@@ -33,6 +33,7 @@ public class BeginMessage extends TransactionInitiatingMessage
 
     public BeginMessage()
     {
+        super();
     }
 
     public BeginMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )

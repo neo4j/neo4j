@@ -23,11 +23,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.packstream.PackedInputArray;
+import org.neo4j.bolt.packstream.PackedInputArray;
 import org.neo4j.kernel.impl.util.ValueUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

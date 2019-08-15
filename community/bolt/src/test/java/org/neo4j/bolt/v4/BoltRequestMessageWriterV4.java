@@ -22,9 +22,9 @@ package org.neo4j.bolt.v4;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
+import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v3.messaging.BoltRequestMessageWriterV3;
 import org.neo4j.bolt.v4.messaging.AbstractStreamingMessage;
 import org.neo4j.bolt.v4.messaging.DiscardMessage;

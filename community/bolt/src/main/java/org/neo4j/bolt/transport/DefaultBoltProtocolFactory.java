@@ -22,9 +22,7 @@ package org.neo4j.bolt.transport;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.runtime.BoltStateMachineFactory;
-import org.neo4j.bolt.v1.BoltProtocolV1;
-import org.neo4j.bolt.v2.BoltProtocolV2;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
@@ -50,15 +48,7 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
     @Override
     public BoltProtocol create( long protocolVersion, BoltChannel channel )
     {
-        if ( protocolVersion == BoltProtocolV1.VERSION )
-        {
-            return new BoltProtocolV1( channel, connectionFactory, stateMachineFactory, logService );
-        }
-        else if ( protocolVersion == BoltProtocolV2.VERSION )
-        {
-            return new BoltProtocolV2( channel, connectionFactory, stateMachineFactory, logService );
-        }
-        else if ( protocolVersion == BoltProtocolV3.VERSION )
+        if ( protocolVersion == BoltProtocolV3.VERSION )
         {
             return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, logService );
         }

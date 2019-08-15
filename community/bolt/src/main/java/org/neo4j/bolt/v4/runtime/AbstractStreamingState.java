@@ -20,14 +20,14 @@
 package org.neo4j.bolt.v4.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.runtime.StateMachineContext;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
+import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.v3.runtime.FailSafeBoltStateMachineState;
 import org.neo4j.bolt.v4.messaging.DiscardResultConsumer;
 import org.neo4j.bolt.v4.messaging.DiscardMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.PullResultConsumer;
-import org.neo4j.bolt.v4.messaging.ResultConsumer;
+import org.neo4j.bolt.messaging.ResultConsumer;
 
 import static org.neo4j.util.Preconditions.checkState;
 

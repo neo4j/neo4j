@@ -22,8 +22,8 @@ package org.neo4j.bolt.v3;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.runtime.BoltStateMachineSPI;
-import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
+import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
 import org.neo4j.bolt.v3.runtime.ConnectedState;
 import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
@@ -32,7 +32,7 @@ import org.neo4j.bolt.v3.runtime.StreamingState;
 import org.neo4j.bolt.v3.runtime.TransactionReadyState;
 import org.neo4j.bolt.v3.runtime.TransactionStreamingState;
 
-public class BoltStateMachineV3 extends BoltStateMachineV1
+public class BoltStateMachineV3 extends AbstractBoltStateMachine
 {
     public BoltStateMachineV3( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock )
     {

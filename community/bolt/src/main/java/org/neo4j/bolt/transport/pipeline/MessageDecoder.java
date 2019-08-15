@@ -24,9 +24,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
-import org.neo4j.bolt.messaging.Neo4jPack;
-import org.neo4j.bolt.messaging.UnpackerProvider;
-import org.neo4j.bolt.v1.packstream.ByteBufInput;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.UnpackerProvider;
+import org.neo4j.bolt.packstream.ByteBufInput;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 

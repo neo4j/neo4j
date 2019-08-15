@@ -22,20 +22,41 @@ package org.neo4j.bolt.v3.messaging.request;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.messaging.RequestMessage;
 
 import static java.util.Objects.requireNonNull;
 
-public class HelloMessage extends InitMessage
+public class HelloMessage implements RequestMessage
 {
-    public static final byte SIGNATURE = InitMessage.SIGNATURE;
+    public static final byte SIGNATURE = 0x01;
     private static final String USER_AGENT = "user_agent";
     private final Map<String,Object> meta;
 
     public HelloMessage( Map<String,Object> meta )
     {
-        super( (String) meta.get( USER_AGENT ), meta );
         this.meta = requireNonNull( meta );
+    }
+
+    public String userAgent()
+    {
+        return requireNonNull( (String) meta.get( USER_AGENT ) );
+    }
+
+    public Map<String,Object> authToken()
+    {
+        // for now, we just delegate to meta.
+        return meta();
+    }
+
+    public Map<String,Object> meta()
+    {
+        return meta;
+    }
+
+    @Override
+    public boolean safeToProcessInAnyState()
+    {
+        return false;
     }
 
     @Override
@@ -51,11 +72,6 @@ public class HelloMessage extends InitMessage
         }
         HelloMessage that = (HelloMessage) o;
         return Objects.equals( meta, that.meta );
-    }
-
-    public Map<String,Object> meta()
-    {
-        return meta;
     }
 
     @Override

@@ -22,9 +22,11 @@ package org.neo4j.bolt.runtime;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.scheduling.BoltConnectionLifetimeListener;
+import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.testing.BoltTestUtil;
-import org.neo4j.bolt.v1.packstream.PackOutput;
-import org.neo4j.bolt.v1.runtime.Job;
+import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
 

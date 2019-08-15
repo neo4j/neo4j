@@ -21,6 +21,8 @@ package org.neo4j.bolt.messaging;
 
 import java.io.IOException;
 
+import org.neo4j.bolt.packstream.Neo4jPack;
+
 public interface ResponseMessageEncoder<T extends ResponseMessage>
 {
     void encode( Neo4jPack.Packer packer, T message ) throws IOException;

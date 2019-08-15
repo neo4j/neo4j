@@ -20,14 +20,15 @@
 package org.neo4j.bolt.v3.messaging.decoder;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.messaging.decoder.InitMessageDecoder;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
+import org.neo4j.kernel.api.security.AuthToken;
 
 public class HelloMessageDecoder implements RequestMessageDecoder
 {
@@ -53,7 +54,22 @@ public class HelloMessageDecoder implements RequestMessageDecoder
     @Override
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
-        Map<String,Object> meta = InitMessageDecoder.readMetaDataMap( unpacker );
+        Map<String,Object> meta = readMetaDataMap( unpacker );
         return new HelloMessage( meta );
+    }
+
+    private static Map<String,Object> readMetaDataMap( Neo4jPack.Unpacker unpacker ) throws IOException
+    {
+        var metaDataMapValue = unpacker.unpackMap();
+        var writer = new PrimitiveOnlyValueWriter();
+        var metaDataMap = new HashMap<String,Object>( metaDataMapValue.size() );
+        metaDataMapValue.foreach( ( key, value ) ->
+        {
+            Object convertedValue = AuthToken.containsSensitiveInformation( key ) ?
+                                    writer.sensitiveValueAsObject( value ) :
+                                    writer.valueAsObject( value );
+            metaDataMap.put( key, convertedValue );
+        } );
+        return metaDataMap;
     }
 }

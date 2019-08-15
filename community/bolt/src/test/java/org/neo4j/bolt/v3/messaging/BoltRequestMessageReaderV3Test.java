@@ -26,31 +26,19 @@ import java.util.stream.Stream;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
-import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
-import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
-import org.neo4j.bolt.v1.messaging.request.InitMessage;
-import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v1.messaging.request.ResetMessage;
-import org.neo4j.bolt.v1.packstream.PackedInputArray;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
-import org.neo4j.bolt.v3.messaging.request.HelloMessage;
-import org.neo4j.bolt.v3.messaging.request.RunMessage;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackedInputArray;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.encode;
-import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4jPack;
-import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.requestMessageReader;
-import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
-import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
+import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.encode;
+import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newNeo4jPack;
+import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.requestMessageReader;
 
 class BoltRequestMessageReaderV3Test
 {
@@ -85,24 +73,12 @@ class BoltRequestMessageReaderV3Test
 
     private static Stream<RequestMessage> boltV3Messages() throws BoltIOException
     {
-        return Stream.of(
-                new HelloMessage( map( "user_agent", "My driver", "one", 1L, "two", 2L ) ),
-                new RunMessage( "RETURN 1", EMPTY_MAP ),
-                DiscardAllMessage.INSTANCE,
-                PullAllMessage.INSTANCE,
-                new BeginMessage(),
-                COMMIT_MESSAGE,
-                ROLLBACK_MESSAGE,
-                ResetMessage.INSTANCE );
+        return BoltV3Messages.supported();
     }
 
-    private static Stream<RequestMessage> boltV3UnsupportedMessages()
+    private static Stream<RequestMessage> boltV3UnsupportedMessages() throws BoltIOException
     {
-        return Stream.of(
-                new InitMessage( "My driver", map( "one", 1L, "two", 2L ) ),
-                AckFailureMessage.INSTANCE,
-                new org.neo4j.bolt.v1.messaging.request.RunMessage( "RETURN 1" )
-        );
+        return BoltV3Messages.unsupported();
     }
 
 }

@@ -27,18 +27,12 @@ import java.util.stream.Stream;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
-import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
-import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
-import org.neo4j.bolt.v1.messaging.request.InitMessage;
-import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v1.messaging.request.ResetMessage;
-import org.neo4j.bolt.v1.packstream.PackedInputArray;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackedInputArray;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.v3.messaging.request.TransactionInitiatingMessage;
 
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,13 +40,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
-import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.encode;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newNeo4jPack;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.requestMessageReader;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class BoltRequestMessageReaderV4Test
@@ -118,25 +108,11 @@ class BoltRequestMessageReaderV4Test
 
     private static Stream<RequestMessage> boltV4Messages() throws BoltIOException
     {
-        return Stream.of(
-                new PullMessage( asMapValue( singletonMap( "n",  100L ) ) ),
-                new DiscardMessage( asMapValue( singletonMap( "n", 100L ) ) ),
-                new RunMessage( "RETURN 1", EMPTY_MAP ),
-                new BeginMessage(),
-
-                COMMIT_MESSAGE,
-                ROLLBACK_MESSAGE,
-                ResetMessage.INSTANCE );
+        return BoltV4Messages.supported();
     }
 
     private static Stream<RequestMessage> boltV4UnsupportedMessages() throws BoltIOException
     {
-        return Stream.of(
-                new InitMessage( "My driver", map( "one", 1L, "two", 2L ) ),
-                AckFailureMessage.INSTANCE,
-                new org.neo4j.bolt.v1.messaging.request.RunMessage( "RETURN 1" ),
-                PullAllMessage.INSTANCE,
-                DiscardAllMessage.INSTANCE
-        );
+        return BoltV4Messages.unsupported();
     }
 }

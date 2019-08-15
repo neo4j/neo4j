@@ -21,6 +21,8 @@ package org.neo4j.bolt.runtime;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.graphdb.TransactionTerminatedException;
 
 import static org.hamcrest.CoreMatchers.equalTo;

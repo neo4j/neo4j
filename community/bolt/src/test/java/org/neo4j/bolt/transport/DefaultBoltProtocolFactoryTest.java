@@ -28,12 +28,11 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.testing.BoltTestUtil;
-import org.neo4j.bolt.v1.BoltProtocolV1;
-import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltProtocolV3;
+import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 
@@ -64,7 +63,7 @@ class DefaultBoltProtocolFactoryTest
     }
 
     @ParameterizedTest( name = "V{0}" )
-    @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION, BoltProtocolV3.VERSION} )
+    @ValueSource( longs = {BoltProtocolV3.VERSION, BoltProtocolV4.VERSION} )
     void shouldCreateBoltProtocol( long protocolVersion ) throws Throwable
     {
         EmbeddedChannel channel = new EmbeddedChannel();

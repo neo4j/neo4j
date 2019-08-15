@@ -22,10 +22,10 @@ package org.neo4j.bolt.v4;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.BoltStateMachineFactory;
-import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;

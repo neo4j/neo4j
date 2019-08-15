@@ -19,8 +19,9 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
+import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.runtime.StateMachineContext;
+import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 
 public class PullResultConsumer implements ResultConsumer
 {

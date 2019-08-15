@@ -21,7 +21,7 @@ package org.neo4j.bolt.v3.messaging.request;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.messaging.Neo4jPack.Unpacker;
+import org.neo4j.bolt.packstream.Neo4jPack.Unpacker;
 import org.neo4j.bolt.v3.messaging.decoder.BeginMessageDecoder;
 import org.neo4j.values.virtual.MapValue;
 

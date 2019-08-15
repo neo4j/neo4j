@@ -23,10 +23,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.v1.packstream.PackStream;
+import org.neo4j.bolt.packstream.PackStream;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.function.Function.identity;

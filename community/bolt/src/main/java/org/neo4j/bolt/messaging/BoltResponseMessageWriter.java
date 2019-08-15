@@ -28,4 +28,5 @@ import java.io.IOException;
 public interface BoltResponseMessageWriter extends BoltRecordConsumer
 {
     void write( ResponseMessage message ) throws IOException;
+    void flush() throws IOException;
 }

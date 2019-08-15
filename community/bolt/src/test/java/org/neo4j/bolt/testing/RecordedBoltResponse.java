@@ -24,10 +24,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
+import org.neo4j.bolt.messaging.BoltResponseMessage;
 import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -39,7 +40,7 @@ public class RecordedBoltResponse
 
     public RecordedBoltResponse()
     {
-        records = new ArrayList<>(  );
+        records = new ArrayList<>();
         response = null;
         metadata = new HashMap<>();
     }
@@ -83,6 +84,15 @@ public class RecordedBoltResponse
     public List<AnyValue[]> records()
     {
         return new ArrayList<>( records );
+    }
+
+    public AnyValue singleValueRecord()
+    {
+        var records = records();
+        assertThat( records.size(), equalTo( 1 ) );
+        var values = records.get( 0 );
+        assertThat( values.length, equalTo( 1 ) );
+        return values[0];
     }
 
     @Override

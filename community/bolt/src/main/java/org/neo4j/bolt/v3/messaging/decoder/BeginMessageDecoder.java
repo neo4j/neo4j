@@ -25,14 +25,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BookmarksParser;
-import org.neo4j.bolt.v1.runtime.bookmarking.BookmarksParserV1;
+import org.neo4j.bolt.v3.runtime.bookmarking.BookmarksParserV3;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.MessageMetadataParser;
 import org.neo4j.values.virtual.MapValue;
@@ -44,7 +44,7 @@ public class BeginMessageDecoder implements RequestMessageDecoder
 
     public BeginMessageDecoder( BoltResponseHandler responseHandler )
     {
-        this( responseHandler, BookmarksParserV1.INSTANCE );
+        this( responseHandler, BookmarksParserV3.INSTANCE );
     }
 
     protected BeginMessageDecoder( BoltResponseHandler responseHandler, BookmarksParser bookmarksParser )

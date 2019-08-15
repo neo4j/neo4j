@@ -23,18 +23,18 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackedInputArray;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.security.auth.AuthTokenDecoderTest;
-import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.encode;
-import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4jPack;
+import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.encode;
+import static org.neo4j.bolt.v3.BoltProtocolV3ComponentFactory.newNeo4jPack;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.test.AuthTokenUtil.assertAuthTokenMatches;
 

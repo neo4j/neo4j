@@ -22,8 +22,14 @@ package org.neo4j.bolt.runtime;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
+import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitorAggregate;
+import org.neo4j.bolt.runtime.scheduling.BoltConnectionReadLimiter;
+import org.neo4j.bolt.runtime.scheduling.BoltScheduler;
+import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.v1.transport.ChunkedOutput;
+import org.neo4j.bolt.packstream.ChunkedOutput;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.internal.LogService;

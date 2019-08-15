@@ -21,14 +21,14 @@ package org.neo4j.bolt.v4.runtime;
 
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StatementMetadata;
-import org.neo4j.bolt.runtime.StatementProcessor;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
+import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.bolt.v4.messaging.ResultConsumer;
+import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.values.storable.Values;
 

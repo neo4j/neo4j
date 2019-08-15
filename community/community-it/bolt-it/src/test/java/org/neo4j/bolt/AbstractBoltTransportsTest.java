@@ -30,21 +30,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
-import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPackV1;
+import org.neo4j.bolt.packstream.Neo4jPackV2;
+import org.neo4j.bolt.testing.TransportTestUtil;
+import org.neo4j.bolt.testing.client.SecureSocketConnection;
+import org.neo4j.bolt.testing.client.SecureWebSocketConnection;
+import org.neo4j.bolt.testing.client.SocketConnection;
+import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.client.WebSocketConnection;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.withOptionalBoltEncryption;
+import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 
 @RunWith( Parameterized.class )
 public abstract class AbstractBoltTransportsTest

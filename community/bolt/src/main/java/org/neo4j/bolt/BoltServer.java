@@ -26,13 +26,13 @@ import java.time.Clock;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.runtime.BoltSchedulerProvider;
-import org.neo4j.bolt.runtime.BoltStateMachineFactory;
-import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
-import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
+import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineFactoryImpl;
+import org.neo4j.bolt.runtime.scheduling.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
-import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
-import org.neo4j.bolt.runtime.NettyThreadFactory;
+import org.neo4j.bolt.runtime.scheduling.ExecutorBoltSchedulerProvider;
+import org.neo4j.bolt.runtime.scheduling.NettyThreadFactory;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
@@ -115,7 +115,7 @@ public class BoltServer extends LifecycleAdapter
                 life.setLast( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), jobScheduler, logService ) );
         BoltConnectionFactory boltConnectionFactory =
                 createConnectionFactory( config, boltSchedulerProvider, throttleGroup, logService, clock );
-        BoltStateMachineFactory boltStateMachineFactory = createBoltFactory( authentication, clock );
+        BoltStateMachineFactory boltStateMachineFactory = createBoltStateMachineFactory( authentication, clock );
 
         BoltProtocolFactory boltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, boltStateMachineFactory );
 
@@ -223,7 +223,7 @@ public class BoltServer extends LifecycleAdapter
         return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService, databaseIdRepository );
     }
 
-    private BoltStateMachineFactory createBoltFactory( Authentication authentication, SystemNanoClock clock )
+    private BoltStateMachineFactory createBoltStateMachineFactory( Authentication authentication, SystemNanoClock clock )
     {
         return new BoltStateMachineFactoryImpl( boltGraphDatabaseManagementServiceSPI, authentication, clock, config, logService );
     }

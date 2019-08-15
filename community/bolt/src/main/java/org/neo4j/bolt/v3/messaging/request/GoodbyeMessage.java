@@ -20,7 +20,7 @@
 package org.neo4j.bolt.v3.messaging.request;
 
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 
 /**
  * On decoding of a {@link GoodbyeMessage}, we immediately stop whatever the connection is doing and shut down this connection.

@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.bolt.messaging.Neo4jPack.Unpacker;
+import org.neo4j.bolt.packstream.Neo4jPack.Unpacker;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 class BoltRequestMessageReaderTest
 {
     @Test
-    public void shouldPropagateFatalError() throws Exception
+    void shouldPropagateFatalError() throws Exception
     {
         Unpacker unpacker = mock( Unpacker.class );
         RuntimeException error = new RuntimeException();
@@ -57,7 +57,7 @@ class BoltRequestMessageReaderTest
     }
 
     @Test
-    public void shouldHandleErrorThatCausesFailureMessage() throws Exception
+    void shouldHandleErrorThatCausesFailureMessage() throws Exception
     {
         Unpacker unpacker = mock( Unpacker.class );
         BoltIOException error = new BoltIOException( Status.General.UnknownError, "Hello" );
@@ -75,7 +75,7 @@ class BoltRequestMessageReaderTest
     }
 
     @Test
-    public void shouldThrowForUnknownMessage() throws Exception
+    void shouldThrowForUnknownMessage() throws Exception
     {
         Unpacker unpacker = mock( Unpacker.class );
         when( unpacker.unpackStructSignature() ).thenReturn( 'a' );
@@ -90,7 +90,7 @@ class BoltRequestMessageReaderTest
     }
 
     @Test
-    public void shouldDecodeKnownMessage() throws Exception
+    void shouldDecodeKnownMessage() throws Exception
     {
         Unpacker unpacker = mock( Unpacker.class );
         when( unpacker.unpackStructSignature() ).thenReturn( 'a' );

@@ -20,12 +20,11 @@
 package org.neo4j.bolt.v3.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.ResultConsumerV1Adaptor;
-import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
-import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v4.messaging.ResultConsumer;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
+import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v3.messaging.request.PullAllMessage;
+import org.neo4j.bolt.messaging.ResultConsumer;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -43,12 +42,12 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
     {
         if ( message instanceof PullAllMessage )
         {
-            ResultConsumer resultConsumer = new ResultConsumerV1Adaptor( context, true );
+            ResultConsumer resultConsumer = new ResultConsumerAdaptor( context, true );
             return processStreamResultMessage( resultConsumer, context );
         }
         else if ( message instanceof DiscardAllMessage )
         {
-            ResultConsumer resultConsumer = new ResultConsumerV1Adaptor( context, false );
+            ResultConsumer resultConsumer = new ResultConsumerAdaptor( context, false );
             return processStreamResultMessage( resultConsumer, context );
         }
 

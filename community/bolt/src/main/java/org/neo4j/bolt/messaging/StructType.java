@@ -22,8 +22,8 @@ package org.neo4j.bolt.messaging;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.bolt.packstream.Neo4jPackV1;
+import org.neo4j.bolt.packstream.Neo4jPackV2;
 
 import static java.util.Collections.unmodifiableMap;
 

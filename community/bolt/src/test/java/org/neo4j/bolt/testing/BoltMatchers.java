@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.request.ResetMessage;
-import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
-import org.neo4j.bolt.v1.runtime.ReadyState;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
+import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
+import org.neo4j.bolt.v3.messaging.request.ResetMessage;
+import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -44,10 +44,10 @@ import org.neo4j.values.storable.TextValue;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
-import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
+import static org.neo4j.bolt.messaging.BoltResponseMessage.FAILURE;
+import static org.neo4j.bolt.messaging.BoltResponseMessage.IGNORED;
+import static org.neo4j.bolt.messaging.BoltResponseMessage.SUCCESS;
+import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.newMachine;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class BoltMatchers
@@ -258,7 +258,7 @@ public class BoltMatchers
             @Override
             public boolean matches( final Object item )
             {
-                final BoltStateMachineV1 machine = (BoltStateMachineV1) item;
+                final AbstractBoltStateMachine machine = (AbstractBoltStateMachine) item;
                 final StatementProcessor statementProcessor = machine.statementProcessor();
                 return statementProcessor != null && statementProcessor.hasTransaction();
             }
@@ -266,7 +266,7 @@ public class BoltMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "no transaction" );
+                description.appendText( "has transaction" );
             }
         };
     }
@@ -278,7 +278,7 @@ public class BoltMatchers
             @Override
             public boolean matches( final Object item )
             {
-                final BoltStateMachineV1 machine = (BoltStateMachineV1) item;
+                final AbstractBoltStateMachine machine = (AbstractBoltStateMachine) item;
                 final StatementProcessor statementProcessor = machine.statementProcessor();
                 return statementProcessor == StatementProcessor.EMPTY || !statementProcessor.hasTransaction();
             }
@@ -298,13 +298,17 @@ public class BoltMatchers
             @Override
             public boolean matches( final Object item )
             {
-                return stateClass.isInstance( ((BoltStateMachineV1) item).state() );
+                if ( stateClass == null )
+                {
+                    return ((AbstractBoltStateMachine) item).state() == null;
+                }
+                return stateClass.isInstance( ((AbstractBoltStateMachine) item).state() );
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "can reset" );
+                description.appendText( "in state " + stateClass.getName() );
             }
         };
     }
@@ -323,7 +327,7 @@ public class BoltMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "can reset" );
+                description.appendText( "is closed" );
             }
         };
     }
@@ -339,6 +343,7 @@ public class BoltMatchers
                 final BoltResponseRecorder recorder = new BoltResponseRecorder();
                 try
                 {
+                    machine.interrupt();
                     machine.process( ResetMessage.INSTANCE, recorder );
                     return recorder.responseCount() == 1 && inState( ReadyState.class ).matches( item );
                 }

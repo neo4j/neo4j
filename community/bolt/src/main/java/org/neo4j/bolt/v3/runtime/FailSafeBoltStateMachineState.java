@@ -21,9 +21,9 @@ package org.neo4j.bolt.v3.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
+import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
 import static org.neo4j.util.Preconditions.checkState;

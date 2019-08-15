@@ -21,7 +21,7 @@ package org.neo4j.bolt.v4.runtime;
 
 import java.time.Clock;
 
-import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
+import org.neo4j.bolt.runtime.statemachine.impl.BoltAdapterSubscriber;
 import org.neo4j.bolt.v3.runtime.CypherAdapterStreamV3;
 import org.neo4j.kernel.impl.query.QueryExecution;
 
@@ -32,7 +32,7 @@ public class CypherAdapterStreamV4 extends CypherAdapterStreamV3
 {
     private final String databaseName;
 
-    public CypherAdapterStreamV4( QueryExecution delegate, TransactionStateMachineV1SPI.BoltAdapterSubscriber subscriber, Clock clock, String databaseName )
+    public CypherAdapterStreamV4( QueryExecution delegate, BoltAdapterSubscriber subscriber, Clock clock, String databaseName )
     {
         super( delegate, subscriber, clock );
         this.databaseName = databaseName;

@@ -131,7 +131,7 @@ public final class BookmarksParserV4 implements BookmarksParser
         }
         catch ( NumberFormatException e )
         {
-            throw newInvalidBookmarkError( bookmark, e );
+            throw newInvalidBookmarkError( bookmark, String.format( "Unable to parse transaction id: %s", txIdString ), e );
         }
     }
 

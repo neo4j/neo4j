@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.StatementMetadata;
+import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;

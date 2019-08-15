@@ -21,19 +21,25 @@ package org.neo4j.bolt.v3.runtime;
 
 import java.time.Clock;
 
-import org.neo4j.bolt.v1.runtime.CypherAdapterStream;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
+import org.neo4j.bolt.runtime.statemachine.impl.BoltAdapterSubscriber;
+import org.neo4j.bolt.runtime.AbstractCypherAdapterStream;
 import org.neo4j.kernel.impl.query.QueryExecution;
 
 import static org.neo4j.values.storable.Values.longValue;
 
-public class CypherAdapterStreamV3 extends CypherAdapterStream
+public class CypherAdapterStreamV3 extends AbstractCypherAdapterStream
 {
     private static final String LAST_RESULT_CONSUMED_KEY = "t_last";
 
-    public CypherAdapterStreamV3( QueryExecution delegate, TransactionStateMachineV1SPI.BoltAdapterSubscriber subscriber,  Clock clock )
+    public CypherAdapterStreamV3( QueryExecution delegate, BoltAdapterSubscriber subscriber,  Clock clock )
     {
         super( delegate, subscriber, clock );
+    }
+
+    @Override
+    protected void addDatabaseName( RecordConsumer recordConsumer )
+    {
+        // on purpose left empty
     }
 
     @Override

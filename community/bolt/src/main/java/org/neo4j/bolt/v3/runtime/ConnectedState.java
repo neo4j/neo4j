@@ -23,12 +23,12 @@ import java.util.Map;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.runtime.StateMachineContext;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
+import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.bolt.v1.runtime.BoltAuthenticationHelper.processAuthentication;
+import static org.neo4j.bolt.v3.messaging.BoltAuthenticationHelper.processAuthentication;
 import static org.neo4j.util.Preconditions.checkState;
 
 /**

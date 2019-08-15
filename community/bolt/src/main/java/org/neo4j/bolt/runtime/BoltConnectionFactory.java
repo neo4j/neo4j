@@ -20,6 +20,7 @@
 package org.neo4j.bolt.runtime;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 
 public interface BoltConnectionFactory
 {

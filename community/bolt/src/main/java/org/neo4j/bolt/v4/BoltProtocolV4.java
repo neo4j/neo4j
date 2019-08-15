@@ -21,27 +21,26 @@ package org.neo4j.bolt.v4;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
-import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
-import org.neo4j.bolt.v1.BoltProtocolV1;
-import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
-import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.transport.AbstractBoltProtocol;
+import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
-import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.logging.internal.LogService;
 
 /**
  * Bolt protocol V4. It hosts all the components that are specific to BoltV4
  */
-public class BoltProtocolV4 extends BoltProtocolV1
+public class BoltProtocolV4 extends AbstractBoltProtocol
 {
     public static final long VERSION = 4;
 
     public BoltProtocolV4( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-            BookmarksParserV4 bookmarksParser, LogService logging )
+            BookmarksParser bookmarksParser, LogService logging )
     {
         super( channel, connectionFactory, stateMachineFactory, bookmarksParser, logging );
     }
@@ -62,7 +61,7 @@ public class BoltProtocolV4 extends BoltProtocolV1
     protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection,
             BookmarksParser bookmarksParser, LogService logging )
     {
-        BoltResponseMessageWriterV1 responseWriter = new BoltResponseMessageWriterV1( neo4jPack, connection.output(), logging );
+        BoltResponseMessageWriterV3 responseWriter = new BoltResponseMessageWriterV3( neo4jPack, connection.output(), logging );
         return new BoltRequestMessageReaderV4( connection, responseWriter, bookmarksParser, logging );
     }
 }

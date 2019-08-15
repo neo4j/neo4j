@@ -30,9 +30,9 @@ import org.neo4j.values.storable.BooleanValue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
+import static org.neo4j.bolt.messaging.BoltResponseMessage.FAILURE;
+import static org.neo4j.bolt.messaging.BoltResponseMessage.IGNORED;
+import static org.neo4j.bolt.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.values.storable.Values.stringOrNoValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -55,7 +55,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
     @Override
     public boolean onPullRecords( BoltResult result, long size ) throws Throwable
     {
-        return hasMore( result.handleRecords( new RecordingBoltResultRecordConsumer( ), size ) );
+        return hasMore( result.handleRecords( new RecordingBoltResultRecordConsumer(), size ) );
     }
 
     @Override

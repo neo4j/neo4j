@@ -29,7 +29,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.internal.helpers.HostnamePort;

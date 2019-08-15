@@ -35,23 +35,23 @@ class BookmarkParsingException extends BoltIOException
         super( status, message );
     }
 
-    static BookmarkParsingException newInvalidBookmarkError( String bookmarkString, NumberFormatException cause )
+    static BookmarkParsingException newInvalidBookmarkError( Object bookmarkObject, String message, Throwable cause )
     {
         return new BookmarkParsingException( Status.Transaction.InvalidBookmark,
-                String.format( "Supplied bookmark [%s] does not conform to pattern {database_id}:{tx_id}; unable to parse transaction id", bookmarkString ),
-                cause );
+                String.format( "Supplied bookmark list [%s] is not a list of bookmark conforming to pattern {database_id}:{tx_id}. %s", bookmarkObject,
+                        message ), cause );
     }
 
     static BookmarkParsingException newInvalidBookmarkError( Object bookmarkObject )
     {
         return new BookmarkParsingException( Status.Transaction.InvalidBookmark,
-                String.format( "Supplied bookmark [%s] does not conform to pattern {database_id}:{tx_id}", bookmarkObject ) );
+                String.format( "Supplied bookmark list [%s] is not a list of bookmark conforming to pattern {database_id}:{tx_id}.", bookmarkObject ) );
     }
 
     static BookmarkParsingException newInvalidBookmarkMixtureError( ListValue bookmarks )
     {
         return new BookmarkParsingException( Status.Transaction.InvalidBookmarkMixture,
-                String.format( "Supplied bookmark list contains bookmarks from multiple databases. Bookmark list: %s ", bookmarks ) );
+                String.format( "Supplied bookmark list contains bookmarks from multiple non-system databases. Bookmark list: %s.", bookmarks ) );
     }
 
     static BookmarkParsingException newInvalidBookmarkUnknownDatabaseError( String databaseName )

@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import org.neo4j.bolt.runtime.BoltStateMachineState;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v4.messaging.ResultConsumer;
+import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.bolt.messaging.ResultConsumer;
 
 /**
  * When AUTOCOMMIT, additionally attach bookmark to PULL, DISCARD result

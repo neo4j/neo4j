@@ -27,13 +27,14 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
-import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
+import org.neo4j.bolt.runtime.statemachine.impl.AbstractTransactionStateMachineSPI;
+import org.neo4j.bolt.runtime.statemachine.impl.BoltAdapterSubscriber;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public class TransactionStateMachineV3SPI extends TransactionStateMachineV1SPI
+public class TransactionStateMachineV3SPI extends AbstractTransactionStateMachineSPI
 {
     public TransactionStateMachineV3SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, Duration txAwaitDuration,
             SystemNanoClock clock, StatementProcessorReleaseManager resourceReleaseManger )
@@ -47,7 +48,7 @@ public class TransactionStateMachineV3SPI extends TransactionStateMachineV1SPI
         return new BoltResultHandleV3( statement, params, boltQueryExecutor );
     }
 
-    private class BoltResultHandleV3 extends BoltResultHandleV1
+    private class BoltResultHandleV3 extends AbstractBoltResultHandle
     {
         BoltResultHandleV3( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
         {

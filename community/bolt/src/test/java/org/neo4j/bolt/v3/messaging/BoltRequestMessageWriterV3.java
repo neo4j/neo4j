@@ -22,12 +22,16 @@ package org.neo4j.bolt.v3.messaging;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
+import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
+import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v3.messaging.request.GoodbyeMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
+import org.neo4j.bolt.v3.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -35,17 +39,34 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 /**
  * This writer simulates the client.
  */
-public class BoltRequestMessageWriterV3 extends BoltRequestMessageWriter
+public class BoltRequestMessageWriterV3 implements BoltRequestMessageWriter
 {
+    protected final Neo4jPack.Packer packer;
+
     public BoltRequestMessageWriterV3( Neo4jPack.Packer packer )
     {
-        super( packer );
+        this.packer = packer;
     }
 
-    @Override
     public BoltRequestMessageWriter write( RequestMessage message ) throws IOException
     {
-        if ( message instanceof HelloMessage )
+        if ( message instanceof ResetMessage )
+        {
+            writeReset();
+        }
+        else if ( message instanceof DiscardAllMessage )
+        {
+            writeDiscardAll();
+        }
+        else if ( message instanceof PullAllMessage )
+        {
+            writePullAll();
+        }
+        else if ( message instanceof GoodbyeMessage )
+        {
+            writeGoodbye();
+        }
+        else if ( message instanceof HelloMessage )
         {
             writeHello( (HelloMessage) message );
         }
@@ -67,9 +88,69 @@ public class BoltRequestMessageWriterV3 extends BoltRequestMessageWriter
         }
         else
         {
-            super.write( message );
+            throw new IllegalArgumentException( "Unknown message: " + message );
         }
         return this;
+    }
+
+    public void flush()
+    {
+        try
+        {
+            packer.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private void writeGoodbye()
+    {
+        try
+        {
+            packer.packStructHeader( 0, GoodbyeMessage.SIGNATURE );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private void writeReset()
+    {
+        try
+        {
+            packer.packStructHeader( 0, ResetMessage.SIGNATURE );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private void writeDiscardAll()
+    {
+        try
+        {
+            packer.packStructHeader( 0, DiscardAllMessage.SIGNATURE );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private void writePullAll()
+    {
+        try
+        {
+            packer.packStructHeader( 0, PullAllMessage.SIGNATURE );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     private void writeRun( RunMessage message )

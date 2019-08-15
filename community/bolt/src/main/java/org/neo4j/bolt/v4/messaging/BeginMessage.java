@@ -35,6 +35,7 @@ public class BeginMessage extends org.neo4j.bolt.v3.messaging.request.BeginMessa
 
     public BeginMessage()
     {
+        super();
         this.databaseName = ABSENT_DB_NAME;
     }
 

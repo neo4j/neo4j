@@ -35,10 +35,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltServer;
+import org.neo4j.bolt.runtime.scheduling.BoltConnectionLifetimeListener;
+import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.testing.Jobs;
-import org.neo4j.bolt.v1.packstream.PackOutput;
-import org.neo4j.bolt.v1.runtime.Job;
+import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.LogService;

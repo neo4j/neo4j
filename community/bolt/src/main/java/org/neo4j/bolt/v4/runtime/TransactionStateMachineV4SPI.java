@@ -29,15 +29,16 @@ import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
+import org.neo4j.bolt.runtime.statemachine.impl.AbstractTransactionStateMachineSPI;
+import org.neo4j.bolt.runtime.statemachine.impl.BoltAdapterSubscriber;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
+public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachineSPI
 {
     private final DatabaseId databaseId;
 
@@ -73,7 +74,7 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
         return true;
     }
 
-    private class BoltResultHandleV4 extends BoltResultHandleV1
+    private class BoltResultHandleV4 extends AbstractBoltResultHandle
     {
 
         BoltResultHandleV4( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor  )
