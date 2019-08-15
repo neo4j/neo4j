@@ -26,16 +26,17 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext, ResourceManager}
-import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.internal.kernel.api.Procedures
-import org.neo4j.values.storable.LongValue
-import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.util.DummyPosition
 import org.neo4j.cypher.internal.v3_5.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.internal.kernel.api.Procedures
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import scala.collection.JavaConverters._
 
@@ -46,7 +47,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   test("should be able to call procedure with single argument") {
     // Given
-    val proc = ProcedureCallExecutionPlan(readSignature, Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
+    val proc = ProcedureCallExecutionPlan(readSignature, Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> ("b", "b")),
                                           converters, idGen.id())
 
     // When
@@ -59,7 +60,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   test("should eagerize write procedure") {
     // Given
     val proc = ProcedureCallExecutionPlan(writeSignature,
-                                          Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
+                                          Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> ("b", "b")),
                                           converters, idGen.id())
 
     // When
@@ -72,7 +73,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   test("should not eagerize readOperationsInNewTransaction procedure") {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature,
-                                          Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
+                                          Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> ("b", "b")),
                                           converters, idGen.id())
 
     // When
@@ -130,10 +131,10 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   val procs = mock[Procedures]
   when(ctx.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-  when(ctx.callReadOnlyProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(anyInt, any[Seq[Any]], any[Array[String]], any[ProcedureCallContext])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]], any[ProcedureCallContext])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(anyInt, any[Seq[Any]], any[Array[String]], any[ProcedureCallContext])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]], any[ProcedureCallContext])).thenAnswer(procedureResult)
   when(ctx.asObject(any[LongValue])).thenAnswer(new Answer[Long]() {
     override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArgument(0).asInstanceOf[LongValue].value()
   })

@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.util.{InputPosition, SyntaxException}
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckResult._
-import org.neo4j.cypher.internal.v3_5.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.v3_5.ast.semantics.{SemanticCheck, SemanticError, SemanticExpressionCheck, SemanticState}
+import org.neo4j.cypher.internal.v3_5.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.util.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.v3_5.util.{InputPosition, SyntaxException}
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
@@ -80,9 +80,9 @@ case class ResolvedCall(signature: ProcedureSignature,
   override def returnColumns: List[String] =
     callResults.map(_.variable.name).toList
 
-  def callResultIndices: Seq[(Int, String)] = {
+  def callResultIndices: IndexedSeq[(Int, (String, String))] = {  // pos, newName, oldName
     val outputIndices: Map[String, Int] = signature.outputSignature.map { outputs => outputs.map(_.name).zip(outputs.indices).toMap }.getOrElse(Map.empty)
-    callResults.map(result => outputIndices(result.outputName) -> result.variable.name)
+    callResults.map(result => outputIndices(result.outputName) -> (result.variable.name -> result.outputName))
   }
 
   def callResultTypes: Seq[(String, CypherType)] = {

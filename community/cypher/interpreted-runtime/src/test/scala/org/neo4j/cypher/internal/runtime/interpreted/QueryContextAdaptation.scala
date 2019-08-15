@@ -24,16 +24,17 @@ import java.net.URL
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeValueIndexCursor}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 
 trait QueryContextAdaptation {
   self: QueryContext =>
@@ -160,21 +161,21 @@ trait QueryContextAdaptation {
   override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
                                               values: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor = ???
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String], procedureCallContext: ProcedureCallContext): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String], procedureCallContext: ProcedureCallContext): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String], procedureCallContext: ProcedureCallContext): Iterator[Array[AnyRef]] = ???
 
-  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String], procedureCallContext: ProcedureCallContext): Iterator[Array[AnyRef]] = ???
 
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String], procedureCallContext: ProcedureCallContext): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String], procedureCallContext: ProcedureCallContext): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String], procedureCallContext: ProcedureCallContext): Iterator[Array[AnyRef]] = ???
 
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String], procedureCallContext: ProcedureCallContext): Iterator[Array[AnyRef]] = ???
 
   override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue = ???
 

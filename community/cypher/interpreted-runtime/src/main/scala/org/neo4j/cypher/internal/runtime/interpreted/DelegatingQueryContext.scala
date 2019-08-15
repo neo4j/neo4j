@@ -24,9 +24,11 @@ import java.net.URL
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -35,7 +37,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value}
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 
 import scala.collection.Iterator
 
@@ -245,29 +246,29 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
-    singleDbHit(inner.callReadOnlyProcedure(id, args, allowed))
+  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String], context: ProcedureCallContext) =
+    singleDbHit(inner.callReadOnlyProcedure(id, args, allowed, context))
 
-  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
-    singleDbHit(inner.callReadWriteProcedure(id, args, allowed))
+  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String], context: ProcedureCallContext) =
+    singleDbHit(inner.callReadWriteProcedure(id, args, allowed, context))
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
-    singleDbHit(inner.callSchemaWriteProcedure(id, args, allowed))
+  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String], context: ProcedureCallContext) =
+    singleDbHit(inner.callSchemaWriteProcedure(id, args, allowed, context))
 
-  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
-    inner.callDbmsProcedure(id, args, allowed)
+  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String], context: ProcedureCallContext) =
+    inner.callDbmsProcedure(id, args, allowed, context)
 
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    singleDbHit(inner.callReadOnlyProcedure(name, args, allowed))
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String], context: ProcedureCallContext) =
+    singleDbHit(inner.callReadOnlyProcedure(name, args, allowed, context))
 
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    singleDbHit(inner.callReadWriteProcedure(name, args, allowed))
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String], context: ProcedureCallContext) =
+    singleDbHit(inner.callReadWriteProcedure(name, args, allowed, context))
 
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    singleDbHit(inner.callSchemaWriteProcedure(name, args, allowed))
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String], context: ProcedureCallContext) =
+    singleDbHit(inner.callSchemaWriteProcedure(name, args, allowed, context))
 
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
-    inner.callDbmsProcedure(name, args, allowed)
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String], context: ProcedureCallContext) =
+    inner.callDbmsProcedure(name, args, allowed, context)
 
   override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callFunction(id, args, allowed))

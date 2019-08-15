@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
@@ -115,7 +116,8 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     {
         QualifiedName procedureName = procedureName( "dbms", "listConfig" );
         RawIterator<Object[],ProcedureException> callResult =
-                dbmsOperations().procedureCallDbms( procedureName, toArray( seatchString ), dependencyResolver, AUTH_DISABLED, resourceTracker );
+                dbmsOperations().procedureCallDbms( procedureName, toArray( seatchString ), dependencyResolver, AUTH_DISABLED, resourceTracker,
+                        ProcedureCallContext.EMPTY );
         return asList( callResult );
     }
 }

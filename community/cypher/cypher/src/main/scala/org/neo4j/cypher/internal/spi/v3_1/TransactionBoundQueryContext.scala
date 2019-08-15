@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
-import org.neo4j.cypher.internal.compiler.v3_1.spi._
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{IdempotentResult, _}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.helpers.Nodes
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.dbms.DbmsOperations
@@ -875,34 +876,34 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        txContext.kernelTransaction.procedures().procedureCallReadOverride(_, _)
+        txContext.kernelTransaction.procedures().procedureCallReadOverride(_, _, ProcedureCallContext.EMPTY)
       else
-        txContext.kernelTransaction.procedures().procedureCallRead(_, _)
+        txContext.kernelTransaction.procedures().procedureCallRead(_, _, ProcedureCallContext.EMPTY)
     callProcedure(name, args, call)
   }
 
   override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        txContext.kernelTransaction.procedures().procedureCallWriteOverride(_, _)
+        txContext.kernelTransaction.procedures().procedureCallWriteOverride(_, _, ProcedureCallContext.EMPTY)
       else
-        txContext.kernelTransaction.procedures().procedureCallWrite(_, _)
+        txContext.kernelTransaction.procedures().procedureCallWrite(_, _, ProcedureCallContext.EMPTY)
     callProcedure(name, args, call)
   }
 
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        txContext.kernelTransaction.procedures().procedureCallSchemaOverride(_, _)
+        txContext.kernelTransaction.procedures().procedureCallSchemaOverride(_, _, ProcedureCallContext.EMPTY)
       else
-        txContext.kernelTransaction.procedures().procedureCallSchema(_, _)
+        txContext.kernelTransaction.procedures().procedureCallSchema(_, _, ProcedureCallContext.EMPTY)
     callProcedure(name, args, call)
   }
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     callProcedure(name, args,
                   txContext.dbmsOperations.procedureCallDbms(_,_,txContext.graph.getDependencyResolver, txContext.securityContext,
-        txContext.resourceTracker))
+        txContext.resourceTracker, ProcedureCallContext.EMPTY) )
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {
@@ -915,7 +916,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
     }
   }
 
-  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef = {
     val call: KernelFunctionCall =
       if (shouldElevate(allowed))
         (name, args) => txContext.kernelTransaction.procedures().functionCallOverride(name, args)

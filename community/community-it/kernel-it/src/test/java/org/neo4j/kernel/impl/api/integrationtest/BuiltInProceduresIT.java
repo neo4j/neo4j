@@ -38,10 +38,9 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -85,7 +84,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new Object[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyLabel"} ) ) );
@@ -123,7 +123,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         constraintLatch.await();
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new Object[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         try
@@ -148,7 +149,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new Object[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyProp"} ) ) );
@@ -167,7 +169,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new Object[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyRelType"} ) ) );
@@ -178,7 +181,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     {
         // When
         ProcedureHandle procedures = procs().procedureGet( procedureName( "dbms", "procedures" ) );
-        RawIterator<Object[],ProcedureException> stream = procs().procedureCallRead( procedures.id(), new Object[0] );
+        RawIterator<Object[],ProcedureException> stream = procs().procedureCallRead( procedures.id(), new Object[0], ProcedureCallContext.EMPTY );
 
         // Then
         //noinspection unchecked
@@ -332,7 +335,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         try
         {
             dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0], dependencyResolver,
-                    AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), resourceTracker );
+                    AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), resourceTracker, ProcedureCallContext.EMPTY );
             fail( "This should never get here" );
         }
         catch ( Exception e )
@@ -349,7 +352,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new Object[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel", singletonList( Version.getNeo4jVersion() ), "community"} ) ) );
@@ -383,7 +387,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new Object[0],
+                        ProcedureCallContext.EMPTY );
 
         Set<Object[]> result = new HashSet<>();
         while ( stream.hasNext() )
@@ -455,7 +460,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         constraintLatch.await();
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new Object[0],
+                        ProcedureCallContext.EMPTY );
 
         Set<Object[]> result = new HashSet<>();
         while ( stream.hasNext() )

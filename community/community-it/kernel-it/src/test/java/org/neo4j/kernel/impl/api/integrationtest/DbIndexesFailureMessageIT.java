@@ -30,6 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -77,7 +78,7 @@ public class DbIndexesFailureMessageIT extends KernelIntegrationTest
         // When
         RawIterator<Object[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(),
-                        new Object[0] );
+                        new Object[0], ProcedureCallContext.EMPTY );
         assertTrue( stream.hasNext() );
         Object[] result = stream.next();
         assertFalse( stream.hasNext() );
