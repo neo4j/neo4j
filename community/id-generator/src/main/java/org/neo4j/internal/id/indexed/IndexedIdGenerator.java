@@ -351,7 +351,7 @@ public class IndexedIdGenerator implements IdGenerator
     {
         // Apparently there's this thing where there's a check that highId is only set if it's higher than the current highId,
         // i.e. highId cannot be set to something lower than it already is. This check is done in the store implementation.
-        // But can we rely on it always guarding this, and can this even happen at all? Anyway here's a simple guard for now setting it to something lower.
+        // But can we rely on it always guarding this, and can this even happen at all? Anyway here's a simple guard for not setting it to something lower.
         long expect;
         do
         {
