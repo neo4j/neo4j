@@ -79,6 +79,27 @@ class SubQueryTest extends CypherFunSuite with AstConstructionHelp {
     result.errors.head.position shouldEqual marker
   }
 
+  // This is subject to change when we implement correlated subqueries
+  test("outer scope is not seen in subquery beginning with with") {
+
+    val marker = InputPosition(-100, -100, -100)
+
+    val q =
+      query(
+        with_(i("1") -> v("a")),
+        subQuery(
+          with_(v("a")(marker) -> v("b")),
+          return_(v("b") -> v("c"))
+        ),
+        return_(v("a"))
+      )
+
+    val result = SemanticChecker.check(q, clean)
+
+    result.errors.size shouldEqual 1
+    result.errors.head.position shouldEqual marker
+  }
+
   test("subquery scoping works with order by") {
 
     val q =
