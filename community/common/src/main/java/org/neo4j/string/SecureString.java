@@ -24,6 +24,7 @@ import java.security.Key;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -57,17 +58,20 @@ public class SecureString
             {
                 try
                 {
-                    final byte[] key = new byte[16];
-                    random.nextBytes( key );
-                    final String algorithm = "AES";
-                    final Key aesKey = new SecretKeySpec( key, algorithm );
-                    cipher = Cipher.getInstance( algorithm );
+                    final byte[] buf = new byte[16];
+                    random.nextBytes( buf );
+                    final Key aesKey = new SecretKeySpec( buf, "AES" );
+                    cipher = Cipher.getInstance( "AES/CBC/PKCS5Padding" );
 
-                    cipher.init( Cipher.ENCRYPT_MODE, aesKey );
+                    random.nextBytes( buf );
+                    IvParameterSpec iv = new IvParameterSpec( buf );
+                    Arrays.fill( buf, (byte) 0 );
+
+                    cipher.init( Cipher.ENCRYPT_MODE, aesKey, iv );
                     encryptedData = cipher.doFinal( dataToSecure );
-                    cipher.init( Cipher.DECRYPT_MODE, aesKey );
+
+                    cipher.init( Cipher.DECRYPT_MODE, aesKey, iv );
                     encryptionAvailable = true;
-                    Arrays.fill( key, (byte) 0 );
                 }
                 catch ( Exception e )
                 {
