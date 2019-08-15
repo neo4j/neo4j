@@ -78,6 +78,10 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private static int defaultChannelStripePower()
     {
+        if ( !SystemUtils.IS_OS_WINDOWS )
+        {
+            return 0;
+        }
         int vcores = Runtime.getRuntime().availableProcessors();
         // Find the lowest 2's exponent that can accommodate 'vcores'
         int stripePower = 32 - Integer.numberOfLeadingZeros( vcores - 1 );
