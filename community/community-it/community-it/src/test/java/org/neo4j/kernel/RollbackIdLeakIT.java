@@ -90,7 +90,7 @@ class RollbackIdLeakIT
                         rolledBackNodeIds.add( node.getId() );
                         rolledBackRelationshipIds.add( relationship.getId() );
                         flowControl.reached();
-                        // DO NOT call tx.success()
+                        // DO NOT call tx.commit()
                     }
                 }, 1 );
                 race.addContestant( throwing( () ->
@@ -102,7 +102,7 @@ class RollbackIdLeakIT
                         Relationship relationship = node.createRelationshipTo( node, TEST );
                         committedNodeIds.add( node.getId() );
                         committedRelationshipIds.add( relationship.getId() );
-                        tx.success(); // this one we commit
+                        tx.commit(); // this one we commit
                     }
                     flowControl.release();
                 } ), 1 );
@@ -113,7 +113,7 @@ class RollbackIdLeakIT
                 {
                     committedNodeIds.forEach( nodeId -> db.getNodeById( nodeId ).delete() );
                     committedRelationshipIds.forEach( relationshipId -> db.getRelationshipById( relationshipId ).delete() );
-                    tx.success();
+                    tx.commit();
                 }
             }
 
@@ -166,14 +166,14 @@ class RollbackIdLeakIT
                 relationship1.delete();
                 relationshipIds.add( relationship1.getId() );
 
-                tx.success();
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
                 node2.delete();
                 relationship2.delete();
-                tx.success();
+                tx.commit();
             }
 
             assertAllocateIds( restarter.restart(), nodeIds, relationshipIds );
@@ -196,7 +196,7 @@ class RollbackIdLeakIT
                 Relationship relationship = db.createNode().createRelationshipTo( db.createNode(), TEST );
                 assertTrue( relationshipIds.remove( relationship.getId() ) );
             }
-            tx.success();
+            tx.commit();
         }
         assertTrue( nodeIds.isEmpty() );
         assertTrue( relationshipIds.isEmpty() );
