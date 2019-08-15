@@ -99,10 +99,9 @@ public class BoltServer extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Exception
+    public void init() throws Exception
     {
         Log log = logService.getInternalLog( BoltServer.class );
-        Log userLog = logService.getUserLog( BoltServer.class );
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
 
@@ -111,7 +110,7 @@ public class BoltServer extends LifecycleAdapter
         TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
 
         BoltSchedulerProvider boltSchedulerProvider =
-                life.add( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), jobScheduler, logService ) );
+                life.setLast( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), jobScheduler, logService ) );
         BoltConnectionFactory boltConnectionFactory =
                 createConnectionFactory( config, boltSchedulerProvider, throttleGroup, logService, clock );
         BoltStateMachineFactory boltStateMachineFactory = createBoltFactory( authentication, clock );
@@ -122,18 +121,30 @@ public class BoltServer extends LifecycleAdapter
         {
             jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
             NettyServer server = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
-                    createProtocolInitializer( boltProtocolFactory, throttleGroup, log ), connectorPortRegister, userLog );
+                    createProtocolInitializer( boltProtocolFactory, throttleGroup, log ), connectorPortRegister, logService );
             life.add( server );
             log.info( "Bolt server loaded" );
         }
 
+        life.init();
+    }
+
+    @Override
+    public void start() throws Exception
+    {
         life.start(); // init and start the nested lifecycle
     }
 
     @Override
     public void stop() throws Exception
     {
-        life.shutdown(); // stop and shutdown the nested lifecycle
+        life.stop(); // stop the nested lifecycle
+    }
+
+    @Override
+    public void shutdown() throws Exception
+    {
+        life.shutdown(); // shutdown the nested lifecycle
     }
 
     private BoltConnectionFactory createConnectionFactory( Config config, BoltSchedulerProvider schedulerProvider,
@@ -196,7 +207,7 @@ public class BoltServer extends LifecycleAdapter
         catch ( Exception e )
         {
             throw new RuntimeException( "Failed to initialize SSL encryption support, which is required to start this connector. " +
-                                        "Error was: " + e.getMessage(), e );
+                    "Error was: " + e.getMessage(), e );
         }
     }
 

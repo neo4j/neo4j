@@ -33,6 +33,7 @@ import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.internal.NullLogService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -50,6 +51,7 @@ class NettyServerTest
         if ( server != null )
         {
             server.stop();
+            server.shutdown();
         }
     }
 
@@ -63,7 +65,7 @@ class NettyServerTest
             var address = new SocketAddress( "localhost", port );
 
             // When
-            server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), new ConnectorPortRegister(), NullLog.getInstance() );
+            server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), new ConnectorPortRegister(), NullLogService.getInstance() );
 
             // Then
             assertThrows( PortBindException.class, server::start );
@@ -77,16 +79,18 @@ class NettyServerTest
         var portRegister = new ConnectorPortRegister();
 
         var address = new SocketAddress( "localhost", 0 );
-        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), portRegister, NullLog.getInstance() );
+        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), portRegister, NullLogService.getInstance() );
 
         assertNull( portRegister.getLocalAddress( connector ) );
 
+        server.init();
         server.start();
         var actualAddress = portRegister.getLocalAddress( connector );
         assertNotNull( actualAddress );
         assertThat( actualAddress.getPort(), greaterThan( 0 ) );
 
         server.stop();
+        server.shutdown();
         assertNull( portRegister.getLocalAddress( connector ) );
     }
 

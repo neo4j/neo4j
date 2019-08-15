@@ -72,13 +72,14 @@ public class ExecutorBoltSchedulerConcurrencyTest
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltScheduler =
             new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, maxPoolSize, maxPoolSize, Duration.ofMinutes( 1 ), 0,
-                    ForkJoinPool.commonPool() );
+                    ForkJoinPool.commonPool(), Duration.ZERO );
 
     @Before
     public void setup() throws Throwable
     {
         when( jobScheduler.threadFactory( any() ) ).thenReturn( Executors.defaultThreadFactory() );
 
+        boltScheduler.init();
         boltScheduler.start();
     }
 
@@ -86,6 +87,7 @@ public class ExecutorBoltSchedulerConcurrencyTest
     public void cleanup() throws Throwable
     {
         boltScheduler.stop();
+        boltScheduler.shutdown();
     }
 
     @Test

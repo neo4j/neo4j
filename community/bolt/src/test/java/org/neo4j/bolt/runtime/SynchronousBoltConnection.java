@@ -37,6 +37,8 @@ public class SynchronousBoltConnection implements BoltConnection
     private final PackOutput output;
     private final BoltStateMachine machine;
 
+    private boolean idle = true;
+
     public SynchronousBoltConnection( BoltStateMachine machine )
     {
         this.channel = new EmbeddedChannel();
@@ -48,6 +50,12 @@ public class SynchronousBoltConnection implements BoltConnection
     public String id()
     {
         return channel.id().asLongText();
+    }
+
+    @Override
+    public boolean idle()
+    {
+        return idle;
     }
 
     @Override
@@ -89,6 +97,8 @@ public class SynchronousBoltConnection implements BoltConnection
     @Override
     public void enqueue( Job job )
     {
+        idle = false;
+
         try
         {
             job.perform( machine );
@@ -96,6 +106,10 @@ public class SynchronousBoltConnection implements BoltConnection
         catch ( BoltConnectionFatality connectionFatality )
         {
             throw new RuntimeException( connectionFatality );
+        }
+        finally
+        {
+            idle = true;
         }
     }
 

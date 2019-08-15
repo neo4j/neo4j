@@ -59,6 +59,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,7 +74,8 @@ public class ExecutorBoltSchedulerTest
     private final ExecutorFactory executorFactory = new CachedThreadPoolExecutorFactory( NullLog.getInstance() );
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltScheduler =
-            new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool() );
+            new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(),
+                    Duration.ZERO );
 
     @Before
     public void setup()
@@ -85,6 +87,7 @@ public class ExecutorBoltSchedulerTest
     public void cleanup() throws Throwable
     {
         boltScheduler.stop();
+        boltScheduler.shutdown();
     }
 
     @Test
@@ -94,9 +97,9 @@ public class ExecutorBoltSchedulerTest
         when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
-                        ForkJoinPool.commonPool() );
+                        ForkJoinPool.commonPool(), Duration.ZERO );
 
-        scheduler.start();
+        scheduler.init();
 
         verify( jobScheduler ).threadFactory( Group.BOLT_WORKER );
         verify( mockExecutorFactory ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), anyBoolean(), any( ThreadFactory.class ) );
@@ -110,10 +113,10 @@ public class ExecutorBoltSchedulerTest
         when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( cachedThreadPool );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
-                        ForkJoinPool.commonPool() );
+                        ForkJoinPool.commonPool(), Duration.ZERO );
 
-        scheduler.start();
-        scheduler.stop();
+        scheduler.init();
+        scheduler.shutdown();
 
         assertTrue( cachedThreadPool.isShutdown() );
     }
@@ -124,6 +127,7 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
 
+        boltScheduler.init();
         boltScheduler.start();
         boltScheduler.created( connection );
 
@@ -137,6 +141,7 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
 
+        boltScheduler.init();
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.closed( connection );
@@ -152,6 +157,7 @@ public class ExecutorBoltSchedulerTest
         BoltConnection connection = newConnection( id );
         when( connection.processNextBatch() ).thenAnswer( inv -> awaitExit( exitCondition ) );
 
+        boltScheduler.init();
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
@@ -171,6 +177,7 @@ public class ExecutorBoltSchedulerTest
         AtomicBoolean exitCondition = new AtomicBoolean();
         when( connection.processNextBatch() ).thenAnswer( inv -> awaitExit( exitCondition ) );
 
+        boltScheduler.init();
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
@@ -192,6 +199,7 @@ public class ExecutorBoltSchedulerTest
         doThrow( new RuntimeException( "some unexpected error" ) ).when( connection ).processNextBatch();
         doAnswer( inv -> stopped.getAndSet( true ) ).when( connection ).stop();
 
+        boltScheduler.init();
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
@@ -202,7 +210,7 @@ public class ExecutorBoltSchedulerTest
         verify( connection ).processNextBatch();
         verify( connection ).stop();
 
-        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).error(
+        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).error(
                 containsString( "Unexpected error during job scheduling for session" ),
                 matchesExceptionMessage( containsString( "some unexpected error" ) ) ) );
     }
@@ -216,6 +224,7 @@ public class ExecutorBoltSchedulerTest
         when( connection.processNextBatch() ).thenAnswer( inv -> counter.incrementAndGet() > 0 );
         when( connection.hasPendingJobs() ).thenReturn( true ).thenReturn( false );
 
+        boltScheduler.init();
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
@@ -238,6 +247,7 @@ public class ExecutorBoltSchedulerTest
             return awaitExit( exitCondition );
         } );
 
+        boltScheduler.init();
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
@@ -275,6 +285,7 @@ public class ExecutorBoltSchedulerTest
             return true;
         } );
 
+        boltScheduler.init();
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
@@ -302,6 +313,7 @@ public class ExecutorBoltSchedulerTest
             return awaitExit( exitCondition );
         } );
 
+        boltScheduler.init();
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
@@ -312,6 +324,56 @@ public class ExecutorBoltSchedulerTest
         assertThat( capturedThreadName.get(), containsString( String.format( "[%s]", connection.remoteAddress() ) ) );
 
         exitCondition.set( true );
+    }
+
+    @Test
+    public void stopShouldStopIdleConnections() throws Exception
+    {
+        BoltConnection connection1 = newConnection( UUID.randomUUID().toString() );
+        BoltConnection connection2 = newConnection( UUID.randomUUID().toString() );
+        BoltConnection connection3 = newConnection( UUID.randomUUID().toString() );
+
+        boltScheduler.init();
+        boltScheduler.start();
+        boltScheduler.created( connection1 );
+        boltScheduler.created( connection2 );
+        boltScheduler.created( connection3 );
+
+        // Mock returned idle values
+        when( connection1.idle() ).thenReturn( true );
+        when( connection2.idle() ).thenReturn( false );
+        when( connection3.idle() ).thenReturn( true );
+
+        boltScheduler.stop();
+
+        verify( connection1, times( 1 ) ).stop();
+        verify( connection2, never() ).stop();
+        verify( connection3, times( 1 ) ).stop();
+    }
+
+    @Test
+    public void shutdownShouldStopAllConnections() throws Exception
+    {
+        BoltConnection connection1 = newConnection( UUID.randomUUID().toString() );
+        BoltConnection connection2 = newConnection( UUID.randomUUID().toString() );
+        BoltConnection connection3 = newConnection( UUID.randomUUID().toString() );
+
+        boltScheduler.init();
+        boltScheduler.start();
+        boltScheduler.created( connection1 );
+        boltScheduler.created( connection2 );
+        boltScheduler.created( connection3 );
+
+        // Mock returned idle values
+        when( connection1.idle() ).thenReturn( true );
+        when( connection2.idle() ).thenReturn( false );
+        when( connection3.idle() ).thenReturn( true );
+
+        boltScheduler.shutdown();
+
+        verify( connection1, times( 1 ) ).stop();
+        verify( connection2, times( 1 ) ).stop();
+        verify( connection3, times( 1 ) ).stop();
     }
 
     private BoltConnection newConnection( String id )

@@ -28,8 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.runtime.Job;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.Group;
@@ -37,25 +39,27 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifetimeListener, BoltConnectionQueueMonitor
+public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltScheduler, BoltConnectionLifetimeListener, BoltConnectionQueueMonitor
 {
     private final String connector;
     private final ExecutorFactory executorFactory;
     private final JobScheduler scheduler;
     private final Log log;
-    private final ConcurrentHashMap<String, BoltConnection> activeConnections = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, CompletableFuture<Boolean>> activeWorkItems = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,BoltConnection> activeConnections = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,CompletableFuture<Boolean>> activeWorkItems = new ConcurrentHashMap<>();
     private final int corePoolSize;
     private final int maxPoolSize;
     private final Duration keepAlive;
     private final int queueSize;
     private final ExecutorService forkJoinPool;
+    private final Duration shutdownWaitTime;
 
     private ExecutorService threadPool;
 
     public ExecutorBoltScheduler( String connector, ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService, int corePoolSize,
-            int maxPoolSize, Duration keepAlive, int queueSize, ExecutorService forkJoinPool )
+            int maxPoolSize, Duration keepAlive, int queueSize, ExecutorService forkJoinPool, Duration shutdownWaitTime )
     {
         this.connector = connector;
         this.executorFactory = executorFactory;
@@ -66,6 +70,7 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
         this.keepAlive = keepAlive;
         this.queueSize = queueSize;
         this.forkJoinPool = forkJoinPool;
+        this.shutdownWaitTime = shutdownWaitTime;
     }
 
     boolean isRegistered( BoltConnection connection )
@@ -85,20 +90,56 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
     }
 
     @Override
-    public void start()
+    public void init()
     {
         threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize, true,
                 new NameAppendingThreadFactory( connector, scheduler.threadFactory( Group.BOLT_WORKER ) ) );
+        log.debug( "Initialized bolt thread pool" );
+    }
+
+    @Override
+    public void start()
+    {
     }
 
     @Override
     public void stop()
     {
+        // Close all idle connections
+        log.debug( "Stopping idle connections" );
+        activeConnections.values().stream().filter( BoltConnection::idle ).forEach( this::stopConnection );
+        log.debug( "Idle connections stopped" );
+    }
+
+    @Override
+    public void shutdown()
+    {
+        // Close all connections
+        log.debug( "Stopping connections" );
+        activeConnections.values().forEach( this::stopConnection );
+        log.debug( "Connections stopped" );
+
         if ( threadPool != null )
         {
-            activeConnections.values().forEach( this::stopConnection );
-
+            log.debug( "Shutting down thread pool" );
             threadPool.shutdown();
+            try
+            {
+                var terminatedCleanly = threadPool.awaitTermination( shutdownWaitTime.toMillis(), MILLISECONDS );
+                if ( !terminatedCleanly )
+                {
+                    log.warn( "Waited %s for the thread pool to shutdown cleanly, but timed out waiting for existing work to finish cleanly",
+                            shutdownWaitTime );
+                }
+                else
+                {
+                    log.debug( "Thread pool shut down" );
+                }
+            }
+            catch ( InterruptedException ex )
+            {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

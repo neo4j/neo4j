@@ -24,13 +24,16 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.ServerChannel;
 import io.netty.channel.epoll.Epoll;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
+import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.transport.configuration.EpollConfigurationProvider;
 import org.neo4j.bolt.transport.configuration.NioConfigurationProvider;
 import org.neo4j.bolt.transport.configuration.ServerConfigurationProvider;
@@ -40,9 +43,11 @@ import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.function.ThrowingAction.executeAll;
 
 /**
@@ -51,15 +56,17 @@ import static org.neo4j.function.ThrowingAction.executeAll;
  */
 public class NettyServer extends LifecycleAdapter
 {
-    private static final boolean USE_EPOLL = FeatureToggles.flag( NettyServer.class, "useEpoll", true  );
+    private static final boolean USE_EPOLL = FeatureToggles.flag( NettyServer.class, "useEpoll", true );
 
+    private final ServerConfigurationProvider configurationProvider;
     private final ProtocolInitializer initializer;
     private final ThreadFactory tf;
     private final ConnectorPortRegister portRegister;
-    private final Log log;
+    private final Log userLog;
+    private final Log internalLog;
 
     private EventLoopGroup eventLoopGroup;
-    private List<Channel> channels;
+    private List<Channel> serverChannels;
 
     /**
      * Describes how to initialize new channels for a protocol, and which address the protocol should be bolted into.
@@ -67,44 +74,49 @@ public class NettyServer extends LifecycleAdapter
     public interface ProtocolInitializer
     {
         ChannelInitializer<Channel> channelInitializer();
+
         SocketAddress address();
     }
 
     /**
      * @param tf used to create IO threads to listen and handle network events
-     * @param initializer  function for bolt connector map to bootstrap configured protocol
+     * @param initializer function for bolt connector map to bootstrap configured protocol
      * @param connectorRegister register to keep local address information on all configured connectors
      */
     public NettyServer( ThreadFactory tf, ProtocolInitializer initializer,
-                        ConnectorPortRegister connectorRegister, Log log )
+            ConnectorPortRegister connectorRegister, LogService logService )
     {
         this.initializer = initializer;
         this.tf = tf;
         this.portRegister = connectorRegister;
-        this.log = log;
+        this.userLog = logService.getUserLog( BoltServer.class );
+        this.internalLog = logService.getUserLog( getClass() );
+        this.configurationProvider = createConfigurationProvider();
+        this.serverChannels = new ArrayList<>();
+    }
+
+    @Override
+    public void init() throws Exception
+    {
+        eventLoopGroup = configurationProvider.createEventLoopGroup( tf );
     }
 
     @Override
     public void start() throws Exception
     {
-        var configurationProvider = createConfigurationProvider();
-
-        eventLoopGroup = configurationProvider.createEventLoopGroup( tf );
-        channels = new ArrayList<>();
-
         if ( initializer != null )
         {
             try
             {
                 var channel = bind( configurationProvider, initializer );
-                channels.add( channel );
+                serverChannels.add( channel );
 
                 var localAddress = (InetSocketAddress) channel.localAddress();
                 portRegister.register( BoltConnector.NAME, localAddress );
 
                 var host = initializer.address().getHostname();
                 var port = localAddress.getPort();
-                log.info( "Bolt enabled on %s.", SocketAddress.format( host, port ) );
+                userLog.info( "Bolt enabled on %s.", SocketAddress.format( host, port ) );
             }
             catch ( Throwable e )
             {
@@ -120,9 +132,14 @@ public class NettyServer extends LifecycleAdapter
     public void stop() throws Exception
     {
         executeAll(
-                this::deregisterListenAddresses,
-                this::closeChannels,
-                this::shutdownEventLoopGroup );
+                this::unregisterListenAddresses,
+                this::closeChannels );
+    }
+
+    @Override
+    public void shutdown() throws Exception
+    {
+        shutdownEventLoopGroup();
     }
 
     private Channel bind( ServerConfigurationProvider configurationProvider, ProtocolInitializer protocolInitializer ) throws InterruptedException
@@ -148,28 +165,28 @@ public class NettyServer extends LifecycleAdapter
         return useEpoll ? EpollConfigurationProvider.INSTANCE : NioConfigurationProvider.INSTANCE;
     }
 
-    private void deregisterListenAddresses()
+    private void unregisterListenAddresses()
     {
         portRegister.deregister( BoltConnector.NAME );
     }
 
     private void closeChannels()
     {
-        if ( channels != null )
+        internalLog.debug( "Closing server channels" );
+        for ( var channel : serverChannels )
         {
-            for ( var channel : channels )
+            try
             {
-                try
-                {
-                    channel.close().syncUninterruptibly();
-                }
-                catch ( Throwable t )
-                {
-                    log.warn( "Failed to close a channel " + channel, t );
-                }
+                channel.close().syncUninterruptibly();
             }
-            channels = null;
+            catch ( Throwable t )
+            {
+                internalLog.warn( "Failed to close channel " + channel, t );
+            }
         }
+        internalLog.debug( "Server channels closed" );
+
+        serverChannels.clear();
     }
 
     private void shutdownEventLoopGroup()
@@ -178,11 +195,13 @@ public class NettyServer extends LifecycleAdapter
         {
             try
             {
-                eventLoopGroup.shutdownGracefully( 500, 2000, MILLISECONDS ).syncUninterruptibly();
+                internalLog.debug( "Shutting down event loop group" );
+                eventLoopGroup.shutdownGracefully().syncUninterruptibly();
+                internalLog.debug( "Event loop group shut down" );
             }
             catch ( Throwable t )
             {
-                log.warn( "Failed to shutdown the event loop group", t );
+                internalLog.warn( "Failed to shutdown event loop group", t );
             }
             eventLoopGroup = null;
         }

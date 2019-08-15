@@ -24,6 +24,7 @@ import java.util.concurrent.ForkJoinPool;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -52,42 +53,59 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     }
 
     @Override
-    public void start()
+    public void init()
     {
         scheduler.setThreadFactory( Group.BOLT_WORKER, NettyThreadFactory::new );
-        forkJoinThreadPool = new ForkJoinPool();
         if ( config.get( BoltConnector.enabled ) )
         {
-            BoltScheduler boltScheduler =
+            this.forkJoinThreadPool = new ForkJoinPool();
+            this.boltScheduler =
                     new ExecutorBoltScheduler( BoltConnector.NAME, executorFactory, scheduler, logService, config.get( BoltConnector.thread_pool_min_size ),
                             config.get( BoltConnector.thread_pool_max_size ), config.get( BoltConnector.thread_pool_keep_alive ),
-                            config.get( BoltConnector.unsupported_thread_pool_queue_size ), forkJoinThreadPool );
+                            config.get( BoltConnector.unsupported_thread_pool_queue_size ), forkJoinThreadPool,
+                            config.get( BoltConnector.thread_pool_shutdown_wait_time ) );
+            this.boltScheduler.init();
+        }
+    }
+
+    @Override
+    public void start()
+    {
+        if ( boltScheduler != null )
+        {
             boltScheduler.start();
-            this.boltScheduler = boltScheduler;
         }
     }
 
     @Override
     public void stop()
     {
-        stopScheduler();
-        forkJoinThreadPool.shutdown();
-        forkJoinThreadPool = null;
+        if ( boltScheduler != null )
+        {
+            boltScheduler.stop();
+        }
     }
 
-    private void stopScheduler()
+    @Override
+    public void shutdown()
     {
         if ( boltScheduler != null )
         {
             try
             {
-                boltScheduler.stop();
+                boltScheduler.shutdown();
             }
             catch ( Throwable t )
             {
-                internalLog.warn( String.format( "An unexpected error occurred while stopping BoltScheduler [%s]", boltScheduler.connector() ), t );
+                internalLog.warn( String.format( "An unexpected error occurred while shutting down BoltScheduler [%s]", boltScheduler.connector() ), t );
             }
             boltScheduler = null;
+        }
+
+        if ( forkJoinThreadPool != null )
+        {
+            forkJoinThreadPool.shutdown();
+            forkJoinThreadPool = null;
         }
     }
 
@@ -103,5 +121,4 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
 
         return boltScheduler;
     }
-
 }

@@ -38,6 +38,13 @@ public interface BoltConnection
     String id();
 
     /**
+     * Returns whether this connection is idle or not.
+     *
+     * @return true if idle, false otherwise
+     */
+    boolean idle();
+
+    /**
      * Returns the local (server) socket address that this client is bound to
      *
      * @return local endpoint

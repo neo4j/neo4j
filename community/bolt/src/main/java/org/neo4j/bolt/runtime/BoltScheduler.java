@@ -24,8 +24,11 @@ public interface BoltScheduler extends BoltConnectionLifetimeListener, BoltConne
 
     String connector();
 
+    void init();
+
     void start();
 
     void stop();
 
+    void shutdown();
 }

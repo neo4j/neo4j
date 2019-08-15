@@ -76,7 +76,8 @@ public class MessageMatchers
     {
         Deserializer deserializer = new Deserializer();
         HashMap<String,Object> map = new HashMap<>( mapValue.size() );
-        mapValue.foreach( ( key, value ) -> {
+        mapValue.foreach( ( key, value ) ->
+        {
             value.writeTo( deserializer );
             map.put( key, deserializer.value() );
         } );
@@ -244,6 +245,25 @@ public class MessageMatchers
         };
     }
 
+    public static Matcher<ResponseMessage> msgFailure()
+    {
+        return new TypeSafeMatcher<ResponseMessage>()
+        {
+            @Override
+            protected boolean matchesSafely( ResponseMessage t )
+            {
+                assertThat( t, instanceOf( FailureMessage.class ) );
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "FAILURE" );
+            }
+        };
+    }
+
     public static Matcher<ResponseMessage> msgFailure( final Status status, final String message )
     {
         return new TypeSafeMatcher<ResponseMessage>()
@@ -332,7 +352,7 @@ public class MessageMatchers
         catch ( Throwable e )
         {
             throw new IOException( "Failed to deserialize response, '" + e.getMessage() + "'.\n" +
-                                   "Raw data: \n" + HexPrinter.hex( bytes ), e );
+                    "Raw data: \n" + HexPrinter.hex( bytes ), e );
         }
     }
 
@@ -342,5 +362,4 @@ public class MessageMatchers
         input.reset( new ArrayByteChannel( bytes ) );
         return new BoltResponseMessageReader( neo4jPack.newUnpacker( input ) );
     }
-
 }

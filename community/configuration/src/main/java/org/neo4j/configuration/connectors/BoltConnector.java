@@ -30,6 +30,7 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.time.Duration.ofMinutes;
+import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
@@ -74,6 +75,10 @@ public final class BoltConnector implements SettingsDeclaration
     @Description( "The maximum time an idle thread in the thread pool bound to this connector will wait for new tasks." )
     public static final Setting<Duration> thread_pool_keep_alive =
             newBuilder( "dbms.connector.bolt.thread_pool_keep_alive", DURATION, ofMinutes( 5 ) ).build();
+
+    @Description( "The maximum time to wait for the thread pool to finish processing its pending jobs and shutdown" )
+    public static final Setting<Duration> thread_pool_shutdown_wait_time =
+            newBuilder( "dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time", DURATION, ofSeconds( 5 ) ).build();
 
     @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
     @Internal

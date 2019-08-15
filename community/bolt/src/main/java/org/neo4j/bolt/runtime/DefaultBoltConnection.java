@@ -62,6 +62,7 @@ public class DefaultBoltConnection implements BoltConnection
 
     private final AtomicBoolean shouldClose = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean idle = new AtomicBoolean( true );
 
     private final BoltConnectionMetricsMonitor metricsMonitor;
     private final Clock clock;
@@ -87,6 +88,14 @@ public class DefaultBoltConnection implements BoltConnection
     public String id()
     {
         return id;
+    }
+
+    @Override
+    public boolean idle()
+    {
+        // Checking additionally for whether the job queue is empty in order to respect
+        // pending and accepted jobs
+        return idle.get() && queue.isEmpty();
     }
 
     @Override
@@ -156,6 +165,7 @@ public class DefaultBoltConnection implements BoltConnection
 
     private boolean processNextBatch( int batchCount, boolean exitIfNoJobsAvailable )
     {
+        idle.set( false );
         metricsMonitor.connectionActivated();
 
         try
@@ -171,6 +181,7 @@ public class DefaultBoltConnection implements BoltConnection
         }
         finally
         {
+            idle.set( true );
             metricsMonitor.connectionWaiting();
         }
     }
