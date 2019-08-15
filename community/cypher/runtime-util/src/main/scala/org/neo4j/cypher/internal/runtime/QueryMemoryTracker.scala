@@ -107,7 +107,21 @@ class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
   }
 }
 
+/**
+  * Logical description of memory tracking behaviour
+  */
 sealed trait MemoryTracking
 case object NO_TRACKING extends MemoryTracking
 case object MEMORY_TRACKING extends MemoryTracking
 case class MEMORY_BOUND(maxAllocatedBytes: Long) extends MemoryTracking
+
+/**
+  * Controller of memory tracking. Needed to make memory tracking dynamically configurable.
+  */
+trait MemoryTrackingController {
+  def memoryTracking: MemoryTracking
+}
+
+object NO_TRACKING_CONTROLLER extends MemoryTrackingController {
+  override def memoryTracking: MemoryTracking = NO_TRACKING
+}

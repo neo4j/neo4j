@@ -388,7 +388,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "memory as needed. This could potentially lead to transactions consuming more heap memory than available, " +
                   "which will kill the Neo4j server." )
     public static final Setting<Long> query_max_memory =
-            newBuilder( "dbms.query_memory_max", BYTES, BYTES.parse( "0" ) ).addConstraint( min( 0L ) ).build();
+            newBuilder( "dbms.query_memory_max", BYTES, BYTES.parse( "0" ) ).addConstraint( min( 0L ) ).dynamic().build();
 
     @Description( "Enable tracing of morsel runtime scheduler." )
     @Internal

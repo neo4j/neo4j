@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.configuration.{Config, GraphDatabaseSettings}
+import org.neo4j.configuration.{Config, GraphDatabaseSettings, SettingChangeListener}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.runtime.{MEMORY_BOUND, MEMORY_TRACKING, MemoryTracking, NO_TRACKING}
+import org.neo4j.cypher.internal.runtime._
 
 import scala.concurrent.duration.Duration
 
@@ -58,10 +58,7 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.cypher_task_wait),
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
       config.get(GraphDatabaseSettings.cypher_morsel_fuse_operators),
-      memoryTracking(
-        config.get(GraphDatabaseSettings.track_query_allocation),
-        config.get(GraphDatabaseSettings.query_max_memory)
-      )
+      new ConfigMemoryTrackingController(config)
     )
   }
 
@@ -77,8 +74,30 @@ object CypherConfiguration {
                                                       minReplanTime,
                                                       targetReplanTime)
   }
+}
 
-  def memoryTracking(trackQueryAllocation: Boolean, queryMaxMemory: Long): MemoryTracking =
+class ConfigMemoryTrackingController(config: Config) extends MemoryTrackingController {
+
+  @volatile private var _memoryTracking: MemoryTracking =
+    getMemoryTracking(
+      config.get(GraphDatabaseSettings.track_query_allocation),
+      config.get(GraphDatabaseSettings.query_max_memory))
+
+  override def memoryTracking: MemoryTracking = _memoryTracking
+
+  config.addListener(GraphDatabaseSettings.track_query_allocation,
+                     new SettingChangeListener[java.lang.Boolean] {
+                       override def accept(before: java.lang.Boolean, after: java.lang.Boolean): Unit =
+                         _memoryTracking = getMemoryTracking(after, config.get(GraphDatabaseSettings.query_max_memory))
+                     })
+
+  config.addListener(GraphDatabaseSettings.query_max_memory,
+                     new SettingChangeListener[java.lang.Long] {
+                       override def accept(before: java.lang.Long, after: java.lang.Long): Unit =
+                        _memoryTracking = getMemoryTracking(config.get(GraphDatabaseSettings.track_query_allocation), after)
+                     })
+
+  private def getMemoryTracking(trackQueryAllocation: Boolean, queryMaxMemory: Long): MemoryTracking =
     if (trackQueryAllocation && queryMaxMemory > 0) MEMORY_BOUND(queryMaxMemory)
     else if (trackQueryAllocation) MEMORY_TRACKING
     else NO_TRACKING
@@ -107,7 +126,7 @@ case class CypherConfiguration(version: CypherVersion,
                                waitTimeout: Int,
                                recompilationLimit: Int,
                                fuseOperators: Boolean,
-                               memoryTracking: MemoryTracking) {
+                               memoryTrackingController: MemoryTrackingController) {
 
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
     CypherRuntimeConfiguration(
@@ -119,7 +138,7 @@ case class CypherConfiguration(version: CypherVersion,
       waitTimeout = Duration(waitTimeout, TimeUnit.MILLISECONDS),
       lenientCreateRelationship = lenientCreateRelationship,
       fuseOperators = fuseOperators,
-      memoryTracking = memoryTracking
+      memoryTrackingController = memoryTrackingController
     )
 
   def toSchedulerTracingConfiguration(doSchedulerTracing: Boolean,

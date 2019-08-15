@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.MemoryTracking
+import org.neo4j.cypher.internal.runtime.MemoryTrackingController
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
@@ -195,7 +195,7 @@ case class CypherRuntimeConfiguration(workers: Int,
                                       waitTimeout: Duration,
                                       lenientCreateRelationship: Boolean,
                                       fuseOperators: Boolean,
-                                      memoryTracking: MemoryTracking) {
+                                      memoryTrackingController: MemoryTrackingController) {
 
   Preconditions.checkArgument(morselSizeSmall <= morselSizeBig, s"morselSizeSmall (got $morselSizeSmall) must be <= morselSizeBig (got $morselSizeBig)")
 }

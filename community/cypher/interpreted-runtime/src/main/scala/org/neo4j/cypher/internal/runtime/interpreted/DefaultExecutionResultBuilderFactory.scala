@@ -75,7 +75,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     columns: Seq[String],
                                                     logicalPlan: LogicalPlan,
                                                     lenientCreateRelationship: Boolean,
-                                                    memoryTracking: MemoryTracking,
+                                                    memoryTrackingController: MemoryTrackingController,
                                                     hasLoadCSV: Boolean = false)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, hasLoadCSV) {
 
@@ -92,7 +92,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                      queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
                      new Array[AnyValue](nExpressionSlots),
                      subscriber,
-                     QueryMemoryTracker(memoryTracking),
+                     QueryMemoryTracker(memoryTrackingController.memoryTracking),
                      pipeDecorator,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults,

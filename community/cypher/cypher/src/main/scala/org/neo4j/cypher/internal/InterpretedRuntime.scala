@@ -55,7 +55,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                                                         columns,
                                                                         withSlottedParameters,
                                                                         context.config.lenientCreateRelationship,
-                                                                        context.config.memoryTracking,
+                                                                        context.config.memoryTrackingController,
                                                                         query.hasLoadCSV)
 
     new InterpretedExecutionPlan(query.periodicCommitInfo,
