@@ -149,10 +149,6 @@ trait SemanticAnalysisTooling {
   def withScopedState(check: => SemanticCheck): SemanticCheck =
     pushStateScope chain check chain popStateScope
 
-  def importStateScope(scope: Scope): SemanticCheck = state => SemanticCheckResult.success(state.importValuesFromScope(scope))
-  def withScopedStateImported(scope: Scope)(check: => SemanticCheck): SemanticCheck =
-    pushStateScope chain importStateScope(scope) chain check chain popStateScope
-
   def typeSwitch(expr: Expression)(choice: TypeSpec => SemanticCheck): SemanticCheck =
     (state: SemanticState) => choice(state.expressionType(expr).actual)(state)
 
