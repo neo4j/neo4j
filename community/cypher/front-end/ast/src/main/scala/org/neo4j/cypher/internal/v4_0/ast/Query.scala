@@ -36,6 +36,11 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
 sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def containsUpdates: Boolean
   def returnColumns: List[String]
+
+  /**
+   * Given the root scope for this query part,
+   * looks up the final scope after the last clause
+   */
   def finalScope(scope: Scope): Scope
 }
 
