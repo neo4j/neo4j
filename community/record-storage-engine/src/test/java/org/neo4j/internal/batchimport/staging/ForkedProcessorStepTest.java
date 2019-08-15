@@ -257,9 +257,9 @@ class ForkedProcessorStepTest
         };
 
         // WHEN
+        control.steps( step );
         step.start( 0 );
         step.receive( 1, null );
-        control.steps( step );
 
         // THEN
         step.awaitCompleted();
