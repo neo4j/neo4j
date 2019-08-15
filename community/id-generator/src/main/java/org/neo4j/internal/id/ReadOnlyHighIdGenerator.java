@@ -58,24 +58,6 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public void freeId( long id )
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
-    }
-
-    @Override
-    public void deleteId( long id )
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
-    }
-
-    @Override
-    public void markIdAsUsed( long id )
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
-    }
-
-    @Override
     public ReuseMarker reuseMarker()
     {
         throw new UnsupportedOperationException( "Should not be required" );

@@ -33,9 +33,6 @@ public interface IdGenerator extends IdSequence, Closeable
     void markHighestWrittenAtHighId();
     long getHighId();
     long getHighestPossibleIdInUse();
-    void freeId( long id );
-    void deleteId( long id );
-    void markIdAsUsed( long id );
     ReuseMarker reuseMarker();
     CommitMarker commitMarker();
 
@@ -137,24 +134,6 @@ public interface IdGenerator extends IdSequence, Closeable
         public CommitMarker commitMarker()
         {
             return delegate.commitMarker();
-        }
-
-        @Override
-        public void markIdAsUsed( long id )
-        {
-            delegate.markIdAsUsed( id );
-        }
-
-        @Override
-        public void deleteId( long id )
-        {
-            delegate.deleteId( id );
-        }
-
-        @Override
-        public void freeId( long id )
-        {
-            delegate.freeId( id );
         }
 
         @Override

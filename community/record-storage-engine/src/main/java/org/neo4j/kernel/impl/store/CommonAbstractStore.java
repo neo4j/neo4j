@@ -481,7 +481,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public void freeId( long id )
     {
-        idGenerator.freeId( id );
+        try ( IdGenerator.ReuseMarker marker = idGenerator.reuseMarker() )
+        {
+            marker.markFree( id );
+        }
     }
 
     /**

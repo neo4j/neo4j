@@ -95,7 +95,7 @@ class IndexedIdGeneratorTest
         // given
         freelist.start( NO_FREE_IDS );
         long id = freelist.nextId();
-        markUnused( id );
+        markDeleted( id );
         markReusable( id );
 
         // when
@@ -111,7 +111,7 @@ class IndexedIdGeneratorTest
         // given
         freelist.start( NO_FREE_IDS );
         long id = freelist.nextId();
-        markUnused( id );
+        markDeleted( id );
         long otherId = freelist.nextId();
         assertNotEquals( id, otherId );
 
@@ -277,11 +277,11 @@ class IndexedIdGeneratorTest
         // given
         freelist.start( NO_FREE_IDS );
         long id = freelist.nextId();
-        freelist.markIdAsUsed( id );
-        freelist.deleteId( id );
+        markUsed( id );
+        markDeleted( id );
 
         // when
-        freelist.markIdAsUsed( id );
+        markUsed( id );
         restart();
 
         // then
@@ -294,12 +294,12 @@ class IndexedIdGeneratorTest
         // given
         freelist.start( NO_FREE_IDS );
         long id = freelist.nextId();
-        freelist.markIdAsUsed( id );
-        freelist.deleteId( id );
-        freelist.freeId( id );
+        markUsed( id );
+        markDeleted( id );
+        markFree( id );
 
         // when
-        freelist.markIdAsUsed( id );
+        markUsed( id );
         restart();
 
         // then
@@ -312,16 +312,16 @@ class IndexedIdGeneratorTest
         // given
         freelist.start( NO_FREE_IDS );
         long id = freelist.nextId();
-        freelist.markIdAsUsed( id );
-        freelist.deleteId( id );
-        freelist.freeId( id );
+        markUsed( id );
+        markDeleted( id );
+        markFree( id );
         try ( ReuseMarker reuseMarker = freelist.reuseMarker() )
         {
             reuseMarker.markReserved( id );
         }
 
         // when
-        freelist.markIdAsUsed( id );
+        markUsed( id );
         restart();
 
         // then
@@ -528,7 +528,7 @@ class IndexedIdGeneratorTest
         }
     }
 
-    private void markUnused( long id )
+    private void markDeleted( long id )
     {
         try ( CommitMarker marker = freelist.commitMarker() )
         {
@@ -537,6 +537,14 @@ class IndexedIdGeneratorTest
     }
 
     private void markReusable( long id )
+    {
+        try ( ReuseMarker marker = freelist.reuseMarker() )
+        {
+            marker.markFree( id );
+        }
+    }
+
+    private void markFree( long id )
     {
         try ( ReuseMarker marker = freelist.reuseMarker() )
         {
@@ -560,7 +568,7 @@ class IndexedIdGeneratorTest
         {
             if ( deleting.compareAndSet( false, true ) )
             {
-                markUnused( id );
+                markDeleted( id );
                 deleted = true;
                 return true;
             }

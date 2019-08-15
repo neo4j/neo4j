@@ -33,13 +33,19 @@ public interface IdUpdateListener
         @Override
         public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id )
         {
-            idGenerator.markIdAsUsed( id );
+            try ( IdGenerator.CommitMarker marker = idGenerator.commitMarker() )
+            {
+                marker.markUsed( id );
+            }
         }
 
         @Override
         public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id )
         {
-            idGenerator.deleteId( id );
+            try ( IdGenerator.CommitMarker marker = idGenerator.commitMarker() )
+            {
+                marker.markDeleted( id );
+            }
         }
     };
 

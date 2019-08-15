@@ -145,24 +145,9 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void freeId( long id )
-        {   // Don't
-        }
-
-        @Override
         public ReuseMarker reuseMarker()
         {
             return NOOP_REUSE_MARKER;
-        }
-
-        @Override
-        public void deleteId( long id )
-        {   // Don't
-        }
-
-        @Override
-        public void markIdAsUsed( long id )
-        {   // Don't
         }
 
         @Override

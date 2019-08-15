@@ -45,13 +45,6 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         } );
     }
 
-    @Override
-    public void deleteId( long id )
-    {
-        super.deleteId( id );
-        buffer.offer( id );
-    }
-
     // NOTE: there will be calls to freeId, which comes from transactions that have allocated ids and are rolling back instead of committing
 
     @Override

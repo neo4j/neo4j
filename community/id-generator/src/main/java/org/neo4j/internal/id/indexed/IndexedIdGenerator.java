@@ -419,33 +419,6 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public void freeId( long id )
-    {
-        try ( ReuseMarker marker = reuseMarker() )
-        {
-            marker.markFree( id );
-        }
-    }
-
-    @Override
-    public void deleteId( long id )
-    {
-        try ( CommitMarker marker = commitMarker() )
-        {
-            marker.markDeleted( id );
-        }
-    }
-
-    @Override
-    public void markIdAsUsed( long id )
-    {
-        try ( CommitMarker marker = commitMarker() )
-        {
-            marker.markUsed( id );
-        }
-    }
-
-    @Override
     public long getNumberOfIdsInUse()
     {
         return getHighId();
