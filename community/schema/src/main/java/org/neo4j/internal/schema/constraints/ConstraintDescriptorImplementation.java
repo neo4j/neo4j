@@ -120,9 +120,9 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
             switch ( schema.entityType() )
             {
             case NODE:
-                return "CONSTRAINT ON ( " + entityName + ":" + entityTypeName + " ) ASSERT exists(" + properties + ")";
+                return "CONSTRAINT ON ( " + entityName + ":" + entityTypeName + " ) ASSERT exists" + properties;
             case RELATIONSHIP:
-                return "CONSTRAINT ON ()-[ " + entityName + ":" + entityTypeName + " ]-() ASSERT exists(" + properties + ")";
+                return "CONSTRAINT ON ()-[ " + entityName + ":" + entityTypeName + " ]-() ASSERT exists" + properties;
             default:
                 throw new IllegalStateException( "Unknown schema entity type: " + schema.entityType() + "." );
             }

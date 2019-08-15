@@ -107,12 +107,14 @@ public class IndexProcedures implements AutoCloseable
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String indexSpecification, String providerName ) throws ProcedureException
     {
-        return createIndex( indexSpecification, providerName, "uniqueness constraint online", SchemaWrite::uniquePropertyConstraintCreate );
+        return createIndex( indexSpecification, providerName, "uniqueness constraint online",
+                ( schemaWrite, descriptor, provider ) -> schemaWrite.uniquePropertyConstraintCreate( descriptor, provider, null ) );
     }
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String indexSpecification, String providerName ) throws ProcedureException
     {
-        return createIndex( indexSpecification, providerName, "node key constraint online", SchemaWrite::nodeKeyConstraintCreate );
+        return createIndex( indexSpecification, providerName, "node key constraint online",
+                ( schemaWrite, descriptor, provider ) -> schemaWrite.nodeKeyConstraintCreate( descriptor, provider, null ) );
     }
 
     private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName, String statusMessage,

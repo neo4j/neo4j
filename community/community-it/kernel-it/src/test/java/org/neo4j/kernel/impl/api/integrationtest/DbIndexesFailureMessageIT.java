@@ -89,7 +89,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         // Then
         IndexDescriptor index = transaction.schemaRead().index( descriptor );
         assertEquals( stringValue( "INDEX ON :Fail(foo)" ), result[0] );
-        assertEquals( stringValue( "index_" + index.getId() ), result[1] );
+        assertEquals( stringValue( "Index on :Fail (foo)" ), result[1] );
         assertEquals( VirtualValues.list( stringValue( "Fail" ) ), result[2] );
         assertEquals( VirtualValues.list( stringValue( "foo" ) ), result[3] );
         assertEquals( stringValue( "FAILED" ), result[4] );

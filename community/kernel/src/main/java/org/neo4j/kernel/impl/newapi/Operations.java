@@ -921,10 +921,8 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public void indexDrop( SchemaDescriptorSupplier schemaish ) throws SchemaKernelException
+    public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
     {
-        SchemaDescriptor schema = schemaish.schema();
-
         exclusiveSchemaLock( schema );
         try
         {
@@ -1090,6 +1088,7 @@ public class Operations implements Write, SchemaWrite
         //Lock
         SchemaDescriptor schema = descriptor.schema();
         exclusiveOptimisticLock( schema.keyType(), schema.lockingKeys() );
+        // todo lock constraint name
         ktx.assertOpen();
 
         //verify data integrity
@@ -1241,8 +1240,7 @@ public class Operations implements Write, SchemaWrite
         return allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null;
     }
 
-    private void assertConstraintDoesNotExist( ConstraintDescriptor constraint )
-            throws AlreadyConstrainedException
+    private void assertConstraintDoesNotExist( ConstraintDescriptor constraint ) throws AlreadyConstrainedException
     {
         if ( allStoreHolder.constraintExists( constraint ) )
         {
@@ -1253,7 +1251,7 @@ public class Operations implements Write, SchemaWrite
         String name = constraint.getName();
         ConstraintDescriptor existingConstraint = allStoreHolder.constraintGetForName( name );
         IndexDescriptor existingIndex = allStoreHolder.indexGetForName( name );
-        if ( existingConstraint != null || existingIndex != IndexDescriptor.NO_INDEX )
+        if ( existingConstraint != null || existingIndex.getOwningConstraintId().isPresent() )
         {
             throw new AlreadyConstrainedException( name, CONSTRAINT_CREATION );
         }

@@ -41,6 +41,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -135,7 +136,7 @@ class SchemaImplTest
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = db.schema().indexFor( USER_LABEL ).on( "name" ).create();
-            assertThat( index.getName(), startsWith( "index_" ) );
+            assertThat( index.getName(), equalTo( "Index on :User (name)" ) );
             tx.commit();
         }
     }

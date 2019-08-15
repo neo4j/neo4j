@@ -75,9 +75,9 @@ public interface SchemaWrite
     /**
      * Drop an index that matches the given schema.
      *
-     * @param schemaish the schema matching the index to drop
+     * @param schema the schema matching the index to drop
      */
-    void indexDrop( SchemaDescriptorSupplier schemaish ) throws SchemaKernelException;
+    void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException;
 
     /**
      * Create unique property constraint

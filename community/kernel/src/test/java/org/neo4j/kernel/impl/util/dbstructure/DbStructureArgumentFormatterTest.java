@@ -66,7 +66,8 @@ class DbStructureArgumentFormatterTest
     void shouldFormatIndexDescriptors()
     {
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 23, 42 );
-        assertEquals( "IndexPrototype.forSchema( SchemaDescriptor.forLabel( 23, 42 ) ).materialise( " + index.getId() + " )",
+        assertEquals( "IndexPrototype.forSchema( SchemaDescriptor.forLabel( 23, 42 ) )" +
+                        ".withName( \"" + index.getName() + "\" ).materialise( " + index.getId() + " )",
                 formatArgument( index ) );
     }
 

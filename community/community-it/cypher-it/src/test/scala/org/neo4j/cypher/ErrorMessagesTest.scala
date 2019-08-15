@@ -206,7 +206,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
     expectError(
       "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
-      String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
+      String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name) IS UNIQUE:%n" +
         "Both Node(" + node1 + ") and Node(" + node2 + ") have the label `Person` and property `name` = 'A'")
     )
   }

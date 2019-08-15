@@ -465,7 +465,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
                             stringValue( "ONLINE" ),
                             stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
                             longValue( indexing.getIndexId( personFooBarDescriptor ) ), EMPTY_STRING},
-                    new AnyValue[]{stringValue( "INDEX ON :Person(baz)" ), stringValue( "index_5" ),
+                    new AnyValue[]{stringValue( "INDEX ON :Person(baz)" ), stringValue( "person baz constraint" ),
                             VirtualValues.list( stringValue( "Person" ) ),
                             VirtualValues.list( stringValue( "baz" ) ),
                             stringValue( "POPULATING" ),

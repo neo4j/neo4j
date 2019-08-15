@@ -186,7 +186,7 @@ class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                "INDEX ON :User(name)", "index_1000", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
+                "INDEX ON :User(name)", "constraint_1000", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
                 getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "" ) ) );
     }
 
@@ -283,7 +283,7 @@ class BuiltInProceduresTest
         assertThat( call( "db.constraints" ),
                 containsInAnyOrder(
                         record( "CONSTRAINT ON ( user:User ) ASSERT exists(user.name)" ),
-                        record( "CONSTRAINT ON ( user:User ) ASSERT user.name IS UNIQUE" ),
+                        record( "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS UNIQUE" ),
                         record( "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS NODE KEY" )
                 ) );
     }
@@ -299,7 +299,7 @@ class BuiltInProceduresTest
         List<Object[]> call = call( "db.constraints" );
         assertThat( call,
                 contains(
-                        record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT `foo:bar`.x.y IS UNIQUE" ),
+                        record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT (`foo:bar`.x.y) IS UNIQUE" ),
                         record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT exists(`foo:bar`.x.y)" ) ) );
     }
 
@@ -366,9 +366,10 @@ class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
+        int id = indexes.size() + 1000;
         IndexDescriptor index = IndexPrototype.forSchema( forLabel( labelId, propId ), EMPTY.getProviderDescriptor() )
-                .withName( "index_" + indexes.size() )
-                .materialise( indexes.size() + 1000 );
+                .withName( "index_" + id )
+                .materialise( id );
         indexes.add( index );
     }
 
@@ -378,9 +379,10 @@ class BuiltInProceduresTest
         int propId = token( propKey, propKeys );
 
         LabelSchemaDescriptor schema = forLabel( labelId, propId );
+        int id = uniqueIndexes.size() + 1000;
         IndexDescriptor index = IndexPrototype.uniqueForSchema( schema, EMPTY.getProviderDescriptor() )
-                .withName( "constraint_" + uniqueIndexes.size() )
-                .materialise( uniqueIndexes.size() + 1000 );
+                .withName( "constraint_" + id )
+                .materialise( id );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }

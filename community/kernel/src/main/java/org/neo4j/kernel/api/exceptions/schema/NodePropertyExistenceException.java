@@ -44,10 +44,14 @@ public class NodePropertyExistenceException extends ConstraintValidationExceptio
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        String propertyNoun = (schema.getPropertyIds().length > 1) ? "properties" : "property";
-        return format( "Node(%d) with label `%s` must have the %s `%s`",
+        boolean pluralProps = schema.getPropertyIds().length > 1;
+        String propertyNoun = pluralProps ? "properties" : "property";
+        String sep = pluralProps ? "" : "`";
+        String props = pluralProps ? TokenIdPrettyPrinter.niceProperties( tokenNameLookup, schema.getPropertyIds() ) :
+                       tokenNameLookup.propertyKeyGetName( schema.getPropertyId() );
+        return format( "Node(%d) with label `%s` must have the %s %s%s%s",
                 nodeId,
                 tokenNameLookup.labelGetName( schema.getLabelId() ), propertyNoun,
-                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, schema.getPropertyIds() ) );
+                sep, props, sep );
     }
 }

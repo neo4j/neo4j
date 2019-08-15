@@ -137,8 +137,8 @@ public abstract class StringLengthIndexValidationIT
         {
             GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
             assertThat( e.getMessage(), Matchers.containsString(
-                    String.format(
-                            "Index IndexDefinition[label:LABEL_ONE on:largeString] (Index( 1, 'index_1', GENERAL, :label[0](property[0]), %s )) " +
+                    String.format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
+                                    "(Index( 1, 'Index on :LABEL_ONE (largeString)', GENERAL, :label[0](property[0]), %s )) " +
                                     "entered a FAILED state.",
                             schemaIndex.providerName() ) ) );
         }
