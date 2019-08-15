@@ -35,7 +35,7 @@ class CollectFunction(value:Expression) extends AggregationFunction {
       case IsNoValue() =>
       case v    =>
         collection += v
-        state.memoryTracker.allocated(v.estimatedHeapUsage())
+        state.memoryTracker.allocated(v)
     }
   }
 

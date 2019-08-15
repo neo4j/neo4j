@@ -44,7 +44,7 @@ case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean 
 
 trait WithHeapUsageEstimation {
   /**
-    * Provides an estimation of the number of bytes currently used by the ExecutionContext
+    * Provides an estimation of the number of bytes currently used by this instance.
     */
   def estimatedHeapUsage: Long
 }

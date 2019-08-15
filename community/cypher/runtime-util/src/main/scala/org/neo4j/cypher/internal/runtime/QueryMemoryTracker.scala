@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.exceptions.TransactionOutOfMemoryException
 import java.lang
 import java.util.Optional
+
+import org.neo4j.exceptions.TransactionOutOfMemoryException
+import org.neo4j.values.AnyValue
 
 trait QueryMemoryTracker {
 
@@ -33,11 +35,39 @@ trait QueryMemoryTracker {
   def allocated(bytes: => Long): Unit
 
   /**
+    * Record allocation of value
+    *
+    * @param value that value which was allocated
+    */
+  def allocated(value: AnyValue): Unit
+
+  /**
+    * Record allocation of instance with heap usage estimation
+    *
+    * @param instance the allocated instance
+    */
+  def allocated(instance: WithHeapUsageEstimation): Unit
+
+  /**
     * Record de-allocation of bytes
     *
     * @param bytes number of de-allocated bytes
     */
-  def deallocated(bytes: => Long): Unit
+  def deallocated(bytes: Long): Unit
+
+  /**
+    * Record de-allocation of value
+    *
+    * @param value that value which was de-allocated
+    */
+  def deallocated(value: AnyValue): Unit
+
+  /**
+    * Record de-allocation of instance with heap usage estimation
+    *
+    * @param instance the de-allocated instance
+    */
+  def deallocated(instance: WithHeapUsageEstimation): Unit
 
   /**
     * Returns an Iterator that, given the memory config settings, might throw an exception if the
@@ -66,9 +96,17 @@ object QueryMemoryTracker {
 case object NoMemoryTracker extends QueryMemoryTracker {
   override def memoryTrackingIterator[T](input: Iterator[T]): Iterator[T] = input
 
-  override def allocated(bytes: => Long): Unit = {}
+  override def allocated(bytes: Long): Unit = {}
 
-  override def deallocated(bytes: => Long): Unit = {}
+  override def allocated(value: AnyValue): Unit = {}
+
+  override def allocated(instance: WithHeapUsageEstimation): Unit = {}
+
+  override def deallocated(bytes: Long): Unit = {}
+
+  override def deallocated(value: AnyValue): Unit = {}
+
+  override def deallocated(instance: WithHeapUsageEstimation): Unit = {}
 
   override def totalAllocatedMemory: Optional[lang.Long] = Optional.empty()
 }
@@ -77,7 +115,7 @@ class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
   private var allocatedBytes = 0L
   private var highWaterMark = 0L
 
-  override def allocated(bytes: => Long): Unit = {
+  override def allocated(bytes: Long): Unit = {
     allocatedBytes += bytes
     if (allocatedBytes > threshold) {
       throw new TransactionOutOfMemoryException
@@ -87,9 +125,17 @@ class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
     }
   }
 
-  override def deallocated(bytes: => Long): Unit = {
+  override def allocated(value: AnyValue): Unit = allocated(value.estimatedHeapUsage())
+
+  override def allocated(instance: WithHeapUsageEstimation): Unit = allocated(instance.estimatedHeapUsage)
+
+  override def deallocated(bytes: Long): Unit = {
     allocatedBytes -= bytes
   }
+
+  override def deallocated(value: AnyValue): Unit = deallocated(value.estimatedHeapUsage())
+
+  override def deallocated(instance: WithHeapUsageEstimation): Unit = deallocated(instance.estimatedHeapUsage)
 
   override def totalAllocatedMemory: Optional[lang.Long] = Optional.of(highWaterMark)
 

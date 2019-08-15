@@ -50,7 +50,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
   override def processRow(row: ExecutionContext): Unit = {
     val groupingValue: AnyValue = groupingFunction(row, state)
     val aggregationFunctions = resultMap.computeIfAbsent(groupingValue, _ => {
-      state.memoryTracker.allocated(groupingValue.estimatedHeapUsage())
+      state.memoryTracker.allocated(groupingValue)
       val functions = new Array[AggregationFunction](aggregations.length)
       var i = 0
       while (i < aggregations.length) {
