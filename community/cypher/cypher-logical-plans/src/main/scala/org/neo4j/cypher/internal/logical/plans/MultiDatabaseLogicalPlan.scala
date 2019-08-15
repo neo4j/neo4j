@@ -50,14 +50,14 @@ abstract class SecurityAdministrationLogicalPlan(source: Option[MultiDatabaseLog
 case class ShowUsers()(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class CreateUser(userName: String, initialStringPassword: Option[Array[Byte]], initialParameterPassword: Option[Parameter],
                       requirePasswordChange: Boolean, suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
-case class DropUser(userName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+case class DropUser(userName: String, checkUserExists: Boolean)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class AlterUser(userName: String, initialStringPassword: Option[Array[Byte]], initialParameterPassword: Option[Parameter],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class SetOwnPassword(newStringPassword: Option[Array[Byte]], newParameterPassword: Option[Parameter],
                           currentStringPassword: Option[Array[Byte]], currentParameterPassword: Option[Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class CreateRole(source: Option[SecurityAdministrationLogicalPlan], roleName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
-case class DropRole(roleName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+case class DropRole(roleName: String, checkRoleExists: Boolean)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class GrantRoleToUser(source: Option[GrantRoleToUser], roleName: String, userName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 case class RevokeRoleFromUser(source: Option[RevokeRoleFromUser], roleName: String, userNames: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 case class RequireRole(source: Option[SecurityAdministrationLogicalPlan], name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
@@ -88,4 +88,4 @@ case class CreateDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen
 case class DropDatabase(source: Option[EnsureValidNonSystemDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class StartDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class StopDatabase(source: Option[EnsureValidNonSystemDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-case class EnsureValidNonSystemDatabase(normalizedName: NormalizedDatabaseName, action: String)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+case class EnsureValidNonSystemDatabase(normalizedName: NormalizedDatabaseName, action: String, checkDatabaseExists: Option[Boolean])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan

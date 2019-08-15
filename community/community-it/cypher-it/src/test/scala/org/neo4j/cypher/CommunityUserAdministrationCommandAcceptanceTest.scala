@@ -368,6 +368,26 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
   }
 
+  test("should do nothing when dropping non-existing user using if exists") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+
+    // WHEN
+    execute("DROP USER IF EXISTS foo")
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+
+    // and an invalid (non-existing) one
+
+    // WHEN
+    execute("DROP USER IF EXISTS `:foo`")
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+  }
+
   test("should fail when dropping user when not on system database") {
     the[DatabaseAdministrationException] thrownBy {
       // WHEN

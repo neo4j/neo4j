@@ -78,7 +78,7 @@ case class Prettifier(expr: ExpressionStringifier) {
                          else ""
       s"${x.name} $userNameString $passwordString$statusString"
 
-    case x @ DropUser(userName) =>
+    case x @ DropUser(userName, _) =>
       s"${x.name} ${Prettifier.escapeName(userName)}"
 
     case x @ AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
@@ -113,7 +113,7 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ CreateRole(roleName, Some(fromRole)) =>
       s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
 
-    case x @ DropRole(roleName) =>
+    case x @ DropRole(roleName, _) =>
       s"${x.name} ${Prettifier.escapeName(roleName)}"
 
     case x @ GrantRolesToUsers(roleNames, userNames) if roleNames.length > 1 =>
@@ -167,7 +167,7 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ CreateDatabase(dbName) =>
       s"${x.name} ${Prettifier.escapeName(dbName)}"
 
-    case x @ DropDatabase(dbName) =>
+    case x @ DropDatabase(dbName, _) =>
       s"${x.name} ${Prettifier.escapeName(dbName)}"
 
     case x @ StartDatabase(dbName) =>

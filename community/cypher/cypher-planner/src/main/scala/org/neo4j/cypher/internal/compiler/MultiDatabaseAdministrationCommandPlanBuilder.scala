@@ -70,10 +70,10 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           plans.CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
-      // DROP USER foo
-      case c@DropUser(userName) =>
+      // DROP USER [IF EXISTS] foo
+      case c@DropUser(userName, ifExists) =>
         Some(plans.LogSystemCommand(
-          plans.DropUser(userName),
+          plans.DropUser(userName, checkUserExists = !ifExists),
           prettifier.asString(c)))
 
       // ALTER USER foo
@@ -131,9 +131,9 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
             ), roleName, fromName, "GRANTED")
           ), roleName, fromName, "DENIED"), prettifier.asString(c)))
 
-      // DROP ROLE foo
-      case c@DropRole(roleName) =>
-        Some(plans.LogSystemCommand(plans.DropRole(roleName), prettifier.asString(c)))
+      // DROP ROLE [IF EXISTS] foo
+      case c@DropRole(roleName, ifExists) =>
+        Some(plans.LogSystemCommand(plans.DropRole(roleName, checkRoleExists = !ifExists), prettifier.asString(c)))
 
       // GRANT roles TO users
       case c@GrantRolesToUsers(roleNames, userNames) =>
@@ -266,11 +266,11 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         }
         Some(plans.CreateDatabase(normalizedName))
 
-      // DROP DATABASE foo
-      case DropDatabase(dbName) =>
+      // DROP DATABASE [IF EXISTS] foo
+      case DropDatabase(dbName, ifExists) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         Some(plans.DropDatabase(
-          Some(plans.EnsureValidNonSystemDatabase(normalizedName, "drop")),
+          Some(plans.EnsureValidNonSystemDatabase(normalizedName, "drop", checkDatabaseExists = Some(!ifExists))),
           normalizedName))
 
       // START DATABASE foo
@@ -281,7 +281,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case StopDatabase(dbName) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         Some(plans.StopDatabase(
-          Some(plans.EnsureValidNonSystemDatabase(normalizedName, "stop")),
+          Some(plans.EnsureValidNonSystemDatabase(normalizedName, "stop", checkDatabaseExists = None)), // ifExists is part of DROP DATABASE only
           normalizedName))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!

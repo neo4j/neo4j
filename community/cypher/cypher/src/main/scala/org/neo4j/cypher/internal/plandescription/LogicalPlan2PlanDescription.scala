@@ -160,7 +160,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateUser", NoChildren, Seq(userName), variables)
 
-      case DropUser(name) =>
+      case DropUser(name, _) =>
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropUser", NoChildren, Seq(userName), variables)
 
@@ -174,7 +174,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowRoles(_,_) =>
         PlanDescriptionImpl(id, "ShowRoles", NoChildren, Seq.empty, variables)
 
-      case DropRole(name) =>
+      case DropRole(name, _) =>
         val roleName = Role(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropRole", NoChildren, Seq(roleName), variables)
 
@@ -263,7 +263,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
 
-      case EnsureValidNonSystemDatabase(normalizedName, _) =>
+      case EnsureValidNonSystemDatabase(normalizedName, _, _) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "EnsureValidNonSystemDatabase", NoChildren, Seq(dbName), variables)
 

@@ -90,7 +90,8 @@ trait Statement extends Parser
   }
 
   def DropUser: Rule1[DropUser] = rule("CATALOG DROP USER") {
-    group(keyword("DROP USER") ~~ SymbolicNameString) ~~>> (ast.DropUser(_))
+    group(keyword("DROP USER IF EXISTS") ~~ SymbolicNameString) ~~>> (ast.DropUser(_, ifExists = true)) |
+    group(keyword("DROP USER") ~~ SymbolicNameString) ~~>> (ast.DropUser(_, ifExists = false))
   }
 
   def AlterUser: Rule1[AlterUser] = rule("CATALOG ALTER USER") {
@@ -177,7 +178,8 @@ trait Statement extends Parser
   }
 
   def DropRole: Rule1[DropRole] = rule("CATALOG DROP ROLE") {
-    group(keyword("DROP ROLE") ~~ SymbolicNameString) ~~>> (ast.DropRole(_))
+    group(keyword("DROP ROLE IF EXISTS") ~~ SymbolicNameString) ~~>> (ast.DropRole(_, ifExists = true)) |
+    group(keyword("DROP ROLE") ~~ SymbolicNameString) ~~>> (ast.DropRole(_, ifExists = false))
   }
 
   def GrantRole: Rule1[GrantRolesToUsers] = rule("CATALOG GRANT ROLE") {
@@ -373,7 +375,8 @@ trait Statement extends Parser
   }
 
   def DropDatabase: Rule1[DropDatabase] = rule("CATALOG DROP DATABASE") {
-    group(keyword("DROP DATABASE") ~~ SymbolicNameString) ~~>> (ast.DropDatabase(_))
+    group(keyword("DROP DATABASE IF EXISTS") ~~ SymbolicNameString) ~~>> (ast.DropDatabase(_, ifExists = true)) |
+    group(keyword("DROP DATABASE") ~~ SymbolicNameString) ~~>> (ast.DropDatabase(_, ifExists = false))
   }
 
   def StartDatabase: Rule1[StartDatabase] = rule("CATALOG START DATABASE") {

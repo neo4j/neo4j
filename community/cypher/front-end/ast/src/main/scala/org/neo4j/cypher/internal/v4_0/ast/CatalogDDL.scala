@@ -65,9 +65,9 @@ final case class CreateUser(userName: String,
       SemanticState.recordCurrentScope(this)
 }
 
-final case class DropUser(userName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class DropUser(userName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
-  override def name = "DROP USER"
+  override def name: String = if (ifExists) "DROP USER IF EXISTS" else "DROP USER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -123,9 +123,9 @@ final case class CreateRole(roleName: String, from: Option[String])(val position
       SemanticState.recordCurrentScope(this)
 }
 
-final case class DropRole(roleName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class DropRole(roleName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
-  override def name = "DROP ROLE"
+  override def name: String = if (ifExists) "DROP ROLE IF EXISTS" else "DROP ROLE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -367,9 +367,9 @@ final case class CreateDatabase(dbName: String)(val position: InputPosition) ext
       SemanticState.recordCurrentScope(this)
 }
 
-final case class DropDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class DropDatabase(dbName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
-  override def name = "DROP DATABASE"
+  override def name: String = if (ifExists) "DROP DATABASE IF EXISTS" else "DROP DATABASE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

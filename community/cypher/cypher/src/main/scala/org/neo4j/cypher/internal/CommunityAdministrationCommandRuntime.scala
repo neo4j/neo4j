@@ -107,15 +107,18 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case CreateUser(userName, _, _, _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
 
-    // DROP USER foo
-    case DropUser(userName) => (_, _, securityContext) =>
+    // DROP USER [IF EXISTS] foo
+    case DropUser(userName, checkUserExists) => (_, _, securityContext) =>
       if (securityContext.subject().hasUsername(userName)) throw new InvalidArgumentsException(s"Failed to delete the specified user '$userName': Deleting yourself is not allowed.")
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
         """MATCH (user:User {name: $name}) DETACH DELETE user
           |RETURN user""".stripMargin,
         VirtualValues.map(Array("name"), Array(Values.stringValue(userName))),
         QueryHandler
-          .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to delete the specified user '$userName': User does not exist.")))
+          .handleNoResult(() =>
+            if (checkUserExists) Some(new InvalidArgumentsException(s"Failed to delete the specified user '$userName': User does not exist."))
+            else None
+          )
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
               new IllegalStateException(s"Failed to delete the specified user '$userName': $followerError", error)

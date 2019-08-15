@@ -169,18 +169,34 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Dropping user
 
   test("DROP USER foo") {
-    yields(ast.DropUser("foo"))
+    yields(ast.DropUser("foo", ifExists = false))
   }
 
   test("DROP USER ``") {
-    yields(ast.DropUser(""))
+    yields(ast.DropUser("", ifExists = false))
   }
 
   test("DROP USER `f:oo`") {
-    yields(ast.DropUser("f:oo"))
+    yields(ast.DropUser("f:oo", ifExists = false))
+  }
+
+  test("DROP USER IF EXISTS foo") {
+    yields(ast.DropUser("foo", ifExists = true))
+  }
+
+  test("DROP USER IF EXISTS ``") {
+    yields(ast.DropUser("", ifExists = true))
+  }
+
+  test("DROP USER IF EXISTS `f:oo`") {
+    yields(ast.DropUser("f:oo", ifExists = true))
   }
 
   test("DROP USER ") {
+    failsToParse
+  }
+
+  test("DROP USER IF EXISTS ") {
     failsToParse
   }
 

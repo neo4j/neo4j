@@ -176,8 +176,12 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
   test("should fail on dropping database from community") {
     setup( defaultConfig )
+
     assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME",
       s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME")
+
+    assertFailure(s"DROP DATABASE IF EXISTS $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: DROP DATABASE IF EXISTS $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on dropping non-existing database with correct error message") {

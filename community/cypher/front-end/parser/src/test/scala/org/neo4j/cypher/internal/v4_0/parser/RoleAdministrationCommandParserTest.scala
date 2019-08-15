@@ -136,14 +136,26 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Dropping role
 
   test("DROP ROLE foo") {
-    yields(ast.DropRole("foo"))
+    yields(ast.DropRole("foo", ifExists = false))
   }
 
   test("DROP ROLE ``") {
-    yields(ast.DropRole(""))
+    yields(ast.DropRole("", ifExists = false))
+  }
+
+  test("DROP ROLE IF EXISTS foo") {
+    yields(ast.DropRole("foo", ifExists = true))
+  }
+
+  test("DROP ROLE IF EXISTS ``") {
+    yields(ast.DropRole("", ifExists = true))
   }
 
   test("DROP ROLE ") {
+    failsToParse
+  }
+
+  test("DROP ROLE IF EXISTS ") {
     failsToParse
   }
 
