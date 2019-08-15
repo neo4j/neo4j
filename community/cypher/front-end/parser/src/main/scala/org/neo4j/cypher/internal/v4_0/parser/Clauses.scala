@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.{Pattern => ASTPattern}
 import org.parboiled.scala._
 
@@ -27,6 +26,7 @@ trait Clauses extends Parser
   with Expressions
   with Base
   with ProcedureCalls {
+  self: Query =>
 
   def Clause: Rule1[ast.Clause]
 
@@ -97,11 +97,11 @@ trait Clauses extends Parser
     ) ~~>> (ast.Merge(_, _))
   }
 
-  def Create: Rule1[Create] = rule("CREATE") {
+  def Create: Rule1[ast.Create] = rule("CREATE") {
     group(keyword("CREATE") ~~ Pattern) ~~>> (ast.Create(_))
   }
 
-  def CreateUnique: Rule1[CreateUnique] = rule("CREATE UNIQUE") {
+  def CreateUnique: Rule1[ast.CreateUnique] = rule("CREATE UNIQUE") {
     group(keyword("CREATE UNIQUE") ~~ Pattern) ~~>> (ast.CreateUnique(_))
   }
 
@@ -139,7 +139,7 @@ trait Clauses extends Parser
       | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
-  private def Where: Rule1[Where] = rule("WHERE") {
+  private def Where: Rule1[ast.Where] = rule("WHERE") {
     group(keyword("WHERE") ~~ Expression) ~~>> (ast.Where(_))
   }
 
@@ -148,8 +148,8 @@ trait Clauses extends Parser
   )
 
   private def Hint: Rule1[ast.UsingHint] = rule("USING")(
-    group(keyword("USING INDEX SEEK") ~~ Variable ~~ NodeLabel ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _, SeekOnly))
-      | group(keyword("USING INDEX") ~~ Variable ~~ NodeLabel ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _, SeekOrScan))
+    group(keyword("USING INDEX SEEK") ~~ Variable ~~ NodeLabel ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _, ast.SeekOnly))
+      | group(keyword("USING INDEX") ~~ Variable ~~ NodeLabel ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _, ast.SeekOrScan))
       | group(keyword("USING JOIN ON") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.UsingJoinHint(_))
       | group(keyword("USING SCAN") ~~ Variable ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
   )
@@ -171,14 +171,14 @@ trait Clauses extends Parser
       | PropertyExpression ~~> ast.RemovePropertyItem
   )
 
-  private def WithBody: Rule4[ast.ReturnItemsDef, Option[ast.OrderBy], Option[Skip], Option[ast.Limit]] = {
+  private def WithBody: Rule4[ast.ReturnItemsDef, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~
       optional(Order) ~~
       optional(Skip) ~~
       optional(Limit)
   }
 
-  private def ReturnBody: Rule4[ast.ReturnItemsDef, Option[ast.OrderBy], Option[Skip], Option[ast.Limit]] = {
+  private def ReturnBody: Rule4[ast.ReturnItemsDef, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~
       optional(Order) ~~
       optional(Skip) ~~
@@ -204,12 +204,16 @@ trait Clauses extends Parser
       | group(Expression ~~ optional(keyword("ASCENDING") | keyword("ASC"))) ~~>> (ast.AscSortItem(_))
   )
 
-  private def Skip: Rule1[Skip] = rule("SKIP") {
+  private def Skip: Rule1[ast.Skip] = rule("SKIP") {
     group(keyword("SKIP") ~~ Expression) ~~>> (ast.Skip(_))
   }
 
   private def Limit: Rule1[ast.Limit] = rule("LIMIT") {
     group(keyword("LIMIT") ~~ Expression) ~~>> (ast.Limit(_))
+  }
+
+  def SubQuery: Rule1[ast.SubQuery] = rule("CALL") {
+    group(keyword("CALL") ~~ group("{" ~~ SingleQuery ~~ "}")) ~~>> (ast.SubQuery(_))
   }
 }
 

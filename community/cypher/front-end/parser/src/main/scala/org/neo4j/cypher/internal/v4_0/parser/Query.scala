@@ -21,7 +21,6 @@ import org.parboiled.scala._
 
 trait Query extends Parser
   with Clauses
-  with SubQueries
   with Base {
 
   def Query: Rule1[ast.Query] = (

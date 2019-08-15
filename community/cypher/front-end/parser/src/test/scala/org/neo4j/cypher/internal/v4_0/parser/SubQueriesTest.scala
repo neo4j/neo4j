@@ -23,7 +23,7 @@ import org.parboiled.scala.Rule1
 class SubQueriesTest
   extends ParserAstTest[ast.SubQuery]
     with Query
-    with SubQueries
+    with Clauses
     with AstConstructionHelp {
 
   implicit val parser: Rule1[SubQuery] = SubQuery
@@ -32,12 +32,8 @@ class SubQueriesTest
     gives(subQuery(return_(i("1"))))
   }
 
-// TODO: this test is dependent on 'arbitrary expressions in FROM' feature introduced independently  
-//  test("CALL { FROM x RETURN 1 }") {
-//    gives(subQuery(
-//      from(v("x")),
-//      return_(i("1"))
-//    ))
-//  }
+  test("CALL { }") {
+    failsToParse
+  }
 
 }
