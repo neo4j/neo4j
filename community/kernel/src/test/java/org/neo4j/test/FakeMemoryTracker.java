@@ -25,7 +25,12 @@ import org.neo4j.memory.OptionalMemoryTracker;
 
 public class FakeMemoryTracker implements OptionalMemoryTracker
 {
-    private long allocatedBytes = 0L;
+    private long allocatedBytes;
+
+    public FakeMemoryTracker()
+    {
+        this.allocatedBytes = 0L;
+    }
 
     @Override
     public Optional<Long> totalAllocatedMemory()

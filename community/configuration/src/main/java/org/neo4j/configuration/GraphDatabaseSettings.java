@@ -1059,7 +1059,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory " +
             "shared across all active transactions. Zero means 'unlimited'. Used when dbms.tx_state.memory_allocation is set to 'OFF_HEAP'." )
     public static final Setting<Long> tx_state_max_off_heap_memory =
-            newBuilder( "dbms.tx_state.max_of_heap_memory", BYTES, BYTES.parse("2G") ).addConstraint( min( 0L ) ).build();
+            newBuilder( "dbms.tx_state.max_off_heap_memory", BYTES, BYTES.parse("2G") ).addConstraint( min( 0L ) ).build();
 
     @Description( "Defines the maximum size of an off-heap memory block that can be cached to speed up allocations for transaction state data. " +
                   "The value must be a power of 2." )
