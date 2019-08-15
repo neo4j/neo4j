@@ -827,13 +827,14 @@ case class SubQuery(sq: SingleQuery)(val position: InputPosition) extends SubQue
     // - Returned variables are added to outer scope
     val input: Scope = s.currentScope.scope
     val branch: SemanticState = s.newSiblingScope
-    val result: SemanticCheckResult = sq.semanticCheck(branch)
-    val output: Scope = sq.finalScope(result.state.currentScope.scope)
-    val merged: SemanticState =
-      result.state.newSiblingScope
-        .importValuesFromScope(input)
-        .importValuesFromScope(output)
-    result.copy(state = merged)
+    val inner: SemanticCheckResult = sq.semanticCheck(branch)
+    val output: Scope = sq.finalScope(inner.state.currentScope.scope)
+    val imported: SemanticState = inner.state.newSiblingScope.importValuesFromScope(input)
+    val merged: SemanticCheckResult =
+      output.valueSymbolTable.values
+        .foldSemanticCheck(symbol => declareVariable(symbol.definition.asVariable, symbol.types))(imported)
+
+    SemanticCheckResult(merged.state, inner.errors ++ merged.errors)
   }
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = { s =>

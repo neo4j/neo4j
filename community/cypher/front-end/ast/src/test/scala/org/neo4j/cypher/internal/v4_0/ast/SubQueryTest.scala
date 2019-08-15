@@ -48,10 +48,8 @@ class SubQueryTest extends CypherFunSuite with AstConstructionHelp {
       return_(v("y") -> v("y"), v("x") -> v("x"))
     )
 
-
     val result = sq.semanticCheck(clean)
 
-    println(result.errors)
     result.errors.size shouldEqual 0
   }
 
@@ -68,5 +66,20 @@ class SubQueryTest extends CypherFunSuite with AstConstructionHelp {
 
     result.errors.size shouldEqual 1
     result.errors.head.msg should include ("Variable `x` not defined")
+  }
+
+  test("should fail on variable name collision") {
+    val sq = singleQuery(
+      with_(i("1") -> v("x")),
+      subQuery(
+        return_(i("2") -> v("x"))
+      ),
+      return_(i("1") -> v("y"))
+    )
+
+    val result = sq.semanticCheck(clean)
+
+    result.errors.size shouldEqual 1
+    result.errors.head.msg should include ("Variable `x` already declared")
   }
 }
