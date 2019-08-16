@@ -83,14 +83,43 @@ sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
-final case class FromGraph(expression: Expression)(val position: InputPosition) extends MultipleGraphClause {
+final case class FromGraph(expression: Expression)(val position: InputPosition) extends MultipleGraphClause with SemanticAnalysisTooling {
 
   override def name = "FROM GRAPH"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      checkGraphReference chain
       SemanticState.recordCurrentScope(this)
+
+  private def checkGraphReference: SemanticCheck =
+    unless(graphReference.isDefined)(error("Invalid graph reference", position))
+
+  def graphReference: Option[GraphReference] = {
+
+    def fqn(expr: Expression): Option[List[String]] = expr match {
+      case p: Property           => fqn(p.map).map(_ :+ p.propertyKey.name)
+      case v: Variable           => Some(List(v.name))
+      case f: FunctionInvocation => Some(f.namespace.parts :+ f.functionName.name)
+      case _                     => None
+    }
+
+    (expression, fqn(expression)) match {
+      case (f: FunctionInvocation, Some(name)) => Some(ViewRef(CatalogName(name), f.args)(f.position))
+      case (p: Parameter, _)                   => Some(GraphRefParameter(p)(p.position))
+      case (e, Some(name))                     => Some(GraphRef(CatalogName(name))(e.position))
+      case _                                   => None
+    }
+  }
 }
+
+sealed trait GraphReference extends ASTNode
+
+final case class GraphRef(name: CatalogName)(val position: InputPosition) extends GraphReference
+
+final case class ViewRef(name: CatalogName, arguments: Seq[Expression])(val position: InputPosition) extends GraphReference
+
+final case class GraphRefParameter(parameter: Parameter)(val position: InputPosition) extends GraphReference
 
 final case class Clone(items: List[ReturnItem])
   (val position: InputPosition) extends MultipleGraphClause with SemanticAnalysisTooling {

@@ -515,6 +515,37 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
+  test("Allow single identifier in FROM") {
+    parsing("""|FROM x RETURN 1""".stripMargin)
+      .shouldVerify(result => result.errors shouldBe empty)
+  }
+
+  test("Allow qualified identifier in FROM") {
+    parsing("""|FROM x.y.z RETURN 1""".stripMargin)
+      .shouldVerify(result => result.errors shouldBe empty)
+  }
+
+  test("Allow view invocation in FROM") {
+    parsing("""|FROM v(1, x, "a") RETURN 1""".stripMargin)
+      .shouldVerify(result => result.errors shouldBe empty)
+  }
+
+  test("Allow qualified view invocation in FROM") {
+    parsing("""|FROM a.b.v(1, x, "a") RETURN 1""".stripMargin)
+      .shouldVerify(result => result.errors shouldBe empty)
+  }
+
+  test("Do not allow arbitrary expressions in FROM") {
+    parsing("FROM 1 RETURN 1")
+      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
+    parsing("FROM 'a' RETURN 1")
+      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
+    parsing("FROM [x] RETURN 1")
+      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
+    parsing("FROM 1 + 2 RETURN 1")
+      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
+  }
+
   override def convert(astNode: ast.Statement): SemanticCheckResult = {
     val rewritten = PreparatoryRewriting(Deprecations.V1).transform(TestState(Some(astNode)), TestContext()).statement()
     val initialState = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
