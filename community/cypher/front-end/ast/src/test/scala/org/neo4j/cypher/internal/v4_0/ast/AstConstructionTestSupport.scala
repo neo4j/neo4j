@@ -238,4 +238,63 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def ands(expressions: Expression*): Ands = Ands(expressions.toSet)(pos)
 
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
+
+  def query(cs: Clause*): Query =
+    Query(None, SingleQuery(cs)(pos))(pos)
+
+  def singleQuery(cs: Clause*): SingleQuery =
+    SingleQuery(cs)(pos)
+
+  def subQuery(cs: Clause*): SubQuery =
+    SubQuery(SingleQuery(cs)(pos))(pos)
+
+  def create(pattern: PatternElement, where: Option[Where] = None): Create =
+    Create(Pattern(Seq(EveryPath(pattern)))(pos))(pos)
+
+  def match_(pattern: PatternElement, where: Option[Where] = None): Match =
+    Match(false, Pattern(Seq(EveryPath(pattern)))(pos), Seq(), where)(pos)
+
+  def node(name: String): NodePattern =
+    NodePattern(Some(Variable(name)(pos)), Seq(), None)(pos)
+
+  def node(name: String, labels: String*): NodePattern =
+    NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None)(pos)
+
+  def with_(items: ReturnItem*): With =
+    With(ReturnItems(false, items)(pos))(pos)
+
+  def return_(items: ReturnItem*): Return =
+    Return(ReturnItems(false, items)(pos))(pos)
+
+  def return_(ob: OrderBy, items: ReturnItem*): Return =
+    Return(false, ReturnItems(false, items)(pos), Some(ob), None, None)(pos)
+
+  def orderBy(items: SortItem*): OrderBy =
+    OrderBy(items)(pos)
+
+  def sortItem(e: Expression): AscSortItem =
+    AscSortItem(e)(pos)
+
+  def unwind(e: Expression, v: Variable): Unwind =
+    Unwind(e, v)(pos)
+
+  def call(ns: Seq[String], name: String): UnresolvedCall =
+    UnresolvedCall(Namespace(ns.toList)(pos),
+      ProcedureName(name)(pos),
+      Some(Vector()), None
+    )(pos)
+
+
+  implicit class ExpressionOps(expr: Expression) {
+    def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos)
+
+    def asc: AscSortItem = AscSortItem(expr)(pos)
+    def desc: DescSortItem = DescSortItem(expr)(pos)
+  }
+
+  implicit class NumberLiteralOps(nl: NumberLiteral) {
+    def unaliased: UnaliasedReturnItem = UnaliasedReturnItem(nl, nl.stringVal)(pos)
+  }
+
+
 }

@@ -17,10 +17,9 @@
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class SubQueryTest extends CypherFunSuite with AstConstructionHelp {
+class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val clean = SemanticState.clean.withFeature(SemanticFeature.SubQueries)
 
@@ -28,11 +27,11 @@ class SubQueryTest extends CypherFunSuite with AstConstructionHelp {
 
     val q =
       query(
-        with_(i("1") -> v("a")),
+        with_(literal(1).as("a")),
         subQuery(
-          return_(i("1") -> v("b"))
+          return_(literal(1).as("b"))
         ),
-        return_(v("a"))
+        return_(varFor("a").as("a"))
       )
 
     val result = SemanticChecker.check(q, SemanticState.clean)
@@ -45,14 +44,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionHelp {
 
     val q =
       query(
-        with_(i("1") -> v("a")),
+        with_(literal(1).as("a")),
         subQuery(
-          with_(i("1") -> v("b")),
-          return_(
-            v("b"), i("1") -> v("c"))
+          with_(literal(1).as("b")),
+          return_(varFor("b").as("b"), literal(1).as("c"))
         ),
         return_(
-          v("a"), v("b"), v("c"))
+          varFor("a").as("a"), varFor("b").as("b"), varFor("c").as("c"))
       )
 
     val result = SemanticChecker.check(q, clean)
@@ -62,58 +60,54 @@ class SubQueryTest extends CypherFunSuite with AstConstructionHelp {
 
   test("outer scope is not seen in uncorrelated sub-query") {
 
-    val marker = InputPosition(-100, -100, -100)
-
     val q =
       query(
-        with_(i("1") -> v("a")),
+        with_(literal(1).as("a")),
         subQuery(
-          return_(v("a")(marker) -> v("b"))
+          return_(varFor("a").as("b"))
         ),
-        return_(v("a"))
+        return_(varFor("a").as("a"))
       )
 
     val result = SemanticChecker.check(q, clean)
 
     result.errors.size shouldEqual 1
-    result.errors.head.position shouldEqual marker
+    result.errors.head.msg should include ("Variable `a` not defined")
   }
 
   // This is subject to change when we implement correlated subqueries
   test("outer scope is not seen in subquery beginning with with") {
 
-    val marker = InputPosition(-100, -100, -100)
-
     val q =
       query(
-        with_(i("1") -> v("a")),
+        with_(literal(1).as("a")),
         subQuery(
-          with_(v("a")(marker) -> v("b")),
-          return_(v("b") -> v("c"))
+          with_(varFor("a").as("b")),
+          return_(varFor("b").as("c"))
         ),
-        return_(v("a"))
+        return_(varFor("a").as("a"))
       )
 
     val result = SemanticChecker.check(q, clean)
 
     result.errors.size shouldEqual 1
-    result.errors.head.position shouldEqual marker
+    result.errors.head.msg should include ("Variable `a` not defined")
   }
 
   test("subquery scoping works with order by") {
 
     val q =
       query(
-        with_(i("1") -> v("a")),
+        with_(literal(1).as("a")),
         subQuery(
-          with_(i("1") -> v("b")),
+          with_(literal(1).as("b")),
           return_(
-            orderBy(v("b"), v("c")),
-            v("b"), i("1") -> v("c"))
+            orderBy(varFor("b").asc, varFor("c").asc),
+            varFor("b").as("b"), literal(1).as("c"))
         ),
         return_(
-          orderBy(v("a"), v("b"), v("c")),
-          v("a"), v("b"), v("b") -> v("c"))
+          orderBy(varFor("a").asc, varFor("b").asc, varFor("c").asc),
+          varFor("a").as("a"), varFor("b").as("b"), varFor("b").as("c"))
       )
 
     val result = SemanticChecker.check(q, clean)
@@ -123,20 +117,17 @@ class SubQueryTest extends CypherFunSuite with AstConstructionHelp {
 
   test("fails on variable name collision") {
 
-    val marker = InputPosition(-100, -100, -100)
-
     val sq = singleQuery(
-      with_(i("1") -> v("x")),
+      with_(literal(1).as("x")),
       subQuery(
-        return_(i("2") -> v("x")(marker))
+        return_(literal(2).as("x"))
       ),
-      return_(i("1") -> v("y"))
+      return_(literal(1).as("y"))
     )
 
     val result = sq.semanticCheck(clean)
 
     result.errors.size shouldEqual 1
-    result.errors.head.position shouldEqual marker
     result.errors.head.msg should include ("Variable `x` already declared")
   }
 
