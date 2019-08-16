@@ -32,7 +32,7 @@ trait QueryMemoryTracker {
     *
     * @param bytes number of allocated bytes
     */
-  def allocated(bytes: => Long): Unit
+  def allocated(bytes: Long): Unit
 
   /**
     * Record allocation of value
