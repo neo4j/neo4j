@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.v4_0.ast.Statement
+import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.BaseState
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
@@ -61,7 +62,7 @@ case class PreParsedQuery(statement: String, rawStatement: String, options: Quer
   */
 case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends InputQuery {
 
-  override def description: String = "<ast>"
+  override lazy val description: String = FullyParsedQuery.prettify(this)
 
   override def withRecompilationLimitReached: FullyParsedQuery = copy(options = options.withRecompilationLimitReached)
 
@@ -69,6 +70,14 @@ case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends Inp
 
   case class CacheKey(statement: Statement, fields: options.CacheKey)
 
+}
+
+object FullyParsedQuery {
+
+  private val prettifier = Prettifier(ExpressionStringifier())
+
+  private def prettify(query: FullyParsedQuery): String =
+    "/* FullyParsedQuery */ " + prettifier.asString(query.state.statement())
 }
 
 /**
