@@ -1096,10 +1096,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .build();
 
     @Description( "Defines the minimum amount of time to wait before retrying after the dbms fails to reconcile a database to its desired state." )
-    @Internal
     public static final Setting<Duration> reconciler_minimum_backoff = newBuilder( "dbms.reconciler.min_backoff", DURATION, ofSeconds( 2 ) )
             .addConstraint( min( Duration.ofSeconds( 1 ) ) )
             .build();
+
+    @Description( "Defines the level of parallelism employed by the reconciler. 0 corresponds the number of cores available on the host machine." )
+    @Internal
+    public static final Setting<Integer> reconciler_maximum_parallelism = newBuilder( "dbms.reconciler.max_parallelism", INT, 0 ).build();
 
     /**
      * Default settings for server. The default values are assumes to be default for embedded deployments through the code.
