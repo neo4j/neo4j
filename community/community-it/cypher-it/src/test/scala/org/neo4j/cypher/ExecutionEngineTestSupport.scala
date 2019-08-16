@@ -22,12 +22,13 @@ package org.neo4j.cypher
 import java.util
 import java.util.concurrent.TimeUnit
 
+import org.neo4j.cypher.CypherExecutionMode.profile
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime.{QueryContext, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.runtime.{InputDataStream, NoInput, QueryContext, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.internal.schema.IndexDescriptor
@@ -157,6 +158,24 @@ trait ExecutionEngineHelper {
         new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
         subscriber)
     }
+  }
+
+  def execute(fpq: FullyParsedQuery, params: Map[String, Any], input: InputDataStream): RewindableExecutionResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val context = graph.transactionalContext(query = fpq.description -> params.toMap)
+    RewindableExecutionResult(
+      eengine.execute(
+        query = fpq,
+        params = ExecutionEngineHelper.asMapValue(params),
+        context = context,
+        profile = false,
+        prePopulate = false,
+        input = input,
+        subscriber = subscriber
+      ),
+      new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
+      subscriber
+    )
   }
 
   def executeOfficial(q: String, params: (String, Any)*): Result =
