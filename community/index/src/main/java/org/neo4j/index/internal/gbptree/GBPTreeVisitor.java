@@ -23,6 +23,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 interface GBPTreeVisitor<KEY,VALUE> extends IdProvider.IdProviderVisitor
 {
+    void meta( Meta meta );
+
     void treeState( Pair<TreeState,TreeState> statePair );
 
     void beginLevel( int level );
@@ -43,6 +45,11 @@ interface GBPTreeVisitor<KEY,VALUE> extends IdProvider.IdProviderVisitor
 
     class Adaptor<KEY,VALUE> implements GBPTreeVisitor<KEY,VALUE>
     {
+        @Override
+        public void meta( Meta meta )
+        {
+        }
+
         @Override
         public void treeState( Pair<TreeState,TreeState> statePair )
         {
