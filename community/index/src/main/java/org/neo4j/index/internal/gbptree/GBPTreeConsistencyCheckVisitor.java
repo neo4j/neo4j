@@ -19,47 +19,65 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.kernel.impl.annotations.Documented;
+
 public interface GBPTreeConsistencyCheckVisitor<KEY>
 {
     boolean clean();
 
+    @Documented( "notATreeNode" )
     void notATreeNode( long pageId );
 
+    @Documented( "unknownTreeNodeType" )
     void unknownTreeNodeType( long pageId, byte treeNodeType );
 
+    @Documented( "siblingsDontPointToEachOther" )
     void siblingsDontPointToEachOther(
             long leftNode,  long leftNodeGeneration,  long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
             long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration, long rightLeftSiblingPointer );
 
+    @Documented( "rightmostNodeHasRightSibling" )
     void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer );
 
+    @Documented( "pointerToOldVersionOfTreeNode" )
     void pointerToOldVersionOfTreeNode( long pageId, long successorPointer );
 
+    @Documented( "pointerHasLowerGenerationThanNode" )
     void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer,
             long pointerGeneration, long targetNodeGeneration );
 
+    @Documented( "keysOutOfOrderInNode" )
     void keysOutOfOrderInNode( long pageId );
 
+    @Documented( "keysLocatedInWrongNode" )
     void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount );
 
+    @Documented( "unusedPage" )
     void unusedPage( long pageId );
 
+    @Documented( "pageIdExceedLastId" )
     void pageIdExceedLastId( long lastId, long pageId );
 
+    @Documented( "nodeMetaInconsistency" )
     void nodeMetaInconsistency( long pageId, String message );
 
+    @Documented( "pageIdSeenMultipleTimes" )
     void pageIdSeenMultipleTimes( long pageId );
 
+    @Documented( "crashedPointer" )
     void crashedPointer( long pageId, GBPTreePointerType pointerType,
             long generationA, long readPointerA, long pointerA, byte stateA,
             long generationB, long readPointerB, long pointerB, byte stateB );
 
+    @Documented( "brokenPointer" )
     void brokenPointer( long pageId, GBPTreePointerType pointerType,
             long generationA, long readPointerA, long pointerA, byte stateA,
             long generationB, long readPointerB, long pointerB, byte stateB );
 
+    @Documented( "unreasonableKeyCount" )
     void unreasonableKeyCount( long pageId, int keyCount );
 
+    @Documented( "childNodeFoundAmongParentNodes" )
     void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<KEY> superRange );
 
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>

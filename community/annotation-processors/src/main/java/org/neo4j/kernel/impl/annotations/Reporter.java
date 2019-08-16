@@ -17,13 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.kernel.impl.annotations;
 
-import org.neo4j.kernel.impl.annotations.Reporter;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 
-public interface ConsistencyCheckable
+// todo figure out what to call this thing... ProxyFactory???
+public class Reporter
 {
-    boolean consistencyCheck( Reporter reporter );
+    private final InvocationHandler handler;
 
-    boolean consistencyCheck();
+    public Reporter( InvocationHandler handler )
+    {
+        this.handler = handler;
+    }
+
+    public <T> T getClass( Class<T> cls)
+    {
+        ClassLoader classLoader = cls.getClassLoader();
+        return (T) Proxy.newProxyInstance( classLoader, new Class<?>[]{cls}, handler );
+    }
 }

@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.annotations.Reporter;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase;
@@ -196,6 +197,12 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     public boolean isDirty()
     {
         return Iterators.stream( iterator() ).anyMatch( NativeIndexAccessor::isDirty );
+    }
+
+    @Override
+    public boolean consistencyCheck( Reporter reporter )
+    {
+        return FusionIndexBase.consistencyCheck( this, reporter );
     }
 
     @Override

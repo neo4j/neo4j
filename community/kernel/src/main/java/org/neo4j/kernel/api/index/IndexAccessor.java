@@ -29,6 +29,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.impl.annotations.Reporter;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
@@ -208,6 +209,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
+        public boolean consistencyCheck( Reporter reporter )
+        {
+            return true;
+        }
+
+        @Override
         public boolean consistencyCheck()
         {
             return true;
@@ -299,6 +306,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         public void validateBeforeCommit( Value[] tuple )
         {
             delegate.validateBeforeCommit( tuple );
+        }
+
+        @Override
+        public boolean consistencyCheck( Reporter reporter )
+        {
+            return delegate.consistencyCheck( reporter );
         }
 
         @Override

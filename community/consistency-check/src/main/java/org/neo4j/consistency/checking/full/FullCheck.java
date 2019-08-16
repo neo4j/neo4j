@@ -20,7 +20,9 @@
 package org.neo4j.consistency.checking.full;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationHandler;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.consistency.RecordType;
@@ -42,6 +44,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.annotations.Reporter;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -193,11 +196,20 @@ public class FullCheck
 
     private static void consistencyCheckIndexes( IndexAccessors indexes )
     {
+        InvocationHandler invocationHandler = ( proxy, method, args ) -> {
+            System.out.println( "Call to " + method.getName() + " with args " + Arrays.toString(args) );
+            if ( method.getName().equals( "clean" ) )
+            {
+                return true;
+            }
+            return null;
+        };
+        Reporter reporter = new Reporter( invocationHandler );
         List<StoreIndexDescriptor> rulesToRemove = new ArrayList<>();
         for ( StoreIndexDescriptor onlineRule : indexes.onlineRules() )
         {
             IndexAccessor accessor = indexes.accessorFor( onlineRule );
-            if ( !accessor.consistencyCheck() )
+            if ( !accessor.consistencyCheck( reporter ) )
             {
                 rulesToRemove.add( onlineRule );
             }

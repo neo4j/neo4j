@@ -25,12 +25,15 @@ import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.ThrowingConsistencyCheckVisitor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.annotations.Reporter;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
@@ -103,12 +106,23 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     }
 
     @Override
+    public boolean consistencyCheck( Reporter reporter )
+    {
+        return consistencyCheck( reporter.getClass( GBPTreeConsistencyCheckVisitor.class ) );
+    }
+
+    @Override
     public boolean consistencyCheck()
+    {
+        return consistencyCheck( new ThrowingConsistencyCheckVisitor<>() );
+    }
+
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         try
         {
             // todo: This can not throw anymore. Only report inconsistencies
-            return tree.consistencyCheck();
+            return tree.consistencyCheck( visitor );
         }
         catch ( IOException e )
         {

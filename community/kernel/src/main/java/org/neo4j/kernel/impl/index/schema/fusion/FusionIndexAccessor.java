@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.annotations.Reporter;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexDropAction;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -165,6 +166,12 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public void validateBeforeCommit( Value[] tuple )
     {
         instanceSelector.select( slotSelector.selectSlot( tuple, GROUP_OF ) ).validateBeforeCommit( tuple );
+    }
+
+    @Override
+    public boolean consistencyCheck( Reporter reporter )
+    {
+        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), reporter );
     }
 
     @Override
