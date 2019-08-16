@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -53,6 +54,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -74,7 +76,7 @@ class SchemaAcceptanceTest
     private GraphDatabaseService db;
 
     private Label label = Labels.MY_LABEL;
-    private Label otherLabel = Labels.MY_LABEL;
+    private Label otherLabel = Labels.MY_OTHER_LABEL;
     private final String propertyKey = "my_property_key";
     private final String secondPropertyKey = "my_second_property_key";
 
@@ -731,6 +733,61 @@ class SchemaAcceptanceTest
             raceTransactions( firstFuture, secondFuture );
 
             assertOneSuccessAndOneFailure( firstFuture, secondFuture );
+        }
+
+        @Test
+        void droppingConstraintMustLockNameForIndexCreate() throws Exception
+        {
+            String schemaName = "MySchema";
+            createUniquenessConstraint( schemaName, label, propertyKey );
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                tx.commit();
+            }
+
+            BinaryLatch afterFirstDropsConstraint = new BinaryLatch();
+            BinaryLatch pauseFirst = new BinaryLatch();
+            BinaryLatch beforeSecondCreatesIndex = new BinaryLatch();
+
+            Future<Void> firstFuture = first.submit( () ->
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().getConstraintByName( schemaName ).drop();
+                    afterFirstDropsConstraint.release();
+                    pauseFirst.await();
+                    tx.commit();
+                }
+            } );
+            Future<Void> secondFuture = second.submit( () ->
+            {
+                afterFirstDropsConstraint.await();
+                try ( Transaction tx = db.beginTx() )
+                {
+                    beforeSecondCreatesIndex.release();
+                    IndexCreator indexCreator = db.schema().indexFor( otherLabel ).on( secondPropertyKey ).withName( schemaName );
+                    indexCreator.create();
+                    tx.commit();
+                }
+            } );
+
+            first.untilWaitingIn( BinaryLatch.class.getMethod( "await") );
+            beforeSecondCreatesIndex.await();
+            second.untilWaitingIn( Object.class.getMethod( "wait", long.class ) );
+            second.untilWaiting();
+            pauseFirst.release();
+            firstFuture.get();
+            secondFuture.get();
+            try ( Transaction tx = db.beginTx() )
+            {
+                assertFalse( db.schema().getConstraints().iterator().hasNext() );
+                Iterator<IndexDefinition> indexes = db.schema().getIndexes().iterator();
+                assertTrue( indexes.hasNext() );
+                assertEquals( indexes.next().getName(), schemaName );
+                assertFalse( indexes.hasNext() );
+                tx.commit();
+            }
         }
 
         private Callable<Void> schemaTransaction( ThrowingSupplier<Object, Exception> action )

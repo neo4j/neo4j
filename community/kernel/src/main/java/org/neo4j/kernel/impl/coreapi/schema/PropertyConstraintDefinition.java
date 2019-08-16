@@ -21,18 +21,19 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.util.Objects.requireNonNull;
 
 abstract class PropertyConstraintDefinition implements ConstraintDefinition
 {
     protected final InternalSchemaActions actions;
-    protected String name;
+    protected ConstraintDescriptor constraint;
 
-    PropertyConstraintDefinition( InternalSchemaActions actions, String name )
+    PropertyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint )
     {
         this.actions = requireNonNull( actions );
-        this.name = requireNonNull( name );
+        this.constraint = requireNonNull( constraint );
     }
 
     @Override
@@ -48,7 +49,14 @@ abstract class PropertyConstraintDefinition implements ConstraintDefinition
     @Override
     public String getName()
     {
-        return name;
+        return constraint.getName();
+    }
+
+    @Override
+    public void drop()
+    {
+        assertInUnterminatedTransaction();
+        actions.dropConstraint( constraint );
     }
 
     @Override

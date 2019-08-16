@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -29,15 +30,15 @@ abstract class MultiPropertyConstraintDefinition extends PropertyConstraintDefin
 {
     protected final String[] propertyKeys;
 
-    MultiPropertyConstraintDefinition( InternalSchemaActions actions, String name, String[] propertyKeys )
+    MultiPropertyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, String[] propertyKeys )
     {
-        super( actions, name );
+        super( actions, constraint );
         this.propertyKeys = requireNonEmpty( propertyKeys );
     }
 
-    MultiPropertyConstraintDefinition( InternalSchemaActions actions, String name, IndexDefinition indexDefinition )
+    MultiPropertyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition )
     {
-        super( actions, name );
+        super( actions, constraint );
         this.propertyKeys = requireNonEmpty( Iterables.asArray( String.class, indexDefinition.getPropertyKeys() ) );
     }
 

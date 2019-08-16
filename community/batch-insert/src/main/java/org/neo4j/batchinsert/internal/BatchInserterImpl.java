@@ -1233,7 +1233,7 @@ public class BatchInserterImpl implements BatchInserter
 
             validateUniquenessConstraintCanBeCreated( descriptor );
             IndexBackedConstraintDescriptor constraint = createUniquenessConstraintRule( descriptor, name );
-            return new UniquenessConstraintDefinition( this, constraint.getName(), indexDefinition );
+            return new UniquenessConstraintDefinition( this, constraint, indexDefinition );
         }
 
         @Override
@@ -1245,7 +1245,7 @@ public class BatchInserterImpl implements BatchInserter
 
             validateNodeKeyConstraintCanBeCreated( descriptor );
             IndexBackedConstraintDescriptor constraint = createNodeKeyConstraintRule( descriptor, name );
-            return new NodeKeyConstraintDefinition( this, constraint.getName(), indexDefinition );
+            return new NodeKeyConstraintDefinition( this, constraint, indexDefinition );
         }
 
         @Override
@@ -1257,7 +1257,7 @@ public class BatchInserterImpl implements BatchInserter
             validateNodePropertyExistenceConstraintCanBeCreated( labelId, propertyKeyIds );
 
             ConstraintDescriptor constraint = createNodePropertyExistenceConstraintRule( name, labelId, propertyKeyIds );
-            return new NodePropertyExistenceConstraintDefinition( this, constraint.getName(), label, propertyKeys );
+            return new NodePropertyExistenceConstraintDefinition( this, constraint, label, propertyKeys );
         }
 
         @Override
@@ -1269,29 +1269,11 @@ public class BatchInserterImpl implements BatchInserter
             validateRelationshipConstraintCanBeCreated( relationshipTypeId, propertyKeyId );
 
             ConstraintDescriptor constraint = createRelTypePropertyExistenceConstraintRule( name, relationshipTypeId, propertyKeyId );
-            return new RelationshipPropertyExistenceConstraintDefinition( this, constraint.getName(), type, propertyKey );
+            return new RelationshipPropertyExistenceConstraintDefinition( this, constraint, type, propertyKey );
         }
 
         @Override
-        public void dropPropertyUniquenessConstraint( Label label, String[] properties )
-        {
-            throw unsupportedException();
-        }
-
-        @Override
-        public void dropNodeKeyConstraint( Label label, String[] properties )
-        {
-            throw unsupportedException();
-        }
-
-        @Override
-        public void dropNodePropertyExistenceConstraint( Label label, String[] properties )
-        {
-            throw unsupportedException();
-        }
-
-        @Override
-        public void dropRelationshipPropertyExistenceConstraint( RelationshipType type, String propertyKey )
+        public void dropConstraint( ConstraintDescriptor constraint )
         {
             throw unsupportedException();
         }

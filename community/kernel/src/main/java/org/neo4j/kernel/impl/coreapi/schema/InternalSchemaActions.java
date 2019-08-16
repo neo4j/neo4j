@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import java.util.Optional;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 /**
  * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseNodeConstraintCreator} for re-use
@@ -45,13 +44,7 @@ public interface InternalSchemaActions
 
     ConstraintDefinition createPropertyExistenceConstraint( String name, RelationshipType type, String propertyKey );
 
-    void dropPropertyUniquenessConstraint( Label label, String[] properties );
-
-    void dropNodeKeyConstraint( Label label, String[] properties );
-
-    void dropNodePropertyExistenceConstraint( Label label, String[] properties );
-
-    void dropRelationshipPropertyExistenceConstraint( RelationshipType type, String propertyKey );
+    void dropConstraint( ConstraintDescriptor constraint );
 
     String getUserMessage( KernelException e );
 

@@ -21,22 +21,16 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.lang.String.format;
 
 public class RelationshipPropertyExistenceConstraintDefinition extends RelationshipConstraintDefinition
 {
-    public RelationshipPropertyExistenceConstraintDefinition( InternalSchemaActions actions, String name,
+    public RelationshipPropertyExistenceConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint,
             RelationshipType relationshipType, String propertyKey )
     {
-        super( actions, name, relationshipType, propertyKey );
-    }
-
-    @Override
-    public void drop()
-    {
-        assertInUnterminatedTransaction();
-        actions.dropRelationshipPropertyExistenceConstraint( relationshipType, propertyKey );
+        super( actions, constraint, relationshipType, propertyKey );
     }
 
     @Override

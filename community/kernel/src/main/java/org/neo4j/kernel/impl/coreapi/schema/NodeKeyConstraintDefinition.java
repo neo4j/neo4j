@@ -21,21 +21,15 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.lang.String.format;
 
 public class NodeKeyConstraintDefinition extends NodeConstraintDefinition
 {
-    public NodeKeyConstraintDefinition( InternalSchemaActions actions, String name, IndexDefinition indexDefinition )
+    public NodeKeyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition )
     {
-        super( actions, name, indexDefinition );
-    }
-
-    @Override
-    public void drop()
-    {
-        assertInUnterminatedTransaction();
-        actions.dropNodeKeyConstraint( label, propertyKeys );
+        super( actions, constraint, indexDefinition );
     }
 
     @Override

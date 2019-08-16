@@ -518,7 +518,6 @@ public class SchemaImpl implements Schema
         // essentially. Checking instanceof here is OK-ish since the objects it checks here are part of the
         // internal storage engine API.
         SilentTokenNameLookup lookup = new SilentTokenNameLookup( tokenRead );
-        String name = constraint.getName();
         if ( constraint.isNodePropertyExistenceConstraint() ||
              constraint.isNodeKeyConstraint() ||
              constraint.isUniquenessConstraint() )
@@ -533,21 +532,21 @@ public class SchemaImpl implements Schema
             String[] propertyKeys = Arrays.stream( schemaDescriptor.getPropertyIds() ).mapToObj( lookup::propertyKeyGetName ).toArray( String[]::new );
             if ( constraint.isNodePropertyExistenceConstraint() )
             {
-                return new NodePropertyExistenceConstraintDefinition( actions, name, labels[0], propertyKeys );
+                return new NodePropertyExistenceConstraintDefinition( actions, constraint, labels[0], propertyKeys );
             }
             else if ( constraint.isUniquenessConstraint() )
             {
-                return new UniquenessConstraintDefinition( actions, name, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
+                return new UniquenessConstraintDefinition( actions, constraint, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
             }
             else
             {
-                return new NodeKeyConstraintDefinition( actions, name, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
+                return new NodeKeyConstraintDefinition( actions, constraint, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
             }
         }
         else if ( constraint.isRelationshipPropertyExistenceConstraint() )
         {
             RelationTypeSchemaDescriptor descriptor = constraint.schema().asRelationshipTypeSchemaDescriptor();
-            return new RelationshipPropertyExistenceConstraintDefinition( actions, name,
+            return new RelationshipPropertyExistenceConstraintDefinition( actions, constraint,
                     withName( lookup.relationshipTypeGetName( descriptor.getRelTypeId() ) ),
                     lookup.propertyKeyGetName( descriptor.getPropertyId() ) );
         }
@@ -652,7 +651,7 @@ public class SchemaImpl implements Schema
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
                     ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( schema, name );
-                    return new UniquenessConstraintDefinition( this, constraint.getName(), indexDefinition );
+                    return new UniquenessConstraintDefinition( this, constraint, indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
                         RepeatedPropertyInCompositeSchemaException e )
@@ -698,7 +697,7 @@ public class SchemaImpl implements Schema
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
                     ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate( schema, name );
-                    return new NodeKeyConstraintDefinition( this, constraint.getName(), indexDefinition );
+                    return new NodeKeyConstraintDefinition( this, constraint, indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
                         RepeatedPropertyInCompositeSchemaException e )
@@ -738,7 +737,7 @@ public class SchemaImpl implements Schema
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
                     LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
                     ConstraintDescriptor constraint = transaction.schemaWrite().nodePropertyExistenceConstraintCreate( schema, name );
-                    return new NodePropertyExistenceConstraintDefinition( this, constraint.getName(), label, propertyKeys );
+                    return new NodePropertyExistenceConstraintDefinition( this, constraint, label, propertyKeys );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
                         RepeatedPropertyInCompositeSchemaException e )
@@ -778,7 +777,7 @@ public class SchemaImpl implements Schema
                     int[] propertyKeyId = getOrCreatePropertyKeyIds( tokenWrite, propertyKey );
                     RelationTypeSchemaDescriptor schema = forRelType( typeId, propertyKeyId );
                     ConstraintDescriptor constraint = transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate( schema, name );
-                    return new RelationshipPropertyExistenceConstraintDefinition( this, constraint.getName(), type, propertyKey );
+                    return new RelationshipPropertyExistenceConstraintDefinition( this, constraint, type, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
                         RepeatedPropertyInCompositeSchemaException e )
@@ -802,97 +801,14 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public void dropPropertyUniquenessConstraint( Label label, String[] properties )
+        public void dropConstraint( ConstraintDescriptor constraint )
         {
             KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    TokenRead tokenRead = transaction.tokenRead();
-                    int labelId = tokenRead.nodeLabel( label.name() );
-                    int[] propertyKeyIds = resolveAndValidatePropertyKeys( tokenRead, properties );
-                    transaction.schemaWrite().constraintDrop(
-                            ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ) );
-                }
-                catch ( DropConstraintFailureException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
-                }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
-                }
-            }
-        }
-
-        @Override
-        public void dropNodeKeyConstraint( Label label, String[] properties )
-        {
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
-            try ( Statement ignore = transaction.acquireStatement() )
-            {
-                try
-                {
-                    TokenRead tokenRead = transaction.tokenRead();
-                    int labelId = tokenRead.nodeLabel( label.name() );
-                    int[] propertyKeyIds = resolveAndValidatePropertyKeys( tokenRead, properties );
-                    transaction.schemaWrite().constraintDrop(
-                            ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ) );
-                }
-                catch ( DropConstraintFailureException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
-                }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
-                }
-            }
-        }
-
-        @Override
-        public void dropNodePropertyExistenceConstraint( Label label, String[] properties )
-        {
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
-            try ( Statement ignore = transaction.acquireStatement() )
-            {
-                try
-                {
-                    TokenRead tokenRead = transaction.tokenRead();
-                    int labelId = tokenRead.nodeLabel( label.name() );
-                    int[] propertyKeyIds = resolveAndValidatePropertyKeys( tokenRead, properties );
-                    transaction.schemaWrite().constraintDrop(
-                            ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ) );
-                }
-                catch ( DropConstraintFailureException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
-                }
-                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
-                }
-            }
-        }
-
-        @Override
-        public void dropRelationshipPropertyExistenceConstraint( RelationshipType type, String propertyKey )
-        {
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
-            try ( Statement ignore = transaction.acquireStatement() )
-            {
-                try
-                {
-                    TokenRead tokenRead = transaction.tokenRead();
-
-                    int typeId = tokenRead.relationshipType( type.name() );
-                    int propertyKeyId = tokenRead.propertyKey( propertyKey );
-                    transaction.schemaWrite().constraintDrop(
-                            ConstraintDescriptorFactory.existsForRelType( typeId, propertyKeyId ) );
+                    transaction.schemaWrite().constraintDrop( constraint );
                 }
                 catch ( DropConstraintFailureException e )
                 {

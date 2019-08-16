@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import org.neo4j.internal.schema.ConstraintDescriptor;
+
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
@@ -26,9 +28,9 @@ abstract class SinglePropertyConstraintDefinition extends PropertyConstraintDefi
 {
     protected final String propertyKey;
 
-    SinglePropertyConstraintDefinition( InternalSchemaActions actions, String name, String propertyKey )
+    SinglePropertyConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, String propertyKey )
     {
-        super( actions, name );
+        super( actions, constraint );
         this.propertyKey = requireNonNull( propertyKey );
     }
 

@@ -1088,7 +1088,7 @@ public class Operations implements Write, SchemaWrite
         //Lock
         SchemaDescriptor schema = descriptor.schema();
         exclusiveOptimisticLock( schema.keyType(), schema.lockingKeys() );
-        // todo lock constraint name
+        exclusiveSchemaNameLock( descriptor.getName() );
         ktx.assertOpen();
 
         //verify data integrity
@@ -1251,7 +1251,11 @@ public class Operations implements Write, SchemaWrite
         String name = constraint.getName();
         ConstraintDescriptor existingConstraint = allStoreHolder.constraintGetForName( name );
         IndexDescriptor existingIndex = allStoreHolder.indexGetForName( name );
-        if ( existingConstraint != null || existingIndex.getOwningConstraintId().isPresent() )
+        if ( existingConstraint == null && existingIndex == IndexDescriptor.NO_INDEX )
+        {
+            return; // No existing index or constraint.
+        }
+        if ( existingConstraint != null || !existingIndex.isUnique() || existingIndex.getOwningConstraintId().isPresent() )
         {
             throw new AlreadyConstrainedException( name, CONSTRAINT_CREATION );
         }

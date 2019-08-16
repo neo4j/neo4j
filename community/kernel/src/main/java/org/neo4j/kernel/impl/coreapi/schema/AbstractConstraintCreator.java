@@ -25,7 +25,7 @@ abstract class AbstractConstraintCreator
 {
     protected final InternalSchemaActions actions;
 
-    protected AbstractConstraintCreator( InternalSchemaActions actions )
+    AbstractConstraintCreator( InternalSchemaActions actions )
     {
         this.actions = actions;
     }

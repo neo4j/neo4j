@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.util.Objects.requireNonNull;
 
@@ -28,9 +29,9 @@ abstract class RelationshipConstraintDefinition extends SinglePropertyConstraint
 {
     protected final RelationshipType relationshipType;
 
-    RelationshipConstraintDefinition( InternalSchemaActions actions, String name, RelationshipType relationshipType, String propertyKey )
+    RelationshipConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, RelationshipType relationshipType, String propertyKey )
     {
-        super( actions, name, propertyKey );
+        super( actions, constraint, propertyKey );
         this.relationshipType = requireNonNull( relationshipType );
     }
 

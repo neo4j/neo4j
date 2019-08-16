@@ -21,21 +21,15 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.lang.String.format;
 
 public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDefinition
 {
-    public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, String name, Label label, String[] propertyKeys )
+    public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, Label label, String[] propertyKeys )
     {
-        super( actions, name, label, propertyKeys );
-    }
-
-    @Override
-    public void drop()
-    {
-        assertInUnterminatedTransaction();
-        actions.dropNodePropertyExistenceConstraint( label, propertyKeys );
+        super( actions, constraint, label, propertyKeys );
     }
 
     @Override

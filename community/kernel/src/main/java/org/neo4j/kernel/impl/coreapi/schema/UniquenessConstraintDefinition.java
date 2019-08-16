@@ -21,21 +21,15 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.lang.String.format;
 
 public class UniquenessConstraintDefinition extends NodeConstraintDefinition
 {
-    public UniquenessConstraintDefinition( InternalSchemaActions actions, String name, IndexDefinition indexDefinition )
+    public UniquenessConstraintDefinition( InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition )
     {
-        super( actions, name, indexDefinition );
-    }
-
-    @Override
-    public void drop()
-    {
-        assertInUnterminatedTransaction();
-        actions.dropPropertyUniquenessConstraint( label, propertyKeys );
+        super( actions, constraint, indexDefinition );
     }
 
     @Override
