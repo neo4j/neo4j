@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,14 +33,12 @@ import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.io.pagecache.impl.FileLockException;
+import org.neo4j.kernel.StoreLockException;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 public class StoreInfoCommandIT
 {
@@ -51,8 +48,6 @@ public class StoreInfoCommandIT
     @Test
     public void respectLockFilesSameProcess() throws Exception
     {
-        assumeFalse( SystemUtils.IS_OS_WINDOWS ); // We don't respect locks on windows
-
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newGraphDatabase();
         StoreInfoCommand command = new StoreInfoCommand( System.out::println );
         try
@@ -62,7 +57,7 @@ public class StoreInfoCommandIT
         }
         catch ( CommandFailed e )
         {
-            assumeTrue( e.getCause() instanceof FileLockException );
+            assertTrue( e.getCause() instanceof StoreLockException );
         }
         finally
         {
@@ -73,12 +68,10 @@ public class StoreInfoCommandIT
     @Test
     public void respectLockFiles() throws Exception
     {
-        assumeFalse( SystemUtils.IS_OS_WINDOWS ); // We don't respect locks on windows
-
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newGraphDatabase();
         Process process = runInSeparateProcess( testDirectory.storeDir().getAbsolutePath() );
         assertEquals( 1, process.waitFor() );
-        assertTrue( new Scanner( process.getErrorStream() ).nextLine().contains( "This file is locked by another process" ) );
+        assertTrue( new Scanner( process.getErrorStream() ).nextLine().contains( "the database is in use" ) );
         database.shutdown();
     }
 
