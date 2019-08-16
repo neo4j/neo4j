@@ -61,6 +61,11 @@ public class SystemNanoClock extends Clock
         return System.currentTimeMillis();
     }
 
+    /**
+     * It is <em>only</em> useful for comparing values returned from the same clock, as the wall clock time of this method is arbitrary.
+     *
+     * @return current nano time of the system.
+     */
     public long nanos()
     {
         return System.nanoTime();

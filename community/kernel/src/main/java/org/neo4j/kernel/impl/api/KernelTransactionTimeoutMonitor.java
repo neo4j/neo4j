@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.time.Clock;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * Transaction monitor that check transactions with a configured timeout for expiration.
@@ -34,10 +35,10 @@ import org.neo4j.logging.Log;
 public class KernelTransactionTimeoutMonitor implements Runnable
 {
     private final KernelTransactions kernelTransactions;
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final Log log;
 
-    public KernelTransactionTimeoutMonitor( KernelTransactions kernelTransactions, Clock clock, LogService logService )
+    public KernelTransactionTimeoutMonitor( KernelTransactions kernelTransactions, SystemNanoClock clock, LogService logService )
     {
         this.kernelTransactions = kernelTransactions;
         this.clock = clock;
@@ -48,13 +49,13 @@ public class KernelTransactionTimeoutMonitor implements Runnable
     public synchronized void run()
     {
         Set<KernelTransactionHandle> activeTransactions = kernelTransactions.activeTransactions();
-        long now = clock.millis();
+        long nowNanos = clock.nanos();
         for ( KernelTransactionHandle activeTransaction : activeTransactions )
         {
             long transactionTimeoutMillis = activeTransaction.timeoutMillis();
             if ( transactionTimeoutMillis > 0 )
             {
-                if ( isTransactionExpired( activeTransaction, now, transactionTimeoutMillis ) )
+                if ( isTransactionExpired( activeTransaction, nowNanos, transactionTimeoutMillis ) )
                 {
                     if ( activeTransaction.markForTermination( Status.Transaction.TransactionTimedOut ) )
                     {
@@ -65,9 +66,8 @@ public class KernelTransactionTimeoutMonitor implements Runnable
         }
     }
 
-    private boolean isTransactionExpired( KernelTransactionHandle activeTransaction, long nowMillis,
-            long transactionTimeoutMillis )
+    private boolean isTransactionExpired( KernelTransactionHandle activeTransaction, long nowNanos, long transactionTimeoutMillis )
     {
-        return nowMillis > (activeTransaction.startTime() + transactionTimeoutMillis);
+        return nowNanos - activeTransaction.startTimeNanos() > TimeUnit.MILLISECONDS.toNanos( transactionTimeoutMillis );
     }
 }

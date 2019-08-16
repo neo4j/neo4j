@@ -21,7 +21,6 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -741,7 +740,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return heapAllocation;
     }
 
-    private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
+    private void buildTransactionMonitor( KernelTransactions kernelTransactions, SystemNanoClock clock, Config config )
     {
         KernelTransactionTimeoutMonitor kernelTransactionTimeoutMonitor =
                 new KernelTransactionTimeoutMonitor( kernelTransactions, clock, logService );

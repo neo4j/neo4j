@@ -220,6 +220,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public long startTimeNanos()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public long timeout()
     {
         throw new UnsupportedOperationException( "not implemented" );

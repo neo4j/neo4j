@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -102,6 +101,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -165,6 +165,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean success;
     private volatile Status terminationReason;
     private long startTimeMillis;
+    private long startTimeNanos;
     private long timeoutMillis;
     private long lastTransactionIdWhenStarted;
     private volatile long lastTransactionTimestampWhenStarted;
@@ -186,18 +187,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( StatementOperationParts statementOperations,
-            SchemaWriteGuard schemaWriteGuard,
-            TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
-            TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess,
-            TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
-            Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
-            TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
-            StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
-            CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
-            SchemaState schemaState, IndexingService indexingService,
-            IndexProviderMap indexProviderMap )
+    public KernelTransactionImplementation( StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHooks hooks,
+            ConstraintIndexCreator constraintIndexCreator, Procedures procedures, TransactionHeaderInformationFactory headerInformationFactory,
+            TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
+            Pool<KernelTransactionImplementation> pool, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
+            AtomicReference<HeapAllocation> heapAllocationRef, TransactionTracer transactionTracer, LockTracer lockTracer,
+            PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors,
+            AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
+            CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
+            IndexingService indexingService, IndexProviderMap indexProviderMap )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -251,6 +249,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.success = false;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clocks.systemClock().millis();
+        this.startTimeNanos = clocks.systemClock().nanos();
         this.timeoutMillis = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
@@ -275,6 +274,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public long startTime()
     {
         return startTimeMillis;
+    }
+
+    @Override
+    public long startTimeNanos()
+    {
+        return startTimeNanos;
     }
 
     @Override
