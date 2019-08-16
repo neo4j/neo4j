@@ -254,12 +254,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def match_(pattern: PatternElement, where: Option[Where] = None): Match =
     Match(false, Pattern(Seq(EveryPath(pattern)))(pos), Seq(), where)(pos)
 
-  def node(name: String): NodePattern =
-    NodePattern(Some(Variable(name)(pos)), Seq(), None)(pos)
-
-  def node(name: String, labels: String*): NodePattern =
-    NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None)(pos)
-
   def with_(items: ReturnItem*): With =
     With(ReturnItems(false, items)(pos))(pos)
 
