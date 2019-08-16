@@ -44,6 +44,14 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
+    assertFailure("CREATE ROLE IF NOT EXISTS foo", "Unsupported administration command: CREATE ROLE IF NOT EXISTS foo")
+  }
+
+  test("should fail on creating role from community with correct error message") {
+    // GIVEN
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+
+    // THEN
     assertFailure("CREATE ROLE foo", "Unsupported administration command: CREATE ROLE foo")
   }
 

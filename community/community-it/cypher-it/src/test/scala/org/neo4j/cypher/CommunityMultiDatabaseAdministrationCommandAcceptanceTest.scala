@@ -166,6 +166,8 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   test("should fail on creating database from community") {
     setup( defaultConfig )
     assertFailure("CREATE DATABASE foo", "Unsupported administration command: CREATE DATABASE foo")
+    assertFailure(s"CREATE DATABASE IF NOT EXISTS $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: CREATE DATABASE IF NOT EXISTS $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on creating already existing database with correct error message") {

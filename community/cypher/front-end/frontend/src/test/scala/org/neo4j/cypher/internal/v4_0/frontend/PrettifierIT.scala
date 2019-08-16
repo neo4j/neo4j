@@ -213,8 +213,8 @@ class PrettifierIT extends CypherFunSuite {
       "create user abc set password $password" ->
         "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED",
 
-      "create user `ab%$c` set password 'foo'" ->
-        "CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED",
+      "create user if not exists `ab%$c` set password 'foo'" ->
+        "CREATE USER IF NOT EXISTS `ab%$c` SET PASSWORD '******' CHANGE REQUIRED",
 
       "create user abc set password 'foo' change required" ->
         "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED",
@@ -225,8 +225,8 @@ class PrettifierIT extends CypherFunSuite {
       "create user abc set password 'foo' set status active" ->
         "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
-      "create user abc set password 'foo' change required set status active" ->
-        "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
+      "create user if not exists abc set password 'foo' change required set status active" ->
+        "CREATE USER IF NOT EXISTS abc SET PASSWORD '******' CHANGE REQUIRED SET STATUS ACTIVE",
 
       "create user abc set password 'foo' change not required set status active" ->
         "CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS ACTIVE",
@@ -294,14 +294,17 @@ class PrettifierIT extends CypherFunSuite {
       "create role abc" ->
         "CREATE ROLE abc",
 
+      "create role if not exists abc" ->
+        "CREATE ROLE IF NOT EXISTS abc",
+
       "create role `ab%$c`" ->
         "CREATE ROLE `ab%$c`",
 
       "create role abc as copy of def" ->
         "CREATE ROLE abc AS COPY OF def",
 
-      "create role `ab%$c` as copy of `$d3f`" ->
-        "CREATE ROLE `ab%$c` AS COPY OF `$d3f`",
+      "create role if not exists `ab%$c` as copy of `$d3f`" ->
+        "CREATE ROLE IF NOT EXISTS `ab%$c` AS COPY OF `$d3f`",
 
       "drop role if exists abc" ->
         "DROP ROLE IF EXISTS abc",
@@ -389,6 +392,9 @@ class PrettifierIT extends CypherFunSuite {
 
       "catalog create database `foO_Bar_42`" ->
         "CREATE DATABASE foO_Bar_42",
+
+      "catalog create database if not exists `foO_Bar_42`" ->
+        "CREATE DATABASE IF NOT EXISTS foO_Bar_42",
 
       "catalog create database `graph.db`" ->
         "CREATE DATABASE `graph.db`",

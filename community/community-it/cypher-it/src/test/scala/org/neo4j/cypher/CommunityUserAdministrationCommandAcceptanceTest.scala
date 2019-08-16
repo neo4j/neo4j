@@ -232,6 +232,19 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
   }
 
+  test("should do nothing when creating already existing user using if not exists") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    val existingUser = user("neo4j")
+    execute("SHOW USERS").toSet shouldBe Set(existingUser)
+
+    // WHEN
+    execute("CREATE USER IF NOT EXISTS neo4j SET PASSWORD 'password' CHANGE NOT REQUIRED")
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(existingUser)
+  }
+
   test("should fail when creating user with illegal username") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)

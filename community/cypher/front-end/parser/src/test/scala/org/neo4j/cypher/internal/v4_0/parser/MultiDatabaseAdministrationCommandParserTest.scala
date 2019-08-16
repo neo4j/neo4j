@@ -49,27 +49,35 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // CREATE DATABASE
 
   test("CREATE DATABASE foo") {
-    yields(ast.CreateDatabase("foo"))
+    yields(ast.CreateDatabase("foo", ifNotExists = false))
   }
 
   test("CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase("foo.bar"))
+    yields(ast.CreateDatabase("foo.bar", ifNotExists = false))
   }
 
   test("CATALOG CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase("foo.bar"))
+    yields(ast.CreateDatabase("foo.bar", ifNotExists = false))
   }
 
   test("CATALOG CREATE DATABASE `foo-bar42`") {
-    yields(ast.CreateDatabase("foo-bar42"))
+    yields(ast.CreateDatabase("foo-bar42", ifNotExists = false))
   }
 
   test("CATALOG CREATE DATABASE `_foo-bar42`") {
-    yields(ast.CreateDatabase("_foo-bar42"))
+    yields(ast.CreateDatabase("_foo-bar42", ifNotExists = false))
   }
 
   test("CATALOG CREATE DATABASE ``") {
-    yields(ast.CreateDatabase(""))
+    yields(ast.CreateDatabase("", ifNotExists = false))
+  }
+
+  test("CREATE DATABASE IF NOT EXISTS foo") {
+    yields(ast.CreateDatabase("foo", ifNotExists = true))
+  }
+
+  test("CATALOG CREATE DATABASE IF NOT EXISTS `_foo-bar42`") {
+    yields(ast.CreateDatabase("_foo-bar42", ifNotExists = true))
   }
 
   test("CREATE DATABASE foo.bar") {
@@ -93,6 +101,18 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG CREATE DATABASE 42foo-bar") {
+    failsToParse
+  }
+
+  test("CATALOG CREATE DATABASE") {
+    failsToParse
+  }
+
+  test("CATALOG CREATE DATABASE IF NOT EXISTS _foo-bar42") {
+    failsToParse
+  }
+
+  test("CREATE DATABASE IF NOT EXISTS") {
     failsToParse
   }
 
