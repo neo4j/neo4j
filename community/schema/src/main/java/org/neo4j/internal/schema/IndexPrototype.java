@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.schema;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.neo4j.common.TokenNameLookup;
 

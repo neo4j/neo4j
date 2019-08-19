@@ -753,7 +753,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(ConstraintDescriptorFactory.nodeKeyForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)))
+      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
     transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), null)
@@ -764,7 +764,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(ConstraintDescriptorFactory.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)))
+      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     try {
@@ -777,7 +777,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(ConstraintDescriptorFactory.existsForLabel(labelId, propertyKeyId))
+      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyId))
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     try {
@@ -790,7 +790,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(ConstraintDescriptorFactory.existsForRelType(relTypeId, propertyKeyId))
+      .constraintDrop(SchemaDescriptor.forRelType(relTypeId, propertyKeyId))
 
   override def getImportURL(url: URL): Either[String, URL] = transactionalContext.graph match {
     case db: GraphDatabaseQueryService =>

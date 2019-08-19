@@ -34,6 +34,7 @@ import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -663,6 +664,12 @@ public class MultipleIndexPopulator implements IndexPopulator
         public SchemaDescriptor schema()
         {
             return indexDescriptor.schema();
+        }
+
+        @Override
+        public String userDescription( TokenNameLookup tokenNameLookup )
+        {
+            return indexUserDescription;
         }
 
         boolean addToBatchFromScan( IndexEntryUpdate<?> update )

@@ -19,22 +19,12 @@
  */
 package org.neo4j.internal.schema;
 
-import org.neo4j.common.TokenNameLookup;
-
 interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplier
 {
     /**
      * Returns true if this index is only meant to allow one value per key.
      */
     boolean isUnique();
-
-    /**
-     * Returns a user friendly description of this index.
-     *
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
-     */
-    String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
      * Returns the {@link IndexType} of this index.

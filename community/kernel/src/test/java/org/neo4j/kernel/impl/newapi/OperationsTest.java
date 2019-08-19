@@ -806,8 +806,8 @@ class OperationsTest
     void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
     {
         // given
-        UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
-        IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).withName( "index_13" ).materialise( 13 );
+        UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor ).withName( "constraint" );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).withName( "constraint" ).materialise( 13 );
         when( storageReader.constraintExists( constraint ) ).thenReturn( true );
         when( storageReader.indexGetForSchema( descriptor ) ).thenReturn( index );
 

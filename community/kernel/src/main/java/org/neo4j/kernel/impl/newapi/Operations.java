@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -58,7 +59,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -122,6 +122,7 @@ public class Operations implements Write, SchemaWrite
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final KernelToken token;
+    private final TokenNameLookup tokenNameLookup;
     private final IndexTxStateUpdater updater;
     private final DefaultPooledCursors cursors;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -142,6 +143,7 @@ public class Operations implements Write, SchemaWrite
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
         this.token = token;
+        this.tokenNameLookup = new SilentTokenNameLookup( token );
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
         this.updater = updater;
@@ -498,7 +500,6 @@ public class Operations implements Write, SchemaWrite
             long[] labelIds = indexSchema.lockingKeys();
             if ( labelIds.length != 1 )
             {
-                SilentTokenNameLookup tokenNameLookup = new SilentTokenNameLookup( token() );
                 throw new UnableToValidateConstraintException( constraint, new AssertionError( "Constraint indexes are not expected to be multi-token " +
                         "indexes, but the constraint " + constraint.prettyPrint( tokenNameLookup ) + " was referencing an index with the following schema: " +
                         indexSchema.userDescription( tokenNameLookup ) + "." ) );
@@ -1083,6 +1084,32 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
+    public void constraintDrop( SchemaDescriptor schema ) throws SchemaKernelException
+    {
+        ktx.assertOpen();
+        Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetForSchema( schema );
+        if ( constraints.hasNext() )
+        {
+            ConstraintDescriptor constraint = constraints.next();
+            if ( !constraints.hasNext() )
+            {
+                constraintDrop( constraint );
+            }
+            else
+            {
+                String schemaDescription = schema.userDescription( tokenNameLookup );
+                String constraintDescription = constraints.next().userDescription( tokenNameLookup );
+                throw new DropConstraintFailureException( constraint, new IllegalArgumentException(
+                        "More than one constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription ) );
+            }
+        }
+        else
+        {
+            throw new NoSuchConstraintException( schema );
+        }
+    }
+
+    @Override
     public void constraintDrop( ConstraintDescriptor descriptor ) throws SchemaKernelException
     {
         //Lock
@@ -1142,7 +1169,7 @@ public class Operations implements Write, SchemaWrite
                 if ( context != CONSTRAINT_CREATION || constraintIndexHasOwner( existingIndex ) )
                 {
                     throw new AlreadyConstrainedException( ConstraintDescriptorFactory.uniqueForSchema( prototype.schema() ),
-                            context, new SilentTokenNameLookup( token ) );
+                            context, tokenNameLookup );
                 }
             }
             else
@@ -1246,7 +1273,7 @@ public class Operations implements Write, SchemaWrite
         {
             throw new AlreadyConstrainedException( constraint,
                     SchemaKernelException.OperationContext.CONSTRAINT_CREATION,
-                    new SilentTokenNameLookup( token ) );
+                    tokenNameLookup );
         }
         String name = constraint.getName();
         ConstraintDescriptor existingConstraint = allStoreHolder.constraintGetForName( name );

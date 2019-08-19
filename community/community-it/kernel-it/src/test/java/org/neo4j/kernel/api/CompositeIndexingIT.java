@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -36,8 +37,10 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -115,8 +118,11 @@ class CompositeIndexingIT
             KernelTransaction ktx = ktx();
             if ( index.isUnique() )
             {
-                ktx.schemaWrite().constraintDrop(
-                        ConstraintDescriptorFactory.uniqueForSchema( index.schema() ) );
+                Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetForSchema( index.schema() );
+                while ( constraints.hasNext() )
+                {
+                    ktx.schemaWrite().constraintDrop( constraints.next() );
+                }
             }
             else
             {

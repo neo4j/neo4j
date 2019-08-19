@@ -21,17 +21,17 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
 
 public class NoSuchConstraintException extends SchemaKernelException
 {
-    private final ConstraintDescriptor constraint;
+    private final SchemaDescriptorSupplier constraint;
     private static final String message = "No such constraint %s.";
 
-    public NoSuchConstraintException( ConstraintDescriptor constraint )
+    public NoSuchConstraintException( SchemaDescriptorSupplier constraint )
     {
         super( Status.Schema.ConstraintNotFound, format( message, constraint ) );
         this.constraint = constraint;

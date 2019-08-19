@@ -37,8 +37,6 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
 
     boolean enforcesPropertyExistence();
 
-    String userDescription( TokenNameLookup tokenNameLookup );
-
     String prettyPrint( TokenNameLookup tokenNameLookup );
 
     /**

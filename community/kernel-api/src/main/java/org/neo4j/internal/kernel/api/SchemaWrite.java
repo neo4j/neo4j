@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import java.util.Optional;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -29,7 +27,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 
 /**
  * Surface for creating and dropping indexes and constraints.
@@ -124,7 +121,14 @@ public interface SchemaWrite
     ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor, String name ) throws KernelException;
 
     /**
-     * Drop constraint
+     * Drop a constraint with the given schema.
+     *
+     * @param schema The schema of the constraint to be dropped.
+     */
+    void constraintDrop( SchemaDescriptor schema ) throws SchemaKernelException;
+
+    /**
+     * Drop the specific constraint.
      *
      * @param descriptor description of the constraint
      */

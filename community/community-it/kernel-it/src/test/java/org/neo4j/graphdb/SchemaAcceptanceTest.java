@@ -223,7 +223,7 @@ class SchemaAcceptanceTest
     }
 
     @Test
-    void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction()
+    void droppingNonExistingIndexShouldGiveHelpfulExceptionInSameTransaction()
     {
         // GIVEN
         IndexDefinition index = createIndex( db, label, propertyKey );
@@ -249,7 +249,7 @@ class SchemaAcceptanceTest
     }
 
     @Test
-    void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions()
+    void droppingNonExistingIndexShouldGiveHelpfulExceptionInSeparateTransactions()
     {
         // GIVEN
         IndexDefinition index = createIndex( db, label, propertyKey );

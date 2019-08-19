@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
@@ -438,6 +439,12 @@ public class ConsistencyReporterTest
 
                 @Override
                 public SchemaDescriptor schema()
+                {
+                    return null;
+                }
+
+                @Override
+                public String userDescription( TokenNameLookup tokenNameLookup )
                 {
                     return null;
                 }

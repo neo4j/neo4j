@@ -22,7 +22,6 @@ package org.neo4j.internal.schema;
 import java.util.function.Predicate;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.token.api.TokenConstants;
 
@@ -187,12 +186,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @param processor The SchemaProcessor that hold the logic for the computation
      */
     void processWith( SchemaProcessor processor );
-
-    /**
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
-     */
-    String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
      * This method return the property ids that are relevant to this Schema Descriptor.
