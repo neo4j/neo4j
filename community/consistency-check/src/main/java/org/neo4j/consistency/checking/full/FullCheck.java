@@ -20,9 +20,7 @@
 package org.neo4j.consistency.checking.full;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.InvocationHandler;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.consistency.RecordType;
@@ -171,9 +169,7 @@ public class FullCheck
                     nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes, directStoreAccess.tokenHolders(),
                     multiPass, reporter, threads );
 
-            // Can we remove indexes from list here?
-            // It seems safe at least!
-            consistencyCheckIndexes( indexes );
+            consistencyCheckIndexes( indexes, reporter );
 
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
@@ -194,22 +190,19 @@ public class FullCheck
                 readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
     }
 
-    private static void consistencyCheckIndexes( IndexAccessors indexes )
+    private static void consistencyCheckIndexes( IndexAccessors indexes, ConsistencyReporter report )
     {
-        // todo implement this for real
-        InvocationHandler invocationHandler = ( proxy, method, args ) -> {
-            System.out.println( "Call to " + method.getName() + " with args " + Arrays.toString(args) );
-            return null;
-        };
-        Reporter reporter = new Reporter( invocationHandler );
         List<StoreIndexDescriptor> rulesToRemove = new ArrayList<>();
         for ( StoreIndexDescriptor onlineRule : indexes.onlineRules() )
         {
+            ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.INDEX );
+            Reporter reporter = new Reporter( handler );
             IndexAccessor accessor = indexes.accessorFor( onlineRule );
             if ( !accessor.consistencyCheck( reporter ) )
             {
                 rulesToRemove.add( onlineRule );
             }
+            handler.updateSummary();
         }
         for ( StoreIndexDescriptor toRemove : rulesToRemove )
         {

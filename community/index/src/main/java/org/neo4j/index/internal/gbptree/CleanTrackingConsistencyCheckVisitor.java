@@ -57,20 +57,20 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
     @Override
     @Documented( "siblingsDontPointToEachOther" )
     public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
-            long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration, long rightLeftSiblingPointer )
+            long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration )
     {
         clean.setFalse();
-        delegate.siblingsDontPointToEachOther( leftNode, leftNodeGeneration, leftRightSiblingPointerGeneration, leftRightSiblingPointer, rightNode,
-                rightNodeGeneration,
-                rightLeftSiblingPointerGeneration, rightLeftSiblingPointer );
+        delegate.siblingsDontPointToEachOther( leftNode, leftNodeGeneration, leftRightSiblingPointerGeneration, leftRightSiblingPointer,
+                rightLeftSiblingPointer, rightLeftSiblingPointerGeneration, rightNode, rightNodeGeneration
+        );
     }
 
     @Override
     @Documented( "rightmostNodeHasRightSibling" )
-    public void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer )
+    public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode )
     {
         clean.setFalse();
-        delegate.rightmostNodeHasRightSibling( rightmostNode, rightSiblingPointer );
+        delegate.rightmostNodeHasRightSibling( rightSiblingPointer, rightmostNode );
     }
 
     @Override
@@ -83,11 +83,11 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
 
     @Override
     @Documented( "pointerHasLowerGenerationThanNode" )
-    public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
+    public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
             long targetNodeGeneration )
     {
         clean.setFalse();
-        delegate.pointerHasLowerGenerationThanNode( pointerType, sourceNode, pointer, pointerGeneration, targetNodeGeneration );
+        delegate.pointerHasLowerGenerationThanNode( pointerType, sourceNode, pointerGeneration, pointer, targetNodeGeneration );
     }
 
     @Override
@@ -100,10 +100,10 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
 
     @Override
     @Documented( "keysLocatedInWrongNode" )
-    public void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
+    public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId )
     {
         clean.setFalse();
-        delegate.keysLocatedInWrongNode( pageId, range, key, pos, keyCount );
+        delegate.keysLocatedInWrongNode( range, key, pos, keyCount, pageId );
     }
 
     @Override
@@ -168,9 +168,9 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
 
     @Override
     @Documented( "childNodeFoundAmongParentNodes" )
-    public void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<KEY> superRange )
+    public void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId )
     {
         clean.setFalse();
-        delegate.childNodeFoundAmongParentNodes( level, pageId, superRange );
+        delegate.childNodeFoundAmongParentNodes( superRange, level, pageId );
     }
 }

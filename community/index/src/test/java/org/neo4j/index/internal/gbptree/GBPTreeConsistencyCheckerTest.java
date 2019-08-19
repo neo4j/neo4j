@@ -1018,14 +1018,14 @@ public class GBPTreeConsistencyCheckerTest
         {
             @Override
             public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration,
-                    long leftRightSiblingPointer, long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration,
-                    long rightLeftSiblingPointer )
+                    long leftRightSiblingPointer, long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode,
+                    long rightNodeGeneration )
             {
                 corruptedSiblingPointerCalled.setTrue();
             }
 
             @Override
-            public void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer )
+            public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode )
             {
                 rightmostNodeHasRightSiblingCalled.setTrue();
             }
@@ -1056,7 +1056,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
+            public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
                     long targetNodeGeneration )
             {
                 called.setTrue();
@@ -1089,7 +1089,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void keysLocatedInWrongNode( long pageId, KeyRange<MutableLong> range, MutableLong key, int pos, int keyCount )
+            public void keysLocatedInWrongNode( KeyRange<MutableLong> range, MutableLong key, int pos, int keyCount, long pageId )
             {
                 called.setTrue();
                 allNodesWithKeysLocatedInWrongNode.add( pageId );
@@ -1269,21 +1269,21 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer )
+            public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode )
             {
                 called.setTrue();
             }
 
             @Override
             public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration,
-                    long leftRightSiblingPointer, long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration,
-                    long rightLeftSiblingPointer )
+                    long leftRightSiblingPointer, long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode,
+                    long rightNodeGeneration )
             {
                 called.setTrue();
             }
 
             @Override
-            public void keysLocatedInWrongNode( long pageId, KeyRange<MutableLong> range, MutableLong mutableLong, int pos, int keyCount )
+            public void keysLocatedInWrongNode( KeyRange<MutableLong> range, MutableLong mutableLong, int pos, int keyCount, long pageId )
             {
                 called.setTrue();
             }
@@ -1295,7 +1295,7 @@ public class GBPTreeConsistencyCheckerTest
             }
 
             @Override
-            public void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<MutableLong> superRange )
+            public void childNodeFoundAmongParentNodes( KeyRange<MutableLong> superRange, int level, long pageId )
             {
                 called.setTrue();
             }
@@ -1309,7 +1309,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<MutableLong> superRange )
+            public void childNodeFoundAmongParentNodes( KeyRange<MutableLong> superRange, int level, long pageId )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );

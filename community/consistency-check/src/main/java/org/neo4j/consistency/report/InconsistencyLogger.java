@@ -29,8 +29,12 @@ public interface InconsistencyLogger
     void error( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, String message,
                 Object[] args );
 
+    void error( String message );
+
     void warning( RecordType recordType, AbstractBaseRecord record, String message, Object[] args );
 
     void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, String message,
                   Object[] args );
+
+    void warning( String message );
 }

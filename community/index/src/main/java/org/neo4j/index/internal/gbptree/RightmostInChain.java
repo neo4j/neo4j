@@ -70,8 +70,9 @@ class RightmostInChain
             // Generation of left sibling is larger than that of the pointer from right sibling
             // Left siblings view:  {_(9)}-(_)->{_}
             // Right siblings view: {_}<-(5)-{_(_)}
-            visitor.pointerHasLowerGenerationThanNode( GBPTreePointerType.leftSibling(), newRightmostNode, newRightmostLeftSiblingPointer,
-                    newRightmostLeftSiblingPointerGeneration, currentRightmostNodeGeneration );
+            visitor.pointerHasLowerGenerationThanNode( GBPTreePointerType.leftSibling(), newRightmostNode, newRightmostLeftSiblingPointerGeneration,
+                    newRightmostLeftSiblingPointer,
+                    currentRightmostNodeGeneration );
         }
         if ( currentRightmostRightSiblingPointerGeneration < newRightmostNodeGeneration &&
                 currentRightmostRightSiblingPointer != NO_NODE_FLAG )
@@ -79,8 +80,9 @@ class RightmostInChain
             // Generation of right sibling is larger than that of the pointer from left sibling
             // Left siblings view:  {_(_)}-(5)->{_}
             // Right siblings view: {_}<-(_)-{_(9)}
-            visitor.pointerHasLowerGenerationThanNode( GBPTreePointerType.rightSibling(), currentRightmostNode, currentRightmostRightSiblingPointer,
-                    currentRightmostRightSiblingPointerGeneration, newRightmostNodeGeneration );
+            visitor.pointerHasLowerGenerationThanNode( GBPTreePointerType.rightSibling(), currentRightmostNode, currentRightmostRightSiblingPointerGeneration,
+                    currentRightmostRightSiblingPointer,
+                    newRightmostNodeGeneration );
         }
     }
 
@@ -109,7 +111,7 @@ class RightmostInChain
         {
             visitor.siblingsDontPointToEachOther( currentRightmostNode, currentRightmostNodeGeneration, currentRightmostRightSiblingPointerGeneration,
                     currentRightmostRightSiblingPointer,
-                    newRightmostNode, newRightmostNodeGeneration, newRightmostLeftSiblingPointerGeneration, newRightmostLeftSiblingPointer );
+                    newRightmostLeftSiblingPointer, newRightmostLeftSiblingPointerGeneration, newRightmostNode, newRightmostNodeGeneration );
         }
     }
 
@@ -117,7 +119,7 @@ class RightmostInChain
     {
         if ( currentRightmostRightSiblingPointer != NO_NODE_FLAG )
         {
-            visitor.rightmostNodeHasRightSibling( currentRightmostNode, currentRightmostRightSiblingPointer );
+            visitor.rightmostNodeHasRightSibling( currentRightmostRightSiblingPointer, currentRightmostNode );
         }
     }
 }

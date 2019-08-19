@@ -43,7 +43,7 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
 
     @Override
     public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
-            long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration, long rightLeftSiblingPointer )
+            long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration )
     {
         throwTreeStructureInconsistency( "Sibling pointers misaligned.%n" +
                         "  Left siblings view:  %s%n" +
@@ -53,7 +53,7 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
-    public void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer )
+    public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode )
     {
         throwTreeStructureInconsistency( "Expected rightmost right sibling to be %d but was %d. Current rightmost node is %d.",
                 NO_NODE_FLAG, rightSiblingPointer, rightmostNode );
@@ -66,7 +66,7 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
-    public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
+    public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
             long targetNodeGeneration )
     {
         throwTreeStructureInconsistency( "Pointer (%s) in tree node %d has pointer generation %d, but target node %d has a higher generation %d.",
@@ -80,10 +80,22 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
-    public void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
+    public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId )
     {
         throwKeyOrderInconsistency( "Expected range for this tree node is %n%s%n but found %s in position %d, with keyCount %d on page %d.",
                 range, key, pos, keyCount, pageId );
+    }
+
+    @Override
+    public void unusedPage( long pageId )
+    {
+        throwTreeMetaInconsistency( "Index has a leaked page that will never be reclaimed, pageId=%d.", pageId );
+    }
+
+    @Override
+    public void pageIdExceedLastId( long lastId, long pageId )
+    {
+        throwTreeMetaInconsistency( "Tree node has page id larger than registered last id, lastId=%d, pageId=%d.", lastId, pageId );
     }
 
     @Override
@@ -97,18 +109,6 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     {
         throwTreeStructureInconsistency(
                 "Page id seen multiple times, this means either active tree node is present in freelist or pointers in tree create a loop, pageId=%d.", pageId );
-    }
-
-    @Override
-    public void unusedPage( long pageId )
-    {
-        throwTreeMetaInconsistency( "Index has a leaked page that will never be reclaimed, pageId=%d.", pageId );
-    }
-
-    @Override
-    public void pageIdExceedLastId( long lastId, long pageId )
-    {
-        throwTreeMetaInconsistency( "Tree node has page id larger than registered last id, lastId=%d, pageId=%d.", lastId, pageId );
     }
 
     @Override
@@ -140,7 +140,7 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
-    public void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<KEY> parentRange )
+    public void childNodeFoundAmongParentNodes( KeyRange<KEY> parentRange, int level, long pageId )
     {
         throwTreeStructureInconsistency( "Circular reference, child tree node found among parent nodes. Parents:%n%s%nlevel: %d, pageId: %d",
                 parentRange, level, pageId );

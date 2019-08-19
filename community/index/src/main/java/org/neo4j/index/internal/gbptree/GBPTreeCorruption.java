@@ -63,7 +63,7 @@ public final class GBPTreeCorruption
     public static <KEY, VALUE> PageCorruption<KEY,VALUE> setPointer( GBPTreePointerType pointerType, long pointer )
     {
         return ( cursor, layout, node, treeState ) -> {
-            overwriteGSPP( cursor, pointerType.offset( node ), treeState.unstableGeneration(), pointer );
+            overwriteGSPP( cursor, pointerType.offset( node ), treeState.stableGeneration(), pointer );
         };
     }
 

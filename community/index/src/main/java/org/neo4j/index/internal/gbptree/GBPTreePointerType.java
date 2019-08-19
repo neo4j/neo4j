@@ -25,7 +25,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
 
-interface GBPTreePointerType
+public interface GBPTreePointerType
 {
     int offset( TreeNode node );
 

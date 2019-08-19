@@ -49,6 +49,12 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
     }
 
     @Override
+    public void error( String message )
+    {
+        log.error( buildMessage( message ) );
+    }
+
+    @Override
     public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
     {
         log.warn( buildMessage( message, record, args ) );
@@ -59,6 +65,18 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
                          String message, Object... args )
     {
         log.warn( buildMessage( message, oldRecord, newRecord, args ) );
+    }
+
+    @Override
+    public void warning( String message )
+    {
+        log.warn( buildMessage( message ) );
+    }
+
+    private static String buildMessage( String message )
+    {
+        StringBuilder builder = joinLines( message );
+        return builder.toString();
     }
 
     private static String buildMessage( String message, AbstractBaseRecord record, Object[] args )

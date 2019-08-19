@@ -23,60 +23,68 @@ import org.neo4j.kernel.impl.annotations.Documented;
 
 public interface GBPTreeConsistencyCheckVisitor<KEY>
 {
-    @Documented( "notATreeNode" )
+    @Documented( "Page: %d is not a tree node page." )
     void notATreeNode( long pageId );
 
-    @Documented( "unknownTreeNodeType" )
+    @Documented( "Page: %d has an unknown tree node type: %d." )
     void unknownTreeNodeType( long pageId, byte treeNodeType );
 
-    @Documented( "siblingsDontPointToEachOther" )
+    @Documented( "Sibling pointers misaligned.,%n" +
+            "  Left siblings view:  {%d(%d)}-(%d)->{%d},%n" +
+            "  Right siblings view: {%d}<-(%d)-{%d(%d)}%n" )
     void siblingsDontPointToEachOther(
-            long leftNode,  long leftNodeGeneration,  long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
-            long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration, long rightLeftSiblingPointer );
+            long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
+            long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration );
 
-    @Documented( "rightmostNodeHasRightSibling" )
-    void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer );
+    @Documented( "Expected rightmost node to have no right sibling but was %d. Current rightmost node is %d." )
+    void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode );
 
-    @Documented( "pointerToOldVersionOfTreeNode" )
+    @Documented( "We ended up on tree node %d which has a newer generation, successor is: %d" )
     void pointerToOldVersionOfTreeNode( long pageId, long successorPointer );
 
-    @Documented( "pointerHasLowerGenerationThanNode" )
-    void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer,
-            long pointerGeneration, long targetNodeGeneration );
+    @Documented( "Pointer (%s) in tree node %d has pointer generation %d, but target node %d has a higher generation %d." )
+    void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
+            long targetNodeGeneration );
 
-    @Documented( "keysOutOfOrderInNode" )
+    @Documented( "Keys in tree node %d are out of order." )
     void keysOutOfOrderInNode( long pageId );
 
-    @Documented( "keysLocatedInWrongNode" )
-    void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount );
+    @Documented( "Expected range for this tree node is %n%s%n but found %s in position %d, with keyCount %d on page %d." )
+    void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId );
 
-    @Documented( "unusedPage" )
+    @Documented( "Index has a leaked page that will never be reclaimed, pageId=%d." )
     void unusedPage( long pageId );
 
-    @Documented( "pageIdExceedLastId" )
+    @Documented( "Tree node has page id larger than registered last id, lastId=%d, pageId=%d." )
     void pageIdExceedLastId( long lastId, long pageId );
 
-    @Documented( "nodeMetaInconsistency" )
+    @Documented( "Tree node %d has inconsistent meta data: %s." )
     void nodeMetaInconsistency( long pageId, String message );
 
-    @Documented( "pageIdSeenMultipleTimes" )
+    @Documented( "Page id seen multiple times, this means either active tree node is present in freelist or pointers in tree create a loop, pageId=%d." )
     void pageIdSeenMultipleTimes( long pageId );
 
-    @Documented( "crashedPointer" )
+    @Documented( "Crashed pointer found in tree node %d, pointerType='%s',%n" +
+            "  slotA[generation=%d, readPointer=%d, pointer=%d, state=%s],%n" +
+            "  slotB[generation=%d, readPointer=%d, pointer=%d, state=%s]" )
     void crashedPointer( long pageId, GBPTreePointerType pointerType,
             long generationA, long readPointerA, long pointerA, byte stateA,
             long generationB, long readPointerB, long pointerB, byte stateB );
 
-    @Documented( "brokenPointer" )
+    @Documented( "Broken pointer found in tree node %d, pointerType='%s',%n" +
+            "  slotA[generation=%d, readPointer=%d, pointer=%d, state=%s],%n" +
+            "  slotB[generation=%d, readPointer=%d, pointer=%d, state=%s]" )
     void brokenPointer( long pageId, GBPTreePointerType pointerType,
             long generationA, long readPointerA, long pointerA, byte stateA,
             long generationB, long readPointerB, long pointerB, byte stateB );
 
-    @Documented( "unreasonableKeyCount" )
+    @Documented( "Unexpected keyCount on pageId %d, keyCount=%d" )
     void unreasonableKeyCount( long pageId, int keyCount );
 
-    @Documented( "childNodeFoundAmongParentNodes" )
-    void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<KEY> superRange );
+    @Documented( "Circular reference, child tree node found among parent nodes. Parents:%n" +
+            "%s,%n" +
+            "level: %d, pageId: %d" )
+    void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId );
 
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
     {
@@ -92,12 +100,12 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
         @Override
         public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
-                long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration, long rightLeftSiblingPointer )
+                long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration )
         {
         }
 
         @Override
-        public void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer )
+        public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode )
         {
         }
 
@@ -107,7 +115,7 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
         }
 
         @Override
-        public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
+        public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
                 long targetNodeGeneration )
         {
         }
@@ -118,7 +126,7 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
         }
 
         @Override
-        public void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
+        public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId )
         {
         }
 
@@ -162,7 +170,7 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
         }
 
         @Override
-        public void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<KEY> superRange )
+        public void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId )
         {
         }
     }

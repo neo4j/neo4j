@@ -133,7 +133,7 @@ class GBPTreeConsistencyChecker<KEY>
         addToSeenList( seenIds, pageId, lastId, visitor );
         if ( range.hasPageIdInStack( pageId ) )
         {
-            visitor.childNodeFoundAmongParentNodes( level, pageId, range );
+            visitor.childNodeFoundAmongParentNodes( range, level, pageId );
             return;
         }
         byte nodeType;
@@ -230,7 +230,7 @@ class GBPTreeConsistencyChecker<KEY>
     {
         if ( targetNodeGeneration > pointerGeneration )
         {
-            visitor.pointerHasLowerGenerationThanNode( pointerType, sourceNode, pointer, pointerGeneration, targetNodeGeneration );
+            visitor.pointerHasLowerGenerationThanNode( pointerType, sourceNode, pointerGeneration, pointer, targetNodeGeneration );
         }
     }
 
@@ -349,7 +349,7 @@ class GBPTreeConsistencyChecker<KEY>
                 {
                     KEY keyCopy = layout.newKey();
                     layout.copyKey( readKey, keyCopy );
-                    delayedVisitor.keysLocatedInWrongNode( cursor.getCurrentPageId(), range, keyCopy, pos, keyCount );
+                    delayedVisitor.keysLocatedInWrongNode( range, keyCopy, pos, keyCount, cursor.getCurrentPageId() );
                 }
                 if ( !first )
                 {
@@ -437,7 +437,7 @@ class GBPTreeConsistencyChecker<KEY>
         }
 
         @Override
-        public void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
+        public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId )
         {
             keysLocatedInWrongNode.add( new KeyInWrongNode<>( pageId, range, key, pos, keyCount ) );
         }
@@ -457,7 +457,7 @@ class GBPTreeConsistencyChecker<KEY>
             if ( keysLocatedInWrongNode.notEmpty() )
             {
                 keysLocatedInWrongNode.forEach( keyInWrongNode -> visitor.keysLocatedInWrongNode(
-                        keyInWrongNode.pageId, keyInWrongNode.range, keyInWrongNode.key, keyInWrongNode.pos, keyInWrongNode.keyCount ) );
+                        keyInWrongNode.range, keyInWrongNode.key, keyInWrongNode.pos, keyInWrongNode.keyCount, keyInWrongNode.pageId ) );
             }
         }
 
