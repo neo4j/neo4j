@@ -20,6 +20,7 @@
 package org.neo4j.dbms.api;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A {@link DatabaseManagementService} tried to create a new database, but a database with that name already exists.
@@ -45,5 +46,11 @@ public class DatabaseExistsException extends DatabaseManagementException
     public DatabaseExistsException( Throwable cause )
     {
         super( cause );
+    }
+
+    @Override
+    public Status status()
+    {
+        return Status.Database.ExistingDatabaseFound;
     }
 }

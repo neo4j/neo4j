@@ -20,13 +20,14 @@
 package org.neo4j.dbms.api;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * General exception, thrown in the event of errors when managing individual databases.
  * @see DatabaseManagementService
  */
 @PublicApi
-public class DatabaseManagementException extends RuntimeException
+public class DatabaseManagementException extends RuntimeException implements Status.HasStatus
 {
     public DatabaseManagementException()
     {
@@ -46,6 +47,12 @@ public class DatabaseManagementException extends RuntimeException
     public DatabaseManagementException( Throwable cause )
     {
         super( cause );
+    }
+
+    @Override
+    public Status status()
+    {
+        return Status.Database.Unknown;
     }
 
     public static DatabaseManagementException wrap( Throwable toWrap )
