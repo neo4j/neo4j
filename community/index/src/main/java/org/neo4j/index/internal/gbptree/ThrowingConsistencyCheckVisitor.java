@@ -28,13 +28,6 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     private static final String keyOrderInconsistency = "Key order inconsistency: ";
     private static final String nodeMetaInconsistency = "Node meta inconsistency: ";
     private static final String treeMetaInconsistency = "Tree meta inconsistency: ";
-    private boolean clean = true;
-
-    @Override
-    public boolean clean()
-    {
-        return clean;
-    }
 
     @Override
     public void notATreeNode( long pageId )
@@ -175,35 +168,26 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
 
     private void throwKeyOrderInconsistency( String format, Object... args )
     {
-        notClean();
         throwWithPrefix( keyOrderInconsistency, format, args );
     }
 
     private void throwTreeStructureInconsistency( String format, Object... args )
     {
-        notClean();
         throwWithPrefix( treeStructureInconsistency, format, args );
     }
 
     private void throwNodeMetaInconsistency( String format, Object... args )
     {
-        notClean();
         throwWithPrefix( nodeMetaInconsistency, format, args );
     }
 
     private void throwTreeMetaInconsistency( String format, Object... args )
     {
-        notClean();
         throwWithPrefix( treeMetaInconsistency, format, args );
     }
 
     private void throwWithPrefix( String prefix, String format, Object[] args )
     {
         throw new TreeInconsistencyException( String.format( prefix + format, args ) );
-    }
-
-    private void notClean()
-    {
-        clean = false;
     }
 }

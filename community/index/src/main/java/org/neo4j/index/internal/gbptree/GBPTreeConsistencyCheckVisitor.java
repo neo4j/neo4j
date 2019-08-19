@@ -23,8 +23,6 @@ import org.neo4j.kernel.impl.annotations.Documented;
 
 public interface GBPTreeConsistencyCheckVisitor<KEY>
 {
-    boolean clean();
-
     @Documented( "notATreeNode" )
     void notATreeNode( long pageId );
 
@@ -82,12 +80,6 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
     {
-        @Override
-        public boolean clean()
-        {
-            return true;
-        }
-
         @Override
         public void notATreeNode( long pageId )
         {

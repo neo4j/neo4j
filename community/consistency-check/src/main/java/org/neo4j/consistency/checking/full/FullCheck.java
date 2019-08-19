@@ -196,12 +196,9 @@ public class FullCheck
 
     private static void consistencyCheckIndexes( IndexAccessors indexes )
     {
+        // todo implement this for real
         InvocationHandler invocationHandler = ( proxy, method, args ) -> {
             System.out.println( "Call to " + method.getName() + " with args " + Arrays.toString(args) );
-            if ( method.getName().equals( "clean" ) )
-            {
-                return true;
-            }
             return null;
         };
         Reporter reporter = new Reporter( invocationHandler );

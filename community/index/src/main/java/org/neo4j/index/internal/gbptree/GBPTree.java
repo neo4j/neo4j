@@ -1253,13 +1253,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
+            CleanTrackingConsistencyCheckVisitor<KEY> cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor<>( visitor );
             long unstableGeneration = unstableGeneration( generation );
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout, freeList,
                     stableGeneration( generation ), unstableGeneration );
 
-            consistencyChecker.check( cursor, root, visitor );
+            consistencyChecker.check( cursor, root, cleanTrackingVisitor );
 
-            return visitor.clean();
+            return cleanTrackingVisitor.clean();
         }
     }
 
