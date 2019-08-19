@@ -329,20 +329,12 @@ public class ExecutorBoltSchedulerTest
     @Test
     public void stopShouldStopIdleConnections() throws Exception
     {
-        BoltConnection connection1 = newConnection( UUID.randomUUID().toString() );
-        BoltConnection connection2 = newConnection( UUID.randomUUID().toString() );
-        BoltConnection connection3 = newConnection( UUID.randomUUID().toString() );
-
         boltScheduler.init();
         boltScheduler.start();
-        boltScheduler.created( connection1 );
-        boltScheduler.created( connection2 );
-        boltScheduler.created( connection3 );
 
-        // Mock returned idle values
-        when( connection1.idle() ).thenReturn( true );
-        when( connection2.idle() ).thenReturn( false );
-        when( connection3.idle() ).thenReturn( true );
+        var connection1 = newConnection( boltScheduler, true );
+        var connection2 = newConnection( boltScheduler, false );
+        var connection3 = newConnection( boltScheduler, true );
 
         boltScheduler.stop();
 
@@ -354,20 +346,12 @@ public class ExecutorBoltSchedulerTest
     @Test
     public void shutdownShouldStopAllConnections() throws Exception
     {
-        BoltConnection connection1 = newConnection( UUID.randomUUID().toString() );
-        BoltConnection connection2 = newConnection( UUID.randomUUID().toString() );
-        BoltConnection connection3 = newConnection( UUID.randomUUID().toString() );
-
         boltScheduler.init();
         boltScheduler.start();
-        boltScheduler.created( connection1 );
-        boltScheduler.created( connection2 );
-        boltScheduler.created( connection3 );
 
-        // Mock returned idle values
-        when( connection1.idle() ).thenReturn( true );
-        when( connection2.idle() ).thenReturn( false );
-        when( connection3.idle() ).thenReturn( true );
+        var connection1 = newConnection( boltScheduler, true );
+        var connection2 = newConnection( boltScheduler, false );
+        var connection3 = newConnection( boltScheduler, true );
 
         boltScheduler.shutdown();
 
@@ -376,12 +360,20 @@ public class ExecutorBoltSchedulerTest
         verify( connection3, times( 1 ) ).stop();
     }
 
-    private BoltConnection newConnection( String id )
+    private static BoltConnection newConnection( String id )
     {
         BoltConnection result = mock( BoltConnection.class );
         when( result.id() ).thenReturn( id );
         when( result.remoteAddress() ).thenReturn( new InetSocketAddress( "localhost", 32_000 ) );
         return result;
+    }
+
+    private static BoltConnection newConnection( ExecutorBoltScheduler boltScheduler, boolean isIdle )
+    {
+        var connection = newConnection( UUID.randomUUID().toString() );
+        boltScheduler.created( connection );
+        when( connection.idle() ).thenReturn( isIdle );
+        return connection;
     }
 
     private static boolean awaitExit( AtomicBoolean exitCondition )
