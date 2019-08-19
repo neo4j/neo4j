@@ -58,7 +58,14 @@ public final class CypherMath
 
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
-            return ((NumberValue) lhs).plus( (NumberValue) rhs );
+            try
+            {
+                return ((NumberValue) lhs).plus( (NumberValue) rhs );
+            }
+            catch ( java.lang.ArithmeticException e )
+            {
+                throw new ArithmeticException( e.getMessage(), e );
+            }
         }
         //List addition
         //arrays are same as lists when it comes to addition
@@ -154,7 +161,14 @@ public final class CypherMath
         //numbers
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
-            return ((NumberValue) lhs).minus( (NumberValue) rhs );
+            try
+            {
+                return ((NumberValue) lhs).minus( (NumberValue) rhs );
+            }
+            catch ( java.lang.ArithmeticException e )
+            {
+                throw new ArithmeticException( e.getMessage(), e );
+            }
         }
         // Temporal values
         if ( lhs instanceof TemporalValue )
@@ -181,7 +195,14 @@ public final class CypherMath
 
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
-            return ((NumberValue) lhs).times( (NumberValue) rhs );
+            try
+            {
+                return ((NumberValue) lhs).times( (NumberValue) rhs );
+            }
+            catch ( java.lang.ArithmeticException e )
+            {
+                throw new ArithmeticException( e.getMessage(), e );
+            }
         }
         // Temporal values
         if ( lhs instanceof DurationValue )
@@ -240,13 +261,20 @@ public final class CypherMath
 
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
-            if ( lhs instanceof FloatingPointValue || rhs instanceof FloatingPointValue )
+            try
             {
-                return doubleValue( ((NumberValue) lhs).doubleValue() % ((NumberValue) rhs).doubleValue() );
+                if ( lhs instanceof FloatingPointValue || rhs instanceof FloatingPointValue )
+                {
+                    return doubleValue( ((NumberValue) lhs).doubleValue() % ((NumberValue) rhs).doubleValue() );
+                }
+                else
+                {
+                    return longValue( ((NumberValue) lhs).longValue() % ((NumberValue) rhs).longValue() );
+                }
             }
-            else
+            catch ( java.lang.ArithmeticException e )
             {
-                return longValue( ((NumberValue) lhs).longValue() % ((NumberValue) rhs).longValue() );
+                throw new ArithmeticException( e.getMessage(), e );
             }
         }
         throw new CypherTypeException(

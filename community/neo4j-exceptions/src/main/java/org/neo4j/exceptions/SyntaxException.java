@@ -99,7 +99,7 @@ public class SyntaxException extends Neo4jException
                 String element = message[i];
                 if ( i < message.length - 1 )
                 {
-                    if ( element.length() > currentOffset )
+                    if ( element.length() >= currentOffset )
                     {
                         builder.append( "\"" ).append( element ).append( "\"" ).append( lineSeparator() ).append( " ".repeat( currentOffset ) ).append( " ^" );
                         break;

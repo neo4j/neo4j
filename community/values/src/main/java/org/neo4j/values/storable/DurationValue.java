@@ -35,7 +35,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.exceptions.InvalidArgumentException;
-import org.neo4j.exceptions.ArithmeticException;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
@@ -275,9 +274,10 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         try
         {
             calcAverageLengthInSeconds( months, days, seconds );
+            //noinspection ResultOfMethodCallIgnored
             secondsWithNanos( seconds, nanos );
         }
-        catch ( ArithmeticException e )
+        catch ( java.lang.ArithmeticException | org.neo4j.exceptions.ArithmeticException e )
         {
             throw invalidDuration( months, days, seconds, nanos, e );
         }
@@ -538,9 +538,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             {
                 from = from.plus( months, ChronoUnit.MONTHS );
             }
-            catch ( DateTimeException | ArithmeticException e )
+            catch ( DateTimeException | java.lang.ArithmeticException e )
             {
-                throw new ArithmeticException( e.getMessage(), e );
+                throw new org.neo4j.exceptions.ArithmeticException( e.getMessage(), e );
             }
 
             days = assertValidUntil( from, to, ChronoUnit.DAYS );
@@ -548,9 +548,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             {
                 from = from.plus( days, ChronoUnit.DAYS );
             }
-            catch ( DateTimeException | ArithmeticException e )
+            catch ( DateTimeException | java.lang.ArithmeticException e )
             {
-                throw new ArithmeticException( e.getMessage(), e );
+                throw new org.neo4j.exceptions.ArithmeticException( e.getMessage(), e );
             }
         }
         long nanos = assertValidUntil( from, to, NANOS );
@@ -906,7 +906,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                     Math.addExact( this.seconds, that.seconds ),
                     Math.addExact( this.nanos, that.nanos ) );
         }
-        catch ( ArithmeticException e )
+        catch ( java.lang.ArithmeticException | org.neo4j.exceptions.ArithmeticException e )
         {
             throw invalidDurationAdd( this, that, e );
         }
@@ -922,7 +922,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                     Math.subtractExact( this.seconds, that.seconds ),
                     Math.subtractExact( this.nanos, that.nanos ) );
         }
-        catch ( ArithmeticException e )
+        catch ( java.lang.ArithmeticException | org.neo4j.exceptions.ArithmeticException e )
         {
             throw invalidDurationSubtract( this, that, e );
         }
@@ -947,7 +947,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 return approximate( months * factor, days * factor, seconds * factor, nanos * factor );
             }
         }
-        catch ( ArithmeticException e )
+        catch ( java.lang.ArithmeticException | org.neo4j.exceptions.ArithmeticException e )
         {
             throw invalidDurationMultiply( this, number, e );
         }
@@ -961,7 +961,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         {
             return approximate( months / divisor, days / divisor, seconds / divisor, nanos / divisor );
         }
-        catch ( ArithmeticException e )
+        catch ( java.lang.ArithmeticException | org.neo4j.exceptions.ArithmeticException e )
         {
             throw invalidDurationDivision( this, number, e );
         }
@@ -1034,7 +1034,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         if ( d > Long.MAX_VALUE || d < Long.MIN_VALUE )
         {
-            throw new ArithmeticException( "long overflow" );
+            throw new org.neo4j.exceptions.ArithmeticException( "long overflow" );
         }
         return (long) d;
     }
@@ -1045,9 +1045,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         {
             return temporal.plus(amountToAdd,  unit);
         }
-        catch ( DateTimeException | ArithmeticException e )
+        catch ( DateTimeException | java.lang.ArithmeticException e )
         {
-            throw new ArithmeticException( e.getMessage(), e );
+            throw new org.neo4j.exceptions.ArithmeticException( e.getMessage(), e );
         }
     }
 
@@ -1057,9 +1057,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         {
             return temporal.minus(amountToAdd,  unit);
         }
-        catch ( DateTimeException | ArithmeticException e )
+        catch ( DateTimeException | java.lang.ArithmeticException e )
         {
-            throw new ArithmeticException( e.getMessage(), e );
+            throw new org.neo4j.exceptions.ArithmeticException( e.getMessage(), e );
         }
     }
 
@@ -1079,32 +1079,32 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         }
     }
 
-    private InvalidArgumentException invalidDuration( long months, long days, long seconds, long nanos, ArithmeticException e )
+    private InvalidArgumentException invalidDuration( long months, long days, long seconds, long nanos, Exception e )
     {
         return new InvalidArgumentException(
                 String.format( "Invalid value for duration, will cause overflow. Value was months=%d, days=%d, seconds=%d, nanos=%d",
                         months, days, seconds, nanos ), e );
     }
 
-    private InvalidArgumentException invalidDurationAdd( DurationValue o1, DurationValue o2, ArithmeticException e )
+    private InvalidArgumentException invalidDurationAdd( DurationValue o1, DurationValue o2, Exception e )
     {
         return new InvalidArgumentException(
                 String.format( "Can not add duration %s and %s without causing overflow.", o1.toString(), o2.toString() ), e );
     }
 
-    private InvalidArgumentException invalidDurationSubtract( DurationValue o1, DurationValue o2, ArithmeticException e )
+    private InvalidArgumentException invalidDurationSubtract( DurationValue o1, DurationValue o2, Exception e )
     {
         return new InvalidArgumentException(
                 String.format( "Can not subtract duration %s and %s without causing overflow.", o1.toString(), o2.toString() ), e );
     }
 
-    private InvalidArgumentException invalidDurationMultiply( DurationValue o1, NumberValue numberValue, ArithmeticException e )
+    private InvalidArgumentException invalidDurationMultiply( DurationValue o1, NumberValue numberValue, Exception e )
     {
         return new InvalidArgumentException(
                 String.format( "Can not multiply duration %s with %s without causing overflow.", o1.toString(), numberValue.toString() ), e );
     }
 
-    private InvalidArgumentException invalidDurationDivision( DurationValue o1, NumberValue numberValue, ArithmeticException e )
+    private InvalidArgumentException invalidDurationDivision( DurationValue o1, NumberValue numberValue, Exception e )
     {
         return new InvalidArgumentException(
                 String.format( "Can not divide duration %s with %s without causing overflow.", o1.toString(), numberValue.toString() ), e );

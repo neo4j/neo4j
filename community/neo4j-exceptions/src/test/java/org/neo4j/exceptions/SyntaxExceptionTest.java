@@ -101,6 +101,32 @@ class SyntaxExceptionTest
     }
 
     @Test
+    void messageWithMultiLineQueryAndOffsetAtEndOfFirstLine()
+    {
+        String message = "Message";
+        String query = "The error is here.\nSome random text.";
+        int offset = 18;
+        SyntaxException e = new SyntaxException( message, query, offset );
+
+        String expected = String.format( "Message%s\"The error is here.\"%s                   ^", lineSeparator(), lineSeparator() );
+
+        assertEquals( expected, e.getMessage() );
+    }
+
+    @Test
+    void messageWithMultiLineQueryAndOffsetAtBeginningOfSecondLine()
+    {
+        String message = "Message";
+        String query = "The error is here.\nSome random text.";
+        int offset = 19;
+        SyntaxException e = new SyntaxException( message, query, offset );
+
+        String expected = String.format( "Message%s\"Some random text.\"%s ^", lineSeparator(), lineSeparator() );
+
+        assertEquals( expected, e.getMessage() );
+    }
+
+    @Test
     void messageWithMultiLineQueryAndOffsetInSecondLine()
     {
         String message = "Message";
