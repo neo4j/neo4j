@@ -84,7 +84,7 @@
       -Djunit.jupiter.execution.parallel.mode.classes.default=${default.jupiter.test.mode}
       -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
-    <default.jupiter.test.timeout>5m</default.jupiter.test.timeout>
+    <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
     <jetty.version>9.4.17.v20190418</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
@@ -1005,7 +1005,6 @@
               <version>${scala-maven-plugin.version}</version>
               <configuration>
                 <recompileMode>incremental</recompileMode>
-                <useZincServer>true</useZincServer>
               </configuration>
             </plugin>
           </plugins>
