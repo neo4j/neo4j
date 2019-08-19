@@ -42,6 +42,7 @@ class InterpretedVarExpandAllTest extends VarLengthExpandTestBase(COMMUNITY.EDIT
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexContainsScanTest extends NodeIndexContainsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedNodeIndexEndsWithScanTest extends NodeIndexEndsWithScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexSeekTest extends NodeIndexSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
                                    with NodeIndexSeekRangeAndCompositeTestBase[CommunityRuntimeContext]
                                    with NodeLockingUniqueIndexSeekTestBase[CommunityRuntimeContext]
