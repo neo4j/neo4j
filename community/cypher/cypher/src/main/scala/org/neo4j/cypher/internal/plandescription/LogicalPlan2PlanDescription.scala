@@ -156,7 +156,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowUsers() =>
         PlanDescriptionImpl(id, "ShowUsers", NoChildren, Seq.empty, variables)
 
-      case CreateUser(name, _, _, _, _, _) =>
+      case CreateUser(name, _, _, _, _, _, _) =>
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateUser", NoChildren, Seq(userName), variables)
 
@@ -179,7 +179,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "DropRole", NoChildren, Seq(roleName), variables)
 
       // TODO: These are currently required in both leaf and one-child code paths, surely there is a way to not require that?
-      case CreateRole(_, name, _) =>
+      case CreateRole(_, name, _, _) =>
         val roleName = Role(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateRole", NoChildren, Seq(roleName), variables)
 
@@ -247,7 +247,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowDefaultDatabase() =>
         PlanDescriptionImpl(id, "ShowDefaultDatabase", NoChildren, Seq.empty, variables)
 
-      case CreateDatabase(normalizedName, _) =>
+      case CreateDatabase(normalizedName, _, _) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "CreateDatabase", NoChildren, Seq(dbName), variables)
 
@@ -459,7 +459,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                             Seq(expandDescription) ++ predicatesDescription, variables)
 
       // TODO: These are currently required in both leaf and one-child code paths, surely there is a way to not require that?
-      case CreateRole(_, name, _) =>
+      case CreateRole(_, name, _, _) =>
         val roleName = Role(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateRole", children, Seq(roleName), variables)
 

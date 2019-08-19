@@ -55,11 +55,13 @@ final case class CreateUser(userName: String,
                             initialParameterPassword: Option[Parameter],
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
+                            replace: Boolean,
                             ifNotExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
   assert(initialStringPassword.isDefined || initialParameterPassword.isDefined)
   assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
+  assert(!(replace && ifNotExists))
 
-  override def name: String = if (ifNotExists) "CREATE USER IF NOT EXISTS" else "CREATE USER"
+  override def name: String = if (replace) "CREATE OR REPLACE USER" else if (ifNotExists) "CREATE USER IF NOT EXISTS" else "CREATE USER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -115,9 +117,10 @@ final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: I
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateRole(roleName: String, from: Option[String], ifNotExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class CreateRole(roleName: String, from: Option[String], replace: Boolean, ifNotExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+  assert(!(replace && ifNotExists))
 
-  override def name: String = if (ifNotExists) "CREATE ROLE IF NOT EXISTS" else "CREATE ROLE"
+  override def name: String = if (replace) "CREATE OR REPLACE ROLE" else if (ifNotExists) "CREATE ROLE IF NOT EXISTS" else "CREATE ROLE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -359,9 +362,10 @@ final case class ShowDatabase(dbName: String)(val position: InputPosition) exten
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateDatabase(dbName: String, ifNotExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+final case class CreateDatabase(dbName: String, replace: Boolean, ifNotExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+  assert(!(replace && ifNotExists))
 
-  override def name: String = if (ifNotExists) "CREATE DATABASE IF NOT EXISTS" else "CREATE DATABASE"
+  override def name: String = if (replace) "CREATE OR REPLACE DATABASE" else if (ifNotExists) "CREATE DATABASE IF NOT EXISTS" else "CREATE DATABASE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

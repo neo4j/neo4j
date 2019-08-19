@@ -68,23 +68,30 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         VirtualValues.EMPTY_MAP
       )
 
-    // CREATE USER [IF NOT EXISTS] foo SET PASSWORD password
-    case CreateUser(userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional, allowExistingUser) => (_, _, _) =>
+    // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD password
+    case CreateUser(userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional, replace, allowExistingUser) => (_, _, _) =>
       if(suspendedOptional.isDefined)  // Users are always active in community
         throw new CantCompileQueryException(s"Failed to create the specified user '$userName': 'SET STATUS' is not available in community edition.")
 
       try {
         validatePassword(initialPassword)
-        val query = if (allowExistingUser) {
+        val query = if (replace) {
+          """OPTIONAL MATCH (old:User {name: $name})
+            |DETACH DELETE old
+            |
+            |CREATE (new:User {name: $name, credentials: $credentials, passwordChangeRequired: $passwordChangeRequired, suspended: false})
+            |RETURN new.name
+          """.stripMargin
+        } else if (allowExistingUser) {
           """MERGE (u:User {name: $name})
             |ON CREATE SET u.credentials = $credentials, u.passwordChangeRequired = $passwordChangeRequired, u.suspended = false
             |RETURN u.name""".stripMargin
         } else {
+          // NOTE: If username already exists we will violate a constraint
           """CREATE (u:User {name: $name, credentials: $credentials, passwordChangeRequired: $passwordChangeRequired, suspended: false})
             |RETURN u.name""".stripMargin
         }
 
-        // NOTE: If username already exists we will violate a constraint
         UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine, query,
           VirtualValues.map(
             Array("name", "credentials", "passwordChangeRequired"),
@@ -105,12 +112,12 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         if (initialPassword != null) util.Arrays.fill(initialPassword, 0.toByte)
       }
 
-    // CREATE USER [IF NOT EXISTS] foo SET PASSWORD $password
-    case CreateUser(userName, _, Some(_), _, _, _) =>
+    // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD $password
+    case CreateUser(userName, _, Some(_), _, _, _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Did not resolve parameters correctly.")
 
-    // CREATE USER [IF NOT EXISTS] foo SET PASSWORD
-    case CreateUser(userName, _, _, _, _, _) =>
+    // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD
+    case CreateUser(userName, _, _, _, _, _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
 
     // DROP USER [IF EXISTS] foo

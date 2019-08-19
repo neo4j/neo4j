@@ -56,18 +56,18 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case _: ShowUsers =>
         Some(plans.ShowUsers())
 
-      // CREATE USER [IF NOT EXISTS] foo WITH PASSWORD password
-      case c@CreateUser(userName, Some(initialStringPassword), initialParameterPassword, requirePasswordChange, suspended, ifNotExists) =>
+      // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo WITH PASSWORD password
+      case c@CreateUser(userName, Some(initialStringPassword), initialParameterPassword, requirePasswordChange, suspended, replace, ifNotExists) =>
         NameValidator.assertValidUsername(userName)
         Some(plans.LogSystemCommand(
-          plans.CreateUser(userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended, allowExistingUser = ifNotExists),
+          plans.CreateUser(userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended, replace, allowExistingUser = ifNotExists),
           prettifier.asString(c)))
 
-      // CREATE USER [IF NOT EXISTS] foo WITH PASSWORD $password
-      case c@CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended, ifNotExists) =>
+      // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo WITH PASSWORD $password
+      case c@CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended, replace, ifNotExists) =>
         NameValidator.assertValidUsername(userName)
         Some(plans.LogSystemCommand(
-          plans.CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended, allowExistingUser = ifNotExists),
+          plans.CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended, replace, allowExistingUser = ifNotExists),
           prettifier.asString(c)))
 
       // DROP USER [IF EXISTS] foo
@@ -116,18 +116,18 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case ShowRoles(withUsers, showAll) =>
         Some(plans.ShowRoles(withUsers, showAll))
 
-      // CREATE ROLE [IF NOT EXISTS] foo
-      case c@CreateRole(roleName, None, ifNotExists) =>
+      // CREATE [OR REPLACE] ROLE [IF NOT EXISTS] foo
+      case c@CreateRole(roleName, None, replace, ifNotExists) =>
         NameValidator.assertValidRoleName(roleName)
-        Some(plans.LogSystemCommand(plans.CreateRole(None, roleName, allowExistingRole = ifNotExists), prettifier.asString(c)))
+        Some(plans.LogSystemCommand(plans.CreateRole(None, roleName, replace, allowExistingRole = ifNotExists), prettifier.asString(c)))
 
-      // CREATE ROLE [IF NOT EXISTS] foo AS COPY OF bar
-      case c@CreateRole(roleName, Some(fromName), ifNotExists) =>
+      // CREATE [OR REPLACE] ROLE [IF NOT EXISTS] foo AS COPY OF bar
+      case c@CreateRole(roleName, Some(fromName), replace, ifNotExists) =>
         NameValidator.assertValidRoleName(roleName)
         Some(plans.LogSystemCommand(plans.CopyRolePrivileges(
           Some(plans.CopyRolePrivileges(
             Some(plans.CreateRole(
-              Some(plans.RequireRole(None, fromName)), roleName, allowExistingRole = ifNotExists)
+              Some(plans.RequireRole(None, fromName)), roleName, replace, allowExistingRole = ifNotExists)
             ), roleName, fromName, "GRANTED")
           ), roleName, fromName, "DENIED"), prettifier.asString(c)))
 
@@ -256,15 +256,15 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case ShowDatabase(dbName) =>
         Some(plans.ShowDatabase(new NormalizedDatabaseName(dbName)))
 
-      // CREATE DATABASE [IF NOT EXISTS] foo
-      case CreateDatabase(dbName, ifNotExists) =>
+      // CREATE [OR REPLACE] DATABASE [IF NOT EXISTS] foo
+      case CreateDatabase(dbName, replace, ifNotExists) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         try {
           DatabaseNameValidator.assertValidDatabaseName(normalizedName)
         } catch {
           case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage)
         }
-        Some(plans.CreateDatabase(normalizedName, allowExistingDatabase = ifNotExists))
+        Some(plans.CreateDatabase(normalizedName, replace, allowExistingDatabase = ifNotExists))
 
       // DROP DATABASE [IF EXISTS] foo
       case DropDatabase(dbName, ifExists) =>

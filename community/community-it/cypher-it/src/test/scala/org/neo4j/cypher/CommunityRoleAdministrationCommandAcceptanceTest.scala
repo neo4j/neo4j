@@ -45,6 +45,7 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     assertFailure("CREATE ROLE IF NOT EXISTS foo", "Unsupported administration command: CREATE ROLE IF NOT EXISTS foo")
+    assertFailure("CREATE OR REPLACE ROLE foo", "Unsupported administration command: CREATE OR REPLACE ROLE foo")
   }
 
   test("should fail on creating role from community with correct error message") {

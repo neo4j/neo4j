@@ -49,35 +49,43 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // CREATE DATABASE
 
   test("CREATE DATABASE foo") {
-    yields(ast.CreateDatabase("foo", ifNotExists = false))
+    yields(ast.CreateDatabase("foo", replace = false, ifNotExists = false))
   }
 
   test("CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase("foo.bar", ifNotExists = false))
+    yields(ast.CreateDatabase("foo.bar", replace = false, ifNotExists = false))
   }
 
   test("CATALOG CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase("foo.bar", ifNotExists = false))
+    yields(ast.CreateDatabase("foo.bar", replace = false, ifNotExists = false))
   }
 
   test("CATALOG CREATE DATABASE `foo-bar42`") {
-    yields(ast.CreateDatabase("foo-bar42", ifNotExists = false))
+    yields(ast.CreateDatabase("foo-bar42", replace = false, ifNotExists = false))
   }
 
   test("CATALOG CREATE DATABASE `_foo-bar42`") {
-    yields(ast.CreateDatabase("_foo-bar42", ifNotExists = false))
+    yields(ast.CreateDatabase("_foo-bar42", replace = false, ifNotExists = false))
   }
 
   test("CATALOG CREATE DATABASE ``") {
-    yields(ast.CreateDatabase("", ifNotExists = false))
+    yields(ast.CreateDatabase("", replace = false, ifNotExists = false))
   }
 
   test("CREATE DATABASE IF NOT EXISTS foo") {
-    yields(ast.CreateDatabase("foo", ifNotExists = true))
+    yields(ast.CreateDatabase("foo", replace = false, ifNotExists = true))
   }
 
   test("CATALOG CREATE DATABASE IF NOT EXISTS `_foo-bar42`") {
-    yields(ast.CreateDatabase("_foo-bar42", ifNotExists = true))
+    yields(ast.CreateDatabase("_foo-bar42", replace = false, ifNotExists = true))
+  }
+
+  test("CREATE OR REPLACE DATABASE foo") {
+    yields(ast.CreateDatabase("foo", replace = true, ifNotExists = false))
+  }
+
+  test("CATALOG CREATE OR REPLACE DATABASE `_foo-bar42`") {
+    yields(ast.CreateDatabase("_foo-bar42", replace = true, ifNotExists = false))
   }
 
   test("CREATE DATABASE foo.bar") {
@@ -113,6 +121,18 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CREATE DATABASE IF NOT EXISTS") {
+    failsToParse
+  }
+
+  test("CATALOG CREATE OR REPLACE DATABASE _foo-bar42") {
+    failsToParse
+  }
+
+  test("CREATE OR REPLACE DATABASE") {
+    failsToParse
+  }
+
+  test("CREATE OR REPLACE DATABASE IF NOT EXISTS foo") {
     failsToParse
   }
 

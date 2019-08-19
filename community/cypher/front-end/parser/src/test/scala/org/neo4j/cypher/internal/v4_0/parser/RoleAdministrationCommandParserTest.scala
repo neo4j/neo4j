@@ -98,35 +98,43 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Creating role
 
   test("CREATE ROLE foo") {
-    yields(ast.CreateRole("foo", None, ifNotExists = false))
+    yields(ast.CreateRole("foo", None, replace = false, ifNotExists = false))
   }
 
   test("CATALOG CREATE ROLE `foo`") {
-    yields(ast.CreateRole("foo", None, ifNotExists = false))
+    yields(ast.CreateRole("foo", None, replace = false, ifNotExists = false))
   }
 
   test("CREATE ROLE ``") {
-    yields(ast.CreateRole("", None, ifNotExists = false))
+    yields(ast.CreateRole("", None, replace = false, ifNotExists = false))
   }
 
   test("CREATE ROLE foo AS COPY OF bar") {
-    yields(ast.CreateRole("foo", Some("bar"), ifNotExists = false))
+    yields(ast.CreateRole("foo", Some("bar"), replace = false, ifNotExists = false))
   }
 
   test("CREATE ROLE foo AS COPY OF ``") {
-    yields(ast.CreateRole("foo", Some(""), ifNotExists = false))
+    yields(ast.CreateRole("foo", Some(""), replace = false, ifNotExists = false))
   }
 
   test("CREATE ROLE `` AS COPY OF bar") {
-    yields(ast.CreateRole("", Some("bar"), ifNotExists = false))
+    yields(ast.CreateRole("", Some("bar"), replace = false, ifNotExists = false))
   }
 
   test("CREATE ROLE IF NOT EXISTS foo") {
-    yields(ast.CreateRole("foo", None, ifNotExists = true))
+    yields(ast.CreateRole("foo", None, replace = false, ifNotExists = true))
   }
 
   test("CREATE ROLE IF NOT EXISTS foo AS COPY OF bar") {
-    yields(ast.CreateRole("foo", Some("bar"), ifNotExists = true))
+    yields(ast.CreateRole("foo", Some("bar"), replace = false, ifNotExists = true))
+  }
+
+  test("CREATE OR REPLACE ROLE foo") {
+    yields(ast.CreateRole("foo", None, replace = true, ifNotExists = false))
+  }
+
+  test("CREATE OR REPLACE ROLE foo AS COPY OF bar") {
+    yields(ast.CreateRole("foo", Some("bar"), replace = true, ifNotExists = false))
   }
 
   test("CATALOG CREATE ROLE \"foo\"") {
@@ -141,6 +149,10 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+  test("CREATE OR REPLACE ROLE ") {
+    failsToParse
+  }
+
   test("CREATE ROLE foo AS COPY OF") {
     failsToParse
   }
@@ -148,6 +160,15 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   test("CREATE ROLE IF NOT EXISTS foo AS COPY OF") {
     failsToParse
   }
+
+  test("CREATE OR REPLACE ROLE foo AS COPY OF") {
+    failsToParse
+  }
+
+  test("CREATE OR REPLACE ROLE IF NOT EXISTS foo") {
+    failsToParse
+  }
+
 
   //  Dropping role
 
