@@ -37,6 +37,11 @@ trait ASTCachedProperty extends LogicalProperty {
   def entityType: EntityType
 
   /**
+    * @return the original name of the entity for which a property is cached.
+    */
+  def originalEntityName: String
+
+  /**
     * @return the name of the entity for which a property is cached.
     */
   def entityName: String
@@ -52,6 +57,15 @@ trait ASTCachedProperty extends LogicalProperty {
     * @return a textual representation of the entity and the property in the form `n.prop`
     */
   def propertyAccessString: String = s"$entityName.${propertyKey.name}"
+
+  // CachedProperties are stored as keys in `MapExecutionContext`. The lookup is by original entity name and property key.
+  // Therefore, we need to override equality and hashCode to disregard `entityVariable`
+  override final def equals(obj: Any): Boolean = obj match {
+    case other:ASTCachedProperty => Seq(originalEntityName, propertyKey, entityType) == Seq(other.originalEntityName, other.propertyKey, other.entityType)
+    case _ => false
+  }
+
+  override final def hashCode(): Int = MurmurHash3.seqHash(Seq(originalEntityName, propertyKey, entityType))
 }
 
 /**
@@ -63,22 +77,12 @@ trait ASTCachedProperty extends LogicalProperty {
   * @param entityVariable     the variable how it appeared in this particular Property. It can have a different name than `originalEntityName`,
   *                           if the variable name was changed in between.
   */
-case class CachedProperty(originalEntityName: String,
+case class CachedProperty(override val originalEntityName: String,
                           entityVariable: LogicalVariable,
                           override val propertyKey: PropertyKeyName,
-                          override val entityType: EntityType
-                         )(val position: InputPosition) extends ASTCachedProperty {
+                          override val entityType: EntityType)(val position: InputPosition) extends ASTCachedProperty {
 
   override val entityName: String = entityVariable.name
 
   override def asCanonicalStringVal: String = s"cache[$propertyAccessString]"
-
-  // CachedProperties are stored as keys in `MapExecutionContext`. The lookup is by original entity name and property key.
-  // Therefore, we need to override equality and hashCode to disregard `entityVariable`
-  override def equals(obj: Any): Boolean = obj match {
-    case other:CachedProperty => Seq(originalEntityName, propertyKey, entityType) == Seq(other.originalEntityName, other.propertyKey, other.entityType)
-    case _ => false
-  }
-
-  override def hashCode(): Int = MurmurHash3.seqHash(Seq(originalEntityName, propertyKey, entityType))
 }
