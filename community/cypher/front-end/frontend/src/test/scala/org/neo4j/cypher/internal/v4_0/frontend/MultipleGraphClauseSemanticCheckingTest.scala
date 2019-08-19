@@ -516,22 +516,22 @@ class MultipleGraphClauseSemanticCheckingTest
   }
 
   test("Allow single identifier in FROM") {
-    parsing("""|FROM x RETURN 1""".stripMargin)
+    parsing("FROM x RETURN 1")
       .shouldVerify(result => result.errors shouldBe empty)
   }
 
   test("Allow qualified identifier in FROM") {
-    parsing("""|FROM x.y.z RETURN 1""".stripMargin)
+    parsing("FROM x.y.z RETURN 1")
       .shouldVerify(result => result.errors shouldBe empty)
   }
 
   test("Allow view invocation in FROM") {
-    parsing("""|FROM v(1, x, "a") RETURN 1""".stripMargin)
+    parsing("FROM v(1, x, 'a') RETURN 1")
       .shouldVerify(result => result.errors shouldBe empty)
   }
 
   test("Allow qualified view invocation in FROM") {
-    parsing("""|FROM a.b.v(1, x, "a") RETURN 1""".stripMargin)
+    parsing("FROM a.b.v(1, x, 'a') RETURN 1")
       .shouldVerify(result => result.errors shouldBe empty)
   }
 
