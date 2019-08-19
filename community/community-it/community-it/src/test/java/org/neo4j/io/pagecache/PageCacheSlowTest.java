@@ -154,84 +154,85 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 //        getPageCache( fs, cachePages, pageSize, linearTracers.getPageCacheTracer(),
 //                linearTracers.getCursorTracerSupplier() );
             getPageCache( fs, cachePages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
-            final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
-
-            ensureAllPagesExists( filePages, pagedFile );
-
-            List<Future<UpdateResult>> futures = new ArrayList<>();
-            for ( int i = 0; i < threadCount; i++ )
+            try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize ) )
             {
-                UpdateWorker worker = new UpdateWorker( i, filePages, shouldStop, pagedFile )
+
+                ensureAllPagesExists( filePages, pagedFile );
+
+                List<Future<UpdateResult>> futures = new ArrayList<>();
+                for ( int i = 0; i < threadCount; i++ )
                 {
-                    @Override
-                    protected void performReadOrUpdate( ThreadLocalRandom rng, boolean updateCounter, int pf_flags ) throws IOException
+                    UpdateWorker worker = new UpdateWorker( i, filePages, shouldStop, pagedFile )
                     {
-                        int pageId = rng.nextInt( 0, filePages );
-                        try ( PageCursor cursor = pagedFile.io( pageId, pf_flags ) )
+                        @Override
+                        protected void performReadOrUpdate( ThreadLocalRandom rng, boolean updateCounter, int pf_flags ) throws IOException
                         {
-                            int counter;
-                            try
+                            int pageId = rng.nextInt( 0, filePages );
+                            try ( PageCursor cursor = pagedFile.io( pageId, pf_flags ) )
                             {
-                                assertTrue( cursor.next() );
-                                do
+                                int counter;
+                                try
                                 {
-                                    cursor.setOffset( offset );
-                                    counter = cursor.getInt();
+                                    assertTrue( cursor.next() );
+                                    do
+                                    {
+                                        cursor.setOffset( offset );
+                                        counter = cursor.getInt();
+                                    }
+                                    while ( cursor.shouldRetry() );
+                                    String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
+                                    String reason = String.format( "inconsistent page read from filePageId:%s, with %s, threadId:%s", pageId, lockName,
+                                            Thread.currentThread().getId() );
+                                    assertThat( reason, counter, is( pageCounts[pageId] ) );
                                 }
-                                while ( cursor.shouldRetry() );
-                                String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
-                                String reason = String.format( "inconsistent page read from filePageId:%s, with %s, threadId:%s", pageId, lockName,
-                                        Thread.currentThread().getId() );
-                                assertThat( reason, counter, is( pageCounts[pageId] ) );
-                            }
-                            catch ( Throwable throwable )
-                            {
-                                shouldStop.set( true );
-                                throw throwable;
-                            }
-                            if ( updateCounter )
-                            {
-                                counter++;
-                                pageCounts[pageId]++;
-                                cursor.setOffset( offset );
-                                cursor.putInt( counter );
-                            }
-                            if ( cursor.checkAndClearBoundsFlag() )
-                            {
-                                shouldStop.set( true );
-                                throw new IndexOutOfBoundsException(
-                                        "offset = " + offset + ", filPageId:" + pageId + ", threadId: " + threadId + ", updateCounter = " + updateCounter );
+                                catch ( Throwable throwable )
+                                {
+                                    shouldStop.set( true );
+                                    throw throwable;
+                                }
+                                if ( updateCounter )
+                                {
+                                    counter++;
+                                    pageCounts[pageId]++;
+                                    cursor.setOffset( offset );
+                                    cursor.putInt( counter );
+                                }
+                                if ( cursor.checkAndClearBoundsFlag() )
+                                {
+                                    shouldStop.set( true );
+                                    throw new IndexOutOfBoundsException(
+                                            "offset = " + offset + ", filPageId:" + pageId + ", threadId: " + threadId + ", updateCounter = " + updateCounter );
+                                }
                             }
                         }
-                    }
-                };
-                futures.add( executor.submit( worker ) );
-            }
+                    };
+                    futures.add( executor.submit( worker ) );
+                }
 
-            Thread.sleep( 10 );
-            shouldStop.set( true );
+                Thread.sleep( 10 );
+                shouldStop.set( true );
 
-            try
-            {
-                verifyUpdateResults( filePages, pagedFile, futures );
+                try
+                {
+                    verifyUpdateResults( filePages, pagedFile, futures );
+                }
+                catch ( Throwable e )
+                {
+                    // For debugging via linear tracers:
+    //            synchronized ( System.err )
+    //            {
+    //                System.err.flush();
+    //                linearTracers.printHistory( System.err );
+    //                System.err.flush();
+    //            }
+    //            try ( PrintStream out = new PrintStream( "trace.log" ) )
+    //            {
+    //                linearTracers.printHistory( out );
+    //                out.flush();
+    //            }
+                    throw e;
+                }
             }
-            catch ( Throwable e )
-            {
-                // For debugging via linear tracers:
-//            synchronized ( System.err )
-//            {
-//                System.err.flush();
-//                linearTracers.printHistory( System.err );
-//                System.err.flush();
-//            }
-//            try ( PrintStream out = new PrintStream( "trace.log" ) )
-//            {
-//                linearTracers.printHistory( out );
-//                out.flush();
-//            }
-                throw e;
-            }
-            pagedFile.close();
         } );
     }
 
@@ -301,76 +302,77 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             assertThat( maxCursorsPerThread * threadCount, lessThan( cachePages ) );
 
             getPageCache( fs, cachePages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
-            final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
-
-            ensureAllPagesExists( filePages, pagedFile );
-
-            List<Future<UpdateResult>> futures = new ArrayList<>();
-            for ( int i = 0; i < threadCount; i++ )
+            try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize ) )
             {
-                UpdateWorker worker = new UpdateWorker( i, filePages, shouldStop, pagedFile )
+
+                ensureAllPagesExists( filePages, pagedFile );
+
+                List<Future<UpdateResult>> futures = new ArrayList<>();
+                for ( int i = 0; i < threadCount; i++ )
                 {
-                    @Override
-                    protected void performReadOrUpdate( ThreadLocalRandom rng, boolean updateCounter, int pf_flags ) throws IOException
+                    UpdateWorker worker = new UpdateWorker( i, filePages, shouldStop, pagedFile )
                     {
-                        try
+                        @Override
+                        protected void performReadOrUpdate( ThreadLocalRandom rng, boolean updateCounter, int pf_flags ) throws IOException
                         {
-                            int pageCount = rng.nextInt( 1, maxCursorsPerThread );
-                            int[] pageIds = new int[pageCount];
-                            for ( int j = 0; j < pageCount; j++ )
+                            try
                             {
-                                pageIds[j] = rng.nextInt( 0, filePages );
-                            }
-                            PageCursor[] cursors = new PageCursor[pageCount];
-                            for ( int j = 0; j < pageCount; j++ )
-                            {
-                                cursors[j] = pagedFile.io( pageIds[j], pf_flags );
-                                assertTrue( cursors[j].next() );
-                            }
-                            for ( int j = 0; j < pageCount; j++ )
-                            {
-                                int pageId = pageIds[j];
-                                PageCursor cursor = cursors[j];
-                                int counter;
-                                do
+                                int pageCount = rng.nextInt( 1, maxCursorsPerThread );
+                                int[] pageIds = new int[pageCount];
+                                for ( int j = 0; j < pageCount; j++ )
                                 {
-                                    cursor.setOffset( offset );
-                                    counter = cursor.getInt();
+                                    pageIds[j] = rng.nextInt( 0, filePages );
                                 }
-                                while ( cursor.shouldRetry() );
-                                String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
-                                String reason =
-                                        String.format( "inconsistent page read from filePageId = %s, with %s, workerId = %s [t:%s]", pageId, lockName, threadId,
-                                                Thread.currentThread().getId() );
-                                assertThat( reason, counter, is( pageCounts[pageId] ) );
-                                if ( updateCounter )
+                                PageCursor[] cursors = new PageCursor[pageCount];
+                                for ( int j = 0; j < pageCount; j++ )
                                 {
-                                    counter++;
-                                    pageCounts[pageId]++;
-                                    cursor.setOffset( offset );
-                                    cursor.putInt( counter );
+                                    cursors[j] = pagedFile.io( pageIds[j], pf_flags );
+                                    assertTrue( cursors[j].next() );
+                                }
+                                for ( int j = 0; j < pageCount; j++ )
+                                {
+                                    int pageId = pageIds[j];
+                                    PageCursor cursor = cursors[j];
+                                    int counter;
+                                    do
+                                    {
+                                        cursor.setOffset( offset );
+                                        counter = cursor.getInt();
+                                    }
+                                    while ( cursor.shouldRetry() );
+                                    String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
+                                    String reason =
+                                            String.format( "inconsistent page read from filePageId = %s, with %s, workerId = %s [t:%s]", pageId, lockName,
+                                                    threadId, Thread.currentThread().getId() );
+                                    assertThat( reason, counter, is( pageCounts[pageId] ) );
+                                    if ( updateCounter )
+                                    {
+                                        counter++;
+                                        pageCounts[pageId]++;
+                                        cursor.setOffset( offset );
+                                        cursor.putInt( counter );
+                                    }
+                                }
+                                for ( PageCursor cursor : cursors )
+                                {
+                                    cursor.close();
                                 }
                             }
-                            for ( PageCursor cursor : cursors )
+                            catch ( Throwable throwable )
                             {
-                                cursor.close();
+                                shouldStop.set( true );
+                                throw throwable;
                             }
                         }
-                        catch ( Throwable throwable )
-                        {
-                            shouldStop.set( true );
-                            throw throwable;
-                        }
-                    }
-                };
-                futures.add( executor.submit( worker ) );
+                    };
+                    futures.add( executor.submit( worker ) );
+                }
+
+                Thread.sleep( 40 );
+                shouldStop.set( true );
+
+                verifyUpdateResults( filePages, pagedFile, futures );
             }
-
-            Thread.sleep( 40 );
-            shouldStop.set( true );
-
-            verifyUpdateResults( filePages, pagedFile, futures );
-            pagedFile.close();
         } );
     }
 
@@ -507,75 +509,74 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
             getPageCache( fs, maxPages, linearTracers.getPageCacheTracer(), linearTracers.getCursorTracerSupplier() );
 
-            PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
-            PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1 );
-            adversary.setProbabilityFactor( 1.0 );
-
-            for ( int i = 0; i < 1000; i++ )
+            try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
+                  PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1 ) )
             {
-                PagedFile pagedFile = rng.nextBoolean() ? pfA : pfB;
-                long maxPageId = pagedFile.getLastPageId();
-                boolean performingRead = rng.nextBoolean() && maxPageId != -1;
-                long startingPage = maxPageId < 0 ? 0 : rng.nextLong( maxPageId + 1 );
-                int pfFlags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
-                int pageSize = pagedFile.pageSize();
+                adversary.setProbabilityFactor( 1.0 );
 
-                try ( PageCursor cursor = pagedFile.io( startingPage, pfFlags ) )
+                for ( int i = 0; i < 1000; i++ )
                 {
-                    if ( performingRead )
+                    PagedFile pagedFile = rng.nextBoolean() ? pfA : pfB;
+                    long maxPageId = pagedFile.getLastPageId();
+                    boolean performingRead = rng.nextBoolean() && maxPageId != -1;
+                    long startingPage = maxPageId < 0 ? 0 : rng.nextLong( maxPageId + 1 );
+                    int pfFlags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
+                    int pageSize = pagedFile.pageSize();
+
+                    try ( PageCursor cursor = pagedFile.io( startingPage, pfFlags ) )
                     {
-                        performConsistentAdversarialRead( cursor, maxPageId, startingPage, pageSize );
-                    }
-                    else
-                    {
-                        performConsistentAdversarialWrite( cursor, rng, pageSize );
-                    }
-                }
-                catch ( AssertionError error )
-                {
-                    // Capture any exception that might have hit the eviction thread.
-                    adversary.setProbabilityFactor( 0.0 );
-                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
-                    {
-                        for ( int j = 0; j < 100; j++ )
+                        if ( performingRead )
                         {
-                            cursor.next( rng.nextLong( maxPageId + 1 ) );
+                            performConsistentAdversarialRead( cursor, maxPageId, startingPage, pageSize );
                         }
+                        else
+                        {
+                            performConsistentAdversarialWrite( cursor, rng, pageSize );
+                        }
+                    }
+                    catch ( AssertionError error )
+                    {
+                        // Capture any exception that might have hit the eviction thread.
+                        adversary.setProbabilityFactor( 0.0 );
+                        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                        {
+                            for ( int j = 0; j < 100; j++ )
+                            {
+                                cursor.next( rng.nextLong( maxPageId + 1 ) );
+                            }
+                        }
+                        catch ( Throwable throwable )
+                        {
+                            error.addSuppressed( throwable );
+                        }
+
+                        throw error;
                     }
                     catch ( Throwable throwable )
                     {
-                        error.addSuppressed( throwable );
+                        // Don't worry about it... it's fine!
+    //                throwable.printStackTrace(); // only enable this when debugging test failures.
                     }
-
-                    throw error;
                 }
-                catch ( Throwable throwable )
+
+                // Unmapping will cause pages to be flushed.
+                // We don't want that to fail, since it will upset the test tear-down.
+                adversary.setProbabilityFactor( 0.0 );
+                try
                 {
-                    // Don't worry about it... it's fine!
-//                throwable.printStackTrace(); // only enable this when debugging test failures.
+                    // Flushing all pages, if successful, should clear any internal
+                    // exception.
+                    pageCache.flushAndForce();
+
+                    // Do some post-chaos verification of what has been written.
+                    verifyAdversarialPagedContent( pfA );
+                    verifyAdversarialPagedContent( pfB );
                 }
-            }
-
-            // Unmapping will cause pages to be flushed.
-            // We don't want that to fail, since it will upset the test tear-down.
-            adversary.setProbabilityFactor( 0.0 );
-            try
-            {
-                // Flushing all pages, if successful, should clear any internal
-                // exception.
-                pageCache.flushAndForce();
-
-                // Do some post-chaos verification of what has been written.
-                verifyAdversarialPagedContent( pfA );
-                verifyAdversarialPagedContent( pfB );
-
-                pfA.close();
-                pfB.close();
-            }
-            catch ( Throwable e )
-            {
-                linearTracers.printHistory( System.err );
-                throw e;
+                catch ( Throwable e )
+                {
+                    linearTracers.printHistory( System.err );
+                    throw e;
+                }
             }
         } );
     }
@@ -641,12 +642,13 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         int iterations = Short.MAX_VALUE * 3;
         for ( int i = 0; i < iterations; i++ )
         {
-            PagedFile pagedFile = pageCache.map( file, filePageSize );
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            try ( PagedFile pagedFile = pageCache.map( file, filePageSize ) )
             {
-                assertTrue( cursor.next() );
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                {
+                    assertTrue( cursor.next() );
+                }
             }
-            pagedFile.close();
         }
     }
 }
