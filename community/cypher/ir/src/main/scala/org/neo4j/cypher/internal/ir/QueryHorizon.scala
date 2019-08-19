@@ -64,14 +64,6 @@ case class LoadCSVProjection(variable: String, url: Expression, format: CSVForma
   override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 }
 
-case class InputDataStreamProjection(symbols: Set[String]) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = symbols
-
-  override def dependingExpressions: Seq[Expression] = Seq()
-
-  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
-}
-
 sealed abstract class QueryProjection extends QueryHorizon {
   def selections: Selections
   def projections: Map[String, Expression]

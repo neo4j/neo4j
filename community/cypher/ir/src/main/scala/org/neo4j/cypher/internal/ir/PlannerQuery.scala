@@ -168,7 +168,7 @@ trait PlannerQuery {
                      interestingOrder: InterestingOrder = interestingOrder,
                      horizon: QueryHorizon = horizon,
                      tail: Option[PlannerQuery] = tail,
-                     input: Option[Set[String]] = None): PlannerQuery
+                     input: Option[Set[String]] = queryInput): PlannerQuery
 
   def foldMap(f: (PlannerQuery, PlannerQuery) => PlannerQuery): PlannerQuery = tail match {
     case None => this

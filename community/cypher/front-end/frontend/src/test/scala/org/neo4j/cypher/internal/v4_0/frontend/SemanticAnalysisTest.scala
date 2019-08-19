@@ -16,13 +16,11 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
-import org.neo4j.cypher.internal.v4_0.frontend.ErrorCollectingContext.failWith
+import org.neo4j.cypher.internal.v4_0.frontend.helpers.{ErrorCollectingContext, NoPlannerName}
+import org.neo4j.cypher.internal.v4_0.frontend.helpers.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{CypherExceptionFactory, OpenCypherExceptionFactory}
-import org.scalatest.matchers.{MatchResult, Matcher}
 
 class SemanticAnalysisTest extends CypherFunSuite {
 
@@ -94,32 +92,4 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
-}
-
-class ErrorCollectingContext extends BaseContext {
-
-  var errors: Seq[SemanticErrorDef] = Seq.empty
-
-  override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
-  override def notificationLogger: devNullLogger.type = devNullLogger
-  override def cypherExceptionFactory: CypherExceptionFactory = OpenCypherExceptionFactory(None)
-  override def monitors: Monitors = ???
-  override def errorHandler: Seq[SemanticErrorDef] => Unit = (errs: Seq[SemanticErrorDef]) =>
-    errors = errs
-}
-
-object ErrorCollectingContext {
-  def failWith(errorMessages: String*): Matcher[ErrorCollectingContext] = new Matcher[ErrorCollectingContext] {
-    override def apply(context: ErrorCollectingContext): MatchResult = {
-      MatchResult(
-        matches = context.errors.map(_.msg) == errorMessages,
-        rawFailureMessage = s"Expected errors: $errorMessages but got ${context.errors}",
-        rawNegatedFailureMessage = s"Did not expect errors: $errorMessages.")
-    }
-  }
-}
-object NoPlannerName extends PlannerName {
-  override def name = "no planner"
-  override def toTextOutput = "no planner"
-  override def version = "no version"
 }
