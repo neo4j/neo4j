@@ -134,7 +134,7 @@ class LargeDynamicKeysIT
 
             RawBytes value = value( 0 );
             List<Pair<RawBytes,RawBytes>> entries = new ArrayList<>();
-            for ( int i = 0; i < 10_000; i++ )
+            for ( int i = 0; i < 2_000; i++ )
             {
                 int keySize = inValidRange( 4, keyValueSizeOverflow, random.nextInt( keyValueSizeOverflow ) );
                 entries.add( Pair.of( key( keySize, asBytes( i ) ), value ) );
