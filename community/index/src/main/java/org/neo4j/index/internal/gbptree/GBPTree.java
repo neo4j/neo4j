@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.Exceptions.withMessage;
@@ -1252,6 +1253,19 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
             return visitor.clean();
         }
+    }
+
+    @VisibleForTesting
+    public void corrupt( GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption ) throws IOException
+    {
+        TreeState state;
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            // todo find better way of getting TreeState?
+            Pair<TreeState,TreeState> states = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+            state = TreeStatePair.selectNewestValidState( states );
+        }
+        corruption.corrupt( pagedFile, layout, bTreeNode, state );
     }
 
     @Override

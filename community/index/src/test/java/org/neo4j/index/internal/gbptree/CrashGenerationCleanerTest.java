@@ -318,7 +318,7 @@ public class CrashGenerationCleanerTest
             type.write( cursor, node, layout, checkpointedTreeState );
             for ( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> pc : pageCorruptions )
             {
-                pc.corrupt( pagedFile, cursor, layout, node, unstableTreeState );
+                pc.corrupt( cursor, layout, node, unstableTreeState );
             }
         }
     }
