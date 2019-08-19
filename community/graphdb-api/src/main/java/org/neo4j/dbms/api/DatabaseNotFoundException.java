@@ -20,6 +20,7 @@
 package org.neo4j.dbms.api;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A {@link DatabaseManagementService} tried to perform some operation on a database, but no database with that name currently exists.
@@ -45,5 +46,11 @@ public class DatabaseNotFoundException extends DatabaseManagementException
     public DatabaseNotFoundException( Throwable cause )
     {
         super( cause );
+    }
+
+    @Override
+    public Status status()
+    {
+        return Status.Database.DatabaseNotFound;
     }
 }
