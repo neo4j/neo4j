@@ -151,7 +151,10 @@ class IndexRecoveryIT
                 int iterations = 0;
                 do
                 {
-                    rotateLogsAndCheckPoint();
+                    synchronized ( this )
+                    {
+                        rotateLogsAndCheckPoint();
+                    }
                     Thread.sleep( 10 );
                 } while ( iterations++ < 100 && !killFuture.isDone() );
 
@@ -336,7 +339,10 @@ class IndexRecoveryIT
         if ( db != null )
         {
             File snapshotDir = testDirectory.directory( "snapshot" );
-            snapshotFs( snapshotDir );
+            synchronized ( this )
+            {
+                snapshotFs( snapshotDir );
+            }
             managementService.shutdown();
             restoreSnapshot( snapshotDir );
         }
