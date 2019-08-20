@@ -75,6 +75,7 @@ public class BoltServer extends LifecycleAdapter
     private final SystemNanoClock clock;
     private final Monitors monitors;
     private final LogService logService;
+    private final AuthManager authManager;
 
     // edition specific dependencies are resolved dynamically
     private final DependencyResolver dependencyResolver;
@@ -84,7 +85,7 @@ public class BoltServer extends LifecycleAdapter
     public BoltServer( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, JobScheduler jobScheduler,
             ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker,
             DatabaseIdRepository databaseIdRepository, Config config, SystemNanoClock clock,
-            Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
+            Monitors monitors, LogService logService, DependencyResolver dependencyResolver, AuthManager authManager )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.jobScheduler = jobScheduler;
@@ -96,6 +97,7 @@ public class BoltServer extends LifecycleAdapter
         this.monitors = monitors;
         this.logService = logService;
         this.dependencyResolver = dependencyResolver;
+        this.authManager = authManager;
     }
 
     @Override
@@ -213,8 +215,7 @@ public class BoltServer extends LifecycleAdapter
 
     private Authentication createAuthentication()
     {
-        return new BasicAuthentication( dependencyResolver.resolveDependency( AuthManager.class ),
-                dependencyResolver.resolveDependency( UserManagerSupplier.class ) );
+        return new BasicAuthentication( authManager, dependencyResolver.resolveDependency( UserManagerSupplier.class ) );
     }
 
     private BoltProtocolFactory createBoltProtocolFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory )

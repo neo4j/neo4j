@@ -70,13 +70,20 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
             // If the system graph has not been initialized (typically the first time you start neo4j) we set it up by
             // creating default databases and constraints
             setupDefaultDatabasesAndConstraints( system );
+            manageDatabases( system, false );
         }
         else
         {
             // If the system graph exists, we make sure the default database is set correctly based on the config file settings
             // (and in community we also make sure a default database change causes the old default to be stopped)
             updateDefaultDatabase( system, isCommunity );
+            manageDatabases( system, true );
         }
+    }
+
+    protected void manageDatabases( GraphDatabaseService system, boolean update )
+    {
+
     }
 
     private boolean isSystemGraphEmpty( GraphDatabaseService system )

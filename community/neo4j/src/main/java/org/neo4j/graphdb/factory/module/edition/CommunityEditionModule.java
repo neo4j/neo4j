@@ -247,8 +247,8 @@ public class CommunityEditionModule extends StandaloneEditionModule
     }
 
     @Override
-    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( DatabaseManagementService managementService,
-            Monitors monitors, SystemNanoClock clock, LogService logService )
+    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( Dependencies dependencies,
+            DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock, LogService logService )
     {
         var reconciledTxTracker = new SimpleReconciledTransactionTracker( managementService, logService );
         return new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, monitors, clock );

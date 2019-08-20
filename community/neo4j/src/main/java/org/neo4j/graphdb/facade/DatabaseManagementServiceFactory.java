@@ -153,8 +153,8 @@ public class DatabaseManagementServiceFactory
         globalLife.add( new DefaultDatabaseInitializer( databaseManager ) );
 
         globalLife.add( globalModule.getGlobalExtensions() );
-        BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI = edition.createBoltDatabaseManagementServiceProvider( managementService,
-                globalModule.getGlobalMonitors(), globalModule.getGlobalClock(), logService );
+        BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI = edition.createBoltDatabaseManagementServiceProvider( globalDependencies,
+                managementService, globalModule.getGlobalMonitors(), globalModule.getGlobalClock(), logService );
         globalLife.add( createBoltServer( globalModule, edition, boltGraphDatabaseManagementServiceSPI, databaseManager.databaseIdRepository() ) );
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
 
@@ -298,6 +298,7 @@ public class DatabaseManagementServiceFactory
     {
         return new BoltServer( boltGraphDatabaseManagementServiceSPI, platform.getJobScheduler(), platform.getConnectorPortRegister(),
                 edition.getConnectionTracker(), databaseIdRepository, platform.getGlobalConfig(), platform.getGlobalClock(),
-                platform.getGlobalMonitors(), platform.getLogService(), platform.getGlobalDependencies() );
+                platform.getGlobalMonitors(), platform.getLogService(), platform.getGlobalDependencies(),
+                edition.getBoltAuthManager( platform.getGlobalDependencies() ) );
     }
 }

@@ -22,6 +22,8 @@ package org.neo4j.graphdb.factory.module.edition;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -39,6 +41,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProcedures;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseId;
@@ -209,6 +212,11 @@ public abstract class AbstractEditionModule
      */
     public abstract QueryEngineProvider getQueryEngineProvider();
 
-    public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( DatabaseManagementService managementService,
-            Monitors monitors, SystemNanoClock clock, LogService logService );
+    public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( Dependencies dependencies,
+            DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock, LogService logService );
+
+    public AuthManager getBoltAuthManager( DependencyResolver dependencyResolver )
+    {
+        return dependencyResolver.resolveDependency( AuthManager.class );
+    }
 }
