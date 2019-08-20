@@ -31,7 +31,6 @@ import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.test.FakeCpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -67,7 +66,7 @@ class ExecutingQueryStatusTest
     void shouldProduceSensibleMapRepresentationInPlannedState()
     {
         // when
-        String status = SimpleState.planning().name();
+        String status = SimpleState.planned().name();
 
         // then
         assertEquals( "planned", status );
