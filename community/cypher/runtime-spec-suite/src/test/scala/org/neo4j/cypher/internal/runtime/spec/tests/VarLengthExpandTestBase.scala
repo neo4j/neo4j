@@ -1,0 +1,341 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.runtime.spec.tests
+
+import org.neo4j.cypher.internal.logical.plans.{Ascending, ExpandInto}
+import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.graphdb.{Label, Node, RelationshipType}
+
+import scala.util.Random
+
+abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  /*
+
+  (:START)-[:TO]->()-[:TO]->()-[:TO]->()-[:TOO]->()-[:TO]->()
+
+  (:START)-[:TO]->()<-[:FROM]-()-[:TO]->()<-[:FROOM]-()-[:TO]->()
+
+  (:START)<-[:FROM]-()<-[:FROM]-()<-[:FROM]-()<-[:FROOM]-()<-[:FROM]->()
+
+   */
+
+
+
+  test("simple var-length-expand ") {
+    // given
+    val n = sizeHint / 6
+    val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 0 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("var-length-expand with bound relationships") {
+    // given
+    val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 0 to 5
+      } yield {
+        val pathPrefix = path.take(length)
+        Array(pathPrefix.startNode, pathPrefix.relationships(), pathPrefix.endNode())
+      }
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("var-length-expand on lollipop graph") {
+    // given
+    val (Seq(n1, n2, n3), Seq(r1, r2, r3)) = lollipopGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      Array(
+        Array(n1, Array.empty, n1),
+        Array(n1, Array(r1), n2),
+        Array(n1, Array(r1, r3), n3),
+        Array(n1, Array(r2), n2),
+        Array(n1, Array(r2, r3), n3))
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("var-length-expand with max length") {
+    // given
+    val (Seq(n1, n2, n3), Seq(r1, r2, r3)) = lollipopGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*..1]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      Array(
+        Array(n1, Array.empty, n1),
+        Array(n1, Array(r1), n2),
+        Array(n1, Array(r2), n2))
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("var-length-expand with min and max length") {
+    // given
+    val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*2..4]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 2 to 4
+      } yield {
+        val pathPrefix = path.take(length)
+        Array(pathPrefix.startNode, pathPrefix.relationships(), pathPrefix.endNode())
+      }
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  // VAR EXPAND INTO
+
+  test("simple var-length-expand-into") {
+    // given
+    val n = closestMultipleOf(sizeHint / 5, 4)
+    val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected: IndexedSeq[Array[Node]] = paths.map(p => Array(p.startNode, p.endNode()))
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("var-length-expand-into with non-matching end") {
+    // given
+    val paths = chainGraphs(1, "TO", "TO", "TO", "TOO", "TO")
+    val nonMatching = nodeGraph(1).head
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputValues(Array(paths.head.startNode, nonMatching))
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
+  test("var-length-expand-into with end not being a node") {
+    // given
+    val paths = chainGraphs(1, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputValues(Array(paths.head.startNode, 42))
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
+  test("var-length-expand-into with end bound to mix of matching and non-matching nodes") {
+    // given
+    val n = closestMultipleOf(sizeHint / 5, 4)
+    val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+    val random = new Random
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    case class InputDef(start: Node, end: Node, matches: Boolean)
+    val input =
+      for (i <- 0 until n) yield {
+        val matches = random.nextBoolean()
+        val endNode =
+          if (matches) {
+            paths(i).endNode()
+          } else {
+            val not_i = (i + 1 + random.nextInt(paths.size - 1)) % n
+            paths(not_i).endNode()
+          }
+        InputDef(paths(i).startNode, endNode, matches)
+      }
+
+    val runtimeResult = execute(logicalQuery, runtime,
+      inputColumns(4, n/4, i => input(i).start, i => input(i).end))
+
+    // then
+    val expected: IndexedSeq[Array[Node]] =
+      input.filter(_.matches).map(p => Array(p.start, p.end))
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("var-length-expand-into on lollipop graph") {
+    // given
+    val (Seq(n1, n2, n3), Seq(r1, r2, r3)) = lollipopGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*]->(y)", expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(n1, n3)))
+
+    // then
+    val expected =
+      Array(
+        Array(n1, Array(r1, r3), n3),
+        Array(n1, Array(r2, r3), n3))
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("var-length-expand-into with max length") {
+    // given
+    val (Seq(n1, n2, n3), _) = lollipopGraph()
+    val r4 =
+      inTx {
+        n1.createRelationshipTo(n3, RelationshipType.withName("R"))
+      }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*..1]->(y)", expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(n1, n3)))
+
+    // then
+    val expected = Array(Array(n1, Array(r4), n3))
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("var-length-expand-into with min length") {
+    // given
+    val (Seq(n1, n2, n3), Seq(r1, r2, r3)) = lollipopGraph()
+    val r4 =
+      inTx {
+        n1.createRelationshipTo(n3, RelationshipType.withName("R"))
+      }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*2..2]->(y)", expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(n1, n3)))
+
+    // then
+    val expected = Array(
+      Array(n1, Array(r1, r3), n3),
+      Array(n1, Array(r2, r3), n3))
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  // HELPERS
+
+  private def closestMultipleOf(sizeHint: Int, div: Int) = (sizeHint / div) * div
+}

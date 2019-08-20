@@ -60,6 +60,10 @@ class PatternParserTest extends CypherFunSuite with TestName
     PatternParser.parse(testName) should be(Pattern("p", OUTGOING, Seq(RelTypeName("IS_BEING_INVESTIGATED")(NONE), RelTypeName("WAS_INVESTIGATED")(NONE)), "investigated", "agent", SimplePatternLength))
   }
 
+  test("(a)-[*]-(b)") {
+    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "", "b", VarPatternLength(0, None)))
+  }
+
   test("(a)-[:R*]-(b)") {
     PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", VarPatternLength(0, None)))
   }

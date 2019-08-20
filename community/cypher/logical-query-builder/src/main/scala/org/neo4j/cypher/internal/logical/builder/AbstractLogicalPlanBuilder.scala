@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -118,15 +118,21 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def expand(pattern: String): IMPL = {
+  def expand(pattern: String, expandMode: ExpansionMode = ExpandAll): IMPL = {
     val p = PatternParser.parse(pattern)
+    if (expandMode == ExpandAll) {
+      newNode(varFor(p.to))
+    }
     p.length match {
       case SimplePatternLength =>
-        appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll)(_)))
-      // TODO VarExpand and PruningVarExpand
+        appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode)(_)))
+      case varPatternLength: VarPatternLength =>
+        appendAtCurrentIndent(UnaryOperator(lp => VarExpand(lp, p.from, p.dir, /*TODO: incorrect*/p.dir, p.relTypes, p.to, p.relName, varPatternLength, expandMode)(_)))
     }
     self
   }
+
+  def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)
 
   def optionalExpandAll(pattern: String, predicate: Option[String]): IMPL = {
     val p = PatternParser.parse(pattern)
@@ -200,14 +206,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def deleteRel(rel: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, varFor(rel))(_)))
-    self
-  }
-
-  def expandInto(pattern: String): IMPL = {
-    val p = PatternParser.parse(pattern)
-    newNode(varFor(p.from))
-    newNode(varFor(p.to))
-    appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto)(_)))
     self
   }
 

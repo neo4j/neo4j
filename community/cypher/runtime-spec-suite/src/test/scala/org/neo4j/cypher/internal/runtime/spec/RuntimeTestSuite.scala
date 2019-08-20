@@ -341,6 +341,63 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
+  /**
+    * Create n disjoint chain graphs, where is one is a chain of nodes connected
+    * by relationships of the given types. The initial node will have the label
+    * :START, and the last node the label :END. Note that relationships with a type
+    * starting with `FRO` will be created in reverse direction, allowing convenient
+    * creation of chains with varying relationship direction.
+    */
+  def chainGraphs(nChains: Int, relTypeNames: String*): IndexedSeq[TestPath] = {
+    inTx {
+      val relTypes = relTypeNames.map(RelationshipType.withName)
+      val startLabel = Label.label("START")
+      val endLabel = Label.label("END")
+      for (_ <- 0 until nChains) yield {
+        val head = graphDb.createNode(startLabel)
+        var previous: Node = head
+        val relationships =
+          for (relType <- relTypes) yield {
+            val n =
+              if (relType == relTypes.last)
+                graphDb.createNode(endLabel)
+              else
+                graphDb.createNode()
+
+            val r =
+              if (relType.name().startsWith("FRO")) {
+                n.createRelationshipTo(previous, relType)
+              } else {
+                previous.createRelationshipTo(n, relType)
+              }
+            previous = n
+            r
+          }
+        new TestPath(head, relationships)
+      }
+    }
+  }
+
+  /**
+    * Create a lollipopGraph:
+    *
+    *             -[r1:R]->
+    *   (n1:START)         (n2)-[r3:R]->(n3)
+    *             -[r2:R]->
+    */
+  def lollipopGraph(): (Seq[Node], Seq[Relationship]) = {
+    inTx {
+      val n1 = graphDb.createNode(Label.label("START"))
+      val n2 = graphDb.createNode()
+      val n3 = graphDb.createNode()
+      val relType = RelationshipType.withName("R")
+      val r1 = n1.createRelationshipTo(n2, relType)
+      val r2 = n1.createRelationshipTo(n2, relType)
+      val r3 = n2.createRelationshipTo(n3, relType)
+      (Seq(n1, n2, n3), Seq(r1, r2, r3))
+    }
+  }
+
   def circleGraph(nNodes: Int, labels: String*): (Seq[Node], Seq[Relationship]) = {
     val nodes = inTx {
       for (_ <- 0 until nNodes) yield {
