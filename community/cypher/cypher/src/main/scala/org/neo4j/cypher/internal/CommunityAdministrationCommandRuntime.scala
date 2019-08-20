@@ -66,7 +66,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         VirtualValues.EMPTY_MAP
       )
 
-    // CREATE USER foo WITH PASSWORD password
+    // CREATE USER foo SET PASSWORD password
     case CreateUser(userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional) => (_, _, _) =>
       if(suspendedOptional.isDefined)  // Users are always active in community
         throw new CantCompileQueryException(s"Failed to create the specified user '$userName': 'SET STATUS' is not available in community edition.")
@@ -93,11 +93,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         if (initialPassword != null) util.Arrays.fill(initialPassword, 0.toByte)
       }
 
-    // CREATE USER foo WITH PASSWORD $password
+    // CREATE USER foo SET PASSWORD $password
     case CreateUser(userName, _, Some(_), _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Did not resolve parameters correctly.")
 
-    // CREATE USER foo WITH PASSWORD
+    // CREATE USER foo SET PASSWORD
     case CreateUser(userName, _, _, _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
 
@@ -123,11 +123,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           |RETURN oldCredentials""".stripMargin
       val currentUser = securityContext.subject().username()
 
-      UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine,
-        query,
+      UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine, query,
         VirtualValues.map(Array("name", "credentials"),
-          Array(Values.stringValue(currentUser),
-            Values.stringValue(authManager.createCredentialForPassword(validatePassword(newPassword)).serialize()))),
+          Array(Values.stringValue(currentUser), Values.stringValue(authManager.createCredentialForPassword(validatePassword(newPassword)).serialize()))),
         QueryHandler
           .handleError(e => new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password.", e))
           .handleResult((_, value) => {
