@@ -50,6 +50,6 @@ public class HeaderReader implements Header.Reader
     @Override
     public String toString()
     {
-        return format( "High-ID:%d, Generation:%d", highId, generation );
+        return format( "High-ID:%d, Highest-ID written:%d, Generation:%d", highId, highestWrittenId, generation );
     }
 }
