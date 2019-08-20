@@ -23,6 +23,8 @@ import java.util.regex.Pattern
 
 import org.junit.Assert._
 
+import scala.collection.JavaConverters._
+
 class ExecutionResultTest extends ExecutionEngineFunSuite {
   test("columnOrderIsPreserved") {
     val columns = List("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
@@ -131,5 +133,34 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
     assert(stats.uniqueConstraintsAdded === 0)
     assert(stats.uniqueConstraintsRemoved === 0)
+  }
+
+  test("hasNext should not change resultAsString") {
+    val result = graph.execute("UNWIND [1,2,3] AS x RETURN x")
+    result.hasNext
+    result.resultAsString() should equal(
+      """+---+
+        || x |
+        |+---+
+        || 1 |
+        || 2 |
+        || 3 |
+        |+---+
+        |3 rows
+        |""".stripMargin)
+  }
+
+  test("next should change resultAsString") {
+    val result = graph.execute("UNWIND [1,2,3] AS x RETURN x")
+    result.next().asScala should equal(Map("x" -> 1))
+    result.resultAsString() should equal(
+      """+---+
+        || x |
+        |+---+
+        || 2 |
+        || 3 |
+        |+---+
+        |2 rows
+        |""".stripMargin)
   }
 }

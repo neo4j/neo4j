@@ -240,6 +240,10 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
             //don't materialize since that will close down the underlying transaction
             //and we need it to be open in order to serialize nodes, relationships, and
             //paths
+            if ( this.hasFetchedNext() )
+            {
+                stringBuilder.addRow( new ResultRowImpl( this.getNextObject() ) );
+            }
             accept( stringBuilder );
             stringBuilder.result( writer, statistics );
             for ( Notification notification : getNotifications() )

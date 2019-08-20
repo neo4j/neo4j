@@ -82,6 +82,72 @@ class ResultSubscriberTest
     }
 
     @Test
+    void hasNextShouldNotChangeResultAsString()
+    {
+        // Given
+        ResultSubscriber subscriber = subscriber();
+        TestQueryExecution queryExecution = queryExecution( subscriber )
+                .withFields( "a", "b" )
+                .withRecords(
+                        record( 11, 12 ),
+                        record( 21, 22 ),
+                        record( 31, 32 ) )
+                .queryExecution();
+
+        // When
+        //noinspection ResultOfMethodCallIgnored
+        subscriber.hasNext();
+
+        // Then
+        assertThat( subscriber.resultAsString(),
+                    equalTo( String.format( "+---------+%s| a  | b  |%s+---------+%s| 11 | 12 |%s| 21 | 22 |%s| 31 | 32 |%s+---------+%s3 rows%s",
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator()
+                    ) ) );
+        assertTrue( queryExecution.isClosed() );
+    }
+
+    @Test
+    void nextShouldChangeResultAsString()
+    {
+        // Given
+        ResultSubscriber subscriber = subscriber();
+        TestQueryExecution queryExecution = queryExecution( subscriber )
+                .withFields( "a", "b" )
+                .withRecords(
+                        record( 11, 12 ),
+                        record( 21, 22 ),
+                        record( 31, 32 ) )
+                .queryExecution();
+
+        // When
+        Map<String,Object> first = subscriber.next();
+
+        // Then
+        assertThat( first, equalTo( Map.of(
+                "a", 11,
+                "b", 12
+        ) ) );
+        assertThat( subscriber.resultAsString(),
+                    equalTo( String.format( "+---------+%s| a  | b  |%s+---------+%s| 21 | 22 |%s| 31 | 32 |%s+---------+%s2 rows%s",
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator(),
+                                            System.lineSeparator()
+                    ) ) );
+        assertTrue( queryExecution.isClosed() );
+    }
+
+    @Test
     void shouldGetPartialResultsViaAcceptAndClose( )
     {
         // Given

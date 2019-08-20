@@ -82,6 +82,16 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
         return result;
     }
 
+    public boolean hasFetchedNext()
+    {
+        return hasFetchedNext;
+    }
+
+    public T getNextObject()
+    {
+        return nextObject;
+    }
+
     protected abstract T fetchNextOrNull();
 
     @Override
