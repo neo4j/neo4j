@@ -264,7 +264,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         } catch {
           case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage)
         }
-        Some(plans.CreateDatabase(normalizedName, replace, allowExistingDatabase = ifNotExists))
+        Some(plans.EnsureValidNumberOfDatabases(Some(plans.CreateDatabase(normalizedName, replace, allowExistingDatabase = ifNotExists))))
 
       // DROP DATABASE [IF EXISTS] foo
       case DropDatabase(dbName, ifExists) =>

@@ -25,11 +25,12 @@ import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.{QuerySubscriber, QuerySubscriberAdapter}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
@@ -52,9 +53,10 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val ctx = SystemUpdateCountingQueryContext.from(originalCtx)
-    ctx.systemUpdates.increase()
     // Only the outermost query should be tied into the reactive results stream. The source queries should use an empty subscriber
-    val sourceResult = source.map(_.run(ctx, doProfile, params, prePopulateResults, ignore, QuerySubscriber.DO_NOTHING_SUBSCRIBER))
+    val sourceResult = source.map(_.run(ctx, doProfile, params, prePopulateResults, ignore, new QuerySubscriberAdapter(){
+      override def onResultCompleted(statistics: QueryStatistics): Unit = if(statistics.containsUpdates()) ctx.systemUpdates.increase()
+    }))
     sourceResult match {
       case Some(FailedRuntimeResult) => FailedRuntimeResult
       case _ =>

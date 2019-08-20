@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryStatistics => QueryStats}
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
@@ -96,7 +96,10 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
       })
     }
     if (failed.isEmpty) {
-      inner.onResultCompleted(if (statistics.containsUpdates()) ctx.getStatistics else QueryStats.empty)
+      if (statistics.containsUpdates()) {
+        ctx.systemUpdates.increase()
+      }
+      inner.onResultCompleted(ctx.getStatistics)
     }
   }
 

@@ -89,3 +89,4 @@ case class DropDatabase(source: Option[EnsureValidNonSystemDatabase], normalized
 case class StartDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class StopDatabase(source: Option[EnsureValidNonSystemDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class EnsureValidNonSystemDatabase(normalizedName: NormalizedDatabaseName, action: String, checkDatabaseExists: Option[Boolean])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+case class EnsureValidNumberOfDatabases(source: Option[CreateDatabase])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
