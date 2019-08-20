@@ -161,7 +161,7 @@ class EagerResult implements Result
         {
             for ( Map<String,Object> map : queryResult )
             {
-                visitor.visit( new MapRow( map ) );
+                visitor.visit( new ResultRowImpl( map ) );
             }
             checkIfDirty();
         }
