@@ -22,7 +22,6 @@ package org.neo4j.kernel.database;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -685,7 +684,7 @@ public class Database extends LifecycleAdapter
         return heapAllocation;
     }
 
-    private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
+    private void buildTransactionMonitor( KernelTransactions kernelTransactions, SystemNanoClock clock, Config config )
     {
         KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, databaseLogService );
         databaseDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
