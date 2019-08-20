@@ -21,7 +21,6 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -43,7 +42,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
@@ -156,6 +154,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
@@ -677,7 +676,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return heapAllocation;
     }
 
-    private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
+    private void buildTransactionMonitor( KernelTransactions kernelTransactions, SystemNanoClock clock, Config config )
     {
         KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, logService );
         dataSourceDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );

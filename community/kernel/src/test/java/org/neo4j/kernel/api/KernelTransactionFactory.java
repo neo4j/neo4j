@@ -77,7 +77,7 @@ public class KernelTransactionFactory
     {
     }
 
-    static Instances kernelTransactionWithInternals( LoginContext loginContext )
+    private static Instances kernelTransactionWithInternals( LoginContext loginContext )
     {
         TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
         TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
@@ -91,7 +91,7 @@ public class KernelTransactionFactory
                 new KernelTransactionImplementation( Config.defaults(), mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ),
                         new TransactionHooks(), mock( ConstraintIndexCreator.class ), new Procedures(), headerInformationFactory,
                         mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ), mock( AuxiliaryTransactionStateManager.class ),
-                        mock( Pool.class ), Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                        mock( Pool.class ), Clocks.nanoClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                         new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                         new CanWrite(), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                         new StandardConstraintSemantics(), mock( SchemaState.class ), mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );

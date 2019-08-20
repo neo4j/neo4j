@@ -734,6 +734,12 @@ public class QueryExecutionLocksIT
         }
 
         @Override
+        public long startTimeNanos()
+        {
+            return internal.startTimeNanos();
+        }
+
+        @Override
         public long timeout()
         {
             return internal.timeout();

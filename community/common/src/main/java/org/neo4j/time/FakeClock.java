@@ -25,13 +25,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A {@link java.time.Clock} that is manually controlled.
+ * The implementation is thread safe.
  */
 public class FakeClock extends SystemNanoClock
 {
-    private volatile long nanoTime;
+    private AtomicLong nanoTime = new AtomicLong();
 
     public FakeClock()
     {
@@ -57,19 +59,19 @@ public class FakeClock extends SystemNanoClock
     @Override
     public Instant instant()
     {
-        return Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nanoTime ) );
+        return Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nanoTime.get() ) );
     }
 
     @Override
     public long nanos()
     {
-        return nanoTime;
+        return nanoTime.get();
     }
 
     @Override
     public long millis()
     {
-        return TimeUnit.NANOSECONDS.toMillis( nanoTime );
+        return TimeUnit.NANOSECONDS.toMillis( nanoTime.get() );
     }
 
     public FakeClock forward( Duration delta )
@@ -79,7 +81,7 @@ public class FakeClock extends SystemNanoClock
 
     public FakeClock forward( long delta, TimeUnit unit )
     {
-        nanoTime += unit.toNanos( delta );
+        nanoTime.addAndGet( unit.toNanos( delta ) );
         return this;
     }
 

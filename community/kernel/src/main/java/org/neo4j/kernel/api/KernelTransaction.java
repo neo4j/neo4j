@@ -97,6 +97,12 @@ public interface KernelTransaction extends Transaction, AssertOpen
     long startTime();
 
     /**
+     * @return start time of this transaction, i.e. basically {@link System#nanoTime()} when user called
+     * {@link org.neo4j.internal.kernel.api.Session#beginTransaction(Type)}.
+     */
+    long startTimeNanos();
+
+    /**
      * Timeout for transaction in milliseconds.
      * @return transaction timeout in milliseconds.
      */
