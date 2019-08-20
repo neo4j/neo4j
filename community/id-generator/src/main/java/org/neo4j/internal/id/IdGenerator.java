@@ -178,4 +178,40 @@ public interface IdGenerator extends IdSequence, Closeable
             delegate.clearCache();
         }
     }
+
+    ReuseMarker NOOP_REUSE_MARKER = new ReuseMarker()
+    {
+        @Override
+        public void markReserved( long id )
+        {   // no-op
+        }
+
+        @Override
+        public void markFree( long id )
+        {   // no-op
+        }
+
+        @Override
+        public void close()
+        {   // no-op
+        }
+    };
+
+    CommitMarker NOOP_COMMIT_MARKER = new CommitMarker()
+    {
+        @Override
+        public void markUsed( long id )
+        {   // no-op
+        }
+
+        @Override
+        public void markDeleted( long id )
+        {   // no-op
+        }
+
+        @Override
+        public void close()
+        {   // no-op
+        }
+    };
 }

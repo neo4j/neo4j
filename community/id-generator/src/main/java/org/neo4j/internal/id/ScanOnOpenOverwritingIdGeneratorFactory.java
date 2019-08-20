@@ -30,7 +30,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 
 /**
  * A {@link DefaultIdGeneratorFactory} that ignores any existing id file on open and instead replaces it with an id file
- * of the current format with the highId it got from scanning the store on open. I.e. it treat the store as source of truth
+ * of the current format with the highId it got from scanning the store on open. I.e. it treats the store as source of truth
  * w/ regards to highId.
  *
  * This is very useful in various id-file migration scenarios, both when migrating from an old format, but also when migrating
@@ -47,7 +47,6 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
     public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
         long highId = highIdScanner.getAsLong();
-        fs.deleteFile( filename );
         return create( pageCache, filename, idType, highId, true, maxId, openOptions );
     }
 }

@@ -131,6 +131,12 @@ class IndexedIdGeneratorRecoverabilityTest
     @Test
     void resetUsabilityOnRestart() throws IOException
     {
+        // Create the freelist
+        try ( IdGenerator freelist = instantiateFreelist() )
+        {
+            freelist.checkpoint( UNLIMITED );
+        }
+
         final long id1;
         final long id2;
         try ( IdGenerator freelist = instantiateFreelist() )
@@ -153,6 +159,12 @@ class IndexedIdGeneratorRecoverabilityTest
     @Test
     void resetUsabilityOnRestartWithSomeWrites() throws IOException
     {
+        // Create the freelist
+        try ( IdGenerator freelist = instantiateFreelist() )
+        {
+            freelist.checkpoint( UNLIMITED );
+        }
+
         final long id1;
         final long id2;
         final long id3;

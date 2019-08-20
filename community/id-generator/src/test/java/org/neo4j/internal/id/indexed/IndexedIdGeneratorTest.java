@@ -221,6 +221,23 @@ class IndexedIdGeneratorTest
     }
 
     @Test
+    void shouldRebuildFromFreeIdsIfWasCreatedAndSomeUpdatesWereMadeDuringRecovery() throws IOException
+    {
+        // given that it was created in this test right now, we know that
+        // and given some updates before calling start (coming from recovery)
+        markUsed( 5 );
+        markUsed( 100 );
+
+        // when
+        freelist.start( freeIds( 10, 20, 30 ) );
+
+        // then
+        assertEquals( 10L, freelist.nextId() );
+        assertEquals( 20L, freelist.nextId() );
+        assertEquals( 30L, freelist.nextId() );
+    }
+
+    @Test
     void shouldRebuildFromFreeIdsIfExistedButAtStartingGeneration() throws IOException
     {
         // given that it was created in this test right now, we know that

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +47,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -245,14 +248,76 @@ class CommonAbstractStoreBehaviourTest
         createStore();
     }
 
+    @Test
+    void shouldProvideFreeIdsToMissingIdGenerator() throws IOException
+    {
+        // given
+        createStore();
+        store.start();
+        MutableLongSet holes = LongSets.mutable.empty();
+        holes.add( store.nextId() );
+        holes.add( store.nextId() );
+        store.updateRecord( new IntRecord( store.nextId(), 1 ) );
+        holes.add( store.nextId() );
+        store.updateRecord( new IntRecord( store.nextId(), 1 ) );
+
+        // when
+        store.close();
+        fs.deleteFile( new File( MyStore.ID_FILENAME ) );
+        createStore();
+        store.start();
+
+        // then
+        int numberOfHoles = holes.size();
+        for ( int i = 0; i < numberOfHoles; i++ )
+        {
+            assertTrue( holes.remove( store.nextId() ) );
+        }
+        assertTrue( holes.isEmpty() );
+    }
+
+    @Test
+    void shouldOverwriteExistingIdGeneratorOnMissingStore() throws IOException
+    {
+        // given
+        createStore();
+        store.start();
+        MutableLongSet holes = LongSets.mutable.empty();
+        store.updateRecord( new IntRecord( store.nextId(), 1 ) );
+        holes.add( store.nextId() );
+        holes.add( store.nextId() );
+        store.updateRecord( new IntRecord( store.nextId(), 1 ) );
+        holes.add( store.nextId() );
+        store.updateRecord( new IntRecord( store.nextId(), 1 ) );
+
+        // when
+        store.close();
+        fs.deleteFile( new File( MyStore.STORE_FILENAME ) );
+        createStore();
+        store.start();
+
+        // then
+        int numberOfReservedLowIds = store.getNumberOfReservedLowIds();
+        for ( int i = 0; i < 10; i++ )
+        {
+            assertEquals( numberOfReservedLowIds + i, store.nextId() );
+        }
+    }
+
     private static class IntRecord extends AbstractBaseRecord
     {
         public int value;
 
         IntRecord( long id )
         {
+            this( id, 0 );
+        }
+
+        IntRecord( long id, int value )
+        {
             super( id );
             setInUse( true );
+            this.value = value;
         }
 
         @Override
@@ -358,6 +423,9 @@ class CommonAbstractStoreBehaviourTest
 
     private class MyStore extends CommonAbstractStore<IntRecord,LongLongHeader>
     {
+        static final String STORE_FILENAME = "store";
+        static final String ID_FILENAME = "idFile";
+
         MyStore( Config config, PageCache pageCache, int recordHeaderSize )
         {
             this( config, pageCache, new MyFormat( recordHeaderSize ) );
@@ -365,7 +433,7 @@ class CommonAbstractStoreBehaviourTest
 
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
-            super( new File( "store" ), new File( "idFile" ), config, IdType.NODE,
+            super( new File( STORE_FILENAME ), new File( ID_FILENAME ), config, IdType.NODE,
                     new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
                     NullLogProvider.getInstance(), "T", format, format, "XYZ" );
         }

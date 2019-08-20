@@ -533,7 +533,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD ) )
             {
-                int startingId = getNumberOfReservedLowIds();
+                int numberOfReservedLowIds = getNumberOfReservedLowIds();
+                int startingId = numberOfReservedLowIds;
                 int recordsPerPage = getRecordsPerPage();
                 int blockSize = getRecordSize();
                 long foundHighId = scanForHighId();
@@ -573,7 +574,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                         visitor.accept( foundIds[i] );
                     }
                 }
-                return foundHighId - 1;
+                return Long.max( numberOfReservedLowIds, foundHighId ) - 1;
             }
         };
     }

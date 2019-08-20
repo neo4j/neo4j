@@ -309,12 +309,24 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public CommitMarker commitMarker()
     {
+        if ( !started && needsRebuild )
+        {
+            // If we're in recovery and know that we're building the id generator from scratch after recovery has completed then don't make any updates
+            return NOOP_COMMIT_MARKER;
+        }
+
         return lockAndInstantiateMarker( true );
     }
 
     @Override
     public ReuseMarker reuseMarker()
     {
+        if ( !started && needsRebuild )
+        {
+            // If we're in recovery and know that we're building the id generator from scratch after recovery has completed then don't make any updates
+            return NOOP_REUSE_MARKER;
+        }
+
         return lockAndInstantiateMarker( true );
     }
 

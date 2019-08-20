@@ -24,8 +24,6 @@ import java.nio.file.OpenOption;
 import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
-import org.neo4j.internal.id.IdGenerator.CommitMarker;
-import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 
@@ -64,42 +62,6 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     {
         return idGenerators.get( idType );
     }
-
-    public static final ReuseMarker NOOP_REUSE_MARKER = new ReuseMarker()
-    {
-        @Override
-        public void markReserved( long id )
-        {   // no-op
-        }
-
-        @Override
-        public void markFree( long id )
-        {   // no-op
-        }
-
-        @Override
-        public void close()
-        {   // no-op
-        }
-    };
-
-    public static final CommitMarker NOOP_COMMIT_MARKER = new CommitMarker()
-    {
-        @Override
-        public void markUsed( long id )
-        {   // no-op
-        }
-
-        @Override
-        public void markDeleted( long id )
-        {   // no-op
-        }
-
-        @Override
-        public void close()
-        {   // no-op
-        }
-    };
 
     static class ReadOnlyIdGenerator implements IdGenerator
     {
