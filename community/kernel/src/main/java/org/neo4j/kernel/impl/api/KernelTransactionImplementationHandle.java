@@ -47,6 +47,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long lastTransactionIdWhenStarted;
     private final long lastTransactionTimestampWhenStarted;
     private final long startTime;
+    private final long startTimeNanos;
     private final long timeoutMillis;
     private final KernelTransactionImplementation tx;
     private final SystemNanoClock clock;
@@ -64,6 +65,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.lastTransactionIdWhenStarted = tx.lastTransactionIdWhenStarted();
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
+        this.startTimeNanos = tx.startTimeNanos();
         this.timeoutMillis = tx.timeout();
         this.subject = tx.subjectOrAnonymous();
         this.terminationReason = tx.getReasonIfTerminated();
@@ -92,6 +94,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public long startTime()
     {
         return startTime;
+    }
+
+    @Override
+    public long startTimeNanos()
+    {
+        return startTimeNanos;
     }
 
     @Override

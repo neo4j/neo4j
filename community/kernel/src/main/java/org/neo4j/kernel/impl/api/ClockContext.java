@@ -42,13 +42,13 @@ public final class ClockContext
         this.system = Objects.requireNonNull( clock, "system clock" );
     }
 
-    public void initializeTransaction()
+    void initializeTransaction()
     {
         this.transaction = Clock.fixed( system.instant(), timezone() );
         this.statement = null;
     }
 
-    public void initializeStatement()
+    void initializeStatement()
     {
         if ( this.statement == null ) // this is the first statement in the transaction, use the transaction time
         {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import java.time.Clock;
 import java.util.NoSuchElementException;
 
 import org.neo4j.annotations.service.Service;
@@ -29,6 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.service.NamedService;
 import org.neo4j.service.Services;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * The {@link CheckPointThresholdPolicy} specifies the overall <em>type</em> of threshold that should be used for
@@ -36,7 +36,7 @@ import org.neo4j.service.Services;
  *
  * The is determined by the {@link GraphDatabaseSettings#check_point_policy} setting, and
  * based on this, the concrete policies are loaded and used to
- * {@link CheckPointThreshold#createThreshold(Config, Clock, LogPruning, LogProvider) create} the final and fully
+ * {@link CheckPointThreshold#createThreshold(Config, SystemNanoClock, LogPruning, LogProvider) create} the final and fully
  * configured check point thresholds.
  */
 @Service
@@ -47,7 +47,7 @@ public interface CheckPointThresholdPolicy extends NamedService
      *
      * @throws NoSuchElementException if the policy was not found.
      */
-        static CheckPointThresholdPolicy loadPolicy( String policyName ) throws NoSuchElementException
+    static CheckPointThresholdPolicy loadPolicy( String policyName ) throws NoSuchElementException
     {
         return Services.loadOrFail( CheckPointThresholdPolicy.class, policyName );
     }
@@ -55,5 +55,5 @@ public interface CheckPointThresholdPolicy extends NamedService
     /**
      * Create a {@link CheckPointThreshold} instance based on this policy and the given configurations.
      */
-    CheckPointThreshold createThreshold( Config config, Clock clock, LogPruning logPruning, LogProvider logProvider );
+    CheckPointThreshold createThreshold( Config config, SystemNanoClock clock, LogPruning logPruning, LogProvider logProvider );
 }
