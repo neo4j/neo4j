@@ -43,10 +43,18 @@ class StandardInternalExecutionResult(context: QueryContext,
   self =>
 
   override def initiate(): Unit = {
+    // For write only queries and queries that return no rows, execute all
+    // work immediately, and close all resources.
+    if (queryType == WRITE || fieldNames().isEmpty) {
+      request(1)
+      await()
+      close(Success)
+    }
+
     subscriber match {
       case coreAPI: ResultSubscriber =>
         // OBS: check before materialization
-        val consumedBeforeInit = runtimeResult.consumptionState == ConsumptionState.EXHAUSTED
+        val consumedBeforeMaterialize = runtimeResult.consumptionState == ConsumptionState.EXHAUSTED
 
         // By policy we materialize the result directly unless it's a read only query.
         if (queryType != READ_ONLY) {
@@ -54,7 +62,7 @@ class StandardInternalExecutionResult(context: QueryContext,
         }
 
         // ... and if we do not return any rows, we close all resources.
-        if (consumedBeforeInit || queryType == WRITE || fieldNames().isEmpty) {
+        if (consumedBeforeMaterialize) {
           close(Success)
         }
 

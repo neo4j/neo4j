@@ -23,7 +23,7 @@ import java.io.PrintWriter
 import java.lang
 import java.util.Optional
 
-import org.mockito.Mockito.RETURNS_DEEP_STUBS
+import org.mockito.Mockito.{RETURNS_DEEP_STUBS, times, verify}
 import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
@@ -34,7 +34,7 @@ import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
 import org.neo4j.values.storable.Values.intValue
 
 //noinspection NameBooleanParameters,RedundantDefaultArgument
@@ -52,6 +52,21 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
 
   test("should materialize and close write-only result") {
     assertMaterializationAndCloseOfInit(WRITE, true, true)
+  }
+
+  test("should materialize and close write-only result for all QuerySubscribers") {
+    // given
+    val runtimeResult = mock[RuntimeResult]
+    val subscriber = mock[QuerySubscriber]
+    val x = standardInternalExecutionResult(runtimeResult, WRITE, subscriber)
+
+    // when
+    x.initiate()
+
+    // then
+    verify(runtimeResult, times(1)).request(1)
+    verify(runtimeResult, times(1)).await()
+    x.isClosed should be(true)
   }
 
   test("should close pre-exhausted schema-write result") {
@@ -124,7 +139,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
   }
 
   private def standardInternalExecutionResult(inner: RuntimeResult, queryType: InternalQueryType,
-                                              subscriber: ResultSubscriber) =
+                                              subscriber: QuerySubscriber) =
     new StandardInternalExecutionResult(
       mock[QueryContext],
       InterpretedRuntimeName,
