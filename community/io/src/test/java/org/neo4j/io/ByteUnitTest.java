@@ -154,7 +154,6 @@ class ByteUnitTest
         assertThat( ByteUnit.parse( "1" ), is( 1L ) );
         assertThat( ByteUnit.parse( "1 KiB" ), is( 1024L ) );
         assertThat( ByteUnit.parse( "1KiB" ), is( 1024L ) );
-        assertThat( ByteUnit.parse( " 1    Ki B" ), is( 1024L ) );
         assertThat( ByteUnit.parse( "1 KB" ), is( 1024L ) );
         assertThat( ByteUnit.parse( "1KB" ), is( 1024L ) );
         assertThat( ByteUnit.parse( " 1    KB " ), is( 1024L ) );
@@ -169,7 +168,6 @@ class ByteUnitTest
         assertThat( ByteUnit.parse( " 1    k" ), is( 1024L ) );
         assertThat( ByteUnit.parse( "1 MiB" ), is( 1048576L ) );
         assertThat( ByteUnit.parse( "1MiB" ), is( 1048576L ) );
-        assertThat( ByteUnit.parse( " 1    Mi B" ), is( 1048576L ) );
         assertThat( ByteUnit.parse( "1 MB" ), is( 1048576L ) );
         assertThat( ByteUnit.parse( "1MB" ), is( 1048576L ) );
         assertThat( ByteUnit.parse( " 1    MB " ), is( 1048576L ) );
@@ -184,7 +182,6 @@ class ByteUnitTest
         assertThat( ByteUnit.parse( " 1    m" ), is( 1048576L ) );
         assertThat( ByteUnit.parse( "1 GiB" ), is( 1073741824L ) );
         assertThat( ByteUnit.parse( "1GiB" ), is( 1073741824L ) );
-        assertThat( ByteUnit.parse( " 1    Gi B" ), is( 1073741824L ) );
         assertThat( ByteUnit.parse( "1 GB" ), is( 1073741824L ) );
         assertThat( ByteUnit.parse( "1GB" ), is( 1073741824L ) );
         assertThat( ByteUnit.parse( " 1    GB " ), is( 1073741824L ) );
@@ -199,19 +196,16 @@ class ByteUnitTest
         assertThat( ByteUnit.parse( " 1    g" ), is( 1073741824L ) );
         assertThat( ByteUnit.parse( "1 TiB" ), is( 1099511627776L ) );
         assertThat( ByteUnit.parse( "1TiB" ), is( 1099511627776L ) );
-        assertThat( ByteUnit.parse( " 1    Ti B" ), is( 1099511627776L ) );
         assertThat( ByteUnit.parse( "1 TB" ), is( 1099511627776L ) );
         assertThat( ByteUnit.parse( "1TB" ), is( 1099511627776L ) );
         assertThat( ByteUnit.parse( " 1    TB " ), is( 1099511627776L ) );
         assertThat( ByteUnit.parse( "1 PiB" ), is( 1125899906842624L ) );
         assertThat( ByteUnit.parse( "1PiB" ), is( 1125899906842624L ) );
-        assertThat( ByteUnit.parse( " 1    Pi B" ), is( 1125899906842624L ) );
         assertThat( ByteUnit.parse( "1 PB" ), is( 1125899906842624L ) );
         assertThat( ByteUnit.parse( "1PB" ), is( 1125899906842624L ) );
         assertThat( ByteUnit.parse( " 1    PB " ), is( 1125899906842624L ) );
         assertThat( ByteUnit.parse( "1 EiB" ), is( 1152921504606846976L ) );
         assertThat( ByteUnit.parse( "1EiB" ), is( 1152921504606846976L ) );
-        assertThat( ByteUnit.parse( " 1    Ei B" ), is( 1152921504606846976L ) );
         assertThat( ByteUnit.parse( "1 EB" ), is( 1152921504606846976L ) );
         assertThat( ByteUnit.parse( "1EB" ), is( 1152921504606846976L ) );
         assertThat( ByteUnit.parse( " 1    EB " ), is( 1152921504606846976L ) );
@@ -237,6 +231,12 @@ class ByteUnitTest
     void mustThrowWhenParsingInvalidUnit()
     {
         assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "1 XB" ) );
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "1 Ki B" ) );
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "1 Mi B" ) );
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "1 Gi B" ) );
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "1 Ti B" ) );
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "1 Pi B" ) );
+        assertThrows( IllegalArgumentException.class, () -> ByteUnit.parse( "1 Ei B" ) );
     }
 
     @Test

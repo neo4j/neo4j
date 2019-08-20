@@ -129,7 +129,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
                                  PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier versionContextSupplier )
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.open( fs, Configuration.EMPTY );
+        swapperFactory.open( fs );
         return createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier, versionContextSupplier );
     }
 

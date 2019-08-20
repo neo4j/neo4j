@@ -42,7 +42,6 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import static java.lang.ProcessBuilder.Redirect.INHERIT;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.neo4j.graphdb.config.Configuration.EMPTY;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
@@ -106,7 +105,7 @@ class GBPTreePartialCreateFuzzIT
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
-            swapper.open( fs, EMPTY );
+            swapper.open( fs );
             try ( PageCache pageCache = new MuninnPageCache( swapper, 10, PageCacheTracer.NULL,
                     PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
             {

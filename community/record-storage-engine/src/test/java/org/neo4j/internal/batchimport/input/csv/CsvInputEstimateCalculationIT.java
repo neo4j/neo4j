@@ -132,7 +132,7 @@ class CsvInputEstimateCalculationIT
             // then compare estimates with actual disk sizes
             VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
             SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-            swapperFactory.open( fs, null );
+            swapperFactory.open( fs );
             try ( PageCache pageCache = new MuninnPageCache( swapperFactory, 1000, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                           contextSupplier, jobScheduler );
                   NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,

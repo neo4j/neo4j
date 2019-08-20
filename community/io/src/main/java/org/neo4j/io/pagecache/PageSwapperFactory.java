@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.annotations.service.Service;
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.service.NamedService;
@@ -45,9 +44,8 @@ public interface PageSwapperFactory extends NamedService
     /**
      * Open page swapper factory with provided filesystem and config
      * @param fs file system to use in page swappers
-     * @param config custom page swapper configuration
      */
-    void open( FileSystemAbstraction fs, Configuration config );
+    void open( FileSystemAbstraction fs );
 
     /**
      * Get the unit of alignment that the swappers require of the memory buffers. For instance, if page alignment is

@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
@@ -60,7 +59,7 @@ class GBPTreeSingleWriterTest
     void createPageCache()
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
-        factory.open( new DefaultFileSystemAbstraction(), Configuration.EMPTY );
+        factory.open( new DefaultFileSystemAbstraction() );
         MemoryAllocator mman = MemoryAllocator.createAllocator( "8 MiB", new LocalMemoryTracker() );
         jobScheduler = new ThreadPoolJobScheduler();
         pageCache = new MuninnPageCache( factory, mman, 256, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, EMPTY, jobScheduler );

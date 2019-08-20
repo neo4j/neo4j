@@ -26,16 +26,6 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 public class IdRangeIterator implements IdSequence
 {
-    public static final IdRangeIterator EMPTY_ID_RANGE_ITERATOR =
-            new IdRangeIterator( new IdRange( EMPTY_LONG_ARRAY, 0, 0 ) )
-            {
-                @Override
-                public long nextId()
-                {
-                    return VALUE_REPRESENTING_NULL;
-                }
-            };
-
     public static final long VALUE_REPRESENTING_NULL = -1;
     private int position;
     private final long[] defrag;

@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( DefaultFileSystemExtension.class )
@@ -107,7 +106,7 @@ class StoreLogServiceTest
             log.info( firstMessage );
 
             // when
-            logService.setContextLogLevels( genericMap( "org.neo4j", Level.INFO ) );
+            logService.setContextLogLevels( Map.of( "org.neo4j", Level.INFO ) );
             log.info( secondMessage );
         }
 

@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -56,7 +55,7 @@ public class ZipUtils
         {
             return;
         }
-        Map<String,String> env = MapUtil.stringMap( "create", "true" );
+        Map<String,String> env = Map.of( "create", "true" );
         Path rootPath = sourceToCompress.toPath();
         URI archiveAbsoluteURI = URI.create( "jar:file:" + destinationZip.toURI().getRawPath() );
 

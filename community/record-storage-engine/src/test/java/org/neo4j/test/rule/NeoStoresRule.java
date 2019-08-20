@@ -175,7 +175,7 @@ public class NeoStoresRule extends ExternalResource
     private static PageCache getOrCreatePageCache( Config config, FileSystemAbstraction fs, JobScheduler jobScheduler )
     {
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.open( fs, null );
+        swapperFactory.open( fs );
         return new MuninnPageCache( swapperFactory, 1000, NULL, PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY, jobScheduler );
     }
 }

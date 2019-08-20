@@ -27,8 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.neo4j.internal.helpers.collection.Iterables;
+import java.util.stream.StreamSupport;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
@@ -234,7 +233,7 @@ public class DatabaseLayout
     public Stream<File> file( DatabaseFile databaseFile )
     {
         Iterable<String> names = databaseFile.getNames();
-        return Iterables.stream( names ).map( this::file );
+        return StreamSupport.stream( names.spliterator(), false ).map( this::file );
     }
 
     public Stream<File> allFiles( DatabaseFile databaseFile )

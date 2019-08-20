@@ -107,7 +107,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.ThreadTestUtils.fork;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
-@SuppressWarnings( "OptionalGetWithoutIsPresent" )
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     // Sub-classes can override this. The reason this isn't a constructor parameter is that it would require this test class
@@ -847,7 +846,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             finally
             {
-                //noinspection ThrowFromFinallyBlock
                 pageCache.close();
             }
 
@@ -1097,7 +1095,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             finally
             {
-                //noinspection ThrowFromFinallyBlock
                 pagedFile.close();
             }
             Exception e = exceptionRef.get();
@@ -2934,10 +2931,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             assertTrue( cursor.next() );
             byte[] bytes = new byte[3];
-            assertThrows( ArrayIndexOutOfBoundsException.class, () ->
-            {
-                cursor.getBytes( bytes, 1, 3 );
-            } );
+            assertThrows( ArrayIndexOutOfBoundsException.class, () -> cursor.getBytes( bytes, 1, 3 ) );
         }
     }
 
@@ -2950,10 +2944,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             assertTrue( cursor.next() );
             byte[] bytes = new byte[3];
-            assertThrows( ArrayIndexOutOfBoundsException.class, () ->
-            {
-                cursor.putBytes( bytes, 1, 3 );
-            } );
+            assertThrows( ArrayIndexOutOfBoundsException.class, () -> cursor.putBytes( bytes, 1, 3 ) );
         }
     }
 
@@ -3951,7 +3942,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
-            //noinspection InfiniteLoopStatement
             while ( !hasThrown.get() ) // Keep writing until we get an exception! (when the cache starts evicting stuff)
             {
                 assertTrue( cursor.next() );
@@ -4486,7 +4476,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
-        swapperFactory.open( fs, Configuration.EMPTY );
+        swapperFactory.open( fs );
         File file = file( "a" );
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                 EmptyVersionContextSupplier.EMPTY );
@@ -4504,7 +4494,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
-        swapperFactory.open( fs, Configuration.EMPTY );
+        swapperFactory.open( fs );
         File file = file( "a" );
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                 EmptyVersionContextSupplier.EMPTY );

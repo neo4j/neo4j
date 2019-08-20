@@ -393,7 +393,7 @@ public class RandomPageCacheTestHarness implements Closeable
         }
 
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.open( fs, Configuration.EMPTY );
+        swapperFactory.open( fs );
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, tracer,
                 cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY, jobScheduler );

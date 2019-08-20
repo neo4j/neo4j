@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.pagecache;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 
@@ -56,9 +55,9 @@ public class PageSwapperFactoryForTesting extends SingleFilePageSwapperFactory
     }
 
     @Override
-    public void open( FileSystemAbstraction fs, Configuration configuration )
+    public void open( FileSystemAbstraction fs )
     {
-        super.open( fs, configuration );
+        super.open( fs );
         configuredCounter.getAndIncrement();
     }
 }

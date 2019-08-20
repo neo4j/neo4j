@@ -19,11 +19,9 @@
  */
 package org.neo4j.io;
 
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Locale;
-import java.util.stream.Stream;
-
-import org.neo4j.internal.helpers.collection.Pair;
+import java.util.Map;
 
 import static java.lang.String.format;
 
@@ -205,50 +203,81 @@ public enum ByteUnit
     {
         long result = 0;
         int len = text.length();
-        int unitCharacter = 0;
+        int unitStart;
+        int unitCharacters = 0;
         int digitCharacters = 0;
-        Stream<Pair<String,ByteUnit>> unitsStream = listUnits();
+        Map<String,ByteUnit> units = listUnits();
 
-        for ( int i = 0; i < len; i++ )
+        int i = 0;
+
+        // Skip initial whitespace.
+        while ( i < len )
+        {
+            char ch = text.charAt( i );
+            if ( !Character.isWhitespace( ch ) )
+            {
+                break;
+            }
+            i++;
+        }
+
+        // Parse digits.
+        while ( i < len )
         {
             char ch = text.charAt( i );
             int digit = Character.digit( ch, 10 );
-            if ( digit != -1 )
+            if ( digit == -1 )
             {
-                if ( unitCharacter != 0 )
-                {
-                    throw invalidFormat( text );
-                }
-                if ( result != 0 )
-                {
-                    result *= 10;
-                }
-                result += digit;
-                digitCharacters++;
+                break;
             }
-            else if ( !Character.isWhitespace( ch ) )
-            {
-                int idx = unitCharacter;
-                unitsStream = unitsStream.filter( p -> p.first().length() > idx && p.first().charAt( idx ) == ch );
-                unitCharacter++;
-            }
+            result *= 10;
+            result += digit;
+            i++;
+            digitCharacters++;
         }
 
+        // Skip whitespace between digits and unit.
+        while ( i < len )
+        {
+            char ch = text.charAt( i );
+            if ( !Character.isWhitespace( ch ) )
+            {
+                break;
+            }
+            i++;
+        }
+
+        // Parse the unit.
+        unitStart = i;
+        while ( i < len )
+        {
+            char ch = text.charAt( i );
+            if ( Character.isWhitespace( ch ) )
+            {
+                break;
+            }
+            i++;
+            unitCharacters++;
+        }
+
+        // Validate parsed data and return result.
         if ( digitCharacters == 0 )
         {
             throw invalidFormat( text );
         }
 
-        if ( unitCharacter > 0 )
+        if ( unitCharacters == 0 )
         {
-            ByteUnit byteUnit = unitsStream.map( Pair::other ).findFirst().orElse( null );
-            if ( byteUnit == null )
-            {
-                throw invalidFormat( text );
-            }
-            result = byteUnit.toBytes( result );
+            return result;
         }
 
+        ByteUnit unit = units.get( text.substring( unitStart, unitStart + unitCharacters ) );
+        if ( unit == null )
+        {
+            throw invalidFormat( text );
+        }
+
+        result = unit.toBytes( result );
         return result;
     }
 
@@ -257,9 +286,16 @@ public enum ByteUnit
         return new IllegalArgumentException( "Invalid number format: '" + text + "'" );
     }
 
-    private static Stream<Pair<String,ByteUnit>> listUnits()
+    private static Map<String,ByteUnit> listUnits()
     {
-        return Arrays.stream( values() ).flatMap(
-                b -> Stream.of( b.names ).map( n -> Pair.of( n, b ) ) );
+        Map<String,ByteUnit> units = new HashMap<>();
+        for ( ByteUnit unit : values() )
+        {
+            for ( String name : unit.names )
+            {
+                units.put( name, unit );
+            }
+        }
+        return units;
     }
 }
