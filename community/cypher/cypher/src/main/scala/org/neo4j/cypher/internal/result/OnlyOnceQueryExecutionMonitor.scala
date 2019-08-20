@@ -36,4 +36,7 @@ case class OnlyOnceQueryExecutionMonitor(monitor: QueryExecutionMonitor) extends
       closed = true
       monitor.endSuccess(query)
     }
+
+  override def start(query: ExecutingQuery): Unit =
+    monitor.start( query )
 }

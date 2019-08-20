@@ -288,7 +288,7 @@ public final class SettingValueParsers
                     }
                 }
 
-                throw new IllegalArgumentException( format( "%s not one of %s", value, values.toString() ) );
+                throw new IllegalArgumentException( format( "'%s' not one of %s", value, values.toString() ) );
             }
 
             @Override
@@ -296,7 +296,7 @@ public final class SettingValueParsers
             {
                 if ( !values.contains( value ) )
                 {
-                    throw new IllegalArgumentException( format( "%s not one of %s", value, values.toString() ) );
+                    throw new IllegalArgumentException( format( "'%s' not one of %s", value, values.toString() ) );
                 }
             }
 

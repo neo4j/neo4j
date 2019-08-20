@@ -30,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
@@ -258,6 +259,29 @@ public final class SettingMigrators
             }
 
             values.keySet().removeAll( toRemove );
+        }
+    }
+
+    @ServiceProvider
+    public static class QueryLoggerMigrator implements SettingMigrator
+    {
+        private static final String deprecationMessage = "Use of deprecated setting value %s=%s. It is replaced by %s=%s";
+        private static final String settingName = GraphDatabaseSettings.log_queries.name();
+
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            String value = values.get( settingName );
+            if ( SettingValueParsers.TRUE.equalsIgnoreCase( value ) )
+            {
+                log.warn( deprecationMessage, settingName, value, settingName, LogQueryLevel.INFO.name() );
+                values.put( settingName, LogQueryLevel.INFO.name() );
+            }
+            else if ( SettingValueParsers.FALSE.equalsIgnoreCase( value ) )
+            {
+                log.warn( deprecationMessage, settingName, value, settingName, LogQueryLevel.OFF.name() );
+                values.put( settingName, LogQueryLevel.OFF.name() );
+            }
         }
     }
 

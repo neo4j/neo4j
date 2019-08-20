@@ -819,12 +819,20 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> dense_node_threshold =
             newBuilder( "dbms.relationship_grouping_threshold", INT, 50 ).addConstraint( min( 1 ) ).build();
 
-    @Description( "Log executed queries that take longer than the configured threshold, dbms.logs.query.threshold. " +
+    @Description( "Log executed queries. Valid values are 'OFF', 'INFO' & 'VERBOSE'.\n" +
+            "OFF:  no logging.\n" +
+            "INFO: log queries at the end of execution, that take longer than the configured threshold, dbms.logs.query.threshold.\n" +
+            "VERBOSE: log queries at the start and end of execution, regardless of dbms.logs.query.threshold.\n" +
             "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
             "For location of the Logs directory, see <<file-locations>>. " +
             "This feature is available in the Neo4j Enterprise Edition." )
-    public static final Setting<Boolean> log_queries =
-            newBuilder( "dbms.logs.query.enabled", BOOL, false ).dynamic().build();
+    public static final Setting<LogQueryLevel> log_queries =
+            newBuilder( "dbms.logs.query.enabled", ofEnum( LogQueryLevel.class ), LogQueryLevel.VERBOSE ).dynamic().build();
+
+    public enum LogQueryLevel
+    {
+        OFF, INFO, VERBOSE
+    }
 
     @Description( "Send user logs to the process stdout. " +
             "If this is disabled then logs will instead be sent to the file _neo4j.log_ located in the logs directory. " +
@@ -883,8 +891,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled =
             newBuilder( "dbms.logs.query.page_logging_enabled", BOOL, false ).dynamic().build();
 
-    @Description( "If the execution of query takes more time than this threshold, the query is logged - " +
-            "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged." )
+    @Description( "If the execution of query takes more time than this threshold, the query is logged once completed - " +
+            "provided query logging is set to INFO. Defaults to 0 seconds, that is all queries are logged." )
     public static final Setting<Duration> log_queries_threshold =
             newBuilder( "dbms.logs.query.threshold", DURATION, Duration.ZERO ).dynamic().build();
 

@@ -22,27 +22,50 @@ package org.neo4j.configuration;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
+import org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.JksSslPolicyConfig;
 import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.configuration.ssl.Pkcs12SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
+@ExtendWith( TestDirectoryExtension.class )
 class SettingMigratorsTest
 {
+    @Inject
+    private TestDirectory testDirectory;
+
     @Test
     void shouldRemoveAllowKeyGenerationFrom35ConfigFormat() throws Throwable
     {
@@ -100,6 +123,135 @@ class SettingMigratorsTest
             logProvider.assertAtLeastOnce( inLog( Config.class ).warn("Use of deprecated setting %s. Legacy ssl policy is no longer supported.", setting ) );
         }
 
+    }
+
+    @Test
+    void testDefaultDatabaseMigrator() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of( "dbms.active_database=foo") );
+
+        {
+            Config config = Config.newBuilder()
+                    .fromFile( confFile )
+                    .build();
+            Log log = mock( Log.class );
+            config.setLogger( log );
+
+            assertEquals( "foo", config.get( GraphDatabaseSettings.default_database ) );
+            verify( log ).warn( "Use of deprecated setting %s. It is replaced by %s", "dbms.active_database", GraphDatabaseSettings.default_database.name() );
+        }
+        {
+            Config config = Config.newBuilder()
+                    .fromFile( confFile )
+                    .set( GraphDatabaseSettings.default_database, "bar" )
+                    .build();
+            Log log = mock( Log.class );
+            config.setLogger( log );
+
+            assertEquals( "bar", config.get( GraphDatabaseSettings.default_database ) );
+            verify( log ).warn( "Use of deprecated setting %s. It is replaced by %s", "dbms.active_database", GraphDatabaseSettings.default_database.name() );
+        }
+
+    }
+
+    @Test
+    void testConnectorOldFormatMigration() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Arrays.asList(
+                "dbms.connector.bolt.enabled=true",
+                "dbms.connector.bolt.type=BOLT",
+                "dbms.connector.http.enabled=true",
+                "dbms.connector.https.enabled=true",
+                "dbms.connector.bolt2.type=bolt",
+                "dbms.connector.bolt2.listen_address=:1234" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertTrue( config.get( BoltConnector.enabled ) );
+        assertTrue( config.get( HttpConnector.enabled ) );
+        assertTrue( config.get( HttpsConnector.enabled ) );
+
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. Type is no longer required", "dbms.connector.bolt.type" ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
+                "dbms.connector.bolt2.type" ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
+                "dbms.connector.bolt2.listen_address" ) );
+
+    }
+
+    @TestFactory
+    Collection<DynamicTest> testConnectorAddressMigration()
+    {
+        Collection<DynamicTest> tests = new ArrayList<>();
+        tests.add( dynamicTest( "Test bolt connector address migration",
+                () -> testAddrMigration( BoltConnector.listen_address, BoltConnector.advertised_address ) ) );
+        tests.add( dynamicTest( "Test http connector address migration",
+                () -> testAddrMigration( HttpConnector.listen_address, HttpConnector.advertised_address ) ) );
+        tests.add( dynamicTest( "Test https connector address migration",
+                () -> testAddrMigration( HttpsConnector.listen_address, HttpsConnector.advertised_address ) ) );
+        return tests;
+    }
+
+    @TestFactory
+    Collection<DynamicTest> testQueryLogMigration()
+    {
+        Collection<DynamicTest> tests = new ArrayList<>();
+        tests.add( dynamicTest( "Test query log migration, disabled", () -> testQueryLogMigration( false, LogQueryLevel.OFF ) ) );
+        tests.add( dynamicTest( "Test query log migration, enabled", () -> testQueryLogMigration( true, LogQueryLevel.INFO ) ) );
+        return tests;
+    }
+
+    private static void testQueryLogMigration( Boolean oldValue, LogQueryLevel newValue )
+    {
+        var setting = GraphDatabaseSettings.log_queries;
+        Config config = Config.newBuilder().setRaw( Map.of( setting.name(), oldValue.toString() ) ).build();
+
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertEquals( newValue, config.get( setting ) );
+
+        String msg = "Use of deprecated setting value %s=%s. It is replaced by %s=%s";
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, setting.name(), oldValue.toString(), setting.name(), newValue.name() ) );
+    }
+
+    private static void testAddrMigration( Setting<SocketAddress> listenAddr, Setting<SocketAddress> advertisedAddr )
+    {
+        Config config1 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), "foo:111" ) ).build();
+        Config config2 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), ":222" ) ).build();
+        Config config3 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), ":333", advertisedAddr.name(), "bar" ) ).build();
+        Config config4 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), "foo:444", advertisedAddr.name(), ":555" ) ).build();
+        Config config5 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), "foo", advertisedAddr.name(), "bar" ) ).build();
+        Config config6 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), "foo:666", advertisedAddr.name(), "bar:777" ) ).build();
+
+        var logProvider = new AssertableLogProvider();
+        config1.setLogger( logProvider.getLog( Config.class ) );
+        config2.setLogger( logProvider.getLog( Config.class ) );
+        config3.setLogger( logProvider.getLog( Config.class ) );
+        config4.setLogger( logProvider.getLog( Config.class ) );
+        config5.setLogger( logProvider.getLog( Config.class ) );
+        config6.setLogger( logProvider.getLog( Config.class ) );
+
+        assertEquals( new SocketAddress( "localhost", 111 ), config1.get( advertisedAddr ) );
+        assertEquals( new SocketAddress( "localhost", 222 ), config2.get( advertisedAddr ) );
+        assertEquals( new SocketAddress( "bar", 333 ), config3.get( advertisedAddr ) );
+        assertEquals( new SocketAddress( "localhost", 555 ), config4.get( advertisedAddr ) );
+        assertEquals( new SocketAddress( "bar", advertisedAddr.defaultValue().getPort() ), config5.get( advertisedAddr ) );
+        assertEquals( new SocketAddress( "bar", 777 ), config6.get( advertisedAddr ) );
+
+        String msg = "Use of deprecated setting port propagation. port %s is migrated from %s to %s.";
+
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 111, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 222, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 333, listenAddr.name(), advertisedAddr.name() ) );
+
+        logProvider.assertNone( inLog( Config.class ).warn( msg, 444, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertNone( inLog( Config.class ).warn( msg, 555, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertNone( inLog( Config.class ).warn( msg, 666, listenAddr.name(), advertisedAddr.name() ) );
     }
 
     private static void testMigrateSslPolicy( String oldGroupnameSetting, String sslType, SslPolicyConfig policyConfig )
