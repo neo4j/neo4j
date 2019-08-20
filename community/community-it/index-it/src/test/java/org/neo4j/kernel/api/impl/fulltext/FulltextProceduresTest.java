@@ -194,7 +194,6 @@ public class FulltextProceduresTest
             assertEquals( "INDEX ON :Label1,Label2(prop1, prop2)", row.get( "description" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
-            //noinspection ConstantConditions
             assertFalse( result.hasNext() );
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
             tx.commit();
@@ -239,7 +238,6 @@ public class FulltextProceduresTest
             assertEquals( "INDEX ON -[:Reltype1,Reltype2(prop1, prop2)]-", row.get( "description" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
-            //noinspection ConstantConditions
             assertFalse( result.hasNext() );
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
             tx.commit();

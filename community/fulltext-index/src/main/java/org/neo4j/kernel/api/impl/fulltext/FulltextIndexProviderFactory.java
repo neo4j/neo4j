@@ -24,10 +24,10 @@ import java.io.File;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -42,7 +42,6 @@ import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
 @RecoveryExtension
 @ServiceProvider
@@ -73,8 +72,7 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
 
     private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
     {
-        IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( storeDir ).forProvider( DESCRIPTOR );
-        return directoriesBySubProvider( parentDirectoryStructure );
+        return directoriesByProvider( storeDir );
     }
 
     @Override

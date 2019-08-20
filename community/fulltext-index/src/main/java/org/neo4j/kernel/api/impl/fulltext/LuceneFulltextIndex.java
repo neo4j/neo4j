@@ -58,7 +58,7 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
         this.type = descriptor.schema().entityType();
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         File indexFolder = storage.getIndexFolder();
-        transactionsFolder = new File( indexFolder.getParent(), indexFolder.getName() + ".tx" );
+        transactionsFolder = new File( indexFolder, indexFolder.getName() + ".tx" );
     }
 
     @Override
