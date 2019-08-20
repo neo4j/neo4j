@@ -26,6 +26,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * The {@link CheckPointThresholdPolicy} specifies the overall <em>type</em> of threshold that should be used for
@@ -64,5 +65,5 @@ public abstract class CheckPointThresholdPolicy extends Service
      * Create a {@link CheckPointThreshold} instance based on this policy and the given configurations.
      */
     public abstract CheckPointThreshold createThreshold(
-            Config config, Clock clock, LogPruning logPruning, LogProvider logProvider );
+            Config config, SystemNanoClock clock, LogPruning logPruning, LogProvider logProvider );
 }

@@ -19,26 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import java.time.Clock;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.time.SystemNanoClock;
 
 class TimeCheckPointThreshold extends AbstractCheckPointThreshold
 {
     private volatile long lastCheckPointedTransactionId;
-    private volatile long nextCheckPointTime;
+    private volatile long lastCheckPointTimeNanos;
 
     private final long timeMillisThreshold;
-    private final Clock clock;
+    private final SystemNanoClock clock;
 
-    TimeCheckPointThreshold( long thresholdMillis, Clock clock )
+    TimeCheckPointThreshold( long thresholdMillis, SystemNanoClock clock )
     {
         super( "time threshold" );
         this.timeMillisThreshold = thresholdMillis;
         this.clock = clock;
         // The random start offset means database in a cluster will not all check-point at the same time.
         long randomStartOffset = thresholdMillis > 0 ? ThreadLocalRandom.current().nextLong( thresholdMillis ) : 0;
-        this.nextCheckPointTime = clock.millis() + thresholdMillis + randomStartOffset;
-
+        this.lastCheckPointTimeNanos = clock.nanos() + TimeUnit.MILLISECONDS.toNanos( randomStartOffset );
     }
 
     @Override
@@ -51,13 +52,13 @@ class TimeCheckPointThreshold extends AbstractCheckPointThreshold
     protected boolean thresholdReached( long lastCommittedTransactionId )
     {
         return lastCommittedTransactionId > lastCheckPointedTransactionId &&
-               clock.millis() >= nextCheckPointTime;
+               clock.nanos() - lastCheckPointTimeNanos >= TimeUnit.MILLISECONDS.toNanos( timeMillisThreshold );
     }
 
     @Override
     public void checkPointHappened( long transactionId )
     {
-        nextCheckPointTime = clock.millis() + timeMillisThreshold;
+        lastCheckPointTimeNanos = clock.nanos();
         lastCheckPointedTransactionId = transactionId;
     }
 

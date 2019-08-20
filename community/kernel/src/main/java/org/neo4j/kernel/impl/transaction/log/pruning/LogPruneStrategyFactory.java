@@ -67,8 +67,7 @@ public class LogPruneStrategyFactory
      *   <li>1k hours - For keeping last 1000 hours worth of log data</li>
      * </ul>
      */
-    public LogPruneStrategy strategyFromConfigValue( FileSystemAbstraction fileSystem, LogFiles logFiles,
-            Clock clock, String configValue )
+    LogPruneStrategy strategyFromConfigValue( FileSystemAbstraction fileSystem, LogFiles logFiles, Clock clock, String configValue )
     {
         ThresholdConfigValue value = parse( configValue );
 

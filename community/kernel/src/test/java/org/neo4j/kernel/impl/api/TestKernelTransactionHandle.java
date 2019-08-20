@@ -64,6 +64,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
+    public long startTimeNanos()
+    {
+        return tx.startTimeNanos();
+    }
+
+    @Override
     public long timeoutMillis()
     {
         return tx.timeout();

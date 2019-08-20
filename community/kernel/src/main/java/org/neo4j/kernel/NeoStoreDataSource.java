@@ -21,7 +21,6 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -677,7 +676,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return heapAllocation;
     }
 
-    private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
+    private void buildTransactionMonitor( KernelTransactions kernelTransactions, SystemNanoClock clock, Config config )
     {
         KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, logService );
         dataSourceDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
