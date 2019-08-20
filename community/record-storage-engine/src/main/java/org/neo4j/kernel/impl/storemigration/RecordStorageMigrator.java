@@ -485,7 +485,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
         // Since we'll be using these stores in the batch importer where we don't have this fine control over IdGeneratorFactory
         // it's easier to just figure out highId and create simple id files of the current format at that highId.
-        createStoreFactory( migrationStrcuture, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, pageCache ) ).openAllNeoStores().close();
+        createStoreFactory( migrationStrcuture, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ) ).openAllNeoStores().close();
     }
 
     private void createStore( DatabaseLayout migrationDirectoryStructure, RecordFormats newFormat )
@@ -633,7 +633,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, srcIdGeneratorFactory );
-        StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, pageCache ) );
+        StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ) );
 
         if ( newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) )
         {

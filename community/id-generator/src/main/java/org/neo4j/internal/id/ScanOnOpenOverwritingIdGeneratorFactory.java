@@ -38,7 +38,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
  */
 public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorFactory
 {
-    public ScanOnOpenOverwritingIdGeneratorFactory( FileSystemAbstraction fs, PageCache pageCache )
+    public ScanOnOpenOverwritingIdGeneratorFactory( FileSystemAbstraction fs )
     {
         super( fs, immediate() );
     }

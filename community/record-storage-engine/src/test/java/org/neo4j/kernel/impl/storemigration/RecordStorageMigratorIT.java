@@ -134,7 +134,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
-                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, pageCache ), pageCache, fs, logService.getInternalLogProvider() );
+                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs, logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -163,7 +163,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
-                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, pageCache ), pageCache, fs,
+                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs,
                 logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
         logProvider.rawMessageMatcher().assertNotContains( "ERROR" );
@@ -196,7 +196,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, pageCache ), pageCache, fs,
+                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs,
                         logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
@@ -267,7 +267,7 @@ class RecordStorageMigratorIT
 
         // Uses this special scan-on-open IGF because when the new IndexedIdGenerator was introduced this test would break
         // when trying to open an older store, before doing migration.
-        IdGeneratorFactory igf = new ScanOnOpenOverwritingIdGeneratorFactory( fs, pageCache );
+        IdGeneratorFactory igf = new ScanOnOpenOverwritingIdGeneratorFactory( fs );
         LogProvider logProvider = logService.getInternalLogProvider();
         File storeFile = databaseLayout.schemaStore();
         File idFile = databaseLayout.idSchemaStore();

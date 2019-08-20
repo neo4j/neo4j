@@ -239,7 +239,7 @@ public class StoreUpgraderTest
         newUpgrader( check, allowMigrateConfig, pageCache ).migrateIfNeeded( databaseLayout );
 
         // Then
-        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, pageCache ),
+        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ),
                 pageCache, fileSystem, NullLogProvider.getInstance() );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {

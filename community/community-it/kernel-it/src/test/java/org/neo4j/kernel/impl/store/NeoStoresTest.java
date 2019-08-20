@@ -757,7 +757,7 @@ public class NeoStoresTest
         // given
         Config defaults = Config.defaults( counts_store_rotation_timeout, Duration.ofMinutes( 60 ) );
         String errorMessage = "Failing for the heck of it";
-        StoreFactory factory = new StoreFactory( databaseLayout, defaults, new CloseFailingDefaultIdGeneratorFactory( fs, pageCache, errorMessage ), pageCache,
+        StoreFactory factory = new StoreFactory( databaseLayout, defaults, new CloseFailingDefaultIdGeneratorFactory( fs, errorMessage ), pageCache,
                 fs, NullLogProvider.getInstance() );
         NeoStores neoStore = factory.openAllNeoStores( true );
 
@@ -1464,7 +1464,7 @@ public class NeoStoresTest
     {
         private final String errorMessage;
 
-        CloseFailingDefaultIdGeneratorFactory( FileSystemAbstraction fs, PageCache pageCache, String errorMessage )
+        CloseFailingDefaultIdGeneratorFactory( FileSystemAbstraction fs, String errorMessage )
         {
             super( fs, immediate() );
             this.errorMessage = errorMessage;
