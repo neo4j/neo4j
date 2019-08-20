@@ -241,14 +241,14 @@ object DataCollectorMatchers {
 
     val parser = new CypherParser
     private val preParsedQuery: PreParsedQuery = preParser.preParseQuery(expected, profile = false)
-    private val expectedAst = parser.parse(preParsedQuery.statement, Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.offset)))
+    private val expectedAst = parser.parse(preParsedQuery.statement, Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.options.offset)))
 
     override def apply(left: AnyRef): MatchResult =
       MatchResult(
         matches = left match {
           case text: String =>
             val preParsedQuery1 = preParser.preParseQuery(text, profile = false)
-            parser.parse(preParsedQuery1.statement, Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.offset))) == expectedAst
+            parser.parse(preParsedQuery1.statement, Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset))) == expectedAst
           case _ => false
         },
         rawFailureMessage = s"'$left' is not the same Cypher as '$expected'",
