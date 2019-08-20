@@ -27,7 +27,7 @@ object Deprecations {
     e => Property(e, PropertyKeyName(propertyKey)(e.position))(e.position)
 
   def renameFunctionTo(newName: String): FunctionInvocation => FunctionInvocation =
-    f => f.copy(functionName = FunctionName(newName)(f.functionName.position))(f.position)
+    f => f.copy(functionName = FunctionName(newName)(f.functionName.position), deprecated = true)(f.position)
 
   case object V1 extends Deprecations {
     private val functionRenames: Map[String, String] =
@@ -41,14 +41,14 @@ object Deprecations {
     override val find: PartialFunction[Any, Deprecation] = {
 
       // straight renames
-      case f@FunctionInvocation(namespace, FunctionName(name), distinct, args) if functionRenames.contains(name) =>
+      case f@FunctionInvocation(namespace, FunctionName(name), distinct, args,_) if functionRenames.contains(name) =>
         Deprecation(
           () => renameFunctionTo(functionRenames(name))(f),
           () => Some(DeprecatedFunctionNotification(f.position, name, functionRenames(name)))
         )
 
       // timestamp
-      case f@FunctionInvocation(namespace, FunctionName(name), distinct, args) if name.equalsIgnoreCase("timestamp")=>
+      case f@FunctionInvocation(namespace, FunctionName(name), distinct, args,_) if name.equalsIgnoreCase("timestamp")=>
         Deprecation(
           () => renameFunctionTo("datetime").andThen(propertyOf("epochMillis"))(f),
           () => None
@@ -86,14 +86,14 @@ object Deprecations {
         // extract => list comprehension
         case e@ExtractExpression(scope, expression) =>
           Deprecation(
-            () => ListComprehension(scope, expression)(e.position),
+            () => ListComprehension(scope, expression, generatedThroughRewrite = true)(e.position),
             () => Some(DeprecatedFunctionNotification(e.position, "extract(...)", "[...]"))
           )
 
         // filter => list comprehension
         case e@FilterExpression(scope, expression) =>
           Deprecation(
-            () => ListComprehension(ExtractScope(scope.variable, scope.innerPredicate, None)(scope.position), expression)(e.position),
+            () => ListComprehension(ExtractScope(scope.variable, scope.innerPredicate, None)(scope.position), expression, generatedThroughRewrite = true)(e.position),
             () => Some(DeprecatedFunctionNotification(e.position, "filter(...)", "[...]"))
           )
 

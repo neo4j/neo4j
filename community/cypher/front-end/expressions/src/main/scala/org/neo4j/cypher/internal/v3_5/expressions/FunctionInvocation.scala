@@ -30,7 +30,8 @@ object FunctionInvocation {
   FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
 }
 
-case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
+case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression],
+                              deprecated: Boolean = false)
                              (val position: InputPosition) extends Expression {
   val name: String = (namespace.parts :+ functionName.name).mkString(".")
   val function: functions.Function = functions.Function.lookup.getOrElse(name.toLowerCase, UnresolvedFunction)

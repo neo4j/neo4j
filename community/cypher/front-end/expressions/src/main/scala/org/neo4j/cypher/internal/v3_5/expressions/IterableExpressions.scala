@@ -56,7 +56,7 @@ object ExtractExpression {
     ExtractExpression(ExtractScope(variable, innerPredicate, extractExpression)(position), expression)(position)
 }
 
-case class ListComprehension(scope: ExtractScope, expression: Expression)(val position: InputPosition)
+case class ListComprehension(scope: ExtractScope, expression: Expression, generatedThroughRewrite: Boolean = false)(val position: InputPosition)
   extends FilteringExpression {
 
   val name = "[...]"

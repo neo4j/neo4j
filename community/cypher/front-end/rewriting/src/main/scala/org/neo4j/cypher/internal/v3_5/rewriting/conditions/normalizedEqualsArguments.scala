@@ -16,8 +16,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.rewriting.conditions
 
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.expressions.Equals
+import org.neo4j.cypher.internal.v3_5.expressions.{Equals, _}
 import org.neo4j.cypher.internal.v3_5.rewriting.Condition
 
 case object normalizedEqualsArguments extends Condition {
@@ -26,7 +25,7 @@ case object normalizedEqualsArguments extends Condition {
     equals.collect {
       case eq@Equals(expr, Property(_,_)) if !expr.isInstanceOf[Property] && notIdFunction(expr) =>
         s"Equals at ${eq.position} is not normalized: $eq"
-      case eq@Equals(expr, func@FunctionInvocation(_, _, _, _)) if isIdFunction(func) && notIdFunction(expr) =>
+      case eq@Equals(expr, func@FunctionInvocation(_, _, _, _,_)) if isIdFunction(func) && notIdFunction(expr) =>
         s"Equals at ${eq.position} is not normalized: $eq"
     }
   }

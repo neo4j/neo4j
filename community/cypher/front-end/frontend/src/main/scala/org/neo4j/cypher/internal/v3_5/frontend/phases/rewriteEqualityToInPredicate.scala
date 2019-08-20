@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.frontend.phases
 
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions.{In, Variable, _}
 import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v3_5.expressions.{In, Variable}
 
 /*
 TODO: This should implement Rewriter instead
@@ -29,7 +28,7 @@ case object rewriteEqualityToInPredicate extends StatementRewriter {
 
   override def instance(ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
     // id(a) = value => id(a) IN [value]
-    case predicate@Equals(func@FunctionInvocation(_, _, _, IndexedSeq(idExpr)), idValueExpr)
+    case predicate@Equals(func@FunctionInvocation(_, _, _, IndexedSeq(idExpr), _), idValueExpr)
       if func.function == functions.Id =>
       In(func, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
 

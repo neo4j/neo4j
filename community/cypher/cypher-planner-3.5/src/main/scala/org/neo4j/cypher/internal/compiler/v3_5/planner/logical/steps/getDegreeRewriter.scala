@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.neo4j.cypher.internal.v3_5.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.v3_5.expressions.{functions, _}
+import org.neo4j.cypher.internal.v3_5.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.calculateUsingGetDegree
 import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
 
@@ -34,22 +34,22 @@ case object getDegreeRewriter extends Rewriter {
 
   private def rewriter = Rewriter.lift {
     // LENGTH( (a)-[]->() )
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(None, List(), None ,_))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(None, List(), None ,_))))), _)
       if func.function == functions.Length || func.function == functions.Size =>
       calculateUsingGetDegree(func, node, types, dir)
 
     // LENGTH( ()-[]->(a) )
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(Some(node), List(), None, _))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(Some(node), List(), None, _))))), _)
       if func.function == functions.Length || func.function == functions.Size =>
       calculateUsingGetDegree(func, node, types, dir.reversed)
 
     // EXISTS( (a)-[]->() ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(None, List(), None, _))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(None, List(), None, _))))), _)
       if func.function == functions.Exists  =>
       GreaterThan(calculateUsingGetDegree(func, node, types, dir), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
 
     // EXISTS( ()-[]->(a) ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(Some(node), List(), None, _))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, types, None, None, dir, _, _), NodePattern(Some(node), List(), None, _))))), _)
       if func.function == functions.Exists =>
       GreaterThan(calculateUsingGetDegree(func, node, types, dir.reversed), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
   }

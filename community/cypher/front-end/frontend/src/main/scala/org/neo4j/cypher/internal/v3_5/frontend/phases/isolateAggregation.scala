@@ -101,7 +101,7 @@ case object isolateAggregation extends StatementRewriter {
         case e@ExtractExpression(_, expr) if hasAggregateButIsNotAggregate(e) =>
           Seq(expr)
 
-        case e@ListComprehension(_, expr) if hasAggregateButIsNotAggregate(e) =>
+        case e@ListComprehension(_, expr, _) if hasAggregateButIsNotAggregate(e) =>
           Seq(expr)
 
         case e@DesugaredMapProjection(variable, items, _) if hasAggregateButIsNotAggregate(e) =>

@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.v3_5.ast.prettifier
 
+import org.neo4j.cypher.internal.v3_5.ast.prettifier.ExpressionStringifier.backtick
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.util.InternalException
-import ExpressionStringifier.backtick
 
 case class ExpressionStringifier(extender: Expression => String = e => throw new InternalException(s"failed to pretty print $e")) {
   def apply(ast: Expression): String = {
@@ -46,7 +46,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         backtick(v)
       case ListLiteral(expressions) =>
         expressions.map(this.apply).mkString("[", ", ", "]")
-      case FunctionInvocation(namespace, functionName, distinct, args) =>
+      case FunctionInvocation(namespace, functionName, distinct, args, _) =>
         val ns = namespace.parts.mkString(".")
         val ds = if (distinct) "DISTINCT " else ""
         val as = args.map(this.apply).mkString(", ")
@@ -78,7 +78,7 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         s"any${prettyScope(scope, expression)}"
       case not@Not(arg) =>
         s"not ${parens(not, arg)}"
-      case ListComprehension(s, expression) =>
+      case ListComprehension(s, expression, _) =>
         val v = this.apply(s.variable)
         val p = s.innerPredicate.map(e => " WHERE " + this.apply(e)).getOrElse("")
         val e = s.extractExpression.map(e => " | " + this.apply(e)).getOrElse("")
