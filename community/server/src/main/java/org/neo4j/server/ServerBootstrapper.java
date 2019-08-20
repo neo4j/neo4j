@@ -23,10 +23,12 @@ import sun.misc.Signal;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.TransactionFailureException;
@@ -107,6 +109,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
             checkCompatibility();
 
+            setupSerializationFiltering( config );
+
             server = createNeoServer( config, dependencies, userLogProvider );
             server.start();
 
@@ -129,6 +133,24 @@ public abstract class ServerBootstrapper implements Bootstrapper
             log.error( format( "Failed to start Neo4j on %s.", serverAddress ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
+    }
+
+    private void setupSerializationFiltering( Config config )
+    {
+        boolean useBlacklist = config.get( GraphDatabaseSettings.java_serialization_filter_use_blacklist );
+        String filter;
+        if ( useBlacklist )
+        {
+            List<String> patterns = config.get( GraphDatabaseSettings.java_serialization_filter_blacklist );
+            filter = patterns.stream().collect( Collectors.joining( ";", "!", "" ) );
+        }
+        else
+        {
+            List<String> patterns = config.get( GraphDatabaseSettings.java_serialization_filter_whitelist );
+            patterns.add( "!*" );
+            filter = patterns.stream().collect( Collectors.joining( ";" ) );
+        }
+        System.setProperty( "jdk.serialFilter", filter );
     }
 
     @Override
