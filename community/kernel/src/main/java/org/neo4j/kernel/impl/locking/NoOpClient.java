@@ -21,12 +21,18 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.impl.api.Epoch;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 
 public class NoOpClient implements Locks.Client
 {
+    @Override
+    public void initialize( Epoch epoch )
+    {
+    }
+
     @Override
     public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {

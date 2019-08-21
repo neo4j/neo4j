@@ -84,4 +84,10 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     {
         generators.values().forEach( visitor );
     }
+
+    @Override
+    public void clearCache()
+    {
+        generators.values().forEach( IdGenerator::clearCache );
+    }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.api.Epoch;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.CommandStream;
 
@@ -62,8 +62,8 @@ public interface TransactionRepresentation extends CommandStream
     long getTimeCommitted();
 
     /**
-     * @return the identifier for the lock session associated with this transaction, or {@value Locks.Client#NO_LOCK_SESSION_ID} if none.
-     * This is only used for slave commits.
+     * @return the identifier for the epoch token associated with this transaction, or {@value Epoch#NO_EPOCH}.
+     * This is only used for distributed commits.
      */
-    int getLockSessionId();
+    int getEpochTokenId();
 }

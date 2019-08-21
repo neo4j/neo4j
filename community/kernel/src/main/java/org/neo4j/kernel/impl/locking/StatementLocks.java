@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.impl.api.Epoch;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.lock.LockTracer;
 
@@ -30,6 +31,12 @@ import org.neo4j.lock.LockTracer;
  */
 public interface StatementLocks extends AutoCloseable
 {
+    /**
+     * Initializes this locks instance with an {@link Epoch}. Must be called before the first call to {@link #pessimistic()} or {@link #optimistic()}.
+     * @param epoch {@link Epoch} of the transaction owning this locks instance.
+     */
+    void initialize( Epoch epoch );
+
     /**
      * Get {@link Locks.Client} responsible for pessimistic locks. Such locks will be grabbed right away.
      *

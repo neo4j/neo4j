@@ -36,6 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
@@ -150,6 +151,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final VersionContextSupplier versionContextSupplier;
     private final AvailabilityGuard databaseAvailabilityGuard;
     private final DatabaseId databaseId;
+    private final EpochSupplier epochSupplier;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final ClockContext clocks;
@@ -165,6 +167,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private volatile long userTransactionId;
+    private Epoch epoch;
     private volatile boolean closing;
     private volatile boolean closed;
     private boolean failure;
@@ -206,7 +209,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            AvailabilityGuard databaseAvailabilityGuard, DatabaseId databaseId )
+            AvailabilityGuard databaseAvailabilityGuard, DatabaseId databaseId, EpochSupplier epochSupplier )
     {
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -223,6 +226,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.versionContextSupplier = versionContextSupplier;
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.databaseId = databaseId;
+        this.epochSupplier = epochSupplier;
         this.currentStatement = new KernelStatement( this, lockTracer, this.clocks, versionContextSupplier, cpuClockRef, databaseId );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
@@ -259,6 +263,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.type = type;
         this.statementLocks = statementLocks;
         this.userTransactionId = userTransactionId;
+        this.epoch = epochSupplier.get();
+        this.statementLocks.initialize( epoch );
         this.terminationReason = null;
         this.closing = false;
         this.closed = false;
@@ -468,6 +474,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement.executingQuery();
     }
 
+    private void ensureEpochAcquired()
+    {
+        try
+        {
+            epoch.ensureHoldingToken();
+        }
+        catch ( EpochException e )
+        {
+            throw new TransientTransactionFailureException( "This transaction got invalidated due to a new epoch started after this transaction started", e );
+        }
+    }
+
     void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
     {
         writeState = writeState.upgradeToDataWrites();
@@ -496,6 +514,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( txState == null )
         {
+            ensureEpochAcquired();
             transactionMonitor.upgradeToWriteTransaction();
             txState = new TxState( collectionsFactory );
         }
@@ -714,8 +733,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),
-                            startTimeMillis, lastTransactionIdWhenStarted, timeCommitted,
-                            commitLocks.getLockSessionId() );
+                            startTimeMillis, lastTransactionIdWhenStarted, timeCommitted, epoch.tokenId() );
 
                     // Commit the transaction
                     success = true;
@@ -1121,22 +1139,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String toString()
     {
-        String lockSessionId;
-        StatementLocks locks = statementLocks;
-        if ( locks == null )
-        {
-            lockSessionId = "statementLocks == null";
-        }
-        else
-        {
-            if ( locks instanceof FrozenStatementLocks )
-            {
-                locks = ((FrozenStatementLocks)locks).getRealStatementLocks();
-            }
-            lockSessionId = String.valueOf( locks.pessimistic().getLockSessionId() );
-        }
-
-        return "KernelTransaction[" + lockSessionId + "]";
+        return String.format( "KernelTransaction[epoch:%d]", epoch );
     }
 
     public void dispose()

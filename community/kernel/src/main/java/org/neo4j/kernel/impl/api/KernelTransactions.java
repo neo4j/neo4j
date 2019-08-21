@@ -115,6 +115,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final TransactionTracer transactionTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final LockTracer lockTracer;
+    private final EpochSupplier epoch;
 
     /**
      * Used to enumerate all transactions in the system, active and idle ones.
@@ -153,7 +154,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
             SchemaState schemaState, TokenHolders tokenHolders, DatabaseId databaseId, IndexingService indexingService, LabelScanStore labelScanStore,
             IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, TransactionTracer transactionTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier, LockTracer lockTracer )
+            PageCursorTracerSupplier pageCursorTracerSupplier, LockTracer lockTracer, EpochSupplier epoch )
     {
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
@@ -183,6 +184,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.transactionTracer = transactionTracer;
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.lockTracer = lockTracer;
+        this.epoch = epoch;
         this.factory = new KernelTransactionImplementationFactory( allTransactions );
         this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
@@ -409,7 +411,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             transactionTracer, lockTracer, pageCursorTracerSupplier, storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies, databaseAvailabilityGuard,
-                            databaseId );
+                            databaseId, epoch );
             this.transactions.add( tx );
             return tx;
         }

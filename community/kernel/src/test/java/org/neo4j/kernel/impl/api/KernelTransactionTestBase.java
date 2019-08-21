@@ -185,7 +185,7 @@ class KernelTransactionTestBase
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                 mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies, availabilityGuard,
-                new TestDatabaseIdRepository().defaultDatabase() );
+                new TestDatabaseIdRepository().defaultDatabase(), EpochSupplier.NO_EPOCHS );
     }
 
     public static class CapturingCommitProcess implements TransactionCommitProcess

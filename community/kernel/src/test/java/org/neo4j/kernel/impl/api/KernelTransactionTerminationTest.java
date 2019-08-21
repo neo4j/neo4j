@@ -296,7 +296,7 @@ class KernelTransactionTerminationTest
                     LockTracer.NONE, PageCursorTracerSupplier.NULL, mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
                     mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                    mock( AvailabilityGuard.class ), new TestDatabaseIdRepository().defaultDatabase() );
+                    mock( AvailabilityGuard.class ), new TestDatabaseIdRepository().defaultDatabase(), EpochSupplier.NO_EPOCHS );
 
             this.monitor = monitor;
         }

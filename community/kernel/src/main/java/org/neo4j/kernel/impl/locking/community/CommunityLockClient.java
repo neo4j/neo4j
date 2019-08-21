@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.impl.api.Epoch;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
@@ -76,6 +77,12 @@ public class CommunityLockClient implements Locks.Client
         writeReleaser = ( key, lockResource ) -> manager.releaseWriteLock( lockResource, lockTransaction );
         typeReadReleaser = value -> value.forEachKeyValue( readReleaser );
         typeWriteReleaser = value -> value.forEachKeyValue( writeReleaser );
+    }
+
+    @Override
+    public void initialize( Epoch epoch )
+    {
+        // we don't need epoch here
     }
 
     @Override

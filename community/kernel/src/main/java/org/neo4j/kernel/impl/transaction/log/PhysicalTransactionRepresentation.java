@@ -124,7 +124,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public int getLockSessionId()
+    public int getEpochTokenId()
     {
         return lockSessionIdentifier;
     }

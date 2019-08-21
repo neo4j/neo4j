@@ -135,5 +135,11 @@ class BufferingIdGeneratorFactoryTest
         {
             Stream.of( generators ).forEach( visitor );
         }
+
+        @Override
+        public void clearCache()
+        {
+            // no-op
+        }
     }
 }

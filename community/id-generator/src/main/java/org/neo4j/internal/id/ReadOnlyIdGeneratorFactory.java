@@ -70,6 +70,12 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         idGenerators.values().forEach( visitor );
     }
 
+    @Override
+    public void clearCache()
+    {
+        actual.clearCache();
+    }
+
     static class ReadOnlyIdGenerator implements IdGenerator
     {
         private final IdGenerator actual;

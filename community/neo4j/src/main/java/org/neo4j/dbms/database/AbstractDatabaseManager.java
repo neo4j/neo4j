@@ -42,6 +42,7 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
 import org.neo4j.kernel.database.SystemDbDatabaseIdRepository;
+import org.neo4j.kernel.impl.api.EpochSupplier;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -142,7 +143,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 
         return new ModularDatabaseCreationContext( databaseId, globalModule, parentDependencies, parentMonitors,
                                                    editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ),
-                                                   databaseConfig );
+                                                   databaseConfig, EpochSupplier.NO_EPOCHS );
     }
 
     private void forEachDatabase( BiConsumer<DatabaseId,DB> consumer, boolean systemDatabaseLast )

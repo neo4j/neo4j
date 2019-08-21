@@ -17,24 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.id;
+package org.neo4j.kernel.impl.api;
 
-import java.io.File;
-import java.nio.file.OpenOption;
-import java.util.function.Consumer;
-import java.util.function.LongSupplier;
+import org.neo4j.kernel.api.exceptions.Status;
 
-import org.neo4j.io.pagecache.PageCache;
-
-public interface IdGeneratorFactory
+public class EpochException extends Exception implements Status.HasStatus
 {
-    IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions );
+    private final Status status;
 
-    IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions );
+    public EpochException( String message, Status status )
+    {
+        this( message, null, status );
+    }
 
-    IdGenerator get( IdType idType );
+    public EpochException( String message, Throwable cause, Status status )
+    {
+        super( message, cause );
+        this.status = status;
+    }
 
-    void visit( Consumer<IdGenerator> visitor );
-
-    void clearCache();
+    @Override
+    public Status status()
+    {
+        return status;
+    }
 }

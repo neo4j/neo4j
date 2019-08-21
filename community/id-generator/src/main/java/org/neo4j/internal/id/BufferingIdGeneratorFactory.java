@@ -82,6 +82,12 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
         Stream.of( overriddenIdGenerators ).forEach( visitor );
     }
 
+    @Override
+    public void clearCache()
+    {
+        delegate.clearCache();
+    }
+
     private IdGenerator wrapAndKeep( IdType idType, IdGenerator generator )
     {
         BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator );

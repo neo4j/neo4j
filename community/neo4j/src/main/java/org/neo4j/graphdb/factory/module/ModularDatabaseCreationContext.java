@@ -45,6 +45,7 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
+import org.neo4j.kernel.impl.api.EpochSupplier;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -112,10 +113,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final ThreadToStatementContextBridge contextBridge;
     private final FileLockerService fileLockerService;
     private final AccessCapabilityFactory accessCapabilityFactory;
+    private final EpochSupplier epoch;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
-                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig )
+                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, EpochSupplier epoch )
     {
         this.databaseId = databaseId;
         this.globalConfig = globalModule.getGlobalConfig();
@@ -159,6 +161,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.contextBridge = globalModule.getThreadToTransactionBridge();
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
+        this.epoch = epoch;
     }
 
     @Override
@@ -393,6 +396,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public AccessCapabilityFactory getAccessCapabilityFactory()
     {
         return accessCapabilityFactory;
+    }
+
+    @Override
+    public EpochSupplier getEpoch()
+    {
+        return epoch;
     }
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( DatabaseId databaseId, GlobalModule globalModule, long databaseTimeoutMillis  )

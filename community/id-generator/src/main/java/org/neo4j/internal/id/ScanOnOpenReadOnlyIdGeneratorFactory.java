@@ -68,4 +68,10 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     {
         idGenerators.values().forEach( visitor );
     }
+
+    @Override
+    public void clearCache()
+    {
+        idGenerators.values().forEach( IdGenerator::clearCache );
+    }
 }

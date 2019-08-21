@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.kernel.impl.api.EpochSupplier;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -100,7 +101,7 @@ public class KernelTransactionFactory
                         new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                         new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                         mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                        mock( AvailabilityGuard.class ), new TestDatabaseIdRepository().defaultDatabase() );
+                        mock( AvailabilityGuard.class ), new TestDatabaseIdRepository().defaultDatabase(), EpochSupplier.NO_EPOCHS );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

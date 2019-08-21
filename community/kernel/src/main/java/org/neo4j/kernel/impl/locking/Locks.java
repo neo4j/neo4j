@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.impl.api.Epoch;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
@@ -62,6 +63,13 @@ public interface Locks
          * Represents the fact that no lock session is used because no locks are taken.
          */
         int NO_LOCK_SESSION_ID = -1;
+
+        /**
+         * Initializes this locks client with an {@link Epoch} for the owning transaction. Must be called before any lock can be acquired.
+         * An epoch can act as a simple way to fail-fast for a transaction if a new epoch is started mid-transaction.
+         * @param epoch {@link Epoch} of the owning transaction.
+         */
+        void initialize( Epoch epoch );
 
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,

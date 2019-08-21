@@ -17,24 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.id;
+package org.neo4j.kernel.impl.api;
 
-import java.io.File;
-import java.nio.file.OpenOption;
-import java.util.function.Consumer;
-import java.util.function.LongSupplier;
-
-import org.neo4j.io.pagecache.PageCache;
-
-public interface IdGeneratorFactory
+public interface EpochSupplier
 {
-    IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions );
+    EpochSupplier NO_EPOCHS = () -> Epoch.NO_EPOCHS;
 
-    IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions );
-
-    IdGenerator get( IdType idType );
-
-    void visit( Consumer<IdGenerator> visitor );
-
-    void clearCache();
+    Epoch get();
 }
