@@ -246,7 +246,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     SingleQuery(cs)(pos)
 
   def subQuery(cs: Clause*): SubQuery =
-    SubQuery(SingleQuery(cs)(pos))(pos)
+    SubQuery(Query(None, SingleQuery(cs)(pos))(pos))(pos)
 
   def create(pattern: PatternElement, where: Option[Where] = None): Create =
     Create(Pattern(Seq(EveryPath(pattern)))(pos))(pos)

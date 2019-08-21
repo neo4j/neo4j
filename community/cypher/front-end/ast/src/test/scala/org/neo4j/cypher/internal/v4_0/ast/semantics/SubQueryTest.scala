@@ -21,25 +21,6 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val clean = SemanticState.clean.withFeature(SemanticFeature.SubQueries)
-
-  test("subqueries require semantic feature") {
-
-    val q =
-      query(
-        with_(literal(1).as("a")),
-        subQuery(
-          return_(literal(1).as("b"))
-        ),
-        return_(varFor("a").as("a"))
-      )
-
-    val result = SemanticChecker.check(q, SemanticState.clean)
-
-    result.errors.size shouldEqual 1
-    result.errors.head.msg should (include("CALL") and include("subqueries"))
-  }
-
   test("returned variables are added to scope after sub-query") {
 
     val q =
@@ -53,7 +34,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
           varFor("a").as("a"), varFor("b").as("b"), varFor("c").as("c"))
       )
 
-    val result = SemanticChecker.check(q, clean)
+    val result = SemanticChecker.check(q, SemanticState.clean)
 
     result.errors.size shouldEqual 0
   }
@@ -69,7 +50,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
         return_(varFor("a").as("a"))
       )
 
-    val result = SemanticChecker.check(q, clean)
+    val result = SemanticChecker.check(q, SemanticState.clean)
 
     result.errors.size shouldEqual 1
     result.errors.head.msg should include ("Variable `a` not defined")
@@ -88,7 +69,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
         return_(varFor("a").as("a"))
       )
 
-    val result = SemanticChecker.check(q, clean)
+    val result = SemanticChecker.check(q, SemanticState.clean)
 
     result.errors.size shouldEqual 1
     result.errors.head.msg should include ("Variable `a` not defined")
@@ -110,7 +91,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
           varFor("a").as("a"), varFor("b").as("b"), varFor("b").as("c"))
       )
 
-    val result = SemanticChecker.check(q, clean)
+    val result = SemanticChecker.check(q, SemanticState.clean)
 
     result.errors.size shouldEqual 0
   }
@@ -125,7 +106,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       return_(literal(1).as("y"))
     )
 
-    val result = sq.semanticCheck(clean)
+    val result = sq.semanticCheck(SemanticState.clean)
 
     result.errors.size shouldEqual 1
     result.errors.head.msg should include ("Variable `x` already declared")

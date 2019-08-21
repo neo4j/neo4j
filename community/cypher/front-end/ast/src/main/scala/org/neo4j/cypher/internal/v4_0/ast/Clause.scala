@@ -824,18 +824,11 @@ case class Return(distinct: Boolean,
     }
 }
 
-trait SubQueryClause extends HorizonClause with SemanticAnalysisTooling {
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      requireFeatureSupport(s"The `$name {...}` clause", SemanticFeature.SubQueries, position)
-}
-
-case class SubQuery(sq: SingleQuery)(val position: InputPosition) extends SubQueryClause with SemanticAnalysisTooling {
+case class SubQuery(query: Query)(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {
 
   override def name: String = "CALL"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
       checkSubquery
 
   def checkSubquery: SemanticCheck = { s: SemanticState =>
@@ -844,8 +837,8 @@ case class SubQuery(sq: SingleQuery)(val position: InputPosition) extends SubQue
     // - Returned variables are added to outer scope
     val input: Scope = s.currentScope.scope
     val branch: SemanticState = s.newSiblingScope
-    val inner: SemanticCheckResult = sq.semanticCheck(branch)
-    val output: Scope = sq.finalScope(inner.state.currentScope.scope)
+    val inner: SemanticCheckResult = query.semanticCheck(branch)
+    val output: Scope = query.finalScope(inner.state.currentScope.scope)
     val imported: SemanticState = inner.state.newSiblingScope.importValuesFromScope(input)
     val merged: SemanticCheckResult =
       output.valueSymbolTable.values
