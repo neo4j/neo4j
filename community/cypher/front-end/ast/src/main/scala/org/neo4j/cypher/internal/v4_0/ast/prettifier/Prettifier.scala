@@ -25,7 +25,8 @@ case class Prettifier(expr: ExpressionStringifier) {
   private val NL = System.lineSeparator()
   private val INDENT = "  "
 
-  private def indentedLine(l: String) = NL + INDENT + l
+  private def indentedNewLine(l: String) = NL + INDENT + l
+  private def indentedLine(l: String) = INDENT + l
 
   def asString(statement: Statement): String = statement match {
     case Query(maybePeriodicCommit, part) =>
@@ -207,6 +208,7 @@ case class Prettifier(expr: ExpressionStringifier) {
   private def dispatch(clause: Clause) = clause match {
     case e: Return => asString(e)
     case m: Match => asString(m)
+    case c: SubQuery => asString(c)
     case w: With => asString(w)
     case c: Create => asString(c)
     case u: Unwind => asString(u)
@@ -224,9 +226,17 @@ case class Prettifier(expr: ExpressionStringifier) {
   def asString(m: Match): String = {
     val o = if(m.optional) "OPTIONAL " else ""
     val p = expr.patterns.apply(m.pattern)
-    val w = m.where.map(asString).map(indentedLine).getOrElse("")
-    val h = m.hints.map(asString).map(indentedLine).mkString
+    val w = m.where.map(asString).map(indentedNewLine).getOrElse("")
+    val h = m.hints.map(asString).map(indentedNewLine).mkString
     s"${o}MATCH $p$h$w"
+  }
+
+  def asString(c: SubQuery): String = {
+    val q = asString(c.query)
+    val qWithIndent = q.split(NL).map(indentedLine).mkString(NL)
+    s"""CALL {
+       |$qWithIndent
+       |}""".stripMargin
   }
 
   private def asString(w: Where): String =
@@ -257,7 +267,7 @@ case class Prettifier(expr: ExpressionStringifier) {
 
   private def asString(m: Merge): String = {
     val p = expr.patterns.apply(m.pattern)
-    val a = m.actions.map(asString).map(indentedLine).mkString
+    val a = m.actions.map(asString).map(indentedNewLine).mkString
     s"MERGE $p$a"
   }
 
@@ -285,19 +295,19 @@ case class Prettifier(expr: ExpressionStringifier) {
   private def asString(r: Return): String = {
     val d = if (r.distinct) " DISTINCT" else ""
     val i = asString(r.returnItems)
-    val o = r.orderBy.map(asString).map(indentedLine).getOrElse("")
-    val l = r.limit.map(asString).map(indentedLine).getOrElse("")
-    val s = r.skip.map(asString).map(indentedLine).getOrElse("")
+    val o = r.orderBy.map(asString).map(indentedNewLine).getOrElse("")
+    val l = r.limit.map(asString).map(indentedNewLine).getOrElse("")
+    val s = r.skip.map(asString).map(indentedNewLine).getOrElse("")
     s"RETURN$d $i$o$s$l"
   }
 
   private def asString(w: With): String = {
     val d = if (w.distinct) " DISTINCT" else ""
     val i = asString(w.returnItems)
-    val o = w.orderBy.map(asString).map(indentedLine).getOrElse("")
-    val l = w.limit.map(asString).map(indentedLine).getOrElse("")
-    val s = w.skip.map(asString).map(indentedLine).getOrElse("")
-    val wh = w.where.map(asString).map(indentedLine).getOrElse("")
+    val o = w.orderBy.map(asString).map(indentedNewLine).getOrElse("")
+    val l = w.limit.map(asString).map(indentedNewLine).getOrElse("")
+    val s = w.skip.map(asString).map(indentedNewLine).getOrElse("")
+    val wh = w.where.map(asString).map(indentedNewLine).getOrElse("")
     s"WITH$d $i$o$s$l$wh"
   }
 
@@ -315,8 +325,8 @@ case class Prettifier(expr: ExpressionStringifier) {
     val prefix = if (namespace.isEmpty) "" else namespace + "."
     val arguments = u.declaredArguments.map(list => list.map(expr(_)).mkString("(", ", ", ")")).getOrElse("")
     def item(i: ProcedureResultItem) = i.output.map(expr(_) + " AS ").getOrElse("") + expr(i.variable)
-    def result(r: ProcedureResult) = "YIELD " + r.items.map(item).mkString(", ") + r.where.map(asString).map(indentedLine).getOrElse("")
-    val yields = u.declaredResult.map(result).map(indentedLine).getOrElse("")
+    def result(r: ProcedureResult) = "YIELD " + r.items.map(item).mkString(", ") + r.where.map(asString).map(indentedNewLine).getOrElse("")
+    val yields = u.declaredResult.map(result).map(indentedNewLine).getOrElse("")
     s"CALL $prefix${expr(u.procedureName)}$arguments$yields"
   }
 
@@ -362,7 +372,7 @@ case class Prettifier(expr: ExpressionStringifier) {
         case RelationshipByParameter(v, param) => s"${expr(v)} = RELATIONSHIP( ${expr(param)} )"
       }
 
-    val where = start.where.map(asString).map(indentedLine).getOrElse("")
+    val where = start.where.map(asString).map(indentedNewLine).getOrElse("")
     s"START ${startItems.mkString(s",$NL      ")}$where"
   }
 
