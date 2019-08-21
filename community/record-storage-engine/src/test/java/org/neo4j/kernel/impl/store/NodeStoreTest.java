@@ -33,6 +33,7 @@ import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.LongSupplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -391,9 +392,9 @@ class NodeStoreTest
         {
             @Override
             protected IdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                    File fileName, long maxValue, IdType idType, OpenOption[] openOptions )
+                    File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, OpenOption[] openOptions )
             {
-                return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, maxValue, idType, openOptions ) );
+                return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, openOptions ) );
             }
         } );
         StoreFactory factory = new StoreFactory( testDirectory.databaseLayout( "new" ), Config.defaults(), idGeneratorFactory, pageCache, fs,

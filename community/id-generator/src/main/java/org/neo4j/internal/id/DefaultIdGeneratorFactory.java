@@ -46,16 +46,16 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     @Override
     public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
-        IdGenerator generator = instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, maxId, idType, openOptions );
+        IdGenerator generator = instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, openOptions );
         generators.put( idType, generator );
         return generator;
     }
 
     protected IdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, File fileName,
-            long maxValue, IdType idType, OpenOption[] openOptions )
+            LongSupplier highIdSupplier, long maxValue, IdType idType, OpenOption[] openOptions )
     {
         // highId not used when opening an IndexedIdGenerator
-        return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, 0, maxValue, openOptions );
+        return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, highIdSupplier, maxValue, openOptions );
     }
 
     @Override
@@ -72,7 +72,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
         fs.deleteFile( fileName );
 
-        IdGenerator generator = new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, highId, maxId, openOptions );
+        IdGenerator generator = new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, () -> highId, maxId, openOptions );
         generator.checkpoint( UNLIMITED );
         generators.put( idType, generator );
         return generator;

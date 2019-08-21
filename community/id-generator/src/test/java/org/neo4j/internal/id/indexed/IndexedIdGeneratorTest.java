@@ -29,12 +29,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.id.FreeIds;
@@ -56,7 +58,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
@@ -76,11 +83,13 @@ class IndexedIdGeneratorTest
     private RandomRule random;
 
     private IndexedIdGenerator freelist;
+    private File file;
 
     @BeforeEach
     void open()
     {
-        freelist = new IndexedIdGenerator( pageCache, directory.file( "file" ), immediate(), IdType.LABEL_TOKEN, 0, MAX_ID );
+        file = directory.file( "file" );
+        freelist = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, () -> 0, MAX_ID );
     }
 
     @AfterEach
@@ -410,6 +419,43 @@ class IndexedIdGeneratorTest
             }
             while ( IdValidator.isReservedId( nextExpected ) );
         }
+    }
+
+    @Test
+    void shouldUseHighIdSupplierOnCreatingNewFile()
+    {
+        // given
+        stop();
+        assertTrue( file.delete() );
+
+        // when
+        long highId = 101L;
+        LongSupplier highIdSupplier = mock( LongSupplier.class );
+        when( highIdSupplier.getAsLong() ).thenReturn( highId );
+        freelist = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, highIdSupplier, MAX_ID );
+
+        // then
+        verify( highIdSupplier ).getAsLong();
+        assertEquals( highId, freelist.getHighId() );
+    }
+
+    @Test
+    void shouldNotUseHighIdSupplierOnOpeningNewFile() throws IOException
+    {
+        // given
+        long highId = freelist.getHighId();
+        freelist.start( NO_FREE_IDS );
+        freelist.checkpoint( IOLimiter.UNLIMITED );
+        stop();
+
+        // when
+        LongSupplier highIdSupplier = mock( LongSupplier.class );
+        when( highIdSupplier.getAsLong() ).thenReturn( 101L );
+        freelist = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, highIdSupplier, MAX_ID );
+
+        // then
+        verifyNoMoreInteractions( highIdSupplier );
+        assertEquals( highId, freelist.getHighId() );
     }
 
     private void verifyReallocationDoesNotIncreaseHighId( ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse )

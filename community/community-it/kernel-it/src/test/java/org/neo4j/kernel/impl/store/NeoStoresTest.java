@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -1472,12 +1473,12 @@ public class NeoStoresTest
 
         @Override
         protected IdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                File fileName, long maxValue, IdType idType, OpenOption[] openOptions )
+                File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, OpenOption[] openOptions )
         {
             if ( idType == IdType.NODE )
             {
                 // Return a special id generator which will throw exception on close
-                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, 6 * 7, maxValue )
+                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, () -> 6 * 7, maxValue )
                 {
                     @Override
                     public synchronized void close()
@@ -1487,7 +1488,7 @@ public class NeoStoresTest
                     }
                 };
             }
-            return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, maxValue, idType, openOptions );
+            return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, openOptions );
         }
     }
 }

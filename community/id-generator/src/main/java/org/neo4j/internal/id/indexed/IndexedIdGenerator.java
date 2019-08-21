@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongSupplier;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
@@ -148,7 +149,7 @@ public class IndexedIdGenerator implements IdGenerator
     /**
      * High id of this id generator (and to some extent the store this covers).
      */
-    private final AtomicLong highId;
+    private final AtomicLong highId = new AtomicLong();
 
     /**
      * Maximum id that this id generator can allocate.
@@ -176,7 +177,7 @@ public class IndexedIdGenerator implements IdGenerator
      * Highest ever written id in this id generator. This is used to not lose track of ids allocated off of high id that are not committed.
      * See more in {@link IdRangeMarker}.
      */
-    private final AtomicLong highestWrittenId;
+    private final AtomicLong highestWrittenId = new AtomicLong();
 
     /**
      * {@code false} after construction and before a call to {@link IdGenerator#start(FreeIds)}, where false means that operations made this freelist
@@ -185,22 +186,20 @@ public class IndexedIdGenerator implements IdGenerator
     private volatile boolean started;
 
     public IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            long initialHighId, long maxId, OpenOption... openOptions )
+            LongSupplier initialHighId, long maxId, OpenOption... openOptions )
     {
         this( pageCache, file, recoveryCleanupWorkCollector, idType, IDS_PER_ENTRY, initialHighId, maxId, openOptions );
     }
 
     @VisibleForTesting
     IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            int idsPerEntryOnCreate, long initialHighId, long maxId, OpenOption... openOptions )
+            int idsPerEntryOnCreate, LongSupplier initialHighId, long maxId, OpenOption... openOptions )
     {
         Preconditions.checkArgument( Integer.bitCount( idsPerEntryOnCreate ) == 1, "Requires idsPerEntry to be a power of 2, was %d", idsPerEntryOnCreate );
         int cacheCapacity = idType.highActivity() ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
         this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
         this.cache = new SpmcLongQueue( cacheCapacity );
-        this.highId = new AtomicLong( initialHighId );
-        this.highestWrittenId = new AtomicLong( initialHighId - 1 );
         this.maxId = maxId;
 
         Optional<HeaderReader> header = readHeader( pageCache, file );
@@ -223,6 +222,8 @@ public class IndexedIdGenerator implements IdGenerator
         {
             // We'll create this index when constructing the GBPTree below. The generation on its creation will be STARTING_GENERATION,
             // as written by the HeaderWriter, but the active generation has to be +1 that
+            this.highId.set( initialHighId.getAsLong() );
+            this.highestWrittenId.set( highId.get() - 1 );
             this.generation = STARTING_GENERATION + 1;
             this.idsPerEntry = idsPerEntryOnCreate;
         }
