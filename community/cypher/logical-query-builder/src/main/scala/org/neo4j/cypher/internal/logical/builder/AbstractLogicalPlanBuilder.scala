@@ -103,7 +103,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   // OPERATORS
 
   def produceResults(vars: String*): IMPL = {
-    resultColumns = vars.toArray
+    resultColumns = vars.map(VariableParser.unescaped).toArray
     tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumns)(_)))
     looseEnds += tree
     self
@@ -250,8 +250,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def allNodeScan(node: String, args: String*): IMPL = {
-    newNode(varFor(node))
-    appendAtCurrentIndent(LeafOperator(AllNodesScan(node, args.toSet)(_)))
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(AllNodesScan(n, args.map(VariableParser.unescaped).toSet)(_)))
   }
 
   def argument(args: String*): IMPL = {
@@ -259,12 +260,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def nodeByLabelScan(node: String, label: String, args: String*): IMPL = {
-    newNode(varFor(node))
-    appendAtCurrentIndent(LeafOperator(NodeByLabelScan(node, labelName(label), args.toSet)(_)))
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(NodeByLabelScan(n, labelName(label), args.toSet)(_)))
   }
 
   def nodeByIdSeek(node: String, ids: Long*): IMPL = {
-    newNode(varFor(node))
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
     val idExpressions = ids.map(l => UnsignedDecimalIntegerLiteral(l.toString)(pos))
     val input =
       if (idExpressions.length == 1) {
@@ -273,7 +276,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         ManySeekableArgs(ListLiteral(idExpressions)(pos))
       }
 
-    appendAtCurrentIndent(LeafOperator(NodeByIdSeek(node, input, Set.empty)(_)))
+    appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, Set.empty)(_)))
   }
 
   def directedRelationshipByIdSeek(relationship: String, from: String, to: String, ids: Long*): IMPL = {

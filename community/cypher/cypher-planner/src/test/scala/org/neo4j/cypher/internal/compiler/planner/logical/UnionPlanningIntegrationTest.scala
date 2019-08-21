@@ -19,54 +19,133 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.logical.plans.{Distinct, NodeByLabelScan, Projection, Union}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a") {
+  test("one UNION all") {
 
-    val setup = new given {
+    val (_, logicalPlan, _, _, _) = new given {
       knownLabels = Set("A", "B")
-    }
-    val (_, logicalPlan, _ , _, _) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a")
+    }.getLogicalPlanFor(
+      """
+        |MATCH (a:A) RETURN a AS a, 1 AS b
+        |UNION ALL
+        |MATCH (a:B) RETURN 1 AS b, a AS a""".stripMargin, stripProduceResults = false)
+
+    val Seq(a1, a2, a3) = namespaced("a", 8, 35, 52)
+    val Seq(b1, b2, b3) = namespaced("b", 33, 35, 69)
 
     logicalPlan should equal(
-      Union(
-        Projection(
-          NodeByLabelScan("  a@7", labelName("A"), Set.empty),
-          Map("a" -> varFor("  a@7"))
-        ),
-        Projection(
-          NodeByLabelScan("  a@43", labelName("B"), Set.empty),
-          Map("a" -> varFor("  a@43"))
-        )
-      )
+      new LogicalPlanBuilder()
+        .produceResults(a2, b2)
+        .union()
+        .|.projection(s"$a3 AS $a2", s"$b3 AS $b2")
+        .|.projection(s"1 AS $b3")
+        .|.nodeByLabelScan(a3, "B")
+        .projection(s"$a1 AS $a2", s"$b1 AS $b2")
+        .projection(s"1 AS $b1")
+        .nodeByLabelScan(a1, "A")
+        .build()
     )
   }
 
-  test("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a") {
+  test("one UNION distinct") {
 
-    val setup = new given {
+    val (_, logicalPlan, _, _, _) = new given {
       knownLabels = Set("A", "B")
-    }
-    val (_, logicalPlan, _, _, _) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
+    }.getLogicalPlanFor(
+      """
+        |MATCH (a:A) RETURN a AS a, 1 AS b
+        |UNION
+        |MATCH (a:B) RETURN 1 AS b, a AS a""".stripMargin, stripProduceResults = false)
+
+    val Seq(a1, a2, a3) = namespaced("a", 8, 35, 48)
+    val Seq(b1, b2, b3) = namespaced("b", 33, 35, 65)
 
     logicalPlan should equal(
-      Distinct(
-        source = Union(
-          Projection(
-            NodeByLabelScan("  a@7", labelName("A"), Set.empty),
-            Map("a" -> varFor("  a@7"))
-          ),
-          Projection(
-            NodeByLabelScan("  a@39", labelName("B"), Set.empty),
-            Map("a" -> varFor("  a@39"))
-          )
-        ),
-        groupingExpressions = Map("a" -> varFor("a"))
-      )
+      new LogicalPlanBuilder()
+        .produceResults(a2, b2)
+        .distinct(s"$a2 AS $a2", s"$b2 AS $b2")
+        .union()
+        .|.projection(s"$a3 AS $a2", s"$b3 AS $b2")
+        .|.projection(s"1 AS $b3")
+        .|.nodeByLabelScan(a3, "B")
+        .projection(s"$a1 AS $a2", s"$b1 AS $b2")
+        .projection(s"1 AS $b1")
+        .nodeByLabelScan(a1, "A")
+        .build()
+    )
+  }
+  test("two UNION all") {
+
+    val (_, logicalPlan, _, _, _) = new given {
+      knownLabels = Set("A", "B", "C")
+    }.getLogicalPlanFor(
+      """MATCH (a:A) RETURN a AS a, 1 AS b
+        |UNION ALL
+        |MATCH (a:B) RETURN 1 AS b, a AS a
+        |UNION ALL
+        |MATCH (a:C) RETURN a AS a, 1 AS b
+        |""".stripMargin, stripProduceResults = false)
+
+    val Seq(a1, a2, a3, a4, a5) = namespaced("a", 7, 34, 51, 78, 95)
+    val Seq(b1, b2, b3, b4, b5) = namespaced("b", 32, 34, 68, 78, 120)
+
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults(a4, b4)
+        .union()
+        .|.projection(s"$a5 AS $a4", s"$b5 AS $b4")
+        .|.projection(s"1 AS $b5")
+        .|.nodeByLabelScan(a5, "C")
+        .projection(s"$a2 AS $a4", s"$b2 AS $b4")
+        .union()
+        .|.projection(s"$a3 AS $a2", s"$b3 AS $b2")
+        .|.projection(s"1 AS $b3")
+        .|.nodeByLabelScan(a3, "B")
+        .projection(s"$a1 AS $a2", s"$b1 AS $b2")
+        .projection(s"1 AS $b1")
+        .nodeByLabelScan(a1, "A")
+        .build()
+    )
+  }
+
+  test("two UNION distinct") {
+
+    val (_, logicalPlan, _, _, _) = new given {
+      knownLabels = Set("A", "B", "C")
+    }.getLogicalPlanFor(
+      """MATCH (a:A) RETURN a AS a, 1 AS b
+        |UNION
+        |MATCH (a:B) RETURN 1 AS b, a AS a
+        |UNION
+        |MATCH (a:C) RETURN a AS a, 1 AS b
+        |""".stripMargin, stripProduceResults = false)
+
+    val Seq(a1, a2, a3, a4, a5) = namespaced("a", 7, 34, 47, 74, 87)
+    val Seq(b1, b2, b3, b4, b5) = namespaced("b", 32, 34, 64, 74, 112)
+
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults(a4, b4)
+        .distinct(s"$a4 AS $a4", s"$b4 AS $b4")
+        .union()
+        .|.projection(s"$a5 AS $a4", s"$b5 AS $b4")
+        .|.projection(s"1 AS $b5")
+        .|.nodeByLabelScan(a5, "C")
+        .projection(s"$a2 AS $a4", s"$b2 AS $b4")
+        .distinct(s"$a2 AS $a2", s"$b2 AS $b2") // TODO can we get rid of this distinct? - it is not needed!
+        .union()
+        .|.projection(s"$a3 AS $a2", s"$b3 AS $b2")
+        .|.projection(s"1 AS $b3")
+        .|.nodeByLabelScan(a3, "B")
+        .projection(s"$a1 AS $a2", s"$b1 AS $b2")
+        .projection(s"1 AS $b1")
+        .nodeByLabelScan(a1, "A")
+        .build()
     )
   }
 }

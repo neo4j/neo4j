@@ -175,7 +175,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       input.copy(maybeLogicalPlan = Some(newPlan))
     }
 
-    def getLogicalPlanFor(queryString: String, config:CypherPlannerConfiguration = cypherCompilerConfig, queryGraphSolver: QueryGraphSolver = queryGraphSolver): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) = {
+    def getLogicalPlanFor(queryString: String,
+                          config:CypherPlannerConfiguration = cypherCompilerConfig,
+                          queryGraphSolver: QueryGraphSolver = queryGraphSolver,
+                          stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) = {
       val exceptionFactory = new Neo4jCypherExceptionFactory(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config)
       def context = ContextHelper.create(planContext = planContext,
@@ -189,7 +192,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val state = createInitState(queryString)
       val output = pipeLine().transform(state, context)
       val logicalPlan = output.logicalPlan match {
-        case p:ProduceResult => p.source
+        case p:ProduceResult if stripProduceResults => p.source
         case p => p
       }
       (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes.solveds, output.planningAttributes.cardinalities)
@@ -266,8 +269,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     res
   }
 
-  def planFor(queryString: String, config:CypherPlannerConfiguration = cypherCompilerConfig, queryGraphSolver: QueryGraphSolver = queryGraphSolver): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) =
-    new given().getLogicalPlanFor(queryString, config, queryGraphSolver)
+  def planFor(queryString: String,
+              config:CypherPlannerConfiguration = cypherCompilerConfig,
+              queryGraphSolver: QueryGraphSolver = queryGraphSolver,
+              stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) =
+    new given().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
@@ -292,4 +298,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         rawNegatedFailureMessage = s"Plan should not use ${tag.runtimeClass.getSimpleName}")
     }
   }
+
+  /**
+   * Useful for disambiguiating variables with the same name.
+   */
+  def namespaced(varName: String, positions: Int*): Seq[String] = {
+    positions.map(p => s"`  $varName@$p`")
+  }
+
 }

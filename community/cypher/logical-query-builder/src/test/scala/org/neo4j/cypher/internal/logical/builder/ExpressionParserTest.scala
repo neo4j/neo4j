@@ -48,4 +48,8 @@ class ExpressionParserTest extends CypherFunSuite with TestName
   test("n:Label") {
     ExpressionParser.parseExpression(testName) should be(HasLabels(Variable("n")(pos), Seq(LabelName("Label")(pos)))(pos))
   }
+
+  test("`  n@31`") {
+    ExpressionParser.parseExpression(testName) should be(Variable("  n@31")(pos))
+  }
 }

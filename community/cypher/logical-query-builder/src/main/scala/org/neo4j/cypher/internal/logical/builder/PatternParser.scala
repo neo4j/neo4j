@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
 
 object PatternParser
 {
-  private val ID = "([a-zA-Z0-9]*)"
+  private val ID = "([a-zA-Z0-9` @]*)"
   private val REL_TYPES = "([a-zA-Z_|]*)"
   private val regex = s"\\($ID\\)(<?)-\\[?$ID:?$REL_TYPES(\\*?)([0-9]*)\\.?\\.?([0-9]*)\\]?-(>?)\\($ID\\)".r
 
@@ -48,7 +48,7 @@ object PatternParser
             case ("*", "", _)  => VarPatternLength(0, Some(max.toInt))
             case ("*", _, _)   => VarPatternLength(min.toInt, Some(max.toInt))
           }
-        Pattern(from, dir, relTypes, relName, to, length)
+        Pattern(VariableParser.unescaped(from), dir, relTypes, relName, VariableParser.unescaped(to), length)
       case _ => throw new IllegalArgumentException(s"'$pattern' cannot be parsed as a pattern")
     }
   }

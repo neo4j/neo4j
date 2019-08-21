@@ -26,42 +26,18 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  Apache Commons Compress
-  Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
-  Caffeine cache
-  jPowerShell
-  jProcesses
-  Lucene codecs
-  Lucene Common Analyzers
-  Lucene Core
-  Lucene QueryParsers
-  Netty/All-in-One
   parboiled-core
   parboiled-scala
-  picocli - a mighty tiny Command Line Interface
-  WMI4Java
 
 BSD - Scala License
   Scala Library
 
 BSD License
-  asm
-  asm-analysis
-  asm-tree
-  asm-util
   Scala Compiler
   scala-xml
   Scalap
-  Zstandard
-
-BSD License 2-clause
-  zstd-jni
-
-Bouncy Castle License
-  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
-  Bouncy Castle Provider
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
@@ -70,9 +46,6 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-
-GNU Lesser General Public License, Version 2.1
-  Java Native Access
 
 Dependencies with multiple licenses
 -----------------------------------

@@ -124,6 +124,13 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-logical-query-builder</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-planner-spi</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
