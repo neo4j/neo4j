@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.logical.plans.{Ascending, ExpandInto}
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.graphdb.{Label, Node, RelationshipType}
 
@@ -332,6 +333,122 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       Array(n1, Array(r1, r3), n3),
       Array(n1, Array(r2, r3), n3))
 
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  // PATH PROJECTION
+
+  test("should project (x)-[r*]->(y) correctly when from matching from x") {
+    // given
+    val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*]->(y)", projectedDir = OUTGOING, expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("should project (x)-[r*]->(y) correctly when from matching from y") {
+    // given
+    val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(y)<-[r*]-(x)", projectedDir = OUTGOING, expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("should project (y)<-[r*]-(x) correctly when from matching from x") {
+    // given
+    val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*]->(y)", projectedDir = INCOMING, expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = paths.map(p => Array(p.startNode, p.reverseRelationships(), p.endNode()))
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("should project (y)<-[r*]-(x) correctly when from matching from y") {
+    // given
+    val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(y)<-[r*]-(x)", projectedDir = INCOMING, expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = paths.map(p => Array(p.startNode, p.reverseRelationships(), p.endNode()))
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("should project (x)-[r*]-(y) correctly when from matching from x") {
+    // given
+    val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*]-(y)", projectedDir = OUTGOING, expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("should project (x)-[r*]-(y) correctly when from matching from y") {
+    // given
+    val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(y)-[r*]-(x)", projectedDir = INCOMING, expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.builder
 import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId, SequentialIdGen}
@@ -118,7 +119,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def expand(pattern: String, expandMode: ExpansionMode = ExpandAll): IMPL = {
+  def expand(pattern: String,
+             expandMode: ExpansionMode = ExpandAll,
+             projectedDir: SemanticDirection = OUTGOING): IMPL = {
     val p = PatternParser.parse(pattern)
     if (expandMode == ExpandAll) {
       newNode(varFor(p.to))
@@ -127,7 +130,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       case SimplePatternLength =>
         appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode)(_)))
       case varPatternLength: VarPatternLength =>
-        appendAtCurrentIndent(UnaryOperator(lp => VarExpand(lp, p.from, p.dir, /*TODO: incorrect*/p.dir, p.relTypes, p.to, p.relName, varPatternLength, expandMode)(_)))
+        appendAtCurrentIndent(UnaryOperator(lp => VarExpand(lp, p.from, p.dir, projectedDir, p.relTypes, p.to, p.relName, varPatternLength, expandMode)(_)))
     }
     self
   }

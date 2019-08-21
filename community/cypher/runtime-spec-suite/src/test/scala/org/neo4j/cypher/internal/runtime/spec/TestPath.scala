@@ -51,4 +51,7 @@ class TestPath(override val startNode: Node, _relationships: Seq[Relationship]) 
 
   def take(n: Int): TestPath =
     new TestPath(startNode, _relationships.take(n))
+
+  def reverse: TestPath =
+    new TestPath(endNode(), _relationships.reverse)
 }
