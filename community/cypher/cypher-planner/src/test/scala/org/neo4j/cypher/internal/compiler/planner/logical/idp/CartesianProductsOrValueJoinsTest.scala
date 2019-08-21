@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner._
-import org.neo4j.cypher.internal.ir.{QueryGraph, RegularPlannerQuery, Selections, InterestingOrder, ProvidedOrder}
+import org.neo4j.cypher.internal.ir.{QueryGraph, RegularSinglePlannerQuery, Selections, InterestingOrder, ProvidedOrder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.logical.plans._
@@ -33,7 +33,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   private val planC = allNodesScan("c")
 
   private def allNodesScan(n: String, planningAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders)): LogicalPlan = {
-    val solved = RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set(n)))
+    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph(patternNodes = Set(n)))
     val cardinality = Cardinality(0)
     val res = AllNodesScan(n, Set.empty)
     planningAttributes.solveds.set(res.id, solved)
@@ -218,9 +218,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     new given {
       qg = graph
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
         case _ => 100.0
       }
     }.withLogicalPlanningContext { (cfg, context) =>

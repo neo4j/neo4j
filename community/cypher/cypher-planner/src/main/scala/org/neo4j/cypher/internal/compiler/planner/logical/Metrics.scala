@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
-import org.neo4j.cypher.internal.ir.{PlannerQuery, QueryGraph, StrictnessMode}
+import org.neo4j.cypher.internal.ir.{PlannerQueryPart, QueryGraph, StrictnessMode}
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ResolvedFunctionInvocation}
@@ -63,7 +63,7 @@ object Metrics {
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
   trait CardinalityModel {
-    def apply(query: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality
+    def apply(query: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality
   }
 
   trait QueryGraphCardinalityModel {

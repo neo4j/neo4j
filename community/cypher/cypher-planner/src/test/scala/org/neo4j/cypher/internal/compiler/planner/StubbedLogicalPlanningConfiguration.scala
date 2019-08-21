@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.ir.{QueryGraph, PlannerQuery, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.{PlannerQueryPart, QueryGraph, RegularSinglePlannerQuery}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ProcedureSignature}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexOrderCapability}
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ProcedureSignature}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, HasLabels}
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, LabelId}
@@ -35,7 +35,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   self =>
 
   var knownLabels: Set[String] = Set.empty
-  var cardinality: PartialFunction[PlannerQuery, Cardinality] = PartialFunction.empty
+  var cardinality: PartialFunction[PlannerQueryPart, Cardinality] = PartialFunction.empty
   var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = PartialFunction.empty
   var labelCardinality: Map[String, Cardinality] = Map.empty
   var statistics: GraphStatistics = _
@@ -91,18 +91,18 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
   override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
     new CardinalityModel {
-      override def apply(pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
+      override def apply(pq: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
         val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
           case (name: String, cardinality: Cardinality) =>
             semanticTable.resolvedLabelNames(name) -> cardinality
         }
-        val labelScanCardinality: PartialFunction[PlannerQuery, Cardinality] = {
-          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 &&
+        val labelScanCardinality: PartialFunction[PlannerQueryPart, Cardinality] = {
+          case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 &&
             computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).isDefined =>
             computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).get
         }
 
-        val r: PartialFunction[PlannerQuery, Cardinality] = labelScanCardinality.orElse(cardinality)
+        val r: PartialFunction[PlannerQueryPart, Cardinality] = labelScanCardinality.orElse(cardinality)
         if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(queryGraphCardinalityModel, evaluator)(pq, input, semanticTable)
       }
     }

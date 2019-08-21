@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
-import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.logical.plans._
@@ -100,7 +100,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
     var current: Option[LogicalPlan] = Some(plan)
     do {
       val thisPlan = current.get
-      solveds.set(thisPlan.id, PlannerQuery.empty)
+      solveds.set(thisPlan.id, SinglePlannerQuery.empty)
       cardinalities.set(thisPlan.id, Cardinality.SINGLE)
       current = current.get.lhs
     } while (current.nonEmpty)

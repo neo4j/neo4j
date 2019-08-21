@@ -85,18 +85,18 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None) =
     RegularQueryProjection(projections = Map("n" -> varFor("n")), queryPagination = QueryPagination(skip, limit))
 
-  private def solved(patternNodes: String*): PlannerQuery =
-    RegularPlannerQuery(QueryGraph.empty.addPatternNodes(patternNodes: _*))
+  private def solved(patternNodes: String*): SinglePlannerQuery =
+    RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(patternNodes: _*))
 
   private def queryGraphWith(patternNodesInQG: Set[String],
-                             solved: PlannerQuery,
+                             solved: SinglePlannerQuery,
                              projection: QueryProjection = regularProjection(),
                              interestingOrder: InterestingOrder = InterestingOrder.empty):
-  (RegularPlannerQuery, LogicalPlanningContext, LogicalPlan) = {
+  (RegularSinglePlannerQuery, LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val qg = QueryGraph(patternNodes = patternNodesInQG)
-    val query = RegularPlannerQuery(queryGraph = qg, horizon = projection, interestingOrder = interestingOrder)
+    val query = RegularSinglePlannerQuery(queryGraph = qg, interestingOrder = interestingOrder, horizon = projection)
 
     val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = patternNodesInQG, solved = solved)
 

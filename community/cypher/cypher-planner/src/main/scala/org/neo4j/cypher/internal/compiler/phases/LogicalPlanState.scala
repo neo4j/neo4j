@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.cypher.internal.ir.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SemanticTable}
@@ -45,7 +45,7 @@ case class LogicalPlanState(queryText: String,
                             maybeSemantics: Option[SemanticState] = None,
                             maybeExtractedParams: Option[Map[String, Any]] = None,
                             maybeSemanticTable: Option[SemanticTable] = None,
-                            maybeUnionQuery: Option[UnionQuery] = None,
+                            maybeQuery: Option[PlannerQuery] = None,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
                             accumulatedConditions: Set[Condition] = Set.empty,
@@ -53,7 +53,7 @@ case class LogicalPlanState(queryText: String,
                             hasLoadCSV: Boolean = false,
                             maybeReturnColumns: Option[Seq[String]] = None) extends BaseState {
 
-  def unionQuery: UnionQuery = maybeUnionQuery getOrElse fail("Union query")
+  def query: PlannerQuery = maybeQuery getOrElse fail("The planner query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
   def periodicCommit: Option[PeriodicCommit] = maybePeriodicCommit getOrElse fail("Periodic commit")
   def astAsQuery: Query = statement().asInstanceOf[Query]

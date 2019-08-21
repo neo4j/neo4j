@@ -19,42 +19,50 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.{RegularQueryProjection, SinglePlannerQuery, UnionQuery}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("RETURN 1 as x UNION RETURN 2 as x") {
-    val query = buildPlannerUnionQuery("RETURN 1 as x UNION RETURN 2 as x")
-    query.distinct should equal(true)
-    query.queries should have size 2
+    val query = buildPlannerQuery("RETURN 1 as x UNION RETURN 2 as x")
+    query.query should be (a[UnionQuery])
+    val unionQuery = query.query.asInstanceOf[UnionQuery]
+    unionQuery.distinct should equal(true)
 
-    val q1 = query.queries.head
+    unionQuery.part should be(a[SinglePlannerQuery])
+    val q1 = unionQuery.part.asInstanceOf[SinglePlannerQuery]
     q1.queryGraph.patternNodes shouldBe empty
-    q1.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1))))
+    q1.horizon should equal(RegularQueryProjection(Map("  x@12" -> literalInt(1))))
 
-    val q2 = query.queries.last
+    val q2 = unionQuery.query
     q2.queryGraph.patternNodes shouldBe empty
-    q2.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(2))))
+    q2.horizon should equal(RegularQueryProjection(Map("  x@32" -> literalInt(2))))
   }
 
   test("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x") {
-    val query = buildPlannerUnionQuery("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x")
-    query.distinct should equal(false)
-    query.queries should have size 3
+    val query = buildPlannerQuery("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x")
+    query.query should be (a[UnionQuery])
+    val unionQuery = query.query.asInstanceOf[UnionQuery]
+    unionQuery.distinct should equal(false)
 
-    val q1 = query.queries.head
+    unionQuery.part should be(a[UnionQuery])
+    val innerUnion = unionQuery.part.asInstanceOf[UnionQuery]
+    innerUnion.distinct should equal(false)
+
+    innerUnion.part should be(a[SinglePlannerQuery])
+    val q1 = innerUnion.part.asInstanceOf[SinglePlannerQuery]
     q1.queryGraph.patternNodes shouldBe empty
-    q1.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1))))
+    q1.horizon should equal(RegularQueryProjection(Map("  x@12" -> literalInt(1))))
 
-    val q2 = query.queries.tail.head
+    val q2 = innerUnion.query
     q2.queryGraph.patternNodes shouldBe empty
-    q2.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(2))))
+    q2.horizon should equal(RegularQueryProjection(Map("  x@36" -> literalInt(2))))
 
-    val q3 = query.queries.last
+    val q3 = unionQuery.query
     q3.queryGraph.patternNodes shouldBe empty
-    q3.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(3))))
+    q3.horizon should equal(RegularQueryProjection(Map("  x@60" -> literalInt(3))))
   }
 
 }

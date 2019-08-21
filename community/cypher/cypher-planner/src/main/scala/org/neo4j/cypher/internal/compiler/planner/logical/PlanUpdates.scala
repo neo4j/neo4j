@@ -30,7 +30,7 @@ import org.neo4j.exceptions.InternalException
  */
 case object PlanUpdates extends UpdatesPlanner {
 
-  private def computePlan(plan: LogicalPlan, query: PlannerQuery, firstPlannerQuery: Boolean, context: LogicalPlanningContext) = {
+  private def computePlan(plan: LogicalPlan, query: SinglePlannerQuery, firstPlannerQuery: Boolean, context: LogicalPlanningContext) = {
     var updatePlan = plan
     val iterator = query.queryGraph.mutatingPatterns.iterator
     while(iterator.hasNext) {
@@ -39,7 +39,7 @@ case object PlanUpdates extends UpdatesPlanner {
     (updatePlan, context)
   }
 
-  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
+  override def apply(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
     val plan = if (firstPlannerQuery)
       Eagerness.headReadWriteEagerize(in, query, context)
@@ -59,7 +59,7 @@ case object PlanUpdates extends UpdatesPlanner {
 
   private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean, interestingOrder: InterestingOrder, context: LogicalPlanningContext) = {
 
-    def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan): LogicalPlan = {
+    def planAllUpdatesRecursively(query: SinglePlannerQuery, plan: LogicalPlan): LogicalPlan = {
       query.allPlannerQueries.foldLeft((plan, true, context)) {
         case ((accPlan, innerFirst, accCtx), plannerQuery) =>
           val (newPlan,newCtx) = this.apply(plannerQuery, accPlan, innerFirst, context)

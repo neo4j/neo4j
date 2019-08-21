@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.ir.RegularPlannerQuery
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.logical.plans._
 
@@ -31,11 +31,11 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val result= (new given {
       cardinality = mapCardinality {
         // node label scan
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
         // all node scan
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
         // expand
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
         case _                             => Double.MaxValue
       }
 
@@ -68,9 +68,9 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val result = (new given {
       cardinality = mapCardinality {
         // node label scan
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
         // all node scan
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
         case _ => Double.MaxValue
       }
     }  getLogicalPlanFor cypherQuery)._2

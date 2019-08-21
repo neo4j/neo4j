@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.v4_0.ast.{ASTAnnotationMap, Hint}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan, ProduceResult, Projection}
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
+// TODO fix tests in this class
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("adds ProduceResult with a single node") {
@@ -69,11 +69,11 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val queryPlanner = QueryPlanner(planSingleQuery = new FakePlanner(inputPlan))
 
-    val pq = RegularPlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> varFor(c)).toMap))
+    val singleQuery = RegularSinglePlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> varFor(c)).toMap))
 
-    val union = UnionQuery(Seq(pq), distinct = false, columns, periodicCommit = None)
+    val plannerQuery = PlannerQuery(singleQuery, periodicCommit = None)
 
-    val (_, result, _) = queryPlanner.plan(union, planningContext, solveds, cardinalities, idGen)
+    val (_, result, _) = queryPlanner.plan(plannerQuery, planningContext, columns)
 
     result shouldBe a [ProduceResult]
 
@@ -82,16 +82,16 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("should set strictness when needed") {
     // given
-    val plannerQuery = mock[RegularPlannerQuery]
-    when(plannerQuery.preferredStrictness).thenReturn(Some(LazyMode))
-    when(plannerQuery.queryGraph).thenReturn(QueryGraph.empty)
-    when(plannerQuery.lastQueryGraph).thenReturn(QueryGraph.empty)
-    when(plannerQuery.horizon).thenReturn(RegularQueryProjection())
-    when(plannerQuery.lastQueryHorizon).thenReturn(RegularQueryProjection())
-    when(plannerQuery.tail).thenReturn(None)
-    when(plannerQuery.allHints).thenReturn(Seq[Hint]())
-    when(plannerQuery.interestingOrder).thenReturn(InterestingOrder.empty)
-    when(plannerQuery.queryInput).thenReturn(None)
+    val singlePlannerQuery = mock[RegularSinglePlannerQuery]
+    when(singlePlannerQuery.preferredStrictness).thenReturn(Some(LazyMode))
+    when(singlePlannerQuery.queryGraph).thenReturn(QueryGraph.empty)
+    when(singlePlannerQuery.lastQueryGraph).thenReturn(QueryGraph.empty)
+    when(singlePlannerQuery.horizon).thenReturn(RegularQueryProjection())
+    when(singlePlannerQuery.lastQueryHorizon).thenReturn(RegularQueryProjection())
+    when(singlePlannerQuery.tail).thenReturn(None)
+    when(singlePlannerQuery.allHints).thenReturn(Seq[Hint]())
+    when(singlePlannerQuery.interestingOrder).thenReturn(InterestingOrder.empty)
+    when(singlePlannerQuery.queryInput).thenReturn(None)
 
     val lp = {
       val plan = Argument()
@@ -105,7 +105,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(context.planningAttributes).thenReturn(planningAttributes)
     when(context.strategy).thenReturn(new QueryGraphSolver with PatternExpressionSolving {
       override def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
-        context.planningAttributes.solveds.set(lp.id, plannerQuery)
+        context.planningAttributes.solveds.set(lp.id, singlePlannerQuery)
         context.planningAttributes.cardinalities.set(lp.id, 0.0)
         context.planningAttributes.providedOrders.set(lp.id, ProvidedOrder.empty)
         lp
@@ -123,15 +123,15 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val queryPlanner = QueryPlanner(planSingleQuery = PlanSingleQuery())
 
     // when
-    val query = UnionQuery(Seq(plannerQuery), distinct = false, Seq.empty, None)
-    queryPlanner.plan(query, context, new Solveds, new Cardinalities, idGen)
+    val plannerQuery = PlannerQuery(singlePlannerQuery, periodicCommit = None)
+    queryPlanner.plan(plannerQuery, context, Seq.empty)
 
     // then
     verify(context).withStrictness(LazyMode)
   }
 
   class FakePlanner(result: LogicalPlan) extends SingleQueryPlanner {
-    def apply(input: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = (result, context)
+    def apply(input: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = (result, context)
   }
 
   private def mockLogicalPlanningContext(semanticTable: SemanticTable, planningAttributes: PlanningAttributes) = LogicalPlanningContext(
@@ -144,5 +144,6 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     notificationLogger = devNullLogger,
     costComparisonListener = devNullListener,
     planningAttributes = planningAttributes,
-    innerVariableNamer = innerVariableNamer)
+    innerVariableNamer = innerVariableNamer,
+    idGen = idGen)
 }

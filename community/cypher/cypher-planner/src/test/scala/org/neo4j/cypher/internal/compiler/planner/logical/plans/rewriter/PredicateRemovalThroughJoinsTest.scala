@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner._
-import org.neo4j.cypher.internal.ir.{QueryGraph, Selections, PlannerQuery, ProvidedOrder}
+import org.neo4j.cypher.internal.ir.{QueryGraph, Selections, SinglePlannerQuery, ProvidedOrder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.logical.plans.{NodeHashJoin, Selection}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
@@ -84,7 +84,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
   private def selectionOp(id: String, planningAttributes: PlanningAttributes, predicates: Expression*) = {
     val selections = Selections.from(predicates)
     val lhsLeaf = newMockedLogicalPlan("a")
-    val solved = PlannerQuery.empty.withQueryGraph(QueryGraph(selections = selections))
+    val solved = SinglePlannerQuery.empty.withQueryGraph(QueryGraph(selections = selections))
     val c = Cardinality(0)
     val res = Selection(Seq(aHasLabel), lhsLeaf)
     planningAttributes.solveds.set(res.id, solved)

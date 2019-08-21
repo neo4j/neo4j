@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{countStorePlanner, verifyBestPlan}
-import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, SinglePlannerQuery, QueryProjection}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
@@ -38,7 +38,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
                            planUpdates:UpdatesPlanner = PlanUpdates)
   extends SingleQueryPlanner {
 
-  override def apply(in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
+  override def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
     val updatedContext = addAggregatedPropertiesToContext(in, context)
 
     val (completePlan, ctx) =
@@ -46,12 +46,10 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
         case Some(plan) =>
           (plan, updatedContext.withUpdatedCardinalityInformation(plan))
         case None =>
-          val attributes = updatedContext.planningAttributes.asAttributes(idGen)
-
           val partPlan = planPart(in, updatedContext)
           val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, firstPlannerQuery = true, updatedContext)
           
-          val planWithInput= in.queryInput match {
+          val planWithInput = in.queryInput match {
             case Some(variables) =>
               val inputPlan = contextAfterUpdates.logicalPlanProducer.planInput(variables, contextAfterUpdates)
               contextAfterUpdates.logicalPlanProducer.planInputApply(inputPlan, planWithUpdates, variables, contextAfterUpdates)
@@ -63,7 +61,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
           (projectedPlan, projectedContext)
       }
 
-    val (finalPlan, finalContext) = planWithTail(completePlan, in, ctx, idGen)
+    val (finalPlan, finalContext) = planWithTail(completePlan, in, ctx)
     (verifyBestPlan(finalPlan, in, finalContext), finalContext)
   }
 
@@ -74,7 +72,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
    * The renamings map is used to keep track of any projections changing the name of the property,
    * as in MATCH (n:Label) WITH n.prop1 AS prop RETURN count(prop)
    */
-  def addAggregatedPropertiesToContext(currentQuery: PlannerQuery, context: LogicalPlanningContext): LogicalPlanningContext = {
+  def addAggregatedPropertiesToContext(currentQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlanningContext = {
 
     // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
     if (currentQuery.queryGraph.mutatingPatterns.nonEmpty) return context
@@ -104,17 +102,17 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
 }
 
 trait PartPlanner {
-  def apply(query: PlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): LogicalPlan
+  def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): LogicalPlan
 }
 
 trait EventHorizonPlanner {
-  def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan
+  def apply(query: SinglePlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan
 }
 
 trait TailPlanner {
-  def apply(lhs: LogicalPlan, in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext)
+  def apply(lhs: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
 }
 
 trait UpdatesPlanner {
-  def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
+  def apply(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
 }

@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
 import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
 import org.neo4j.cypher.internal.v4_0.util._
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
@@ -106,7 +106,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
         val solveds = context.planningAttributes.solveds
         val cardinalities = context.planningAttributes.cardinalities
         val providedOrders = context.planningAttributes.providedOrders
-        solveds.set(plan.id, PlannerQuery.empty)
+        solveds.set(plan.id, SinglePlannerQuery.empty)
         cardinalities.set(plan.id, 0.0)
         providedOrders.set(plan.id, ProvidedOrder.empty)
         plan
@@ -136,7 +136,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
-      innerVariableNamer = innerVariableNamer)
+      innerVariableNamer = innerVariableNamer,
+      idGen = idGen)
   }
 
   def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
@@ -159,7 +160,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, csvBufferSize = config.csvBufferSize,
                            config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
-      innerVariableNamer = innerVariableNamer)
+      innerVariableNamer = innerVariableNamer,
+      idGen = idGen)
   }
 
   def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]
@@ -180,9 +182,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedLogicalPlanWithProjections(planningAttributes: PlanningAttributes, ids: String*): LogicalPlan = {
     val projections = RegularQueryProjection(projections = ids.map(id => id -> varFor(id)).toMap)
-    val solved = RegularPlannerQuery(
-      horizon = projections,
-      queryGraph = QueryGraph.empty.addPatternNodes(ids: _*)
+    val solved = RegularSinglePlannerQuery(
+      queryGraph = QueryGraph.empty.addPatternNodes(ids: _*),
+      horizon = projections
     )
     val res = FakePlan(ids.toSet)
     planningAttributes.solveds.set(res.id, solved)
@@ -195,13 +197,13 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                            planningAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders),
                            hints: Set[Hint] = Set[Hint](),
                            availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
-    val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints))
+    val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints))
     newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(1), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
   }
 
   def newMockedLogicalPlanWithSolved(planningAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders),
                                      idNames: Set[String],
-                                     solved: PlannerQuery,
+                                     solved: SinglePlannerQuery,
                                      cardinality: Cardinality = Cardinality(1),
                                      providedOrder: ProvidedOrder = ProvidedOrder.empty,
                                      availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
@@ -216,7 +218,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                        idNames: Set[String],
                                        patterns: Seq[PatternRelationship] = Seq.empty,
                                        availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
-    val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns))
+    val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns))
     newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
   }
 
@@ -241,9 +243,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     planSystemCommands = false
   )
 
-  def buildPlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None) = {
-    val queries: Seq[PlannerQuery] = buildPlannerUnionQuery(query, lookup).queries
-    queries.head
+  def buildSinglePlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None): SinglePlannerQuery = {
+    buildPlannerQuery(query, lookup).query match {
+      case pq: SinglePlannerQuery => pq
+      case _ => throw new IllegalArgumentException("This method cannot be used for UNION queries")
+    }
   }
 
   val pipeLine =
@@ -269,8 +273,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     input.withStatement(newStatement)
   }
 
-  def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,
-                             fcnLookup: Option[QualifiedName => Option[UserFunctionSignature]] = None) = {
+  def buildPlannerQuery(query: String,
+                        procLookup: Option[QualifiedName => ProcedureSignature] = None,
+                        fcnLookup: Option[QualifiedName => Option[UserFunctionSignature]] = None): PlannerQuery = {
     val signature = ProcedureSignature(
       QualifiedName(Seq.empty, "foo"),
       inputSignature = IndexedSeq.empty,
@@ -287,7 +292,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val context = ContextHelper.create(cypherExceptionFactory = exceptionFactory, planContext = planContext, logicalPlanIdGen = idGen)
     val output = pipeLine.transform(state, context)
 
-    output.unionQuery
+    output.query
   }
 }
 

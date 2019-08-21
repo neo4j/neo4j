@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
-import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, RegularPlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, RegularSinglePlannerQuery, VarPatternLength}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast._
@@ -39,12 +39,12 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   private def newJoinHint(): Hint = { UsingJoinHint(Seq(varFor("a")))_ }
 
-  private def newQueryWithIdxHint() = RegularPlannerQuery(
+  private def newQueryWithIdxHint() = RegularSinglePlannerQuery(
     QueryGraph(
       patternNodes = Set("a", "b")
     ).addHints(Set(newIndexHint())))
 
-  private def newQueryWithJoinHint() = RegularPlannerQuery(
+  private def newQueryWithJoinHint() = RegularSinglePlannerQuery(
     QueryGraph(
       patternNodes = Set("a", "b")
     ).addHints(Set(newJoinHint())))
@@ -60,7 +60,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("should throw when finding plan that does not solve all pattern nodes") {
-    val query = RegularPlannerQuery(
+    val query = RegularSinglePlannerQuery(
       QueryGraph(
         patternNodes = Set("a", "b")
       )
@@ -75,7 +75,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   test("should throw when finding plan that does not solve all pattern relationships") {
     val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength.unlimited)
-    val query = RegularPlannerQuery(
+    val query = RegularSinglePlannerQuery(
       QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(patternRel)
@@ -89,7 +89,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("should not throw when finding plan that does solve all pattern nodes") {
-    val query = RegularPlannerQuery(
+    val query = RegularSinglePlannerQuery(
       QueryGraph(
         patternNodes = Set("a", "b")
       )

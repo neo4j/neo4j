@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConverters._
-import org.neo4j.cypher.internal.ir.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.ir.{PeriodicCommit, SinglePlannerQuery, PlannerQueryPart, PlannerQuery, UnionQuery}
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
@@ -55,29 +55,33 @@ object StatementConverters {
     }
   }
 
-  def toUnionQuery(query: Query, semanticTable: SemanticTable): UnionQuery = {
-    val nodes = findBlacklistedNodes(query)
+  def toPlannerQuery(query: Query, semanticTable: SemanticTable): PlannerQuery = {
+    val plannerQueryPart = toPlannerQueryPart(query.part, semanticTable)
+    PlannerQuery(plannerQueryPart, PeriodicCommit(query.periodicCommitHint))
+  }
+
+  def toPlannerQueryPart(queryPart: QueryPart, semanticTable: SemanticTable): PlannerQueryPart = {
+    val nodes = findBlacklistedNodes(queryPart)
     require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
 
-    query match {
-      case Query(periodicCommitHint, queryPart: SingleQuery) =>
-        val builder = toPlannerQueryBuilder(queryPart, semanticTable)
-        UnionQuery(Seq(builder.build()), distinct = false, builder.returns, PeriodicCommit(periodicCommitHint))
+    queryPart match {
+      case singleQuery: SingleQuery =>
+        val builder = toPlannerQueryBuilder(singleQuery, semanticTable)
+        builder.build()
 
-      case Query(periodicCommitHint, u: ast.Union) =>
-        val queries: Seq[SingleQuery] = u.unionedQueries
-        val distinct = u match {
-          case _: UnionAll => false
-          case _: UnionDistinct => true
+      case unionQuery: ast.Union =>
+        val part: PlannerQueryPart = toPlannerQueryPart(unionQuery.part, semanticTable)
+        val query: SinglePlannerQuery = toPlannerQueryBuilder(unionQuery.query, semanticTable).build()
+
+
+        val distinct = unionQuery match {
+          case _: ProjectingUnionAll => false
+          case _: ProjectingUnionDistinct => true
         }
-        val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => toPlannerQueryBuilder(x, semanticTable))
-        //UNION requires all queries to return the same variables
-        assert(plannedQueries.nonEmpty)
-        val returns = plannedQueries.last.returns
-        UnionQuery(plannedQueries.map(_.build()), distinct, returns, PeriodicCommit(periodicCommitHint))
 
+        UnionQuery(part, query, distinct, unionQuery.unionMappings)
       case _ =>
-        throw new InternalException(s"Received an AST-clause that has no representation the QG: $query")
+        throw new InternalException(s"Received an AST-clause that has no representation the QG: $queryPart")
     }
   }
 

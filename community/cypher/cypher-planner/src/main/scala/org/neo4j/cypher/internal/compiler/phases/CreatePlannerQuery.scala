@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConv
 import org.neo4j.cypher.internal.v4_0.ast.{MultiDatabaseAdministrationCommand, Query}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, BaseState, Phase}
-import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.exceptions.{DatabaseAdministrationException, InternalException}
+import org.neo4j.cypher.internal.ir.{PlannerQuery, UnionQuery}
 
 
 object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] {
@@ -36,8 +36,8 @@ object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState
 
   override def process(from: BaseState, context: BaseContext): LogicalPlanState = from.statement() match {
     case query: Query =>
-      val unionQuery: UnionQuery = toUnionQuery(query, from.semanticTable())
-      LogicalPlanState(from).copy(maybeUnionQuery = Some(unionQuery))
+      val plannerQuery: PlannerQuery= toPlannerQuery(query, from.semanticTable())
+      LogicalPlanState(from).copy(maybeQuery = Some(plannerQuery))
 
     case ddl: MultiDatabaseAdministrationCommand => throw new DatabaseAdministrationException(
       s"This is an administration command and it should be executed against the system database: ${ddl.name}")

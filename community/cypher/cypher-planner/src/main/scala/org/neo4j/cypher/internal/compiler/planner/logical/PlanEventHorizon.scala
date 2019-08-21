@@ -32,7 +32,7 @@ aggregation and UNWIND.
  */
 case object PlanEventHorizon extends EventHorizonPlanner {
 
-  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(query: SinglePlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = context.config.applySelections(plan, query.queryGraph, query.interestingOrder, context)
 
     val projectedPlan = query.horizon match {
@@ -91,6 +91,10 @@ case object PlanEventHorizon extends EventHorizonPlanner {
       case PassthroughAllHorizon() =>
         val projected = context.logicalPlanProducer.planPassAll(plan, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, query.interestingOrder, context)
+
+      case CallSubqueryHorizon(callSubquery) =>
+        val (subPlan, _) =  plannerQueryPartPlanner.plan(callSubquery, context)
+        context.logicalPlanProducer.planSubqueryApply(plan, subPlan, context)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")

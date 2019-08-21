@@ -39,17 +39,17 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
   override def postConditions: Set[Condition] = Set.empty
 
   override def instance(ignored: PlannerContext): Rewriter = topDown(Rewriter.lift {
-    case RegularPlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, _)
+    case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, _)
       if validAggregations(aggregations) =>
       val projectionDeps: Iterable[LogicalVariable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
       rewrite(projectionDeps, graph, interestingOrder, proj, tail)
 
-    case RegularPlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _), tail, _) =>
+    case RegularSinglePlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _), tail, _) =>
       val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
       rewrite(projectionDeps, graph, interestingOrder, proj, tail)
   })
 
-  private def rewrite(projectionDeps: Iterable[LogicalVariable], graph: QueryGraph, interestingOrder: InterestingOrder, proj: QueryProjection, tail: Option[PlannerQuery]): RegularPlannerQuery = {
+  private def rewrite(projectionDeps: Iterable[LogicalVariable], graph: QueryGraph, interestingOrder: InterestingOrder, proj: QueryProjection, tail: Option[SinglePlannerQuery]): RegularSinglePlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
     val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
     val gen = new PositionGenerator
@@ -94,7 +94,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
     }
 
     val matches = graph.withOptionalMatches(optionalMatches)
-    RegularPlannerQuery(matches, interestingOrder, horizon = proj, tail = tail)
+    RegularSinglePlannerQuery(matches, interestingOrder, horizon = proj, tail = tail)
 
   }
 
@@ -291,8 +291,8 @@ trait PlannerQueryRewriter extends Phase[PlannerContext, LogicalPlanState, Logic
   def instance(context: PlannerContext): Rewriter
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    val query: UnionQuery = from.unionQuery
+    val query = from.query
     val rewritten = query.endoRewrite(instance(context))
-    from.copy(maybeUnionQuery = Some(rewritten))
+    from.copy(maybeQuery = Some(rewritten))
   }
 }

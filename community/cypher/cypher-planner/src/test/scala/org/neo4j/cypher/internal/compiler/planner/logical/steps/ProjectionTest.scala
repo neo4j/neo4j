@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.{InterestingOrder, RegularQueryProjection, RegularPlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.{InterestingOrder, RegularQueryProjection, RegularSinglePlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, Projection}
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast.semantics.ExpressionTypeInfo
@@ -112,7 +112,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val ids = projectionsMap.keySet
 
     val plan =
-      newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = ids, solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)),
+      newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = ids, solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)),
         availablePropertiesFromIndexes = availablePropertiesFromIndexes)
 
     (context, plan)

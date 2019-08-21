@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.internal.ir.{PlannerQuery, ProvidedOrder}
+import org.neo4j.cypher.internal.ir.{SinglePlannerQuery, ProvidedOrder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.parser.{CypherParser, ParserFixture}
@@ -37,11 +37,11 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
   implicit protected def idSymbol(name: Symbol): String = name.name
 
   class StubSolveds extends Solveds {
-    override def set(id: Id, t: PlannerQuery): Unit = {}
+    override def set(id: Id, t: SinglePlannerQuery): Unit = {}
 
     override def isDefinedAt(id: Id): Boolean = true
 
-    override def get(id: Id): PlannerQuery = PlannerQuery.empty
+    override def get(id: Id): SinglePlannerQuery = SinglePlannerQuery.empty
 
     override def copy(from: Id, to: Id): Unit = {}
   }

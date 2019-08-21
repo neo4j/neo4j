@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, IdGen}
 
@@ -32,7 +32,7 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
                         planUpdates: UpdatesPlanner = PlanUpdates)
   extends TailPlanner {
 
-  override def apply(lhs: LogicalPlan, in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
+  override def apply(lhs: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
     in.tail match {
       case Some(plannerQuery) =>
         val lhsContext = context.withUpdatedCardinalityInformation(lhs)
@@ -46,10 +46,10 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext)
         val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan)
 
-        this.apply(projectedPlan, plannerQuery, projectedContext, idGen)
+        this.apply(projectedPlan, plannerQuery, projectedContext)
 
       case None =>
-        val attributes = Attributes(idGen, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)
+        val attributes = Attributes(context.idGen, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)
         (lhs.endoRewrite(Eagerness.unnestEager(context.planningAttributes.solveds, attributes)), context)
     }
   }

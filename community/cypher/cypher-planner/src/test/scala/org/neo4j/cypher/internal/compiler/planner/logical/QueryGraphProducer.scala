@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.{Neo4jCypherExceptionFactory, SyntaxEx
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticChecker
@@ -44,7 +44,7 @@ trait QueryGraphProducer extends MockitoSugar {
 
   import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters._
 
-  def producePlannerQueryForPattern(query: String): (PlannerQuery, SemanticTable) = {
+  def producePlannerQueryForPattern(query: String): (SinglePlannerQuery, SemanticTable) = {
     val q = query + " RETURN 1 AS Result"
     val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
     val ast = parser.parse(q, exceptionFactory)
@@ -58,6 +58,6 @@ trait QueryGraphProducer extends MockitoSugar {
     val context = ContextHelper.create(logicalPlanIdGen = idGen)
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 
-    (toUnionQuery(output.statement().asInstanceOf[Query], output.semanticTable()).queries.head, output.semanticTable())
+    (toPlannerQuery(output.statement().asInstanceOf[Query], output.semanticTable()).query.asInstanceOf[SinglePlannerQuery], output.semanticTable())
   }
 }

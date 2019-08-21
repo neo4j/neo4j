@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.v4_0.util.Rewritable._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, Rewriter}
-import org.neo4j.cypher.internal.compiler.{Neo4jCypherExceptionFactory, SyntaxExceptionCreator}
-import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toUnionQuery
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover.smallestGraphIncluding
+import org.neo4j.cypher.internal.compiler.{Neo4jCypherExceptionFactory, SyntaxExceptionCreator}
+import org.neo4j.cypher.internal.ir.{PatternRelationship, PlannerQuery, QueryGraph, SimplePatternLength}
 import org.neo4j.cypher.internal.v4_0.ast.Query
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.flattenBooleanOperators
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticChecker, SemanticTable}
-import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, SimplePatternLength, UnionQuery}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.flattenBooleanOperators
+import org.neo4j.cypher.internal.v4_0.util.Rewritable._
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, Rewriter}
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -332,15 +332,15 @@ assert_that(
   case class RewriteTester(originalQuery: String) {
     def is_rewritten_to(newQuery: String): Unit =
       test(originalQuery) {
-        val expected = getUnionQueryFrom(newQuery.stripMargin)
-        val original = getUnionQueryFrom(originalQuery.stripMargin)
+        val expected = getTheWholePlannerQueryFrom(newQuery.stripMargin)
+        val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin)
 
         val result = original.endoRewrite(fixedPoint(rewriter))
         assert(result === expected, "\nWas not rewritten correctly\n" + originalQuery)
       }
 
     def is_not_rewritten(): Unit = test(originalQuery) {
-      val query = getUnionQueryFrom(originalQuery.stripMargin)
+      val query = getTheWholePlannerQueryFrom(originalQuery.stripMargin)
       val result = query.endoRewrite(fixedPoint(rewriter))
       assert(result === query, "\nShould not have been rewritten\n" + originalQuery)
     }
@@ -348,14 +348,14 @@ assert_that(
 
   private def assert_that(originalQuery: String): RewriteTester = RewriteTester(originalQuery)
 
-  private def getUnionQueryFrom(query: String): UnionQuery = {
+  private def getTheWholePlannerQueryFrom(query: String): PlannerQuery = {
     val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
     val exceptionFactory = new Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val result = SemanticChecker.check(ast)
     onError(result.errors)
     val table = SemanticTable(types = result.state.typeTable, recordedScopes = result.state.recordedScopes)
-    toUnionQuery(ast.asInstanceOf[Query], table)
+    StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table)
   }
 
   private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"), Neo4jCypherExceptionFactory(queryText, None))

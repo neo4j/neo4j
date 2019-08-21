@@ -19,256 +19,39 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.v4_0.ast.Hint
-import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, Variable}
-import org.neo4j.exceptions.InternalException
-
-import scala.annotation.tailrec
-import scala.collection.GenSeq
-import scala.util.hashing.MurmurHash3
+import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 
 /**
-  * A linked list of queries, each made up of, a query graph (MATCH ... WHERE ...), a required order, a horizon (WITH ...) and a pointer to the next query.
-  */
-trait PlannerQuery {
-
-  /**
-    * Optionally, an input to the query provided using INPUT DATA STREAM. These are the column names provided by IDS.
-    */
-  val queryInput: Option[Set[String]]
-  /**
-    * The part of query from a MATCH/MERGE/CREATE until (excluding) the next WITH/RETURN.
-    */
-  val queryGraph: QueryGraph
-  /**
-    * The required order of a query graph and its horizon. The required order emerges from an ORDER BY or aggregation or distinct.
-    */
-  val interestingOrder: InterestingOrder
-  /**
-    * The WITH/RETURN part of a query
-    */
-  val horizon: QueryHorizon
-  /**
-    * Optionally, a next PlannerQuery for everything after the WITH in the current horizon.
-    */
-  val tail: Option[PlannerQuery]
-
-  def dependencies: Set[String]
-
-  def readOnly: Boolean = (queryGraph.readOnly && horizon.readOnly) && tail.forall(_.readOnly)
-
-  def preferredStrictness: Option[StrictnessMode] =
-    horizon.preferredStrictness(interestingOrder.requiredOrderCandidate.nonEmpty) orElse tail.flatMap(_.preferredStrictness)
-
-  def last: PlannerQuery = tail.map(_.last).getOrElse(this)
-
-  def lastQueryGraph: QueryGraph = last.queryGraph
-  def lastQueryHorizon: QueryHorizon = last.horizon
-
-  def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
-    case None => copy(tail = Some(newTail))
-    case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
-  }
-  
-  def withInput(queryInput: Set[String]) =
-    copy(input = Some(queryInput), queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput))
-
-  def withoutHints(hintsToIgnore: GenSeq[Hint]): PlannerQuery = {
-    copy(queryGraph = queryGraph.withoutHints(hintsToIgnore), tail = tail.map(x => x.withoutHints(hintsToIgnore)))
-  }
-
-  def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
-
-  def withQueryGraph(queryGraph: QueryGraph): PlannerQuery = copy(queryGraph = queryGraph)
-
-  def withInterestingOrder(interestingOrder: InterestingOrder): PlannerQuery =
-    copy(interestingOrder = interestingOrder)
-
-  def withTailInterestingOrder(interestingOrder: InterestingOrder): PlannerQuery = {
-    def f(plannerQuery: PlannerQuery): (PlannerQuery, InterestingOrder) = {
-      plannerQuery.tail match {
-        case None => (plannerQuery.copy(interestingOrder = interestingOrder), interestingOrder.asInteresting)
-        case Some(q) =>
-          val (newTail, tailOrder) = f(q)
-          if (plannerQuery.interestingOrder.isEmpty) {
-            val reverseProjected =
-              plannerQuery.horizon match {
-                case qp: QueryProjection => tailOrder.withReverseProjectedColumns(qp.projections, newTail.queryGraph.argumentIds)
-                case _ => tailOrder
-              }
-            (plannerQuery.copy(interestingOrder = reverseProjected, tail = Some(newTail)), reverseProjected)
-          } else
-            (plannerQuery.copy(tail = Some(newTail)), InterestingOrder.empty)
-      }
-    }
-
-    f(this)._1
-  }
-
-  def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
-
-  def allHints: Seq[Hint] = tail match {
-    case Some(tailPlannerQuery) => queryGraph.allHints ++ tailPlannerQuery.allHints
-    case None => queryGraph.allHints
-  }
-
-  def numHints: Int = allHints.size
-
-  def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQuery = withQueryGraph(f(queryGraph))
-
-  def updateHorizon(f: QueryHorizon => QueryHorizon): PlannerQuery = withHorizon(f(horizon))
-
-  def updateQueryProjection(f: QueryProjection => QueryProjection): PlannerQuery = horizon match {
-    case projection: QueryProjection => withHorizon(f(projection))
-    case _ => throw new InternalException("Tried updating projection when there was no projection there")
-  }
-
-  def updateTail(f: PlannerQuery => PlannerQuery) = tail match {
-    case None => this
-    case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
-  }
-
-  def updateTailOrSelf(f: PlannerQuery => PlannerQuery): PlannerQuery = tail match {
-    case None => f(this)
-    case Some(tailQuery) => this.updateTail(_.updateTailOrSelf(f))
-  }
-
-  def tailOrSelf: PlannerQuery = tail match {
-    case None => this
-    case Some(t) => t.tailOrSelf
-  }
-
-  def exists(f: PlannerQuery => Boolean): Boolean =
-    f(this) || tail.exists(_.exists(f))
-
-  def ++(other: PlannerQuery): PlannerQuery = {
-    (this.horizon, other.horizon) match {
-      case (a: RegularQueryProjection, b: RegularQueryProjection) =>
-        RegularPlannerQuery(
-          horizon = a ++ b,
-          interestingOrder = interestingOrder,
-          queryGraph = queryGraph ++ other.queryGraph,
-          tail = either(tail, other.tail),
-          queryInput = either(queryInput, other.queryInput)
-        )
-
-      case _ =>
-        throw new InternalException("Tried to concatenate non-regular query projections")
-    }
-  }
-
-  private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
-    case (s@Some(_), None) => s
-    case (None, s) => s
-  }
-
-  // This is here to stop usage of copy from the outside
-  protected def copy(queryGraph: QueryGraph = queryGraph,
-                     interestingOrder: InterestingOrder = interestingOrder,
-                     horizon: QueryHorizon = horizon,
-                     tail: Option[PlannerQuery] = tail,
-                     input: Option[Set[String]] = queryInput): PlannerQuery
-
-  def foldMap(f: (PlannerQuery, PlannerQuery) => PlannerQuery): PlannerQuery = tail match {
-    case None => this
-    case Some(oldTail) =>
-      val newTail = f(this, oldTail)
-      copy(tail = Some(newTail.foldMap(f)))
-  }
-
-  def fold[A](in: A)(f: (A, PlannerQuery) => A): A = {
-
-    @tailrec
-    def recurse(acc: A, pq: PlannerQuery): A = {
-      val nextAcc = f(acc, pq)
-
-      pq.tail match {
-        case Some(tailPQ) => recurse(nextAcc, tailPQ)
-        case None => nextAcc
-      }
-    }
-
-    recurse(in, this)
-  }
-
-  //Returns a list of query graphs from this plannerquery and all of its tails
-  def allQueryGraphs: Seq[QueryGraph] = allPlannerQueries.map(_.queryGraph)
-
-  //Returns list of planner query and all of its tails
-  def allPlannerQueries: Seq[PlannerQuery] = {
-    @tailrec
-    def loop(acc: Seq[PlannerQuery], remaining: Option[PlannerQuery]): Seq[PlannerQuery] = remaining match {
-      case None => acc
-      case Some(inner) => loop(acc :+ inner, inner.tail)
-    }
-
-    loop(Seq.empty, Some(this))
-  }
-
-  def labelInfo: Map[String, Set[LabelName]] = {
-    val labelInfo = lastQueryGraph.selections.labelInfo
-    val projectedLabelInfo = lastQueryHorizon match {
-      case projection: QueryProjection =>
-        projection.projections.collect {
-          case (projectedName, Variable(name)) if labelInfo.contains(name) =>
-              projectedName -> labelInfo(name)
-        }
-      case _ => Map.empty[String, Set[LabelName]]
-    }
-    labelInfo ++ projectedLabelInfo
-  }
+ * A query in a representation that is consumed by the planner.
+ */
+case class PlannerQuery(query: PlannerQueryPart, periodicCommit: Option[PeriodicCommit]) {
+  def readOnly: Boolean = query.readOnly
 }
 
-object PlannerQuery {
-  val empty = RegularPlannerQuery()
-
-  def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]) = {
-    val patternRelIds = patternRels.flatMap(_.coveredIds)
-    patternNodeIds ++ patternRelIds
-  }
+/**
+ * A part of a PlannerQuery.
+ */
+trait PlannerQueryPart {
+  def readOnly: Boolean
+  def returns: Set[String]
 }
 
-case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
-                               interestingOrder: InterestingOrder = InterestingOrder.empty,
-                               horizon: QueryHorizon = QueryProjection.empty,
-                               tail: Option[PlannerQuery] = None,
-                               queryInput: Option[Set[String]] = None) extends PlannerQuery {
+/**
+ * This represents the union of the queries.
+ * @param part the first part, which can itself be either a UnionQuery or a SinglePlannerQuery
+ * @param query the second part, which is a SinglePlannerQuery
+ * @param distinct whether it is a distinct union
+ * @param unionMappings mappings of return items from both parts
+ */
+case class UnionQuery(part: PlannerQueryPart,
+                      query: SinglePlannerQuery,
+                      distinct: Boolean,
+                      unionMappings: List[UnionMapping]) extends PlannerQueryPart {
+  def readOnly: Boolean = part.readOnly && query.readOnly
 
-  // This is here to stop usage of copy from the outside
-  override protected def copy(queryGraph: QueryGraph = queryGraph,
-                              interestingOrder: InterestingOrder = interestingOrder,
-                              horizon: QueryHorizon = horizon,
-                              tail: Option[PlannerQuery] = tail,
-                              queryInput: Option[Set[String]] = queryInput) =
-    RegularPlannerQuery(queryGraph, interestingOrder, horizon, tail, queryInput)
-
-  override def dependencies: Set[String] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
-
-  override def canEqual(that: Any): Boolean = that.isInstanceOf[RegularPlannerQuery]
-
-  override def equals(other: Any): Boolean = other match {
-    case that: RegularPlannerQuery =>
-      (that canEqual this) &&
-        queryInput == that.queryInput &&
-        queryGraph == that.queryGraph &&
-        horizon == that.horizon &&
-        tail == that.tail &&
-        interestingOrder.requiredOrderCandidate.order == that.interestingOrder.requiredOrderCandidate.order
-    case _ => false
+  override def returns: Set[String] = part.returns.map { returnColInPart =>
+    unionMappings.collectFirst {
+      case UnionMapping(varAfterUnion, varInPart, _) if varInPart.name == returnColInPart => varAfterUnion.name
+    }.get
   }
-
-  var theHashCode: Int = -1
-
-  override def hashCode(): Int = {
-    if (theHashCode == -1) {
-      val state = Seq(queryInput, queryGraph, horizon, tail, interestingOrder.requiredOrderCandidate.order)
-      theHashCode = MurmurHash3.seqHash(state)
-    }
-    theHashCode
-  }
-}
-
-case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[String], periodicCommit: Option[PeriodicCommit]) {
-  def readOnly: Boolean = queries.forall(_.readOnly)
 }

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestA
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, NotImplementedPlanContext, StatsDivergenceCalculator, SyntaxExceptionCreator}
-import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery, ProvidedOrder, QueryGraph}
+import org.neo4j.cypher.internal.ir.{PeriodicCommit, SinglePlannerQuery, ProvidedOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
@@ -170,11 +170,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
-    private def removeApply(input: LogicalPlanState, context: PlannerContext, solveds: Solveds, attributes: Attributes[LogicalPlan]): LogicalPlanState = {
-      val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply(solveds, attributes)))
-      input.copy(maybeLogicalPlan = Some(newPlan))
-    }
-
     def getLogicalPlanFor(queryString: String,
                           config:CypherPlannerConfiguration = cypherCompilerConfig,
                           queryGraphSolver: QueryGraphSolver = queryGraphSolver,
@@ -220,7 +215,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         notificationLogger = devNullLogger,
         costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
-        innerVariableNamer = innerVariableNamer
+        innerVariableNamer = innerVariableNamer,
+        idGen = idGen
       )
       f(config, ctx)
     }
@@ -243,7 +239,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         notificationLogger = devNullLogger,
         costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
-        innerVariableNamer = innerVariableNamer
+        innerVariableNamer = innerVariableNamer,
+        idGen = idGen
       )
       f(config, ctx)
     }
@@ -263,7 +260,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def fakeLogicalPlanFor(planningAttributes: PlanningAttributes, id: String*): FakePlan = {
     val res = FakePlan(id.toSet)
-    planningAttributes.solveds.set(res.id, PlannerQuery.empty)
+    planningAttributes.solveds.set(res.id, SinglePlannerQuery.empty)
     planningAttributes.cardinalities.set(res.id, 0.0)
     planningAttributes.providedOrders.set(res.id, ProvidedOrder.empty)
     res

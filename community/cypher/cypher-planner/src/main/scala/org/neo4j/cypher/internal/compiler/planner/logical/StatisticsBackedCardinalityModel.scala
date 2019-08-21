@@ -35,15 +35,25 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
   private val expressionSelectivityCalculator = queryGraphCardinalityModel.expressionSelectivityCalculator
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
-  def apply(query: PlannerQuery, input0: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
-    val output = query.fold(input0) {
-      case (input, RegularPlannerQuery(graph, _, horizon, _, _)) =>
-        val QueryGraphSolverInput(newLabels, graphCardinality, laziness) = calculateCardinalityForQueryGraph(graph, input, semanticTable)
+  def apply(queryPart: PlannerQueryPart, input0: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
+    queryPart match {
+      case query: SinglePlannerQuery =>
+        val output = query.fold(input0) {
+          case (input, RegularSinglePlannerQuery(graph, _, horizon, _, _)) =>
+            val QueryGraphSolverInput(newLabels, graphCardinality, laziness) = calculateCardinalityForQueryGraph(graph, input, semanticTable)
 
-        val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon, semanticTable)
-        QueryGraphSolverInput(newLabels, horizonCardinality, laziness)
+            val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon, semanticTable)
+            QueryGraphSolverInput(newLabels, horizonCardinality, laziness)
+        }
+        output.inboundCardinality
+      case UnionQuery(part, query, distinct, _) =>
+        val unionCardinality = apply(part, input0, semanticTable) + apply(query, input0, semanticTable)
+        if (distinct) {
+          unionCardinality * DEFAULT_DISTINCT_SELECTIVITY
+        } else {
+          unionCardinality
+        }
     }
-    output.inboundCardinality
   }
 
   private def calculateCardinalityForQueryHorizon(in: Cardinality, horizon: QueryHorizon, semanticTable: SemanticTable): Cardinality = horizon match {
@@ -107,6 +117,10 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
     case _: PassthroughAllHorizon =>
       in
+
+    case CallSubqueryHorizon(subquery) =>
+      val subQueryCardinality = apply(subquery, QueryGraphSolverInput.empty, semanticTable)
+      in * subQueryCardinality
   }
 
   private def horizonCardinalityWithSelections(cardinalityBeforeSelection: Cardinality,

@@ -88,7 +88,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val coveredIds = Set("x")
     val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, literalInt(1)))))
-    val solved = RegularPlannerQuery(qg)
+    val solved = RegularSinglePlannerQuery(qg)
     val inner = newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = Set("x"), solved = solved)
 
     // When

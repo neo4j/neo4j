@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.{functions, _}
 
 case object countStorePlanner {
 
-  def apply(query: PlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] = {
+  def apply(query: SinglePlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] = {
     query.horizon match {
       case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _, _)
         if groupingKeys.isEmpty && aggregatingExpressions.size == 1 =>
@@ -39,14 +39,14 @@ case object countStorePlanner {
     }
   }
 
-  private def checkForValidQueryGraph(query: PlannerQuery, columnName: String, exp: Expression, context: LogicalPlanningContext): Option[LogicalPlan] = query.queryGraph match {
+  private def checkForValidQueryGraph(query: SinglePlannerQuery, columnName: String, exp: Expression, context: LogicalPlanningContext): Option[LogicalPlan] = query.queryGraph match {
     case QueryGraph(patternRelationships, patternNodes, argumentIds, selections, Seq(), hints, shortestPathPatterns, _)
       if hints.isEmpty && shortestPathPatterns.isEmpty && query.queryGraph.readOnly =>
       checkForValidAggregations(query, columnName, exp, patternRelationships, patternNodes, argumentIds, selections, context)
     case _ => None
   }
 
-  private def checkForValidAggregations(query: PlannerQuery, columnName: String, exp: Expression,
+  private def checkForValidAggregations(query: SinglePlannerQuery, columnName: String, exp: Expression,
                                         patternRelationships: Set[PatternRelationship], patternNodes: Set[String],
                                         argumentIds: Set[String], selections: Selections, context: LogicalPlanningContext): Option[LogicalPlan] =
     exp match {
@@ -70,7 +70,7 @@ case object countStorePlanner {
       case _ => None
     }
 
-  private def trySolveNodeAggregation(query: PlannerQuery, columnName: String, variableName: Option[String],
+  private def trySolveNodeAggregation(query: SinglePlannerQuery, columnName: String, variableName: Option[String],
                                       patternRelationships: Set[PatternRelationship], patternNodes: Set[String], argumentIds: Set[String],
                                       selections: Selections,
                                       context: LogicalPlanningContext,
@@ -96,7 +96,7 @@ case object countStorePlanner {
   // the counts store counts loops twice
   private def notLoop(r: PatternRelationship) = r.nodes._1 != r.nodes._2
 
-  private def trySolveRelationshipAggregation(query: PlannerQuery, columnName: String, variableName: Option[String],
+  private def trySolveRelationshipAggregation(query: SinglePlannerQuery, columnName: String, variableName: Option[String],
                                               patternRelationships: Set[PatternRelationship], argumentIds: Set[String],
                                               selections: Selections, context: LogicalPlanningContext): Option[LogicalPlan] = {
     patternRelationships.head match {

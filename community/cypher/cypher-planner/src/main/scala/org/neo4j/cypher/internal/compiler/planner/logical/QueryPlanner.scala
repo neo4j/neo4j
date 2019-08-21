@@ -67,10 +67,15 @@ case class QueryPlanner(planSingleQuery: SingleQueryPlanner = PlanSingleQuery())
       csvBufferSize = context.config.csvBufferSize,
       costComparisonListener = costComparisonListener,
       planningAttributes = planningAttributes,
-      innerVariableNamer = context.innerVariableNamer
+      innerVariableNamer = context.innerVariableNamer,
+      idGen = context.logicalPlanIdGen
     )
 
-    val (perCommit, logicalPlan, newLogicalPlanningContext) = plan(from.unionQuery, logicalPlanningContext, planningAttributes.solveds, planningAttributes.cardinalities, context.logicalPlanIdGen)
+    // Not using from.returnColumns, since they are the original ones given by the user,
+    // whereas the one in the statement might have been rewritten and contain the variables
+    // that will actually be available to ProduceResults
+    val produceResultColumns = from.statement().returnColumns.map(_.name)
+    val (perCommit, logicalPlan, newLogicalPlanningContext) = plan(from.query, logicalPlanningContext, produceResultColumns)
 
     costComparisonListener match {
       case debug: ReportCostComparisonsAsRows => debug.addPlan(from)
@@ -89,38 +94,49 @@ case class QueryPlanner(planSingleQuery: SingleQueryPlanner = PlanSingleQuery())
     context.metrics
   }
 
-  def plan(unionQuery: UnionQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, idGen: IdGen): (Option[PeriodicCommit], LogicalPlan, LogicalPlanningContext) =
-    unionQuery match {
-      case UnionQuery(queries, distinct, _, periodicCommitHint) =>
-        val (plan, newContext) = planQueries(queries, distinct, context, idGen)
-        (periodicCommitHint, createProduceResultOperator(plan, unionQuery, newContext), newContext)
-    }
+  def plan(query: PlannerQuery, context: LogicalPlanningContext, produceResultColumns: Seq[String]): (Option[PeriodicCommit], LogicalPlan, LogicalPlanningContext) = {
+    val (plan, newContext) = plannerQueryPartPlanner.plan(query.query, context)
+    val planWithProduceResults = createProduceResultOperator(plan, produceResultColumns, newContext)
+    (query.periodicCommit, planWithProduceResults, newContext)
+  }
 
   private def createProduceResultOperator(in: LogicalPlan,
-                                          unionQuery: UnionQuery,
+                                          produceResultColumns: Seq[String],
                                           context: LogicalPlanningContext): LogicalPlan =
-    context.logicalPlanProducer.planProduceResult(in, unionQuery.returns, context)
+    context.logicalPlanProducer.planProduceResult(in, produceResultColumns, context)
 
-  private def planQueries(queries: Seq[PlannerQuery], distinct: Boolean, context: LogicalPlanningContext, idGen: IdGen) = {
-    val (logicalPlans, finalContext) = queries.foldLeft((Seq.empty[LogicalPlan], context)) {
-      case ((plans, currentContext), currentQuery) =>
-        val (singlePlan, newContext) = planSingleQuery(currentQuery, context, idGen)
-        (plans :+ singlePlan, newContext)
-    }
-    val unionPlan = logicalPlans.reduce[LogicalPlan] {
-      case (p1, p2) => finalContext.logicalPlanProducer.planUnion(p1, p2, finalContext)
-    }
+}
 
-    if (distinct)
-      (finalContext.logicalPlanProducer.planDistinctStar(unionPlan, finalContext), finalContext)
-    else
-      (unionPlan, finalContext)
-  }
+/**
+  * Combines multiple PlannerQuery plans together with Union
+  */
+case object plannerQueryPartPlanner {
+
+  def plan(plannerQueryPart: PlannerQueryPart, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) =
+    plannerQueryPart match {
+      case pq:SinglePlannerQuery =>
+        PlanSingleQuery()(pq, context)
+      case UnionQuery(part, query, distinct, unionMappings) =>
+        val projectionsForPart = unionMappings.map(um => um.unionVariable.name -> um.variableInPart).toMap
+        val projectionsForQuery = unionMappings.map(um => um.unionVariable.name -> um.variableInQuery).toMap
+
+        val (partPlan, partContext) = plan(part, context)
+        val partPlanWithProjection = partContext.logicalPlanProducer.planRegularProjection(partPlan, projectionsForPart, Map.empty, partContext)
+
+        val (queryPlan, finalContext) = PlanSingleQuery()(query, partContext)
+        val queryPlanWithProjection = finalContext.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, Map.empty, finalContext)
+
+        val unionPlan = finalContext.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, finalContext)
+        if (distinct)
+          (finalContext.logicalPlanProducer.planDistinctStar(unionPlan, finalContext), finalContext)
+        else
+          (unionPlan, finalContext)
+    }
 }
 
 case object planPart extends PartPlanner {
 
-  def apply(query: PlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): LogicalPlan = {
+  def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): LogicalPlan = {
     val ctx = query.preferredStrictness match {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
@@ -131,7 +147,7 @@ case object planPart extends PartPlanner {
   // Extract the interesting InterestingOrder for this part of the query
   // If the required order has dependency on argument, then it should not solve the ordering here
   // If we have a mutating pattern that depends on the sorting variables, we cannot solve ordering here
-  private def interestingOrderForPart(query: PlannerQuery, isRhs: Boolean) = {
+  private def interestingOrderForPart(query: SinglePlannerQuery, isRhs: Boolean) = {
     val interestingOrder = query.interestingOrder
     if (isRhs)
       interestingOrder.asInteresting
@@ -153,5 +169,5 @@ case object planPart extends PartPlanner {
 }
 
 trait SingleQueryPlanner {
-  def apply(in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext)
+  def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
 }

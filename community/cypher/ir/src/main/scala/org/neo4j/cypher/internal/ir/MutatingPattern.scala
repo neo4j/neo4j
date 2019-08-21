@@ -147,6 +147,6 @@ case class MergeRelationshipPattern(createNodes: Seq[CreateNode],
       onMatch.flatMap(_.dependencies)
 }
 
-case class ForeachPattern(variable: String, expression: Expression, innerUpdates: PlannerQuery) extends MutatingPattern with NoSymbols {
+case class ForeachPattern(variable: String, expression: Expression, innerUpdates: SinglePlannerQuery) extends MutatingPattern with NoSymbols {
   override def dependencies: Set[String] = deps(expression) ++ innerUpdates.dependencies
 }

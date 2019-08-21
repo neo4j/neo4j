@@ -64,6 +64,14 @@ case class LoadCSVProjection(variable: String, url: Expression, format: CSVForma
   override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 }
 
+case class CallSubqueryHorizon(callSubquery: PlannerQueryPart) extends QueryHorizon {
+  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ callSubquery.returns
+
+  override def dependingExpressions: Seq[Expression] = Seq.empty
+
+  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
+}
+
 sealed abstract class QueryProjection extends QueryHorizon {
   def selections: Selections
   def projections: Map[String, Expression]
@@ -146,8 +154,7 @@ final case class AggregatingQueryProjection(groupingExpressions: Map[String, Exp
   override def withPagination(queryPagination: QueryPagination): AggregatingQueryProjection =
     copy(queryPagination = queryPagination)
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingExpressions
-    .keySet ++ aggregationExpressions.keySet
+  override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingExpressions.keySet ++ aggregationExpressions.keySet
 
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }

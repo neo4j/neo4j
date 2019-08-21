@@ -33,15 +33,15 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val qg2 = QueryGraph.empty
     val qg3 = QueryGraph.empty
 
-    val pq3 = RegularPlannerQuery(queryGraph = qg3, tail = None)
-    val pq2 = RegularPlannerQuery(queryGraph = qg2, tail = Some(pq3))
-    val pq1 = RegularPlannerQuery(queryGraph = qg1, tail = Some(pq2))
+    val pq3 = RegularSinglePlannerQuery(queryGraph = qg3, tail = None)
+    val pq2 = RegularSinglePlannerQuery(queryGraph = qg2, tail = Some(pq3))
+    val pq1 = RegularSinglePlannerQuery(queryGraph = qg1, tail = Some(pq2))
 
-    var seenOnPos1 = List.empty[PlannerQuery]
-    var seenOnPos2 = List.empty[PlannerQuery]
+    var seenOnPos1 = List.empty[SinglePlannerQuery]
+    var seenOnPos2 = List.empty[SinglePlannerQuery]
 
     val result = pq1.foldMap {
-      case (pq1: PlannerQuery, pq2: PlannerQuery) =>
+      case (pq1: SinglePlannerQuery, pq2: SinglePlannerQuery) =>
         seenOnPos1 = seenOnPos1 :+ pq1
         seenOnPos2 = seenOnPos2 :+ pq2
         pq2
@@ -54,10 +54,10 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("foldMap on single plannerQuery returns that PQ") {
 
-    val input = RegularPlannerQuery(queryGraph = QueryGraph.empty, tail = None)
+    val input = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty, tail = None)
 
     val result = input.foldMap {
-      case (_: PlannerQuery, _: PlannerQuery) =>
+      case (_: SinglePlannerQuery, _: SinglePlannerQuery) =>
         fail("should not pass through here")
     }
 
@@ -66,13 +66,13 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("foldMap plannerQuery with tail should change when reverseMapped") {
 
-    val tail = RegularPlannerQuery(queryGraph = QueryGraph.empty)
+    val tail = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty)
     val firstQueryGraph = QueryGraph.empty
     val secondQueryGraph = QueryGraph(patternNodes = Set("a"))
-    val input = RegularPlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
+    val input = RegularSinglePlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
 
     val result = input.foldMap {
-      case (_: PlannerQuery, pq2: PlannerQuery) =>
+      case (_: SinglePlannerQuery, pq2: SinglePlannerQuery) =>
         pq2.withQueryGraph(secondQueryGraph)
     }
 
@@ -82,14 +82,14 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should compute laziness preference correctly for a single planner query") {
-    val noLimit = RegularPlannerQuery(horizon = QueryProjection.empty)
+    val noLimit = RegularSinglePlannerQuery(horizon = QueryProjection.empty)
     noLimit.preferredStrictness should equal(None)
 
     val paginationWithLimit = QueryProjection.empty.withPagination(QueryPagination(limit = Some(literalUnsignedInt(42))))
-    val hasLimit = RegularPlannerQuery(horizon = paginationWithLimit, interestingOrder = InterestingOrder.empty)
+    val hasLimit = RegularSinglePlannerQuery(interestingOrder = InterestingOrder.empty, horizon = paginationWithLimit)
     hasLimit.preferredStrictness should equal(Some(LazyMode))
 
-    val hasLimitAndSort = RegularPlannerQuery(horizon = paginationWithLimit, interestingOrder = mockInterestingOrder)
+    val hasLimitAndSort = RegularSinglePlannerQuery(interestingOrder = mockInterestingOrder, horizon = paginationWithLimit)
     hasLimitAndSort.preferredStrictness should equal(None)
   }
 
@@ -98,9 +98,9 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
     // pq -> pqWithLimit -> pqWithLimitAndSort
 
-    val pqWithLimitAndSort: PlannerQuery = RegularPlannerQuery(horizon = paginationWithLimit, interestingOrder = mockInterestingOrder)
-    val pqWithLimit = RegularPlannerQuery(horizon = paginationWithLimit, tail = Some(pqWithLimitAndSort), interestingOrder = InterestingOrder.empty)
-    val pq = RegularPlannerQuery(tail = Some(pqWithLimit))
+    val pqWithLimitAndSort: SinglePlannerQuery = RegularSinglePlannerQuery(interestingOrder = mockInterestingOrder, horizon = paginationWithLimit)
+    val pqWithLimit = RegularSinglePlannerQuery(interestingOrder = InterestingOrder.empty, horizon = paginationWithLimit, tail = Some(pqWithLimitAndSort))
+    val pq = RegularSinglePlannerQuery(tail = Some(pqWithLimit))
 
     pq.preferredStrictness should equal(Some(LazyMode))
     pqWithLimit.preferredStrictness should equal(Some(LazyMode))

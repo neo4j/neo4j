@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.helpers.CachedFunction
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
-import org.neo4j.cypher.internal.ir.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.{PlannerQueryPart, QueryGraph}
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
@@ -31,9 +31,9 @@ import org.neo4j.cypher.internal.v4_0.util.Cardinality
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
     val wrapped: CardinalityModel = metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
-    val cached = CachedFunction[PlannerQuery, Metrics.QueryGraphSolverInput, SemanticTable, Cardinality] { (a, b, c) => wrapped(a, b, c) }
+    val cached = CachedFunction[PlannerQueryPart, Metrics.QueryGraphSolverInput, SemanticTable, Cardinality] { (a, b, c) => wrapped(a, b, c) }
     new CardinalityModel {
-      override def apply(query: PlannerQuery, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
+      override def apply(query: PlannerQueryPart, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
         cached.apply(query, input, semanticTable)
       }
     }

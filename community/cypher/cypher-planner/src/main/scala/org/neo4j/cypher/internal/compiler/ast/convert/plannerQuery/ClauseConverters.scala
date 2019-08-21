@@ -48,6 +48,7 @@ object ClauseConverters {
     case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
     case c: Foreach => addForeachToLogicalPlanInput(acc, c)
     case c: InputDataStream => addInputDataStreamToLogicalPlanInput(acc, c)
+    case c: SubQuery => addCallSubqueryToLogicalPlanInput(acc, c)
 
     case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
     case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
@@ -60,7 +61,7 @@ object ClauseConverters {
         url = clause.urlString,
         format = if (clause.withHeaders) HasHeaders else NoHeaders,
         clause.fieldTerminator)
-    ).withTail(PlannerQuery.empty)
+    ).withTail(SinglePlannerQuery.empty)
 
   private def addInputDataStreamToLogicalPlanInput(acc: PlannerQueryBuilder, clause: InputDataStream): PlannerQueryBuilder =
     acc.withQueryInput(clause.variables.map(_.name).toSet)
@@ -96,14 +97,10 @@ object ClauseConverters {
       val queryPagination = QueryPagination().withSkip(skip).withLimit(limit)
 
       val projection = asQueryProjection(distinct, items).withPagination(queryPagination)
-      val returns = items.collect {
-        case AliasedReturnItem(_, variable) => variable.name
-      }
       val requiredOrder = findRequiredOrder(projection, optOrderBy)
 
       acc.
         withHorizon(projection).
-        withReturns(returns).
         withInterestingOrder(requiredOrder)
     case _ =>
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
@@ -325,6 +322,15 @@ object ClauseConverters {
     }
   }
 
+  private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubQuery): PlannerQueryBuilder = {
+    val subquery = clause.query
+    // These need to be passed into the callSubquery somehow - for correlated subqueries only
+    // val argumentIDs = acc.currentlyAvailableVariables
+
+    val callSubquery = StatementConverters.toPlannerQueryPart(subquery.part, acc.semanticTable)
+    acc.withCallSubquery(callSubquery)
+  }
+
   private def toPropertyMap(expr: Option[Expression]): Map[PropertyKeyName, Expression] = expr match {
     case None => Map.empty
     case Some(MapExpression(items)) => items.toMap
@@ -389,9 +395,9 @@ object ClauseConverters {
 
         acc
           .withHorizon(PassthroughAllHorizon())
-          .withTail(RegularPlannerQuery(queryGraph = queryGraph))
+          .withTail(RegularSinglePlannerQuery(queryGraph = queryGraph))
           .withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds)))
-          .withTail(RegularPlannerQuery())
+          .withTail(RegularSinglePlannerQuery())
 
       //MERGE (n)-[r: R]->(m)
       case (acc, EveryPath(pattern: RelationshipChain)) =>
@@ -438,9 +444,9 @@ object ClauseConverters {
 
         acc.
           withHorizon(PassthroughAllHorizon()).
-          withTail(RegularPlannerQuery(queryGraph = queryGraph)).
+          withTail(RegularSinglePlannerQuery(queryGraph = queryGraph)).
           withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds))).
-          withTail(RegularPlannerQuery())
+          withTail(RegularSinglePlannerQuery())
 
       case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: ${x._2}")
     }
@@ -489,7 +495,7 @@ object ClauseConverters {
       builder.
         withHorizon(queryProjection).
         withInterestingOrder(requiredOrder).
-        withTail(RegularPlannerQuery(QueryGraph()))
+        withTail(RegularSinglePlannerQuery(QueryGraph()))
 
     case _ =>
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
@@ -502,12 +508,12 @@ object ClauseConverters {
           variable = clause.variable.name,
           exp = clause.expression)
       ).
-      withTail(PlannerQuery.empty)
+      withTail(SinglePlannerQuery.empty)
 
   private def addCallToLogicalPlanInput(builder: PlannerQueryBuilder, call: ResolvedCall): PlannerQueryBuilder = {
     builder
       .withHorizon(ProcedureCallProjection(call))
-      .withTail(PlannerQuery.empty)
+      .withTail(SinglePlannerQuery.empty)
   }
 
   private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach): PlannerQueryBuilder = {
@@ -522,7 +528,7 @@ object ClauseConverters {
     val projectionToInnerUpdates = asQueryProjection(distinct = false, QueryProjection
       .forIds(currentlyAvailableVariables + foreachVariable.name))
 
-    val innerBuilder = new PlannerQueryBuilder(PlannerQuery.empty, builder.semanticTable)
+    val innerBuilder = new PlannerQueryBuilder(SinglePlannerQuery.empty, builder.semanticTable)
       .amendQueryGraph(_.addPatternNodes((builder.allSeenPatternNodes ++ setOfNodeVariables).toIndexedSeq:_*)
                         .addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(projectionToInnerUpdates)
@@ -547,9 +553,9 @@ object ClauseConverters {
     // to maintain the strict ordering of reads followed by writes within a single planner query
     builder
       .withHorizon(PassthroughAllHorizon())
-      .withTail(RegularPlannerQuery(queryGraph = foreachGraph))
+      .withTail(RegularSinglePlannerQuery(queryGraph = foreachGraph))
       .withHorizon(PassthroughAllHorizon()) // NOTE: We do not expose anything from foreach itself
-      .withTail(RegularPlannerQuery())
+      .withTail(RegularSinglePlannerQuery())
   }
 
   private def addRemoveToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Remove): PlannerQueryBuilder = {

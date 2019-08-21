@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.RegularPlannerQuery
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, CartesianProduct, NodeByLabelScan, Selection}
 
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -43,7 +43,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         case (_: NodeByLabelScan, _, _) => 20.0
       }
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.selections.predicates.size == 1 => 10
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.selections.predicates.size == 1 => 10
       }
     } getLogicalPlanFor  "MATCH (n), (m) WHERE n.prop = 12 AND m:Label RETURN n, m")._2 should beLike {
       case CartesianProduct(_: Selection, _: NodeByLabelScan) => ()

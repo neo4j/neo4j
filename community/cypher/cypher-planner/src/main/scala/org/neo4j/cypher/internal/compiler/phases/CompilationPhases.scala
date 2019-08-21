@@ -70,7 +70,7 @@ object CompilationPhases {
           QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
           PlanRewriter(sequencer) andThen
           insertCachedProperties andThen
-          If((s: LogicalPlanState) => s.unionQuery.readOnly)(
+          If((s: LogicalPlanState) => s.query.readOnly)(
             CheckForUnresolvedTokens
           )
       )

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.planner._
-import org.neo4j.cypher.internal.ir.{QueryGraph, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.{QueryGraph, RegularSinglePlannerQuery}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -35,9 +35,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = (new given {
       cardinality = mapCardinality {
         // expand
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 10
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 10
         // argument
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if containsArgumentOnly(queryGraph) => 1
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if containsArgumentOnly(queryGraph) => 1
         case _ => 4000000
       }
     } getLogicalPlanFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""")._2

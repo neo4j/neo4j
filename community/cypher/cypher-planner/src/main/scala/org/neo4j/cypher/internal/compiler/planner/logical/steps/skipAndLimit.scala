@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, PlanTransformer}
-import org.neo4j.cypher.internal.ir.{QueryProjection, PlannerQuery}
+import org.neo4j.cypher.internal.ir.{QueryProjection, SinglePlannerQuery}
 import org.neo4j.cypher.internal.v4_0.expressions.{Add, Expression}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object skipAndLimit extends PlanTransformer {
 
-  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+  def apply(plan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     query.horizon match {
       case p: QueryProjection =>
         val queryPagination = p.queryPagination

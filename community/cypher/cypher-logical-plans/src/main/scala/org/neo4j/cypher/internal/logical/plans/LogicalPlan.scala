@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.ir.{PlannerQuery, Strictness}
+import org.neo4j.cypher.internal.ir.{SinglePlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
 import org.neo4j.cypher.internal.v4_0.util.Rewritable._
@@ -120,7 +120,7 @@ abstract class LogicalPlan(idGen: IdGen)
           && params.last.isAssignableFrom(classOf[IdGen]))
           constructor.invoke(this, args :+ SameId(this.id): _*).asInstanceOf[this.type]
         else if ((params.length == args.length + 2)
-          && params(params.length - 2).isAssignableFrom(classOf[PlannerQuery])
+          && params(params.length - 2).isAssignableFrom(classOf[SinglePlannerQuery])
           && params(params.length - 1).isAssignableFrom(classOf[IdGen]))
           constructor.invoke(this, args :+ SameId(this.id): _*).asInstanceOf[this.type]
         else

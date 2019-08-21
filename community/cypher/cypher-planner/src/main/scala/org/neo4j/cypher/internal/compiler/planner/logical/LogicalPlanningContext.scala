@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   logicalPlanProducer: LogicalPlanProducer,
@@ -53,7 +54,8 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                    * where we potentially could use a NodeIndexScan.
                                    * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(("n", "prop1"), ("m", "prop2"))
                                    */
-                                  aggregatingProperties: Set[(String, String)] = Set.empty) {
+                                  aggregatingProperties: Set[(String, String)] = Set.empty,
+                                  idGen: IdGen) {
   def withStrictness(strictness: StrictnessMode): LogicalPlanningContext =
     copy(input = input.withPreferredStrictness(strictness))
 

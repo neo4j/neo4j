@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.RegularPlannerQuery
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeHashJoin}
 import org.scalacheck.Gen
 
@@ -66,7 +66,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     val semanticPlan = new given {
       cardinality = mapCardinality {
         // expand - cheap
-        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
         // everything else - expensive
         case _ => Double.MaxValue
       }

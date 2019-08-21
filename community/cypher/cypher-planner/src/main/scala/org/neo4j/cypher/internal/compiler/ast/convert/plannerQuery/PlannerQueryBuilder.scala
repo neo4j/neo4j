@@ -28,10 +28,8 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 
 import scala.collection.mutable
 
-case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[String] = Seq.empty)
+case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable: SemanticTable)
   extends ListSupport {
-
-  def withReturns(returns: Seq[String]): PlannerQueryBuilder = copy(returns = returns)
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.amendQueryGraph(f)))
@@ -39,7 +37,11 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
 
-  def withTail(newTail: PlannerQuery): PlannerQueryBuilder = {
+  def withCallSubquery(subquery: PlannerQueryPart): PlannerQueryBuilder = {
+    withHorizon(CallSubqueryHorizon(subquery)).withTail(SinglePlannerQuery.empty)
+  }
+
+  def withTail(newTail: SinglePlannerQuery): PlannerQueryBuilder = {
     copy(q = q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq)))))
   }
   
@@ -85,9 +87,9 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
   def readOnly: Boolean = q.queryGraph.readOnly
 
-  def build(): PlannerQuery = {
+  def build(): SinglePlannerQuery = {
 
-    def fixArgumentIdsOnOptionalMatch(plannerQuery: PlannerQuery): PlannerQuery = {
+    def fixArgumentIdsOnOptionalMatch(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
       val optionalMatches = plannerQuery.queryGraph.optionalMatches
       val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.queryGraph.idsWithoutOptionalMatchesOrUpdates) {
         case (args, qg) =>
@@ -98,7 +100,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
-    def fixArgumentIdsOnMerge(plannerQuery: PlannerQuery): PlannerQuery = {
+    def fixArgumentIdsOnMerge(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
       val newMergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph.map {
         qg =>
           val nodesAndRels = QueryGraph.coveredIdsForPatterns(qg.patternNodes, qg.patternRelationships)
@@ -118,7 +120,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
       updatePQ.updateTail(fixArgumentIdsOnMerge)
     }
 
-    def fixQueriesWithOnlyRelationshipIndex(plannerQuery: PlannerQuery): PlannerQuery = {
+    def fixQueriesWithOnlyRelationshipIndex(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
       val qg = plannerQuery.queryGraph
       val patternRelationships = qg.hints.collect {
         case r: RelationshipStartItem if !qg.patternRelationships.exists(_.name == r.name) =>
@@ -141,7 +143,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
         tail.withQueryGraph(newTailGraph)
     }
 
-    def groupInequalities(plannerQuery: PlannerQuery): PlannerQuery = {
+    def groupInequalities(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
       import org.neo4j.cypher.internal.v4_0.util.NonEmptyList._
 
       plannerQuery
@@ -164,5 +166,5 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 }
 
 object PlannerQueryBuilder {
-  def apply(semanticTable: SemanticTable) = new PlannerQueryBuilder(PlannerQuery.empty, semanticTable)
+  def apply(semanticTable: SemanticTable) = new PlannerQueryBuilder(SinglePlannerQuery.empty, semanticTable)
 }

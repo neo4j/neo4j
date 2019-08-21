@@ -34,7 +34,7 @@ case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) exte
       manifest.runtimeClass match {
         case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
-        case x if classOf[UnionQuery] == x && state.maybeUnionQuery.isEmpty => Seq("Union query missing")
+        case x if classOf[UnionQuery] == x && state.maybeQuery.isEmpty => Seq("Union query missing")
         case x if classOf[LogicalPlan] == x && state.maybeLogicalPlan.isEmpty => Seq("Logical plan missing")
         case _ => Seq.empty
       }
