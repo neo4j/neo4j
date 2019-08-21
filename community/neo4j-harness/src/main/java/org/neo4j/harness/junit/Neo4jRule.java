@@ -172,13 +172,13 @@ public class Neo4jRule implements TestRule, TestServerBuilder
         return controls.httpURI();
     }
 
-    public URI httpsURI()
+    public Optional<URI> httpsURI()
     {
         if(controls == null)
         {
             throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
         }
-        return controls.httpURI();
+        return controls.httpsURI();
     }
 
     public GraphDatabaseService getGraphDatabaseService() {
