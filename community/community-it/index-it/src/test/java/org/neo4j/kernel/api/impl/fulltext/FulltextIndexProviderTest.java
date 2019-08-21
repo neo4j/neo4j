@@ -27,6 +27,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -46,6 +48,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -59,6 +62,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -66,6 +70,7 @@ import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -94,34 +99,55 @@ public class FulltextIndexProviderTest
 
     private Node node1;
     private Node node2;
+    private int labelIdHej;
+    private int labelIdHa;
+    private int labelIdHe;
+    private int propIdHej;
+    private int propIdHa;
+    private int propIdHe;
+    private int propIdHo;
 
     @Before
     public void prepDB()
     {
+        Label hej = label( "hej" );
+        Label ha = label( "ha" );
+        Label he = label( "he" );
         try ( Transaction transaction = db.beginTx() )
         {
-            node1 = db.createNode( label( "hej" ), label( "ha" ), label( "he" ) );
+            node1 = db.createNode( hej, ha, he );
             node1.setProperty( "hej", "value" );
             node1.setProperty( "ha", "value1" );
             node1.setProperty( "he", "value2" );
             node1.setProperty( "ho", "value3" );
-            node1.setProperty( "hi", "value4" );
             node2 = db.createNode();
             Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "hej" ) );
             rel.setProperty( "hej", "valuuu" );
             rel.setProperty( "ha", "value1" );
             rel.setProperty( "he", "value2" );
             rel.setProperty( "ho", "value3" );
-            rel.setProperty( "hi", "value4" );
 
             transaction.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            TokenRead tokenRead = tokenRead();
+            labelIdHej = tokenRead.nodeLabel( hej.name() );
+            labelIdHa = tokenRead.nodeLabel( ha.name() );
+            labelIdHe = tokenRead.nodeLabel( he.name() );
+            propIdHej = tokenRead.propertyKey( "hej" );
+            propIdHa = tokenRead.propertyKey( "ha" );
+            propIdHe = tokenRead.propertyKey( "he" );
+            propIdHo = tokenRead.propertyKey( "ho" );
+            tx.commit();
         }
     }
 
     @Test
     public void createFulltextIndex() throws Exception
     {
-        IndexDescriptor fulltextIndex = createIndex( new int[]{7, 8, 9}, new int[]{2, 3, 4} );
+        IndexDescriptor fulltextIndex = createIndex( new int[]{labelIdHej, labelIdHa, labelIdHe}, new int[]{propIdHej, propIdHa, propIdHe} );
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             IndexDescriptor descriptor = transaction.schemaRead().indexGetForName( NAME );
@@ -131,9 +157,30 @@ public class FulltextIndexProviderTest
     }
 
     @Test
+    public void shouldHaveAReasonableDirectoryStructure() throws Exception
+    {
+        createIndex( new int[]{labelIdHej, labelIdHa, labelIdHe}, new int[]{propIdHej, propIdHa, propIdHe} );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.commit();
+        }
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+        {
+            IndexDescriptor descriptor = transaction.schemaRead().indexGetForName( NAME );
+            File indexDir = Path.of( db.databaseLayout().databaseDirectory().getAbsolutePath(),
+                    "schema", "index", descriptor.getIndexProvider().name(), "" + descriptor.getId() ).toFile();
+            List<File> listFiles = List.of( requireNonNull( indexDir.listFiles() ) );
+            assertTrue( listFiles.contains( new File( indexDir, "failure-message" ) ) );
+            assertTrue( listFiles.contains( new File( indexDir, "1" ) ) );
+            assertTrue( listFiles.contains( new File( indexDir, indexDir.getName() + ".tx" ) ) );
+        }
+    }
+
+    @Test
     public void createAndRetainFulltextIndex() throws Exception
     {
-        IndexDescriptor fulltextIndex = createIndex( new int[]{7, 8, 9}, new int[]{2, 3, 4} );
+        IndexDescriptor fulltextIndex = createIndex( new int[]{labelIdHej, labelIdHa, labelIdHe}, new int[]{propIdHej, propIdHa, propIdHe} );
         db.restartDatabase( DbmsRule.RestartAction.EMPTY );
 
         verifyThatFulltextIndexIsPresent( fulltextIndex );
@@ -145,7 +192,8 @@ public class FulltextIndexProviderTest
         IndexDescriptor indexReference;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
+            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{labelIdHej, labelIdHa, labelIdHe},
+                    new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
             indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( "fulltext" ) );
             transaction.success();
         }
@@ -159,7 +207,7 @@ public class FulltextIndexProviderTest
     public void createAndQueryFulltextIndex() throws Exception
     {
         IndexDescriptor indexReference;
-        indexReference = createIndex( new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
+        indexReference = createIndex( new int[]{labelIdHej, labelIdHa, labelIdHe}, new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
         await( indexReference );
         long thirdNodeId;
         thirdNodeId = createTheThirdNode();
@@ -174,7 +222,8 @@ public class FulltextIndexProviderTest
         IndexDescriptor indexReference;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
+            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{labelIdHej, labelIdHa, labelIdHe},
+                    new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
             indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( "fulltext" ) );
             transaction.success();
         }
@@ -363,7 +412,7 @@ public class FulltextIndexProviderTest
     {
         long nodeId = createTheThirdNode();
         IndexDescriptor index;
-        index = createIndex( new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
+        index = createIndex( new int[]{labelIdHej, labelIdHa, labelIdHe}, new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
         await( index );
         List<String> acceptedEntities = new ArrayList<>();
         try ( KernelTransactionImplementation ktx = getKernelTransaction() )
@@ -416,6 +465,12 @@ public class FulltextIndexProviderTest
             assertThat( acceptedEntities.size(), is( 1 ) );
             acceptedEntities.clear();
         }
+    }
+
+    private TokenRead tokenRead()
+    {
+        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( false, db.databaseId() ).tokenRead();
     }
 
     private KernelTransactionImplementation getKernelTransaction()
