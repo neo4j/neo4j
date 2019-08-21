@@ -50,6 +50,7 @@ import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -63,10 +64,12 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.reflect.FieldUtils.getDeclaredField;
 import static org.neo4j.function.Predicates.alwaysTrue;
@@ -773,6 +776,30 @@ public class FileUtils
         {
             return "Unknown file store type: " + e.getMessage();
         }
+    }
+
+    public static void tryForceDirectory( File directory ) throws IOException
+    {
+        if ( !directory.exists() )
+        {
+            throw new NoSuchFileException( format( "The directory %s does not exist!", directory.getAbsolutePath() ) );
+        }
+        else if ( !directory.isDirectory() )
+        {
+            throw new IllegalArgumentException( format( "The path %s must refer to a directory!", directory.getAbsolutePath() ) );
+        }
+
+        if ( SystemUtils.IS_OS_WINDOWS )
+        {
+            // Windows doesn't allow us to open a FileChannel against a directory for reading, so we can't attempt to "fsync" there
+            return;
+        }
+
+        // Attempts to fsync the directory, guaranting e.g. file creation/deletion/rename events are durable
+        // See http://mail.openjdk.java.net/pipermail/nio-dev/2015-May/003140.html
+        // See also https://github.com/apache/lucene-solr/commit/7bea628bf3961a10581833935e4c1b61ad708c5c
+        FileChannel directoryChannel = FileChannel.open( directory.toPath(), singleton( READ ) );
+        directoryChannel.force( true );
     }
 
 }
