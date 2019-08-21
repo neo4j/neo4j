@@ -31,9 +31,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.util.PathImpl;
@@ -613,19 +613,19 @@ public class ShortestPath implements PathFinder<Path>
 
     private static Collection<Path> hitsToPaths( Collection<Hit> depthHits, Node start, Node end, boolean stopAsap, int maxResultCount )
     {
-        LinkedHashMap<String,Path> paths = new LinkedHashMap<>();
+        Set<Path> paths = new HashSet<>();
         for ( Hit hit : depthHits )
         {
             for ( Path path : hitToPaths( hit, start, end, stopAsap ) )
             {
-                paths.put( path.toString(), path );
+                paths.add( path );
                 if ( paths.size() >= maxResultCount )
                 {
                     break;
                 }
             }
         }
-        return paths.values();
+        return paths;
     }
 
     private static Collection<Path> hitToPaths( Hit hit, Node start, Node end, boolean stopAsap )
