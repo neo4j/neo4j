@@ -118,7 +118,9 @@ public class ExecutingQuery
 
     // update state
 
-    public void compilationCompleted( CompilerInfo compilerInfo, QueryExecutionType.QueryType queryType, Supplier<ExecutionPlanDescription> planDescriptionSupplier )
+    public void compilationCompleted( CompilerInfo compilerInfo,
+                                      QueryExecutionType.QueryType queryType,
+                                      Supplier<ExecutionPlanDescription> planDescriptionSupplier )
     {
         this.compilerInfo = compilerInfo;
         this.compilationCompletedNanos = clock.nanos();
