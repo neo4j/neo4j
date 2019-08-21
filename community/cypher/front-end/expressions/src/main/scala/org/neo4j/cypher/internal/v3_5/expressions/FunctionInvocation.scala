@@ -28,6 +28,8 @@ object FunctionInvocation {
     FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(expression))(name.position)
   def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])(position: InputPosition): FunctionInvocation =
   FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
+  def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression], deprecated: Boolean)(position: InputPosition): FunctionInvocation =
+    FunctionInvocation(Namespace()(position), functionName, distinct, args, deprecated)(position)
 }
 
 case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression],

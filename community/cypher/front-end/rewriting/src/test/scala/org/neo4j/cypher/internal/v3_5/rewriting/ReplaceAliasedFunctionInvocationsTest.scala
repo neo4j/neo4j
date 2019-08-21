@@ -33,17 +33,17 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
 
   test("should rewrite deprecated names regardless of casing") {
     for ((oldName, newName) <- deprecatedNameMap ) {
-      rewriter(function(oldName, varFor("arg"))) should equal(function(oldName, varFor("arg")).copy(functionName = FunctionName(newName)(pos))(pos))
-      rewriter(function(oldName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
-      rewriter(function(oldName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+      rewriter(function(oldName, varFor("arg"))) should equal(function(oldName, deprecated = true, varFor("arg")).copy(functionName = FunctionName(newName)(pos))(pos))
+      rewriter(function(oldName.toLowerCase(), varFor("arg"))) should equal(function(newName, deprecated = true, varFor("arg")))
+      rewriter(function(oldName.toUpperCase(), varFor("arg"))) should equal(function(newName, deprecated = true, varFor("arg")))
     }
   }
 
   test("should not touch new names of regardless of casing") {
     for (newName <- deprecatedNameMap.values ) {
       rewriter(function(newName, varFor("arg"))) should equal(function(newName, varFor("arg")))
-      rewriter(function(newName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
-      rewriter(function(newName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+      rewriter(function(newName.toLowerCase(), varFor("arg"))) should equal(function(newName, deprecated = false, varFor("arg")))
+      rewriter(function(newName.toUpperCase(), varFor("arg"))) should equal(function(newName, deprecated = false, varFor("arg")))
     }
   }
 
@@ -52,7 +52,7 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
 
     val after =
       Property(
-        FunctionInvocation(Namespace()(pos), FunctionName("datetime")(pos), distinct = false, IndexedSeq.empty)(pos),
+        FunctionInvocation(Namespace()(pos), FunctionName("datetime")(pos), distinct = false, IndexedSeq.empty, deprecated = true)(pos),
         PropertyKeyName("epochMillis")(pos))(pos)
     rewriter(before) should equal(after)
   }
@@ -62,7 +62,7 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
 
     val after =
       Property(
-        FunctionInvocation(Namespace()(pos), FunctionName("datetime")(pos), distinct = false, IndexedSeq.empty)(pos),
+        FunctionInvocation(Namespace()(pos), FunctionName("datetime")(pos), distinct = false, IndexedSeq.empty, deprecated = true)(pos),
         PropertyKeyName("epochMillis")(pos))(pos)
     rewriter(before) should equal(after)
   }
@@ -70,7 +70,7 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
   test("should rewrite extract() in V2") {
     val scope = ExtractScope(varFor("a"), None, None)(pos)
     val before = ExtractExpression(scope, literalFloat(3.0))(pos)
-    val expected = ListComprehension(scope, literalFloat(3.0))(pos)
+    val expected = ListComprehension(scope, literalFloat(3.0), generatedThroughRewrite = true)(pos)
 
     replaceAliasedFunctionInvocations(Deprecations.V1)(before) should equal(before)
     replaceAliasedFunctionInvocations(Deprecations.V2)(before) should equal(expected)
@@ -80,7 +80,7 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
     val scopePosition = InputPosition(30, 1, 31)
     val scope = FilterScope(varFor("a"), Some(TRUE))(scopePosition)
     val before = FilterExpression(scope, literalFloat(3.0))(pos)
-    val expected = ListComprehension(ExtractScope(varFor("a"), Some(TRUE), None)(scopePosition), literalFloat(3.0))(pos)
+    val expected = ListComprehension(ExtractScope(varFor("a"), Some(TRUE), None)(scopePosition), literalFloat(3.0), generatedThroughRewrite = true)(pos)
 
     replaceAliasedFunctionInvocations(Deprecations.V1)(before) should equal(before)
     replaceAliasedFunctionInvocations(Deprecations.V2)(before) should equal(expected)
