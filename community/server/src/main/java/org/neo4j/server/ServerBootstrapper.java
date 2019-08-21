@@ -95,7 +95,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
         addShutdownHook();
         installSignalHandlers();
         Config config = Config.newBuilder()
-                .set( GraphDatabaseSettings.SERVER_DEFAULTS )
+                .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
                 .fromFileNoThrow( configFile.orElse( null ) ) // TODO 4.0: Remove this, and require a neo4j.conf file to be present?
                 .setRaw( configOverrides )
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() )

@@ -92,7 +92,7 @@ class GraphDatabaseSettingsTest
     void shouldEnableBoltByDefault()
     {
         // given
-        Config config = Config.defaults( GraphDatabaseSettings.SERVER_DEFAULTS );
+        Config config = Config.newBuilder().setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS ).build();
 
         // when
         SocketAddress listenSocketAddress = config.get( BoltConnector.listen_address );
@@ -145,7 +145,7 @@ class GraphDatabaseSettingsTest
     void testServerDefaultSettings()
     {
         // given
-        Config config = Config.defaults( GraphDatabaseSettings.SERVER_DEFAULTS );
+        Config config = Config.newBuilder().setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS ).build();
 
         // then
         assertEquals( new SocketAddress( "localhost", 7474 ), config.get( HttpConnector.listen_address ) );
@@ -186,7 +186,7 @@ class GraphDatabaseSettingsTest
         // given
         Config config = Config.newBuilder()
                 .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" )  )
-                .set( GraphDatabaseSettings.SERVER_DEFAULTS )
+                .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
                 .build();
 
         // then
