@@ -86,45 +86,6 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     single.getByName("b") should beEquivalentTo(endNode)
   }
 
-  test("should correctly handle nulls from source pipe") {
-    // given
-    val query = mock[QueryContext]
-    val queryState = QueryStateHelper.emptyWith(query = query)
-
-    val source = mock[Pipe]
-    when(source.createResults(queryState)).thenReturn(Iterator(row("a" -> Values.NO_VALUE)))
-
-    // when
-    val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, RelationshipTypes.empty, 1, None, nodeInScope = false)().createResults(queryState).toList
-
-    // then
-    val single :: Nil = result
-    single.getByName("a").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
-    single.getByName("r").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
-    single.getByName("b").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
-  }
-
-  test("should not overwrite expand into to-node on nulls from source pipe") {
-    // given
-    val query = mock[QueryContext]
-    val queryState = QueryStateHelper.emptyWith(query = query)
-
-    val source = mock[Pipe]
-    val toNode = newMockedNode(1)
-    when(source.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
-      def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> Values.NO_VALUE, "b" -> toNode))
-    })
-
-    // when
-    val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, RelationshipTypes.empty, 1, None, nodeInScope = true)().createResults(queryState).toList
-
-    // then
-    val single :: Nil = result
-    single.getByName("a").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
-    single.getByName("r").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
-    single.getByName("b") should beEquivalentTo(toNode)
-  }
-
   test("should register owning pipe") {
     val src = new FakePipe(Iterator.empty)
     val pred1 = True()

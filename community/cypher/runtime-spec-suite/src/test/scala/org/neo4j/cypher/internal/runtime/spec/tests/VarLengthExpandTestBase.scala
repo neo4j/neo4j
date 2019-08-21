@@ -452,6 +452,41 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
+  // NULL INPUT
+
+  test("should handle null from-node") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*]-(y)")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val input = inputValues(Array(Array[Any](null)):_*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x", "r", "y").withSingleRow(null, null, null)
+  }
+
+  test("should handle null from-node without overwriting to-node in expand into") {
+    // given
+    val n1 = nodeGraph(1).head
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*]-(y)", expandMode = ExpandInto)
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputValues(Array(Array[Any](null, n1)):_*)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x", "r", "y").withSingleRow(null, null, n1)
+  }
+
   // HELPERS
 
   private def closestMultipleOf(sizeHint: Int, div: Int) = (sizeHint / div) * div
