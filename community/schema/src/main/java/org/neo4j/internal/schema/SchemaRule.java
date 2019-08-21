@@ -174,8 +174,8 @@ public interface SchemaRule extends SchemaDescriptorSupplier
     /**
      * Produce a copy of this schema rule, that has the given name.
      * If the given name is {@code null}, then this schema rule is returned unchanged.
-     * @param name The name of the new constraint descriptor.
-     * @return a modified copy of this constraint descriptor.
+     * @param name The name of the new schema rule.
+     * @return a modified copy of this schema rule.
      * @throws IllegalArgumentException if the given name is not {@code null}, and it fails the sanitise check.
      */
     SchemaRule withName( String name );

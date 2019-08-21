@@ -19,6 +19,8 @@
  */
 package org.neo4j.token.api;
 
+import java.util.StringJoiner;
+
 import org.neo4j.common.TokenNameLookup;
 
 public class TokenIdPrettyPrinter
@@ -49,17 +51,13 @@ public class TokenIdPrettyPrinter
 
     public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds, String prefix )
     {
-        StringBuilder properties = new StringBuilder();
-        properties.append( "(" );
-        for ( int i = 0; i < propertyIds.length; i++ )
+        StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
+        boolean emptyPrefix = prefix.isEmpty();
+        for ( int propertyId : propertyIds )
         {
-            if ( i > 0 )
-            {
-                properties.append( ", " );
-            }
-            properties.append( prefix ).append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
+            String name = tokenNameLookup.propertyKeyGetName( propertyId );
+            joiner.add( emptyPrefix ? name : prefix + name );
         }
-        properties.append( ")" );
-        return properties.toString();
+        return joiner.toString();
     }
 }
