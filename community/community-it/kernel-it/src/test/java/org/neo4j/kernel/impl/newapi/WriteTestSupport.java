@@ -25,13 +25,11 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -72,24 +70,6 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
     public void clearGraph()
     {
         GraphDatabaseServiceCleaner.cleanDatabaseContent( db );
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
-            PropertyContainer graphProperties = graphProperties();
-            for ( String key : graphProperties.getPropertyKeys() )
-            {
-                graphProperties.removeProperty( key );
-            }
-            tx.commit();
-        }
-    }
-
-    @Override
-    public PropertyContainer graphProperties()
-    {
-        return ((GraphDatabaseAPI) db)
-                .getDependencyResolver()
-                .resolveDependency( EmbeddedProxySPI.class )
-                .newGraphPropertiesProxy();
     }
 
     @Override

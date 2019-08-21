@@ -25,7 +25,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
-import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -173,12 +172,6 @@ class CompiledMaterializeValueMapperTest
 
         @Override
         public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public GraphPropertiesProxy newGraphPropertiesProxy()
         {
             throw new IllegalStateException( "Should not be used" );
         }

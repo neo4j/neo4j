@@ -37,7 +37,5 @@ public interface EmbeddedProxySPI
 
     NodeProxy newNodeProxy( long nodeId );
 
-    GraphPropertiesProxy newGraphPropertiesProxy();
-
     RelationshipType getRelationshipTypeById( int type );
 }

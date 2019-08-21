@@ -85,7 +85,6 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
-import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -888,12 +887,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + type );
         }
-    }
-
-    @Override
-    public GraphPropertiesProxy newGraphPropertiesProxy()
-    {
-        return new GraphPropertiesProxy( this );
     }
 
     private static class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator

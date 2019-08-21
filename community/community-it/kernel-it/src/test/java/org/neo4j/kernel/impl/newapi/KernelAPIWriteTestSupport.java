@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.internal.kernel.api.Kernel;
 
 /**
@@ -56,10 +55,4 @@ public interface KernelAPIWriteTestSupport
      * Clean up resources and close the database. Executed after all tests are completed.
      */
     void tearDown();
-
-    /**
-     * Retrieves all properties associated with the graph
-     * @return The properties associated with the graph
-     */
-    PropertyContainer graphProperties();
 }
