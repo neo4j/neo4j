@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.virtual.{NodeValue, PathValue, RelationshipValue}
-
-import scala.collection.JavaConverters._
 
 case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
                      (val id: Id = Id.INVALID_ID)
@@ -58,15 +56,20 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
     else state.query.nodeOps.delete(n.id())
   }
 
-  private def deleteRelationship(r: RelationshipValue, state: QueryState) =
+  private def deleteRelationship(r: RelationshipValue, state: QueryState): Unit =
     if (!state.query.relationshipOps.isDeletedInThisTx(r.id())) state.query.relationshipOps.delete(r.id())
 
-  private def deletePath(p: PathValue, state: QueryState) = p.asList().iterator().asScala.foreach {
-    case n: NodeValue =>
-      deleteNode(n, state)
-    case r: RelationshipValue =>
-      deleteRelationship(r, state)
-    case other =>
-      throw new CypherTypeException(s"Expected a Node or Relationship, but got a ${other.getClass.getSimpleName}")
+  private def deletePath(p: PathValue, state: QueryState): Unit = {
+    val entities = p.asList().iterator()
+    while (entities.hasNext) {
+       entities.next() match {
+        case n: NodeValue =>
+          deleteNode(n, state)
+        case r: RelationshipValue =>
+          deleteRelationship(r, state)
+        case other =>
+          throw new CypherTypeException(s"Expected a Node or Relationship, but got a ${other.getClass.getSimpleName}")
+      }
+    }
   }
 }

@@ -34,7 +34,9 @@ case class EagerAggregationPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val table = tableFactory.table(state, executionContextFactory)
     table.clear()
-    input.foreach(table.processRow)
+    while (input.hasNext) {
+      table.processRow(input.next())
+    }
     table.result()
   }
 }

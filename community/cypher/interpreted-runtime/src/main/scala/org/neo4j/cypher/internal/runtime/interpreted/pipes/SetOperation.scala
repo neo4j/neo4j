@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.exceptions.{CypherTypeException, InvalidArgumentException}
-import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -59,18 +58,16 @@ object SetOperation {
     val setKeys = new ArrayBuffer[String]()
     val setValues = new ArrayBuffer[AnyValue]()
 
-    map.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
-      override def accept(k: String, v: AnyValue): Unit = {
-        if (v eq Values.NO_VALUE) {
-          val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
-          if (optPropertyKeyId.isDefined) {
-            builder += optPropertyKeyId.get -> v
-          }
+    map.foreach((k: String, v: AnyValue) => {
+      if (v eq Values.NO_VALUE) {
+        val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
+        if (optPropertyKeyId.isDefined) {
+          builder += optPropertyKeyId.get -> v
         }
-        else {
-          setKeys += k
-          setValues += v
-        }
+      }
+      else {
+        setKeys += k
+        setValues += v
       }
     })
 

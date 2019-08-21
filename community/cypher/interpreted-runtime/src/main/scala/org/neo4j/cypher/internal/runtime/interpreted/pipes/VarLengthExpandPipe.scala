@@ -69,7 +69,9 @@ case class VarLengthExpandPipe(source: Pipe,
         if (rels.size < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(node)) {
           val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
 
-          relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
+          val relationshipValues = relationships.filter(filteringStep.filterRelationship(row, state))
+          while (relationshipValues.hasNext) {
+            val rel = relationshipValues.next()
             val otherNode = rel.otherNode(node)
             if (!rels.contains(rel) && filteringStep.filterNode(row,state)(otherNode)) {
               stack.push((otherNode, rels.append(rel)))

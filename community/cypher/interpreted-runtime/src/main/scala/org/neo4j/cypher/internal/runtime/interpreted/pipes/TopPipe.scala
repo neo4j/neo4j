@@ -78,9 +78,8 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
         val topTable = new DefaultComparatorTopTable(comparator, count)
         topTable.add(first)
 
-        input.foreach {
-          ctx =>
-            topTable.add(ctx)
+        while (input.hasNext) {
+            topTable.add(input.next())
         }
 
         topTable.sort()
@@ -106,11 +105,11 @@ case class Top1Pipe(source: Pipe, comparator: Comparator[ExecutionContext])
       val first = input.next()
       var result = first
 
-      input.foreach {
-        ctx =>
-          if (comparator.compare(ctx, result) < 0) {
-            result = ctx
-          }
+      while (input.hasNext) {
+        val ctx = input.next()
+        if (comparator.compare(ctx, result) < 0) {
+          result = ctx
+        }
       }
       Iterator.single(result)
     }
@@ -132,18 +131,18 @@ case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ExecutionContex
       var best = first
       var matchingRows = init(best)
 
-      input.foreach {
-        ctx =>
-          val comparison = comparator.compare(ctx, best)
-          if (comparison < 0) { // Found a new best
-            best = ctx
-            matchingRows.clear()
-            matchingRows += ctx
-          }
+      while (input.hasNext) {
+        val ctx = input.next()
+        val comparison = comparator.compare(ctx, best)
+        if (comparison < 0) { // Found a new best
+          best = ctx
+          matchingRows.clear()
+          matchingRows += ctx
+        }
 
-          if (comparison == 0) { // Found a tie
-            matchingRows += ctx
-          }
+        if (comparison == 0) { // Found a tie
+          matchingRows += ctx
+        }
       }
       matchingRows.result().iterator
     }
