@@ -208,7 +208,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .expand("(x)-[*]->(y)", expandMode = ExpandInto)
-      .input(nodes = Seq("x", "y"))
+      .input(variables = Seq("x", "y"))
       .build()
 
     val input = inputValues(Array(paths.head.startNode, 42))
