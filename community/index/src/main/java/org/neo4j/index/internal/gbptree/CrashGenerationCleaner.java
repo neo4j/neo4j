@@ -30,6 +30,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.util.FeatureToggles;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -41,8 +42,15 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 class CrashGenerationCleaner
 {
+    private static final String NUMBER_OF_WORKERS_NAME = "number_of_workers";
+    private static final int NUMBER_OF_WORKERS_DEFAULT = min( 8, Runtime.getRuntime().availableProcessors() );
+    private static final int NUMBER_OF_WORKERS = FeatureToggles.getInteger( CrashGenerationCleaner.class, NUMBER_OF_WORKERS_NAME, NUMBER_OF_WORKERS_DEFAULT );
+    private static final String BATCH_TIMEOUT_NAME = "batch_timeout";
+    private static final int BATCH_TIMEOUT_DEFAULT = 30;
+    private static final int BATCH_TIMEOUT = FeatureToggles.getInteger( CrashGenerationCleaner.class, BATCH_TIMEOUT_NAME, BATCH_TIMEOUT_DEFAULT );
+
     private static final long MIN_BATCH_SIZE = 10;
-    static final long MAX_BATCH_SIZE = 1000;
+    static final long MAX_BATCH_SIZE = 100;
     private final PagedFile pagedFile;
     private final TreeNode<?,?> treeNode;
     private final long lowTreeNodeId;
@@ -63,7 +71,7 @@ class CrashGenerationCleaner
         this.monitor = monitor;
     }
 
-    static long batchSize( long pagesToClean, int threads )
+    private static long batchSize( long pagesToClean, int threads )
     {
         // Batch size at most maxBatchSize, at least minBatchSize and trying to give each thread 100 batches each
         return min( MAX_BATCH_SIZE, max( MIN_BATCH_SIZE, pagesToClean / (100 * threads) ) );
@@ -79,7 +87,7 @@ class CrashGenerationCleaner
 
         long startTime = currentTimeMillis();
         long pagesToClean = highTreeNodeId - lowTreeNodeId;
-        int threads = Runtime.getRuntime().availableProcessors();
+        int threads = NUMBER_OF_WORKERS;
         long batchSize = batchSize( pagesToClean, threads );
         AtomicLong nextId = new AtomicLong( lowTreeNodeId );
         AtomicReference<Throwable> error = new AtomicReference<>();
@@ -95,7 +103,7 @@ class CrashGenerationCleaner
             long lastProgression = nextId.get();
             // Have max no-progress-timeout quite high to be able to cope with huge
             // I/O congestion spikes w/o failing in vain.
-            while ( !activeThreadLatch.await( 30, SECONDS ) )
+            while ( !activeThreadLatch.await( BATCH_TIMEOUT, SECONDS ) )
             {
                 if ( lastProgression == nextId.get() )
                 {
