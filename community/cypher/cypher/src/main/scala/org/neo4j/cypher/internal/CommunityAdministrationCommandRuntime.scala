@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
 import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
@@ -86,7 +87,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               Values.booleanValue(requirePasswordChange))),
           QueryHandler
             .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to create the specified user '$userName'.")))
-            .handleError(e => new InvalidArgumentsException(s"Failed to create the specified user '$userName': User already exists.", e))
+            .handleError(e => e.getCause match {
+              case _: UniquePropertyValueValidationException =>
+                new InvalidArgumentsException(s"Failed to create the specified user '$userName': User already exists.", e)
+              case _ => new InvalidArgumentsException(s"Failed to create the specified user '$userName'.", e)
+            })
         )
       } finally {
         // Clear password
