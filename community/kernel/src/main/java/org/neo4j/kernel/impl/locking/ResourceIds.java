@@ -27,6 +27,7 @@ public class ResourceIds
 {
     // The hash code function we use for index entries and schema names, since Neo4j 4.0.
     private static final HashFunction HASH_40 = HashFunction.incrementalXXH64();
+    private static final long HASH_40_INIT = HASH_40.initialise( 0x0123456789abcdefL );
 
     /**
      * Produces a 64-bit hashcode for locking index entries.
@@ -48,7 +49,7 @@ public class ResourceIds
      */
     public static long schemaNameResourceId( String schemaName )
     {
-        long hash = HASH_40.initialise( 0x0123456789abcdefL );
+        long hash = HASH_40_INIT;
         hash = schemaName.chars().asLongStream().reduce( hash, HASH_40::update );
         return HASH_40.finalise( hash );
     }
@@ -60,8 +61,7 @@ public class ResourceIds
      */
     static long indexEntryResourceId_4_x( long labelId, IndexQuery.ExactPredicate[] predicates )
     {
-        long hash = HASH_40.initialise( 0x0123456789abcdefL );
-
+        long hash = HASH_40_INIT;
         hash = HASH_40.update( hash, labelId );
 
         for ( IndexQuery.ExactPredicate predicate : predicates )
