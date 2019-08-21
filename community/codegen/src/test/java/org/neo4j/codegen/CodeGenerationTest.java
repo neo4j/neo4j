@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -2107,6 +2108,17 @@ public abstract class CodeGenerationTest
     }
 
     @Test
+    void shouldBeAbleToCastSomePrimitiveTypes() throws Throwable
+    {
+        castTest( Integer.TYPE, 42, Long.TYPE, 42L );
+        castTest( Float.TYPE, 42.0F, Long.TYPE, 42L );
+        castTest( Double.TYPE, 42.0, Long.TYPE, 42L );
+        castTest( Integer.TYPE, 42, Integer.TYPE, 42 );
+        castTest( Float.TYPE, 42.0F, Integer.TYPE, 42 );
+        castTest( Double.TYPE, 42.0D, Integer.TYPE, 42 );
+    }
+
+    @Test
     void shouldBeAbleToBox() throws Throwable
     {
         assertThat( boxTest( boolean.class, true ), equalTo( Boolean.TRUE ) );
@@ -2308,6 +2320,33 @@ public abstract class CodeGenerationTest
                 throw new AssertionError( throwable );
             }
         };
+    }
+
+    private <FROM, TO> void castTest( Class<FROM> fromType, FROM fromValue, Class<TO> toType, TO toValue) throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        String simpleClassName = "SimpleClass" + UUID.randomUUID().toString();
+        try ( ClassGenerator simple = generateClass( NamedBase.class, simpleClassName ) )
+        {
+            simple.field( toType, "toValue" );
+            simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( fromType, "fromValue" ) )
+                    .invokeSuper( new ExpressionTemplate[]{load( "name", typeReference( String.class ) )},
+                            new TypeReference[]{typeReference( String.class )} )
+                    .put( self( simple.handle() ), toType, "toValue",
+                            cast( toType, load( "fromValue", typeReference( fromType ) ) ) )
+                    .build() );
+            handle = simple.handle();
+        }
+
+        // when
+        Object instance = constructor( handle.loadClass(), String.class, fromType ).invoke( "Pontus", fromValue );
+
+        // then
+        assertEquals( simpleClassName, instance.getClass().getSimpleName() );
+        assertThat( instance, instanceOf( NamedBase.class ) );
+        assertEquals( "Pontus", ((NamedBase) instance).name );
+        assertEquals( toValue, getField( instance, "toValue" ) );
     }
 
     private <T> Object unboxTest( Class<T> boxedType, Class<?> unboxedType, T value )

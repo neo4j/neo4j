@@ -48,6 +48,8 @@ import static org.objectweb.asm.Opcodes.BIPUSH;
 import static org.objectweb.asm.Opcodes.CALOAD;
 import static org.objectweb.asm.Opcodes.CASTORE;
 import static org.objectweb.asm.Opcodes.CHECKCAST;
+import static org.objectweb.asm.Opcodes.D2I;
+import static org.objectweb.asm.Opcodes.D2L;
 import static org.objectweb.asm.Opcodes.DADD;
 import static org.objectweb.asm.Opcodes.DALOAD;
 import static org.objectweb.asm.Opcodes.DASTORE;
@@ -57,6 +59,8 @@ import static org.objectweb.asm.Opcodes.DLOAD;
 import static org.objectweb.asm.Opcodes.DMUL;
 import static org.objectweb.asm.Opcodes.DSUB;
 import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.F2I;
+import static org.objectweb.asm.Opcodes.F2L;
 import static org.objectweb.asm.Opcodes.FADD;
 import static org.objectweb.asm.Opcodes.FALOAD;
 import static org.objectweb.asm.Opcodes.FASTORE;
@@ -68,6 +72,7 @@ import static org.objectweb.asm.Opcodes.FSUB;
 import static org.objectweb.asm.Opcodes.GETFIELD;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.GOTO;
+import static org.objectweb.asm.Opcodes.I2L;
 import static org.objectweb.asm.Opcodes.IADD;
 import static org.objectweb.asm.Opcodes.IALOAD;
 import static org.objectweb.asm.Opcodes.IASTORE;
@@ -98,6 +103,7 @@ import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 import static org.objectweb.asm.Opcodes.ISUB;
 import static org.objectweb.asm.Opcodes.L2D;
+import static org.objectweb.asm.Opcodes.L2I;
 import static org.objectweb.asm.Opcodes.LADD;
 import static org.objectweb.asm.Opcodes.LALOAD;
 import static org.objectweb.asm.Opcodes.LASTORE;
@@ -613,7 +619,60 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         expression.accept( this );
         if ( !type.equals( expression.type() ) )
         {
-            methodVisitor.visitTypeInsn( CHECKCAST, byteCodeName( type ) );
+            if ( type.isPrimitive() )
+            {
+                if ( !expression.type().isPrimitive() )
+                {
+                    throw new IllegalStateException( "Cannot cast a non-primitive " + expression.type().simpleName() +
+                                                     " to a primitive " + type.simpleName() );
+                }
+                switch ( type.simpleName() )
+                {
+                case "long":
+                    switch ( expression.type().simpleName() )
+                    {
+                    case "int":
+                        methodVisitor.visitInsn( I2L );
+                        break;
+                    case "float":
+                        methodVisitor.visitInsn( F2L );
+                        break;
+                    case "double":
+                        methodVisitor.visitInsn( D2L );
+                        break;
+                    default:
+                        throw new IllegalStateException( "Do not know how to cast a primitive " + expression.type().simpleName() +
+                                " to a primitive " + type.simpleName() );
+                    }
+                    break;
+
+                case "int":
+                    switch ( expression.type().simpleName() )
+                    {
+                    case "long":
+                        methodVisitor.visitInsn( L2I );
+                        break;
+                    case "float":
+                        methodVisitor.visitInsn( F2I );
+                        break;
+                    case "double":
+                        methodVisitor.visitInsn( D2I );
+                        break;
+                    default:
+                        throw new IllegalStateException( "Do not know how to cast a primitive " + expression.type().simpleName() +
+                                " to a primitive " + type.simpleName() );
+                    }
+                    break;
+
+                default:
+                    throw new IllegalStateException( "Do not know how to cast a primitive " + expression.type().simpleName() +
+                            " to a primitive " + type.simpleName() );
+                }
+            }
+            else
+            {
+                methodVisitor.visitTypeInsn( CHECKCAST, byteCodeName( type ) );
+            }
         }
     }
 
