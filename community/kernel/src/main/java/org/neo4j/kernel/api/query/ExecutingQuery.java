@@ -31,6 +31,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.database.DatabaseId;
@@ -58,13 +59,16 @@ public class ExecutingQuery
     private final PageCursorCounters pageCursorCounters;
     private final String username;
     private final ClientConnectionInfo clientConnection;
-    private final String queryText;
-    private final MapValue queryParameters;
+    private final String rawQueryText;
+    private final MapValue rawQueryParameters;
     private final long startTimeNanos;
     private final long startTimestampMillis;
     private final DatabaseId databaseId;
     /** Uses write barrier of {@link #status}. */
     private long compilationCompletedNanos;
+    private String obfuscatedQueryText;
+    private MapValue obfuscatedQueryParameters;
+    private QueryExecutionType.QueryType queryType;
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
     private final long threadExecutingTheQueryId;
     @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
@@ -99,9 +103,8 @@ public class ExecutingQuery
         this.pageCursorCounters = pageCursorCounters;
         this.username = username;
 
-        Set<String> passwordParams = new HashSet<>();
-        this.queryText = QueryObfuscation.obfuscateText( queryText, passwordParams );
-        this.queryParameters = QueryObfuscation.obfuscateParams( queryParameters, passwordParams );
+        this.rawQueryText = queryText;
+        this.rawQueryParameters = queryParameters;
         this.transactionAnnotationData = transactionAnnotationData;
         this.activeLockCount = activeLockCount;
         this.initialActiveLocks = activeLockCount.getAsLong();
@@ -115,11 +118,12 @@ public class ExecutingQuery
 
     // update state
 
-    public void compilationCompleted( CompilerInfo compilerInfo, Supplier<ExecutionPlanDescription> planDescriptionSupplier )
+    public void compilationCompleted( CompilerInfo compilerInfo, QueryExecutionType.QueryType queryType, Supplier<ExecutionPlanDescription> planDescriptionSupplier )
     {
         this.compilerInfo = compilerInfo;
         this.compilationCompletedNanos = clock.nanos();
         this.planDescriptionSupplier = planDescriptionSupplier;
+        this.queryType = queryType;
         this.status = SimpleState.running(); // write barrier - must be last
     }
 
@@ -241,17 +245,27 @@ public class ExecutingQuery
 
     public String queryText()
     {
-        return queryText;
+        if ( queryNeedsObfuscation() )
+        {
+            obfuscateQuery();
+            return obfuscatedQueryText;
+        }
+        return rawQueryText;
     }
 
-    public Supplier<ExecutionPlanDescription> planDescriptionSupplier()
+    Supplier<ExecutionPlanDescription> planDescriptionSupplier()
     {
         return planDescriptionSupplier;
     }
 
     public MapValue queryParameters()
     {
-        return queryParameters;
+        if ( queryNeedsObfuscation() )
+        {
+            obfuscateQuery();
+            return obfuscatedQueryParameters;
+        }
+        return rawQueryParameters;
     }
 
     public DatabaseId databaseId()
@@ -310,5 +324,20 @@ public class ExecutingQuery
         }
         WAIT_TIME.addAndGet( this, waiting.waitTimeNanos( clock.nanos() ) );
         status = waiting.previousStatus();
+    }
+
+    private boolean queryNeedsObfuscation()
+    {
+        return queryType == QueryExecutionType.QueryType.DBMS || queryType == null;
+    }
+
+    private void obfuscateQuery()
+    {
+        if ( obfuscatedQueryText == null )
+        {
+            Set<String> passwordParams = new HashSet<>();
+            this.obfuscatedQueryText = QueryObfuscation.obfuscateText( rawQueryText, passwordParams );
+            this.obfuscatedQueryParameters = QueryObfuscation.obfuscateParams( rawQueryParameters, passwordParams );
+        }
     }
 }

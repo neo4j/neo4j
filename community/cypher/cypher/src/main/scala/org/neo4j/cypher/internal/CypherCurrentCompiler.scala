@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
 import org.neo4j.exceptions.{Neo4jException, ParameterNotFoundException, ParameterWrongTypeException}
-import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.{Notification, QueryExecutionType}
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
@@ -168,6 +168,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         val procedureOrSchema = SchemaCommandRuntime.queryType(planState.logicalPlan)
         if (procedureOrSchema.isDefined)
           procedureOrSchema.get
+        else if (planHasDBMSProcedure(planState.logicalPlan))
+          DBMS
         else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly)
           READ_ONLY
         else if (columnNames(planState.logicalPlan).isEmpty)
@@ -176,6 +178,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           READ_WRITE
     }
   }
+
+  private def planHasDBMSProcedure(logicalPlan: LogicalPlan): Boolean =
+    logicalPlan.treeExists {
+      case procCall: ProcedureCall if procCall.call.signature.accessMode.isInstanceOf[ProcedureDbmsAccess] => true
+    }
 
   private def columnNames(logicalPlan: LogicalPlan): Array[String] =
     logicalPlan match {
@@ -197,7 +204,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         override val compilerInfo: CompilerInfo,
                                         plannerName: PlannerName,
                                         cypherVersion: CypherVersion,
-                                        queryType: InternalQueryType,
+                                        internalQueryType: InternalQueryType,
                                         override val shouldBeCached: Boolean) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -236,7 +243,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case e: Throwable =>
           subscriber.onError(e)
           taskCloser.close(false)
-          new FailedExecutionResult(columnNames(logicalPlan), queryType, subscriber)
+          new FailedExecutionResult(columnNames(logicalPlan), internalQueryType, subscriber)
       }
     }
 
@@ -262,7 +269,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
             .map(asKernelNotification(Some(preParsedQuery.offset)))
         new ExplainExecutionResult(columns,
                                planDescriptionBuilder.explain(),
-                               queryType, allNotifications, subscriber)
+                               internalQueryType, allNotifications, subscriber)
       } else {
 
         val doProfile = innerExecutionMode == ProfileMode
@@ -274,7 +281,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                             executionPlan.runtimeName,
                                             runtimeResult,
                                             taskCloser,
-                                            queryType,
+                                            internalQueryType,
                                             innerExecutionMode,
                                             planDescriptionBuilder,
                                             subscriber)
@@ -290,6 +297,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState
 
     override def planDescription(): InternalPlanDescription = planDescriptionBuilder.explain()
+
+    override def queryType: QueryExecutionType.QueryType = QueryTypeConversion.asPublic(internalQueryType)
   }
 
 }

@@ -139,7 +139,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
       }
       val combinedParams = params.updatedWith(executableQuery.extractedParams)
-      context.executingQuery().compilationCompleted(executableQuery.compilerInfo, supplier(executableQuery.planDescription()))
+      context.executingQuery().compilationCompleted(executableQuery.compilerInfo, executableQuery.queryType, supplier(executableQuery.planDescription()))
       executableQuery.execute(context, shouldCloseTransaction, preParsedQuery, combinedParams, prePopulate, subscriber)
     } catch {
       case t: Throwable =>

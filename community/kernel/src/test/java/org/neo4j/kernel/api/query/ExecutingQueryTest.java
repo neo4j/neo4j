@@ -51,6 +51,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomDatabaseId;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -81,7 +82,7 @@ class ExecutingQueryTest
         assertEquals( "planning", query.snapshot().status() );
 
         // when
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -120,7 +121,7 @@ class ExecutingQueryTest
 
         // when
         clock.forward( 16, TimeUnit.MICROSECONDS );
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
         clock.forward( 200, TimeUnit.MICROSECONDS );
 
         // then
@@ -133,7 +134,7 @@ class ExecutingQueryTest
     void shouldReportWaitTime()
     {
         // given
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -185,7 +186,7 @@ class ExecutingQueryTest
     void shouldReportQueryWaitTime()
     {
         // given
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
 
         // when
         query.waitsForQuery( subQuery );
