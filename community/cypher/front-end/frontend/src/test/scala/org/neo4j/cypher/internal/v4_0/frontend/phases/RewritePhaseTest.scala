@@ -58,9 +58,7 @@ trait RewritePhaseTest {
   def assertRewritten(from: String, to: String): Unit = assertRewritten(from, to, List.empty)
 
   def assertRewritten(from: String, to: String, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
-    val fromAst = parseAndRewrite(from, features: _*)
-    val fromInState = InitialState(from, None, plannerName, maybeStatement = Some(fromAst), maybeSemantics = Some(fromAst.semanticState(features: _*)))
-    val fromOutState = rewriterPhaseUnderTest.transform(fromInState, ContextHelper.create())
+    val fromOutState: BaseState = prepareFrom(from, features: _*)
 
     val toAst = parseAndRewrite(to, features: _*)
     val toInState = InitialState(to, None, plannerName, maybeStatement = Some(toAst), maybeSemantics = Some(toAst.semanticState(features: _*)))
@@ -72,11 +70,27 @@ trait RewritePhaseTest {
     }
   }
 
-  def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
+  def assertRewritten(from: String, to: Statement, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
+    val fromOutState: BaseState = prepareFrom(from, features: _*)
+
+    fromOutState.statement() should equal(to)
+    semanticTableExpressions.foreach { e =>
+      fromOutState.semanticTable().types.keys should contain(e)
+    }
+  }
+
+  private def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val parsedAst = parser.parse(queryText, exceptionFactory)
     val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
     val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState(features: _*), exceptionFactory)
     rewrittenAst
+  }
+
+  private def prepareFrom(from: String, features: SemanticFeature*): BaseState = {
+    val fromAst = parseAndRewrite(from, features: _*)
+    val fromInState = InitialState(from, None, plannerName, maybeStatement = Some(fromAst), maybeSemantics = Some(fromAst.semanticState(features: _*)))
+    val fromOutState = rewriterPhaseUnderTest.transform(fromInState, ContextHelper.create())
+    fromOutState
   }
 }

@@ -44,7 +44,6 @@ object Transformer {
   def printAst(tag: String) = new Transformer[BaseContext, BaseState, BaseState] {
     override def transform(from: BaseState, context: BaseContext) = {
       println("     |||||||| PRINT AST: "+tag)
-      println(from.maybeStatement.get)
       println(Prettifier(ExpressionStringifier()).asString(from.maybeStatement.get))
       from
     }

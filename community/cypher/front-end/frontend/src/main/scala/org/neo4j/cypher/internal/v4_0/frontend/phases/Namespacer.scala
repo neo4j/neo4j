@@ -21,11 +21,11 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SymbolUse
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
 import org.neo4j.cypher.internal.v4_0.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.v4_0.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.v4_0.util.Ref
 import org.neo4j.cypher.internal.v4_0.util.Rewriter
 import org.neo4j.cypher.internal.v4_0.util.bottomUp
@@ -39,20 +39,23 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   override def description: String = "rename variables so they are all unique"
 
   override def process(from: BaseState, ignored: BaseContext): BaseState = {
+    val withProjectedUnions = from.statement().endoRewrite(projectUnions)
+
     val ambiguousNames = shadowedNames(from.semantics().scopeTree)
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics().scopeTree.allVariableDefinitions
-    val protectedVariables = protectedVarsInStatement(from.statement())
-    val renamings = variableRenamings(from.statement(), variableDefinitions, ambiguousNames, protectedVariables)
+    val renamings = variableRenamings(withProjectedUnions, variableDefinitions, ambiguousNames)
 
     val rewriter = renamingRewriter(renamings)
-    val newStatement = from.statement().endoRewrite(rewriter)
+    val newStatement = withProjectedUnions.endoRewrite(rewriter)
     val table = SemanticTable(types = from.semantics().typeTable, recordedScopes = from.semantics().recordedScopes)
 
     val newSemanticTable = table.replaceExpressions(rewriter)
     from.withStatement(newStatement).withSemanticTable(newSemanticTable)
   }
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions: Set[Condition] = Set(
+    StatementCondition(containsNoNodesOfType[UnionAll]),
+    StatementCondition(containsNoNodesOfType[UnionDistinct]))
 
   private def shadowedNames(scopeTree: Scope): Set[String] = {
     val definitions = scopeTree.allSymbolDefinitions
@@ -62,36 +65,21 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
     }.toSet
   }
 
-  private def protectedVarsInStatement(statement: Statement): Set[Ref[LogicalVariable]] =
-    statement.treeFold(Set.empty[Ref[LogicalVariable]]) {
-
-      case _: With =>
-        acc => (acc, Some(identity))
-
-      case Return(_, ReturnItems(_, items), orderBy, _, _, _) =>
-        val variablesInReturn = items.map(_.alias.get)
-        val refVars = variablesInReturn.map(Ref[LogicalVariable])
-        // If the order by refers to the alias introduced in the return, it is also protected
-        val expressionsInOrderBy = for {
-          order <- orderBy.toSeq
-          sortItem <- order.sortItems
-        } yield sortItem.expression
-
-        val variablesInOrderBy = expressionsInOrderBy.findByAllClass[LogicalVariable]
-
-        val protectedVariablesInOrderBy = variablesInOrderBy.filter(variablesInReturn.contains).map(Ref[LogicalVariable])
-        acc => (acc ++ refVars ++ protectedVariablesInOrderBy, Some(identity))
-    }
-
   private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
-                                ambiguousNames: Set[String], protectedVariables: Set[Ref[LogicalVariable]]): VariableRenamings =
+                                ambiguousNames: Set[String]): VariableRenamings =
     statement.treeFold(Map.empty[Ref[Variable], Variable]) {
-      case i: Variable if ambiguousNames(i.name) && !protectedVariables(Ref(i)) =>
+      case i: Variable if ambiguousNames(i.name) =>
         val symbolDefinition = variableDefinitions(SymbolUse(i))
         val newVariable = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
         val renaming = Ref(i) -> newVariable
         acc => (acc + renaming, Some(identity))
     }
+
+  private def projectUnions: Rewriter =
+    bottomUp(Rewriter.lift {
+      case u: UnionAll => ProjectingUnionAll(u.part, u.query, u.unionMappings)(u.position)
+      case u: UnionDistinct => ProjectingUnionDistinct(u.part, u.query, u.unionMappings)(u.position)
+    })
 
   private def renamingRewriter(renamings: VariableRenamings): Rewriter = inSequence(
     bottomUp(Rewriter.lift {

@@ -126,7 +126,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val logicalQuery = LogicalQuery(logicalPlan,
                                     planState.queryText,
                                     queryType == READ_ONLY,
-                                    planState.statement().returnColumns.toArray,
+                                    planState.returnColumns().toArray,
                                     planState.semanticTable(),
                                     planState.planningAttributes.cardinalities,
                                     planState.hasLoadCSV,

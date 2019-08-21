@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast.prettifier
 
+import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.v4_0.ast.{Skip, Statement, _}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
@@ -203,7 +204,17 @@ case class Prettifier(expr: ExpressionStringifier) {
 
       case UnionDistinct(partA, partB) =>
         s"${queryPart(partA)}${NL}UNION$NL${queryPart(partB)}"
+
+      case ProjectingUnionAll(partA, partB, mappings) =>
+        s"${queryPart(partA)}${NL}UNION ALL mappings: (${mappings.map(asString).mkString(", ")})$NL${queryPart(partB)}"
+
+      case ProjectingUnionDistinct(partA, partB, mappings) =>
+        s"${queryPart(partA)}${NL}UNION mappings: (${mappings.map(asString).mkString(", ")})$NL${queryPart(partB)}"
     }
+
+  private def asString(u: UnionMapping): String = {
+    s"${u.unionVariable.name}: [${u.variableInPart.name}, ${u.variableInQuery.name}]"
+  }
 
   private def dispatch(clause: Clause) = clause match {
     case e: Return => asString(e)

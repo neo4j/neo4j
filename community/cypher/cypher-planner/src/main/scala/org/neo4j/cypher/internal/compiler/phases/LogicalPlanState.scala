@@ -50,7 +50,8 @@ case class LogicalPlanState(queryText: String,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
                             accumulatedConditions: Set[Condition] = Set.empty,
                             initialFields: Map[String, CypherType] = Map.empty,
-                            hasLoadCSV: Boolean = false) extends BaseState {
+                            hasLoadCSV: Boolean = false,
+                            maybeReturnColumns: Option[Seq[String]] = None) extends BaseState {
 
   def unionQuery: UnionQuery = maybeUnionQuery getOrElse fail("Union query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
@@ -58,6 +59,7 @@ case class LogicalPlanState(queryText: String,
   def astAsQuery: Query = statement().asInstanceOf[Query]
 
   override def withStatement(s: Statement): LogicalPlanState = copy(maybeStatement = Some(s))
+  override def withReturnColumns(cols: Seq[String]): LogicalPlanState = copy(maybeReturnColumns = Some(cols))
   override def withSemanticTable(s: SemanticTable): LogicalPlanState = copy(maybeSemanticTable = Some(s))
   override def withSemanticState(s: SemanticState): LogicalPlanState = copy(maybeSemantics = Some(s))
   override def withParams(p: Map[String, Any]): LogicalPlanState = copy(maybeExtractedParams = Some(p))
@@ -76,7 +78,8 @@ object LogicalPlanState {
                      maybeSemantics = state.maybeSemantics,
                      maybeExtractedParams = state.maybeExtractedParams,
                      maybeSemanticTable = state.maybeSemanticTable,
-                     accumulatedConditions = state.accumulatedConditions)
+                     accumulatedConditions = state.accumulatedConditions,
+                     maybeReturnColumns =  state.maybeReturnColumns)
 }
 
 

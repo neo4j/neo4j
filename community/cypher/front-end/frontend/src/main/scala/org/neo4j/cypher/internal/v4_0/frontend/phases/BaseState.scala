@@ -28,6 +28,7 @@ trait BaseState {
   def plannerName: PlannerName
   def initialFields: Map[String, CypherType]
   def maybeStatement: Option[Statement]
+  def maybeReturnColumns: Option[Seq[String]]
   def maybeSemantics: Option[SemanticState]
   def maybeExtractedParams: Option[Map[String, Any]]
   def maybeSemanticTable: Option[SemanticTable]
@@ -40,6 +41,7 @@ trait BaseState {
   }
 
   def statement(): Statement = maybeStatement getOrElse fail("Statement")
+  def returnColumns(): Seq[String] = maybeReturnColumns getOrElse fail("Return columns")
   def semantics(): SemanticState = maybeSemantics getOrElse fail("Semantics")
   def extractedParams(): Map[String, Any] = maybeExtractedParams getOrElse fail("Extracted parameters")
   def semanticTable(): SemanticTable = maybeSemanticTable getOrElse fail("Semantic table")
@@ -49,6 +51,7 @@ trait BaseState {
   }
 
   def withStatement(s: Statement): BaseState
+  def withReturnColumns(cols: Seq[String]): BaseState
   def withSemanticTable(s: SemanticTable): BaseState
   def withSemanticState(s: SemanticState): BaseState
   def withParams(p: Map[String, Any]): BaseState
@@ -62,9 +65,12 @@ case class InitialState(queryText: String,
   maybeSemantics: Option[SemanticState] = None,
   maybeExtractedParams: Option[Map[String, Any]] = None,
   maybeSemanticTable: Option[SemanticTable] = None,
-  accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
+  accumulatedConditions: Set[Condition] = Set.empty,
+  maybeReturnColumns: Option[Seq[String]] = None) extends BaseState {
 
   override def withStatement(s: Statement): InitialState = copy(maybeStatement = Some(s))
+
+  override def withReturnColumns(cols: Seq[String]): InitialState = copy(maybeReturnColumns = Some(cols))
 
   override def withSemanticTable(s: SemanticTable): InitialState = copy(maybeSemanticTable = Some(s))
 

@@ -16,9 +16,12 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics._
+import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticState, _}
+import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, Variable}
 import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticState}
+
+import scala.annotation.tailrec
 
 case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
   extends Statement with SemanticAnalysisTooling {
@@ -37,7 +40,7 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
 
 sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def containsUpdates: Boolean
-  def returnColumns: List[String]
+  def returnColumns: List[LogicalVariable]
 
   /**
    * Given the root scope for this query part,
@@ -144,7 +147,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     val continuationResult = clause.semanticCheckContinuation(closingResult.state.currentScope.scope)(nextState)
     semantics.SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
   }
-  
+
   private def checkInputDataStream: SemanticCheck = (state: SemanticState) => {
     val idsClauses = clauses.filter(_.isInstanceOf[InputDataStream])
 
@@ -172,25 +175,108 @@ object SingleQuery {
   }
 }
 
+object Union {
+
+  /**
+   * This defines a mapping of variables in both parts of the union to variables valid in the scope after the union.
+   */
+  case class UnionMapping(unionVariable: LogicalVariable, variableInPart: LogicalVariable, variableInQuery: LogicalVariable)
+}
+
 sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   def part: QueryPart
   def query: SingleQuery
 
-  def returnColumns = query.returnColumns
+  def unionMappings: List[UnionMapping]
 
-  def containsUpdates:Boolean = part.containsUpdates || query.containsUpdates
+  def returnColumns: List[LogicalVariable] = unionMappings.map(_.unionVariable)
+
+  def containsUpdates: Boolean = part.containsUpdates || query.containsUpdates
 
   def semanticCheck: SemanticCheck =
     checkUnionAggregation chain
-    withScopedState(part.semanticCheck) chain
-    withScopedState(query.semanticCheck) chain 
-    checkColumnNamesAgree chain
-    checkInputDataStream
+      withScopedState(part.semanticCheck) chain
+      withScopedState(query.semanticCheck) chain
+      checkColumnNamesAgree chain
+      checkInputDataStream chain
+      defineUnionVariables chain
+      SemanticState.recordCurrentScope(this)
+
+  private def defineUnionVariables: SemanticCheck = (state: SemanticState) => {
+    var result = SemanticCheckResult.success(state)
+    val scopeFromPart = part.finalScope(state.scope(part).get)
+    val scopeFromQuery = query.finalScope(state.scope(query).get)
+    for {
+      unionMapping <- unionMappings
+      symbolFromPart <- scopeFromPart.symbol(unionMapping.variableInPart.name)
+      symbolFromQuery <- scopeFromQuery.symbol(unionMapping.variableInQuery.name)
+    } yield {
+      val unionType = symbolFromPart.types.union(symbolFromQuery.types)
+      result = result.state.declareVariable(unionMapping.unionVariable, unionType) match {
+        case Left(err) => SemanticCheckResult(result.state, err +: result.errors)
+        case Right(nextState) => SemanticCheckResult(nextState, result.errors)
+      }
+    }
+    result
+  }
 
   def finalScope(scope: Scope): Scope =
-    query.finalScope(scope.children.last)
+    // Union defines all return variables in its own scope using defineUnionVariables
+    scope
 
-  private def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {
+  // Check that columns names agree between both parts of the union
+  def checkColumnNamesAgree: SemanticCheck
+
+  private def checkInputDataStream: SemanticCheck = (state: SemanticState) => {
+
+    def checkSingleQuery(query : SingleQuery, state: SemanticState) = {
+      val idsClause = query.clauses.find(_.isInstanceOf[InputDataStream])
+      if (idsClause.isEmpty) {
+        SemanticCheckResult.success(state)
+      } else {
+        SemanticCheckResult.error(state, SemanticError("INPUT DATA STREAM is not supported in UNION queries", idsClause.get.position))
+      }
+    }
+
+    val partResult = part match {
+      case q : SingleQuery => checkSingleQuery(q, state)
+      case _ => SemanticCheckResult.success(state)
+    }
+
+    val queryResult = checkSingleQuery(query, state)
+    SemanticCheckResult(state, partResult.errors ++ queryResult.errors)
+  }
+
+  private def checkUnionAggregation: SemanticCheck = (part, this) match {
+    case (_: SingleQuery, _) => None
+    case (_: UnionAll, _: UnionAll) => None
+    case (_: UnionDistinct, _: UnionDistinct) => None
+    case (_: ProjectingUnionAll, _: ProjectingUnionAll) => None
+    case (_: ProjectingUnionDistinct, _: ProjectingUnionDistinct) => None
+    case _ => Some(SemanticError("Invalid combination of UNION and UNION ALL", position))
+  }
+
+  def unionedQueries: Seq[SingleQuery] = unionedQueries(Vector.empty)
+  @tailrec
+  private def unionedQueries(accum: Seq[SingleQuery]): Seq[SingleQuery] = part match {
+    case q: SingleQuery => accum :+ query :+ q
+    case u: Union       => u.unionedQueries(accum :+ query)
+  }
+}
+
+trait UnmappedUnion extends Union {
+
+  override def unionMappings: List[UnionMapping] = {
+    for {
+      partCol <- part.returnColumns
+      queryCol <- query.returnColumns.find(_.name == partCol.name)
+    } yield {
+      // This assumes that part.returnColumns and query.returnColumns agree
+      UnionMapping(Variable(partCol.name)(this.position), partCol, queryCol)
+    }
+  }
+
+  override def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {
     val myScope: Scope = state.currentScope.scope
 
     val partScope = part.finalScope(myScope.children.head)
@@ -202,40 +288,15 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
     }
     semantics.SemanticCheckResult(state, errors)
   }
-
-  private def checkInputDataStream: SemanticCheck = (state: SemanticState) => {
-    
-    def checkSingleQuery(query : SingleQuery, state: SemanticState) = {
-      val idsClause = query.clauses.find(_.isInstanceOf[InputDataStream])
-      if (idsClause.isEmpty) {
-        SemanticCheckResult.success(state)
-      } else {
-        SemanticCheckResult.error(state, SemanticError("INPUT DATA STREAM is not supported in UNION queries", idsClause.get.position))
-      }
-    }
-    
-    val partResult = part match {
-      case q : SingleQuery => checkSingleQuery(q, state)
-      case _ => SemanticCheckResult.success(state)
-    }
-    
-    val queryResult = checkSingleQuery(query, state)
-    SemanticCheckResult(state, partResult.errors ++ queryResult.errors)
-  }
-
-  private def checkUnionAggregation: SemanticCheck = (part, this) match {
-    case (_: SingleQuery, _)                  => None
-    case (_: UnionAll, _: UnionAll)           => None
-    case (_: UnionDistinct, _: UnionDistinct) => None
-    case _                                    => Some(SemanticError("Invalid combination of UNION and UNION ALL", position))
-  }
-
-  def unionedQueries: Seq[SingleQuery] = unionedQueries(Vector.empty)
-  private def unionedQueries(accum: Seq[SingleQuery]): Seq[SingleQuery] = part match {
-    case q: SingleQuery => accum :+ query :+ q
-    case u: Union       => u.unionedQueries(accum :+ query)
-  }
 }
 
-final case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends Union
-final case class UnionDistinct(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends Union
+trait ProjectingUnion extends Union {
+  // If we have a ProjectingUnion we have already checked this before and now they have been rewritten to actually not match.
+  override def checkColumnNamesAgree: SemanticCheck = SemanticCheckResult.success
+}
+
+final case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends UnmappedUnion
+final case class UnionDistinct(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends UnmappedUnion
+
+final case class ProjectingUnionAll(part: QueryPart, query: SingleQuery, unionMappings: List[UnionMapping])(val position: InputPosition) extends ProjectingUnion
+final case class ProjectingUnionDistinct(part: QueryPart, query: SingleQuery, unionMappings: List[UnionMapping])(val position: InputPosition) extends ProjectingUnion

@@ -41,9 +41,10 @@ object StatementConverters {
   private val NODE_BLACKLIST: Set[Class[_ <: ASTNode]] = Set(
     classOf[And],
     classOf[Or],
-    // classOf[ReturnAll],
     classOf[UnaliasedReturnItem],
-    classOf[Start]
+    classOf[Start],
+    classOf[UnionAll],
+    classOf[UnionDistinct]
   )
 
 

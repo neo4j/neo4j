@@ -16,13 +16,14 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
+import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, ProjectingUnionDistinct, Query, Statement, Where}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, HasLabels, LabelName, NodePattern}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
 
-  private val tests = Seq(
+  private val tests: Seq[Test] = Seq(
     TestCase(
       "MATCH (n) RETURN n as n",
       "MATCH (n) RETURN n as n",
@@ -30,12 +31,12 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "MATCH (n), (x) WITH n AS n MATCH (x) RETURN n AS n, x AS x",
-      "MATCH (n), (`  x@12`) WITH n AS n MATCH (`  x@34`) RETURN n AS n, `  x@34` AS x",
+      "MATCH (n), (`  x@12`) WITH n AS n MATCH (`  x@34`) RETURN n AS n, `  x@34` AS `  x@34`",
       List(varFor("  x@12"), varFor("  x@34"))
     ),
     TestCase(
       "MATCH (n), (x) WHERE [x in n.prop WHERE x = 2] RETURN x AS x",
-      "MATCH (n), (`  x@12`) WHERE [`  x@22` IN n.prop WHERE `  x@22` = 2] RETURN `  x@12` AS x",
+      "MATCH (n), (`  x@12`) WHERE [`  x@22` IN n.prop WHERE `  x@22` = 2] RETURN `  x@12` AS `  x@12`",
       List(
         varFor("  x@12"),
         varFor("  x@22"),
@@ -77,9 +78,18 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       "MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(c:C) RETURN *",
       List.empty
     ),
-    TestCase(
-      "MATCH (a:Party) RETURN a AS a union MATCH (a:Animal) RETURN a AS a",
-      "MATCH (`  a@7`:Party) RETURN `  a@7` AS a union MATCH (`  a@43`:Animal) RETURN `  a@43` AS a",
+    TestCaseWithStatement(
+      "MATCH (a:Party) RETURN a AS a UNION MATCH (a:Animal) RETURN a AS a",
+      Query(None, ProjectingUnionDistinct(
+        singleQuery(
+          match_(NodePattern(Some(varFor("  a@7")), Seq.empty, None)(pos), Some(Where(HasLabels(varFor("  a@7"), Seq(LabelName("Party")(pos)))(pos))(pos))),
+          return_(varFor("  a@7").as("  a@7"))
+        ),
+        singleQuery(
+          match_(NodePattern(Some(varFor("  a@43")), Seq.empty, None)(pos), Some(Where(HasLabels(varFor("  a@43"), Seq(LabelName("Animal")(pos)))(pos))(pos))),
+          return_(varFor("  a@43").as("  a@43"))
+        ),
+        List(UnionMapping(varFor("  a@30"), varFor("  a@7"), varFor("  a@43"))))(pos))(pos),
       List(varFor("  a@7"), varFor("  a@43"))
     ),
     TestCase(
@@ -100,7 +110,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "CALL db.labels() YIELD label WITH count(*) AS c CALL db.labels() YIELD label RETURN *",
-      "CALL db.labels() YIELD label AS `  label@23` WITH count(*) AS c CALL db.labels() YIELD label AS `  label@71` RETURN c AS c, `  label@71` AS label",
+      "CALL db.labels() YIELD label AS `  label@23` WITH count(*) AS c CALL db.labels() YIELD label AS `  label@71` RETURN c AS c, `  label@71` AS `  label@71`",
       List(varFor("  label@23"), varFor("  label@71"))
     ),
     TestCase(
@@ -126,9 +136,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         |RETURN reduce(weight=0, num IN nums | weight + num) AS weight
         |ORDER BY weight DESC""".stripMargin,
       """WITH [1,2,3] AS nums
-        |RETURN reduce(`  weight@35`=0, num IN nums | `  weight@35` + num ) AS weight
-        |ORDER BY weight DESC""".stripMargin,
-      List(varFor("  weight@35"))
+        |RETURN reduce(`  weight@35`=0, num IN nums | `  weight@35` + num ) AS `  weight@76`
+        |ORDER BY `  weight@76` DESC""".stripMargin,
+      List(varFor("  weight@35"), varFor("  weight@76"))
     ),
     TestCase(
       "WITH 1 AS foo FOREACH (foo IN [1,2,3] | CREATE (c)) RETURN foo as bar ORDER BY foo",
@@ -137,13 +147,13 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "WITH 1 AS foo FOREACH (bar IN [1,2,3] | CREATE (c)) RETURN foo as bar ORDER BY bar",
-      "WITH 1 AS foo FOREACH (`  bar@23` IN [1,2,3] | CREATE (c)) RETURN foo as bar ORDER BY bar",
-      List(varFor("  bar@23"))
+      "WITH 1 AS foo FOREACH (`  bar@23` IN [1,2,3] | CREATE (c)) RETURN foo as `  bar@66` ORDER BY `  bar@66`",
+      List(varFor("  bar@23"), varFor("  bar@66"))
     ),
     TestCase(
       "WITH 1 AS foo FOREACH (bar IN [1,2,3] | CREATE (c)) RETURN foo as bar ORDER BY bar + 2",
-      "WITH 1 AS foo FOREACH (`  bar@23` IN [1,2,3] | CREATE (c)) RETURN foo as bar ORDER BY bar + 2",
-      List(varFor("  bar@23"))
+      "WITH 1 AS foo FOREACH (`  bar@23` IN [1,2,3] | CREATE (c)) RETURN foo as `  bar@66` ORDER BY `  bar@66` + 2",
+      List(varFor("  bar@23"), varFor("  bar@66"))
     ),
     TestCase(
       "MATCH (a) WITH a.name AS n ORDER BY a.foo MATCH (a) RETURN a.age",
@@ -154,10 +164,17 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
 
   override def rewriterPhaseUnderTest: Phase[BaseContext, BaseState, BaseState] = Namespacer
 
-  case class TestCase(query: String, rewrittenQuery: String, semanticTableExpressions: List[Expression])
+  sealed trait Test
+
+  case class TestCase(query: String, rewrittenQuery: String, semanticTableExpressions: List[Expression]) extends Test
+  case class TestCaseWithStatement(query: String, rewrittenQuery: Statement, semanticTableExpressions: List[Expression]) extends Test
 
   tests.foreach {
     case TestCase(q, rewritten, semanticTableExpressions) =>
+      test(q) {
+        assertRewritten(q, rewritten, semanticTableExpressions)
+      }
+    case TestCaseWithStatement(q, rewritten, semanticTableExpressions) =>
       test(q) {
         assertRewritten(q, rewritten, semanticTableExpressions)
       }

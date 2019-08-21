@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.v4_0.util.symbols._
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
 
-  def returnColumns: List[String] =
+  def returnColumns: List[LogicalVariable] =
     throw new IllegalStateException("This clause is not allowed as a last clause and hence does not declare return columns")
 }
 
 sealed trait UpdateClause extends Clause with SemanticAnalysisTooling {
-  override def returnColumns: List[String] = List.empty
+  override def returnColumns: List[LogicalVariable] = List.empty
 }
 
 case class LoadCSV(
@@ -572,7 +572,7 @@ case class Unwind(
 abstract class CallClause extends Clause {
   override def name = "CALL"
 
-  def returnColumns: List[String]
+  def returnColumns: List[LogicalVariable]
 
   def containsNoUpdates: Boolean
 }
@@ -585,8 +585,8 @@ case class UnresolvedCall(procedureNamespace: Namespace,
                           declaredResult: Option[ProcedureResult] = None
                          )(val position: InputPosition) extends CallClause {
 
-  override def returnColumns: List[String] =
-    declaredResult.map(_.items.map(_.variable.name).toList).getOrElse(List.empty)
+  override def returnColumns: List[LogicalVariable] =
+    declaredResult.map(_.items.map(_.variable).toList).getOrElse(List.empty)
 
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(
@@ -804,7 +804,7 @@ case class Return(distinct: Boolean,
 
   override def where: Option[Where] = None
 
-  override def returnColumns: List[String] = returnItems.items.map(_.name).toList
+  override def returnColumns: List[LogicalVariable] = returnItems.items.flatMap(_.alias).toList
 
   override def semanticCheck: SemanticCheck = super.semanticCheck chain checkVariableScope
 

@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticAnalysisTooling, SemanticCheck, SemanticCheckResult, SemanticFeature, SemanticState}
-import org.neo4j.cypher.internal.v4_0.expressions.{Parameter, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, Parameter, Variable}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
@@ -27,7 +27,7 @@ sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
 
   def name: String
 
-  override def returnColumns: List[String] = List.empty
+  override def returnColumns: List[LogicalVariable] = List.empty
 }
 
 sealed trait MultiDatabaseAdministrationCommand extends CatalogDDL {

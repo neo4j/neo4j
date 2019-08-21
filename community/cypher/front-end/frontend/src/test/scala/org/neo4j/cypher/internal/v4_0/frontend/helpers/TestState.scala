@@ -36,6 +36,7 @@ case class TestState(override val maybeStatement: Option[ast.Statement]) extends
     override def toTextOutput: String = name
   }
 
+  override def maybeReturnColumns: Option[Seq[String]] = None
 
   override def maybeSemantics = None
 
@@ -46,6 +47,8 @@ case class TestState(override val maybeStatement: Option[ast.Statement]) extends
   override def accumulatedConditions = Set.empty
 
   override def withStatement(s: ast.Statement) = copy(Some(s))
+
+  override def withReturnColumns(cols: Seq[String]): BaseState = fail("not implemented")
 
   override def withSemanticTable(s: SemanticTable) = fail("not implemented")
 

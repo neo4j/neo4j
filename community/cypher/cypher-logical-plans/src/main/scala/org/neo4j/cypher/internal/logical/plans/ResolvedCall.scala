@@ -78,8 +78,8 @@ case class ResolvedCall(signature: ProcedureSignature,
     copy(callArguments = coercedArguments)(position)
   }
 
-  override def returnColumns: List[String] =
-    callResults.map(_.variable.name).toList
+  override def returnColumns: List[LogicalVariable] =
+    callResults.map(_.variable).toList
 
   def callResultIndices: IndexedSeq[(Int, (String, String))] = {  // pos, newName, oldName
     val outputIndices: Map[String, Int] = signature.outputSignature.map { outputs => outputs.map(_.name).zip(outputs.indices).toMap }.getOrElse(Map.empty)
