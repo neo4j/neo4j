@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEqu
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedProperty
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipeTest.createVarLengthPredicate
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PruningVarLengthExpandPipeTest.createVarLengthPredicate
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, MapExecutionContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.query.{QuerySubscriber, QuerySubscriberAdapter}
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.immutable.IndexedSeq
 import scala.collection.mutable
@@ -455,5 +456,25 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
                          nodePredicate: Predicate) = {
     val filteringStep = createVarLengthPredicate(nodePredicate, relationshipPredicate)
     PruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max, filteringStep)()
+  }
+}
+
+object PruningVarLengthExpandPipeTest {
+  def createVarLengthPredicate(nodePredicate: Predicate, relationshipPredicate: Predicate): VarLengthPredicate = {
+    new VarLengthPredicate {
+      override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = {
+        val cp = row.copyWith("to", node)
+        val result = nodePredicate.isTrue(cp, state)
+        result
+      }
+
+      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = {
+        val cp = row.copyWith("r", rel)
+        val result = relationshipPredicate.isTrue(cp, state)
+        result
+      }
+
+      override def predicateExpressions: Seq[Predicate] = Seq(nodePredicate, relationshipPredicate)
+    }
   }
 }

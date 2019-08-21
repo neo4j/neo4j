@@ -379,7 +379,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   /**
-    * Create a lollipopGraph:
+    * Create a lollipop graph:
     *
     *             -[r1:R]->
     *   (n1:START)         (n2)-[r3:R]->(n3)
@@ -395,6 +395,68 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       val r2 = n1.createRelationshipTo(n2, relType)
       val r3 = n2.createRelationshipTo(n3, relType)
       (Seq(n1, n2, n3), Seq(r1, r2, r3))
+    }
+  }
+
+  /**
+    * Create a sine graph:
+    *
+    *       <- sc1 <- sc2 <- sc3 <-
+    *       +>    sb1 +> sb2     +>
+    *       ->        sa1        ->
+    * start ----------------------> middle <---------------------- end
+    *                                      ->        sa1        ->
+    *                                      +>    sb1 +> sb2     +>
+    *                                      -> sc1 -> sc2 -> sc3 ->
+    *
+    * where
+    *   start has label :START
+    *   middle has label :MIDDLE
+    *   end has label :END
+    *   -> has type :A
+    *   +> has type :B
+    */
+  def sineGraph(): SineGraph = {
+    inTx {
+      val start = graphDb.createNode(Label.label("START"))
+      val middle = graphDb.createNode(Label.label("MIDDLE"))
+      val end = graphDb.createNode(Label.label("END"))
+
+      val A = RelationshipType.withName("A")
+      val B = RelationshipType.withName("B")
+
+      def chain(relType: RelationshipType, nodes: Node*): Unit = {
+        for (i <- 0 until nodes.length-1) {
+          nodes(i).createRelationshipTo(nodes(i+1), relType)
+        }
+      }
+
+      val startMiddle = start.createRelationshipTo(middle, A)
+      val endMiddle = end.createRelationshipTo(middle, A)
+
+      val sa1 = graphDb.createNode()
+      val sb1 = graphDb.createNode()
+      val sb2 = graphDb.createNode()
+      val sc1 = graphDb.createNode()
+      val sc2 = graphDb.createNode()
+      val sc3 = graphDb.createNode()
+
+      chain(A, start, sa1, middle)
+      chain(B, start, sb1, sb2, middle)
+      chain(A, middle, sc3, sc2, sc1, start)
+
+      val ea1 = graphDb.createNode()
+      val eb1 = graphDb.createNode()
+      val eb2 = graphDb.createNode()
+      val ec1 = graphDb.createNode()
+      val ec2 = graphDb.createNode()
+      val ec3 = graphDb.createNode()
+
+      chain(A, middle, ea1, end)
+      chain(B, middle, eb1, eb2, end)
+      chain(A, middle, ec1, ec2, ec3, end)
+
+      SineGraph(start, middle, end, sa1, sb1, sb2, sc1, sc2, sc3, ea1, eb1, eb2, ec1, ec2, ec3, startMiddle, endMiddle)
     }
   }
 
@@ -631,6 +693,24 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   case class DiffItem(missingRow: ListValue, fromA: Boolean)
 
 }
+
+case class SineGraph(start: Node,
+                     middle: Node,
+                     end: Node,
+                     sa1: Node,
+                     sb1: Node,
+                     sb2: Node,
+                     sc1: Node,
+                     sc2: Node,
+                     sc3: Node,
+                     ea1: Node,
+                     eb1: Node,
+                     eb2: Node,
+                     ec1: Node,
+                     ec2: Node,
+                     ec3: Node,
+                     startMiddle: Relationship,
+                     endMiddle: Relationship)
 
 case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {
   def awaitAll(): IndexedSeq[Array[AnyValue]] = {

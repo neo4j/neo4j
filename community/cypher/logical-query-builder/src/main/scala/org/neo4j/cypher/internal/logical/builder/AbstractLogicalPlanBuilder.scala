@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength}
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Predicate, pos}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -121,7 +121,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def expand(pattern: String,
              expandMode: ExpansionMode = ExpandAll,
-             projectedDir: SemanticDirection = OUTGOING): IMPL = {
+             projectedDir: SemanticDirection = OUTGOING,
+             nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
+             relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
     val p = PatternParser.parse(pattern)
     if (expandMode == ExpandAll) {
       newNode(varFor(p.to))
@@ -130,7 +132,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       case SimplePatternLength =>
         appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, expandMode)(_)))
       case varPatternLength: VarPatternLength =>
-        appendAtCurrentIndent(UnaryOperator(lp => VarExpand(lp, p.from, p.dir, projectedDir, p.relTypes, p.to, p.relName, varPatternLength, expandMode)(_)))
+        appendAtCurrentIndent(UnaryOperator(lp => VarExpand(lp,
+                                                            p.from,
+                                                            p.dir,
+                                                            projectedDir,
+                                                            p.relTypes,
+                                                            p.to,
+                                                            p.relName,
+                                                            varPatternLength,
+                                                            expandMode,
+                                                            nodePredicate.asVariablePredicate,
+                                                            relationshipPredicate.asVariablePredicate
+                                                           )(_)))
     }
     self
   }
@@ -435,4 +448,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
 object AbstractLogicalPlanBuilder {
   val pos = new InputPosition(0, 1, 0)
+
+  val NO_PREDICATE = Predicate("", "")
+  case class Predicate(entity: String, predicate: String) {
+    def asVariablePredicate: Option[VariablePredicate] = {
+      if (entity == "") {
+        None
+      } else {
+        Some(VariablePredicate(Variable(entity)(pos), ExpressionParser.parseExpression(predicate)))
+      }
+    }
+  }
 }

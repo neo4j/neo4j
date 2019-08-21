@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.logical.plans.{Ascending, ExpandInto}
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
-import org.neo4j.graphdb.{Label, Node, RelationshipType}
+import org.neo4j.graphdb.{Node, RelationshipType}
 
 import scala.util.Random
 
@@ -32,18 +33,6 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
-
-  /*
-
-  (:START)-[:TO]->()-[:TO]->()-[:TO]->()-[:TOO]->()-[:TO]->()
-
-  (:START)-[:TO]->()<-[:FROM]-()-[:TO]->()<-[:FROOM]-()-[:TO]->()
-
-  (:START)<-[:FROM]-()<-[:FROM]-()<-[:FROM]-()<-[:FROOM]-()<-[:FROM]->()
-
-   */
-
-
 
   test("simple var-length-expand ") {
     // given
@@ -485,6 +474,202 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "r", "y").withSingleRow(null, null, n1)
+  }
+
+  // EXPANSION FILTERING, DIRECTION
+
+  test("should filter on outgoing direction") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r*1..2]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sb1),
+      Array(g.sa1),
+      Array(g.middle),
+      Array(g.sb2),
+      Array(g.middle),
+      Array(g.sc3),
+      Array(g.ea1),
+      Array(g.eb1),
+      Array(g.ec1)
+    ))
+  }
+
+  test("should filter on incoming direction") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)<-[r*1..2]-(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sc1),
+      Array(g.sc2)
+    ))
+  }
+
+  test("should expand on BOTH direction") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r*1..2]-(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sb1), // outgoing only
+      Array(g.sa1),
+      Array(g.middle),
+      Array(g.sb2),
+      Array(g.middle),
+      Array(g.sc3),
+      Array(g.ea1),
+      Array(g.eb1),
+      Array(g.ec1),
+      Array(g.sc1), // incoming only
+      Array(g.sc2),
+      Array(g.sb2), // mixed
+      Array(g.sa1),
+      Array(g.end)
+    ))
+  }
+
+  // EXPANSION FILTERING, RELATIONSHIP TYPE
+
+  test("should filter on relationship type A") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r:A*1..2]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sa1),
+      Array(g.middle),
+      Array(g.middle),
+      Array(g.sc3),
+      Array(g.ea1),
+      Array(g.ec1)
+    ))
+  }
+
+  test("should filter on relationship type B") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r:B*1..2]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sb1),
+      Array(g.sb2)
+    ))
+  }
+
+  // EXPANSION FILTERING, NODE AND RELATIONSHIP PREDICATE
+
+  test("should filter on node predicate") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r:*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> "+g.middle.getId))
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sa1),
+      Array(g.sb1),
+      Array(g.sb2),
+      Array(g.sc1),
+      Array(g.sc2)
+    ))
+  }
+
+  test("should filter on relationship predicate") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r:*1..2]->(y)", relationshipPredicate = Predicate("r", "id(r) <> "+g.startMiddle.getId))
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sa1),
+      Array(g.middle),
+      Array(g.sb1),
+      Array(g.sb2)
+    ))
+  }
+
+  test("should filter on node and relationship predicate") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r:*2..2]-(y)",
+        nodePredicate = Predicate("n", "id(n) <> "+g.sa1.getId),
+        relationshipPredicate = Predicate("r", "id(r) <> "+g.startMiddle.getId))
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sc2),
+      Array(g.sb2)
+    ))
   }
 
   // HELPERS
