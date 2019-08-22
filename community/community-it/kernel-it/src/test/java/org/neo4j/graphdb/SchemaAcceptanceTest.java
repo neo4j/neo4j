@@ -558,6 +558,24 @@ class SchemaAcceptanceTest
     }
 
     @Test
+    void indexNamesMustBeUniqueEvenWhenGenerated()
+    {
+        IndexDefinition index = createIndex( db, label, propertyKey ); // Index with generated name.
+        ConstraintViolationException exception =
+                assertThrows( ConstraintViolationException.class, () -> createIndex( db, index.getName(), otherLabel, secondPropertyKey ) );
+        assertThat( exception.getMessage(), containsString( index.getName() ) );
+    }
+
+    @Test
+    void indexNamesMustBeUniqueEvenWhenGenerated2()
+    {
+        IndexDefinition index = createIndex( db, "Index on :" + label.name() + " (" + propertyKey + ")", otherLabel, secondPropertyKey );
+        ConstraintViolationException exception =
+                assertThrows( ConstraintViolationException.class, () -> createIndex( db, label, propertyKey ) );
+        assertThat( exception.getMessage(), containsString( index.getName() ) );
+    }
+
+    @Test
     void constraintNamesMustBeUnique()
     {
         createUniquenessConstraint( "MyConstraint", label, propertyKey );
@@ -576,12 +594,30 @@ class SchemaAcceptanceTest
     }
 
     @Test
+    void cannotCreateConstraintWithSameNameAsExistingIndexWithGeneratedName()
+    {
+        IndexDefinition index = createIndex( db, label, propertyKey ); // Index with generated name.
+        ConstraintViolationException exception =
+                assertThrows( ConstraintViolationException.class, () -> createIndex( db, index.getName(), otherLabel, secondPropertyKey ) );
+        assertThat( exception.getMessage(), containsString( index.getName() ) );
+    }
+
+    @Test
     void cannotCreateIndexWithSameNameAsExistingConstraint()
     {
         createUniquenessConstraint( "MySchema", label, propertyKey );
         ConstraintViolationException exception =
                 assertThrows( ConstraintViolationException.class, () -> createIndex( db, "MySchema", label, secondPropertyKey ) );
         assertThat( exception.getMessage(), containsString( "MySchema" ) );
+    }
+
+    @Test
+    void cannotCreateIndexWithSameNameAsExistingConstraintWithGeneratedName()
+    {
+        ConstraintDefinition constraint = createUniquenessConstraint( label, propertyKey );
+        ConstraintViolationException exception =
+                assertThrows( ConstraintViolationException.class, () -> createIndex( db, constraint.getName(), label, secondPropertyKey ) );
+        assertThat( exception.getMessage(), containsString( constraint.getName() ) );
     }
 
     @Test
@@ -612,6 +648,33 @@ class SchemaAcceptanceTest
     }
 
     @Test
+    void indexNamesInTransactionStateMustBeUniqueEvenWhenGenerated()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = db.schema().indexFor( label ).on( propertyKey ).create();
+            IndexCreator creator = db.schema().indexFor( otherLabel ).on( secondPropertyKey ).withName( index.getName() );
+            ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, creator::create );
+            assertThat( exception.getMessage(), containsString( "already exists an index called '" + index.getName() + "'" ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void indexNamesInTransactionStateMustBeUniqueEvenWhenGenerated2()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexDefinition index = db.schema().indexFor( otherLabel ).on( secondPropertyKey )
+                    .withName( "Index on :" + label.name() + " (" + propertyKey + ")" ).create();
+            IndexCreator creator = db.schema().indexFor( label ).on( propertyKey );
+            ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, creator::create );
+            assertThat( exception.getMessage(), containsString( "already exists an index called '" + index.getName() + "'" ) );
+            tx.commit();
+        }
+    }
+
+    @Test
     void constraintNamesInTransactionStateMustBeUnique()
     {
         try ( Transaction tx = db.beginTx() )
@@ -620,6 +683,33 @@ class SchemaAcceptanceTest
             ConstraintCreator creator = db.schema().constraintFor( otherLabel ).assertPropertyIsUnique( secondPropertyKey ).withName( "MyConstraint" );
             ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, creator::create );
             assertThat( exception.getMessage(), containsString( "already exists with this name: MyConstraint" ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void constraintNamesInTransactionStateMustBeUniqueEvenWhenGenerated()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintDefinition constraint = db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            ConstraintCreator creator = db.schema().constraintFor( otherLabel ).assertPropertyIsUnique( secondPropertyKey ).withName( constraint.getName() );
+            ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, creator::create );
+            assertThat( exception.getMessage(), containsString( "already exists with this name: " + constraint.getName() ) );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void constraintNamesInTransactionStateMustBeUniqueEvenWhenGenerated2()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintDefinition constraint = db.schema().constraintFor( otherLabel ).assertPropertyIsUnique( secondPropertyKey )
+                    .withName( "Uniqueness constraint on :MY_LABEL (my_property_key)" ).create();
+            ConstraintCreator creator = db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey );
+            ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, creator::create );
+            assertThat( exception.getMessage(), containsString( "already exists with this name: " + constraint.getName() ) );
             tx.commit();
         }
     }

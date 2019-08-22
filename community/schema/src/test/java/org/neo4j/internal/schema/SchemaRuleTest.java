@@ -21,12 +21,13 @@ package org.neo4j.internal.schema;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
-class IndexPrototypeTest
+class SchemaRuleTest
 {
     @Test
     void mustGenerateReasonableNames()
@@ -42,6 +43,10 @@ class IndexPrototypeTest
         IndexPrototype relTypeUniquePrototype = IndexPrototype.uniqueForSchema( relTypeSchema );
         IndexPrototype nodeFtsPrototype = IndexPrototype.forSchema( fulltextNodeSchema );
         IndexPrototype relFtsPrototype = IndexPrototype.forSchema( fulltextRelSchema );
+        ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema );
+        ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema( labelSchema );
+        ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema );
+        ConstraintDescriptor existsRelTypeConstraint = ConstraintDescriptorFactory.existsForSchema( relTypeSchema );
 
         assertName( labelPrototype, new String[]{"A"}, new String[]{"B", "C"}, "Index on :A (B,C)" );
         assertName( labelUniquePrototype, new String[]{"A"}, new String[]{"B", "C"}, "Unique Index on :A (B,C)" );
@@ -49,12 +54,15 @@ class IndexPrototypeTest
         assertName( relTypeUniquePrototype, new String[]{"A"}, new String[]{"B", "C"}, "Unique Index on ()-[:A]-() (B,C)" );
         assertName( nodeFtsPrototype, new String[]{"A", "B"}, new String[]{"C", "D"}, "Full-Text Index on :A,:B (C,D)" );
         assertName( relFtsPrototype, new String[]{"A", "B"}, new String[]{"C", "D"}, "Full-Text Index on ()-[:A|:B]-() (C,D)" );
+        assertName( uniqueLabelConstraint, new String[] {"A"}, new String[] {"B", "C"}, "Uniqueness constraint on :A (B,C)" );
+        assertName( existsLabelConstraint, new String[] {"A"}, new String[] {"B", "C"}, "Property existence constraint on :A (B,C)" );
+        assertName( nodeKeyConstraint, new String[] {"A"}, new String[] {"B", "C"}, "Node key constraint on :A (B,C)" );
+        assertName( existsRelTypeConstraint, new String[] {"A"}, new String[] {"B", "C"}, "Property existence constraint on ()-[:A]-() (B,C)" );
     }
 
-    private void assertName( IndexPrototype labelPrototype, String[] entityTokenNames, String[] propertyNames, String expectedName )
+    private void assertName( SchemaDescriptorSupplier schemaish, String[] entityTokenNames, String[] propertyNames, String expectedName )
     {
-        IndexPrototype withName = labelPrototype.withName( SchemaRule.generateName( labelPrototype, entityTokenNames, propertyNames ) );
-        assertTrue( withName.getName().isPresent() );
-        assertEquals( expectedName, withName.getName().get() );
+        String generateName = SchemaRule.generateName( schemaish, entityTokenNames, propertyNames );
+        assertEquals( expectedName, generateName );
     }
 }
