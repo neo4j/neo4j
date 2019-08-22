@@ -35,11 +35,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TruncatedQuerySnapshotTest
 {
-    static NodeValue NODE = VirtualValues.nodeValue( 42,
+    static final NodeValue NODE = VirtualValues.nodeValue( 42,
                                                      Values.stringArray( "Phone" ),
                                                      map( "number", Values.stringValue( "07303725xx" ) ) );
 
-    static RelationshipValue RELATIONSHIP = VirtualValues.relationshipValue( 100,
+    static final RelationshipValue RELATIONSHIP = VirtualValues.relationshipValue( 100,
                                                                              NODE,
                                                                              NODE,
                                                                              Values.stringValue( "CALL" ),

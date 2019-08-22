@@ -28,8 +28,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertEquality;
-import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 
 class SchemaIndexDescriptorFactoryTest
 {
@@ -91,9 +91,9 @@ class SchemaIndexDescriptorFactoryTest
         IndexDescriptor uniqueForLabel = TestIndexDescriptorFactory.uniqueForLabel( 2, 4 );
         String providerName = forLabel.getIndexProvider().name();
         long uniqueForLabelId = uniqueForLabel.getId();
-        assertThat( forLabel.userDescription( simpleNameLookup ),
+        assertThat( forLabel.userDescription( SIMPLE_NAME_LOOKUP ),
                 equalTo( "Index( " + forLabelId + ", 'index_" + forLabelId + "', GENERAL, :Label1(property2), " + providerName + " )" ) );
-        assertThat( uniqueForLabel.userDescription( simpleNameLookup ),
+        assertThat( uniqueForLabel.userDescription( SIMPLE_NAME_LOOKUP ),
                 equalTo( "Index( " + uniqueForLabelId + ", 'index_" + uniqueForLabelId + "', UNIQUE, :Label2(property4), " + providerName + " )" ) );
     }
 }

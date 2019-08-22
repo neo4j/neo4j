@@ -32,28 +32,27 @@ public class LinuxNativeAccess implements NativeAccess
      */
     private static final int POSIX_FADV_DONTNEED = 4;
 
-    private static boolean nativeAccessAvailable;
-    private static Throwable initializationFailure;
+    private static final boolean NATIVE_ACCESS_AVAILABLE;
+    private static final Throwable INITIALIZATION_FAILURE;
 
     static
     {
+        Throwable initFailure = null;
+        boolean available = false;
         try
         {
             if ( Platform.isLinux() )
             {
                 Native.register( Platform.C_LIBRARY_NAME );
-                nativeAccessAvailable = true;
-            }
-            else
-            {
-                nativeAccessAvailable = false;
+                available = true;
             }
         }
         catch ( Throwable t )
         {
-            initializationFailure = t;
-            nativeAccessAvailable = false;
+            initFailure = t;
         }
+        NATIVE_ACCESS_AVAILABLE = available;
+        INITIALIZATION_FAILURE = initFailure;
     }
 
     /**
@@ -84,7 +83,7 @@ public class LinuxNativeAccess implements NativeAccess
     @Override
     public boolean isAvailable()
     {
-        return nativeAccessAvailable;
+        return NATIVE_ACCESS_AVAILABLE;
     }
 
     @Override
@@ -114,14 +113,14 @@ public class LinuxNativeAccess implements NativeAccess
     @Override
     public String describe()
     {
-        if ( nativeAccessAvailable )
+        if ( NATIVE_ACCESS_AVAILABLE )
         {
             return "Linux native access is available.";
         }
         StringBuilder descriptionBuilder = new StringBuilder( "Linux native access is not available." );
-        if ( initializationFailure != null )
+        if ( INITIALIZATION_FAILURE != null )
         {
-            String exception = getStackTrace( initializationFailure );
+            String exception = getStackTrace( INITIALIZATION_FAILURE );
             descriptionBuilder.append( " Details: " ).append( exception );
         }
         return descriptionBuilder.toString();

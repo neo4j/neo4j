@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.parseEn
 class ReferencesTest
 {
     // This value the largest possible high limit id +1 (see HighLimitV3_1_0)
-    private static long MAX_ID_LIMIT = 1L << 50;
+    private static final long MAX_ID_LIMIT = 1L << 50;
 
     @Test
     void shouldPreserveNoId()

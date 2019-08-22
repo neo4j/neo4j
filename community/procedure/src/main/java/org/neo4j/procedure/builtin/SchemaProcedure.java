@@ -215,7 +215,7 @@ public class SchemaProcedure
     private static class VirtualRelationshipHack implements Relationship
     {
 
-        private static AtomicLong MIN_ID = new AtomicLong( -1 );
+        private static final AtomicLong MIN_ID = new AtomicLong( -1 );
 
         private final long id;
         private final Node startNode;
@@ -344,7 +344,7 @@ public class SchemaProcedure
 
         private final HashMap<String,Object> propertyMap = new HashMap<>();
 
-        private static AtomicLong MIN_ID = new AtomicLong( -1 );
+        private static final AtomicLong MIN_ID = new AtomicLong( -1 );
         private final long id;
         private final Label label;
 

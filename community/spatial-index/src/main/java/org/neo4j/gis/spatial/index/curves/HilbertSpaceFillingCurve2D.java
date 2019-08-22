@@ -91,25 +91,25 @@ public class HilbertSpaceFillingCurve2D extends SpaceFillingCurve
         UP, RIGHT, LEFT, DOWN
     }
 
-    private static EnumMap<Direction2D,HilbertCurve2D> curves = new EnumMap<>( Direction2D.class );
+    private static final EnumMap<Direction2D,HilbertCurve2D> CURVES = new EnumMap<>( Direction2D.class );
 
     private static void addCurveRule( int... npointValues )
     {
         HilbertCurve2D curve = new HilbertCurve2D( npointValues );
         Direction2D name = curve.name();
-        if ( !curves.containsKey( name ) )
+        if ( !CURVES.containsKey( name ) )
         {
-            curves.put( name, curve );
+            CURVES.put( name, curve );
         }
     }
 
     private static void setChildren( Direction2D parent, Direction2D... children )
     {
-        HilbertCurve2D curve = curves.get( parent );
+        HilbertCurve2D curve = CURVES.get( parent );
         HilbertCurve2D[] childCurves = new HilbertCurve2D[children.length];
         for ( int i = 0; i < children.length; i++ )
         {
-            childCurves[i] = curves.get( children[i] );
+            childCurves[i] = CURVES.get( children[i] );
         }
         curve.setChildren( childCurves );
     }
@@ -126,7 +126,7 @@ public class HilbertSpaceFillingCurve2D extends SpaceFillingCurve
         setChildren( RIGHT, UP, RIGHT, RIGHT, DOWN );
         setChildren( DOWN, LEFT, DOWN, DOWN, RIGHT );
         setChildren( LEFT, DOWN, LEFT, LEFT, UP );
-        curveUp = curves.get( UP );
+        curveUp = CURVES.get( UP );
     }
 
     public static final int MAX_LEVEL = 63 / 2 - 1;

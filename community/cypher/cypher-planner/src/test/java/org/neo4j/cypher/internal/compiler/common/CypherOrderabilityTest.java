@@ -31,9 +31,9 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
 
-public class CypherOrderabilityTest
+class CypherOrderabilityTest
 {
-    public static Object[] values = new Object[]{
+    private static final Object[] VALUES = new Object[]{
             // MAP
             new HashMap<Long,Long>(),
 
@@ -129,12 +129,12 @@ public class CypherOrderabilityTest
     @Test
     void shouldOrderValuesCorrectly()
     {
-        for ( int i = 2; i < values.length; i++ )
+        for ( int i = 2; i < VALUES.length; i++ )
         {
-            for ( int j = 2; j < values.length; j++ )
+            for ( int j = 2; j < VALUES.length; j++ )
             {
-                Object left = values[i];
-                Object right = values[j];
+                Object left = VALUES[i];
+                Object right = VALUES[j];
 
                 int cmpPos = sign( i - j );
                 int cmpVal = sign( compare( left, right ) );
@@ -151,7 +151,7 @@ public class CypherOrderabilityTest
         }
     }
 
-    private String toString( Object o )
+    private static String toString( Object o )
     {
         if ( o == null )
         {
@@ -197,7 +197,7 @@ public class CypherOrderabilityTest
         }
     }
 
-    private <T> int compare( T left, T right )
+    private static <T> int compare( T left, T right )
     {
         try
         {
@@ -217,7 +217,7 @@ public class CypherOrderabilityTest
         }
     }
 
-    private int sign( int value )
+    private static int sign( int value )
     {
         return Integer.compare( value, 0 );
     }

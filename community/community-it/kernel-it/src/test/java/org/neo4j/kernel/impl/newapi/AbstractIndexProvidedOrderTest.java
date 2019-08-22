@@ -55,8 +55,8 @@ import static org.neo4j.values.storable.ValueTuple.COMPARATOR;
 @ExtendWith( RandomExtension.class )
 public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTestSupport>
 {
-    private static int N_NODES = 10000;
-    private static int N_ITERATIONS = 100;
+    private static final int N_NODES = 10000;
+    private static final int N_ITERATIONS = 100;
 
     @Inject
     RandomRule randomRule;

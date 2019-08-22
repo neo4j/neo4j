@@ -155,7 +155,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         }
     }
 
-    static WriteMonitor EMPTY = new WriteMonitor()
+    static final WriteMonitor EMPTY = new WriteMonitor()
     {
     };
 

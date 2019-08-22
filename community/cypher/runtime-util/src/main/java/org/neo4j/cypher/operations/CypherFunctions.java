@@ -23,11 +23,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.cypher.internal.runtime.DbAccess;
+import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.ParameterWrongTypeException;
-import org.neo4j.cypher.internal.runtime.DbAccess;
-import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -75,7 +75,7 @@ public final class CypherFunctions
 {
     private static final BigDecimal MAX_LONG = BigDecimal.valueOf( Long.MAX_VALUE );
     private static final BigDecimal MIN_LONG = BigDecimal.valueOf( Long.MIN_VALUE );
-    private static String[] POINT_KEYS = new String[]{"crs", "x", "y", "z", "longitude", "latitude", "height", "srid"};
+    private static final String[] POINT_KEYS = new String[]{"crs", "x", "y", "z", "longitude", "latitude", "height", "srid"};
 
     private CypherFunctions()
     {

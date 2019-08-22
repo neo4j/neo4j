@@ -59,7 +59,7 @@ import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSI
  */
 public class LogTailScanner
 {
-    static long NO_TRANSACTION_ID = -1;
+    static final long NO_TRANSACTION_ID = -1;
     private final LogFiles logFiles;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
     private LogTailInformation logTailInformation;

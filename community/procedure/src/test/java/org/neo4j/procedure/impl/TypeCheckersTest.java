@@ -61,7 +61,7 @@ class TypeCheckersTest
         );
     }
 
-    private static Type listOfListOfMap = typeOf( "listOfListOfMap" );
+    private static final Type listOfListOfMap = typeOf( "listOfListOfMap" );
 
     @ParameterizedTest( name = "{0} to {1}" )
     @MethodSource( "parameters" )

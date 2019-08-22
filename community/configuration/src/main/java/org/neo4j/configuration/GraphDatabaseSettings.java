@@ -365,7 +365,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "The size of the internal buffer in bytes used by `LOAD CSV`. If the csv file contains huge fields " +
             "this value may have to be increased." )
-    public static Setting<Long> csv_buffer_size =
+    public static final Setting<Long> csv_buffer_size =
             newBuilder( "dbms.import.csv.buffer_size", LONG, mebiBytes( 2 ) ).addConstraint( min( 1L ) ).build();
 
     @Description( "Enables or disables tracking of how much time a query spends actively executing on the CPU. " +

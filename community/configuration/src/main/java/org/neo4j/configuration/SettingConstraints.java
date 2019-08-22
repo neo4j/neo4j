@@ -229,7 +229,7 @@ public final class SettingConstraints
         };
     }
 
-    public static SettingConstraint<Long> POWER_OF_2 = new SettingConstraint<>()
+    public static final SettingConstraint<Long> POWER_OF_2 = new SettingConstraint<>()
     {
         @Override
         public void validate( Long value )
@@ -247,7 +247,7 @@ public final class SettingConstraints
         }
     };
 
-    public static SettingConstraint<Integer> PORT = new SettingConstraint<>()
+    public static final SettingConstraint<Integer> PORT = new SettingConstraint<>()
     {
         private final SettingConstraint<Integer> range = range( 0, 65535 );
 
@@ -290,7 +290,7 @@ public final class SettingConstraints
         };
     }
 
-    public static SettingConstraint<SocketAddress> HOSTNAME_ONLY = new SettingConstraint<>()
+    public static final SettingConstraint<SocketAddress> HOSTNAME_ONLY = new SettingConstraint<>()
     {
         @Override
         public void validate( SocketAddress value )
@@ -319,7 +319,7 @@ public final class SettingConstraints
         }
     };
 
-    public static SettingConstraint<Path> ABSOLUTE_PATH = new SettingConstraint<Path>()
+    public static final SettingConstraint<Path> ABSOLUTE_PATH = new SettingConstraint<Path>()
     {
         @Override
         public void validate( Path value )

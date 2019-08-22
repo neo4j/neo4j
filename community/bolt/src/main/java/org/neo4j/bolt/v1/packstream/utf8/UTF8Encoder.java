@@ -50,7 +50,7 @@ public interface UTF8Encoder
 
     class EncoderLoader
     {
-        public static EncoderLoader ENCODER_LOADER = new EncoderLoader();
+        public static final EncoderLoader ENCODER_LOADER = new EncoderLoader();
 
         private volatile boolean useFallbackEncoder;
         public UTF8Encoder fastestAvailableEncoder()

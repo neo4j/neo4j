@@ -30,12 +30,12 @@ import static org.neo4j.values.virtual.VirtualValues.list;
 
 class CharValueTest
 {
-    private static char[] chars = {' ', '楡', 'a', '7', 'Ö'};
+    private static final char[] CHARS = {' ', '楡', 'a', '7', 'Ö'};
 
     @Test
     void shouldHandleDifferentTypesOfChars()
     {
-        for ( char c : chars )
+        for ( char c : CHARS )
         {
             TextValue charValue = charValue( c );
             TextValue stringValue = stringValue( Character.toString( c ) );
@@ -82,7 +82,7 @@ class CharValueTest
     @Test
     void shouldReverse()
     {
-        for ( char c : chars )
+        for ( char c : CHARS )
         {
             CharValue charValue = charValue( c );
             assertThat( charValue.reverse(), equalTo( charValue ) );

@@ -28,10 +28,10 @@ import org.neo4j.internal.schema.SchemaState;
  */
 public class SchemaStateKey
 {
-    private static AtomicLong keyId = new AtomicLong();
+    private static final AtomicLong KEY_ID = new AtomicLong();
     public static SchemaStateKey newKey()
     {
-        return new SchemaStateKey( keyId.getAndIncrement() );
+        return new SchemaStateKey( KEY_ID.getAndIncrement() );
     }
 
     public final long id;

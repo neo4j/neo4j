@@ -48,8 +48,7 @@ import static org.neo4j.graphdb.Label.label;
 @ExtendWith( RandomExtension.class )
 public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
 {
-    @SuppressWarnings( "FieldCanBeLocal" )
-    private static int N_NODES = 10000;
+    private static final int N_NODES = 10000;
 
     @Inject
     private RandomRule randomRule;

@@ -341,8 +341,6 @@ class ConfigTest
         assertEquals( Set.of( "default", "1" ), groups1.keySet() );
         assertEquals( 7474, config1.get( groups1.get( "default" ).port ) );
 
-        Map<String,String> settings =
-                Map.of(  );
         Config config2 = Config.newBuilder()
                 .fromConfig( fromConfig )
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
@@ -403,7 +401,7 @@ class ConfigTest
 
     private static final class BrokenDependencySettings implements SettingsDeclaration
     {
-        static Setting<Path> broken = newBuilder( "test.base.path", PATH, Path.of( "/base/" ) )
+        static final Setting<Path> broken = newBuilder( "test.base.path", PATH, Path.of( "/base/" ) )
                 .setDependency( newBuilder( "test.not.present.dependency", PATH, Path.of("/broken/" ) ).immutable().build() )
                 .immutable()
                 .build();
@@ -731,10 +729,10 @@ class ConfigTest
 
     private static final class TestSettings implements SettingsDeclaration
     {
-        static Setting<String> stringSetting = newBuilder( "test.setting.string", STRING, "hello" ).build();
-        static Setting<Integer> intSetting = newBuilder( "test.setting.integer", INT, 1 ).dynamic().build();
-        static Setting<List<Integer>> intListSetting = newBuilder( "test.setting.integerlist", listOf( INT ), List.of( 1 ) ).build();
-        static Setting<Boolean> boolSetting = newBuilder( "test.setting.bool", BOOL, null ).immutable().build();
+        static final Setting<String> stringSetting = newBuilder( "test.setting.string", STRING, "hello" ).build();
+        static final Setting<Integer> intSetting = newBuilder( "test.setting.integer", INT, 1 ).dynamic().build();
+        static final Setting<List<Integer>> intListSetting = newBuilder( "test.setting.integerlist", listOf( INT ), List.of( 1 ) ).build();
+        static final Setting<Boolean> boolSetting = newBuilder( "test.setting.bool", BOOL, null ).immutable().build();
     }
 
     public static class TestConnectionGroupSetting extends GroupSetting implements GroupSettingValidator
@@ -836,13 +834,13 @@ class ConfigTest
 
     private static final class DependencySettings implements SettingsDeclaration
     {
-        static Setting<Path> basePath = newBuilder( "test.base.path", PATH, Path.of( "/base/" ).toAbsolutePath() ).immutable().build();
-        static Setting<Path> midPath = newBuilder( "test.mid.path", PATH, Path.of( "mid/" ) ).setDependency( basePath ).immutable().build();
-        static Setting<Path> endPath = newBuilder( "test.end.path", PATH, Path.of( "end/file" ) ).setDependency( midPath ).build();
-        static Setting<Path> absolute =
+        static final Setting<Path> basePath = newBuilder( "test.base.path", PATH, Path.of( "/base/" ).toAbsolutePath() ).immutable().build();
+        static final Setting<Path> midPath = newBuilder( "test.mid.path", PATH, Path.of( "mid/" ) ).setDependency( basePath ).immutable().build();
+        static final Setting<Path> endPath = newBuilder( "test.end.path", PATH, Path.of( "end/file" ) ).setDependency( midPath ).build();
+        static final Setting<Path> absolute =
                 newBuilder( "test.absolute.path", PATH, Path.of( "/another/path/file" ).toAbsolutePath() ).setDependency( midPath ).build();
 
-        private static SettingValueParser<String> DefaultParser = new SettingValueParser<>()
+        private static final SettingValueParser<String> DefaultParser = new SettingValueParser<>()
         {
             @Override
             public String parse( String value )
@@ -863,9 +861,9 @@ class ConfigTest
             }
         };
 
-        static Setting<String> baseString = newBuilder( "test.default.dependency.base", DefaultParser, "base" ).immutable().build();
+        static final Setting<String> baseString = newBuilder( "test.default.dependency.base", DefaultParser, "base" ).immutable().build();
 
-        static Setting<String> dependingString = newBuilder( "test.default.dependency.dep", DefaultParser, null ).setDependency( baseString ).build();
+        static final Setting<String> dependingString = newBuilder( "test.default.dependency.dep", DefaultParser, null ).setDependency( baseString ).build();
     }
 
 }

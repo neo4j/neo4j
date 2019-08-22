@@ -86,7 +86,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
 
 public class TypeCheckers
 {
-    private static ExpressionEvaluator EVALUATOR = Evaluator.expressionEvaluator();
+    private static final ExpressionEvaluator EVALUATOR = Evaluator.expressionEvaluator();
 
     private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny  );
     private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, DefaultParameterValue::ntString );

@@ -45,7 +45,7 @@ import static org.neo4j.bolt.runtime.StatementProcessor.EMPTY;
 
 class BoltStateMachineContextImplTest
 {
-    private static String DB_NAME = "Molly";
+    private static final String DB_NAME = "Molly";
 
     @Test
     void shouldHandleFailure() throws BoltConnectionFatality

@@ -84,12 +84,12 @@ class DatabaseLayoutWatcherTest
         watcher.stop();
 
         verify( fileWatcher ).removeFileWatchEventListener( eventListener );
-        assertEquals( 4, CountingWatchedResource.counter.get() );
+        assertEquals( 4, CountingWatchedResource.COUNTER.get() );
     }
 
     private static class CountingWatchedResource implements WatchedResource
     {
-        private static AtomicLong counter = new AtomicLong();
+        private static final AtomicLong COUNTER = new AtomicLong();
         private final File file;
 
         CountingWatchedResource( File file )
@@ -104,9 +104,9 @@ class DatabaseLayoutWatcherTest
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
-            counter.incrementAndGet();
+            COUNTER.incrementAndGet();
         }
     }
 }

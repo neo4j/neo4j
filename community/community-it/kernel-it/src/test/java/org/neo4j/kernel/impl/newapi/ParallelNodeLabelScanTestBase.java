@@ -66,7 +66,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     private static int BAR_LABEL;
     private static LongSet FOO_NODES;
     private static LongSet BAR_NODES;
-    private static int[] ALL_LABELS = new int[]{FOO_LABEL, BAR_LABEL};
+    private static final int[] ALL_LABELS = new int[]{FOO_LABEL, BAR_LABEL};
     private static final ToLongFunction<NodeLabelIndexCursor> NODE_GET = NodeLabelIndexCursor::nodeReference;
 
     @Override

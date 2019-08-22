@@ -41,11 +41,11 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
         extends KernelAPIReadTestBase<G>
 {
     private static final int N_TRAVERSALS = 10_000;
-    private static int N_NODES = 100;
-    private static int N_RELATIONSHIPS = 1000;
-    private static long seed = (new Random()).nextInt();
-    private static Random random = new Random( seed );
-    private static List<Long> nodeIds = new ArrayList<>();
+    private static final int N_NODES = 100;
+    private static final int N_RELATIONSHIPS = 1000;
+    private static final long SEED = (new Random()).nextInt();
+    private static final Random RANDOM = new Random( SEED );
+    private static final List<Long> NODE_IDS = new ArrayList<>();
 
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
@@ -54,7 +54,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
         {
             for ( int i = 0; i < N_NODES; i++ )
             {
-                nodeIds.add( graphDb.createNode( Label.label( "LABEL" + i ) ).getId() );
+                NODE_IDS.add( graphDb.createNode( Label.label( "LABEL" + i ) ).getId() );
             }
             tx.commit();
         }
@@ -63,8 +63,8 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
         {
             for ( int i = 0; i < N_RELATIONSHIPS; i++ )
             {
-                Long source = nodeIds.get( random.nextInt( N_NODES ) );
-                Long target = nodeIds.get( random.nextInt( N_NODES ) );
+                Long source = NODE_IDS.get( RANDOM.nextInt( N_NODES ) );
+                Long target = NODE_IDS.get( RANDOM.nextInt( N_NODES ) );
                 graphDb.getNodeById( source ).createRelationshipTo( graphDb.getNodeById( target ),
                         RelationshipType.withName( "REL" + (i % 10) ) );
             }
@@ -83,7 +83,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
             for ( int i = 0; i < N_TRAVERSALS; i++ )
             {
                 // when
-                long nodeId = nodeIds.get( random.nextInt( N_NODES ) );
+                long nodeId = NODE_IDS.get( RANDOM.nextInt( N_NODES ) );
                 read.singleNode( nodeId, node );
                 assertTrue( node.next(), "access root node" );
                 node.relationships( group );
@@ -115,7 +115,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
         }
         catch ( Throwable t )
         {
-            throw new RuntimeException( "Failed with random seed " + seed, t );
+            throw new RuntimeException( "Failed with random seed " + SEED, t );
         }
     }
 }

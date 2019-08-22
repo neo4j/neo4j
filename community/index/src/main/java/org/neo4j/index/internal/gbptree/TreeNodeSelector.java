@@ -30,7 +30,7 @@ class TreeNodeSelector
     /**
      * Creates {@link TreeNodeFixedSize} instances.
      */
-    static Factory FIXED = new Factory()
+    private static final Factory FIXED = new Factory()
     {
         @Override
         public <KEY,VALUE> TreeNode<KEY,VALUE> create( int pageSize, Layout<KEY,VALUE> layout, OffloadStore<KEY,VALUE> offloadStore )
@@ -54,7 +54,7 @@ class TreeNodeSelector
     /**
      * Creates {@link TreeNodeDynamicSize} instances.
      */
-    static Factory DYNAMIC = new Factory()
+    private static final Factory DYNAMIC = new Factory()
     {
         @Override
         public <KEY,VALUE> TreeNode<KEY,VALUE> create( int pageSize, Layout<KEY,VALUE> layout, OffloadStore<KEY,VALUE> offloadStore )

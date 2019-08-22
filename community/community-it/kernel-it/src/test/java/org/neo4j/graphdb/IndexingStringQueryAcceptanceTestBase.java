@@ -183,12 +183,12 @@ public abstract class IndexingStringQueryAcceptanceTestBase
 
     public abstract static class EXACT extends IndexingStringQueryAcceptanceTestBase
     {
-        static String[] matching = {"Johan", "Johan", "Johan"};
-        static String[] nonMatching = {"Johanna", "Olivia", "InteJohan"};
+        static final String[] MATCHING = {"Johan", "Johan", "Johan"};
+        static final String[] NON_MATCHING = {"Johanna", "Olivia", "InteJohan"};
 
         EXACT( boolean withIndex )
         {
-            super( "Johan", matching, nonMatching, StringSearchMode.EXACT, withIndex );
+            super( "Johan", MATCHING, NON_MATCHING, StringSearchMode.EXACT, withIndex );
         }
     }
 
@@ -210,12 +210,12 @@ public abstract class IndexingStringQueryAcceptanceTestBase
 
     public abstract static class PREFIX extends IndexingStringQueryAcceptanceTestBase
     {
-        static String[] matching = {"Olivia", "Olivia2", "OliviaYtterbrink"};
-        static String[] nonMatching = {"Johan", "olivia", "InteOlivia"};
+        static final String[] MATCHING = {"Olivia", "Olivia2", "OliviaYtterbrink"};
+        static final String[] NON_MATCHING = {"Johan", "olivia", "InteOlivia"};
 
         PREFIX( boolean withIndex )
         {
-            super( "Olivia", matching, nonMatching, StringSearchMode.PREFIX, withIndex );
+            super( "Olivia", MATCHING, NON_MATCHING, StringSearchMode.PREFIX, withIndex );
         }
     }
 
@@ -237,12 +237,12 @@ public abstract class IndexingStringQueryAcceptanceTestBase
 
     public abstract static class SUFFIX extends IndexingStringQueryAcceptanceTestBase
     {
-        static String[] matching = {"Jansson", "Hansson", "Svensson"};
-        static String[] nonMatching = {"Taverner", "Svensson-Averbuch", "Taylor"};
+        static final String[] MATCHING = {"Jansson", "Hansson", "Svensson"};
+        static final String[] NON_MATCHING = {"Taverner", "Svensson-Averbuch", "Taylor"};
 
         SUFFIX( boolean withIndex )
         {
-            super( "sson", matching, nonMatching, StringSearchMode.SUFFIX, withIndex );
+            super( "sson", MATCHING, NON_MATCHING, StringSearchMode.SUFFIX, withIndex );
         }
     }
 
@@ -264,12 +264,12 @@ public abstract class IndexingStringQueryAcceptanceTestBase
 
     public abstract static class CONTAINS extends IndexingStringQueryAcceptanceTestBase
     {
-        static String[] matching = {"good", "fool", "fooooood"};
-        static String[] nonMatching = {"evil", "genius", "hungry"};
+        static final String[] MATCHING = {"good", "fool", "fooooood"};
+        static final String[] NON_MATCHING = {"evil", "genius", "hungry"};
 
-        public CONTAINS( boolean withIndex )
+        CONTAINS( boolean withIndex )
         {
-            super( "oo", matching, nonMatching, StringSearchMode.CONTAINS, withIndex );
+            super( "oo", MATCHING, NON_MATCHING, StringSearchMode.CONTAINS, withIndex );
         }
     }
 
@@ -303,7 +303,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         return expected;
     }
 
-    private void collectNodes( MutableLongSet bucket, ResourceIterator<Node> toCollect )
+    private static void collectNodes( MutableLongSet bucket, ResourceIterator<Node> toCollect )
     {
         while ( toCollect.hasNext() )
         {
@@ -311,7 +311,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         }
     }
 
-    private Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )
+    private static Node createNode( GraphDatabaseService beansAPI, Map<String,Object> properties, Label... labels )
     {
         try ( Transaction tx = beansAPI.beginTx() )
         {

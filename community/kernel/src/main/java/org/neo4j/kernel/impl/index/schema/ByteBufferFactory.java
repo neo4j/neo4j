@@ -117,7 +117,7 @@ public class ByteBufferFactory implements AutoCloseable
         void close();
     }
 
-    static Allocator HEAP_ALLOCATOR = new Allocator()
+    static final Allocator HEAP_ALLOCATOR = new Allocator()
     {
         @Override
         public ByteBuffer allocate( int bufferSize )

@@ -60,7 +60,7 @@ public final class SettingValueParsers
     public static final String LIST_SEPARATOR = ",";
 
     // Pre defined parses
-    public static SettingValueParser<String> STRING = new SettingValueParser<>()
+    public static final SettingValueParser<String> STRING = new SettingValueParser<>()
     {
         @Override
         public String parse( String value )
@@ -81,7 +81,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<SecureString> SECURE_STRING = new SettingValueParser<>()
+    public static final SettingValueParser<SecureString> SECURE_STRING = new SettingValueParser<>()
     {
         @Override
         public SecureString parse( String value )
@@ -102,7 +102,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<Integer> INT = new SettingValueParser<>()
+    public static final SettingValueParser<Integer> INT = new SettingValueParser<>()
     {
         @Override
         public Integer parse( String value )
@@ -130,7 +130,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<Long> LONG = new SettingValueParser<>()
+    public static final SettingValueParser<Long> LONG = new SettingValueParser<>()
     {
         @Override
         public Long parse( String value )
@@ -158,7 +158,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<Boolean> BOOL = new SettingValueParser<>()
+    public static final SettingValueParser<Boolean> BOOL = new SettingValueParser<>()
     {
         @Override
         public Boolean parse( String value )
@@ -190,7 +190,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<Double> DOUBLE = new SettingValueParser<>()
+    public static final SettingValueParser<Double> DOUBLE = new SettingValueParser<>()
     {
         @Override
         public Double parse( String value )
@@ -236,7 +236,7 @@ public final class SettingValueParsers
             public Class<List<T>> getType()
             {
                 //noinspection unchecked
-                return (Class<List<T>>) (Class) List.class;
+                return (Class<List<T>>) (Class<?>) List.class;
             }
 
             @Override
@@ -314,7 +314,7 @@ public final class SettingValueParsers
         };
     }
 
-    public static SettingValueParser<HostnamePort> HOSTNAME_PORT = new SettingValueParser<>()
+    public static final SettingValueParser<HostnamePort> HOSTNAME_PORT = new SettingValueParser<>()
     {
         @Override
         public HostnamePort parse( String value )
@@ -335,7 +335,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<Duration> DURATION = new SettingValueParser<>()
+    public static final SettingValueParser<Duration> DURATION = new SettingValueParser<>()
     {
         @Override
         public Duration parse( String value )
@@ -362,7 +362,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<ZoneId> TIMEZONE = new SettingValueParser<>()
+    public static final SettingValueParser<ZoneId> TIMEZONE = new SettingValueParser<>()
     {
 
         @Override
@@ -391,7 +391,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<SocketAddress> SOCKET_ADDRESS = new SettingValueParser<>()
+    public static final SettingValueParser<SocketAddress> SOCKET_ADDRESS = new SettingValueParser<>()
     {
         @Override
         public SocketAddress parse( String value )
@@ -453,7 +453,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<Long> BYTES = new SettingValueParser<>()
+    public static final SettingValueParser<Long> BYTES = new SettingValueParser<>()
     {
         private static final String VALID_MULTIPLIERS = "`k`, `m`, `g`, `K`, `M`, `G`";
         @Override
@@ -494,7 +494,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<URI> URI = new SettingValueParser<>()
+    public static final SettingValueParser<URI> URI = new SettingValueParser<>()
     {
         @Override
         public URI parse( String value )
@@ -522,7 +522,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<URI> NORMALIZED_RELATIVE_URI = new SettingValueParser<>()
+    public static final SettingValueParser<URI> NORMALIZED_RELATIVE_URI = new SettingValueParser<>()
     {
         @Override
         public URI parse( String value )
@@ -556,7 +556,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<Path> PATH = new SettingValueParser<>()
+    public static final SettingValueParser<Path> PATH = new SettingValueParser<>()
     {
         @Override
         public Path parse( String value )
@@ -613,7 +613,7 @@ public final class SettingValueParsers
         }
     };
 
-    public static SettingValueParser<String> DATABASENAME = new SettingValueParser<>()
+    public static final SettingValueParser<String> DATABASENAME = new SettingValueParser<>()
     {
         @Override
         public String parse( String name )

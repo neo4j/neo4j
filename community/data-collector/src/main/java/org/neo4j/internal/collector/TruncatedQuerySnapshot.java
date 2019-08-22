@@ -97,9 +97,9 @@ class TruncatedQuerySnapshot
         return VirtualValues.map( keys, values );
     }
 
-    private static ValueTruncater VALUE_TRUNCATER = new ValueTruncater();
-    private static int MAX_TEXT_PARAMETER_LENGTH = 100;
-    private static int MAX_PARAMETER_KEY_LENGTH = 1000;
+    private static final ValueTruncater VALUE_TRUNCATER = new ValueTruncater();
+    private static final int MAX_TEXT_PARAMETER_LENGTH = 100;
+    private static final int MAX_PARAMETER_KEY_LENGTH = 1000;
 
     static class ValueTruncater implements ValueMapper<AnyValue>
     {

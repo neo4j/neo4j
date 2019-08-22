@@ -49,8 +49,8 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 
 class FusionIndexTestHelp
 {
-    private static LabelSchemaDescriptor indexKey = SchemaDescriptor.forLabel( 0, 0 );
-    private static LabelSchemaDescriptor compositeIndexKey = SchemaDescriptor.forLabel( 0, 0, 1 );
+    private static final LabelSchemaDescriptor INDEX_KEY = SchemaDescriptor.forLabel( 0, 0 );
+    private static final LabelSchemaDescriptor COMPOSITE_INDEX_KEY = SchemaDescriptor.forLabel( 0, 0, 1 );
 
     private static final Value[] stringValues = new Value[]
             {
@@ -135,9 +135,9 @@ class FusionIndexTestHelp
         switch ( value.length )
         {
         case 1:
-            return IndexEntryUpdate.add( 0, indexKey, value );
+            return IndexEntryUpdate.add( 0, INDEX_KEY, value );
         case 2:
-            return IndexEntryUpdate.add( 0, compositeIndexKey, value );
+            return IndexEntryUpdate.add( 0, COMPOSITE_INDEX_KEY, value );
         default:
             return null;
         }
@@ -148,9 +148,9 @@ class FusionIndexTestHelp
         switch ( value.length )
         {
         case 1:
-            return IndexEntryUpdate.remove( 0, indexKey, value );
+            return IndexEntryUpdate.remove( 0, INDEX_KEY, value );
         case 2:
-            return IndexEntryUpdate.remove( 0, compositeIndexKey, value );
+            return IndexEntryUpdate.remove( 0, COMPOSITE_INDEX_KEY, value );
         default:
             return null;
         }
@@ -158,12 +158,12 @@ class FusionIndexTestHelp
 
     static IndexEntryUpdate<LabelSchemaDescriptor> change( Value[] before, Value[] after )
     {
-        return IndexEntryUpdate.change( 0, compositeIndexKey, before, after );
+        return IndexEntryUpdate.change( 0, COMPOSITE_INDEX_KEY, before, after );
     }
 
     static IndexEntryUpdate<LabelSchemaDescriptor> change( Value before, Value after )
     {
-        return IndexEntryUpdate.change( 0, indexKey, before, after );
+        return IndexEntryUpdate.change( 0, INDEX_KEY, before, after );
     }
 
     static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable, AutoCloseable... successfulCloseables )

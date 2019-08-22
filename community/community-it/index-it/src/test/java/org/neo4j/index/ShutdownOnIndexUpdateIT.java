@@ -49,7 +49,7 @@ class ShutdownOnIndexUpdateIT
 
     private static final String UNIQUE_PROPERTY_NAME = "uniquePropertyName";
     private static final AtomicLong indexProvider = new AtomicLong();
-    private static Label constraintIndexLabel = Label.label( "ConstraintIndexLabel" );
+    private static final Label CONSTRAINT_INDEX_LABEL = Label.label( "ConstraintIndexLabel" );
 
     @Test
     void shutdownWhileFinishingTransactionWithIndexUpdates()
@@ -59,7 +59,7 @@ class ShutdownOnIndexUpdateIT
 
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node = db.createNode( constraintIndexLabel );
+            Node node = db.createNode( CONSTRAINT_INDEX_LABEL );
             node.setProperty( UNIQUE_PROPERTY_NAME, indexProvider.getAndIncrement() );
 
             DependencyResolver dependencyResolver = db.getDependencyResolver();
@@ -73,7 +73,7 @@ class ShutdownOnIndexUpdateIT
         }
     }
 
-    private void waitIndexesOnline( GraphDatabaseService database )
+    private static void waitIndexesOnline( GraphDatabaseService database )
     {
         try ( Transaction ignored = database.beginTx() )
         {
@@ -81,12 +81,12 @@ class ShutdownOnIndexUpdateIT
         }
     }
 
-    private void createConstraint( GraphDatabaseService database )
+    private static void createConstraint( GraphDatabaseService database )
     {
         try ( Transaction transaction = database.beginTx() )
         {
             Schema schema = database.schema();
-            schema.constraintFor( constraintIndexLabel ).assertPropertyIsUnique( UNIQUE_PROPERTY_NAME ).create();
+            schema.constraintFor( CONSTRAINT_INDEX_LABEL ).assertPropertyIsUnique( UNIQUE_PROPERTY_NAME ).create();
             transaction.commit();
         }
     }

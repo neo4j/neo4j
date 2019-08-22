@@ -38,13 +38,8 @@ import static org.junit.Assert.fail;
 
 public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
 {
-    public static final String CUSTOM_SWAPPER = "CustomSwapper";
-    private static Semaphore semaphore;
-
-    static
-    {
-        semaphore = new Semaphore( 0 );
-    }
+    private static final String CUSTOM_SWAPPER = "CustomSwapper";
+    private static final Semaphore SEMAPHORE = new Semaphore( 0 );
 
     /**
      * This test makes sure that the database is able to start after having been stopped during initialization.
@@ -53,15 +48,12 @@ public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
      * In order to make sure that this thread does not call stop before the startup procedure has started we use a
      * custom implementation of a PageSwapperFactory, which communicates with the thread that calls stop. We do this
      * via a static semaphore.
-     * @throws IOException
-     * @throws InterruptedException
      */
-
     @Test
     public void shouldBeAbleToRestartWhenStoppedDuringStartup() throws IOException, InterruptedException
     {
         // Make sure that the semaphore is in a clean state.
-        semaphore.drainPermits();
+        SEMAPHORE.drainPermits();
         // Get a server that uses our custom swapper.
         NeoServer server = getNeoServer( CUSTOM_SWAPPER );
 
@@ -89,14 +81,14 @@ public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
 
     protected abstract NeoServer getNeoServer( String customPageSwapperName ) throws IOException;
 
-    private Runnable stopServerAfterStartingHasStarted( NeoServer server, AtomicBoolean failure )
+    private static Runnable stopServerAfterStartingHasStarted( NeoServer server, AtomicBoolean failure )
     {
         return () ->
         {
             try
             {
                 // Make sure that we have started the startup procedure before calling stop.
-                semaphore.acquire();
+                SEMAPHORE.acquire();
                 server.stop();
             }
             catch ( Exception e )
@@ -121,7 +113,7 @@ public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
                 boolean createIfNotExist, boolean noChannelStriping ) throws IOException
         {
             // This will be called early in the startup sequence. Notifies that we can call stop on the server.
-            semaphore.release();
+            SEMAPHORE.release();
             return super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, noChannelStriping );
         }
     }

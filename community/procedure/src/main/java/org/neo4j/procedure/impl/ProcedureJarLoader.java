@@ -229,7 +229,7 @@ class ProcedureJarLoader
             aggregationFunctions.addAll( callableFunctions );
         }
 
-        private static Callables EMPTY = new Callables();
+        private static final Callables EMPTY = new Callables();
 
         public static Callables empty()
         {

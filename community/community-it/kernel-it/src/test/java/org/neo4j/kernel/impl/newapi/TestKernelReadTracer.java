@@ -47,7 +47,7 @@ public class TestKernelReadTracer implements KernelReadTracer
     @Override
     public void onAllNodesScan()
     {
-        traceEvents.add( OnAllNodesScan );
+        traceEvents.add( ON_ALL_NODES_SCAN );
     }
 
     @Override
@@ -152,7 +152,7 @@ public class TestKernelReadTracer implements KernelReadTracer
         }
     }
 
-    static TraceEvent OnAllNodesScan = new TraceEvent( TraceEventKind.AllNodesScan );
+    static final TraceEvent ON_ALL_NODES_SCAN = new TraceEvent( TraceEventKind.AllNodesScan );
 
     static TraceEvent OnNode( long nodeReference )
     {

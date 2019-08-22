@@ -36,7 +36,7 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public abstract class FusionIndexBase<T>
 {
-    static Function<Value,ValueCategory> CATEGORY_OF = value -> value.valueGroup().category();
+    static final Function<Value,ValueCategory> CATEGORY_OF = value -> value.valueGroup().category();
 
     final SlotSelector slotSelector;
     final InstanceSelector<T> instanceSelector;

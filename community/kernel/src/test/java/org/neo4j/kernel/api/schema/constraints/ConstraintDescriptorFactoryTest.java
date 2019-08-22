@@ -28,8 +28,8 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertEquality;
-import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 
 class ConstraintDescriptorFactoryTest
 {
@@ -110,11 +110,11 @@ class ConstraintDescriptorFactoryTest
     @Test
     void shouldGiveNiceUserDescriptions()
     {
-        assertThat( ConstraintDescriptorFactory.existsForLabel( 1, 2 ).userDescription( simpleNameLookup ),
+        assertThat( ConstraintDescriptorFactory.existsForLabel( 1, 2 ).userDescription( SIMPLE_NAME_LOOKUP ),
                 equalTo( "Constraint( EXISTS, :Label1(property2) )" ) );
-        assertThat( ConstraintDescriptorFactory.existsForRelType( 1, 3 ).userDescription( simpleNameLookup ),
+        assertThat( ConstraintDescriptorFactory.existsForRelType( 1, 3 ).userDescription( SIMPLE_NAME_LOOKUP ),
                 equalTo( "Constraint( EXISTS, -[:RelType1(property3)]- )" ) );
-        assertThat( ConstraintDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( simpleNameLookup ),
+        assertThat( ConstraintDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( SIMPLE_NAME_LOOKUP ),
                 equalTo( "Constraint( UNIQUE, :Label2(property4) )" ) );
     }
 }

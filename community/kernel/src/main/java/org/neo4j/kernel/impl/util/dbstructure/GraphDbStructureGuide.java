@@ -51,7 +51,7 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 
 public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 {
-    private static RelationshipType WILDCARD_REL_TYPE = () -> "";
+    private static final RelationshipType WILDCARD_REL_TYPE = () -> "";
 
     private final GraphDatabaseAPI db;
     private final ThreadToStatementContextBridge bridge;

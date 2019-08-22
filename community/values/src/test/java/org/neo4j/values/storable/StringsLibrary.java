@@ -22,9 +22,9 @@ package org.neo4j.values.storable;
 /**
  * Contains a collection of strings that needs to be supported throughout the product.
  */
-public class StringsLibrary
+class StringsLibrary
 {
-    public static String[] STRINGS = {
+    static final String[] STRINGS = {
             "",
             "1337",
             " ",

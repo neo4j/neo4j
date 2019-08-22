@@ -21,12 +21,12 @@ package org.neo4j.gis.spatial.index.curves;
 
 public class PartialOverlapConfiguration extends StandardConfiguration
 {
-    private static double TOP_THRESHOLD = 0.99;
-    private static double BOTTOM_THRESHOLD = 0.5;
+    private static final double TOP_THRESHOLD = 0.99;
+    private static final double BOTTOM_THRESHOLD = 0.5;
     private double topThreshold;
     private double bottomThreshold;
 
-    public PartialOverlapConfiguration()
+    PartialOverlapConfiguration()
     {
         this( StandardConfiguration.DEFAULT_EXTRA_LEVELS, TOP_THRESHOLD, BOTTOM_THRESHOLD );
     }

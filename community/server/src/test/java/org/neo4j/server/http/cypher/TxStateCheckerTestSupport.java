@@ -32,11 +32,11 @@ import static org.mockito.Mockito.when;
 public class TxStateCheckerTestSupport
 {
     public static final TransitionalPeriodTransactionMessContainer CONTAINER = mock( TransitionalPeriodTransactionMessContainer.class );
-    private static FakeBridge fakeBridge = new FakeBridge();
+    private static final FakeBridge FAKE_BRIDGE = new FakeBridge();
 
     static
     {
-        when( CONTAINER.getBridge() ).thenReturn( fakeBridge );
+        when( CONTAINER.getBridge() ).thenReturn( FAKE_BRIDGE );
         GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
         when( CONTAINER.getDb() ).thenReturn( facade );
         when( facade.databaseId() ).thenReturn( TestDatabaseIdRepository.randomDatabaseId() );

@@ -33,12 +33,12 @@ public enum BoltResponseMessage
     IGNORED( 0x7E ),
     FAILURE( 0x7F );
 
-    private static BoltResponseMessage[] valuesBySignature =  new BoltResponseMessage[0x80];
+    private static final BoltResponseMessage[] VALUES_BY_SIGNATURE =  new BoltResponseMessage[0x80];
     static
     {
         for ( BoltResponseMessage value : values() )
         {
-            valuesBySignature[value.signature()] = value;
+            VALUES_BY_SIGNATURE[value.signature()] = value;
         }
     }
 
@@ -51,7 +51,7 @@ public enum BoltResponseMessage
      */
     public static BoltResponseMessage withSignature( int signature )
     {
-        BoltResponseMessage message = valuesBySignature[signature];
+        BoltResponseMessage message = VALUES_BY_SIGNATURE[signature];
         if ( message == null )
         {
             throw new IllegalArgumentException( format( "No message with signature %d", signature ) );

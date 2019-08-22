@@ -37,10 +37,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
-    private static List<Long> NODE_IDS = new ArrayList<>();
-    private static int N_NODES = 10000;
+    private static final List<Long> NODE_IDS = new ArrayList<>();
+    private static final int N_NODES = 10000;
 
-    private static Random random = new Random( 2 );
+    private static final Random RANDOM = new Random();
 
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
@@ -51,7 +51,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
             for ( int i = 0; i < N_NODES; i++ )
             {
                 Node node = graphDb.createNode();
-                if ( random.nextBoolean() )
+                if ( RANDOM.nextBoolean() )
                 {
                     NODE_IDS.add( node.getId() );
                 }

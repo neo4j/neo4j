@@ -232,7 +232,7 @@ public enum PropertyType
     public static final int BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING = -1;
 
     // TODO In wait of a better place
-    private static int payloadSize = PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE;
+    private static final int PAYLOAD_SIZE = PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE;
 
     private final int type;
 
@@ -323,13 +323,13 @@ public enum PropertyType
     // TODO In wait of a better place
     public static int getPayloadSize()
     {
-        return payloadSize;
+        return PAYLOAD_SIZE;
     }
 
     // TODO In wait of a better place
     public static int getPayloadSizeLongs()
     {
-        return payloadSize >>> 3;
+        return PAYLOAD_SIZE >>> 3;
     }
 
     public int calculateNumberOfBlocksUsed( long firstBlock )

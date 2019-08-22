@@ -465,14 +465,14 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
     public static class ProxyFactory<T>
     {
-        private static Map<Class<?>,ProxyFactory<?>> instances = new HashMap<>();
+        private static final Map<Class<?>,ProxyFactory<?>> INSTANCES = new HashMap<>();
         private Constructor<? extends T> constructor;
         private final Class<T> type;
 
         @SuppressWarnings( "unchecked" )
         static <T> ProxyFactory<T> get( Class<T> cls )
         {
-            return (ProxyFactory<T>) instances.get( cls );
+            return (ProxyFactory<T>) INSTANCES.get( cls );
         }
 
         @SuppressWarnings( "unchecked" )
@@ -484,7 +484,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                 this.constructor = (Constructor<? extends T>) Proxy
                         .getProxyClass( ConsistencyReporter.class.getClassLoader(), type )
                         .getConstructor( InvocationHandler.class );
-                instances.put( type, this );
+                INSTANCES.put( type, this );
             }
             catch ( NoSuchMethodException e )
             {

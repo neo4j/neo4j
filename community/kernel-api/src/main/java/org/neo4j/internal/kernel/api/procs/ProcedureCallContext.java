@@ -56,5 +56,5 @@ public class ProcedureCallContext
     }
 
     /* Can be used for testing purposes */
-    public static ProcedureCallContext EMPTY = new ProcedureCallContext( new String[]{}, false );
+    public static final ProcedureCallContext EMPTY = new ProcedureCallContext( new String[]{}, false );
 }

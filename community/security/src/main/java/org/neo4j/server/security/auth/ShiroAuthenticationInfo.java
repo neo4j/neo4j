@@ -97,7 +97,7 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
         }
     }
 
-    private static AuthenticationResult[][] mergeMatrix = {
+    private static final AuthenticationResult[][] MERGE_MATRIX = {
         /* v result | new res >   SUCCESS,                  FAILURE,                  TOO_MANY_ATTEMPTS,        PASSWORD_CHANGE_REQUIRED */
         /* SUCCESS           */ { SUCCESS,                  SUCCESS,                  SUCCESS          ,        PASSWORD_CHANGE_REQUIRED },
         /* FAILURE           */ { SUCCESS,                  FAILURE,                  TOO_MANY_ATTEMPTS,        PASSWORD_CHANGE_REQUIRED },
@@ -108,7 +108,6 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
     private static AuthenticationResult mergeAuthenticationResult(
             AuthenticationResult result, AuthenticationResult newResult )
     {
-        AuthenticationResult mergedResult = mergeMatrix[result.ordinal()][newResult.ordinal()];
-        return mergedResult;
+        return MERGE_MATRIX[result.ordinal()][newResult.ordinal()];
     }
 }

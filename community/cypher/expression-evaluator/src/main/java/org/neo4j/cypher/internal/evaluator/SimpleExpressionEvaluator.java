@@ -70,7 +70,7 @@ class SimpleExpressionEvaluator implements ExpressionEvaluator
         }
     }
 
-    private static ValueMapper<Object> MAPPER = new ValueMapper.JavaMapper()
+    private static final ValueMapper<Object> MAPPER = new ValueMapper.JavaMapper()
     {
         @Override
         public Object mapPath( PathValue value )

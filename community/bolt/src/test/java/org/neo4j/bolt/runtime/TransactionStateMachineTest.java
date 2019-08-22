@@ -78,8 +78,8 @@ class TransactionStateMachineTest
     private TransactionStateMachineSPI stateMachineSPI;
     private MutableTransactionState mutableState;
     private TransactionStateMachine stateMachine;
-    private static EmptyResultConsumer EMPTY = new EmptyResultConsumer();
-    private static EmptyResultConsumer ERROR = new EmptyResultConsumer()
+    private static final EmptyResultConsumer EMPTY = new EmptyResultConsumer();
+    private static final EmptyResultConsumer ERROR = new EmptyResultConsumer()
     {
         @Override
         public void consume( BoltResult boltResult )

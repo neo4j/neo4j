@@ -19,18 +19,21 @@
  */
 package org.neo4j.cypher.internal;
 
+@SuppressWarnings( "AssertWithSideEffects" )
 public class Assertion
 {
-    private static boolean assertionEnabled;
+    private static final boolean ASSERTION_ENABLED;
 
     static
     {
-        assert assertionEnabled = true;
+        boolean ae = false;
+        assert ae = true;
+        ASSERTION_ENABLED = ae;
     }
 
     public static boolean assertionsEnabled()
     {
-        return assertionEnabled;
+        return ASSERTION_ENABLED;
     }
 
     private Assertion()

@@ -66,7 +66,7 @@ import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 @ResourceLock( InternalTreeLogicTestBase.INDEX_RESOURCE )
 abstract class InternalTreeLogicTestBase<KEY, VALUE>
 {
-    public static final String INDEX_RESOURCE = "index";
+    static final String INDEX_RESOURCE = "index";
     private static final int PAGE_SIZE = 256;
     private static long stableGeneration = GenerationSafePointer.MIN_GENERATION;
     private static long unstableGeneration = stableGeneration + 1;
@@ -102,7 +102,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     private int numberOfRootSuccessors;
 
     @BeforeEach
-    protected void setUp() throws IOException
+    void setUp() throws IOException
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         readCursor = cursor.duplicate();

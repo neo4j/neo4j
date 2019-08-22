@@ -95,7 +95,7 @@ public enum TestStringCharset
                     return new String( chars );
                 }
             };
-    static char[] SYMBOL_CHARS = new char[26 + 26 + 10 + 1];
+    static final char[] SYMBOL_CHARS = new char[26 + 26 + 10 + 1];
 
     static
     {

@@ -29,7 +29,7 @@ public class DatabaseNameValidator
     public static final String DESCRIPTION = "Containing only alphabetic characters, numbers, dots and dashes, " +
                                              "with a length between 3 and 63 characters. " +
                                              "It should be starting with an alphabetic character but not with the name 'system'.";
-    private static Pattern databaseNamePattern = Pattern.compile( "^[a-z0-9-.]+$" );
+    private static final Pattern DATABASE_NAME_PATTERN = Pattern.compile( "^[a-z0-9-.]+$" );
 
     public static void assertValidDatabaseName( NormalizedDatabaseName normalizedName )
     {
@@ -52,7 +52,7 @@ public class DatabaseNameValidator
             throw new IllegalArgumentException( "Database name '" + name + "' is not starting with an ASCII alphabetic character." );
         }
 
-        if ( !databaseNamePattern.matcher( name ).matches() )
+        if ( !DATABASE_NAME_PATTERN.matcher( name ).matches() )
         {
             throw new IllegalArgumentException(
                     "Database name '" + name + "' contains illegal characters. Use simple ascii characters, numbers, dots and dashes." );

@@ -212,7 +212,7 @@ public class CypherOrderability
     // NOTE: nulls are handled at the top of the public compare() method
     // so the type-specific comparators should not check arguments for null
 
-    private static Comparator<Object> FALLBACK_COMPARATOR = ( lhs, rhs ) ->
+    private static final Comparator<Object> FALLBACK_COMPARATOR = ( lhs, rhs ) ->
     {
         if ( lhs.getClass().isAssignableFrom( rhs.getClass() ) &&
              lhs instanceof Comparable &&
@@ -224,9 +224,9 @@ public class CypherOrderability
         throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
     };
 
-    private static Comparator<Object> VOID_COMPARATOR = ( lhs, rhs ) -> 0;
+    private static final Comparator<Object> VOID_COMPARATOR = ( lhs, rhs ) -> 0;
 
-    private static Comparator<Number> NUMBER_COMPARATOR = ( lhs, rhs ) ->
+    private static final Comparator<Number> NUMBER_COMPARATOR = ( lhs, rhs ) ->
     {
         // If floats, compare float values. If integer types, compare long values
         if ( lhs instanceof Double && rhs instanceof Float )
@@ -259,7 +259,7 @@ public class CypherOrderability
         return Long.compare( lhs.longValue(), rhs.longValue() );
     };
 
-    private static Comparator<Object> STRING_COMPARATOR = ( lhs, rhs ) ->
+    private static final Comparator<Object> STRING_COMPARATOR = ( lhs, rhs ) ->
     {
         if ( lhs instanceof Character && rhs instanceof String )
         {
@@ -275,15 +275,15 @@ public class CypherOrderability
         }
     };
 
-    private static Comparator<Boolean> BOOLEAN_COMPARATOR = Boolean::compareTo;
+    private static final Comparator<Boolean> BOOLEAN_COMPARATOR = Boolean::compareTo;
 
-    private static Comparator<VirtualNodeValue> NODE_COMPARATOR = Comparator.comparingLong( VirtualNodeValue::id );
+    private static final Comparator<VirtualNodeValue> NODE_COMPARATOR = Comparator.comparingLong( VirtualNodeValue::id );
 
-    private static Comparator<VirtualRelationshipValue> RELATIONSHIP_COMPARATOR =
+    private static final Comparator<VirtualRelationshipValue> RELATIONSHIP_COMPARATOR =
             Comparator.comparingLong( VirtualRelationshipValue::id );
 
     // TODO test
-    private static Comparator<Path> PATH_COMPARATOR = ( lhs, rhs ) ->
+    private static final Comparator<Path> PATH_COMPARATOR = ( lhs, rhs ) ->
     {
         Iterator<PropertyContainer> lhsIter = lhs.iterator();
         Iterator<PropertyContainer> rhsIter = rhs.iterator();
@@ -300,7 +300,7 @@ public class CypherOrderability
                                                          : 0;
     };
 
-    private static Comparator<Object> LIST_COMPARATOR = new Comparator<Object>()
+    private static final Comparator<Object> LIST_COMPARATOR = new Comparator<Object>()
     {
         @Override
         public int compare( Object lhs, Object rhs )

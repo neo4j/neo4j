@@ -688,19 +688,19 @@ public class BoltConnectionIT
         return response.records();
     }
 
-    private MapValue map( Object... keyValues )
+    private static MapValue map( Object... keyValues )
     {
         return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
-    private static String[] IRIS_CLASS_NAMES =
+    private static final String[] IRIS_CLASS_NAMES =
             new String[] {
                     "Iris-setosa",
                     "Iris-versicolor",
                     "Iris-virginica"
             };
 
-    private static String IRIS_DATA =
+    private static final String IRIS_DATA =
             "sepal_length,sepal_width,petal_length,petal_width,class_name\n" +
                     "5.1,3.5,1.4,0.2,Iris-setosa\n" +
                     "4.9,3.0,1.4,0.2,Iris-setosa\n" +

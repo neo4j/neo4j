@@ -77,7 +77,7 @@ public class IndexingCompositeQueryAcceptanceTest
     @Parameterized.Parameter( 4 )
     public boolean withIndex;
 
-    private static Label LABEL = Label.label( "LABEL1" );
+    private static final Label LABEL = Label.label( "LABEL1" );
     private GraphDatabaseService db;
 
     @Before
@@ -306,7 +306,7 @@ public class IndexingCompositeQueryAcceptanceTest
         ResourceIterator<Node> findNodes( String[] keys, Object[] values, GraphDatabaseService db );
     }
 
-    private static IndexSeek biIndexSeek =
+    private static final IndexSeek biIndexSeek =
             ( keys, values, db ) ->
             {
                 assert keys.length == 2;
@@ -314,7 +314,7 @@ public class IndexingCompositeQueryAcceptanceTest
                 return db.findNodes( LABEL, keys[0], values[0], keys[1], values[1] );
             };
 
-    private static IndexSeek triIndexSeek =
+    private static final IndexSeek triIndexSeek =
             ( keys, values, db ) ->
             {
                 assert keys.length == 3;
@@ -322,6 +322,6 @@ public class IndexingCompositeQueryAcceptanceTest
                 return db.findNodes( LABEL, keys[0], values[0], keys[1], values[1], keys[2], values[2] );
             };
 
-    private static IndexSeek mapIndexSeek =
+    private static final IndexSeek mapIndexSeek =
             ( keys, values, db ) -> db.findNodes( LABEL, propertyMap( keys, values ) );
 }

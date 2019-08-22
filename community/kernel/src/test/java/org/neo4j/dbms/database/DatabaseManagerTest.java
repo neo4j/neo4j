@@ -37,9 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatabaseManagerTest
 {
-    private static String KNOWN_DATABASE_NAME = "known";
-    private static String UNKNOWN_DATABASE_NAME = "unknown";
-    private static DatabaseId DATABASE_ID = TestDatabaseIdRepository.randomDatabaseId();
+    private static final String KNOWN_DATABASE_NAME = "known";
+    private static final String UNKNOWN_DATABASE_NAME = "unknown";
+    private static final DatabaseId DATABASE_ID = TestDatabaseIdRepository.randomDatabaseId();
 
     private DatabaseManager<?> databaseManager = new TestDatabaseManager();
 

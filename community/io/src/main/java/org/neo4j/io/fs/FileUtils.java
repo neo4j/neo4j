@@ -88,16 +88,18 @@ public class FileUtils
     private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( FileUtils.class, "printReflectionExceptions", false );
     private static final int NUMBER_OF_RETRIES = 5;
 
-    private static Field CHANNEL_FILE_DESCRIPTOR;
-    private static Field FILE_DESCRIPTOR_FIELD;
+    private static final Field CHANNEL_FILE_DESCRIPTOR;
+    private static final Field FILE_DESCRIPTOR_FIELD;
 
     static
     {
+        Field channelFileDescriptor = null;
+        Field fileDescriptorField = null;
         try
         {
             Class<?> fileChannelClass = Class.forName( "sun.nio.ch.FileChannelImpl" );
-            CHANNEL_FILE_DESCRIPTOR = requireNonNull( getDeclaredField( fileChannelClass, "fd", true ) );
-            FILE_DESCRIPTOR_FIELD = getDeclaredField( FileDescriptor.class, "fd", true );
+            channelFileDescriptor = requireNonNull( getDeclaredField( fileChannelClass, "fd", true ) );
+            fileDescriptorField = getDeclaredField( FileDescriptor.class, "fd", true );
         }
         catch ( Exception e )
         {
@@ -105,7 +107,10 @@ public class FileUtils
             {
                 e.printStackTrace();
             }
+
         }
+        CHANNEL_FILE_DESCRIPTOR = channelFileDescriptor;
+        FILE_DESCRIPTOR_FIELD = fileDescriptorField;
     }
 
     private FileUtils()

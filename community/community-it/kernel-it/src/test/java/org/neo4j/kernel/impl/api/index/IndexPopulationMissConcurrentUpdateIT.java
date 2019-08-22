@@ -197,7 +197,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         private final Set<Long> entitiesByScan = new ConcurrentSkipListSet<>();
         private final Set<Long> entitiesByUpdater = new ConcurrentSkipListSet<>();
         private volatile long populationAtId;
-        static IndexProviderDescriptor INDEX_PROVIDER = new IndexProviderDescriptor( "controlled", "1" );
+        static final IndexProviderDescriptor INDEX_PROVIDER = new IndexProviderDescriptor( "controlled", "1" );
 
         ControlledSchemaIndexProvider()
         {

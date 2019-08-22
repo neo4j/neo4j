@@ -148,7 +148,7 @@ public class DataFactories
      */
     public static Header.Factory defaultFormatNodeFileHeader( boolean normalizeTypes )
     {
-        return defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes );
+        return defaultFormatNodeFileHeader( DEFAULT_TIME_ZONE, normalizeTypes );
     }
 
     /**
@@ -179,7 +179,7 @@ public class DataFactories
      */
     public static Header.Factory defaultFormatRelationshipFileHeader( boolean normalizeTypes )
     {
-        return defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes );
+        return defaultFormatRelationshipFileHeader( DEFAULT_TIME_ZONE, normalizeTypes );
     }
 
     /**
@@ -187,10 +187,10 @@ public class DataFactories
      */
     public static Header.Factory defaultFormatRelationshipFileHeader()
     {
-        return defaultFormatRelationshipFileHeader( defaultTimeZone, false );
+        return defaultFormatRelationshipFileHeader( DEFAULT_TIME_ZONE, false );
     }
 
-    private static Supplier<ZoneId> defaultTimeZone = () -> UTC;
+    private static final Supplier<ZoneId> DEFAULT_TIME_ZONE = () -> UTC;
 
     private abstract static class AbstractDefaultFileHeaderParser implements Header.Factory
     {
@@ -199,7 +199,7 @@ public class DataFactories
         private final Supplier<ZoneId> defaultTimeZone;
         private final boolean normalizeTypes;
 
-        protected AbstractDefaultFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean createGroups, boolean normalizeTypes, Type... mandatoryTypes )
+        AbstractDefaultFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean createGroups, boolean normalizeTypes, Type... mandatoryTypes )
         {
             this.defaultTimeZone = defaultTimeZone;
             this.createGroups = createGroups;
@@ -235,7 +235,7 @@ public class DataFactories
                         columns.add( entry( dataSeeker.sourceDescription(), i, spec.name, spec.type, group, extractors, idExtractor, monitor ) );
                     }
                 }
-                Entry[] entries = columns.toArray( new Header.Entry[columns.size()] );
+                Entry[] entries = columns.toArray( new Entry[0] );
                 validateHeader( entries );
                 return new Header( entries );
             }
@@ -285,7 +285,7 @@ public class DataFactories
             }
         }
 
-        protected boolean isRecognizedType( String typeSpec )
+        static boolean isRecognizedType( String typeSpec )
         {
             for ( Type type : Type.values() )
             {
@@ -373,7 +373,7 @@ public class DataFactories
 
     private static class DefaultNodeFileHeaderParser extends AbstractDefaultFileHeaderParser
     {
-        protected DefaultNodeFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
+        DefaultNodeFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
         {
             super( defaultTimeZone, true, normalizeTypes );
         }
@@ -434,7 +434,7 @@ public class DataFactories
 
     private static class DefaultRelationshipFileHeaderParser extends AbstractDefaultFileHeaderParser
     {
-        protected DefaultRelationshipFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
+        DefaultRelationshipFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes )
         {
             // Don't have TYPE as mandatory since a decorator could provide that
             super( defaultTimeZone, false, normalizeTypes, Type.START_ID, Type.END_ID );
@@ -510,20 +510,19 @@ public class DataFactories
         }
     }
 
-    @SafeVarargs
     public static Iterable<DataFactory> datas( DataFactory... factories )
     {
         return Iterables.iterable( factories );
     }
 
-    private static Pattern typeSpecAndOptionalParameter = Pattern.compile( "(?<newTypeSpec>.+?)(?<optionalParameter>\\{.*\\})?$" );
+    private static final Pattern TYPE_SPEC_AND_OPTIONAL_PARAMETER = Pattern.compile( "(?<newTypeSpec>.+?)(?<optionalParameter>\\{.*})?$" );
 
-    public static Pair<String,String> splitTypeSpecAndOptionalParameter( String typeSpec )
+    private static Pair<String,String> splitTypeSpecAndOptionalParameter( String typeSpec )
     {
         String optionalParameter = null;
         String newTypeSpec = typeSpec;
 
-        Matcher matcher = typeSpecAndOptionalParameter.matcher( typeSpec );
+        Matcher matcher = TYPE_SPEC_AND_OPTIONAL_PARAMETER.matcher( typeSpec );
 
         if ( matcher.find() )
         {

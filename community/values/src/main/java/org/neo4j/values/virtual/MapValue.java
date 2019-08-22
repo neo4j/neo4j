@@ -46,7 +46,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class MapValue extends VirtualValue
 {
-    public static MapValue EMPTY = new MapValue()
+    public static final MapValue EMPTY = new MapValue()
     {
         @Override
         public Iterable<String> keySet()

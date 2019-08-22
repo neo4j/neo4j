@@ -62,16 +62,16 @@ public enum StructType
         return description;
     }
 
-    private static Map<Byte,StructType> knownTypesBySignature = knownTypesBySignature();
+    private static final Map<Byte,StructType> KNOWN_TYPES_BY_SIGNATURE = knownTypesBySignature();
 
     public static StructType valueOf( byte signature )
     {
-        return knownTypesBySignature.get( signature );
+        return KNOWN_TYPES_BY_SIGNATURE.get( signature );
     }
 
     public static StructType valueOf( char signature )
     {
-        return knownTypesBySignature.get( (byte)signature );
+        return KNOWN_TYPES_BY_SIGNATURE.get( (byte)signature );
     }
 
     private static Map<Byte,StructType> knownTypesBySignature()

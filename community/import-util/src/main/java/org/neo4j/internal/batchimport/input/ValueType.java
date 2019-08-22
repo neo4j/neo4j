@@ -58,7 +58,7 @@ public abstract class ValueType
 {
     private static final Map<Class<?>,ValueType> byClass = new HashMap<>();
     private static final Map<Byte,ValueType> byId = new HashMap<>();
-    private static ValueType stringType;
+    private static final ValueType stringType;
     private static byte next;
     static
     {

@@ -78,7 +78,7 @@ public class GenericIndexValidationIT
     public DbmsRule db = new EmbeddedDbmsRule().withSetting( default_schema_provider, NATIVE_BTREE10.providerName() );
 
     @ClassRule
-    public static RandomRule random = new RandomRule();
+    public static final RandomRule random = new RandomRule();
 
     /**
      * Key size validation test for single type.

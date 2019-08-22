@@ -46,7 +46,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
 {
     INSTANCE;
 
-    private static List<String> IMPORTS = Arrays.asList(
+    private static final List<String> IMPORTS = Arrays.asList(
             ConstraintDescriptorFactory.class.getCanonicalName(),
             UniquenessConstraintDescriptor.class.getCanonicalName(),
             RelExistenceConstraintDescriptor.class.getCanonicalName(),
@@ -192,7 +192,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         }
     }
 
-    private String asString( int[] propertyIds )
+    private static String asString( int[] propertyIds )
     {
         List<String> strings = Arrays.stream( propertyIds ).mapToObj( i -> "" + i ).collect( Collectors.toList() );
         return String.join( ", ", strings );

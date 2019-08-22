@@ -43,7 +43,7 @@ import org.neo4j.util.FeatureToggles;
  */
 public class DynamicIndexStoreView implements IndexStoreView
 {
-    private static boolean USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = FeatureToggles.flag(
+    private static final boolean USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = FeatureToggles.flag(
             DynamicIndexStoreView.class, "use.label.index", true );
 
     private final NeoStoreIndexStoreView neoStoreIndexStoreView;

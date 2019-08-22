@@ -211,7 +211,7 @@ class RelationshipTestSupport
     private static Map<String,List<StartRelationship>> buildSparseDenseRels( Node node )
     {
         Map<String,List<StartRelationship>> relationshipMap = new HashMap<>();
-        for ( Function<Node,StartRelationship> rel : sparseDenseRels )
+        for ( Function<Node,StartRelationship> rel : SPARSE_DENSE_RELS )
         {
             StartRelationship r = rel.apply( node );
             List<StartRelationship> relsOfType = relationshipMap.computeIfAbsent( computeKey( r ), key -> new ArrayList<>() );
@@ -249,7 +249,7 @@ class RelationshipTestSupport
         return type + "-" + direction;
     }
 
-    private static Function<Node,StartRelationship>[] sparseDenseRels = Iterators.array(
+    private static final Function<Node,StartRelationship>[] SPARSE_DENSE_RELS = Iterators.array(
             loop( "FOO" ), // loops are the hardest, let's have two to try to interfere with outgoing/incoming code
             outgoing( "FOO" ),
             outgoing( "BAR" ),

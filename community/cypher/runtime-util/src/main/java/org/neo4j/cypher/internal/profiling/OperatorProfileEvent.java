@@ -80,7 +80,7 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
         dbHit();
     }
 
-    public static OperatorProfileEvent NONE = new OperatorProfileEvent()
+    public static final OperatorProfileEvent NONE = new OperatorProfileEvent()
     {
         @Override
         public void dbHit()

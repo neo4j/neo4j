@@ -294,7 +294,7 @@ public class EntityUpdates
         final IntIterator propertiesWithNoValue = additionalPropertiesToLoad.intIterator();
         while ( propertiesWithNoValue.hasNext() )
         {
-            put( propertiesWithNoValue.next(), noValue );
+            put( propertiesWithNoValue.next(), NO_VALUE );
         }
     }
 
@@ -351,7 +351,7 @@ public class EntityUpdates
         boolean found = false;
         for ( int propertyId : propertyIds )
         {
-            PropertyValue propertyValue = knownProperties.getIfAbsent( propertyId, () -> noValue );
+            PropertyValue propertyValue = knownProperties.getIfAbsent( propertyId, () -> NO_VALUE );
             if ( !propertyValue.hasBefore() )
             {
                 if ( propertySchemaType == COMPLETE_ALL_TOKENS )
@@ -372,7 +372,7 @@ public class EntityUpdates
         boolean found = false;
         for ( int propertyId : propertyIds )
         {
-            PropertyValue propertyValue = knownProperties.getIfAbsent( propertyId, () -> noValue );
+            PropertyValue propertyValue = knownProperties.getIfAbsent( propertyId, () -> NO_VALUE );
             if ( !propertyValue.hasAfter() )
             {
                 if ( propertySchemaType == COMPLETE_ALL_TOKENS )
@@ -569,7 +569,7 @@ public class EntityUpdates
         }
     }
 
-    private static PropertyValue noValue = new PropertyValue( null, null, NoValue );
+    private static final PropertyValue NO_VALUE = new PropertyValue( null, null, NoValue );
 
     private static PropertyValue before( Value value )
     {
