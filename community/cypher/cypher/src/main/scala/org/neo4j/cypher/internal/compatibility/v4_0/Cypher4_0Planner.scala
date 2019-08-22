@@ -113,6 +113,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
 
     // If the query is not cached we want to do the full planning
     def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): CacheableLogicalPlan = {
+      var shouldCache = shouldBeCached
       val logicalPlanStateOld = planner.planPreparedQuery(preparedQuery, context)
       val hasLoadCsv = logicalPlanStateOld.logicalPlan.treeFind[LogicalPlan] {
         case _: LoadCSV => true
@@ -127,10 +128,14 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
       val reusabilityState = runtime match {
         case m: AdministrationCommandRuntime =>
           if (m.isApplicableAdministrationCommand(logicalPlanState)) {
+            shouldCache = false
             FineToReuse
           } else {
             logicalPlanState.maybeLogicalPlan match {
-              case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _))) if signature.systemProcedure => FineToReuse
+              case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _))) if signature.systemProcedure => {
+                shouldCache = false
+                FineToReuse
+              }
               case Some(_: ProcedureCall) => throw new DatabaseAdministrationException("Attempting invalid procedure call in administration runtime")
               case Some(plan: MultiDatabaseLogicalPlan) => throw plan.invalid("Unsupported administration command: " + logicalPlanState.queryText)
               case _ => throw new DatabaseAdministrationException("Attempting invalid administration command in administration runtime")
@@ -142,7 +147,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
           val fingerprintReference = new PlanFingerprintReference(fingerprint)
           MaybeReusable(fingerprintReference)
       }
-      CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldBeCached)
+      CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldCache)
     }
 
     val autoExtractParams = ValueConversion.asValues(preparedQuery.extractedParams()) // only extracted ones
