@@ -207,6 +207,39 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("a2").withRows(rowCount(10))
   }
 
+  test("should support chained limits in the same pipeline") {
+    // given
+    val nodesPerLabel = 100
+    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    // when
+    // This is a hypothetical query used to excersise some logic
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a1")
+      .limit(2)
+      .limit(3)
+      .limit(4)
+      .expandAll("(b1)<--(a1)")
+      .limit(5)
+      .limit(6)
+      .limit(7)
+      .expandAll("(x)-->(b1)")
+      .limit(8)
+      .limit(9)
+      .limit(10)
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("a1").withRows(rowCount(2))
+  }
+
+  // TODO: Bug (already tracked)
+  // If Limit filters out a cancelled argument row, but the task working on it is in the middle of working on that row (e.g. expanded half of the relationships),
+  // then re-pointing the current row to the next puts the task in an inconsistent state.
+  // In this example, the ExpandTask will still have the old cursor, but the input row points to a different node.
+  // When advancing to the next row, you will the lose results.
   ignore("should support limit with expand") {
     val nodes = nodeGraph(sizeHint)
     val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
