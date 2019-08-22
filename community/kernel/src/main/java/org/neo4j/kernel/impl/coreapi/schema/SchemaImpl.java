@@ -245,26 +245,16 @@ public class SchemaImpl implements Schema
     public ConstraintDefinition getConstraintByName( String constraintName )
     {
         Objects.requireNonNull( constraintName );
-        Iterator<ConstraintDefinition> constraints = getConstraints().iterator();
-        ConstraintDefinition constraint = null;
-        while ( constraints.hasNext() )
+        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            ConstraintDefinition candidate = constraints.next();
-            if ( candidate.getName().equals( constraintName ) )
+            ConstraintDescriptor constraint = transaction.schemaRead().constraintGetForName( constraintName );
+            if ( constraint == null )
             {
-                if ( constraint != null )
-                {
-                    throw new IllegalStateException( "Multiple constraints found by the name '" + constraintName + "'. " +
-                            "Try iterating Schema#getIndexes() and filter by name instead." );
-                }
-                constraint = candidate;
+                throw new IllegalArgumentException( "No constraint found with the name '" + constraintName + "'." );
             }
+            return asConstraintDefinition( constraint, transaction.tokenRead() );
         }
-        if ( constraint == null )
-        {
-            throw new IllegalArgumentException( "No constraint found with the name '" + constraintName + "'." );
-        }
-        return constraint;
     }
 
     @Override
