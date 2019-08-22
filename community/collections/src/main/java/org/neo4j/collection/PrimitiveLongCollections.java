@@ -147,14 +147,6 @@ public final class PrimitiveLongCollections
         return count;
     }
 
-    public static int countAndClose( PrimitiveLongResourceIterator iterator )
-    {
-        try ( iterator )
-        {
-            return count( iterator );
-        }
-    }
-
     public static long[] closingAsArray( PrimitiveLongResourceIterator iterator )
     {
         try ( iterator )
@@ -185,25 +177,10 @@ public final class PrimitiveLongCollections
 
     public static long[] asArray( Iterator<Long> iterator )
     {
-        long[] array = new long[8];
-        int i = 0;
-        for ( ; iterator.hasNext(); i++ )
-        {
-            if ( i >= array.length )
-            {
-                array = copyOf( array, i << 1 );
-            }
-            array[i] = iterator.next();
-        }
-
-        if ( i < array.length )
-        {
-            array = copyOf( array, i );
-        }
-        return array;
+        return asArray( toPrimitiveIterator( iterator ) );
     }
 
-    public static LongIterator toPrimitiveIterator( final Iterator<Long> iterator )
+    private static LongIterator toPrimitiveIterator( final Iterator<Long> iterator )
     {
         return new AbstractPrimitiveLongBaseIterator()
         {
@@ -450,7 +427,7 @@ public final class PrimitiveLongCollections
         private final Iterator<? extends LongIterator> iterators;
         private LongIterator currentIterator;
 
-        public PrimitiveLongConcatingIterator( Iterator<? extends LongIterator> iterators )
+        PrimitiveLongConcatingIterator( Iterator<? extends LongIterator> iterators )
         {
             this.iterators = iterators;
         }
@@ -470,11 +447,6 @@ public final class PrimitiveLongCollections
                 }
             }
             return (currentIterator != null && currentIterator.hasNext()) && next( currentIterator.next() );
-        }
-
-        protected final LongIterator currentIterator()
-        {
-            return currentIterator;
         }
     }
 

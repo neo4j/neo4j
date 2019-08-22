@@ -82,7 +82,7 @@ class NativeAllEntriesLabelScanReaderTest
     {
         List<Labels> labels = randomData();
 
-        shouldIterateCorrectlyOver( labels.toArray( new Labels[labels.size()] ) );
+        shouldIterateCorrectlyOver( labels.toArray( new Labels[0] ) );
     }
 
     private static void shouldIterateCorrectlyOver( Labels... data ) throws Exception

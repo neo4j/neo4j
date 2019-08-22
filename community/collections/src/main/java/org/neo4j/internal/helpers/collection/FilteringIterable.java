@@ -22,8 +22,6 @@ package org.neo4j.internal.helpers.collection;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
-import org.neo4j.function.Predicates;
-
 /**
  * An iterable which filters another iterable, only letting items with certain
  * criteria pass through. All iteration/filtering is done lazily.
@@ -45,10 +43,5 @@ public class FilteringIterable<T> implements Iterable<T>
     public Iterator<T> iterator()
     {
         return new FilteringIterator<>( source.iterator(), predicate );
-    }
-
-    public static <T> Iterable<T> notNull( Iterable<T> source )
-    {
-        return new FilteringIterable<>( source, Predicates.notNull() );
     }
 }

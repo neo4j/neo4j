@@ -40,7 +40,7 @@ import static org.apache.commons.lang3.ClassUtils.getAllSuperclasses;
 public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
 {
     private final DependencyResolver parent;
-    private final MutableSetMultimap<Class, Object> typeDependencies = Multimaps.mutable.set.empty();
+    private final MutableSetMultimap<Class<?>, Object> typeDependencies = Multimaps.mutable.set.empty();
 
     public Dependencies()
     {
@@ -56,7 +56,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
     @Override
     public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
     {
-        RichIterable options = typeDependencies.get( type );
+        RichIterable<Object> options = typeDependencies.get( type );
         if ( options.notEmpty() )
         {
             return selector.select( type, (Iterable<T>) options );

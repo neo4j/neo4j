@@ -32,6 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -39,7 +40,6 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Iterators;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
@@ -122,8 +122,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
                 new SelectorFactory( end, interest ) )
                 .evaluator( includeWhereEndNodeIs( end ) )
                 .traverse( start );
-        return Iterators.asResourceIterable(
-                new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, stopAfterLowestWeight ) );
+        return () -> (ResourceIterator<WeightedPath>) new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, stopAfterLowestWeight );
     }
 
     @Override

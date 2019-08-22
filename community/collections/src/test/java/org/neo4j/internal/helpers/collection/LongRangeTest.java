@@ -63,7 +63,7 @@ class LongRangeTest
 
     private static Stream<RangeProvider> invalidRanges()
     {
-        return Stream.of( new RangeProvider( 1, 0 ), new RangeProvider( Long.MAX_VALUE, Long.MAX_VALUE + 1 ), new RangeProvider( -1, 0 ) );
+        return Stream.of( new RangeProvider( 1, 0 ), new RangeProvider( Long.MAX_VALUE, Long.MIN_VALUE ), new RangeProvider( -1, 0 ) );
     }
 
     private static Stream<RangeProvider> validRanges()

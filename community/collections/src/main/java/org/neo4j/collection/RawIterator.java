@@ -81,7 +81,7 @@ public interface RawIterator<T,EXCEPTION extends Exception>
      */
     static <T, EX extends Exception> RawIterator<T, EX> from( ThrowingSupplier<T, EX> supplier )
     {
-        return new AbstractPrefetchingRawIterator<T,EX>()
+        return new AbstractPrefetchingRawIterator<>()
         {
             @Override
             protected T fetchNextOrNull() throws EX

@@ -207,7 +207,8 @@ public final class PathImpl implements Path
                 {
                     if ( !relationshipIterator.hasNext() )
                     {
-                        throw new IllegalStateException( String.format( "Number of relationships: %d does not" + " match with path length: %d.", index, path.length ) );
+                        throw new IllegalStateException(
+                                String.format( "Number of relationships: %d does not" + " match with path length: %d.", index, path.length ) );
                     }
                     next = relationshipIterator.next().getOtherNode( current );
                 }

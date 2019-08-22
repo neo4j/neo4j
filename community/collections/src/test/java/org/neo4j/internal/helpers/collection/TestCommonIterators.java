@@ -44,19 +44,6 @@ import static org.mockito.Mockito.verify;
 class TestCommonIterators
 {
     @Test
-    void testNoDuplicatesFilteringIterator()
-    {
-        List<Integer> ints = asList( 1, 2, 2, 40, 100, 40, 101, 2, 3 );
-        Iterator<Integer> iterator = FilteringIterator.noDuplicates( ints.iterator() );
-        assertEquals( (Integer) 1, iterator.next() );
-        assertEquals( (Integer) 2, iterator.next() );
-        assertEquals( (Integer) 40, iterator.next() );
-        assertEquals( (Integer) 100, iterator.next() );
-        assertEquals( (Integer) 101, iterator.next() );
-        assertEquals( (Integer) 3, iterator.next() );
-    }
-
-    @Test
     void testFirstElement()
     {
         Object object = new Object();
@@ -99,11 +86,6 @@ class TestCommonIterators
         assertEquals( object, Iterators.last( singletonList( object ).iterator() ) );
         assertThrows( NoSuchElementException.class, () -> Iterators.last( Collections.emptyIterator() ) );
 
-        // lastOrNull Iterable
-        assertEquals( object2, Iterables.lastOrNull( asList( object, object2 ) ) );
-        assertEquals( object, Iterables.lastOrNull( singletonList( object ) ) );
-        assertNull( Iterables.lastOrNull( Collections.emptyList() ) );
-
         // lastOrNull Iterator
         assertEquals( object2, Iterators.lastOrNull( asList( object, object2 ).iterator() ) );
         assertEquals( object, Iterators.lastOrNull( singletonList( object ).iterator() ) );
@@ -141,9 +123,9 @@ class TestCommonIterators
     void getItemFromEnd()
     {
         Iterable<Integer> ints = asList( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 );
-        assertEquals( (Integer) 9, Iterables.fromEnd( ints, 0 ) );
-        assertEquals( (Integer) 8, Iterables.fromEnd( ints, 1 ) );
-        assertEquals( (Integer) 7, Iterables.fromEnd( ints, 2 ) );
+        assertEquals( (Integer) 9, Iterators.fromEnd( ints.iterator(), 0 ) );
+        assertEquals( (Integer) 8, Iterators.fromEnd( ints.iterator(), 1 ) );
+        assertEquals( (Integer) 7, Iterators.fromEnd( ints.iterator(), 2 ) );
     }
 
     @Test

@@ -134,7 +134,7 @@ class ProcedureJarLoader
     {
         ZipInputStream zip = new ZipInputStream( jar.openStream() );
 
-        return new AbstractPrefetchingRawIterator<Class<?>,IOException>()
+        return new AbstractPrefetchingRawIterator<>()
         {
             @Override
             protected Class<?> fetchNextOrNull() throws IOException
@@ -153,8 +153,7 @@ class ProcedureJarLoader
                         String name = nextEntry.getName();
                         if ( name.endsWith( ".class" ) )
                         {
-                            String className =
-                                    name.substring( 0, name.length() - ".class".length() ).replace( '/', '.' );
+                            String className = name.substring( 0, name.length() - ".class".length() ).replace( '/', '.' );
 
                             try
                             {
@@ -168,8 +167,7 @@ class ProcedureJarLoader
                             }
                             catch ( UnsatisfiedLinkError | NoClassDefFoundError | Exception e )
                             {
-                                log.warn( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(),
-                                        e.getMessage() );
+                                log.warn( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(), e.getMessage() );
                             }
                         }
                     }

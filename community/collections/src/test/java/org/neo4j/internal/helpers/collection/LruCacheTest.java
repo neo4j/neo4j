@@ -115,7 +115,7 @@ class LruCacheTest
     void shouldResizeTheCache()
     {
         final Set<String> cleaned = new HashSet<>();
-        LruCache<Integer, String> cache = new LruCache<Integer, String>( "TestCache", 3 )
+        LruCache<Integer, String> cache = new LruCache<>( "TestCache", 3 )
         {
             @Override
             public void elementCleaned( String element )
@@ -178,7 +178,7 @@ class LruCacheTest
     void shouldClear()
     {
         final Set<String> cleaned = new HashSet<>();
-        LruCache<Integer, String> cache = new LruCache<Integer, String>( "TestCache", 3 )
+        LruCache<Integer, String> cache = new LruCache<>( "TestCache", 3 )
         {
             @Override
             public void elementCleaned( String element )

@@ -22,16 +22,13 @@ package org.neo4j.internal.helpers.collection;
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -131,23 +128,6 @@ public abstract class MapUtil
     }
 
     /**
-     * Loads a {@link Map} from a {@link Reader} assuming strings as keys
-     * and values.
-     *
-     * @param reader the {@link Reader} containing a {@link Properties}-like
-     * layout of keys and values.
-     * @return the read data as a {@link Map}.
-     * @throws IOException if the {@code reader} throws {@link IOException}.
-     */
-    public static Map<String, String> load( Reader reader ) throws IOException
-    {
-        Properties props = new Properties();
-        props.load( reader );
-        //noinspection unchecked
-        return new HashMap<>( (Map) props );
-    }
-
-    /**
      * Loads a {@link Map} from an {@link InputStream} assuming strings as keys
      * and values.
      *
@@ -169,29 +149,6 @@ public abstract class MapUtil
         }
 
         return result;
-    }
-
-    /**
-     * Loads a {@link Map} from a {@link File} assuming strings as keys
-     * and values.
-     *
-     * @param file the {@link File} containing a {@link Properties}-like
-     * layout of keys and values.
-     * @return the read data as a {@link Map}.
-     * @throws IOException if the file reader throws {@link IOException}.
-     */
-    public static Map<String, String> load( File file ) throws IOException
-    {
-        FileInputStream stream = null;
-        try
-        {
-            stream = new FileInputStream( file );
-            return load( stream );
-        }
-        finally
-        {
-            closeIfNotNull( stream );
-        }
     }
 
     private static void closeIfNotNull( Closeable closeable ) throws IOException
@@ -253,43 +210,6 @@ public abstract class MapUtil
         Properties properties = new Properties();
         properties.putAll( config );
         properties.store( writer, null );
-    }
-
-    /**
-     * Reversed a map, making the key value and the value key.
-     * @param <K> the type of key in the map to reverse. These will be the
-     * values in the returned map.
-     * @param <V> the type of values in the map to revert. These will be the
-     * keys in the returned map.
-     * @param map the {@link Map} to reverse.
-     * @return the reverse of {@code map}. A new {@link Map} will be returned
-     * where the keys from {@code map} will be the values and the values will
-     * be the keys.
-     */
-    public static <K, V> Map<V, K> reverse( Map<K, V> map )
-    {
-        Map<V, K> reversedMap = new HashMap<>();
-        for ( Map.Entry<K, V> entry : map.entrySet() )
-        {
-            reversedMap.put( entry.getValue(), entry.getKey() );
-        }
-        return reversedMap;
-    }
-
-    public static <K,V> Map<K, V> toMap( Iterable<Pair<K, V>> pairs )
-    {
-        return toMap( pairs.iterator() );
-    }
-
-    public static <K,V> Map<K, V> toMap( Iterator<Pair<K, V>> pairs )
-    {
-        Map<K,V> result = new HashMap<>();
-        while ( pairs.hasNext() )
-        {
-            Pair<K,V> pair = pairs.next();
-            result.put( pair.first(), pair.other() );
-        }
-        return result;
     }
 
     public static <K, V> MapBuilder<K, V> entry( K key, V value )

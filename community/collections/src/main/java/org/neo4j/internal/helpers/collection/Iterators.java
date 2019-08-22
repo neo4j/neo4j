@@ -45,7 +45,6 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
 import static java.util.Collections.emptyIterator;
@@ -170,7 +169,7 @@ public final class Iterators
      * @return the iterator's n:th item from the end of the iteration.
      * @throws NoSuchElementException if the iterator contains less than n-1 items.
      */
-    public static <T> T fromEnd( Iterator<T> iterator, int n )
+    static <T> T fromEnd( Iterator<T> iterator, int n )
     {
         return assertNotNull( iterator, fromEndOrNull( iterator, n ) );
     }
@@ -185,7 +184,7 @@ public final class Iterators
      * @return the iterator's n:th item from the end of the iteration,
      * or {@code null} if the iterator doesn't contain that many items.
      */
-    public static <T> T fromEndOrNull( Iterator<T> iterator, int n )
+    private static <T> T fromEndOrNull( Iterator<T> iterator, int n )
     {
         Deque<T> trail = new ArrayDeque<>( n );
         while ( iterator.hasNext() )
@@ -298,8 +297,7 @@ public final class Iterators
      * @return the {@code collection} which was passed in, now filled
      * with the items from {@code iterator}.
      */
-    public static <C extends Collection<T>,T> C addToCollectionUnique( Iterator<T> iterator,
-            C collection )
+    private static <C extends Collection<T>,T> C addToCollectionUnique( Iterator<T> iterator, C collection )
     {
         while ( iterator.hasNext() )
         {
@@ -326,8 +324,7 @@ public final class Iterators
      * @return the {@code collection} which was passed in, now filled
      * with the items from {@code iterator}.
      */
-    public static <C extends Collection<T>,T> C addToCollectionUnique( Iterable<T> iterable,
-            C collection )
+    static <C extends Collection<T>,T> C addToCollectionUnique( Iterable<T> iterable, C collection )
     {
         return addToCollectionUnique( iterable.iterator(), collection );
     }
@@ -348,23 +345,6 @@ public final class Iterators
     public static <T> Iterable<T> loop( final Iterator<T> iterator )
     {
         return () -> iterator;
-    }
-
-    /**
-     * Exposes {@code iterator} as an {@link Iterable}. It breaks the contract
-     * of {@link Iterable} in that it returns the supplied iterator instance for
-     * each call to {@code iterator()} on the returned {@link Iterable}
-     * instance. This method mostly exists to make it easy to use an
-     * {@link Iterator} in a for-loop.
-     *
-     * @param <T> the type of items in the iterator.
-     * @param iterator the iterator to expose as an {@link Iterable}.
-     * @return the supplied iterator posing as an {@link Iterable}.
-     */
-    //@Deprecated * @deprecated use {@link #loop(Iterator) the loop method} instead.
-    public static <T> Iterable<T> asIterable( final Iterator<T> iterator )
-    {
-        return loop( iterator );
     }
 
     public static <T> long count( Iterator<T> iterator )
@@ -486,7 +466,7 @@ public final class Iterators
         return set;
     }
 
-    public static Iterator<Long> asIterator( final long... array )
+    static Iterator<Long> asIterator( final long... array )
     {
         return new PrefetchingIterator<>()
         {
@@ -667,28 +647,6 @@ public final class Iterators
         return (ResourceIterator<T>) EmptyResourceIterator.EMPTY_RESOURCE_ITERATOR;
     }
 
-    public static <T> boolean contains( Iterator<T> iterator, T item )
-    {
-        try
-        {
-            for ( T element : loop( iterator ) )
-            {
-                if ( item == null ? element == null : item.equals( element ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        finally
-        {
-            if ( iterator instanceof ResourceIterator<?> )
-            {
-                ((ResourceIterator<?>) iterator).close();
-            }
-        }
-    }
-
     public static <T> ResourceIterator<T> asResourceIterator( final Iterator<T> iterator )
     {
         if ( iterator instanceof ResourceIterator<?> )
@@ -761,11 +719,6 @@ public final class Iterators
         return asRawIterator( stream.iterator() );
     }
 
-    public static <FROM, TO> Iterator<TO> flatMap( Function<? super FROM, ? extends Iterator<TO>> function, Iterator<FROM> from )
-    {
-        return new CombiningIterator<>( map(function, from) );
-    }
-
     @SafeVarargs
     @SuppressWarnings( "unchecked" )
     public static <T> Iterator<T> concat( Iterator<? extends T>... iterators )
@@ -781,25 +734,6 @@ public final class Iterators
     public static <T> Iterator<T> concat( Iterator<Iterator<T>> iterators )
     {
         return new CombiningIterator<>( iterators );
-    }
-
-    public static <T> ResourceIterable<T> asResourceIterable( final ResourceIterator<T> it )
-    {
-        return () -> it;
-    }
-
-    public static String join( String joinString, Iterator<?> iter )
-    {
-        StringBuilder sb = new StringBuilder();
-        while ( iter.hasNext() )
-        {
-            sb.append( iter.next().toString() );
-            if ( iter.hasNext() )
-            {
-                sb.append( joinString );
-            }
-        }
-        return sb.toString();
     }
 
     public static <T> PrefetchingIterator<T> prefetching( Iterator<T> iterator )

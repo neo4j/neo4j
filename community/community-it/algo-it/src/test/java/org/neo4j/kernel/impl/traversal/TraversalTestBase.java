@@ -303,7 +303,7 @@ abstract class TraversalTestBase
 
     public static <E> void assertContains( Iterator<E> actual, E... expected )
     {
-        assertContains( Iterators.asIterable( actual ), expected );
+        assertContains( Iterators.loop( actual ), expected );
     }
 
     public static <E> void assertContains( Iterable<E> actual, E... expected )

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import java.util.Objects;
+
 /**
  * Utility to handle pairs of objects.
  *
@@ -27,15 +29,6 @@ package org.neo4j.internal.helpers.collection;
  */
 public abstract class Pair<T1, T2>
 {
-    @SuppressWarnings( "rawtypes" )
-    private static final Pair EMPTY = Pair.of( null, null );
-
-    @SuppressWarnings( "unchecked" )
-    public static <T1, T2> Pair<T1,T2> empty()
-    {
-        return EMPTY;
-    }
-
     /**
      * Create a new pair of objects.
      *
@@ -47,7 +40,7 @@ public abstract class Pair<T1, T2>
      */
     public static <T1, T2> Pair<T1,T2> pair( final T1 first, final T2 other )
     {
-        return new Pair<T1,T2>()
+        return new Pair<>()
         {
             @Override
             public T1 first()
@@ -112,20 +105,14 @@ public abstract class Pair<T1, T2>
         }
         if ( obj instanceof Pair )
         {
-            @SuppressWarnings( "rawtypes" )
-            Pair that = (Pair) obj;
-            return equals( this.other(), that.other() ) && equals( this.first(), that.first() );
+            Pair<?,?> that = (Pair<?,?>) obj;
+            return Objects.equals( this.other(), that.other() ) && Objects.equals( this.first(), that.first() );
         }
         return false;
     }
 
-    static int hashCode( Object obj )
+    private static int hashCode( Object obj )
     {
         return obj == null ? 0 : obj.hashCode();
-    }
-
-    static boolean equals( Object obj1, Object obj2 )
-    {
-        return ( obj1 == obj2 ) || ( obj1 != null && obj1.equals( obj2 ) );
     }
 }

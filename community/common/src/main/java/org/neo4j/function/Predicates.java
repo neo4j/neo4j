@@ -21,9 +21,7 @@ package org.neo4j.function;
 
 import java.time.Clock;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
@@ -129,20 +127,6 @@ public class Predicates
                 }
             }
             return false;
-        };
-    }
-
-    public static <T> Predicate<T> noDuplicates()
-    {
-        return new Predicate<T>()
-        {
-            private final Set<T> visitedItems = new HashSet<>();
-
-            @Override
-            public boolean test( T item )
-            {
-                return visitedItems.add( item );
-            }
         };
     }
 
