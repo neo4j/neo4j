@@ -24,7 +24,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -45,11 +48,15 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
@@ -62,7 +69,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( pageCacheRule );
 
     @Test
-    public void shouldReportCorruptionInGBPTreeAndExcludeIndexFromConsistencyCheck() throws Exception
+    public void shouldReportCorruptionInGBPTreeAndExcludeIndexFromRestOfConsistencyCheck() throws Exception
     {
         File dataDir = testDirectory.storeDir();
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dataDir );
@@ -77,17 +84,35 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         corruptIndexes( dataDir );
 
-        runConsistencyCheck( dataDir );
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        ConsistencyCheckService.Result result = runConsistencyCheck( dataDir, logProvider );
+
+        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertResultContainsMessage( result, "Page: 5 is not a tree node page." );
     }
 
-    private void runConsistencyCheck( File dataDir ) throws ConsistencyCheckIncompleteException
+    private void assertResultContainsMessage( ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
+    {
+        final List<String> lines = Files.readAllLines( result.reportFile().toPath() );
+        boolean reportContainExpectedMessage = false;
+        for ( String line : lines )
+        {
+            if ( line.contains( expectedMessage ) )
+            {
+                reportContainExpectedMessage = true;
+                break;
+            }
+        }
+        assertTrue( "Expected consistency report to contain message " + expectedMessage, reportContainExpectedMessage );
+    }
+
+    private ConsistencyCheckService.Result runConsistencyCheck( File dataDir, LogProvider logProvider ) throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = DatabaseLayout.of( dataDir );
         Config config = Config.defaults();
-        ProgressMonitorFactory progressFactory = ProgressMonitorFactory.NONE;
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-        consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false );
+        ProgressMonitorFactory progressFactory = NONE;
+        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false );
     }
 
     private void corruptIndexes( File dataDir ) throws Exception
@@ -109,7 +134,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
                 try ( GBPTree<?,?> gbpTree = bootstrap.tree )
                 {
                     GBPTreeInspection<?,?> inspection = gbpTree.inspect();
-                    gbpTree.corrupt( GBPTreeCorruption.pageSpecificCorruption( inspection.getRootNode(), GBPTreeCorruption.notATreeNode() ) );
+                    long rootNode = inspection.getRootNode();
+                    gbpTree.corrupt( GBPTreeCorruption.pageSpecificCorruption( rootNode, GBPTreeCorruption.notATreeNode() ) );
                 }
             }
         }
@@ -120,23 +146,13 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         Label label = Label.label( "label" );
         RelationshipType relType = RelationshipType.withName( "TYPE" );
         String propKey1 = "key1";
-        String propKey2 = "key2";
-        String propKey3 = "key3";
 
         try ( Transaction tx = db.beginTx() )
         {
             Node firstNode = db.createNode( label );
             firstNode.setProperty( propKey1, "hej" );
-            firstNode.setProperty( propKey2, "hå" );
-            firstNode.setProperty( propKey3, "jobba på" );
-            Node secondNode = db.createNode( label );
-            secondNode.setProperty( propKey1, "hej" );
-            secondNode.setProperty( propKey2, "då" );
-            secondNode.setProperty( propKey3, "gå och gå" );
-            firstNode.createRelationshipTo( secondNode, relType );
             tx.success();
         }
-
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label ).on( propKey1 ).create();
@@ -144,7 +160,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( propKey3 ).create();
+            db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
             tx.success();
         }
     }
