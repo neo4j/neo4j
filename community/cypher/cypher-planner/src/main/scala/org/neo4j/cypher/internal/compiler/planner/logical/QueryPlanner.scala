@@ -23,14 +23,13 @@ import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener, verifyBestPlan}
 import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Phase
 import org.neo4j.cypher.internal.v4_0.util.Cost
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
-case class QueryPlanner(planSingleQuery: SingleQueryPlanner = PlanSingleQuery())
+case object QueryPlanner
   extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
 

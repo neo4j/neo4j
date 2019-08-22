@@ -67,7 +67,7 @@ object CompilationPhases {
           ResolveTokens andThen
           CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
           OptionalMatchRemover andThen
-          QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
+          QueryPlanner.adds(CompilationContains[LogicalPlan]) andThen
           PlanRewriter(sequencer) andThen
           insertCachedProperties andThen
           If((s: LogicalPlanState) => s.query.readOnly)(

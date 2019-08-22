@@ -33,7 +33,7 @@ class SubQueriesTest
   }
 
   test("CALL { CALL { RETURN 1 as a } }") {
-    gives(subQuery(subQuery(return_(literalInt(1).unaliased))))
+    gives(subQuery(subQuery(return_(literalInt(1).as("a")))))
   }
 
   test("CALL { }") {

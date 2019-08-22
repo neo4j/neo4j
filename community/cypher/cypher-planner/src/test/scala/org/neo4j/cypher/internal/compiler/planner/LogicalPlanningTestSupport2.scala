@@ -25,11 +25,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityMo
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, NotImplementedPlanContext, StatsDivergenceCalculator, SyntaxExceptionCreator}
-import org.neo4j.cypher.internal.ir.{PeriodicCommit, SinglePlannerQuery, ProvidedOrder, QueryGraph}
+import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, NotImplementedPlanContext, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.ir.{PeriodicCommit, ProvidedOrder, QueryGraph, SinglePlannerQuery}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
@@ -42,8 +41,7 @@ import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
 import org.neo4j.cypher.internal.v4_0.rewriting.{RewriterStepSequencer, ValidatingRewriterStepSequencer}
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Attribute, Attributes}
-import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, PropertyKeyId}
 import org.neo4j.internal.helpers.collection.Visitable
@@ -60,7 +58,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
   val innerVariableNamer = new GeneratingNamer
   var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = innerVariableNamer)
-  final var planner = QueryPlanner()
+  final var planner = QueryPlanner
   var queryGraphSolver: QueryGraphSolver = createQueryGraphSolver()
   val cypherCompilerConfig = CypherPlannerConfiguration(
     queryCacheSize = 100,

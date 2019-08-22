@@ -567,12 +567,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     // This will be solved with a NestedPlanExpression instead of RollupApply
     planFor(q)._2 should beLike {
-      case Projection(
-      FindShortestPaths(_, _, Seq(
+      case FindShortestPaths(_, _, Seq(
       NoneIterablePredicate(FilterScope(_, Some(Equals(_, ReduceExpression(_, _, _:NestedPlanExpression)))), _)
-      ), _, _),
-      _
-      ) => ()
+      ), _, _) => ()
     }
   }
 

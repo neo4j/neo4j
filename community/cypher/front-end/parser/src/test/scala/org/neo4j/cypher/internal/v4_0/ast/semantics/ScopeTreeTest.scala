@@ -82,7 +82,7 @@ class ScopeTreeTest extends CypherFunSuite {
     val ast = parse("match (a:Party) return a as a union match (a:Animal) return a as a")
     val scopeTree = ast.scope
 
-    scopeTree should equal(scope()(
+    scopeTree should equal(scope(nodeSymbol("a", 30))(
       scope()(
         scope(nodeSymbol("a", 7, 23))(),
         scope(nodeSymbol("a", 7, 23, 28))()
