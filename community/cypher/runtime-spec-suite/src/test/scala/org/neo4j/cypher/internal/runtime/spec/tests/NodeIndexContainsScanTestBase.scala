@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.exceptions.CypherTypeException
 
 abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
                                                              edition: Edition[CONTEXT],
@@ -71,6 +72,47 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (1 to sizeHint by 2).map(i => s"case$i")
     runtimeResult should beColumns("text").withRows(singleColumn(expected))
+  }
+
+  test("should handle null input") {
+    // given
+    nodePropertyGraph(sizeHint, {
+      case i if i % 2 == 0 => Map("text" -> "CASE")
+      case i if i % 2 == 1 => Map("text" -> "case")
+    },"Label")
+    index("Label", "text")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("text")
+      .projection("x.text AS text")
+      .nodeIndexOperator("x:Label(text CONTAINS ???)", paramExpr = Some(nullLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("text").withNoRows()
+  }
+
+  test("should handle non-text input") {
+    // given
+    nodePropertyGraph(sizeHint, {
+      case i if i % 2 == 0 => Map("text" -> "CASE")
+      case i if i % 2 == 1 => Map("text" -> "case")
+    },"Label")
+    index("Label", "text")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("text")
+      .projection("x.text AS text")
+      .nodeIndexOperator("x:Label(text CONTAINS 1337)")
+      .build()
+
+
+    // then
+    a [CypherTypeException] should be thrownBy execute(logicalQuery, runtime)
   }
 
   test("should cache properties") {
