@@ -86,11 +86,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               Values.stringValue(authManager.createCredentialForPassword(initialPassword).serialize()),
               Values.booleanValue(requirePasswordChange))),
           QueryHandler
-            .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to create the specified user '$userName'.")))
+            .handleNoResult(() => Some(new IllegalStateException(s"Failed to create the specified user '$userName'.")))
             .handleError(e => e.getCause match {
               case _: UniquePropertyValueValidationException =>
                 new InvalidArgumentsException(s"Failed to create the specified user '$userName': User already exists.", e)
-              case _ => new InvalidArgumentsException(s"Failed to create the specified user '$userName'.", e)
+              case _ => new IllegalStateException(s"Failed to create the specified user '$userName'.", e)
             })
         )
       } finally {
@@ -115,7 +115,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         VirtualValues.map(Array("name"), Array(Values.stringValue(userName))),
         QueryHandler
           .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to delete the specified user '$userName': User does not exist.")))
-          .handleError(e => new InvalidArgumentsException(s"Failed to delete the specified user '$userName'.", e))
+          .handleError(e => new IllegalStateException(s"Failed to delete the specified user '$userName'.", e))
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
@@ -132,7 +132,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         VirtualValues.map(Array("name", "credentials"),
           Array(Values.stringValue(currentUser), Values.stringValue(authManager.createCredentialForPassword(validatePassword(newPassword)).serialize()))),
         QueryHandler
-          .handleError(e => new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password.", e))
+          .handleError(e => new IllegalStateException(s"User '$currentUser' failed to alter their own password.", e))
           .handleResult((_, value) => {
             val oldCredentials = authManager.deserialize(value.asInstanceOf[TextValue].stringValue())
             if (!oldCredentials.matchesPassword(currentPassword))
