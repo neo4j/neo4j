@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.io.File;
+
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 
@@ -30,20 +32,20 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     private static final String treeMetaInconsistency = "Tree meta inconsistency: ";
 
     @Override
-    public void notATreeNode( long pageId )
+    public void notATreeNode( long pageId, File file )
     {
         throwTreeStructureInconsistency( "Page: %d is not a tree node page.", pageId );
     }
 
     @Override
-    public void unknownTreeNodeType( long pageId, byte treeNodeType )
+    public void unknownTreeNodeType( long pageId, byte treeNodeType, File file )
     {
         throwTreeStructureInconsistency( "Page: %d has an unknown tree node type: %d.", pageId, treeNodeType );
     }
 
     @Override
     public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
-            long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration )
+            long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration, File file )
     {
         throwTreeStructureInconsistency( "Sibling pointers misaligned.%n" +
                         "  Left siblings view:  %s%n" +
@@ -53,68 +55,67 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
-    public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode )
+    public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode, File file )
     {
         throwTreeStructureInconsistency( "Expected rightmost right sibling to be %d but was %d. Current rightmost node is %d.",
                 NO_NODE_FLAG, rightSiblingPointer, rightmostNode );
     }
 
     @Override
-    public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer )
+    public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer, File file )
     {
         throwTreeStructureInconsistency( "We ended up on tree node %d which has a newer generation, successor is: %d", pageId, successorPointer );
     }
 
     @Override
     public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
-            long targetNodeGeneration )
+            long targetNodeGeneration, File file )
     {
         throwTreeStructureInconsistency( "Pointer (%s) in tree node %d has pointer generation %d, but target node %d has a higher generation %d.",
                 pointerType.toString(), sourceNode, pointerGeneration, pointer, targetNodeGeneration );
     }
 
     @Override
-    public void keysOutOfOrderInNode( long pageId )
+    public void keysOutOfOrderInNode( long pageId, File file )
     {
         throwKeyOrderInconsistency( "Keys in tree node %d are out of order.", pageId );
     }
 
     @Override
-    public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId )
+    public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, File file )
     {
         throwKeyOrderInconsistency( "Expected range for this tree node is %n%s%n but found %s in position %d, with keyCount %d on page %d.",
                 range, key, pos, keyCount, pageId );
     }
 
     @Override
-    public void unusedPage( long pageId )
+    public void unusedPage( long pageId, File file )
     {
         throwTreeMetaInconsistency( "Index has a leaked page that will never be reclaimed, pageId=%d.", pageId );
     }
 
     @Override
-    public void pageIdExceedLastId( long lastId, long pageId )
+    public void pageIdExceedLastId( long lastId, long pageId, File file )
     {
         throwTreeMetaInconsistency( "Tree node has page id larger than registered last id, lastId=%d, pageId=%d.", lastId, pageId );
     }
 
     @Override
-    public void nodeMetaInconsistency( long pageId, String message )
+    public void nodeMetaInconsistency( long pageId, String message, File file )
     {
         throwNodeMetaInconsistency( "Tree node %d has inconsistent meta data: %s.", pageId, message );
     }
 
     @Override
-    public void pageIdSeenMultipleTimes( long pageId )
+    public void pageIdSeenMultipleTimes( long pageId, File file )
     {
         throwTreeStructureInconsistency(
                 "Page id seen multiple times, this means either active tree node is present in freelist or pointers in tree create a loop, pageId=%d.", pageId );
     }
 
     @Override
-    public void crashedPointer( long pageId, GBPTreePointerType pointerType,
-            long generationA, long readPointerA, long pointerA, byte stateA,
-            long generationB, long readPointerB, long pointerB, byte stateB )
+    public void crashedPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA, long generationB,
+            long readPointerB, long pointerB, byte stateB, File file )
     {
         throwTreeStructureInconsistency( "Crashed pointer found in tree node %d, pointer: %s%n  slotA[%s]%n  slotB[%s]",
                 pageId, pointerType.toString(),
@@ -123,9 +124,8 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
-    public void brokenPointer( long pageId, GBPTreePointerType pointerType,
-            long generationA, long readPointerA, long pointerA, byte stateA,
-            long generationB, long readPointerB, long pointerB, byte stateB )
+    public void brokenPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA, long generationB,
+            long readPointerB, long pointerB, byte stateB, File file )
     {
         throwTreeStructureInconsistency( "Broken pointer found in tree node %d, pointer: %s%n  slotA[%s]%n  slotB[%s]",
                 pageId, pointerType.toString(),
@@ -134,13 +134,13 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
-    public void unreasonableKeyCount( long pageId, int keyCount )
+    public void unreasonableKeyCount( long pageId, int keyCount, File file )
     {
         throwTreeMetaInconsistency( "Unexpected keyCount on pageId %d, keyCount=%d", pageId, keyCount );
     }
 
     @Override
-    public void childNodeFoundAmongParentNodes( KeyRange<KEY> parentRange, int level, long pageId )
+    public void childNodeFoundAmongParentNodes( KeyRange<KEY> parentRange, int level, long pageId, File file )
     {
         throwTreeStructureInconsistency( "Circular reference, child tree node found among parent nodes. Parents:%n%s%nlevel: %d, pageId: %d",
                 parentRange, level, pageId );

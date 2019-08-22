@@ -1527,7 +1527,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         GBPTreeConsistencyChecker<KEY> consistencyChecker =
                 new GBPTreeConsistencyChecker<>( node, layout, id, stableGeneration, unstableGeneration );
         ThrowingConsistencyCheckVisitor<KEY> visitor = new ThrowingConsistencyCheckVisitor<>();
-        consistencyChecker.check( readCursor, root, visitor );
+        consistencyChecker.check( null, readCursor, root, visitor );
         goTo( readCursor, currentPageId );
     }
 
@@ -1687,8 +1687,8 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 
     private void assertSuccessorPointerNotCrashOrBroken() throws IOException
     {
-        assertNoCrashOrBrokenPointerInGSPP( readCursor, stableGeneration, unstableGeneration, GBPTreePointerType.successor(),
-                TreeNode.BYTE_POS_SUCCESSOR, new ThrowingConsistencyCheckVisitor<>() );
+        assertNoCrashOrBrokenPointerInGSPP( null, readCursor, stableGeneration, unstableGeneration,
+                GBPTreePointerType.successor(), TreeNode.BYTE_POS_SUCCESSOR, new ThrowingConsistencyCheckVisitor<>() );
     }
 
     private void assertKeyAssociatedWithValue( KEY key, VALUE expectedValue )
@@ -1769,7 +1769,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     private void assertSiblingOrderAndPointers( long... children ) throws IOException
     {
         long currentPageId = readCursor.getCurrentPageId();
-        RightmostInChain rightmost = new RightmostInChain();
+        RightmostInChain rightmost = new RightmostInChain( null );
         GenerationKeeper generationTarget = new GenerationKeeper();
         ThrowingConsistencyCheckVisitor visitor = new ThrowingConsistencyCheckVisitor();
         for ( long child : children )

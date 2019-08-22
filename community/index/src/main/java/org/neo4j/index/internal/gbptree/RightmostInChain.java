@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.io.File;
+
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
@@ -32,10 +34,16 @@ import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
  */
 class RightmostInChain
 {
+    private final File file;
     private long currentRightmostNode = TreeNode.NO_NODE_FLAG;
     private long currentRightmostRightSiblingPointer = TreeNode.NO_NODE_FLAG;
     private long currentRightmostRightSiblingPointerGeneration;
     private long currentRightmostNodeGeneration;
+
+    RightmostInChain( File file )
+    {
+        this.file = file;
+    }
 
     void assertNext( PageCursor cursor, long newRightmostNodeGeneration,
             long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGeneration,
@@ -60,7 +68,7 @@ class RightmostInChain
         currentRightmostRightSiblingPointerGeneration = newRightmostRightSiblingPointerGeneration;
     }
 
-    private static void assertSiblingPointerGeneration( long currentRightmostNode, long currentRightmostNodeGeneration,
+    private void assertSiblingPointerGeneration( long currentRightmostNode, long currentRightmostNodeGeneration,
             long currentRightmostRightSiblingPointer, long currentRightmostRightSiblingPointerGeneration, long newRightmostNode,
             long newRightmostNodeGeneration, long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGeneration,
             GBPTreeConsistencyCheckVisitor visitor )
@@ -71,8 +79,8 @@ class RightmostInChain
             // Left siblings view:  {_(9)}-(_)->{_}
             // Right siblings view: {_}<-(5)-{_(_)}
             visitor.pointerHasLowerGenerationThanNode( GBPTreePointerType.leftSibling(), newRightmostNode, newRightmostLeftSiblingPointerGeneration,
-                    newRightmostLeftSiblingPointer,
-                    currentRightmostNodeGeneration );
+                    newRightmostLeftSiblingPointer, currentRightmostNodeGeneration, file
+            );
         }
         if ( currentRightmostRightSiblingPointerGeneration < newRightmostNodeGeneration &&
                 currentRightmostRightSiblingPointer != NO_NODE_FLAG )
@@ -81,12 +89,12 @@ class RightmostInChain
             // Left siblings view:  {_(_)}-(5)->{_}
             // Right siblings view: {_}<-(_)-{_(9)}
             visitor.pointerHasLowerGenerationThanNode( GBPTreePointerType.rightSibling(), currentRightmostNode, currentRightmostRightSiblingPointerGeneration,
-                    currentRightmostRightSiblingPointer,
-                    newRightmostNodeGeneration );
+                    currentRightmostRightSiblingPointer, newRightmostNodeGeneration, file
+            );
         }
     }
 
-    private static void assertSiblingsAgreeOnBeingSibling( long currentRightmostNode, long currentRightmostNodeGeneration,
+    private void assertSiblingsAgreeOnBeingSibling( long currentRightmostNode, long currentRightmostNodeGeneration,
             long currentRightmostRightSiblingPointer, long currentRightmostRightSiblingPointerGeneration, long newRightmostNode,
             long newRightmostNodeGeneration, long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGeneration,
             GBPTreeConsistencyCheckVisitor visitor )
@@ -110,8 +118,9 @@ class RightmostInChain
         if ( !siblingsPointToEachOther )
         {
             visitor.siblingsDontPointToEachOther( currentRightmostNode, currentRightmostNodeGeneration, currentRightmostRightSiblingPointerGeneration,
-                    currentRightmostRightSiblingPointer,
-                    newRightmostLeftSiblingPointer, newRightmostLeftSiblingPointerGeneration, newRightmostNode, newRightmostNodeGeneration );
+                    currentRightmostRightSiblingPointer, newRightmostLeftSiblingPointer, newRightmostLeftSiblingPointerGeneration, newRightmostNode,
+                    newRightmostNodeGeneration, file
+            );
         }
     }
 
@@ -119,7 +128,7 @@ class RightmostInChain
     {
         if ( currentRightmostRightSiblingPointer != NO_NODE_FLAG )
         {
-            visitor.rightmostNodeHasRightSibling( currentRightmostRightSiblingPointer, currentRightmostNode );
+            visitor.rightmostNodeHasRightSibling( currentRightmostRightSiblingPointer, currentRightmostNode, file );
         }
     }
 }

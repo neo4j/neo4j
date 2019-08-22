@@ -1258,7 +1258,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout, freeList,
                     stableGeneration( generation ), unstableGeneration );
 
-            consistencyChecker.check( cursor, root, cleanTrackingVisitor );
+            consistencyChecker.check( indexFile, cursor, root, cleanTrackingVisitor );
 
             return cleanTrackingVisitor.clean();
         }

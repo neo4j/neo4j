@@ -986,7 +986,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void notATreeNode( long pageId )
+            public void notATreeNode( long pageId, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1001,7 +1001,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void unknownTreeNodeType( long pageId, byte treeNodeType )
+            public void unknownTreeNodeType( long pageId, byte treeNodeType, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1019,13 +1019,13 @@ public class GBPTreeConsistencyCheckerTest
             @Override
             public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration,
                     long leftRightSiblingPointer, long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode,
-                    long rightNodeGeneration )
+                    long rightNodeGeneration, File file )
             {
                 corruptedSiblingPointerCalled.setTrue();
             }
 
             @Override
-            public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode )
+            public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode, File file )
             {
                 rightmostNodeHasRightSiblingCalled.setTrue();
             }
@@ -1039,7 +1039,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer )
+            public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1057,7 +1057,7 @@ public class GBPTreeConsistencyCheckerTest
         {
             @Override
             public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
-                    long targetNodeGeneration )
+                    long targetNodeGeneration, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, sourceNode );
@@ -1073,7 +1073,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void keysOutOfOrderInNode( long pageId )
+            public void keysOutOfOrderInNode( long pageId, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1089,7 +1089,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void keysLocatedInWrongNode( KeyRange<MutableLong> range, MutableLong key, int pos, int keyCount, long pageId )
+            public void keysLocatedInWrongNode( KeyRange<MutableLong> range, MutableLong key, int pos, int keyCount, long pageId, File file )
             {
                 called.setTrue();
                 allNodesWithKeysLocatedInWrongNode.add( pageId );
@@ -1105,7 +1105,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
         {
             @Override
-            public void nodeMetaInconsistency( long pageId, String message )
+            public void nodeMetaInconsistency( long pageId, String message, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1121,7 +1121,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
         {
             @Override
-            public void nodeMetaInconsistency( long pageId, String message )
+            public void nodeMetaInconsistency( long pageId, String message, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1137,7 +1137,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
         {
             @Override
-            public void nodeMetaInconsistency( long pageId, String message )
+            public void nodeMetaInconsistency( long pageId, String message, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1153,7 +1153,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
         {
             @Override
-            public void nodeMetaInconsistency( long pageId, String message )
+            public void nodeMetaInconsistency( long pageId, String message, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1169,7 +1169,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void unusedPage( long pageId )
+            public void unusedPage( long pageId, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1184,7 +1184,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void pageIdSeenMultipleTimes( long pageId )
+            public void pageIdSeenMultipleTimes( long pageId, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1199,7 +1199,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void pageIdExceedLastId( long lastId, long pageId )
+            public void pageIdExceedLastId( long lastId, long pageId, File file )
             {
                 called.setTrue();
                 assertEquals( targetLastId, lastId );
@@ -1216,9 +1216,8 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void crashedPointer( long pageId, GBPTreePointerType pointerType,
-                    long generationA, long readPointerA, long pointerA, byte stateA,
-                    long generationB, long readPointerB, long pointerB, byte stateB )
+            public void crashedPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA,
+                    long generationB, long readPointerB, long pointerB, byte stateB, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1235,9 +1234,8 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void brokenPointer( long pageId, GBPTreePointerType pointerType,
-                    long generationA, long readPointerA, long pointerA, byte stateA,
-                    long generationB, long readPointerB, long pointerB, byte stateB )
+            public void brokenPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA,
+                    long generationB, long readPointerB, long pointerB, byte stateB, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1253,7 +1251,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void unreasonableKeyCount( long pageId, int keyCount )
+            public void unreasonableKeyCount( long pageId, int keyCount, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
@@ -1269,7 +1267,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode )
+            public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode, File file )
             {
                 called.setTrue();
             }
@@ -1277,25 +1275,25 @@ public class GBPTreeConsistencyCheckerTest
             @Override
             public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration,
                     long leftRightSiblingPointer, long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode,
-                    long rightNodeGeneration )
+                    long rightNodeGeneration, File file )
             {
                 called.setTrue();
             }
 
             @Override
-            public void keysLocatedInWrongNode( KeyRange<MutableLong> range, MutableLong mutableLong, int pos, int keyCount, long pageId )
+            public void keysLocatedInWrongNode( KeyRange<MutableLong> range, MutableLong mutableLong, int pos, int keyCount, long pageId, File file )
             {
                 called.setTrue();
             }
 
             @Override
-            public void pageIdSeenMultipleTimes( long pageId )
+            public void pageIdSeenMultipleTimes( long pageId, File file )
             {
                 called.setTrue();
             }
 
             @Override
-            public void childNodeFoundAmongParentNodes( KeyRange<MutableLong> superRange, int level, long pageId )
+            public void childNodeFoundAmongParentNodes( KeyRange<MutableLong> superRange, int level, long pageId, File file )
             {
                 called.setTrue();
             }
@@ -1309,7 +1307,7 @@ public class GBPTreeConsistencyCheckerTest
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void childNodeFoundAmongParentNodes( KeyRange<MutableLong> superRange, int level, long pageId )
+            public void childNodeFoundAmongParentNodes( KeyRange<MutableLong> superRange, int level, long pageId, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );

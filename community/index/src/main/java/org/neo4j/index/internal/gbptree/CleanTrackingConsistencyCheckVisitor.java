@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
-import org.neo4j.kernel.impl.annotations.Documented;
+import java.io.File;
 
 class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
 {
@@ -39,138 +39,120 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
     }
 
     @Override
-    @Documented( "notATreeNode" )
-    public void notATreeNode( long pageId )
+    public void notATreeNode( long pageId, File file )
     {
         clean.setFalse();
-        delegate.notATreeNode( pageId );
+        delegate.notATreeNode( pageId, file );
     }
 
     @Override
-    @Documented( "unknownTreeNodeType" )
-    public void unknownTreeNodeType( long pageId, byte treeNodeType )
+    public void unknownTreeNodeType( long pageId, byte treeNodeType, File file )
     {
         clean.setFalse();
-        delegate.unknownTreeNodeType( pageId, treeNodeType );
+        delegate.unknownTreeNodeType( pageId, treeNodeType, file );
     }
 
     @Override
-    @Documented( "siblingsDontPointToEachOther" )
     public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
-            long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration )
+            long rightLeftSiblingPointer, long rightLeftSiblingPointerGeneration, long rightNode, long rightNodeGeneration, File file )
     {
         clean.setFalse();
         delegate.siblingsDontPointToEachOther( leftNode, leftNodeGeneration, leftRightSiblingPointerGeneration, leftRightSiblingPointer,
-                rightLeftSiblingPointer, rightLeftSiblingPointerGeneration, rightNode, rightNodeGeneration
+                rightLeftSiblingPointer, rightLeftSiblingPointerGeneration, rightNode, rightNodeGeneration, file
         );
     }
 
     @Override
-    @Documented( "rightmostNodeHasRightSibling" )
-    public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode )
+    public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode, File file )
     {
         clean.setFalse();
-        delegate.rightmostNodeHasRightSibling( rightSiblingPointer, rightmostNode );
+        delegate.rightmostNodeHasRightSibling( rightSiblingPointer, rightmostNode, file );
     }
 
     @Override
-    @Documented( "pointerToOldVersionOfTreeNode" )
-    public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer )
+    public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer, File file )
     {
         clean.setFalse();
-        delegate.pointerToOldVersionOfTreeNode( pageId, successorPointer );
+        delegate.pointerToOldVersionOfTreeNode( pageId, successorPointer, file );
     }
 
     @Override
-    @Documented( "pointerHasLowerGenerationThanNode" )
     public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
-            long targetNodeGeneration )
+            long targetNodeGeneration, File file )
     {
         clean.setFalse();
-        delegate.pointerHasLowerGenerationThanNode( pointerType, sourceNode, pointerGeneration, pointer, targetNodeGeneration );
+        delegate.pointerHasLowerGenerationThanNode( pointerType, sourceNode, pointerGeneration, pointer, targetNodeGeneration, file );
     }
 
     @Override
-    @Documented( "keysOutOfOrderInNode" )
-    public void keysOutOfOrderInNode( long pageId )
+    public void keysOutOfOrderInNode( long pageId, File file )
     {
         clean.setFalse();
-        delegate.keysOutOfOrderInNode( pageId );
+        delegate.keysOutOfOrderInNode( pageId, file );
     }
 
     @Override
-    @Documented( "keysLocatedInWrongNode" )
-    public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId )
+    public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, File file )
     {
         clean.setFalse();
-        delegate.keysLocatedInWrongNode( range, key, pos, keyCount, pageId );
+        delegate.keysLocatedInWrongNode( range, key, pos, keyCount, pageId, file );
     }
 
     @Override
-    @Documented( "unusedPage" )
-    public void unusedPage( long pageId )
+    public void unusedPage( long pageId, File file )
     {
         clean.setFalse();
-        delegate.unusedPage( pageId );
+        delegate.unusedPage( pageId, file );
     }
 
     @Override
-    @Documented( "pageIdExceedLastId" )
-    public void pageIdExceedLastId( long lastId, long pageId )
+    public void pageIdExceedLastId( long lastId, long pageId, File file )
     {
         clean.setFalse();
-        delegate.pageIdExceedLastId( lastId, pageId );
+        delegate.pageIdExceedLastId( lastId, pageId, file );
     }
 
     @Override
-    @Documented( "nodeMetaInconsistency" )
-    public void nodeMetaInconsistency( long pageId, String message )
+    public void nodeMetaInconsistency( long pageId, String message, File file )
     {
         clean.setFalse();
-        delegate.nodeMetaInconsistency( pageId, message );
+        delegate.nodeMetaInconsistency( pageId, message, file );
     }
 
     @Override
-    @Documented( "pageIdSeenMultipleTimes" )
-    public void pageIdSeenMultipleTimes( long pageId )
+    public void pageIdSeenMultipleTimes( long pageId, File file )
     {
         clean.setFalse();
-        delegate.pageIdSeenMultipleTimes( pageId );
+        delegate.pageIdSeenMultipleTimes( pageId, file );
     }
 
     @Override
-    @Documented( "crashedPointer" )
-    public void crashedPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA,
-            long generationB,
-            long readPointerB, long pointerB, byte stateB )
+    public void crashedPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA, long generationB,
+            long readPointerB, long pointerB, byte stateB, File file )
     {
         clean.setFalse();
-        delegate.crashedPointer( pageId, pointerType, generationA, readPointerA, pointerA, stateA, generationB, readPointerB, pointerB, stateB );
+        delegate.crashedPointer( pageId, pointerType, generationA, readPointerA, pointerA, stateA, generationB, readPointerB, pointerB, stateB, file );
     }
 
     @Override
-    @Documented( "brokenPointer" )
-    public void brokenPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA,
-            long generationB,
-            long readPointerB, long pointerB, byte stateB )
+    public void brokenPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA, long generationB,
+            long readPointerB, long pointerB, byte stateB, File file )
     {
         clean.setFalse();
-        delegate.brokenPointer( pageId, pointerType, generationA, readPointerA, pointerA, stateA, generationB, readPointerB, pointerB, stateB );
+        delegate.brokenPointer( pageId, pointerType, generationA, readPointerA, pointerA, stateA, generationB, readPointerB, pointerB, stateB, file );
     }
 
     @Override
-    @Documented( "unreasonableKeyCount" )
-    public void unreasonableKeyCount( long pageId, int keyCount )
+    public void unreasonableKeyCount( long pageId, int keyCount, File file )
     {
         clean.setFalse();
-        delegate.unreasonableKeyCount( pageId, keyCount );
+        delegate.unreasonableKeyCount( pageId, keyCount, file );
     }
 
     @Override
-    @Documented( "childNodeFoundAmongParentNodes" )
-    public void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId )
+    public void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId, File file )
     {
         clean.setFalse();
-        delegate.childNodeFoundAmongParentNodes( superRange, level, pageId );
+        delegate.childNodeFoundAmongParentNodes( superRange, level, pageId, file );
     }
 }
