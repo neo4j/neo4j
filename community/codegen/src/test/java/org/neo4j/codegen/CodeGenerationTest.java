@@ -2322,7 +2322,7 @@ public abstract class CodeGenerationTest
         };
     }
 
-    private <FROM, TO> void castTest( Class<FROM> fromType, FROM fromValue, Class<TO> toType, TO toValue) throws Throwable
+    private <FROM, TO> void castTest( Class<FROM> fromType, FROM fromValue, Class<TO> toType, TO toValue ) throws Throwable
     {
         // given
         ClassHandle handle;
