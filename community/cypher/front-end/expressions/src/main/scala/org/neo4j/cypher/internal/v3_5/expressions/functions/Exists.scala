@@ -27,7 +27,7 @@ case object Exists extends Function {
 
   def unapply(arg: Expression): Option[Expression] =
     arg match {
-      case FunctionInvocation(_, functionName, _, args) => Some(args.head)
+      case FunctionInvocation(_, functionName, _, args,_) => Some(args.head)
       case _ => None
     }
 

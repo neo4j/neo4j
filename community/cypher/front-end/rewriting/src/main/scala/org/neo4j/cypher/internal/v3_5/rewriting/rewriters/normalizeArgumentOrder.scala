@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions.{InequalityExpression, _}
 import org.neo4j.cypher.internal.v3_5.util.{Rewriter, topDown}
-import org.neo4j.cypher.internal.v3_5.expressions.InequalityExpression
 
 case object normalizeArgumentOrder extends Rewriter {
 
@@ -27,10 +26,10 @@ case object normalizeArgumentOrder extends Rewriter {
   private val instance: Rewriter = topDown(Rewriter.lift {
 
     // move id(n) on equals to the left
-    case predicate @ Equals(func@FunctionInvocation(_, _, _, _), _) if func.function == functions.Id =>
+    case predicate @ Equals(func@FunctionInvocation(_, _, _, _, _), _) if func.function == functions.Id =>
       predicate
 
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _, _)) if rhs.function == functions.Id =>
+    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _, _, _)) if rhs.function == functions.Id =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
 
     // move n.prop on equals to the left

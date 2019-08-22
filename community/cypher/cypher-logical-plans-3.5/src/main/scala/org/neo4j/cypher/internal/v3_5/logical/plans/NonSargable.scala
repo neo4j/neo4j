@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.expressions.functions
+import org.neo4j.cypher.internal.v3_5.expressions.{functions, _}
 
 // This is when dynamic properties are used
 object AsDynamicPropertyNonSeekable {
@@ -36,7 +35,7 @@ object AsDynamicPropertyNonSeekable {
 object AsDynamicPropertyNonScannable {
   def unapply(v: Any) = v match {
 
-    case func@FunctionInvocation(_, _, _, IndexedSeq(ContainerIndex(variable: Variable, _)))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(ContainerIndex(variable: Variable, _)),_)
       if  func.function == functions.Exists =>
       Some(variable)
 

@@ -28,9 +28,12 @@ object FunctionInvocation {
     FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(expression))(name.position)
   def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])(position: InputPosition): FunctionInvocation =
   FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
+  def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression], deprecated: Boolean)(position: InputPosition): FunctionInvocation =
+    FunctionInvocation(Namespace()(position), functionName, distinct, args, deprecated)(position)
 }
 
-case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
+case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression],
+                              deprecated: Boolean = false)
                              (val position: InputPosition) extends Expression {
   val name: String = (namespace.parts :+ functionName.name).mkString(".")
   val function: functions.Function = functions.Function.lookup.getOrElse(name.toLowerCase, UnresolvedFunction)

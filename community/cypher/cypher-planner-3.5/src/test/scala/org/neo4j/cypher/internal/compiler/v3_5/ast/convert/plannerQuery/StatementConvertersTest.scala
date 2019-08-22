@@ -19,19 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_5.planner._
+import org.neo4j.cypher.internal.compiler.v3_5.planner.{LogicalPlanningTestSupport, _}
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans.FieldSignature
-import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureReadOnlyAccess
-import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
-import org.neo4j.cypher.internal.v3_5.ast.Hint
-import org.neo4j.cypher.internal.v3_5.ast.UsingIndexHint
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.INCOMING
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.v3_5.ast.{Hint, UsingIndexHint}
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
 import org.neo4j.cypher.internal.v3_5.util.helpers.StringHelper._
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
@@ -836,7 +829,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result = query.toString
 
     val expectation =
-      """RegularPlannerQuery(QueryGraph {Nodes: ['  candidate@60', '  origin@7', 'c'], Rels: ['(  origin@7)--[r1:KNOWS:WORKS_AT]--(c)', '(c)--[r2:KNOWS:WORKS_AT]--(  candidate@60)'], Predicates: ['not r1 = r2', 'not EXISTS((`  origin@7`)-[`  REL143`:KNOWS]-(`  candidate@60`))', 'type(r1) = type(r2)', '`  origin@7`.name IN ["Clark Kent"]']},InterestingOrder(List(Desc(boost)),List()),AggregatingQueryProjection(Map(origin -> Property(Variable(  origin@7),PropertyKeyName(name)), candidate -> Property(Variable(  candidate@60),PropertyKeyName(name))),Map(boost -> FunctionInvocation(Namespace(List()),FunctionName(SUM),false,Vector(FunctionInvocation(Namespace(List()),FunctionName(ROUND),false,Vector(Add(Property(Variable(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(Namespace(List()),FunctionName(COALESCE),false,Vector(Property(Variable(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0))),SignedDecimalIntegerLiteral(2)))))))),QueryShuffle(List(DescSortItem(Variable(boost))),None,Some(SignedDecimalIntegerLiteral(10))),Selections(Set())),None)"""
+      """RegularPlannerQuery(QueryGraph {Nodes: ['  candidate@60', '  origin@7', 'c'], Rels: ['(  origin@7)--[r1:KNOWS:WORKS_AT]--(c)', '(c)--[r2:KNOWS:WORKS_AT]--(  candidate@60)'], Predicates: ['not r1 = r2', 'not EXISTS((`  origin@7`)-[`  REL143`:KNOWS]-(`  candidate@60`))', 'type(r1) = type(r2)', '`  origin@7`.name IN ["Clark Kent"]']},InterestingOrder(List(Desc(boost)),List()),AggregatingQueryProjection(Map(origin -> Property(Variable(  origin@7),PropertyKeyName(name)), candidate -> Property(Variable(  candidate@60),PropertyKeyName(name))),Map(boost -> FunctionInvocation(Namespace(List()),FunctionName(SUM),false,Vector(FunctionInvocation(Namespace(List()),FunctionName(ROUND),false,Vector(Add(Property(Variable(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(Namespace(List()),FunctionName(COALESCE),false,Vector(Property(Variable(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0)),false),SignedDecimalIntegerLiteral(2)))),false)),false)),QueryShuffle(List(DescSortItem(Variable(boost))),None,Some(SignedDecimalIntegerLiteral(10))),Selections(Set())),None)"""
 
     result should equal(expectation)
   }
@@ -852,7 +845,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result = query.toString
 
     val expectation =
-      """RegularPlannerQuery(QueryGraph {Nodes: ['owner']},InterestingOrder(List(),List()),AggregatingQueryProjection(Map(owner -> Variable(owner)),Map(xyz -> CountStar()),QueryShuffle(List(),None,None),Selections(Set())),Some(RegularPlannerQuery(QueryGraph {Arguments: ['owner', 'xyz']},InterestingOrder(List(),List()),RegularQueryProjection(Map(owner -> Variable(owner), collection -> GreaterThan(Variable(xyz),SignedDecimalIntegerLiteral(0))),QueryShuffle(List(),None,None),Selections(Set(Predicate(Set(owner,   REL90,   NODE92),FunctionInvocation(Namespace(List()),FunctionName(EXISTS),false,Vector(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(owner)),List(),None,None),RelationshipPattern(Some(Variable(  REL90)),List(),None,None,BOTH,false,None),NodePattern(Some(Variable(  NODE92)),List(),None,None)))))))))),Some(RegularPlannerQuery(QueryGraph {Arguments: ['collection', 'owner']},InterestingOrder(List(),List()),RegularQueryProjection(Map(owner -> Variable(owner)),QueryShuffle(List(),None,None),Selections(Set())),None)))))"""
+      """RegularPlannerQuery(QueryGraph {Nodes: ['owner']},InterestingOrder(List(),List()),AggregatingQueryProjection(Map(owner -> Variable(owner)),Map(xyz -> CountStar()),QueryShuffle(List(),None,None),Selections(Set())),Some(RegularPlannerQuery(QueryGraph {Arguments: ['owner', 'xyz']},InterestingOrder(List(),List()),RegularQueryProjection(Map(owner -> Variable(owner), collection -> GreaterThan(Variable(xyz),SignedDecimalIntegerLiteral(0))),QueryShuffle(List(),None,None),Selections(Set(Predicate(Set(owner,   REL90,   NODE92),FunctionInvocation(Namespace(List()),FunctionName(EXISTS),false,Vector(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(owner)),List(),None,None),RelationshipPattern(Some(Variable(  REL90)),List(),None,None,BOTH,false,None),NodePattern(Some(Variable(  NODE92)),List(),None,None))))),false))))),Some(RegularPlannerQuery(QueryGraph {Arguments: ['collection', 'owner']},InterestingOrder(List(),List()),RegularQueryProjection(Map(owner -> Variable(owner)),QueryShuffle(List(),None,None),Selections(Set())),None)))))"""
     result should equal(expectation)
   }
 

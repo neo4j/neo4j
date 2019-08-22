@@ -36,6 +36,7 @@ import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class DeprecationAcceptanceTest extends NotificationTestSupport
@@ -110,6 +111,31 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     {
         assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens",
                              containsItem( deprecatedFeatureWarning ) );
+    }
+
+    @Test
+    public void deprecatedFilterShouldNotHitCacheForNewVersion()
+    {
+        assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds",
+                containsItem( deprecatedFeatureWarning ) );
+
+        try ( Result result = db().execute( "EXPLAIN WITH [1,2,3] AS list RETURN [x IN list WHERE x % 2 = 1] AS odds" ) )
+        {
+            assertFalse( result.getNotifications().iterator().hasNext() );
+        }
+
+    }
+
+    @Test
+    public void deprecatedExtractShouldNotHitCacheForNewVersion()
+    {
+        assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens",
+                containsItem( deprecatedFeatureWarning ) );
+
+        try ( Result result = db().execute( "EXPLAIN WITH [1,2,3] AS list RETURN [x IN list | x * 10] AS tens" ) )
+        {
+            assertFalse( result.getNotifications().iterator().hasNext() );
+        }
     }
 
     @Test

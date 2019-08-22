@@ -43,7 +43,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     plan match {
       case Projection(_, expressions) =>
         expressions("clowns") match {
-          case ListComprehension(ExtractScope(_, Some(NestedPlanExpression(nestedPlan, _)), _), _) =>
+          case ListComprehension(ExtractScope(_, Some(NestedPlanExpression(nestedPlan, _)), _), _, _) =>
             nestedPlan should equal(
               Selection(
                 Ands(Set(HasLabels(varFor("  NODE116"), Seq(LabelName("ComedyClub")_))_))_,

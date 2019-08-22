@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_5.expressions.{functions, _}
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 case object countStorePlanner {
 
@@ -51,7 +51,7 @@ case object countStorePlanner {
                                         argumentIds: Set[String], selections: Selections, context: LogicalPlanningContext): Option[LogicalPlan] =
     exp match {
       case // COUNT(<id>)
-        func@FunctionInvocation(_, _, false, Vector(Variable(variableName))) if func.function == functions.Count =>
+        func@FunctionInvocation(_, _, false, Vector(Variable(variableName)), _) if func.function == functions.Count =>
         trySolveNodeAggregation(query, columnName, Some(variableName), patternRelationships, patternNodes, argumentIds, selections, context)
 
       case // COUNT(*)
@@ -59,7 +59,7 @@ case object countStorePlanner {
         trySolveNodeAggregation(query, columnName, None, patternRelationships, patternNodes, argumentIds, selections, context)
 
       case // COUNT(n.prop)
-        func@FunctionInvocation(_, _, false, Vector(Property(Variable(variableName), PropertyKeyName(propKeyName))))
+        func@FunctionInvocation(_, _, false, Vector(Property(Variable(variableName), PropertyKeyName(propKeyName))), _)
         if func.function == functions.Count =>
         val labelCheck: Option[LabelName] => Option[LogicalPlan] => Option[LogicalPlan] = {
             case None => _ => None

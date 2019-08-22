@@ -16,21 +16,11 @@
  */
 package org.neo4j.cypher.internal.v3_5.ast
 
-import org.neo4j.cypher.internal.v3_5.ast.semantics.Scope
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticAnalysisTooling
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckResult
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckResult.error
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckResult.success
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckable
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticExpressionCheck
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticPatternCheck
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.v3_5.ast.semantics._
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckResult.{error, success}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticExpressionCheck, SemanticPatternCheck, SemanticState, _}
 import org.neo4j.cypher.internal.v3_5.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.expressions.functions
-import org.neo4j.cypher.internal.v3_5.expressions.functions.Distance
-import org.neo4j.cypher.internal.v3_5.expressions.functions.Exists
+import org.neo4j.cypher.internal.v3_5.expressions.{functions, _}
+import org.neo4j.cypher.internal.v3_5.expressions.functions.{Distance, Exists}
 import org.neo4j.cypher.internal.v3_5.util.Foldable._
 import org.neo4j.cypher.internal.v3_5.util._
 import org.neo4j.cypher.internal.v3_5.util.helpers.StringHelper.RichString
@@ -415,7 +405,7 @@ case class Match(
           acc => (acc :+ name, None)
         case In(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
           acc => (acc :+ name, None)
-        case predicate@FunctionInvocation(_, _, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
+        case predicate@FunctionInvocation(_, _, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))),_)
           if id == variable && predicate.function == Exists =>
           acc => (acc :+ name, None)
         case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
@@ -432,7 +422,7 @@ case class Match(
               expr match {
                 case Property(Variable(id), PropertyKeyName(name)) if id == variable =>
                   acc :+ name
-                case FunctionInvocation(Namespace(List()), FunctionName(Distance.name), _, Seq(Property(Variable(id), PropertyKeyName(name)), _)) if id == variable =>
+                case FunctionInvocation(Namespace(List()), FunctionName(Distance.name), _, Seq(Property(Variable(id), PropertyKeyName(name)), _), _) if id == variable =>
                   acc :+ name
                 case _ =>
                   acc

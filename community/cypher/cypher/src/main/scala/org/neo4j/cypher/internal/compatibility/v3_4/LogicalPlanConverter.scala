@@ -34,9 +34,9 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4,
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
+import org.neo4j.cypher.internal.v3_5.expressions.{LogicalVariable, PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexOrderNone, IndexedProperty, ProcedureAccessMode, QualifiedName, UserFunctionSignature, LogicalPlan => LogicalPlanv3_5}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
-import org.neo4j.cypher.internal.v3_5.expressions.{LogicalVariable, PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
 import org.neo4j.cypher.internal.v3_5.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
@@ -265,7 +265,13 @@ object LogicalPlanConverter {
         case (item: plansV3_4.ResolvedCall, children: Seq[AnyRef]) =>
           convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])
 
-          // Fallthrough for all ASTNodes
+        case (funcV3_4:expressionsv3_4.FunctionInvocation, children: Seq[AnyRef]) =>
+          convertVersion(oldExpressionPackage, newExpressionPackage, funcV3_4, children:+Boolean.box(false), helpers.as3_5(funcV3_4.position), classOf[InputPosition])
+
+        case (listCompV3_4:expressionsv3_4.ListComprehension, children: Seq[AnyRef]) =>
+          convertVersion(oldExpressionPackage, newExpressionPackage, listCompV3_4, children:+Boolean.box(false), helpers.as3_5(listCompV3_4.position), classOf[InputPosition])
+
+        // Fallthrough for all ASTNodes
         case (expressionV3_4: utilv3_4.ASTNode, children: Seq[AnyRef]) =>
           convertVersion(oldExpressionPackage, newExpressionPackage, expressionV3_4, children, helpers.as3_5(expressionV3_4.position), classOf[InputPosition])
 
@@ -491,6 +497,7 @@ object LogicalPlanConverter {
 
     val params = constructor.getParameterTypes
     val args = children.toVector
+
     val ctorArgs =
       if (params.length == args.length + 1
         && params.last.isAssignableFrom(assignableClazzForArg))

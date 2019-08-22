@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.Expre
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, _}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions.functions.Rand
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression, FunctionInvocation, LabelName, Parameter}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.v3_5.util.{Cardinality, Cost}
 
 import scala.language.implicitConversions
@@ -81,7 +81,7 @@ trait ExpressionEvaluator {
   }
 
   def isDeterministic(expr: Expression): Boolean = expr.inputs.forall {
-      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => false
+      case (func@FunctionInvocation(_, _, _, _, _), _) if func.function == Rand => false
       //for UDFs we don't know but the result might be non-deterministic
       case (_:ResolvedFunctionInvocation, _) => false
       case _ => true
