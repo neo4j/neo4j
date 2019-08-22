@@ -27,7 +27,5 @@ import org.neo4j.cypher.internal.v4_0.expressions.Expression
 case class unsolvedPreds(solveds: Solveds) extends ((Selections, LogicalPlan) => Seq[Expression]) {
   def apply(s: Selections, l: LogicalPlan): Seq[Expression] =
     s.scalarPredicatesGiven(l.availableSymbols)
-    .filterNot(predicate => solveds.get(l.id).exists(_.queryGraph.selections.contains(predicate)))
+    .filterNot(predicate => solveds.get(l.id).asSinglePlannerQuery.exists(_.queryGraph.selections.contains(predicate)))
 }
-
-

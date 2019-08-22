@@ -56,7 +56,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
   def dependencies: Set[String]
 
-  def readOnly: Boolean = (queryGraph.readOnly && horizon.readOnly) && tail.forall(_.readOnly)
+  override def readOnly: Boolean = (queryGraph.readOnly && horizon.readOnly) && tail.forall(_.readOnly)
 
   def preferredStrictness: Option[StrictnessMode] =
     horizon.preferredStrictness(interestingOrder.requiredOrderCandidate.nonEmpty) orElse tail.flatMap(_.preferredStrictness)
@@ -71,10 +71,10 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def withInput(queryInput: Set[String]) =
+  def withInput(queryInput: Set[String]): SinglePlannerQuery =
     copy(input = Some(queryInput), queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput))
 
-  def withoutHints(hintsToIgnore: GenSeq[Hint]): SinglePlannerQuery = {
+  override def withoutHints(hintsToIgnore: Seq[Hint]): SinglePlannerQuery = {
     copy(queryGraph = queryGraph.withoutHints(hintsToIgnore), tail = tail.map(x => x.withoutHints(hintsToIgnore)))
   }
 
@@ -108,12 +108,12 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
   def isCoveredByHints(other: SinglePlannerQuery): Boolean = allHints.forall(other.allHints.contains)
 
-  def allHints: Seq[Hint] = tail match {
+  override def allHints: Seq[Hint] = tail match {
     case Some(tailPlannerQuery) => queryGraph.allHints ++ tailPlannerQuery.allHints
     case None => queryGraph.allHints
   }
 
-  def numHints: Int = allHints.size
+  override def numHints: Int = allHints.size
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): SinglePlannerQuery = withQueryGraph(f(queryGraph))
 
@@ -225,6 +225,8 @@ trait SinglePlannerQuery extends PlannerQueryPart {
       case _ => Set.empty
     }
   }
+
+  override def asSinglePlannerQuery: SinglePlannerQuery = this
 }
 
 object SinglePlannerQuery {

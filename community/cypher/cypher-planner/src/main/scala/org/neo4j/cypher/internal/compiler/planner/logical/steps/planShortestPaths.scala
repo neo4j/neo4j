@@ -105,7 +105,7 @@ case object planShortestPaths {
     }
 
     // We have to force the plan to solve what we actually solve
-    val solved = context.planningAttributes.solveds.get(inner.id).amendQueryGraph(_.addShortestPath(shortestPath).addPredicates(predicates: _*))
+    val solved = context.planningAttributes.solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addShortestPath(shortestPath).addPredicates(predicates: _*))
 
     lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestPath.name.get), context, Some(solved))
   }

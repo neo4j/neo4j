@@ -135,7 +135,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(NodeIndexScan(`idName`, _, _, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).queryGraph) should beLike {
+      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
         case Seq(plannedQG: QueryGraph) if plannedQG.hints == Seq(hint) => ()
       }
     }
@@ -157,7 +157,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(NodeIndexScan(`idName`, _, _, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).queryGraph) should beLike {
+      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
         case Seq(plannedQG: QueryGraph) if plannedQG.hints == Seq(hint) => ()
       }
     }
@@ -446,7 +446,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).queryGraph) should beLike {
+      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
         case Seq(plannedQG: QueryGraph) if plannedQG.hints == Seq(hint) => ()
       }
     }
@@ -468,7 +468,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _, _)) => ()
       }
 
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).queryGraph) should beLike {
+      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
         case Seq(plannedQG: QueryGraph) if plannedQG.hints == Seq(hint) => ()
       }
     }

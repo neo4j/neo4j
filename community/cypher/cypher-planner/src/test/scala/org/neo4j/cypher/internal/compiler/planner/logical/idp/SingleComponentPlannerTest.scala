@@ -144,7 +144,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   private def assertPlanSolvesHints(plans: Iterable[LogicalPlan], solveds: Solveds, hints: Hint*) {
     for (h <- hints;
          p <- plans) {
-      solveds.get(p.id).lastQueryGraph.hints should contain(h)
+      solveds.get(p.id).asSinglePlannerQuery.lastQueryGraph.hints should contain(h)
     }
   }
 }

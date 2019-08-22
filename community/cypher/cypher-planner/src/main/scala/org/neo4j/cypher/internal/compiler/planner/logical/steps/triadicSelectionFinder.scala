@@ -39,7 +39,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 
   def unsolvedPredicates(in: LogicalPlan, qg: QueryGraph, solveds: Solveds) = {
     val patternPredicates: Seq[Expression] = qg.selections.patternPredicatesGiven(in.availableSymbols)
-    val solvedPredicates: Seq[Expression] = solveds.get(in.id).lastQueryGraph.selections.flatPredicates
+    val solvedPredicates: Seq[Expression] = solveds.get(in.id).asSinglePlannerQuery.lastQueryGraph.selections.flatPredicates
     patternPredicates.filter { patternPredicate =>
       !(solvedPredicates contains patternPredicate)
     }

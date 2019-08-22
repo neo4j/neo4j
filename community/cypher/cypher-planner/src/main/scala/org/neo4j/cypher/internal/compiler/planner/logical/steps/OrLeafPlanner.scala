@@ -66,9 +66,9 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
               val singlePlan = plans.reduce[LogicalPlan] {
                 case (p1, p2) =>
                   predicates --= (predicates diff coveringPredicates(p2, context.planningAttributes.solveds).toSet)
-                  producer.planUnion(p1, p2, context)
+                  producer.planUnionForOrLeaves(p1, p2, context)
               }
-              val orPlan = context.logicalPlanProducer.planDistinctStar(singlePlan, context)
+              val orPlan = context.logicalPlanProducer.planDistinctForOrLeaves(singlePlan, context)
 
               Some(context.logicalPlanProducer.updateSolvedForOr(orPlan, orPredicate, predicates.toSet, context))
           }
@@ -85,7 +85,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
   }
 
   private def coveringPredicates(plan: LogicalPlan, solveds: Solveds): Seq[Expression] = {
-    solveds.get(plan.id).tailOrSelf.queryGraph.selections.flatPredicates.map {
+    solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph.selections.flatPredicates.map {
       case PartialPredicateWrapper(coveredPredicate, coveringPredicate) => coveringPredicate
       case predicate => predicate
     }

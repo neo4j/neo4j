@@ -105,7 +105,7 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
   }
 
   private def nodes(plan: LogicalPlan, solveds: Solveds) =
-    solveds.get(plan.id).queryGraph.patternNodes
+    solveds.get(plan.id).asSinglePlannerQuery.queryGraph.patternNodes
 
   private def show(goal: Goal, symbols: Set[String]) =
     s"${showIds(goal)}: ${showNames(symbols)}"

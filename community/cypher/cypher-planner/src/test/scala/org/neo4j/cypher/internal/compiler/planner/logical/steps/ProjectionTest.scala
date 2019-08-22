@@ -43,7 +43,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projections))
   }
 
   test("should mark as solved according to projectionsToMarkSolved argument") {
@@ -58,7 +58,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(projectionsToMarkSolved))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projectionsToMarkSolved))
   }
 
   test("does not add projection when not needed") {
@@ -71,7 +71,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
     // then
     result should equal(startPlan)
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projections))
   }
 
   test("only adds the set difference of projections needed") {
@@ -85,7 +85,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     // then
     val actualProjections = Map("42" -> literalInt(42))
     result should equal(Projection(startPlan, actualProjections))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projections))
   }
 
   test("does projection when renaming columns") {
@@ -98,7 +98,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(RegularQueryProjection(projections))
   }
 
   private def queryGraphWith(skip: Option[Expression] = None,

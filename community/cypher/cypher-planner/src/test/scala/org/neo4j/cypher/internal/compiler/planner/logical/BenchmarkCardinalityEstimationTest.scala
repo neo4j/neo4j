@@ -34,7 +34,7 @@ class BenchmarkCardinalityEstimationTest extends CypherFunSuite with LogicalPlan
   implicit class RichLogicalPlanningEnvironment(val env: LogicalPlanningEnvironment[_]) {
     def assertNoRegression(query: String, actual: Double, expectedDifference: Double, allowedSlack: Double = 0.05): Unit = {
       val (_, plan, _, solveds, _) = env.getLogicalPlanFor(query)
-      val qg = solveds.get(plan.id).queryGraph
+      val qg = solveds.get(plan.id).asSinglePlannerQuery.queryGraph
       val estimate = env.estimate(qg).amount
       val currentDifference = Math.abs(estimate - actual)
 

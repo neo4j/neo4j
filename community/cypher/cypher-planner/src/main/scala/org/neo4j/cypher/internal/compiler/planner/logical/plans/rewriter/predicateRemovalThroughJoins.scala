@@ -39,13 +39,13 @@ case class predicateRemovalThroughJoins(solveds: Solveds, cardinalities: Cardina
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case n@NodeHashJoin(nodeIds, lhs, rhs@Selection(Ands(rhsPredicates), rhsLeaf)) =>
-      val lhsPredicates = predicatesDependingOnTheJoinIds(solveds.get(lhs.id).lastQueryGraph, nodeIds)
+      val lhsPredicates = predicatesDependingOnTheJoinIds(solveds.get(lhs.id).asSinglePlannerQuery.lastQueryGraph, nodeIds)
       val newPredicate = rhsPredicates.filterNot(lhsPredicates)
 
       if (newPredicate.isEmpty) {
         NodeHashJoin(nodeIds, lhs, rhsLeaf)(SameId(n.id))
       } else {
-        val newRhsPlannerQuery = solveds.get(rhsLeaf.id).amendQueryGraph(_.addPredicates(newPredicate.toArray: _*))
+        val newRhsPlannerQuery = solveds.get(rhsLeaf.id).asSinglePlannerQuery.amendQueryGraph(_.addPredicates(newPredicate.toArray: _*))
         val newSelection = Selection(Ands(newPredicate)(newPredicate.head.position), rhsLeaf)(attributes.copy(rhs.id))
         solveds.set(newSelection.id, newRhsPlannerQuery)
         cardinalities.copy(rhsLeaf.id, newSelection.id)

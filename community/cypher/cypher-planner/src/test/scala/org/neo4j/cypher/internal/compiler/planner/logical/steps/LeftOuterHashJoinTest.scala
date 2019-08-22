@@ -97,7 +97,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val plan = leftOuterHashJoin(optionalQg, left, InterestingOrder.empty, context).getOrElse(fail("No result from outerHashJoin"))
 
     plan should equal(LeftOuterHashJoin(Set(aNode), left, innerPlan))
-    context.planningAttributes.solveds.get(plan.id).lastQueryGraph.allHints should equal (theHint)
+    context.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.allHints should equal (theHint)
   }
 
 }

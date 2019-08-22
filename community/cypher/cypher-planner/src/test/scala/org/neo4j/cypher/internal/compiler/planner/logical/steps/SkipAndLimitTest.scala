@@ -43,7 +43,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Skip(startPlan, x))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(Map.empty, QueryPagination(skip = Some(x)))
     )
   }
@@ -60,7 +60,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Limit(startPlan, x, DoNotIncludeTies))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x)))
     )
   }
@@ -77,7 +77,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Skip(Limit(startPlan, add(x, y), DoNotIncludeTies), y))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(
+    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x), skip = Some(y)))
     )
   }

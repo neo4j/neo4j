@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener}
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener, verifyBestPlan}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -97,6 +97,7 @@ case class QueryPlanner(planSingleQuery: SingleQueryPlanner = PlanSingleQuery())
   def plan(query: PlannerQuery, context: LogicalPlanningContext, produceResultColumns: Seq[String]): (Option[PeriodicCommit], LogicalPlan, LogicalPlanningContext) = {
     val (plan, newContext) = plannerQueryPartPlanner.plan(query.query, context)
     val planWithProduceResults = createProduceResultOperator(plan, produceResultColumns, newContext)
+    verifyBestPlan(planWithProduceResults, query.query,newContext)
     (query.periodicCommit, planWithProduceResults, newContext)
   }
 
@@ -121,14 +122,14 @@ case object plannerQueryPartPlanner {
         val projectionsForQuery = unionMappings.map(um => um.unionVariable.name -> um.variableInQuery).toMap
 
         val (partPlan, partContext) = plan(part, context)
-        val partPlanWithProjection = partContext.logicalPlanProducer.planRegularProjection(partPlan, projectionsForPart, Map.empty, partContext)
+        val partPlanWithProjection = partContext.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, partContext)
 
         val (queryPlan, finalContext) = PlanSingleQuery()(query, partContext)
         val queryPlanWithProjection = finalContext.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, Map.empty, finalContext)
 
-        val unionPlan = finalContext.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, finalContext)
+        val unionPlan = finalContext.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, finalContext)
         if (distinct)
-          (finalContext.logicalPlanProducer.planDistinctStar(unionPlan, finalContext), finalContext)
+          (finalContext.logicalPlanProducer.planDistinctForUnion(unionPlan, finalContext), finalContext)
         else
           (unionPlan, finalContext)
     }

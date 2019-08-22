@@ -48,7 +48,7 @@ object Metrics {
 
     def recurse(fromPlan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities): QueryGraphSolverInput = {
       val newCardinalityInput = cardinalities.get(fromPlan.id)
-      val newLabels = (labelInfo fuse solveds.get(fromPlan.id).labelInfo) (_ ++ _)
+      val newLabels = (labelInfo fuse solveds.get(fromPlan.id).asSinglePlannerQuery.labelInfo) (_ ++ _)
       copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput, strictness = strictness)
     }
 

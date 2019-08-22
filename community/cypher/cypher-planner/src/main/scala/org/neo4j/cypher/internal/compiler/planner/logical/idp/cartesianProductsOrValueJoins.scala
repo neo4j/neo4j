@@ -167,8 +167,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       val hashJoinBA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, join.switchSides, join, context), qg)
 
       Set(
-        (PlannedComponent(context.planningAttributes.solveds.get(hashJoinAB.id).lastQueryGraph, hashJoinAB), t1 -> t2),
-        (PlannedComponent(context.planningAttributes.solveds.get(hashJoinBA.id).lastQueryGraph, hashJoinBA), t1 -> t2)
+        (PlannedComponent(context.planningAttributes.solveds.get(hashJoinAB.id).asSinglePlannerQuery.lastQueryGraph, hashJoinAB), t1 -> t2),
+        (PlannedComponent(context.planningAttributes.solveds.get(hashJoinBA.id).asSinglePlannerQuery.lastQueryGraph, hashJoinBA), t1 -> t2)
       )
 
     }).flatten.toMap
@@ -193,12 +193,12 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                       singleComponentPlanner: SingleComponentPlannerTrait) = {
 
     val notSingleComponent = rhsQG.connectedComponents.size > 1
-    val containsOptionals = context.planningAttributes.solveds.get(rhsInputPlan.id).lastQueryGraph.optionalMatches.nonEmpty
+    val containsOptionals = context.planningAttributes.solveds.get(rhsInputPlan.id).asSinglePlannerQuery.lastQueryGraph.optionalMatches.nonEmpty
 
     if (notSingleComponent || containsOptionals) None
     else {
       // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
-      val rhsQGWithLHSArguments = context.planningAttributes.solveds.get(rhsInputPlan.id).lastQueryGraph.addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq).addPredicates(predicate)
+      val rhsQGWithLHSArguments = context.planningAttributes.solveds.get(rhsInputPlan.id).asSinglePlannerQuery.lastQueryGraph.addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq).addPredicates(predicate)
       val rhsPlan = singleComponentPlanner.planComponent(rhsQGWithLHSArguments, context, kit, interestingOrder)
       val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context), fullQG)
 
@@ -213,7 +213,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       }.flatten
 
       if (indexWithDependency.nonEmpty)
-        Some(PlannedComponent(context.planningAttributes.solveds.get(result.id).lastQueryGraph, result))
+        Some(PlannedComponent(context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.lastQueryGraph, result))
       else
         None
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir
 
+import org.neo4j.cypher.internal.v4_0.ast.Hint
 import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 
 /**
@@ -34,6 +35,16 @@ case class PlannerQuery(query: PlannerQueryPart, periodicCommit: Option[Periodic
 trait PlannerQueryPart {
   def readOnly: Boolean
   def returns: Set[String]
+
+  def allHints: Seq[Hint]
+  def withoutHints(hintsToIgnore: Seq[Hint]): PlannerQueryPart
+  def numHints: Int
+
+  /**
+   * Use this method when you are certain that you are dealing with a SinglePlannerQuery, and not a UnionQuery.
+   * It will throw an Exception if this is a UnionQuery.
+   */
+  def asSinglePlannerQuery: SinglePlannerQuery
 }
 
 /**
@@ -47,11 +58,22 @@ case class UnionQuery(part: PlannerQueryPart,
                       query: SinglePlannerQuery,
                       distinct: Boolean,
                       unionMappings: List[UnionMapping]) extends PlannerQueryPart {
-  def readOnly: Boolean = part.readOnly && query.readOnly
+  override def readOnly: Boolean = part.readOnly && query.readOnly
 
   override def returns: Set[String] = part.returns.map { returnColInPart =>
     unionMappings.collectFirst {
       case UnionMapping(varAfterUnion, varInPart, _) if varInPart.name == returnColInPart => varAfterUnion.name
     }.get
   }
+
+  override def allHints: Seq[Hint] = part.allHints ++ query.allHints
+
+  override def withoutHints(hintsToIgnore: Seq[Hint]): PlannerQueryPart = copy(
+    part = part.withoutHints(hintsToIgnore),
+    query = query.withoutHints(hintsToIgnore)
+  )
+
+  override def numHints: Int = part.numHints + query.numHints
+
+  override def asSinglePlannerQuery: SinglePlannerQuery = throw new IllegalStateException("Called asSinglePlannerQuery on a UnionQuery")
 }

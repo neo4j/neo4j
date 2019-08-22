@@ -96,7 +96,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     )
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
-    verifyBestPlan(getSimpleLogicalPlanWithAandB(context), query, context).availableSymbols should equal(Set("a", "b"))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(context), query, context) // should not throw
   }
 
   test("should throw when finding plan that contains unfulfillable index hint") {
@@ -119,7 +119,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     val notificationLogger = new RecordingNotificationLogger
     val context = newMockedLogicalPlanningContext(planContext = getPlanContext(false), notificationLogger = notificationLogger, useErrorsOverWarnings = false)
 
-    verifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithIdxHint(), context).availableSymbols should equal(Set("a", "b"))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithIdxHint(), context) // should not throw
     notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", Seq("name")))
   }
 
@@ -127,7 +127,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     val notificationLogger = new RecordingNotificationLogger
     val context = newMockedLogicalPlanningContext(planContext = getPlanContext(false), notificationLogger = notificationLogger, useErrorsOverWarnings = false)
 
-    verifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithJoinHint(), context).availableSymbols should equal(Set("a", "b"))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithJoinHint(), context) // should not throw
     val result = notificationLogger.notifications
     result should contain(JoinHintUnfulfillableNotification(Array("a")))
   }
@@ -137,7 +137,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     val context = newMockedLogicalPlanningContext(planContext = getPlanContext(true), notificationLogger = notificationLogger, useErrorsOverWarnings = false)
     val plan: LogicalPlan = newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, hints = Set[Hint](newIndexHint()))
 
-    verifyBestPlan(plan, newQueryWithIdxHint(), context).availableSymbols should equal(Set("a", "b"))
+    verifyBestPlan(plan, newQueryWithIdxHint(), context) // should not throw
     notificationLogger.notifications should be(empty)
   }
 
@@ -146,7 +146,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     val context = newMockedLogicalPlanningContext(planContext = getPlanContext(true), notificationLogger = notificationLogger, useErrorsOverWarnings = false)
     val plan: LogicalPlan = newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, hints = Set[Hint](newJoinHint()))
 
-    verifyBestPlan(plan, newQueryWithJoinHint(), context).availableSymbols should equal(Set("a", "b"))
+    verifyBestPlan(plan, newQueryWithJoinHint(), context) // should not throw
     notificationLogger.notifications should be(empty)
   }
 

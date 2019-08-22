@@ -155,11 +155,11 @@ object SingleComponentPlanner {
                         context: LogicalPlanningContext): Iterable[LogicalPlan] = {
     val solveds = context.planningAttributes.solveds
     leaves.flatMap {
-      case plan if solveds.get(plan.id).lastQueryGraph.patternRelationships.contains(pattern) =>
+      case plan if solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.patternRelationships.contains(pattern) =>
         Set(plan)
-      case plan if solveds.get(plan.id).lastQueryGraph.allCoveredIds.contains(pattern.name) =>
+      case plan if solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.allCoveredIds.contains(pattern.name) =>
         Set(planSingleProjectEndpoints(pattern, plan, context))
-      case plan if solveds.get(plan.id).lastQueryGraph.patternNodes.isEmpty && solveds.get(plan.id).lastQueryGraph.hints.exists(_.isInstanceOf[RelationshipHint]) =>
+      case plan if solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.patternNodes.isEmpty && solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.hints.exists(_.isInstanceOf[RelationshipHint]) =>
         Set(context.logicalPlanProducer.planEndpointProjection(plan, pattern.nodes._1, startInScope = false, pattern.nodes._2, endInScope = false, pattern, context))
       case plan =>
         val (start, end) = pattern.nodes
@@ -168,8 +168,8 @@ object SingleComponentPlanner {
 
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
-        val maybeStartPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[Argument])
-        val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
+        val maybeStartPlan = leaves.find(leaf => solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[Argument])
+        val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
         val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, interestingOrder, context)
         val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan, context)
         leftExpand ++ rightExpand ++ cartesianProduct ++ joins

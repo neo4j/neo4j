@@ -217,7 +217,7 @@ case object PlanUpdates extends UpdatesPlanner {
       case (src, current) => planUpdate(src, current, first, interestingOrder, context)
     }
 
-    val solved = context.planningAttributes.solveds.get(source.id).amendQueryGraph(u => u.addMutatingPatterns(solvedMutatingPattern))
+    val solved = context.planningAttributes.solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(u => u.addMutatingPatterns(solvedMutatingPattern))
     val antiCondApply = producer.planAntiConditionalApply(condApply, onCreate, ids, innerContext, Some(solved))
 
     antiCondApply
@@ -232,8 +232,8 @@ case object PlanUpdates extends UpdatesPlanner {
                              context: LogicalPlanningContext, ids: Seq[String]) = {
     def mergeRead(ctx: LogicalPlanningContext) = {
       val mergeReadPart = ctx.strategy.plan(matchGraph, interestingOrder, ctx)
-      if (context.planningAttributes.solveds.get(mergeReadPart.id).queryGraph != matchGraph)
-        throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${context.planningAttributes.solveds.get(mergeReadPart.id).queryGraph}\n not equal to \n$matchGraph")
+      if (context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph != matchGraph)
+        throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph}\n not equal to \n$matchGraph")
       producer.planOptional(mergeReadPart, matchGraph.argumentIds, ctx)
     }
 

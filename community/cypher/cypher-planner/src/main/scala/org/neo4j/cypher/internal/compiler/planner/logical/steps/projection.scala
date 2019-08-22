@@ -60,7 +60,7 @@ object projection {
   private def projectionsLeft(in: LogicalPlan, projectionsToPlan: Map[String, Expression], solveds: Solveds): Map[String, Expression] = {
     // if we had a previous projection it might have projected something already
     // we only want to project what's left from that previous projection
-    val alreadySolvedProjections = solveds.get(in.id).tailOrSelf.horizon match {
+    val alreadySolvedProjections = solveds.get(in.id).asSinglePlannerQuery.tailOrSelf.horizon match {
       case solvedProjection: QueryProjection => solvedProjection.projections
       case _ => Map.empty[String, Expression]
     }

@@ -19,29 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
-import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.LabelName
 import org.neo4j.exceptions.{HintException, IndexHintException, InternalException, JoinHintException}
 
 import scala.collection.JavaConverters._
 
-object verifyBestPlan extends PlanTransformer {
-  def apply(plan: LogicalPlan, expected: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    // TODO fix solveds and re-enable verification
-    return plan
-    val constructed = context.planningAttributes.solveds.get(plan.id)
+object verifyBestPlan {
+  def apply(plan: LogicalPlan, expected: PlannerQueryPart, context: LogicalPlanningContext): Unit = {
+    val constructed: PlannerQueryPart = context.planningAttributes.solveds.get(plan.id)
+
     if (expected != constructed) {
       val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context.planContext)
       val unfulfillableJoinHints = findUnfulfillableJoinHints(expected, context.planContext)
       val expectedWithoutHints = expected.withoutHints(unfulfillableIndexHints ++ unfulfillableJoinHints)
       if (expectedWithoutHints != constructed) {
-        val a: SinglePlannerQuery = expected.withoutHints(expected.allHints)
-        val b: SinglePlannerQuery = constructed.withoutHints(constructed.allHints)
+        val a: PlannerQueryPart = expected.withoutHints(expected.allHints)
+        val b: PlannerQueryPart = constructed.withoutHints(constructed.allHints)
         if (a != b) {
           // unknown planner issue failed to find plan (without regard for differences in hints)
           throw new InternalException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed\nPlan: $plan")
@@ -78,7 +77,6 @@ object verifyBestPlan extends PlanTransformer {
         processUnfulfilledJoinHints(plan, context, unfulfillableJoinHints)
       }
     }
-    plan
   }
 
   private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Seq[UsingIndexHint]): Unit = {
@@ -108,7 +106,7 @@ object verifyBestPlan extends PlanTransformer {
     }
   }
 
-  private def findUnfulfillableIndexHints(query: SinglePlannerQuery, planContext: PlanContext): Seq[UsingIndexHint] = {
+  private def findUnfulfillableIndexHints(query: PlannerQueryPart, planContext: PlanContext): Seq[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
       case UsingIndexHint(_, LabelName(label), properties, _)
@@ -120,7 +118,7 @@ object verifyBestPlan extends PlanTransformer {
     }
   }
 
-  private def findUnfulfillableJoinHints(query: SinglePlannerQuery, planContext: PlanContext): Seq[UsingJoinHint] = {
+  private def findUnfulfillableJoinHints(query: PlannerQueryPart, planContext: PlanContext): Seq[UsingJoinHint] = {
     query.allHints.collect {
       case hint: UsingJoinHint => hint
     }
