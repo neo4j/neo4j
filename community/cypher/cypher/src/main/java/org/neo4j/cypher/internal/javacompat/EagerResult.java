@@ -182,7 +182,7 @@ class EagerResult implements Result
         }
     }
 
-    private void writeRow( List<String> columns, StringBuilder builder, int numberOfColumns, Map<String,Object> row )
+    private static void writeRow( List<String> columns, StringBuilder builder, int numberOfColumns, Map<String,Object> row )
     {
         for ( int i = 0; i < numberOfColumns; i++ )
         {

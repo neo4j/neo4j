@@ -51,9 +51,4 @@ public class FilteringIterable<T> implements Iterable<T>
     {
         return new FilteringIterable<>( source, Predicates.notNull() );
     }
-
-    public static <T> Iterable<T> noDuplicates( Iterable<T> source )
-    {
-        return new FilteringIterable<>( source, Predicates.noDuplicates() );
-    }
 }

@@ -103,14 +103,56 @@ public abstract class TokenAccess<R>
         }
     };
 
+    private static <T> ResourceIterator<T> inUse( KernelTransaction transaction, TokenAccess<T> access )
+    {
+        SchemaReadCore schemaReadCore = transaction.schemaRead().snapshot();
+        return new TokenIterator<>( transaction, access )
+        {
+            @Override
+            protected T fetchNextOrNull()
+            {
+                while ( tokens.hasNext() )
+                {
+                    NamedToken token = tokens.next();
+                    if ( this.access.inUse( transaction, schemaReadCore, token.id() ) )
+                    {
+                        return this.access.token( token );
+                    }
+                }
+                close();
+                return null;
+            }
+        };
+    }
+
+    private static <T> ResourceIterator<T> all( KernelTransaction transaction, TokenAccess<T> access )
+    {
+        return new TokenIterator<>( transaction, access )
+        {
+            @Override
+            protected T fetchNextOrNull()
+            {
+                if ( tokens.hasNext() )
+                {
+                    return access.token( tokens.next() );
+                }
+                else
+                {
+                    close();
+                    return null;
+                }
+            }
+        };
+    }
+
     public final ResourceIterator<R> inUse( KernelTransaction transaction )
     {
-        return TokenIterator.inUse( transaction, this );
+        return inUse( transaction, this );
     }
 
     public final ResourceIterator<R> all( KernelTransaction transaction )
     {
-        return TokenIterator.all( transaction, this );
+        return all( transaction, this );
     }
 
     private static boolean hasAny( Iterator<?> iter )
@@ -155,48 +197,6 @@ public abstract class TokenAccess<R>
                 statement.close();
                 statement = null;
             }
-        }
-
-        static <T> ResourceIterator<T> inUse( KernelTransaction transaction, TokenAccess<T> access )
-        {
-            SchemaReadCore schemaReadCore = transaction.schemaRead().snapshot();
-            return new TokenIterator<T>( transaction, access )
-            {
-                @Override
-                protected T fetchNextOrNull()
-                {
-                    while ( tokens.hasNext() )
-                    {
-                        NamedToken token = tokens.next();
-                        if ( this.access.inUse( transaction, schemaReadCore, token.id() ) )
-                        {
-                            return this.access.token( token );
-                        }
-                    }
-                    close();
-                    return null;
-                }
-            };
-        }
-
-        static <T> ResourceIterator<T> all( KernelTransaction transaction, TokenAccess<T> access )
-        {
-            return new TokenIterator<T>( transaction, access )
-            {
-                @Override
-                protected T fetchNextOrNull()
-                {
-                    if ( tokens.hasNext() )
-                    {
-                        return access.token( tokens.next() );
-                    }
-                    else
-                    {
-                        close();
-                        return null;
-                    }
-                }
-            };
         }
     }
 

@@ -29,9 +29,8 @@ public class CombiningResourceIterator<T> extends CombiningIterator<T> implement
 {
     private final Iterator<ResourceIterator<T>> iterators;
     private final Collection<ResourceIterator<T>> seenIterators = new ArrayList<>();
-    private ResourceIterator<T> currentIterator;
 
-    public CombiningResourceIterator( Iterator<ResourceIterator<T>> iterators )
+    CombiningResourceIterator( Iterator<ResourceIterator<T>> iterators )
     {
         super( iterators );
         this.iterators = iterators;
@@ -42,7 +41,7 @@ public class CombiningResourceIterator<T> extends CombiningIterator<T> implement
     {
         if ( iterators.hasNext() )
         {
-            currentIterator = iterators.next();
+            ResourceIterator<T> currentIterator = iterators.next();
             seenIterators.add( currentIterator );
             return currentIterator;
         }

@@ -194,7 +194,7 @@ public abstract class StandardExpander implements PathExpander
         {
             final Node node = path.endNode();
 
-            return new MappingResourceIterator<Node, Relationship>( expander.doExpand( path, state ) )
+            return new MappingResourceIterator<>( expander.doExpand( path, state ) )
             {
                 @Override
                 protected Node map( Relationship rel )
@@ -504,7 +504,7 @@ public abstract class StandardExpander implements PathExpander
             }
             else
             {
-                return new NestingResourceIterator<Relationship, DirectionAndTypes>( new ArrayIterator<>( directions ) )
+                return new NestingResourceIterator<>( new ArrayIterator<>( directions ) )
                 {
                     @Override
                     protected ResourceIterator<Relationship> createNestedIterator( DirectionAndTypes item )

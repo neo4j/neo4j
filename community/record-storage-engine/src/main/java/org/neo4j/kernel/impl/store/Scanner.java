@@ -63,6 +63,7 @@ public class Scanner
         private final R record;
         private final Predicate<? super R>[] filters;
 
+        @SafeVarargs
         Scan( RecordStore<R> store, boolean forward, final Predicate<? super R>... filters )
         {
             this.filters = filters;

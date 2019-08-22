@@ -29,7 +29,7 @@ public class CloningRecordIterator<R extends AbstractBaseRecord> extends Prefetc
 {
     private final Iterator<R> actualIterator;
 
-    public CloningRecordIterator( Iterator<R> actualIterator )
+    private CloningRecordIterator( Iterator<R> actualIterator )
     {
         this.actualIterator = actualIterator;
     }
@@ -65,7 +65,7 @@ public class CloningRecordIterator<R extends AbstractBaseRecord> extends Prefetc
         }
     }
 
-    public static <R extends AbstractBaseRecord> Iterator<R> cloned( Iterator<R> iterator )
+    static <R extends AbstractBaseRecord> Iterator<R> cloned( Iterator<R> iterator )
     {
         return new CloningRecordIterator<>( iterator );
     }

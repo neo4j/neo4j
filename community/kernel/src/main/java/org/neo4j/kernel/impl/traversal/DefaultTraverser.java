@@ -43,7 +43,7 @@ public class DefaultTraverser implements Traverser
     @Override
     public ResourceIterable<Node> nodes()
     {
-        return new ResourcePathIterableWrapper<Node>( this )
+        return new ResourcePathIterableWrapper<>( this )
         {
             @Override
             protected Node convert( Path path )
@@ -56,13 +56,13 @@ public class DefaultTraverser implements Traverser
     @Override
     public ResourceIterable<Relationship> relationships()
     {
-        return new ResourcePathIterableWrapper<Relationship>( this )
+        return new ResourcePathIterableWrapper<>( this )
         {
             @Override
             public ResourceIterator<Relationship> iterator()
             {
                 final ResourceIterator<Path> pathIterator = pathIterator();
-                return new PrefetchingResourceIterator<Relationship>()
+                return new PrefetchingResourceIterator<>()
                 {
                     @Override
                     public void close()
@@ -112,12 +112,12 @@ public class DefaultTraverser implements Traverser
     {
         private final ResourceIterable<Path> iterableToWrap;
 
-        protected ResourcePathIterableWrapper( ResourceIterable<Path> iterableToWrap )
+        ResourcePathIterableWrapper( ResourceIterable<Path> iterableToWrap )
         {
             this.iterableToWrap = iterableToWrap;
         }
 
-        protected ResourceIterator<Path> pathIterator()
+        ResourceIterator<Path> pathIterator()
         {
             return iterableToWrap.iterator();
         }
@@ -126,7 +126,7 @@ public class DefaultTraverser implements Traverser
         public ResourceIterator<T> iterator()
         {
             final ResourceIterator<Path> iterator = pathIterator();
-            return new PrefetchingResourceIterator<T>()
+            return new PrefetchingResourceIterator<>()
             {
                 @Override
                 public void close()

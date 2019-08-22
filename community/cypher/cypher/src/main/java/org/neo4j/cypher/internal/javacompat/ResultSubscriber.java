@@ -388,7 +388,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         }
     }
 
-    private QueryExecutionException converted( Throwable e )
+    private static QueryExecutionException converted( Throwable e )
     {
         Neo4jException neo4jException;
         if ( e instanceof Neo4jException )

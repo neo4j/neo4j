@@ -27,9 +27,8 @@ public abstract class NestingResourceIterator<T, U> extends PrefetchingResourceI
 {
     private final Iterator<U> source;
     private ResourceIterator<T> currentNestedIterator;
-    private U currentSurfaceItem;
 
-    public NestingResourceIterator( Iterator<U> source )
+    protected NestingResourceIterator( Iterator<U> source )
     {
         this.source = source;
     }
@@ -44,7 +43,7 @@ public abstract class NestingResourceIterator<T, U> extends PrefetchingResourceI
         {
             while ( source.hasNext() )
             {
-                currentSurfaceItem = source.next();
+                U currentSurfaceItem = source.next();
                 close();
                 currentNestedIterator = createNestedIterator( currentSurfaceItem );
                 if ( currentNestedIterator.hasNext() )

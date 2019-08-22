@@ -36,7 +36,6 @@ public abstract class NestingIterator<T, U> extends PrefetchingIterator<T>
 {
     private final Iterator<U> source;
     private Iterator<T> currentNestedIterator;
-    private U currentSurfaceItem;
 
     public NestingIterator( Iterator<U> source )
     {
@@ -44,16 +43,6 @@ public abstract class NestingIterator<T, U> extends PrefetchingIterator<T>
     }
 
     protected abstract Iterator<T> createNestedIterator( U item );
-
-    public U getCurrentSurfaceItem()
-    {
-        if ( this.currentSurfaceItem == null )
-        {
-            throw new IllegalStateException( "Has no surface item right now," +
-                " you must do at least one next() first" );
-        }
-        return this.currentSurfaceItem;
-    }
 
     @Override
     protected T fetchNextOrNull()
@@ -63,7 +52,7 @@ public abstract class NestingIterator<T, U> extends PrefetchingIterator<T>
         {
             while ( source.hasNext() )
             {
-                currentSurfaceItem = source.next();
+                U currentSurfaceItem = source.next();
                 currentNestedIterator =
                     createNestedIterator( currentSurfaceItem );
                 if ( currentNestedIterator.hasNext() )

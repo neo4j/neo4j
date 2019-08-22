@@ -25,11 +25,11 @@ import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 
 abstract class AbstractTraverserIterator extends PrefetchingResourceIterator<Path> implements TraverserIterator
 {
-    protected int numberOfPathsReturned;
-    protected int numberOfRelationshipsTraversed;
+    int numberOfPathsReturned;
+    private int numberOfRelationshipsTraversed;
     private Resource resource;
 
-    protected AbstractTraverserIterator( Resource resource )
+    AbstractTraverserIterator( Resource resource )
     {
         this.resource = resource;
     }

@@ -21,6 +21,7 @@ package org.neo4j.internal.helpers.collection;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -32,12 +33,11 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -64,23 +64,23 @@ class TestCommonIterators
 
         // first Iterable
         assertEquals( object, Iterables.first( asList( object, object2 ) ) );
-        assertEquals( object, Iterables.first( asList( object ) ) );
-        assertThrows( NoSuchElementException.class, () -> Iterables.first( asList() ) );
+        assertEquals( object, Iterables.first( singletonList( object ) ) );
+        assertThrows( NoSuchElementException.class, () -> Iterables.first( Collections.emptyList() ) );
 
         // first Iterator
         assertEquals( object, Iterators.first( asList( object, object2 ).iterator() ) );
-        assertEquals( object, Iterators.first( asList( object ).iterator() ) );
-        assertThrows( NoSuchElementException.class, () -> Iterators.first( asList().iterator() ) );
+        assertEquals( object, Iterators.first( singletonList( object ).iterator() ) );
+        assertThrows( NoSuchElementException.class, () -> Iterators.first( Collections.emptyIterator() ) );
 
         // firstOrNull Iterable
         assertEquals( object, Iterables.firstOrNull( asList( object, object2 ) ) );
-        assertEquals( object, Iterables.firstOrNull( asList( object ) ) );
-        assertNull( Iterables.firstOrNull( asList() ) );
+        assertEquals( object, Iterables.firstOrNull( singletonList( object ) ) );
+        assertNull( Iterables.firstOrNull( Collections.emptyList() ) );
 
         // firstOrNull Iterator
         assertEquals( object, Iterators.firstOrNull( asList( object, object2 ).iterator() ) );
-        assertEquals( object, Iterators.firstOrNull( asList( object ).iterator() ) );
-        assertNull( Iterators.firstOrNull( asList().iterator() ) );
+        assertEquals( object, Iterators.firstOrNull( singletonList( object ).iterator() ) );
+        assertNull( Iterators.firstOrNull( Collections.emptyIterator() ) );
     }
 
     @Test
@@ -91,23 +91,23 @@ class TestCommonIterators
 
         // last Iterable
         assertEquals( object2, Iterables.last( asList( object, object2 ) ) );
-        assertEquals( object, Iterables.last( asList( object ) ) );
-        assertThrows( NoSuchElementException.class, () -> Iterables.last( asList() ) );
+        assertEquals( object, Iterables.last( singletonList( object ) ) );
+        assertThrows( NoSuchElementException.class, () -> Iterables.last( Collections.emptyList() ) );
 
         // last Iterator
         assertEquals( object2, Iterators.last( asList( object, object2 ).iterator() ) );
-        assertEquals( object, Iterators.last( asList( object ).iterator() ) );
-        assertThrows( NoSuchElementException.class, () -> Iterators.last( asList().iterator() ) );
+        assertEquals( object, Iterators.last( singletonList( object ).iterator() ) );
+        assertThrows( NoSuchElementException.class, () -> Iterators.last( Collections.emptyIterator() ) );
 
         // lastOrNull Iterable
         assertEquals( object2, Iterables.lastOrNull( asList( object, object2 ) ) );
-        assertEquals( object, Iterables.lastOrNull( asList( object ) ) );
-        assertNull( Iterables.lastOrNull( asList() ) );
+        assertEquals( object, Iterables.lastOrNull( singletonList( object ) ) );
+        assertNull( Iterables.lastOrNull( Collections.emptyList() ) );
 
         // lastOrNull Iterator
         assertEquals( object2, Iterators.lastOrNull( asList( object, object2 ).iterator() ) );
-        assertEquals( object, Iterators.lastOrNull( asList( object ).iterator() ) );
-        assertNull( Iterators.lastOrNull( asList().iterator() ) );
+        assertEquals( object, Iterators.lastOrNull( singletonList( object ).iterator() ) );
+        assertNull( Iterators.lastOrNull( Collections.emptyIterator() ) );
     }
 
     @Test
@@ -117,23 +117,23 @@ class TestCommonIterators
         Object object2 = new Object();
 
         // single Iterable
-        assertEquals( object, Iterables.single( asList( object ) ) );
-        assertThrows( NoSuchElementException.class, () ->  Iterables.single( asList() ) );
+        assertEquals( object, Iterables.single( singletonList( object ) ) );
+        assertThrows( NoSuchElementException.class, () ->  Iterables.single( Collections.emptyList() ) );
         assertThrows( NoSuchElementException.class, () -> Iterables.single( asList( object, object2 ) ) );
 
         // single Iterator
-        assertEquals( object, Iterators.single( asList( object ).iterator() ) );
-        assertThrows( NoSuchElementException.class, () -> Iterators.single( asList().iterator() ) );
+        assertEquals( object, Iterators.single( singletonList( object ).iterator() ) );
+        assertThrows( NoSuchElementException.class, () -> Iterators.single( Collections.emptyIterator() ) );
         assertThrows( NoSuchElementException.class, () -> Iterators.single( asList( object, object2 ).iterator() ) );
 
         // singleOrNull Iterable
-        assertEquals( object, Iterables.singleOrNull( asList( object ) ) );
-        assertNull( Iterables.singleOrNull( asList() ) );
+        assertEquals( object, Iterables.singleOrNull( singletonList( object ) ) );
+        assertNull( Iterables.singleOrNull( Collections.emptyList() ) );
         assertThrows( NoSuchElementException.class, () -> Iterables.singleOrNull( asList( object, object2 ) ) );
 
         // singleOrNull Iterator
-        assertEquals( object, Iterators.singleOrNull( asList( object ).iterator() ) );
-        assertNull( Iterators.singleOrNull( asList().iterator() ) );
+        assertEquals( object, Iterators.singleOrNull( singletonList( object ).iterator() ) );
+        assertNull( Iterators.singleOrNull( Collections.emptyIterator() ) );
         assertThrows( NoSuchElementException.class, () -> Iterators.singleOrNull( asList( object, object2 ).iterator() ) );
     }
 
@@ -228,110 +228,4 @@ class TestCommonIterators
         assertEquals( characteristics, stream.spliterator().characteristics() );
     }
 
-    @Test
-    void testCachingIterator()
-    {
-        Iterator<Integer> source = new RangeIterator( 8 );
-        CachingIterator<Integer> caching = new CachingIterator<>( source );
-
-        assertThrows( NoSuchElementException.class, caching::previous );
-        assertThrows( NoSuchElementException.class, caching::current );
-
-        // Next and previous
-        assertEquals( 0, caching.position() );
-        assertTrue( caching.hasNext() );
-        assertEquals( 0, caching.position() );
-        assertFalse( caching.hasPrevious() );
-        assertEquals( (Integer) 0, caching.next() );
-        assertTrue( caching.hasNext() );
-        assertTrue( caching.hasPrevious() );
-        assertEquals( (Integer) 1, caching.next() );
-        assertTrue( caching.hasPrevious() );
-        assertEquals( (Integer) 1, caching.current() );
-        assertEquals( (Integer) 2, caching.next() );
-        assertEquals( (Integer) 2, caching.current() );
-        assertEquals( (Integer) 3, (Integer) caching.position() );
-        assertEquals( (Integer) 2, caching.current() );
-        assertTrue( caching.hasPrevious() );
-        assertEquals( (Integer) 2, caching.previous() );
-        assertEquals( (Integer) 2, caching.current() );
-        assertEquals( (Integer) 2, (Integer) caching.position() );
-        assertEquals( (Integer) 1, caching.previous() );
-        assertEquals( (Integer) 1, caching.current() );
-        assertEquals( (Integer) 1, (Integer) caching.position() );
-        assertEquals( (Integer) 0, caching.previous() );
-        assertEquals( (Integer) 0, (Integer) caching.position() );
-        assertFalse( caching.hasPrevious() );
-
-        assertThrows( IllegalArgumentException.class, () -> caching.position( -1 ), "Shouldn't be able to set a lower value than 0" );
-
-        assertEquals( (Integer) 0, caching.current() );
-        assertEquals( 0, caching.position( 3 ) );
-
-        assertThrows( NoSuchElementException.class, caching::current, "Shouldn't be able to call current() after a call to position(int)" );
-
-        assertTrue( caching.hasNext() );
-        assertEquals( (Integer) 3, caching.next() );
-        assertEquals( (Integer) 3, caching.current() );
-        assertTrue( caching.hasPrevious() );
-        assertEquals( (Integer) 4, caching.next() );
-        assertEquals( 5, caching.position() );
-        assertEquals( (Integer) 4, caching.previous() );
-        assertEquals( (Integer) 4, caching.current() );
-        assertEquals( (Integer) 4, caching.current() );
-        assertEquals( 4, caching.position() );
-        assertEquals( (Integer) 3, caching.previous() );
-        assertEquals( 3, caching.position() );
-
-        assertThrows( NoSuchElementException.class, () -> caching.position( 9 ), "Shouldn't be able to set a position which is too big" );
-
-        assertEquals( 3, caching.position( 8 ) );
-        assertTrue( caching.hasPrevious() );
-        assertFalse( caching.hasNext() );
-
-        assertThrows( NoSuchElementException.class, caching::next, "Shouldn't be able to go beyond last item" );
-
-        assertEquals( 8, caching.position() );
-        assertEquals( (Integer) 7, caching.previous() );
-        assertEquals( (Integer) 6, caching.previous() );
-        assertEquals( 6, caching.position( 0 ) );
-        assertEquals( (Integer) 0, caching.next() );
-    }
-
-    @Test
-    void testPagingIterator()
-    {
-        Iterator<Integer> source = new RangeIterator( 24 );
-        PagingIterator<Integer> pager = new PagingIterator<>( source, 10 );
-        assertEquals( 0, pager.page() );
-        assertTrue( pager.hasNext() );
-        assertPage( pager.nextPage(), 10, 0 );
-        assertTrue( pager.hasNext() );
-
-        assertEquals( 1, pager.page() );
-        assertTrue( pager.hasNext() );
-        assertPage( pager.nextPage(), 10, 10 );
-        assertTrue( pager.hasNext() );
-
-        assertEquals( 2, pager.page() );
-        assertTrue( pager.hasNext() );
-        assertPage( pager.nextPage(), 4, 20 );
-        assertFalse( pager.hasNext() );
-
-        pager.page( 1 );
-        assertEquals( 1, pager.page() );
-        assertTrue( pager.hasNext() );
-        assertPage( pager.nextPage(), 10, 10 );
-        assertTrue( pager.hasNext() );
-    }
-
-    private static void assertPage( Iterator<Integer> page, int size, int plus )
-    {
-        for ( int i = 0; i < size; i++ )
-        {
-            assertTrue( page.hasNext() );
-            assertEquals( (Integer) (i + plus), page.next() );
-        }
-        assertFalse( page.hasNext() );
-    }
 }

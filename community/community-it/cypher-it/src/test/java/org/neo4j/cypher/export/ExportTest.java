@@ -43,7 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.lang.System.lineSeparator;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -319,14 +319,13 @@ class ExportTest
                 "create (_0)-[:`REL`]->(_1)" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
     }
 
-    @SuppressWarnings( "unchecked" )
-    private Result result( String column, Object value )
+    private static Result result( String column, Object value )
     {
         Result result = Mockito.mock( Result.class );
-        Mockito.when( result.columns() ).thenReturn( asList( column ) );
-        final Iterator<Map<String, Object>> inner = asList( singletonMap( column, value ) ).iterator();
+        Mockito.when( result.columns() ).thenReturn( singletonList( column ) );
+        final Iterator<Map<String, Object>> inner = singletonList( singletonMap( column, value ) ).iterator();
 
-        final ResourceIterator<Map<String, Object>> iterator = new ResourceIterator<Map<String, Object>>()
+        final ResourceIterator<Map<String, Object>> iterator = new ResourceIterator<>()
         {
             @Override
             public void close()
@@ -340,7 +339,7 @@ class ExportTest
             }
 
             @Override
-            public Map<String, Object> next()
+            public Map<String,Object> next()
             {
                 return inner.next();
             }

@@ -34,10 +34,10 @@ public class LruCache<K, E>
     private final String name;
     private int maxSize;
 
-    private final Map<K, E> cache = new LinkedHashMap<K, E>( 500, 0.75f, true )
+    private final Map<K, E> cache = new LinkedHashMap<>( 500, 0.75f, true )
     {
         @Override
-        protected boolean removeEldestEntry( Map.Entry<K, E> eldest )
+        protected boolean removeEldestEntry( Map.Entry<K,E> eldest )
         {
             // synchronization miss with old value on maxSize here is ok
             if ( size() > maxSize )

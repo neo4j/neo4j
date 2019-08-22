@@ -44,7 +44,7 @@ public class LimitingResourceIterator<T> extends PrefetchingResourceIterator<T>
      * @param source the source of items.
      * @param limit the limit, i.e. the max number of items to return.
      */
-    public LimitingResourceIterator( ResourceIterator<T> source, int limit )
+    LimitingResourceIterator( ResourceIterator<T> source, int limit )
     {
         this.source = source;
         this.limit = limit;
@@ -65,15 +65,6 @@ public class LimitingResourceIterator<T> extends PrefetchingResourceIterator<T>
         {
             returned++;
         }
-    }
-
-    /**
-     * @return {@code true} if the number of items returned up to this point
-     * is equal to the limit given in the constructor, otherwise {@code false}.
-     */
-    public boolean limitReached()
-    {
-        return returned == limit;
     }
 
     @Override

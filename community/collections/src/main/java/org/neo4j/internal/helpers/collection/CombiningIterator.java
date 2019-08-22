@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -33,23 +32,15 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
     private Iterator<? extends Iterator<T>> iterators;
     private Iterator<T> currentIterator;
 
-    public CombiningIterator( Iterable<? extends Iterator<T>> iterators )
+    CombiningIterator( Iterable<? extends Iterator<T>> iterators )
     {
         this( iterators.iterator() );
     }
 
-   public CombiningIterator( Iterator<? extends Iterator<T>> iterators )
+    CombiningIterator( Iterator<? extends Iterator<T>> iterators )
    {
         this.iterators = iterators;
    }
-
-    public CombiningIterator( T first, Iterator<T> rest )
-    {
-        this( Collections.emptyList() );
-        this.hasFetchedNext = true;
-        this.nextObject = first;
-        this.currentIterator = rest;
-    }
 
     @Override
     protected T fetchNextOrNull()
@@ -64,7 +55,7 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
                 }
             }
         }
-        return currentIterator != null && currentIterator.hasNext() ? currentIterator.next() : null;
+        return currentIterator != null ? currentIterator.next() : null;
     }
 
     protected Iterator<T> nextIteratorOrNull()
@@ -74,10 +65,5 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
             return iterators.next();
         }
         return null;
-    }
-
-    protected Iterator<T> currentIterator()
-    {
-        return currentIterator;
     }
 }

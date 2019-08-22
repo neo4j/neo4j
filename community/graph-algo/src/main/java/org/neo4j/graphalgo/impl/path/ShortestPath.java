@@ -149,13 +149,11 @@ public class ShortestPath implements PathFinder<Path>
             return filterPaths(Collections.singletonList( PathImpl.singular( start ) ));
         }
         Hits hits = new Hits();
-        Collection<Long> sharedVisitedRels = new HashSet<>();
         MutableInt sharedFrozenDepth = new MutableInt( NULL ); // ShortestPathLengthSoFar
         MutableBoolean sharedStop = new MutableBoolean();
         MutableInt sharedCurrentDepth = new MutableInt( 0 );
-        try ( DirectionData startData = new DirectionData( start, sharedVisitedRels,
-                sharedFrozenDepth, sharedStop, sharedCurrentDepth, expander );
-              DirectionData endData = new DirectionData( end, sharedVisitedRels, sharedFrozenDepth,
+        try ( DirectionData startData = new DirectionData( start, sharedFrozenDepth, sharedStop, sharedCurrentDepth, expander );
+              DirectionData endData = new DirectionData( end, sharedFrozenDepth,
                       sharedStop, sharedCurrentDepth, expander.reverse() ) )
         {
             while ( startData.hasNext() || endData.hasNext() )
@@ -324,7 +322,6 @@ public class ShortestPath implements PathFinder<Path>
         private ResourceIterator<Relationship> nextRelationships;
         private final Collection<Node> nextNodes = new ArrayList<>();
         private final Map<Node,LevelData> visitedNodes = new HashMap<>();
-        private final Collection<Long> sharedVisitedRels;
         private final DirectionDataPath lastPath;
         private final MutableInt sharedFrozenDepth;
         private final MutableBoolean sharedStop;
@@ -333,8 +330,7 @@ public class ShortestPath implements PathFinder<Path>
         private boolean stop;
         private final PathExpander expander;
 
-        DirectionData( Node startNode, Collection<Long> sharedVisitedRels, MutableInt sharedFrozenDepth,
-                MutableBoolean sharedStop, MutableInt sharedCurrentDepth, PathExpander expander )
+        DirectionData( Node startNode, MutableInt sharedFrozenDepth, MutableBoolean sharedStop, MutableInt sharedCurrentDepth, PathExpander expander )
         {
             this.startNode = startNode;
             this.visitedNodes.put( startNode, new LevelData( null, 0 ) );
@@ -343,7 +339,6 @@ public class ShortestPath implements PathFinder<Path>
             this.sharedStop = sharedStop;
             this.sharedCurrentDepth = sharedCurrentDepth;
             this.expander = expander;
-            this.sharedVisitedRels = sharedVisitedRels;
             this.lastPath = new DirectionDataPath( startNode );
             if ( sharedCurrentDepth.intValue() < maxDepth )
             {
@@ -361,7 +356,7 @@ public class ShortestPath implements PathFinder<Path>
             this.nextNodes.clear();
             this.lastPath.setLength( currentDepth );
             closeRelationshipsIterator();
-            this.nextRelationships = new NestingResourceIterator<Relationship,Node>( nodesToIterate.iterator() )
+            this.nextRelationships = new NestingResourceIterator<>( nodesToIterate.iterator() )
             {
                 @Override
                 protected ResourceIterator<Relationship> createNestedIterator( Node node )
@@ -695,7 +690,7 @@ public class ShortestPath implements PathFinder<Path>
             }
             set = nextSet;
         }
-        return new IterableWrapper<LinkedList<Relationship>,PathData>( set )
+        return new IterableWrapper<>( set )
         {
             @Override
             protected LinkedList<Relationship> underlyingObjectToObject( PathData object )

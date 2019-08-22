@@ -30,7 +30,7 @@ public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<
 {
     public static <R> ResourceIterator<R> newResourceIterator( Iterator<R> iterator, Resource... resources )
     {
-        return new ResourceClosingIterator<R,R>( iterator, resources )
+        return new ResourceClosingIterator<>( iterator, resources )
         {
             @Override
             public R map( R elem )

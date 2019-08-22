@@ -62,7 +62,7 @@ public interface ResourceIterator<T> extends Iterator<T>, Resource
 
     default <R> ResourceIterator<R> map( Function<T,R> map )
     {
-        return new ResourceIterator<R>()
+        return new ResourceIterator<>()
         {
             @Override
             public void close()

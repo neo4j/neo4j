@@ -98,7 +98,7 @@ public final class Iterators
      * @return the last element in the {@code iterator}, or {@code null} if no
      * element found.
      */
-    public static <T> T lastOrNull( Iterator<T> iterator )
+    static <T> T lastOrNull( Iterator<T> iterator )
     {
         T result = null;
         while ( iterator.hasNext() )
@@ -488,7 +488,7 @@ public final class Iterators
 
     public static Iterator<Long> asIterator( final long... array )
     {
-        return new PrefetchingIterator<Long>()
+        return new PrefetchingIterator<>()
         {
             private int index;
 
@@ -509,7 +509,7 @@ public final class Iterators
 
     public static Iterator<Integer> asIterator( final int... array )
     {
-        return new PrefetchingIterator<Integer>()
+        return new PrefetchingIterator<>()
         {
             private int index;
 
@@ -529,9 +529,9 @@ public final class Iterators
     }
 
     @SafeVarargs
-    public static <T> Iterator<T> asIterator( final int maxItems, final T... array )
+    private static <T> Iterator<T> asIterator( final int maxItems, final T... array )
     {
-        return new PrefetchingIterator<T>()
+        return new PrefetchingIterator<>()
         {
             private int index;
 
@@ -557,7 +557,7 @@ public final class Iterators
             return emptyIterator();
         }
 
-        return new Iterator<T>()
+        return new Iterator<>()
         {
             T myItem = item;
 
@@ -601,7 +601,7 @@ public final class Iterators
 
     public static <T> Iterator<T> appendTo( Iterator<T> iterator, T... appended )
     {
-        return new Iterator<T>()
+        return new Iterator<>()
         {
             private int index;
 
@@ -632,7 +632,7 @@ public final class Iterators
 
     public static <T> Iterator<T> prependTo( Iterator<T> iterator, T... prepended )
     {
-        return new Iterator<T>()
+        return new Iterator<>()
         {
             private int index;
 
@@ -700,7 +700,7 @@ public final class Iterators
 
     public static <T> ResourceIterator<T> resourceIterator( final Iterator<T> iterator, final Resource resource )
     {
-        return new PrefetchingResourceIterator<T>()
+        return new PrefetchingResourceIterator<>()
         {
             @Override
             public void close()
@@ -740,7 +740,7 @@ public final class Iterators
 
     public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator( Iterator<T> iter )
     {
-        return new RawIterator<T,EX>()
+        return new RawIterator<>()
         {
             @Override
             public boolean hasNext()
@@ -804,15 +804,14 @@ public final class Iterators
 
     public static <T> PrefetchingIterator<T> prefetching( Iterator<T> iterator )
     {
-        return iterator instanceof PrefetchingIterator ? (PrefetchingIterator<T>) iterator :
-               new PrefetchingIterator<T>()
-               {
-                   @Override
-                   protected T fetchNextOrNull()
-                   {
-                       return iterator.hasNext() ? iterator.next() : null;
-                   }
-               };
+        return iterator instanceof PrefetchingIterator ? (PrefetchingIterator<T>) iterator : new PrefetchingIterator<>()
+        {
+            @Override
+            protected T fetchNextOrNull()
+            {
+                return iterator.hasNext() ? iterator.next() : null;
+            }
+        };
     }
 
     /**

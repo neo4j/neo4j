@@ -183,7 +183,7 @@ public final class PathImpl implements Path
 
     private Iterable<Node> nodeIterator( final Node start, final Iterable<Relationship> relationships )
     {
-        return () -> new Iterator<Node>()
+        return () -> new Iterator<>()
         {
             Node current = start;
             int index;
@@ -207,8 +207,7 @@ public final class PathImpl implements Path
                 {
                     if ( !relationshipIterator.hasNext() )
                     {
-                        throw new IllegalStateException( String.format( "Number of relationships: %d does not" +
-                                              " match with path length: %d.", index, path.length ) );
+                        throw new IllegalStateException( String.format( "Number of relationships: %d does not" + " match with path length: %d.", index, path.length ) );
                     }
                     next = relationshipIterator.next().getOtherNode( current );
                 }
@@ -246,7 +245,7 @@ public final class PathImpl implements Path
     @Override
     public Iterator<PropertyContainer> iterator()
     {
-        return new Iterator<PropertyContainer>()
+        return new Iterator<>()
         {
             Iterator<? extends PropertyContainer> current = nodes().iterator();
             Iterator<? extends PropertyContainer> next = relationships().iterator();

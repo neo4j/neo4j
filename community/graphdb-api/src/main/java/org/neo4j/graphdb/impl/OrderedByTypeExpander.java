@@ -99,17 +99,14 @@ public final class OrderedByTypeExpander extends StandardExpander.RegularExpande
     ResourceIterator<Relationship> doExpand( final Path path, BranchState state )
     {
         final Node node = path.endNode();
-        return new NestingResourceIterator<Relationship, Pair<RelationshipType, Direction>>(
-                orderedTypes.iterator() )
+        return new NestingResourceIterator<>( orderedTypes.iterator() )
         {
             @Override
-            protected ResourceIterator<Relationship> createNestedIterator(
-                    Pair<RelationshipType, Direction> entry )
+            protected ResourceIterator<Relationship> createNestedIterator( Pair<RelationshipType,Direction> entry )
             {
                 RelationshipType type = entry.first();
                 Direction dir = entry.other();
-                Iterable<Relationship> relationshipsIterable =
-                        (dir == Direction.BOTH) ? node.getRelationships( type ) : node.getRelationships( type, dir );
+                Iterable<Relationship> relationshipsIterable = (dir == Direction.BOTH) ? node.getRelationships( type ) : node.getRelationships( type, dir );
                 return Iterables.asResourceIterable( relationshipsIterable ).iterator();
             }
         };

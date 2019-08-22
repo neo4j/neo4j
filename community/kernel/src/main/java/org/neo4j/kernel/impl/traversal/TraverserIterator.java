@@ -23,6 +23,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.TraversalContext;
 
-public interface TraverserIterator extends ResourceIterator<Path>, TraversalContext
+interface TraverserIterator extends ResourceIterator<Path>, TraversalContext
 {
 }
