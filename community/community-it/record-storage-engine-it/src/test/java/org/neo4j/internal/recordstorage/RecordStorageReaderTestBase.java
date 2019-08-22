@@ -26,25 +26,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
-import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -89,7 +86,6 @@ public abstract class RecordStorageReaderTestBase
     final String otherPropertyKey = "age";
     private final AtomicLong nextTxId = new AtomicLong( TransactionIdStore.BASE_TX_ID );
     private TokenHolders tokenHolders;
-    private KernelStatement state;
     RecordStorageReader storageReader;
     RecordStorageEngine storageEngine;
     private RecordStorageReader commitReader;
@@ -108,9 +104,6 @@ public abstract class RecordStorageReaderTestBase
         builder = modify( builder );
         this.storageEngine = builder.build();
         this.storageReader = storageEngine.newReader();
-        this.state = new KernelStatement( null, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
-                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                new TestDatabaseIdRepository().defaultDatabase() );
         this.commitReader = storageEngine.newReader();
         this.commitContext = storageEngine.newCommandCreationContext();
         storageEngineRule.before();
@@ -174,28 +167,34 @@ public abstract class RecordStorageReaderTestBase
 
     void createUniquenessConstraint( Label label, String propertyKey ) throws Exception
     {
-        createUniqueIndex( label, propertyKey );
+        IndexDescriptor index = createUniqueIndex( label, propertyKey );
         TxState txState = new TxState();
-        txState.constraintDoAdd( ConstraintDescriptorFactory.uniqueForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) );
+        UniquenessConstraintDescriptor constraint =
+                ConstraintDescriptorFactory.uniqueForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ).withName( index.getName() );
+        txState.constraintDoAdd( constraint );
         apply( txState );
     }
 
     void createNodeKeyConstraint( Label label, String propertyKey ) throws Exception
     {
-        createUniqueIndex( label, propertyKey );
+        IndexDescriptor index = createUniqueIndex( label, propertyKey );
         TxState txState = new TxState();
-        txState.constraintDoAdd( ConstraintDescriptorFactory.nodeKeyForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) );
+        NodeKeyConstraintDescriptor constraint =
+                ConstraintDescriptorFactory.nodeKeyForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ).withName( index.getName() );
+        txState.constraintDoAdd( constraint );
         apply( txState );
     }
 
-    private void createUniqueIndex( Label label, String propertyKey ) throws Exception
+    private IndexDescriptor createUniqueIndex( Label label, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
         int labelId = getOrCreateLabelId( label );
         int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
         long id = commitContext.reserveSchema();
-        txState.indexDoAdd( IndexPrototype.uniqueForSchema( forLabel( labelId, propertyKeyId ) ).withName( "constraint_" + id ).materialise( id ) );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( forLabel( labelId, propertyKeyId ) ).withName( "constraint_" + id ).materialise( id );
+        txState.indexDoAdd( index );
         apply( txState );
+        return index;
     }
 
     void createIndex( Label label, String propertyKey ) throws Exception
@@ -208,7 +207,7 @@ public abstract class RecordStorageReaderTestBase
         apply( txState );
     }
 
-    protected void createIndex( RelationshipType relType, String propertyKey ) throws Exception
+    void createIndex( RelationshipType relType, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
         int relTypeId = getOrCreateRelationshipTypeId( relType );
@@ -221,15 +220,20 @@ public abstract class RecordStorageReaderTestBase
     void createNodePropertyExistenceConstraint( Label label, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
-        txState.constraintDoAdd( ConstraintDescriptorFactory.existsForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) );
+        NodeExistenceConstraintDescriptor constraint =
+                ConstraintDescriptorFactory.existsForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) );
+        long id = commitContext.reserveSchema();
+        txState.constraintDoAdd( constraint.withId( id ).withName( "constraint_" + id ) );
         apply( txState );
     }
 
     void createRelPropertyExistenceConstraint( RelationshipType relationshipType, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
-        txState.constraintDoAdd( ConstraintDescriptorFactory.existsForRelType( getOrCreateRelationshipTypeId( relationshipType ),
-                getOrCreatePropertyKeyId( propertyKey ) ) );
+        RelExistenceConstraintDescriptor constraint =
+                ConstraintDescriptorFactory.existsForRelType( getOrCreateRelationshipTypeId( relationshipType ), getOrCreatePropertyKeyId( propertyKey ) );
+        long id = commitContext.reserveSchema();
+        txState.constraintDoAdd( constraint.withId( id ).withName( "constraint_" + id ) );
         apply( txState );
     }
 

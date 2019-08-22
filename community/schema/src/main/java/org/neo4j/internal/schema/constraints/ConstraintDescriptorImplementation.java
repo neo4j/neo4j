@@ -19,9 +19,6 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import java.util.Objects;
-import java.util.Optional;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -60,7 +57,7 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
         this.type = type;
         this.schema = schema;
         this.id = id;
-        this.name = name == null && id != -1 ? "constraint_" + id : name;
+        this.name = name;
         this.ownedIndex = ownedIndex;
     }
 

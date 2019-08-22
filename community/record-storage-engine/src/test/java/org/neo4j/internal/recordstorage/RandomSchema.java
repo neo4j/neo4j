@@ -198,22 +198,16 @@ public class RandomSchema implements Supplier<SchemaRule>
     public ConstraintDescriptor nextConstraint()
     {
         long ruleId = nextRuleIdForConstraint();
-        int choice = rng.nextInt( 12 );
+        int choice = rng.nextInt( 6 );
         switch ( choice )
         {
-        case 0: return ConstraintDescriptorFactory.existsForSchema( nextRelationshipSchema() ).withId( ruleId );
-        case 1: return ConstraintDescriptorFactory.existsForSchema( nextRelationshipSchema() ).withId( ruleId ).withName( nextName() );
-        case 2: return ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ).withId( ruleId );
-        case 3: return ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
-        case 4: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId );
-        case 5: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() );
-        case 6: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
-        case 7: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() )
+        case 0: return ConstraintDescriptorFactory.existsForSchema( nextRelationshipSchema() ).withId( ruleId ).withName( nextName() );
+        case 1: return ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
+        case 2: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
+        case 3: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() )
                 .withName( nextName() );
-        case 8: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId );
-        case 9: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() );
-        case 10: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
-        case 11: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() )
+        case 4: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
+        case 5: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() )
                 .withName( nextName() );
         default: throw new RuntimeException( "Bad constraint choice: " + choice );
         }

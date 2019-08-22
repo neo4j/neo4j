@@ -41,7 +41,6 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -55,8 +54,6 @@ import static org.neo4j.test.assertion.Assert.assertException;
 class SchemaRuleSerialization35Test
 {
     private static final long RULE_ID = 1;
-    private static final String DEFAULT_INDEX_NAME = "index_" + RULE_ID;
-    private static final String DEFAULT_CONSTRAINT_NAME = "constraint_" + RULE_ID;
     private static final long RULE_ID_2 = 2;
     private static final int LABEL_ID = 10;
     private static final int LABEL_ID_2 = 11;
@@ -113,6 +110,15 @@ class SchemaRuleSerialization35Test
         return prototype.materialise( id );
     }
 
+    static ConstraintDescriptor withId( ConstraintDescriptor constraint, long id )
+    {
+        if ( constraint.getName() == null )
+        {
+            constraint = constraint.withName( "constraint_" + id );
+        }
+        return constraint.withId( id );
+    }
+
     private static IndexDescriptor withIds( IndexPrototype prototype, long id, long owningConstraintId )
     {
         return withId( prototype, id ).withOwningConstraintId( owningConstraintId );
@@ -138,22 +144,22 @@ class SchemaRuleSerialization35Test
                     fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ) ),
             RULE_ID );
 
-    private final ConstraintDescriptor constraintExistsLabel = existsForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID );
+    private final ConstraintDescriptor constraintExistsLabel = withId( existsForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
 
     private final ConstraintDescriptor constraintUniqueLabel =
-            uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID );
+            withId( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2 ).withOwnedIndexId( RULE_ID );
 
     private final ConstraintDescriptor constraintNodeKeyLabel =
-            nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID );
+            withId( nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2 ).withOwnedIndexId( RULE_ID );
 
     private final ConstraintDescriptor constraintExistsRelType =
-            existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 );
+            withId( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), RULE_ID_2 );
 
     private final ConstraintDescriptor constraintCompositeLabel =
-            existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID );
+            withId( existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID );
 
     private final ConstraintDescriptor constraintCompositeRelType =
-            existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID_2 );
+            withId( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2 );
 
     // INDEX RULES
 
@@ -225,22 +231,22 @@ class SchemaRuleSerialization35Test
         assertThat( serialiseAndDeserialise( withId( forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), RULE_ID ) ).getName(), is( "index_1" ) );
 
         assertThat( serialiseAndDeserialise(
-                existsForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ) ).getName(),
+                withId( existsForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID ) ).getName(),
                 is( "constraint_1" ) );
         assertThat( serialiseAndDeserialise(
-                uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName(),
+                withId( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName(),
                 is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise(
-                nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName(),
+                withId( nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName(),
                 is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise(
-                existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ) ).getName(),
+                withId( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), RULE_ID_2 ) ).getName(),
                 is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise(
-                existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID ) ).getName(),
+                withId( existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID ) ).getName(),
                 is( "constraint_1" ) );
         assertThat( serialiseAndDeserialise(
-                existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID_2 ) ).getName(),
+                withId( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2 ) ).getName(),
                 is( "constraint_2" ) );
     }
 
@@ -383,75 +389,75 @@ class SchemaRuleSerialization35Test
     @Test
     void shouldParseUniqueConstraintRule() throws Exception
     {
-        assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==", "constraint_1" );
-        assertParseUniqueConstraintRule( "AAAANwMBAAAAAAAAAAMAAAAAAAAAAg==", "constraint_1" ); // LEGACY
+        assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==", null );
+        assertParseUniqueConstraintRule( "AAAANwMBAAAAAAAAAAMAAAAAAAAAAg==", null ); // LEGACY
         assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAwAAAAtjdXN0b21fbmFtZQ==",
                 "custom_name" ); // named rule
         assertParseUniqueConstraintRule( addNullByte( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
         assertParseUniqueConstraintRule( addNullByte( 2, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
         assertParseUniqueConstraintRule( addNullByte( 3, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
         assertParseUniqueConstraintRule( addNullByte( 4, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
         assertParseUniqueConstraintRule( addNullByte( 5, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
     }
 
     @Test
     void shouldParseNodeKeyConstraintRule() throws Exception
     {
-        assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==", "constraint_1" );
+        assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==", null );
         assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAwAAAAtjdXN0b21fbmFtZQ==",
                 "custom_name" ); // named rule
         assertParseNodeKeyConstraintRule( addNullByte( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
         assertParseNodeKeyConstraintRule( addNullByte( 2, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
         assertParseNodeKeyConstraintRule( addNullByte( 3, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
         assertParseNodeKeyConstraintRule( addNullByte( 4, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
         assertParseNodeKeyConstraintRule( addNullByte( 5, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
-                "constraint_1" ); // empty name
+                null ); // empty name
     }
 
     @Test
     void shouldParseNodePropertyExistsRule() throws Exception
     {
-        assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADM=", "constraint_87" );
-        assertParseNodePropertyExistsRule( "AAAALQQAAAAz", "constraint_87" ); // LEGACY
+        assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADM=", null );
+        assertParseNodePropertyExistsRule( "AAAALQQAAAAz", null ); // LEGACY
         assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADMAAAALY3VzdG9tX25hbWU=",
                 "custom_name" ); // named rule
-        assertParseNodePropertyExistsRule( addNullByte( "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
+        assertParseNodePropertyExistsRule( addNullByte( "/////ww9WwAAAC0AAQAAADM=" ), null ); // empty name
         assertParseNodePropertyExistsRule( addNullByte( 2, "/////ww9WwAAAC0AAQAAADM=" ),
-                "constraint_87" ); // empty name
+                null ); // empty name
         assertParseNodePropertyExistsRule( addNullByte( 3, "/////ww9WwAAAC0AAQAAADM=" ),
-                "constraint_87" ); // empty name
+                null ); // empty name
         assertParseNodePropertyExistsRule( addNullByte( 4, "/////ww9WwAAAC0AAQAAADM=" ),
-                "constraint_87" ); // empty name
+                null ); // empty name
         assertParseNodePropertyExistsRule( addNullByte( 5, "/////ww9WwAAAC0AAQAAADM=" ),
-                "constraint_87" ); // empty name
+                null ); // empty name
     }
 
     @Test
     void shouldParseRelationshipPropertyExistsRule() throws Exception
     {
-        assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+c=", "constraint_51" );
-        assertParseRelationshipPropertyExistsRule( "AAAhQAUAABfn", "constraint_51" ); // LEGACY6
+        assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+c=", null );
+        assertParseRelationshipPropertyExistsRule( "AAAhQAUAABfn", null ); // LEGACY6
         assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+cAAAALY3VzdG9tX25hbWU=",
                 "custom_name" ); // named rule
         assertParseRelationshipPropertyExistsRule( addNullByte( "/////ww9XAAAIUAAAQAAF+c=" ),
-                "constraint_51" ); // empty name
+                null ); // empty name
         assertParseRelationshipPropertyExistsRule( addNullByte( 2, "/////ww9XAAAIUAAAQAAF+c=" ),
-                "constraint_51" ); // empty name
+                null ); // empty name
         assertParseRelationshipPropertyExistsRule( addNullByte( 3, "/////ww9XAAAIUAAAQAAF+c=" ),
-                "constraint_51" ); // empty name
+                null ); // empty name
         assertParseRelationshipPropertyExistsRule( addNullByte( 4, "/////ww9XAAAIUAAAQAAF+c=" ),
-                "constraint_51" ); // empty name
+                null ); // empty name
         assertParseRelationshipPropertyExistsRule( addNullByte( 5, "/////ww9XAAAIUAAAQAAF+c=" ),
-                "constraint_51" ); // empty name
+                null ); // empty name
     }
 
     private static void assertParseIndexRule( String serialized, String name ) throws Exception

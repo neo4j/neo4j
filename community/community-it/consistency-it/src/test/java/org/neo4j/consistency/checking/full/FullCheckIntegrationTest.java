@@ -2405,9 +2405,11 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
+        String name = "constraint_" + ruleId2;
         IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
-                .withName( "constraint_" + ruleId1 ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
-        ConstraintDescriptor uniqueRule = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ).withId( ruleId2 ).withOwnedIndexId( ruleId1 );
+                .withName( name ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
+        ConstraintDescriptor uniqueRule = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds )
+                .withId( ruleId2 ).withName( name ).withOwnedIndexId( ruleId1 );
 
         writeToSchemaStore( schemaStore, indexRule );
         writeToSchemaStore( schemaStore, uniqueRule );
@@ -2420,9 +2422,11 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
+        String name = "constraint_" + ruleId2;
         IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
-                .withName( "constraint_" + ruleId1 ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
-        ConstraintDescriptor nodeKeyRule = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ).withId( ruleId2 ).withOwnedIndexId( ruleId1 );
+                .withName( name ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
+        ConstraintDescriptor nodeKeyRule = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds )
+                .withId( ruleId2 ).withName( name ).withOwnedIndexId( ruleId1 );
 
         writeToSchemaStore( schemaStore, indexRule );
         writeToSchemaStore( schemaStore, nodeKeyRule );
@@ -2431,7 +2435,8 @@ public class FullCheckIntegrationTest
     private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-        ConstraintDescriptor rule = nodePropertyExistenceConstraintRule( schemaStore.nextId(), labelId, propertyKeyId );
+        long ruleId = schemaStore.nextId();
+        ConstraintDescriptor rule = nodePropertyExistenceConstraintRule( ruleId, labelId, propertyKeyId ).withName( "constraint_" + ruleId );
         writeToSchemaStore( schemaStore, rule );
     }
 

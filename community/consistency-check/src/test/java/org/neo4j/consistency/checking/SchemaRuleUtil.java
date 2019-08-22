@@ -35,17 +35,20 @@ public class SchemaRuleUtil
 
     public static ConstraintDescriptor uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId )
     {
-        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyId ).withId( ruleId ).withOwnedIndexId( indexId );
+        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyId )
+                .withId( ruleId ).withName( "constraint_" + ruleId ).withOwnedIndexId( indexId );
     }
 
     public static ConstraintDescriptor nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
     {
-        return ConstraintDescriptorFactory.existsForLabel( labelId, propertyId ).withId( ruleId );
+        return ConstraintDescriptorFactory.existsForLabel( labelId, propertyId )
+                .withId( ruleId ).withName( "constraint_" + ruleId );
     }
 
     public static ConstraintDescriptor relPropertyExistenceConstraintRule( long ruleId, int relTypeId, int propertyId )
     {
-        return ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ).withId( ruleId );
+        return ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId )
+                .withId( ruleId ).withName( "constraint_" + ruleId );
     }
 
     public static IndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )
@@ -57,7 +60,7 @@ public class SchemaRuleUtil
                                                             IndexProviderDescriptor descriptor, long constraintId )
     {
         return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor )
-                .withName( "constraint_" + ruleId ).materialise( ruleId ).withOwningConstraintId( constraintId );
+                .withName( "constraint_" + constraintId ).materialise( ruleId ).withOwningConstraintId( constraintId );
     }
 
     public static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,

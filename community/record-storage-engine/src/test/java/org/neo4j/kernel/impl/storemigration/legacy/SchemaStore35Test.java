@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -235,11 +234,12 @@ class SchemaStore35Test
 
     private static ConstraintDescriptor constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )
     {
-        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds ).withId( ruleId ).withOwnedIndexId( ownedIndexId );
+        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds ).withId( ruleId )
+                .withName( "constraint_" + ruleId ).withOwnedIndexId( ownedIndexId );
     }
 
     private static ConstraintDescriptor constraintExistsRule( long ruleId, int labelId, int... propertyIds )
     {
-        return ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ).withId( ruleId );
+        return ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ).withName( "constraint_" + ruleId ).withId( ruleId );
     }
 }
