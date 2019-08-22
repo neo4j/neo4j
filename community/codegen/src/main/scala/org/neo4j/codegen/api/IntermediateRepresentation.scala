@@ -406,6 +406,7 @@ case class Cast(to: codegen.TypeReference, expression: IntermediateRepresentatio
   */
 case class InstanceOf(typ: codegen.TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation
 
+case object Self extends IntermediateRepresentation
 /**
   * Defines a method
   *
@@ -698,4 +699,6 @@ object IntermediateRepresentation {
   def box(expression: IntermediateRepresentation) = Box(expression)
 
   def unbox(expression: IntermediateRepresentation) = Unbox(expression)
+
+  def self(): IntermediateRepresentation = Self
 }

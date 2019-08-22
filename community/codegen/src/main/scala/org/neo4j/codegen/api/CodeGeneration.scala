@@ -24,10 +24,10 @@ import org.neo4j.codegen.CodeGenerator.generateCode
 import org.neo4j.codegen.Expression._
 import org.neo4j.codegen.FieldReference.{field, staticField}
 import org.neo4j.codegen.Parameter.param
-import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.TypeReference.OBJECT
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.source.SourceCode.{PRINT_SOURCE, SOURCECODE}
+import org.neo4j.codegen.{CodeGenerator, TypeReference}
 
 /**
   * Produces runnable code from an IntermediateRepresentation
@@ -36,8 +36,15 @@ object CodeGeneration {
 
   private val DEBUG = false
 
-  def compileClass[T](c: ClassDeclaration[T]): Class[T] = {
-    val handle = compileClassDeclaration(c)
+  def compileClass[T](c: ClassDeclaration[T], generator: CodeGenerator = createGenerator): Class[T] = {
+    val handle = compileClassDeclaration(c, generator)
+    val clazz = handle.loadClass()
+    setConstants(clazz, c.fields)
+    clazz.asInstanceOf[Class[T]]
+  }
+
+  def compileAnonymousClass[T](c: ClassDeclaration[T], generator: CodeGenerator = createGenerator): Class[T] = {
+    val handle = compileClassDeclaration(c, generator)
     val clazz = handle.loadAnonymousClass()
     setConstants(clazz, c.fields)
     clazz.asInstanceOf[Class[T]]
@@ -79,7 +86,7 @@ object CodeGeneration {
     }
   }
 
-  private def generator = {
+  def createGenerator: CodeGenerator = {
     if (DEBUG) generateCode(classOf[IntermediateRepresentation].getClassLoader, SOURCECODE, PRINT_SOURCE)
     else generateCode(classOf[IntermediateRepresentation].getClassLoader, BYTECODE)
   }
@@ -263,9 +270,11 @@ object CodeGeneration {
 
     case Unbox(expression) =>
       codegen.Expression.unbox(compileExpression(expression, block))
+
+    case Self => block.self()
   }
 
-  private def compileClassDeclaration(c: ClassDeclaration[_]): codegen.ClassHandle = {
+  private def compileClassDeclaration(c: ClassDeclaration[_], generator: CodeGenerator): codegen.ClassHandle = {
     val handle = beginBlock(generator.generateClass(c.extendsClass.getOrElse(codegen.TypeReference.OBJECT), c.packageName, c.className, c.implementsInterfaces: _*)) { clazz: codegen.ClassGenerator =>
       //clazz.generateConstructor(generateParametersWithNames(c.constructor.constructor.params): _*)
       generateConstructor(clazz,
