@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
 /*
@@ -51,7 +51,7 @@ public final class StandalonePageCacheFactory
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
-        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( "8 MiB", GlobalMemoryTracker.INSTANCE );
+        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( "8 MiB", EmptyMemoryTracker.INSTANCE );
         return new MuninnPageCache( factory, memoryAllocator, cacheTracer, cursorTracerSupplier, versionContextSupplier, jobScheduler );
     }
 }

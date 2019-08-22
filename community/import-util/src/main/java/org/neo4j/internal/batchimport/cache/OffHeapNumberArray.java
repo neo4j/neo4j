@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport.cache;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.memory.MemoryAllocationTracker;
 
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 
@@ -29,16 +28,14 @@ public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseN
     private final long allocatedAddress;
     protected final long address;
     protected final long length;
-    protected final MemoryAllocationTracker allocationTracker;
     private final long allocatedBytes;
     private boolean closed;
 
-    protected OffHeapNumberArray( long length, int itemSize, long base, MemoryAllocationTracker allocationTracker )
+    protected OffHeapNumberArray( long length, int itemSize, long base )
     {
         super( itemSize, base );
         UnsafeUtil.assertHasUnsafe();
         this.length = length;
-        this.allocationTracker = allocationTracker;
 
         long dataSize = length * itemSize;
         if ( UnsafeUtil.allowUnalignedMemoryAccess || !isPowerOfTwo(itemSize ) )
@@ -47,14 +44,14 @@ public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseN
             // isn't power of two anyway and so we have to fallback to safer means of accessing the memory,
             // i.e. byte for byte.
             allocatedBytes = dataSize;
-            this.allocatedAddress = this.address = UnsafeUtil.allocateMemory( allocatedBytes, allocationTracker );
+            this.allocatedAddress = this.address = UnsafeUtil.allocateMemory( allocatedBytes );
         }
         else
         {
             // the item size is a power of two and we're required to access memory aligned
             // so we can allocate a bit more to ensure we can get an aligned memory address to start from.
             allocatedBytes = dataSize + itemSize - 1;
-            this.allocatedAddress = UnsafeUtil.allocateMemory( allocatedBytes, allocationTracker );
+            this.allocatedAddress = UnsafeUtil.allocateMemory( allocatedBytes );
             this.address = UnsafeUtil.alignedMemory( allocatedAddress, itemSize );
         }
     }
@@ -79,7 +76,7 @@ public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseN
             if ( length > 0 )
             {
                 // Allocating 0 bytes actually returns address 0
-                UnsafeUtil.free( allocatedAddress, allocatedBytes, allocationTracker );
+                UnsafeUtil.free( allocatedAddress, allocatedBytes );
             }
             closed = true;
         }

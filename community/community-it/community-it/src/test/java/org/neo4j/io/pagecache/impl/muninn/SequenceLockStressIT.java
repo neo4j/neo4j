@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 
 class SequenceLockStressIT
@@ -56,7 +55,7 @@ class SequenceLockStressIT
     static void cleanup()
     {
         executor.shutdown();
-        UnsafeUtil.free( lockAddr, Long.BYTES, GlobalMemoryTracker.INSTANCE );
+        UnsafeUtil.free( lockAddr, Long.BYTES );
     }
 
     @BeforeEach

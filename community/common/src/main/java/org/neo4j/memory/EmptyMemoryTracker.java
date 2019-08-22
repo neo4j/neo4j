@@ -19,39 +19,27 @@
  */
 package org.neo4j.memory;
 
-import java.util.concurrent.atomic.LongAdder;
-
-/**
- * Global memory tracker that can be used in a global multi threaded context to record
- * allocation and de-allocation of native memory.
- * @see org.neo4j.memory.MemoryAllocationTracker
- * @see MemoryTracker
- */
-public class GlobalMemoryTracker implements MemoryAllocationTracker
+public class EmptyMemoryTracker implements MemoryAllocationTracker
 {
-    public static final GlobalMemoryTracker INSTANCE = new GlobalMemoryTracker();
+    public static final EmptyMemoryTracker INSTANCE = new EmptyMemoryTracker();
 
-    private final LongAdder allocatedBytes = new LongAdder();
+    private EmptyMemoryTracker()
+    {
+    }
 
-    private GlobalMemoryTracker()
+    @Override
+    public void allocated( long bytes )
+    {
+    }
+
+    @Override
+    public void deallocated( long bytes )
     {
     }
 
     @Override
     public long usedDirectMemory()
     {
-        return allocatedBytes.sum();
-    }
-
-    @Override
-    public void allocated( long bytes )
-    {
-        allocatedBytes.add( bytes );
-    }
-
-    @Override
-    public void deallocated( long bytes )
-    {
-        allocatedBytes.add( -bytes );
+        return 0;
     }
 }

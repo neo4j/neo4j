@@ -25,8 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.memory.GlobalMemoryTracker;
-
 import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -356,7 +354,7 @@ class UnsafeUtilTest
         }
         finally
         {
-            free( address, sizeInBytes, GlobalMemoryTracker.INSTANCE );
+            free( address, sizeInBytes );
         }
     }
 
@@ -549,12 +547,12 @@ class UnsafeUtilTest
             }
             finally
             {
-                free( address2, sizeInBytes2, GlobalMemoryTracker.INSTANCE );
+                free( address2, sizeInBytes2 );
             }
         }
         finally
         {
-            free( address, sizeInBytes, GlobalMemoryTracker.INSTANCE );
+            free( address, sizeInBytes );
         }
     }
 
@@ -603,8 +601,7 @@ class UnsafeUtilTest
     {
         // GIVEN
         int sizeInBytes = 2;
-        GlobalMemoryTracker tracker = GlobalMemoryTracker.INSTANCE;
-        long p = allocateMemory( sizeInBytes, tracker );
+        long p = allocateMemory( sizeInBytes );
         short value = (short) 0b11001100_10101010;
 
         // WHEN
@@ -612,7 +609,7 @@ class UnsafeUtilTest
         short readValue = UnsafeUtil.getShortByteWiseLittleEndian( p );
 
         // THEN
-        free( p, sizeInBytes, tracker );
+        free( p, sizeInBytes );
         assertEquals( value, readValue );
     }
 
@@ -621,8 +618,7 @@ class UnsafeUtilTest
     {
         // GIVEN
         int sizeInBytes = 4;
-        GlobalMemoryTracker tracker = GlobalMemoryTracker.INSTANCE;
-        long p = allocateMemory( sizeInBytes, tracker );
+        long p = allocateMemory( sizeInBytes );
         int value = 0b11001100_10101010_10011001_01100110;
 
         // WHEN
@@ -630,7 +626,7 @@ class UnsafeUtilTest
         int readValue = UnsafeUtil.getIntByteWiseLittleEndian( p );
 
         // THEN
-        free( p, sizeInBytes, tracker );
+        free( p, sizeInBytes );
         assertEquals( value, readValue );
     }
 
@@ -639,8 +635,7 @@ class UnsafeUtilTest
     {
         // GIVEN
         int sizeInBytes = 8;
-        GlobalMemoryTracker tracker = GlobalMemoryTracker.INSTANCE;
-        long p = allocateMemory( sizeInBytes, tracker );
+        long p = allocateMemory( sizeInBytes );
         long value = 0b11001100_10101010_10011001_01100110__10001000_01000100_00100010_00010001L;
 
         // WHEN
@@ -648,7 +643,7 @@ class UnsafeUtilTest
         long readValue = UnsafeUtil.getLongByteWiseLittleEndian( p );
 
         // THEN
-        free( p, sizeInBytes, tracker );
+        free( p, sizeInBytes );
         assertEquals( value, readValue );
     }
 

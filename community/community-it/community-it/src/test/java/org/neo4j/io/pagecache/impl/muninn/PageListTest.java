@@ -51,7 +51,7 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -89,7 +89,7 @@ public class PageListTest
     public static void setUpStatics()
     {
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
-        mman = MemoryAllocator.createAllocator( "1 MiB", GlobalMemoryTracker.INSTANCE );
+        mman = MemoryAllocator.createAllocator( "1 MiB", EmptyMemoryTracker.INSTANCE );
     }
 
     @AfterClass
@@ -126,7 +126,7 @@ public class PageListTest
     public void setUp()
     {
         swappers = new SwapperSet();
-        long victimPage = VictimPageReference.getVictimPage( pageSize, GlobalMemoryTracker.INSTANCE );
+        long victimPage = VictimPageReference.getVictimPage( pageSize );
         pageList = new PageList( pageIds.length, pageSize, mman, swappers, victimPage, ALIGNMENT );
         pageRef = pageList.deref( pageId );
         prevPageRef = pageList.deref( prevPageId );
@@ -137,7 +137,7 @@ public class PageListTest
     public void mustExposePageCount()
     {
         int pageCount;
-        long victimPage = VictimPageReference.getVictimPage( pageSize, GlobalMemoryTracker.INSTANCE );
+        long victimPage = VictimPageReference.getVictimPage( pageSize );
 
         pageCount = 3;
         assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount(),
@@ -1196,7 +1196,7 @@ public class PageListTest
     public void mustExposeCachePageSize()
     {
         PageList list = new PageList( 0, 42, mman, swappers,
-                VictimPageReference.getVictimPage( 42, GlobalMemoryTracker.INSTANCE ), ALIGNMENT );
+                VictimPageReference.getVictimPage( 42 ), ALIGNMENT );
         assertThat( list.getCachePageSize(), is( 42 ) );
     }
 

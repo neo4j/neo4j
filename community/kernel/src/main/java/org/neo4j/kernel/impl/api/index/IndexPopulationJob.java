@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
-import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -65,7 +64,7 @@ public class IndexPopulationJob implements Runnable
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
         this.verifyBeforeFlipping = verifyBeforeFlipping;
-        this.memoryAllocationTracker = new ThreadSafePeakMemoryAllocationTracker( GlobalMemoryTracker.INSTANCE );
+        this.memoryAllocationTracker = new ThreadSafePeakMemoryAllocationTracker();
         this.bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryAllocationTracker ), parseBlockSize() );
     }
 

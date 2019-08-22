@@ -24,8 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.lang.Long.max;
 
 /**
- * A {@link MemoryAllocationTracker} which is thread-safe, forwards allocations and deallocations to another {@link MemoryAllocationTracker}
- * and will register peak memory usage during its lifetime.
+ * A {@link MemoryAllocationTracker} which is thread-safe and will register peak memory usage during its lifetime.
  */
 public class ThreadSafePeakMemoryAllocationTracker implements MemoryAllocationTracker
 {
@@ -34,12 +33,6 @@ public class ThreadSafePeakMemoryAllocationTracker implements MemoryAllocationTr
     // - Convenient and accurate sum when making allocations to correctly register peak memory usage
     private final AtomicLong allocated = new AtomicLong();
     private final AtomicLong peak = new AtomicLong();
-    private final MemoryAllocationTracker alsoReportTo;
-
-    public ThreadSafePeakMemoryAllocationTracker( MemoryAllocationTracker alsoReportTo )
-    {
-        this.alsoReportTo = alsoReportTo;
-    }
 
     @Override
     public void allocated( long bytes )
@@ -60,15 +53,12 @@ public class ThreadSafePeakMemoryAllocationTracker implements MemoryAllocationTr
             updatedPeak = max( currentPeak, total );
         }
         while ( !peak.compareAndSet( currentPeak, updatedPeak ) );
-
-        alsoReportTo.allocated( bytes );
     }
 
     @Override
     public void deallocated( long bytes )
     {
         allocated.addAndGet( -bytes );
-        alsoReportTo.deallocated( bytes );
     }
 
     @Override

@@ -71,7 +71,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -289,7 +289,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.open( fileSystem );
-        MemoryAllocator memoryAllocator = createAllocator( config.get( pagecache_memory ), GlobalMemoryTracker.INSTANCE );
+        MemoryAllocator memoryAllocator = createAllocator( config.get( pagecache_memory ), EmptyMemoryTracker.INSTANCE );
         return new MuninnPageCache( swapperFactory, memoryAllocator, tracer, DefaultPageCursorTracerSupplier.INSTANCE,
                 EmptyVersionContextSupplier.EMPTY, jobScheduler );
     }

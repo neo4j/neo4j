@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.Log;
-import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 
@@ -107,7 +107,7 @@ public class ConfiguringPageCacheFactory
             pageCacheMemorySetting = "" + heuristic;
         }
 
-        return MemoryAllocator.createAllocator( pageCacheMemorySetting, GlobalMemoryTracker.INSTANCE );
+        return MemoryAllocator.createAllocator( pageCacheMemorySetting, EmptyMemoryTracker.INSTANCE );
     }
 
     public static long defaultHeuristicPageCacheMemory()

@@ -30,7 +30,6 @@ import java.util.function.Function;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -96,19 +95,19 @@ public interface NumberArrayFactory
         @Override
         public IntArray newIntArray( long length, int defaultValue, long base )
         {
-            return new OffHeapIntArray( length, defaultValue, base, GlobalMemoryTracker.INSTANCE );
+            return new OffHeapIntArray( length, defaultValue, base );
         }
 
         @Override
         public LongArray newLongArray( long length, long defaultValue, long base )
         {
-            return new OffHeapLongArray( length, defaultValue, base, GlobalMemoryTracker.INSTANCE );
+            return new OffHeapLongArray( length, defaultValue, base );
         }
 
         @Override
         public ByteArray newByteArray( long length, byte[] defaultValue, long base )
         {
-            return new OffHeapByteArray( length, defaultValue, base, GlobalMemoryTracker.INSTANCE );
+            return new OffHeapByteArray( length, defaultValue, base );
         }
 
         @Override

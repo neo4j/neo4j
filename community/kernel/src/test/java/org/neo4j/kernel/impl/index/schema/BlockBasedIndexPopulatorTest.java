@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.Barrier;
@@ -278,7 +277,7 @@ class BlockBasedIndexPopulatorTest
     void shouldDeallocateAllAllocatedMemoryOnClose() throws IndexEntryConflictException
     {
         // given
-        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker( new LocalMemoryTracker() );
+        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), 100 );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory );
         boolean closed = false;
@@ -317,7 +316,7 @@ class BlockBasedIndexPopulatorTest
     void shouldDeallocateAllAllocatedMemoryOnDrop() throws IndexEntryConflictException
     {
         // given
-        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker( new LocalMemoryTracker() );
+        ThreadSafePeakMemoryAllocationTracker memoryTracker = new ThreadSafePeakMemoryAllocationTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( () -> new UnsafeDirectByteBufferAllocator( memoryTracker ), 100 );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory );
         boolean closed = false;

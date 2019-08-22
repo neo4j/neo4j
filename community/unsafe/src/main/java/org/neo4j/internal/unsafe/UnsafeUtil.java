@@ -38,7 +38,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 
 import static java.lang.Long.compareUnsigned;
@@ -393,6 +392,29 @@ public final class UnsafeUtil
     }
 
     /**
+     * Allocates a {@link ByteBuffer}
+     * @param size The size of the buffer to allocate
+     */
+    public static ByteBuffer allocateByteBuffer( int size )
+    {
+        ByteBuffer buffer = ByteBuffer.allocateDirect( size );
+        GlobalMemoryTracker.INSTANCE.allocated( size );
+        return buffer;
+    }
+
+    /**
+     * Allocates a {@link ByteBuffer}
+     * @param byteBuffer The ByteBuffer to free, allocated by {@link #allocateByteBuffer(int)}
+     */
+    public static void freeByteBuffer( ByteBuffer byteBuffer )
+    {
+        int capacity = byteBuffer.capacity();
+        byteBuffer.clear();
+        UnsafeUtil.invokeCleaner( byteBuffer );
+        GlobalMemoryTracker.INSTANCE.deallocated( capacity );
+    }
+
+    /**
      * Invokes cleaner for provided direct byte buffer.
      *
      * @param byteBuffer provided byte buffer.
@@ -439,6 +461,7 @@ public final class UnsafeUtil
      */
     public static long allocateMemory( long bytes, MemoryAllocationTracker allocationTracker ) throws NativeMemoryAllocationRefusedError
     {
+        assert allocationTracker != GlobalMemoryTracker.INSTANCE;
         final long pointer = allocateMemory( bytes );
         allocationTracker.allocated( bytes );
         return pointer;
@@ -476,6 +499,7 @@ public final class UnsafeUtil
      */
     public static void free( long pointer, long bytes, MemoryAllocationTracker allocationTracker )
     {
+        assert allocationTracker != GlobalMemoryTracker.INSTANCE;
         free( pointer, bytes );
         allocationTracker.deallocated( bytes );
     }

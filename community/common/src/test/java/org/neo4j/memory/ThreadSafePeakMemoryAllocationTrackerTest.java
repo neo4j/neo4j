@@ -37,7 +37,7 @@ class ThreadSafePeakMemoryAllocationTrackerTest
     void shouldRegisterConcurrentAllocationsAndDeallocations() throws InterruptedException
     {
         // given
-        ThreadSafePeakMemoryAllocationTracker tracker = new ThreadSafePeakMemoryAllocationTracker( GlobalMemoryTracker.INSTANCE );
+        ThreadSafePeakMemoryAllocationTracker tracker = new ThreadSafePeakMemoryAllocationTracker();
         ExecutorService executorService = Executors.newFixedThreadPool( 10 );
         for ( int t = 0; t < 10; t++ )
         {
@@ -68,7 +68,7 @@ class ThreadSafePeakMemoryAllocationTrackerTest
     void shouldRegisterPeakMemoryUsage() throws InterruptedException
     {
         // given
-        ThreadSafePeakMemoryAllocationTracker tracker = new ThreadSafePeakMemoryAllocationTracker( GlobalMemoryTracker.INSTANCE );
+        ThreadSafePeakMemoryAllocationTracker tracker = new ThreadSafePeakMemoryAllocationTracker();
         int threads = 200;
         long[] allocations = new long[threads];
         ThreadLocalRandom random = ThreadLocalRandom.current();

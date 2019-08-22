@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
@@ -51,14 +50,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
 
     public ReadAheadChannel( T channel, int readAheadSize )
     {
-        this( channel, newInnerDirectByteBuffer( readAheadSize ), true );
-    }
-
-    private static ByteBuffer newInnerDirectByteBuffer( int size )
-    {
-        ByteBuffer buffer = ByteBuffer.allocateDirect( size );
-        GlobalMemoryTracker.INSTANCE.allocated( size );
-        return buffer;
+        this( channel, UnsafeUtil.allocateByteBuffer( readAheadSize ), true );
     }
 
     public ReadAheadChannel( T channel, ByteBuffer byteBuffer )
@@ -150,9 +142,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
         channel.close();
         if ( cleanBufferOnClose )
         {
-            aheadBuffer.clear();
-            UnsafeUtil.invokeCleaner( aheadBuffer );
-            GlobalMemoryTracker.INSTANCE.deallocated( readAheadSize );
+            UnsafeUtil.freeByteBuffer( aheadBuffer );
         }
     }
 
