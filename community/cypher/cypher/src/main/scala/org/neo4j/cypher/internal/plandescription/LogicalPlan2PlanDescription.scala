@@ -153,6 +153,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: DropRelationshipPropertyExistenceConstraint =>
         PlanDescriptionImpl(id, "DropRelationshipPropertyExistenceConstraint", NoChildren, Seq.empty, variables)
 
+      // TODO: Some of these (those with a source) are currently required in both leaf and one-child code paths,
+      //  surely there is a way to not require that?
       case ShowUsers() =>
         PlanDescriptionImpl(id, "ShowUsers", NoChildren, Seq.empty, variables)
 
@@ -160,7 +162,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateUser", NoChildren, Seq(userName), variables)
 
-      case DropUser(name, _) =>
+      case DropUser(_, name) =>
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropUser", NoChildren, Seq(userName), variables)
 
@@ -174,11 +176,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case ShowRoles(_,_) =>
         PlanDescriptionImpl(id, "ShowRoles", NoChildren, Seq.empty, variables)
 
-      case DropRole(name, _) =>
+      case DropRole(_, name) =>
         val roleName = Role(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropRole", NoChildren, Seq(roleName), variables)
 
-      // TODO: These are currently required in both leaf and one-child code paths, surely there is a way to not require that?
       case CreateRole(_, name, _, _) =>
         val roleName = Role(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateRole", NoChildren, Seq(roleName), variables)
@@ -263,7 +264,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
 
-      case EnsureValidNonSystemDatabase(normalizedName, _, _) =>
+      case EnsureValidNonSystemDatabase(_, normalizedName, _) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "EnsureValidNonSystemDatabase", NoChildren, Seq(dbName), variables)
 
@@ -275,6 +276,22 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case SystemProcedureCall(procedureName, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
+
+      case DoNothingIfNotExists(label, name) =>
+        val nameArgument = label match {
+          case "User" => User(Prettifier.escapeName(name))
+          case "Role" => Role(Prettifier.escapeName(name))
+          case "Database" => Database(Prettifier.escapeName(name))
+        }
+        PlanDescriptionImpl(id, s"DoNothingIfNotExists($label)", NoChildren, Seq(nameArgument), variables)
+
+      case DoNothingIfExists(label, name) =>
+        val nameArgument = label match {
+          case "User" => User(Prettifier.escapeName(name))
+          case "Role" => Role(Prettifier.escapeName(name))
+          case "Database" => Database(Prettifier.escapeName(name))
+        }
+        PlanDescriptionImpl(id, s"DoNothingIfExists($label)", NoChildren, Seq(nameArgument), variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
@@ -462,6 +479,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                             Seq(expandDescription) ++ predicatesDescription, variables)
 
       // TODO: These are currently required in both leaf and one-child code paths, surely there is a way to not require that?
+      case DropUser(_, name) =>
+        val userName = User(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "DropUser", NoChildren, Seq(userName), variables)
+
+      case DropRole(_, name) =>
+        val roleName = Role(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "DropRole", NoChildren, Seq(roleName), variables)
+
       case CreateRole(_, name, _, _) =>
         val roleName = Role(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "CreateRole", children, Seq(roleName), variables)
@@ -516,6 +541,21 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeWrite(_, resource, database, qualifier, roleName, revokeType) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "RevokeWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+
+      case DropDatabase(_, normalizedName) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
+        PlanDescriptionImpl(id, "DropDatabase", NoChildren, Seq(dbName), variables)
+
+      case StopDatabase(_, normalizedName) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
+        PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
+
+      case EnsureValidNonSystemDatabase(_, normalizedName, _) =>
+        val dbName = Database(Prettifier.escapeName(normalizedName.name))
+        PlanDescriptionImpl(id, "EnsureValidNonSystemDatabase", NoChildren, Seq(dbName), variables)
+
+      case LogSystemCommand(_, _) =>
+        PlanDescriptionImpl(id, "LogSystemCommand", NoChildren, Seq.empty, variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }

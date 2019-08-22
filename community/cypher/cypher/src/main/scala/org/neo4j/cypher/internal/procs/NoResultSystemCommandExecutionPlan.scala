@@ -70,7 +70,7 @@ case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscr
   override def queryProfile(): QueryProfile = QueryProfile.NONE
 }
 
-case object FailedRuntimeResult extends RuntimeResult {
+case object IgnoredRuntimeResult extends RuntimeResult {
   override def fieldNames(): Array[String] = Array.empty
   override def queryStatistics(): QueryStatistics = QueryStatistics()
   override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()

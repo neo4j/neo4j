@@ -121,22 +121,20 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
 
     // DROP USER [IF EXISTS] foo
-    case DropUser(userName, checkUserExists) => (_, _, securityContext) =>
+    case DropUser(source, userName) => (context, parameterMapping, securityContext) =>
       if (securityContext.subject().hasUsername(userName)) throw new InvalidArgumentsException(s"Failed to delete the specified user '$userName': Deleting yourself is not allowed.")
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
         """MATCH (user:User {name: $name}) DETACH DELETE user
           |RETURN user""".stripMargin,
         VirtualValues.map(Array("name"), Array(Values.stringValue(userName))),
         QueryHandler
-          .handleNoResult(() =>
-            if (checkUserExists) Some(new InvalidArgumentsException(s"Failed to delete the specified user '$userName': User does not exist."))
-            else None
-          )
+          .handleNoResult(() =>Some(new InvalidArgumentsException(s"Failed to delete the specified user '$userName': User does not exist.")))
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
               new IllegalStateException(s"Failed to delete the specified user '$userName': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified user '$userName'.", error)
-          }
+          },
+        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
@@ -188,6 +186,20 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case ShowDefaultDatabase() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine,
         "MATCH (d:Database {default: true}) RETURN d.name as name", VirtualValues.EMPTY_MAP)
+
+    case DoNothingIfNotExists(label, name) => (_, _, _) =>
+      UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
+        s"""
+           |MATCH (node:$label {name: $$name})
+           |RETURN node.name AS name
+        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))), QueryHandler.ignoreNoResult())
+
+    case DoNothingIfExists(label, name) => (_, _, _) =>
+      UpdatingSystemCommandExecutionPlan("DoNothingIfExists", normalExecutionEngine,
+        s"""
+           |MATCH (node:$label {name: $$name})
+           |RETURN node.name AS name
+        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))), QueryHandler.ignoreOnResult())
 
     // SUPPORT PROCEDURES (need to be cleared before here)
     case SystemProcedureCall(_, queryString, params) => (_, _, _) =>

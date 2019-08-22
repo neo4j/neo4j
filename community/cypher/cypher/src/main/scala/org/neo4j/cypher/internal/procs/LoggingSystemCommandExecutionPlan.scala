@@ -38,8 +38,8 @@ case class LoggingSystemCommandExecutionPlan(source: ExecutionPlan, commandStrin
 
     val sourceResult = source.run(ctx,doProfile,params,prePopulateResults,ignore,subscriber)
     sourceResult match {
-      case FailedRuntimeResult =>
-        FailedRuntimeResult
+      case IgnoredRuntimeResult =>
+        IgnoredRuntimeResult
       case result =>
         logger.apply(commandString, securityContext)
         result

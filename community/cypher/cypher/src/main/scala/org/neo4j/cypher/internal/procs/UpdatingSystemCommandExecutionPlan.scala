@@ -58,11 +58,8 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       override def onResultCompleted(statistics: QueryStatistics): Unit = if(statistics.containsUpdates()) ctx.systemUpdates.increase()
     }))
     sourceResult match {
-      case Some(FailedRuntimeResult) => FailedRuntimeResult
+      case Some(IgnoredRuntimeResult) => IgnoredRuntimeResult
       case _ =>
-        // Only the outermost query should be tied into the reactive results stream. The source queries should be exhausted eagerly
-        sourceResult.foreach(_.consumeAll())
-
         val tc = ctx.kernelTransactionalContext
         if (!name.equals("AlterCurrentUserSetPassword") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
 
@@ -81,7 +78,10 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
           }
           systemSubscriber.assertNotFailed()
 
-          SystemCommandRuntimeResult(ctx, new UpdatingSystemCommandExecutionResult(execution), systemSubscriber, fullAccess, tc.kernelTransaction())
+          if (systemSubscriber.shouldIgnoreResult())
+            IgnoredRuntimeResult
+          else
+            UpdatingSystemCommandRuntimeResult(ctx)
         } finally {
           if(revertAccessModeChange != null ) revertAccessModeChange
         }
@@ -100,31 +100,41 @@ class UpdatingSystemCommandExecutionResult(inner: InternalExecutionResult) exten
   override def fieldNames(): Array[String] = Array.empty
 }
 
+case class IgnoreResults()
+
 class QueryHandler {
   def onError(t: Throwable): Throwable = t
 
-  def onResult(offset: Int, value: AnyValue): Option[Throwable] = None
+  def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = None
 
-  def onNoResults(): Option[Throwable] = None
+  def onNoResults(): Option[Either[Throwable, IgnoreResults]] = None
 }
 
 class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
   override def onError(t: Throwable): Throwable = parent.onError(t)
 
-  override def onResult(offset: Int, value: AnyValue): Option[Throwable] = parent.onResult(offset, value)
+  override def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = parent.onResult(offset, value)
 
-  override def onNoResults(): Option[Throwable] = parent.onNoResults()
+  override def onNoResults(): Option[Either[Throwable, IgnoreResults]] = parent.onNoResults()
 
   def handleError(f: Throwable => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
     override def onError(t: Throwable): Throwable = f(t)
   }
 
   def handleNoResult(f: () => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onNoResults(): Option[Throwable] = f()
+    override def onNoResults(): Option[Either[Throwable, IgnoreResults]] = f().map(t => Left(t))
+  }
+
+  def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onNoResults(): Option[Either[Throwable, IgnoreResults]] = Some(Right(new IgnoreResults))
   }
 
   def handleResult(handler: (Int, AnyValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onResult(offset: Int, value: AnyValue): Option[Throwable] = handler(offset, value)
+    override def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = handler(offset, value).map(t => Left(t))
+  }
+
+  def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+    override def onResult(offset: Int, value: AnyValue): Option[Either[Throwable, IgnoreResults]] = Some(Right(new IgnoreResults))
   }
 }
 
@@ -133,5 +143,9 @@ object QueryHandler {
 
   def handleNoResult(f: () => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
 
+  def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreNoResult()
+
   def handleResult(handler: (Int, AnyValue) => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
+
+  def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreOnResult()
 }

@@ -43,7 +43,7 @@ case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
   override val fieldNames: Array[String] = execution.fieldNames()
   private var state = ConsumptionState.NOT_STARTED
 
-  override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
+  override def queryStatistics(): QueryStatistics = QueryStatistics()
 
   override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()
 
@@ -51,7 +51,7 @@ case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
 
   override def close(): Unit = execution.inner.close()
 
-  override def queryProfile(): QueryProfile = SystemCommandProfile(0)
+  override def queryProfile(): QueryProfile = SystemCommandProfile(0, 1)
 
   override def request(numberOfRecords: Long): Unit = {
     var revertSecurityContextChange: KernelTransaction.Revertable = null
@@ -62,6 +62,8 @@ case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
       execution.inner.request(numberOfRecords)
       // The lower level (execution) is capturing exceptions using the subscriber, but this level is expecting to do the same higher up, so re-throw to trigger that code path
       subscriber.assertNotFailed(e => execution.inner.close(Error(e)))
+      // This code path is only designed for read only queries
+      ctx.getOptStatistics.filter(_.containsSystemUpdates).foreach(_ => throw new IllegalStateException("Read only administration command contained updates."))
     } finally {
       if (revertSecurityContextChange != null) revertSecurityContextChange
     }
@@ -95,15 +97,11 @@ class ColumnMappingSystemCommandExecutionResult(context: QueryContext,
   override val fieldNames: Array[String] = innerFields.filter(!ignore.contains(_))
 }
 
-case class SystemCommandProfile(rowCount: Long) extends QueryProfile with OperatorProfile {
+case class SystemCommandProfile(rows: Long, dbHits: Long) extends QueryProfile with OperatorProfile {
 
   override def operatorProfile(operatorId: Int): OperatorProfile = this
 
   override def time(): Long = OperatorProfile.NO_DATA
-
-  override def dbHits(): Long = 1 // for unclear reasons
-
-  override def rows(): Long = rowCount
 
   override def pageCacheHits(): Long = OperatorProfile.NO_DATA
 

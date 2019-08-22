@@ -72,8 +72,9 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // DROP USER [IF EXISTS] foo
       case c@DropUser(userName, ifExists) =>
+        val source = if (ifExists) Some(plans.DoNothingIfNotExists("User", userName)) else None
         Some(plans.LogSystemCommand(
-          plans.DropUser(userName, checkUserExists = !ifExists),
+          plans.DropUser(source, userName),
           prettifier.asString(c)))
 
       // ALTER USER foo
@@ -133,7 +134,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // DROP ROLE [IF EXISTS] foo
       case c@DropRole(roleName, ifExists) =>
-        Some(plans.LogSystemCommand(plans.DropRole(roleName, checkRoleExists = !ifExists), prettifier.asString(c)))
+        val source = if (ifExists) Some(plans.DoNothingIfNotExists("Role", roleName)) else None
+        Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users
       case c@GrantRolesToUsers(roleNames, userNames) =>
@@ -269,8 +271,9 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // DROP DATABASE [IF EXISTS] foo
       case DropDatabase(dbName, ifExists) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
+        val source = if (ifExists) Some(plans.DoNothingIfNotExists("Database", normalizedName.name())) else None
         Some(plans.DropDatabase(
-          Some(plans.EnsureValidNonSystemDatabase(normalizedName, "drop", checkDatabaseExists = Some(!ifExists))),
+          Some(plans.EnsureValidNonSystemDatabase(source, normalizedName, "drop")),
           normalizedName))
 
       // START DATABASE foo
@@ -281,7 +284,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case StopDatabase(dbName) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         Some(plans.StopDatabase(
-          Some(plans.EnsureValidNonSystemDatabase(normalizedName, "stop", checkDatabaseExists = None)), // ifExists is part of DROP DATABASE only
+          Some(plans.EnsureValidNonSystemDatabase(None, normalizedName, "stop")),
           normalizedName))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!

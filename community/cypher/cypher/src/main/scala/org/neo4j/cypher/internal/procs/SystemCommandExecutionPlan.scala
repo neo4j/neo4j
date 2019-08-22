@@ -62,7 +62,10 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
       val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber)
       systemSubscriber.assertNotFailed()
 
-      SystemCommandRuntimeResult(ctx, resultMapper(ctx, execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
+      if (systemSubscriber.shouldIgnoreResult())
+        IgnoredRuntimeResult
+      else
+        SystemCommandRuntimeResult(ctx, resultMapper(ctx, execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
     } finally {
       if (revertAccessModeChange != null) revertAccessModeChange
     }
@@ -81,6 +84,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
   */
 class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
   @volatile private var empty = true
+  @volatile private var ignore = false
   @volatile private var failed: Option[Throwable] = None
   private var currentOffset = -1
 
@@ -90,10 +94,13 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
 
   override def onResultCompleted(statistics: QueryStatistics): Unit = {
     if (empty) {
-      queryHandler.onNoResults().foreach(error => {
-        inner.onError(error)
-        failed = Some(error)
-      })
+      queryHandler.onNoResults().foreach {
+        case Left(error) =>
+          inner.onError(error)
+          failed = Some(error)
+        case Right(_) =>
+          ignore = true
+      }
     }
     if (failed.isEmpty) {
       if (statistics.containsUpdates()) {
@@ -118,10 +125,13 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
 
   override def onField(value: AnyValue): Unit = {
     try {
-      queryHandler.onResult(currentOffset, value).foreach( error => {
-      inner.onError(error)
-        failed = Some(error)
-      })
+      queryHandler.onResult(currentOffset, value).foreach {
+        case Left(error) =>
+          inner.onError(error)
+          failed = Some(error)
+        case Right(_) =>
+          ignore = true
+      }
       if (failed.isEmpty) {
         inner.onField(value)
       }
@@ -140,6 +150,8 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
     onFailure(exception) // used to close resources
     throw exception
   }
+
+  def shouldIgnoreResult(): Boolean = ignore
 
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }
