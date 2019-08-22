@@ -227,6 +227,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       new ExceptionTranslatingQueryContext(ctx)
     }
 
+    override def notifications: Set[InternalNotification] = planningNotifications
+
     override def execute(transactionalContext: TransactionalContext,
                          shouldCloseTransaction: Boolean,
                          preParsedQuery: PreParsedQuery,

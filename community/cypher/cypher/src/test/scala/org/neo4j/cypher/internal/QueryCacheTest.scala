@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions, when}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -148,6 +149,8 @@ class QueryCacheTest extends CypherFunSuite {
   object QueryCacheTest extends MockitoSugar {
     case class MyValue(key: String)(val recompiled: Boolean) extends CacheabilityInfo {
       override def shouldBeCached: Boolean = true
+
+      override def notifications: Set[InternalNotification] = Set.empty
     }
 
     private val RECOMPILE_LIMIT = 2
