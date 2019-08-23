@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -845,46 +844,6 @@ class NeoStoreTransactionApplierTest
         verify( schemaStore ).updateRecord( eq( after ), any() );
         verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId );
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
-    }
-
-    // NEO STORE COMMAND
-
-    @Test
-    void shouldApplyNeoStoreCommandToTheStore() throws Exception
-    {
-        // given
-        BatchTransactionApplier applier = newApplier( false );
-        NeoStoreRecord before = new NeoStoreRecord();
-        NeoStoreRecord after = new NeoStoreRecord();
-        after.setNextProp( 42 );
-        Command command = new Command.NeoStoreCommand( before, after );
-
-        // when
-        boolean result = apply( applier, command::handle, transactionToApply );
-
-        // then
-        assertFalse( result );
-
-        verify( metaDataStore ).setGraphNextProp( after.getNextProp() );
-    }
-
-    @Test
-    void shouldApplyNeoStoreCommandToTheStoreInRecovery() throws Exception
-    {
-        // given
-        BatchTransactionApplier applier = newApplier( true );
-        NeoStoreRecord before = new NeoStoreRecord();
-        NeoStoreRecord after = new NeoStoreRecord();
-        after.setNextProp( 42 );
-        Command command = new Command.NeoStoreCommand( before, after );
-
-        // when
-        boolean result = apply( applier, command::handle, transactionToApply );
-
-        // then
-        assertFalse( result );
-
-        verify( metaDataStore ).setGraphNextProp( after.getNextProp() );
     }
 
     private BatchTransactionApplier newApplier( boolean recovery )

@@ -103,34 +103,6 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
         }
     }
 
-    void initGraph( Read read, AssertOpen assertOpen )
-    {
-        init( read, assertOpen );
-        storeCursor.initGraphProperties();
-        nodeReference = NO_NODE;
-        relationshipReference = NO_RELATIONSHIP;
-
-        // Transaction state
-        if ( read.hasTxStateWithChanges() )
-        {
-            this.propertiesState = read.txState().getGraphState( );
-            if ( this.propertiesState != null )
-            {
-                this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
-            }
-            else
-            {
-                this.txStateChangedProperties = null;
-            }
-        }
-        else
-        {
-            this.txStateChangedProperties = null;
-            this.propertiesState = null;
-        }
-
-    }
-
     private void init( Read read, AssertOpen assertOpen )
     {
         this.assertOpen = assertOpen;

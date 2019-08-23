@@ -138,21 +138,4 @@ public interface Write
      * @return The removed value, or Values.NO_VALUE if the relationship did not have the property before
      */
     Value relationshipRemoveProperty( long relationship, int propertyKey ) throws EntityNotFoundException;
-
-    /**
-     * Set a property on the graph
-     *
-     * @param propertyKey the property key id
-     * @param value the value to set
-     * @return The replaced value, or Values.NO_VALUE if the graph did not have the property before
-     */
-    Value graphSetProperty( int propertyKey, Value value );
-
-    /**
-     * Remove a property from the graph
-     *
-     * @param propertyKey the property key id
-     * @return The removed value, or Values.NO_VALUE if the graph did not have the property before
-     */
-    Value graphRemoveProperty( int propertyKey );
 }

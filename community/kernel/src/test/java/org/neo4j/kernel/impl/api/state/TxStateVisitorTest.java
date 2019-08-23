@@ -165,7 +165,6 @@ class TxStateVisitorTest
 
         List<PropertyChange> nodePropertyChanges = new ArrayList<>();
         List<PropertyChange> relPropertyChanges = new ArrayList<>();
-        List<PropertyChange> graphPropertyChanges = new ArrayList<>();
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty>
@@ -179,13 +178,6 @@ class TxStateVisitorTest
                 changed, IntIterable removed )
         {
             relPropertyChanges.add( new PropertyChange( id, added, changed, removed ) );
-        }
-
-        @Override
-        public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                IntIterable removed )
-        {
-            graphPropertyChanges.add( new PropertyChange( -1, added, changed, removed ) );
         }
     }
 }

@@ -555,7 +555,6 @@ public class NeoStoresTest
             metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 43, 44 );
             metaDataStore.setStoreVersion( recordVersion );
 
-            metaDataStore.setGraphNextProp( 8 );
             metaDataStore.setLatestConstraintIntroducingTx( 9 );
         }
 
@@ -577,7 +576,6 @@ public class NeoStoresTest
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getLastCommittedTransactionId() );
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getLastClosedTransactionId() );
             assertEquals( recordVersion, metaDataStore.getStoreVersion() );
-            assertEquals( 8, metaDataStore.getGraphNextProp() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
             assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{FIELD_NOT_PRESENT, 44, 43} );
         }
@@ -667,7 +665,6 @@ public class NeoStoresTest
             metaDataStore.setLastCommittedAndClosedTransactionId( 6, 42, BASE_TX_COMMIT_TIMESTAMP, 43, 44 );
             metaDataStore.setStoreVersion( recordVersion );
 
-            metaDataStore.setGraphNextProp( 8 );
             metaDataStore.setLatestConstraintIntroducingTx( 9 );
         }
 
@@ -688,7 +685,6 @@ public class NeoStoresTest
             assertEquals( 5, metaDataStore.getCurrentLogVersion() );
             assertEquals( 6, metaDataStore.getLastCommittedTransactionId() );
             assertEquals( recordVersion, metaDataStore.getStoreVersion() );
-            assertEquals( 8, metaDataStore.getGraphNextProp() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
             assertEquals( new TransactionId( 10, 11, BASE_TX_COMMIT_TIMESTAMP ),
                     metaDataStore.getUpgradeTransaction() );
@@ -1461,7 +1457,7 @@ public class NeoStoresTest
         return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, logProvider );
     }
 
-    private class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory
+    private static class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory
     {
         private final String errorMessage;
 

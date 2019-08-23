@@ -665,12 +665,6 @@ public class StubStorageCursors implements StorageReader
             init( reference );
         }
 
-        @Override
-        public void initGraphProperties()
-        {
-            throw new UnsupportedOperationException();
-        }
-
         private void init( long reference )
         {
             PropertyData properties = StubStorageCursors.this.propertyData.get( reference );

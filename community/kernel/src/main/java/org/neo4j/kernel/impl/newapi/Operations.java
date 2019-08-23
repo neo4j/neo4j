@@ -84,7 +84,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -669,36 +668,6 @@ public class Operations implements Write, SchemaWrite
         return existingValue;
     }
 
-    @Override
-    public Value graphSetProperty( int propertyKey, Value value )
-    {
-        ktx.statementLocks().optimistic()
-                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceIds.graphPropertyResource() );
-        ktx.assertOpen();
-
-        Value existingValue = readGraphProperty( propertyKey );
-        if ( !existingValue.equals( value ) )
-        {
-            ktx.txState().graphDoReplaceProperty( propertyKey, existingValue, value );
-        }
-        return existingValue;
-    }
-
-    @Override
-    public Value graphRemoveProperty( int propertyKey )
-    {
-        ktx.statementLocks().optimistic()
-                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceIds.graphPropertyResource() );
-        ktx.assertOpen();
-
-        Value existingValue = readGraphProperty( propertyKey );
-        if ( existingValue != Values.NO_VALUE )
-        {
-            ktx.txState().graphDoRemoveProperty( propertyKey );
-        }
-        return existingValue;
-    }
-
     private Value readNodeProperty( int propertyKey )
     {
         nodeCursor.properties( propertyCursor );
@@ -719,23 +688,6 @@ public class Operations implements Write, SchemaWrite
     private Value readRelationshipProperty( int propertyKey )
     {
         relationshipCursor.properties( propertyCursor );
-
-        //Find out if the property had a value
-        Value existingValue = NO_VALUE;
-        while ( propertyCursor.next() )
-        {
-            if ( propertyCursor.propertyKey() == propertyKey )
-            {
-                existingValue = propertyCursor.propertyValue();
-                break;
-            }
-        }
-        return existingValue;
-    }
-
-    private Value readGraphProperty( int propertyKey )
-    {
-        allStoreHolder.graphProperties( propertyCursor );
 
         //Find out if the property had a value
         Value existingValue = NO_VALUE;

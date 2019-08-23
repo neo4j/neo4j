@@ -173,7 +173,6 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitNeoStoreCommand( Command.NeoStoreCommand command )
     {
-        neoStores.getMetaDataStore().setGraphNextProp( selectRecordByCommandVersion( command ).getNextProp() );
         return false;
     }
 

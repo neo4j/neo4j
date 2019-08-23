@@ -81,12 +81,6 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
         init( reference );
     }
 
-    @Override
-    public void initGraphProperties()
-    {
-        init( metaDataStore.getGraphNextProp() );
-    }
-
     /**
      * In this implementation property ids are unique among nodes AND relationships so they all init the same way
      * @param reference properties reference, actual property record id.

@@ -870,18 +870,6 @@ abstract class TxStateTest
         state.relationshipDoDelete( 1, 0, 0, 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
         assertTrue( state.hasDataChanges() );
-
-        state.graphDoReplaceProperty( 0, Values.NO_VALUE, Values.booleanValue( true ) );
-        assertTrue( observedRevisions.add( state.getDataRevision() ) );
-        assertTrue( state.hasDataChanges() );
-
-        state.graphDoReplaceProperty( 0, Values.booleanValue( true ), Values.booleanValue( false ) );
-        assertTrue( observedRevisions.add( state.getDataRevision() ) );
-        assertTrue( state.hasDataChanges() );
-
-        state.graphDoRemoveProperty( 0 );
-        assertTrue( observedRevisions.add( state.getDataRevision() ) );
-        assertTrue( state.hasDataChanges() );
     }
 
     @Test
@@ -952,21 +940,6 @@ abstract class TxStateTest
 
         verify( collectionsFactory, times( 2 ) ).newValuesMap();
         verify( collectionsFactory ).newLongSet();
-        verifyNoMoreInteractions( collectionsFactory );
-    }
-
-    @Test
-    void getOrCreateGraphState_useCollectionsFactory()
-    {
-        final GraphStateImpl graphState = state.getOrCreateGraphState();
-
-        graphState.addProperty( 2, stringValue( "foo" ) );
-        graphState.removeProperty( 3 );
-        graphState.changeProperty( 4, stringValue( "bar" ) );
-
-        verify( collectionsFactory, times( 2 ) ).newValuesMap();
-        verify( collectionsFactory ).newLongSet();
-
         verifyNoMoreInteractions( collectionsFactory );
     }
 

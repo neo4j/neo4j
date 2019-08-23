@@ -26,7 +26,7 @@ public enum ResourceTypes implements ResourceType
 {
     NODE( 0, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     RELATIONSHIP( 1, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    GRAPH_PROPS( 2, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    // GRAPH_PROPS( 2, LockWaitStrategies.INCREMENTAL_BACKOFF ) - skip it to avoid resource types conflicts
     // SCHEMA resource type had typeId 3 - skip it to avoid resource types conflicts
     INDEX_ENTRY( 4, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     // EXPLICIT INDEX resource had type id 5 - skip it to avoid resource types conflicts

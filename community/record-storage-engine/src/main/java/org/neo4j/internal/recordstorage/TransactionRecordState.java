@@ -34,7 +34,6 @@ import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -58,7 +57,6 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.util.IntCounter;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -87,7 +85,6 @@ public class TransactionRecordState implements RecordState
     private final RelationshipStore relationshipStore;
     private final PropertyStore propertyStore;
     private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
-    private final MetaDataStore metaDataStore;
     private final RecordAccessSet recordChangeSet;
     private final long lastCommittedTxWhenTransactionStarted;
     private final ResourceLocker locks;
@@ -115,7 +112,6 @@ public class TransactionRecordState implements RecordState
         this.relationshipStore = neoStores.getRelationshipStore();
         this.propertyStore = neoStores.getPropertyStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        this.metaDataStore = neoStores.getMetaDataStore();
         this.integrityValidator = integrityValidator;
         this.recordChangeSet = recordChangeSet;
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
@@ -503,76 +499,6 @@ public class TransactionRecordState implements RecordState
             long id2 = o2.getKey();
             return Long.compare( id1, id2 );
         }
-    }
-
-    private RecordProxy<NeoStoreRecord, Void> getOrLoadNeoStoreRecord()
-    {
-        // TODO Move this neo store record thingie into RecordAccessSet
-        if ( neoStoreRecord == null )
-        {
-            neoStoreRecord = new RecordChanges<>( new RecordChanges.Loader<>()
-            {
-                @Override
-                public NeoStoreRecord newUnused( long key, Void additionalData )
-                {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public NeoStoreRecord load( long key, Void additionalData )
-                {
-                    return metaDataStore.graphPropertyRecord();
-                }
-
-                @Override
-                public void ensureHeavy( NeoStoreRecord record )
-                {
-                }
-
-                @Override
-                public NeoStoreRecord clone( NeoStoreRecord neoStoreRecord ) throws CloneNotSupportedException
-                {
-                    return neoStoreRecord.clone();
-                }
-            }, new IntCounter() );
-        }
-        return neoStoreRecord.getOrLoad( 0L, null );
-    }
-
-    /**
-     * Adds a property to the graph, with the given index and value.
-     *  @param propertyKey The index of the key of the property to add.
-     * @param value The value of the property.
-     */
-    void graphAddProperty( int propertyKey, Value value )
-    {
-        propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
-                recordChangeSet.getPropertyRecords() );
-    }
-
-    /**
-     * Changes an existing property of the graph, with the given index to
-     * the passed value
-     *
-     * @param propertyKey The index of the key of the property to change.
-     * @param value The new value of the property.
-     */
-    void graphChangeProperty( int propertyKey, Value value )
-    {
-        propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
-                recordChangeSet.getPropertyRecords() );
-    }
-
-    /**
-     * Removes the given property identified by indexKeyId of the graph with the
-     * given id.
-     *
-     * @param propertyKey The index key of the property.
-     */
-    void graphRemoveProperty( int propertyKey )
-    {
-        RecordProxy<NeoStoreRecord, Void> recordChange = getOrLoadNeoStoreRecord();
-        propertyDeleter.removeProperty( recordChange, propertyKey, recordChangeSet.getPropertyRecords() );
     }
 
     void schemaRuleCreate( long ruleId, boolean isConstraint, SchemaRule rule )

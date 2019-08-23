@@ -229,10 +229,4 @@ public class StubRead implements Read
     {
         throw new UnsupportedOperationException();
     }
-
-    @Override
-    public void graphProperties( PropertyCursor cursor )
-    {
-        throw new UnsupportedOperationException();
-    }
 }

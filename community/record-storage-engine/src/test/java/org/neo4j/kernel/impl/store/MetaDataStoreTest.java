@@ -137,14 +137,6 @@ class MetaDataStoreTest
     }
 
     @Test
-    void getGraphNextPropShouldFailWhenStoreIsClosed()
-    {
-        MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, metaDataStore::getGraphNextProp );
-    }
-
-    @Test
     void getLastClosedTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
@@ -636,7 +628,7 @@ class MetaDataStoreTest
     {
         fakePageCursorOverflow = true;
         assertThrows( UnderlyingStorageException.class,
-                () -> MetaDataStore.setRecord( pageCacheWithFakeOverflow, createMetaDataFile(), MetaDataStore.Position.FIRST_GRAPH_PROPERTY, 4242 ) );
+                () -> MetaDataStore.setRecord( pageCacheWithFakeOverflow, createMetaDataFile(), MetaDataStore.Position.STORE_VERSION, 4242 ) );
     }
 
     @Test
@@ -644,10 +636,10 @@ class MetaDataStoreTest
     {
         File metaDataFile = createMetaDataFile();
         MetaDataStore.setRecord(
-                pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.FIRST_GRAPH_PROPERTY, 4242 );
+                pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.STORE_VERSION, 4242 );
         fakePageCursorOverflow = true;
         assertThrows( UnderlyingStorageException.class,
-                () -> MetaDataStore.getRecord( pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.FIRST_GRAPH_PROPERTY ) );
+                () -> MetaDataStore.getRecord( pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.STORE_VERSION ) );
 
     }
 

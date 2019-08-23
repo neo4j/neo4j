@@ -515,13 +515,6 @@ abstract class Read implements TxStateHolder,
         ((DefaultPropertyCursor) cursor).initNode( nodeReference, reference, this, ktx );
     }
 
-    @Override
-    public final void graphProperties( PropertyCursor cursor )
-    {
-        ktx.assertOpen();
-        ((DefaultPropertyCursor) cursor).initGraph( this, ktx );
-    }
-
     public abstract IndexReader indexReader( IndexDescriptor index, boolean fresh ) throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();

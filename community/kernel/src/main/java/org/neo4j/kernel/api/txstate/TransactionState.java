@@ -55,13 +55,9 @@ public interface TransactionState extends ReadableTransactionState
 
     void relationshipDoReplaceProperty( long relationshipId, int propertyKeyId, Value replacedValue, Value newValue );
 
-    void graphDoReplaceProperty( int propertyKeyId, Value replacedValue, Value newValue );
-
     void nodeDoRemoveProperty( long nodeId, int propertyKeyId );
 
     void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId );
-
-    void graphDoRemoveProperty( int propertyKeyId );
 
     void nodeDoAddLabel( long labelId, long nodeId );
 

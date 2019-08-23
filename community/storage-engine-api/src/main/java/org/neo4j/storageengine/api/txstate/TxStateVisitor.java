@@ -51,9 +51,6 @@ public interface TxStateVisitor extends AutoCloseable
     void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
             IntIterable removed ) throws ConstraintValidationException;
 
-    void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-            IntIterable removed );
-
     void visitNodeLabelChanges( long id, LongSet added, LongSet removed ) throws ConstraintValidationException;
 
     void visitAddedIndex( IndexDescriptor element ) throws KernelException;
@@ -104,12 +101,6 @@ public interface TxStateVisitor extends AutoCloseable
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
                 Iterator<StorageProperty> changed, IntIterable removed )
-        {
-        }
-
-        @Override
-        public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                IntIterable removed )
         {
         }
 
@@ -209,13 +200,6 @@ public interface TxStateVisitor extends AutoCloseable
                         throws ConstraintValidationException
         {
             actual.visitRelPropertyChanges( id, added, changed, removed );
-        }
-
-        @Override
-        public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                IntIterable removed )
-        {
-            actual.visitGraphPropertyChanges( added, changed, removed );
         }
 
         @Override

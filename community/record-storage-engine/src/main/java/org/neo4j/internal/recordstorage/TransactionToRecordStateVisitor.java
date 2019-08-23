@@ -135,23 +135,6 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-            IntIterable removed )
-    {
-        removed.each( recordState::graphRemoveProperty );
-        while ( changed.hasNext() )
-        {
-            StorageProperty prop = changed.next();
-            recordState.graphChangeProperty( prop.propertyKeyId(), prop.value() );
-        }
-        while ( added.hasNext() )
-        {
-            StorageProperty prop = added.next();
-            recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
-        }
-    }
-
-    @Override
     public void visitNodeLabelChanges( long id, final LongSet added, final LongSet removed )
     {
         // record the state changes to be made to the store

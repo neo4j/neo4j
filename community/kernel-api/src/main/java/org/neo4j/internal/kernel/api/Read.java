@@ -370,6 +370,4 @@ public interface Read
      *         the new property value, or {@link Values#NO_VALUE} if the property has been removed in this transaction.
      */
     Value relationshipPropertyChangeInTransactionOrNull( long relationship, int propertyKeyId );
-
-    void graphProperties( PropertyCursor cursor );
 }

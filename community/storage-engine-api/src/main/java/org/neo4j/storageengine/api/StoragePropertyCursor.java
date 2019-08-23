@@ -40,11 +40,6 @@ public interface StoragePropertyCursor extends StorageCursor
     void initRelationshipProperties( long reference );
 
     /**
-     * Initializes this cursor to that reading graph properties.
-     */
-    void initGraphProperties();
-
-    /**
      * @return property key of the property this cursor currently is placed at.
      */
     int propertyKey();

@@ -136,8 +136,6 @@ public interface ReadableTransactionState
 
     RelationshipState getRelationshipState( long id );
 
-    GraphState getGraphState();
-
     MutableLongSet augmentLabels( MutableLongSet labels, NodeState nodeState );
 
     /**

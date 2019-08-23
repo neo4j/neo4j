@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.txstate.DiffSets;
-import org.neo4j.storageengine.api.txstate.GraphState;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
@@ -87,7 +86,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private MutableLongObjectMap<TokenState> createdPropertyKeyTokens;
     private MutableLongObjectMap<TokenState> createdRelationshipTypeTokens;
 
-    private GraphStateImpl graphState;
     private MutableDiffSets<IndexDescriptor> indexChanges;
     private MutableDiffSets<ConstraintDescriptor> constraintsChanges;
 
@@ -155,11 +153,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         for ( RelationshipState rel : modifiedRelationships() )
         {
             visitor.visitRelPropertyChanges( rel.getId(), rel.addedProperties(), rel.changedProperties(), rel.removedProperties() );
-        }
-
-        if ( graphState != null )
-        {
-            visitor.visitGraphPropertyChanges( graphState.addedProperties(), graphState.changedProperties(), graphState.removedProperties() );
         }
 
         if ( indexChanges != null )
@@ -390,20 +383,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void graphDoReplaceProperty( int propertyKeyId, Value replacedValue, Value newValue )
-    {
-        if ( replacedValue != NO_VALUE )
-        {
-            getOrCreateGraphState().changeProperty( propertyKeyId, newValue );
-        }
-        else
-        {
-            getOrCreateGraphState().addProperty( propertyKeyId, newValue );
-        }
-        dataChanged();
-    }
-
-    @Override
     public void nodeDoRemoveProperty( long nodeId, int propertyKeyId )
     {
         getOrCreateNodeState( nodeId ).removeProperty( propertyKeyId );
@@ -414,13 +393,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId )
     {
         getOrCreateRelationshipState( relationshipId ).removeProperty( propertyKeyId );
-        dataChanged();
-    }
-
-    @Override
-    public void graphDoRemoveProperty( int propertyKeyId )
-    {
-        getOrCreateGraphState().removeProperty( propertyKeyId );
         dataChanged();
     }
 
@@ -493,12 +465,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
         final RelationshipStateImpl relationshipState = relationshipStatesMap.get( id );
         return relationshipState == null ? RelationshipStateImpl.EMPTY : relationshipState;
-    }
-
-    @Override
-    public GraphState getGraphState()
-    {
-        return graphState;
     }
 
     @Override
@@ -629,16 +595,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             relationshipStatesMap = new LongObjectHashMap<>();
         }
         return relationshipStatesMap.getIfAbsentPut( relationshipId, () -> new RelationshipStateImpl( relationshipId, collectionsFactory ) );
-    }
-
-    @VisibleForTesting
-    GraphStateImpl getOrCreateGraphState()
-    {
-        if ( graphState == null )
-        {
-            graphState = new GraphStateImpl( collectionsFactory );
-        }
-        return graphState;
     }
 
     @Override

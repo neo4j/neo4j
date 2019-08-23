@@ -36,7 +36,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
@@ -76,7 +75,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         LOG_VERSION( 2, "Current log version" ),
         LAST_TRANSACTION_ID( 3, "Last committed transaction" ),
         STORE_VERSION( 4, "Store format version" ),
-        FIRST_GRAPH_PROPERTY( 5, "First property record containing graph properties" ),
+        // Obsolete field was used to store first graph property, keep it to avoid conflicts and migrations
+        // FIRST_GRAPH_PROPERTY( 5, "First property record containing graph properties" )
         LAST_CONSTRAINT_TRANSACTION( 6, "Last committed transaction containing constraint changes" ),
         UPGRADE_TRANSACTION_ID( 7, "Transaction id most recent upgrade was performed at" ),
         UPGRADE_TIME( 8, "Time of last upgrade" ),
@@ -117,7 +117,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     // we do that when flushing, which performs better and fine from a recovery POV.
     private final AtomicLong lastCommittingTxField = new AtomicLong( FIELD_NOT_INITIALIZED );
     private volatile long storeVersionField = FIELD_NOT_INITIALIZED;
-    private volatile long graphNextPropField = FIELD_NOT_INITIALIZED;
     private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxIdField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxChecksumField = FIELD_NOT_INITIALIZED;
@@ -144,7 +143,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private final Object upgradeTransactionLock = new Object();
     private final Object logVersionLock = new Object();
     private final Object storeVersionLock = new Object();
-    private final Object graphNextPropLock = new Object();
     private final Object lastConstraintIntroducingTxLock = new Object();
     private final Object transactionCommittedLock = new Object();
     private final Object transactionClosedLock = new Object();
@@ -179,7 +177,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setLastCommittedAndClosedTransactionId(
                 BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION );
         setStoreVersion( storeVersionAsLong );
-        setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
 
         initHighId();
@@ -484,22 +481,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         }
     }
 
-    public long getGraphNextProp()
-    {
-        assertNotClosed();
-        checkInitialized( graphNextPropField );
-        return graphNextPropField;
-    }
-
-    public void setGraphNextProp( long propId )
-    {
-        synchronized ( graphNextPropLock )
-        {
-            setRecord( Position.FIRST_GRAPH_PROPERTY, propId );
-            graphNextPropField = propId;
-        }
-    }
-
     public long getLatestConstraintIntroducingTx()
     {
         assertNotClosed();
@@ -526,7 +507,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             long lastCommittedTxId = getRecordValue( cursor, Position.LAST_TRANSACTION_ID );
             lastCommittingTxField.set( lastCommittedTxId );
             storeVersionField = getRecordValue( cursor, Position.STORE_VERSION );
-            graphNextPropField = getRecordValue( cursor, Position.FIRST_GRAPH_PROPERTY );
             latestConstraintIntroducingTxField = getRecordValue( cursor, Position.LAST_CONSTRAINT_TRANSACTION );
             upgradeTxIdField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_ID );
             upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
@@ -622,13 +602,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         cursor.putByte( Record.IN_USE.byteValue() );
         cursor.putLong( value );
         checkForDecodingErrors( cursor, position.id, NORMAL );
-    }
-
-    public NeoStoreRecord graphPropertyRecord()
-    {
-        NeoStoreRecord result = new NeoStoreRecord();
-        result.setNextProp( getGraphNextProp() );
-        return result;
     }
 
     /*
