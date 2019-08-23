@@ -21,13 +21,37 @@ package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.v4_0.util.Cardinality
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
-class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](null) {
+class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](new LogicalPlanTokenResolver) {
 
-  override def newNode(node: Variable): Unit = {}
+  class CardinalitiesWithDefault extends Cardinalities {
+    override def get(id: Id): Cardinality =
+      if (isDefinedAt(id)) super.get(id) else Cardinality.SINGLE
+  }
 
-  override def newRelationship(relationship: Variable): Unit = {}
+  val cardinalities: Cardinalities = new CardinalitiesWithDefault
+
+  private var semanticTable = new SemanticTable()
+
+  override def newNode(node: Variable): Unit = {
+    semanticTable = semanticTable.addNode(node)
+  }
+
+  override def newRelationship(relationship: Variable): Unit = {
+    semanticTable = semanticTable.addRelationship(relationship)
+  }
+
+  def getSemanticTable: SemanticTable = semanticTable
+
+  def withCardinality(x: Int): LogicalPlanBuilder = {
+    cardinalities.set(idOfLastPlan, Cardinality(x))
+    this
+  }
 
   def build(readOnly: Boolean = true): LogicalPlan = {
     buildLogicalPlan()

@@ -36,6 +36,10 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
 
   override def transform(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
 
+    val cardinalities = from.planningAttributes.cardinalities
+    val attributes = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
+    val logicalPlan = pushdownPropertyReads.x(from.logicalPlan, cardinalities, attributes, from.semanticTable())
+
     def isNode(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTNode.invariant)
     def isRel(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTRelationship.invariant)
 
@@ -93,7 +97,7 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
     }
 
     // In the first step we collect all property usages and renaming while going over the tree
-    val acc = from.logicalPlan.treeFold(Acc()) {
+    val acc = logicalPlan.treeFold(Acc()) {
       // Make sure to register any renaming of variables
       case plan: ProjectingPlan => acc =>
         val newRenamings = plan.projectExpressions.collect {
@@ -156,7 +160,7 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
 
     })
 
-    val plan = propertyRewriter(from.logicalPlan).asInstanceOf[LogicalPlan]
+    val plan = propertyRewriter(logicalPlan).asInstanceOf[LogicalPlan]
     val newSemanticTable = if (currentTypes == from.semanticTable().types) from.semanticTable() else from.semanticTable().copy(types = currentTypes)
     from.withMaybeLogicalPlan(Some(plan)).withSemanticTable(newSemanticTable)
   }

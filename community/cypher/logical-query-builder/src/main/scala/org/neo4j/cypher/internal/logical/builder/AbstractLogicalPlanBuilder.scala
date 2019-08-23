@@ -80,7 +80,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
   }
 
-  private val idGen: IdGen = new SequentialIdGen()
+  val idGen: IdGen = new SequentialIdGen()
 
   private var tree: Tree = _
   private val looseEnds = new ArrayBuffer[Tree]
@@ -371,7 +371,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def expandAll(pattern: String): IMPL = {
     val p = PatternParser.parse(pattern)
+    newNode(varFor(p.to))
+    newRelationship(varFor(p.relName))
     appendAtCurrentIndent(UnaryOperator(source => Expand(source, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll)(_)))
+  }
+
+  def cacheProperties(properties: String*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => CacheProperties(source,
+      properties.map(ExpressionParser.parseExpression(_).asInstanceOf[LogicalProperty]).toSet)(_)))
   }
 
   def nodeHashJoin(nodes: String*): IMPL = {
