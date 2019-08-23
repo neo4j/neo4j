@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.annotations;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 
-// todo figure out what to call this thing... ProxyFactory???
-public class Reporter
+/**
+ * Creates proxy instances that dispatch calls to provided {@link InvocationHandler}.
+ */
+public class ProxyFactory
 {
     private final InvocationHandler handler;
 
-    public Reporter( InvocationHandler handler )
+    public ProxyFactory( InvocationHandler handler )
     {
         this.handler = handler;
     }

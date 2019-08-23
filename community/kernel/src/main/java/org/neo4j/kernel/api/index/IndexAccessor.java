@@ -29,7 +29,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.impl.annotations.Reporter;
+import org.neo4j.kernel.impl.annotations.ProxyFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
@@ -209,7 +209,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public boolean consistencyCheck( Reporter reporter )
+        public boolean consistencyCheck( ProxyFactory proxyFactory )
         {
             return true;
         }
@@ -309,9 +309,9 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public boolean consistencyCheck( Reporter reporter )
+        public boolean consistencyCheck( ProxyFactory proxyFactory )
         {
-            return delegate.consistencyCheck( reporter );
+            return delegate.consistencyCheck( proxyFactory );
         }
 
         @Override

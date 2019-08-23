@@ -33,7 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.annotations.Reporter;
+import org.neo4j.kernel.impl.annotations.ProxyFactory;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
@@ -106,9 +106,9 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     }
 
     @Override
-    public boolean consistencyCheck( Reporter reporter )
+    public boolean consistencyCheck( ProxyFactory proxyFactory )
     {
-        return consistencyCheck( reporter.getClass( GBPTreeConsistencyCheckVisitor.class ) );
+        return consistencyCheck( proxyFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
     }
 
     @Override

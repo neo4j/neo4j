@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.annotations.Reporter;
+import org.neo4j.kernel.impl.annotations.ProxyFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -123,9 +123,9 @@ public class TrackingReadersIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public boolean consistencyCheck( Reporter reporter )
+    public boolean consistencyCheck( ProxyFactory proxyFactory )
     {
-        return accessor.consistencyCheck( reporter );
+        return accessor.consistencyCheck( proxyFactory );
     }
 
     @Override

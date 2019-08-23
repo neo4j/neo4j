@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.annotations.Reporter;
+import org.neo4j.kernel.impl.annotations.ProxyFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -159,7 +159,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     }
 
     @Override
-    public boolean consistencyCheck( Reporter reporter )
+    public boolean consistencyCheck( ProxyFactory proxyFactory )
     {
         // todo how and what do we report to reporter here?
         return !isDirty();

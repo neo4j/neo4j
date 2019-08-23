@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.annotations.Reporter;
+import org.neo4j.kernel.impl.annotations.ProxyFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase;
@@ -169,9 +169,9 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     }
 
     @Override
-    public boolean consistencyCheck( Reporter reporter )
+    public boolean consistencyCheck( ProxyFactory proxyFactory )
     {
-        return FusionIndexBase.consistencyCheck( this, reporter );
+        return FusionIndexBase.consistencyCheck( this, proxyFactory );
     }
 
     @Override

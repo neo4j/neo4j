@@ -74,7 +74,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.annotations.Reporter;
+import org.neo4j.kernel.impl.annotations.ProxyFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
@@ -984,9 +984,9 @@ public class RecoveryIT
         }
 
         @Override
-        public boolean consistencyCheck( Reporter reporter )
+        public boolean consistencyCheck( ProxyFactory proxyFactory )
         {
-            return actual.consistencyCheck( reporter );
+            return actual.consistencyCheck( proxyFactory );
         }
 
         @Override
