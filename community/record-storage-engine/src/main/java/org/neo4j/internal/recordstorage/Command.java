@@ -354,6 +354,8 @@ public abstract class Command implements StorageCommand
         }
     }
 
+    // Command that was used for graph properties.
+    // Here only for compatibility reasons for older versions (before 4.0)
     public static class NeoStoreCommand extends BaseCommand<NeoStoreRecord>
     {
         public NeoStoreCommand( NeoStoreRecord before, NeoStoreRecord after )
