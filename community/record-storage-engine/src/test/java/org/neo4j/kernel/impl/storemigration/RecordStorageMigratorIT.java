@@ -91,9 +91,9 @@ class RecordStorageMigratorIT
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";
     private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
-    public static final int MAX_PROPERTY_KEY_ID = 500;
-    public static final int MAX_RELATIONSHIP_TYPE_ID = 100;
-    public static final int MAX_LABEL_ID = 100;
+    private static final int MAX_PROPERTY_KEY_ID = 500;
+    private static final int MAX_RELATIONSHIP_TYPE_ID = 100;
+    private static final int MAX_LABEL_ID = 100;
 
     @Inject
     private TestDirectory directory;

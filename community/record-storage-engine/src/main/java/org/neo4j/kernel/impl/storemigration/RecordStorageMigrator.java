@@ -32,8 +32,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.Set;
 
 import org.neo4j.common.EntityType;
@@ -71,8 +75,11 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseFile;
@@ -683,47 +690,104 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage35 srcAccess, SchemaRuleMigrationAccess dstAccess ) throws KernelException
     {
-        Set<String> distinctNames = new HashSet<>();
-        List<SchemaRule> unnamedRules = new ArrayList<>(); // Process unnamed rules only once we're done with all the named ones.
-        Iterable<SchemaRule> rules = srcAccess.getAll();
+        SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
+        LinkedHashMap<Long,SchemaRule> rules = new LinkedHashMap<>();
 
-        // Go through all rules. Process explicitly named rules immediately. Defer the unnamed ones for later.
-        // We do it this way because explicitly named rules gets priority to keep their names.
-        for ( SchemaRule rule : rules )
         {
-            String name = rule.getName();
-            if ( name == null || name.startsWith( "index_" ) || name.startsWith( "constraint_" ) )
-            {
-                unnamedRules.add( rule );
-                continue;
-            }
-            name = makeNameUnique( distinctNames, name );
-            rule = rule.withName( name );
-            dstAccess.writeSchemaRule( rule );
+            List<SchemaRule> namedRules = new ArrayList<>();
+            List<SchemaRule> unnamedRules = new ArrayList<>();
+            srcAccess.getAll().forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
+            // Make sure that we process explicitly named schemas first.
+            namedRules.forEach( r -> rules.put( r.getId(), r ) );
+            unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
         }
 
-        // Then go through the unnamed rules, and generate names for them while ensuring that all names are unique.
-        for ( SchemaRule rule : unnamedRules )
+        for ( Map.Entry<Long,SchemaRule> entry : rules.entrySet() ) {
+            SchemaRule rule = entry.getValue();
+
+            if ( rule instanceof IndexDescriptor )
+            {
+                IndexDescriptor index = (IndexDescriptor) rule;
+                OptionalLong owningConstraintId = index.getOwningConstraintId();
+                if ( owningConstraintId.isPresent() && rules.containsKey( owningConstraintId.getAsLong() ) )
+                {
+                    // Indexes that are owned by constraints needs to be named after their constraints.
+                    ConstraintDescriptor constraint = (ConstraintDescriptor) rules.get( owningConstraintId.getAsLong() );
+                    constraint = nameGiver.ensureHasUniqueName( constraint );
+                    rules.put( constraint.getId(), constraint );
+                    index = index.withName( constraint.getName() );
+                }
+                else
+                {
+                    index = nameGiver.ensureHasUniqueName( index );
+                }
+                entry.setValue( index );
+            }
+            else
+            {
+                ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
+                constraint = nameGiver.ensureHasUniqueName( constraint );
+                entry.setValue( constraint );
+                if ( constraint.isIndexBackedConstraint() )
+                {
+                    IndexBackedConstraintDescriptor ibc = constraint.asIndexBackedConstraint();
+                    if ( ibc.hasOwnedIndexId() )
+                    {
+                        IndexDescriptor index = (IndexDescriptor) rules.get( ibc.ownedIndexId() );
+                        rules.put( index.getId(), index.withName( constraint.getName() ) );
+                    }
+                }
+            }
+        }
+
+        // Once all rules have been processed, write them out.
+        for ( SchemaRule rule : rules.values() )
         {
-            String[] entityTokenNames = getEntityTokenNames( srcTokenHolders, rule );
-            String[] propertyTokenNames = getPropertyTokenNames( srcTokenHolders, rule );
-            String name = SchemaRule.generateName( rule, entityTokenNames, propertyTokenNames );
-            name = makeNameUnique( distinctNames, name );
-            rule = rule.withName( name );
             dstAccess.writeSchemaRule( rule );
         }
     }
 
-    private static String makeNameUnique( Set<String> distinctNames, String name )
+    private static boolean hasName( SchemaRule rule )
     {
-        int count = 0;
-        String originalName = name;
-        while ( !distinctNames.add( name ) )
+        String name = rule.getName();
+        return name != null && !name.startsWith( "index_" ) && !name.startsWith( "constraint_" );
+    }
+
+    private static final class SchemaNameGiver
+    {
+        private final Map<String, SchemaRule> takenNames = new HashMap<>();
+        private final TokenHolders tokens;
+
+        private SchemaNameGiver( TokenHolders tokens )
         {
-            count++;
-            name = originalName + " (" + count + ")";
+            this.tokens = tokens;
         }
-        return name;
+
+        @SuppressWarnings( "unchecked" )
+        private <T extends SchemaRule> T ensureHasUniqueName( T rule ) throws KernelException
+        {
+            String name = rule.getName();
+            if ( name != null && takenNames.get( name ) == rule )
+            {
+                return rule;
+            }
+            if ( !hasName( rule ) )
+            {
+                String[] entityTokenNames = getEntityTokenNames( tokens, rule );
+                String[] propertyTokenNames = getPropertyTokenNames( tokens, rule );
+                name = SchemaRule.generateName( rule, entityTokenNames, propertyTokenNames );
+            }
+            int count = 0;
+            String originalName = name;
+            while ( takenNames.containsKey( name ) )
+            {
+                count++;
+                name = originalName + " (" + count + ")";
+            }
+            rule = (T) rule.withName( name );
+            takenNames.put( name, rule );
+            return rule;
+        }
     }
 
     private static String[] getEntityTokenNames( TokenHolders tokenHolders, SchemaRule rule ) throws KernelException

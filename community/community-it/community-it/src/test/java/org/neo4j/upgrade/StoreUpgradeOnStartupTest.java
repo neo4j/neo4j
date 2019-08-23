@@ -104,7 +104,7 @@ public class StoreUpgradeOnStartupTest
     public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws ConsistencyCheckIncompleteException
     {
         // when
-        GraphDatabaseService database = createGraphDatabaseService();
+        createGraphDatabaseService();
         managementService.shutdown();
 
         // then
