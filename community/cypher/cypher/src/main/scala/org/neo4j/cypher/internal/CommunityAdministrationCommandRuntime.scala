@@ -69,7 +69,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD password
-    case CreateUser(userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional, replace, allowExistingUser) => (_, _, _) =>
+    case CreateUser(source, userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional, replace) => (context, parameterMapping, securityContext) =>
       if(suspendedOptional.isDefined)  // Users are always active in community
         throw new CantCompileQueryException(s"Failed to create the specified user '$userName': 'SET STATUS' is not available in community edition.")
 
@@ -82,10 +82,6 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             |CREATE (new:User {name: $name, credentials: $credentials, passwordChangeRequired: $passwordChangeRequired, suspended: false})
             |RETURN new.name
           """.stripMargin
-        } else if (allowExistingUser) {
-          """MERGE (u:User {name: $name})
-            |ON CREATE SET u.credentials = $credentials, u.passwordChangeRequired = $passwordChangeRequired, u.suspended = false
-            |RETURN u.name""".stripMargin
         } else {
           // NOTE: If username already exists we will violate a constraint
           """CREATE (u:User {name: $name, credentials: $credentials, passwordChangeRequired: $passwordChangeRequired, suspended: false})
@@ -105,7 +101,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               case _: UniquePropertyValueValidationException =>
                 new InvalidArgumentsException(s"Failed to create the specified user '$userName': User already exists.", e)
               case _ => new IllegalStateException(s"Failed to create the specified user '$userName'.", e)
-            })
+            }),
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
         )
       } finally {
         // Clear password

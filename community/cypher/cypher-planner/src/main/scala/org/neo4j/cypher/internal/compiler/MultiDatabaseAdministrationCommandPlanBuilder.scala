@@ -59,15 +59,17 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo WITH PASSWORD password
       case c@CreateUser(userName, Some(initialStringPassword), initialParameterPassword, requirePasswordChange, suspended, replace, ifNotExists) =>
         NameValidator.assertValidUsername(userName)
+        val source = if (ifNotExists) Some(plans.DoNothingIfExists("User", userName)) else None
         Some(plans.LogSystemCommand(
-          plans.CreateUser(userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended, replace, allowExistingUser = ifNotExists),
+          plans.CreateUser(source, userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended, replace),
           prettifier.asString(c)))
 
       // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo WITH PASSWORD $password
       case c@CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended, replace, ifNotExists) =>
         NameValidator.assertValidUsername(userName)
+        val source = if (ifNotExists) Some(plans.DoNothingIfExists("User", userName)) else None
         Some(plans.LogSystemCommand(
-          plans.CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended, replace, allowExistingUser = ifNotExists),
+          plans.CreateUser(source, userName, None, initialParameterPassword, requirePasswordChange, suspended, replace),
           prettifier.asString(c)))
 
       // DROP USER [IF EXISTS] foo
@@ -120,15 +122,17 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // CREATE [OR REPLACE] ROLE [IF NOT EXISTS] foo
       case c@CreateRole(roleName, None, replace, ifNotExists) =>
         NameValidator.assertValidRoleName(roleName)
-        Some(plans.LogSystemCommand(plans.CreateRole(None, roleName, replace, allowExistingRole = ifNotExists), prettifier.asString(c)))
+        val source = if (ifNotExists) Some(plans.DoNothingIfExists("Role", roleName)) else None
+        Some(plans.LogSystemCommand(plans.CreateRole(source, roleName, replace), prettifier.asString(c)))
 
       // CREATE [OR REPLACE] ROLE [IF NOT EXISTS] foo AS COPY OF bar
       case c@CreateRole(roleName, Some(fromName), replace, ifNotExists) =>
         NameValidator.assertValidRoleName(roleName)
+        val source = if (ifNotExists) Some(plans.DoNothingIfExists("Role", roleName)) else None
         Some(plans.LogSystemCommand(plans.CopyRolePrivileges(
           Some(plans.CopyRolePrivileges(
             Some(plans.CreateRole(
-              Some(plans.RequireRole(None, fromName)), roleName, replace, allowExistingRole = ifNotExists)
+              Some(plans.RequireRole(source, fromName)), roleName, replace)
             ), roleName, fromName, "GRANTED")
           ), roleName, fromName, "DENIED"), prettifier.asString(c)))
 
@@ -266,7 +270,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         } catch {
           case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage)
         }
-        Some(plans.EnsureValidNumberOfDatabases(Some(plans.CreateDatabase(normalizedName, replace, allowExistingDatabase = ifNotExists))))
+        val source = if (ifNotExists) Some(plans.DoNothingIfExists("Database", normalizedName.name())) else None
+        Some(plans.EnsureValidNumberOfDatabases(Some(plans.CreateDatabase(source, normalizedName, replace))))
 
       // DROP DATABASE [IF EXISTS] foo
       case DropDatabase(dbName, ifExists) =>
