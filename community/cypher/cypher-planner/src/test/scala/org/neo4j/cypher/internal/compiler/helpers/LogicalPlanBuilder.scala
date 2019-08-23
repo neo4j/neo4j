@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 
 class LogicalPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](null) {
