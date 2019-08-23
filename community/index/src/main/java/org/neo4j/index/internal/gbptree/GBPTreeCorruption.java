@@ -306,16 +306,15 @@ public final class GBPTreeCorruption
         };
     }
 
-    public static <KEY,VALUE> IndexCorruption<KEY,VALUE> pageSpecificCorruption( long targetPage, PageCorruption<KEY,VALUE> corruption )
+    public static <KEY, VALUE> IndexCorruption<KEY,VALUE> pageSpecificCorruption( long targetPage, PageCorruption<KEY,VALUE> corruption )
     {
-        return (( pagedFile, layout, node, treeState ) -> {
+        return ( pagedFile, layout, node, treeState ) -> {
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {
                 goTo( cursor, "", targetPage );
                 corruption.corrupt( cursor, layout, node, treeState );
             }
-            ;
-        });
+        };
     }
 
     private static FreeListIdProvider getFreelist( PagedFile pagedFile, TreeState treeState )

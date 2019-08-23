@@ -165,7 +165,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         MutableObject<Long> targetNode = new MutableObject<>();
         corruptIndex( ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
-            tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.setPointer( GBPTreePointerType.successor(), 6 ) ) );
+            tree.corrupt(
+                    GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.setPointer( GBPTreePointerType.successor(), 6 ) ) );
         } );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
@@ -189,8 +190,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
-        assertResultContainsMessage( result, String.format( "Pointer (%s) in tree node %d has pointer generation %d, but target node %d has a higher generation %d.",
-                GBPTreePointerType.rightSibling(), targetNode.getValue(), 1, rightSibling.getValue(), 4 ) );
+        assertResultContainsMessage( result,
+                String.format( "Pointer (%s) in tree node %d has pointer generation %d, but target node %d has a higher generation %d.",
+                        GBPTreePointerType.rightSibling(), targetNode.getValue(), 1, rightSibling.getValue(), 4 ) );
     }
 
     @Test

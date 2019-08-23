@@ -17,24 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.annotations;
+package org.neo4j.index.internal.gbptree;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
+import org.apache.commons.lang3.mutable.MutableLong;
 
-// todo figure out what to call this thing... ProxyFactory???
-public class Reporter
+public class GBPTreeConsistencyCheckerFixedSizeTest extends GBPTreeConsistencyCheckerTestBase<MutableLong,MutableLong>
 {
-    private final InvocationHandler handler;
-
-    public Reporter( InvocationHandler handler )
+    @Override
+    protected TestLayout<MutableLong,MutableLong> getLayout()
     {
-        this.handler = handler;
-    }
-
-    public <T> T getClass( Class<T> cls )
-    {
-        ClassLoader classLoader = cls.getClassLoader();
-        return (T) Proxy.newProxyInstance( classLoader, new Class<?>[]{cls}, handler );
+        return SimpleLongLayout.longLayout().build();
     }
 }

@@ -110,7 +110,8 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     public void pageIdSeenMultipleTimes( long pageId, File file )
     {
         throwTreeStructureInconsistency(
-                "Page id seen multiple times, this means either active tree node is present in freelist or pointers in tree create a loop, pageId=%d.", pageId );
+                "Page id seen multiple times, this means either active tree node is present in freelist or pointers in tree create a loop, pageId=%d.",
+                pageId );
     }
 
     @Override

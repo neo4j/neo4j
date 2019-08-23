@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,11 +46,12 @@ import org.neo4j.values.storable.RandomValues;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public class GBPTreeConsistencyCheckerTest
+public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 {
     private static final int PAGE_SIZE = 256;
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
@@ -59,11 +59,11 @@ public class GBPTreeConsistencyCheckerTest
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
     private final RandomRule random = new RandomRule();
     private RandomValues randomValues;
-    private TestLayout<MutableLong,MutableLong> layout = SimpleLongLayout.longLayout().build();
-    private TestLayout<RawBytes,RawBytes> dynamicLayout = new SimpleByteArrayLayout( false );
-    private TreeNode<MutableLong,MutableLong> node;
+    private TestLayout<KEY,VALUE> layout;
+    private TreeNode<KEY,VALUE> node;
     private File indexFile;
     private PageCache pageCache;
+    private boolean isDynamic;
 
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
@@ -73,9 +73,13 @@ public class GBPTreeConsistencyCheckerTest
     {
         indexFile = directory.file( "index" );
         pageCache = createPageCache();
+        layout = getLayout();
         node = TreeNodeSelector.selectByLayout( layout ).create( PAGE_SIZE, layout );
         randomValues = random.randomValues();
+        isDynamic = node instanceof TreeNodeDynamicSize;
     }
+
+    protected abstract TestLayout<KEY,VALUE> getLayout();
 
     private PageCache createPageCache()
     {
@@ -85,11 +89,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectNotATreeNodeRoot() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long rootNode = inspection.getRootNode();
 
             index.corrupt( page( rootNode, GBPTreeCorruption.notATreeNode() ) );
@@ -101,11 +105,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectNotATreeNodeInternal() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long internalNode = randomValues.among( inspection.getInternalNodes() );
 
             index.corrupt( page( internalNode, GBPTreeCorruption.notATreeNode() ) );
@@ -117,11 +121,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectNotATreeNodeLeaf() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long leafNode = randomValues.among( inspection.getLeafNodes() );
 
             index.corrupt( page( leafNode, GBPTreeCorruption.notATreeNode() ) );
@@ -133,11 +137,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectUnknownTreeNodeTypeRoot() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long rootNode = inspection.getRootNode();
 
             index.corrupt( page( rootNode, GBPTreeCorruption.unknownTreeNodeType() ) );
@@ -149,11 +153,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectUnknownTreeNodeTypeInternal() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long internalNode = randomValues.among( inspection.getInternalNodes() );
 
             index.corrupt( page( internalNode, GBPTreeCorruption.unknownTreeNodeType() ) );
@@ -165,11 +169,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectUnknownTreeNodeTypeLeaf() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long leafNode = randomValues.among( inspection.getLeafNodes() );
 
             index.corrupt( page( leafNode, GBPTreeCorruption.unknownTreeNodeType() ) );
@@ -181,11 +185,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectRightSiblingNotPointingToCorrectSibling() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getLeafNodes() );
 
             index.corrupt( page( targetNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ) );
@@ -197,11 +201,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectLeftSiblingNotPointingToCorrectSibling() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getLeafNodes() );
 
             index.corrupt( page( targetNode, GBPTreeCorruption.leftSiblingPointToNonExisting() ) );
@@ -213,11 +217,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectIfAnyNodeInTreeHasSuccessor() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getAllNodes() );
 
             index.corrupt( page( targetNode, GBPTreeCorruption.hasSuccessor() ) );
@@ -229,11 +233,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectRightSiblingPointerWithTooLowGeneration() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = nodeWithRightSibling( inspection );
 
             index.corrupt( page( targetNode, GBPTreeCorruption.rightSiblingPointerHasTooLowGeneration() ) );
@@ -245,11 +249,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectLeftSiblingPointerWithTooLowGeneration() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = nodeWithLeftSibling( inspection );
 
             index.corrupt( page( targetNode, GBPTreeCorruption.leftSiblingPointerHasTooLowGeneration() ) );
@@ -261,11 +265,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectChildPointerWithTooLowGeneration() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getInternalNodes() );
             int keyCount = inspection.getKeyCounts().get( targetNode );
             int childPos = randomValues.nextInt( keyCount + 1 );
@@ -279,18 +283,18 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectKeysOutOfOrderInIsolatedNode() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = nodeWithMultipleKeys( inspection );
             int keyCount = inspection.getKeyCounts().get( targetNode );
             int firstKey = randomValues.nextInt( keyCount );
             int secondKey = nextRandomIntExcluding( keyCount, firstKey );
             boolean isLeaf = inspection.getLeafNodes().contains( targetNode );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> swapKeyOrder = isLeaf ?
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> swapKeyOrder = isLeaf ?
                                                                                      GBPTreeCorruption.swapKeyOrderLeaf( firstKey, secondKey, keyCount ) :
                                                                                      GBPTreeCorruption.swapKeyOrderInternal( firstKey, secondKey, keyCount );
             index.corrupt( page( targetNode, swapKeyOrder ) );
@@ -302,18 +306,18 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectKeysLocatedInWrongNodeLowKey() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = nodeWithLeftSibling( inspection );
             int keyCount = inspection.getKeyCounts().get( targetNode );
             int keyPos = randomValues.nextInt( keyCount );
-            MutableLong key = new MutableLong( Long.MIN_VALUE );
+            KEY key = layout.key( Long.MIN_VALUE );
             boolean isLeaf = inspection.getLeafNodes().contains( targetNode );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> swapKeyOrder = isLeaf ?
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> swapKeyOrder = isLeaf ?
                                                                                      GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
                                                                                      GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
             index.corrupt( page( targetNode, swapKeyOrder ) );
@@ -325,18 +329,18 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectKeysLocatedInWrongNodeHighKey() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = nodeWithRightSibling( inspection );
             int keyCount = inspection.getKeyCounts().get( targetNode );
             int keyPos = randomValues.nextInt( keyCount );
-            MutableLong key = new MutableLong( Long.MAX_VALUE );
+            KEY key = layout.key( Long.MAX_VALUE );
             boolean isLeaf = inspection.getLeafNodes().contains( targetNode );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> swapKeyOrder = isLeaf ?
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> swapKeyOrder = isLeaf ?
                                                                                      GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
                                                                                      GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
             index.corrupt( page( targetNode, swapKeyOrder ) );
@@ -348,14 +352,15 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectNodeMetaInconsistencyDynamicNodeAllocSpaceOverlapActiveKeys() throws IOException
     {
-        try ( GBPTree<RawBytes,RawBytes> index = index( dynamicLayout ).build() )
+        assumeTrue( "Only relevant for dynamic layout", isDynamic );
+        try ( GBPTree<KEY,VALUE> index = index( layout ).build() )
         {
-            treeWithHeight( index, dynamicLayout, 2 );
+            treeWithHeight( index, layout, 2 );
 
-            GBPTreeInspection<RawBytes,RawBytes> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getAllNodes() );
 
-            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.maximizeAllocOffsetInDynamicNode();
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.maximizeAllocOffsetInDynamicNode();
             index.corrupt( page( targetNode, corruption ) );
 
             assertReportAllocSpaceOverlapActiveKeys( index, targetNode );
@@ -365,14 +370,15 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectNodeMetaInconsistencyDynamicNodeOverlapBetweenOffsetArrayAndAllocSpace() throws IOException
     {
-        try ( GBPTree<RawBytes,RawBytes> index = index( dynamicLayout ).build() )
+        assumeTrue( "Only relevant for dynamic layout", isDynamic );
+        try ( GBPTree<KEY,VALUE> index = index( layout ).build() )
         {
-            treeWithHeight( index, dynamicLayout, 2 );
+            treeWithHeight( index, layout, 2 );
 
-            GBPTreeInspection<RawBytes,RawBytes> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getAllNodes() );
 
-            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.minimizeAllocOffsetInDynamicNode();
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.minimizeAllocOffsetInDynamicNode();
             index.corrupt( page( targetNode, corruption ) );
 
             assertReportAllocSpaceOverlapOffsetArray( index, targetNode );
@@ -382,14 +388,15 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectNodeMetaInconsistencyDynamicNodeSpaceAreasNotSummingToTotalSpace() throws IOException
     {
-        try ( GBPTree<RawBytes,RawBytes> index = index( dynamicLayout ).build() )
+        assumeTrue( "Only relevant for dynamic layout", isDynamic );
+        try ( GBPTree<KEY,VALUE> index = index( layout ).build() )
         {
-            treeWithHeight( index, dynamicLayout, 2 );
+            treeWithHeight( index, layout, 2 );
 
-            GBPTreeInspection<RawBytes,RawBytes> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getAllNodes() );
 
-            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.incrementDeadSpaceInDynamicNode();
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.incrementDeadSpaceInDynamicNode();
             index.corrupt( page( targetNode, corruption ) );
 
             assertReportSpaceAreasNotSummingToTotalSpace( index, targetNode );
@@ -399,14 +406,15 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectNodeMetaInconsistencyDynamicNodeAllocOffsetMisplaced() throws IOException
     {
-        try ( GBPTree<RawBytes,RawBytes> index = index( dynamicLayout ).build() )
+        assumeTrue( "Only relevant for dynamic layout", isDynamic );
+        try ( GBPTree<KEY,VALUE> index = index( layout ).build() )
         {
-            treeWithHeight( index, dynamicLayout, 2 );
+            treeWithHeight( index, layout, 2 );
 
-            GBPTreeInspection<RawBytes,RawBytes> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getAllNodes() );
 
-            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.decrementAllocOffsetInDynamicNode();
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.decrementAllocOffsetInDynamicNode();
             index.corrupt( page( targetNode, corruption ) );
 
             assertReportAllocOffsetMisplaced( index, targetNode );
@@ -417,10 +425,10 @@ public class GBPTreeConsistencyCheckerTest
     public void shouldDetectPageMissingFreelistEntry() throws IOException
     {
         long targetMissingId;
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             // Add and remove a bunch of keys to fill freelist
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 int keyCount = 0;
                 while ( getHeight( index ) < 2 )
@@ -438,19 +446,19 @@ public class GBPTreeConsistencyCheckerTest
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
-        try ( GBPTree<MutableLong,MutableLong> index = index().withReadOnly( true ).build() )
+        try ( GBPTree<KEY,VALUE> index = index().withReadOnly( true ).build() )
         {
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             int lastIndex = inspection.getAllFreelistEntries().size() - 1;
             InspectingVisitor.FreelistEntry lastFreelistEntry = inspection.getAllFreelistEntries().get( lastIndex );
             targetMissingId = lastFreelistEntry.id;
 
-            GBPTreeCorruption.IndexCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.decrementFreelistWritePos();
+            GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.decrementFreelistWritePos();
             index.corrupt( corruption );
         }
 
         // Need to restart tree to reload corrupted freelist
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             assertReportUnusedPage( index, targetMissingId );
         }
@@ -460,10 +468,10 @@ public class GBPTreeConsistencyCheckerTest
     public void shouldDetectExtraFreelistEntry() throws IOException
     {
         long targetNode;
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             // Add and remove a bunch of keys to fill freelist
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 int keyCount = 0;
                 while ( getHeight( index ) < 2 )
@@ -476,17 +484,17 @@ public class GBPTreeConsistencyCheckerTest
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
-        try ( GBPTree<MutableLong,MutableLong> index = index().withReadOnly( true ).build() )
+        try ( GBPTree<KEY,VALUE> index = index().withReadOnly( true ).build() )
         {
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             targetNode = randomValues.among( inspection.getAllNodes() );
 
-            GBPTreeCorruption.IndexCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.addFreelistEntry( targetNode );
+            GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.addFreelistEntry( targetNode );
             index.corrupt( corruption );
         }
 
         // Need to restart tree to reload corrupted freelist
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             assertReportActiveTreeNodeInFreelist( index, targetNode );
         }
@@ -496,10 +504,10 @@ public class GBPTreeConsistencyCheckerTest
     public void shouldDetectExtraEmptyPageInFile() throws IOException
     {
         long lastId;
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             // Add and remove a bunch of keys to fill freelist
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 int keyCount = 0;
                 while ( getHeight( index ) < 2 )
@@ -512,19 +520,19 @@ public class GBPTreeConsistencyCheckerTest
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
-        try ( GBPTree<MutableLong,MutableLong> index = index().withReadOnly( true ).build() )
+        try ( GBPTree<KEY,VALUE> index = index().withReadOnly( true ).build() )
         {
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             TreeState treeState = inspection.getTreeState();
             lastId = treeState.lastId() + 1;
             TreeState newTreeState = treeStateWithLastId( lastId, treeState );
 
-            GBPTreeCorruption.IndexCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setTreeState( newTreeState );
+            GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setTreeState( newTreeState );
             index.corrupt( corruption );
         }
 
         // Need to restart tree to reload corrupted freelist
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             assertReportUnusedPage( index, lastId );
         }
@@ -535,10 +543,10 @@ public class GBPTreeConsistencyCheckerTest
     {
         long targetLastId;
         long targetPageId;
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             // Add and remove a bunch of keys to fill freelist
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 int keyCount = 0;
                 while ( getHeight( index ) < 2 )
@@ -551,20 +559,20 @@ public class GBPTreeConsistencyCheckerTest
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
-        try ( GBPTree<MutableLong,MutableLong> index = index().withReadOnly( true ).build() )
+        try ( GBPTree<KEY,VALUE> index = index().withReadOnly( true ).build() )
         {
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             TreeState treeState = inspection.getTreeState();
             targetPageId = treeState.lastId();
             targetLastId = treeState.lastId() - 1;
             TreeState newTreeState = treeStateWithLastId( targetLastId, treeState );
 
-            GBPTreeCorruption.IndexCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setTreeState( newTreeState );
+            GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setTreeState( newTreeState );
             index.corrupt( corruption );
         }
 
         // Need to restart tree to reload corrupted freelist
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             assertReportIdExceedLastId( index, targetLastId, targetPageId );
         }
@@ -580,17 +588,17 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectCrashedGSPP() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getAllNodes() );
             boolean isLeaf = inspection.getLeafNodes().contains( targetNode );
             int keyCount = inspection.getKeyCounts().get( targetNode );
             GBPTreePointerType pointerType = randomPointerType( keyCount, isLeaf );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.crashed( pointerType );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.crashed( pointerType );
             index.corrupt( page( targetNode, corruption ) );
 
             assertReportCrashedGSPP( index, targetNode, pointerType );
@@ -600,17 +608,17 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectBrokenGSPP() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getAllNodes() );
             boolean isLeaf = inspection.getLeafNodes().contains( targetNode );
             int keyCount = inspection.getKeyCounts().get( targetNode );
             GBPTreePointerType pointerType = randomPointerType( keyCount, isLeaf );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.broken( pointerType );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.broken( pointerType );
             index.corrupt( page( targetNode, corruption ) );
 
             assertReportBrokenGSPP( index, targetNode, pointerType );
@@ -620,15 +628,15 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectUnreasonableKeyCount() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long targetNode = randomValues.among( inspection.getAllNodes() );
             int unreasonableKeyCount = PAGE_SIZE;
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setKeyCount( unreasonableKeyCount );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setKeyCount( unreasonableKeyCount );
             index.corrupt( page( targetNode, corruption ) );
 
             assertReportUnreasonableKeyCount( index, targetNode, unreasonableKeyCount );
@@ -638,16 +646,16 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectChildPointerPointingTwoLevelsDown() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long rootNode = inspection.getRootNode();
             int childPos = randomChildPos( inspection, rootNode );
             Long targetChildNode = randomValues.among( inspection.getLeafNodes() );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, targetChildNode );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, targetChildNode );
             index.corrupt( page( rootNode, corruption ) );
 
             assertReportAnyStructuralInconsistency( index );
@@ -657,16 +665,16 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectChildPointerPointingToUpperLevelSameStack() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long rootNode = inspection.getRootNode();
             Long internalNode = randomValues.among( inspection.getNodesPerLevel().get( 1 ) );
             int childPos = randomChildPos( inspection, internalNode );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, rootNode );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, rootNode );
             index.corrupt( page( internalNode, corruption ) );
 
             assertReportCircularChildPointer( index, rootNode );
@@ -676,17 +684,17 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectChildPointerPointingToSameLevel() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             List<Long> internalNodesWithSiblings = inspection.getNodesPerLevel().get( 1 );
             long internalNode = randomValues.among( internalNodesWithSiblings );
             long otherInternalNode = randomFromExcluding( internalNodesWithSiblings, internalNode );
             int childPos = randomChildPos( inspection, internalNode );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, otherInternalNode );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, otherInternalNode );
             index.corrupt( page( internalNode, corruption ) );
 
             assertReportAnyStructuralInconsistency( index );
@@ -696,16 +704,16 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectChildPointerPointingToUpperLevelNotSameStack() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 3 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long upperInternalNode = randomValues.among( inspection.getNodesPerLevel().get( 1 ) );
             long lowerInternalNode = randomValues.among( inspection.getNodesPerLevel().get( 2 ) );
             int childPos = randomChildPos( inspection, lowerInternalNode );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, upperInternalNode );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, upperInternalNode );
             index.corrupt( page( lowerInternalNode, corruption ) );
 
             assertReportAnyStructuralInconsistency( index );
@@ -715,11 +723,11 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectChildPointerPointingToChildOwnedByOtherNode() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             List<Long> internalNodesWithSiblings = inspection.getNodesPerLevel().get( 1 );
             long internalNode = randomValues.among( internalNodesWithSiblings );
             long otherInternalNode = randomFromExcluding( internalNodesWithSiblings, internalNode );
@@ -727,7 +735,7 @@ public class GBPTreeConsistencyCheckerTest
             long childInOtherInternal = childAt( otherInternalNode, otherChildPos, inspection.getTreeState() );
             int childPos = randomChildPos( inspection, internalNode );
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, childInOtherInternal );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, childInOtherInternal );
             index.corrupt( page( internalNode, corruption ) );
 
             assertReportAnyStructuralInconsistency( index );
@@ -737,16 +745,16 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectSiblingPointerPointingToLowerLevel() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long internalNode = randomValues.among( inspection.getInternalNodes() );
             long leafNode = randomValues.among( inspection.getLeafNodes() );
             GBPTreePointerType siblingPointer = randomSiblingPointerType();
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setPointer( siblingPointer, leafNode );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setPointer( siblingPointer, leafNode );
             index.corrupt( page( internalNode, corruption ) );
 
             assertReportAnyStructuralInconsistency( index );
@@ -756,16 +764,16 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectSiblingPointerPointingToUpperLevel() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
 
-            GBPTreeInspection<MutableLong,MutableLong> inspection = inspect( index );
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             long internalNode = randomValues.among( inspection.getInternalNodes() );
             long leafNode = randomValues.among( inspection.getLeafNodes() );
             GBPTreePointerType siblingPointer = randomSiblingPointerType();
 
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setPointer( siblingPointer, internalNode );
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setPointer( siblingPointer, internalNode );
             index.corrupt( page( leafNode, corruption ) );
 
             assertReportAnyStructuralInconsistency( index );
@@ -821,7 +829,7 @@ public class GBPTreeConsistencyCheckerTest
         return GBPTreeCorruption.pageSpecificCorruption( targetNode, corruption );
     }
 
-    private <KEY, VALUE> long nodeWithLeftSibling( GBPTreeInspection<KEY,VALUE> visitor )
+    private long nodeWithLeftSibling( GBPTreeInspection<KEY,VALUE> visitor )
     {
         List<List<Long>> nodesPerLevel = visitor.getNodesPerLevel();
         long targetNode = -1;
@@ -844,7 +852,7 @@ public class GBPTreeConsistencyCheckerTest
         return targetNode;
     }
 
-    private <KEY, VALUE> long nodeWithRightSibling( GBPTreeInspection<KEY,VALUE> inspection )
+    private long nodeWithRightSibling( GBPTreeInspection<KEY,VALUE> inspection )
     {
         List<List<Long>> nodesPerLevel = inspection.getNodesPerLevel();
         long targetNode = -1;
@@ -867,7 +875,7 @@ public class GBPTreeConsistencyCheckerTest
         return targetNode;
     }
 
-    private <KEY, VALUE> long nodeWithMultipleKeys( GBPTreeInspection<KEY,VALUE> inspection )
+    private long nodeWithMultipleKeys( GBPTreeInspection<KEY,VALUE> inspection )
     {
         long targetNode;
         int keyCount;
@@ -902,7 +910,7 @@ public class GBPTreeConsistencyCheckerTest
         return other;
     }
 
-    private <KEY, VALUE> int randomChildPos( GBPTreeInspection<KEY,VALUE> inspection, long internalNode )
+    private int randomChildPos( GBPTreeInspection<KEY,VALUE> inspection, long internalNode )
     {
         int childCount = inspection.getKeyCounts().get( internalNode ) + 1;
         return randomValues.nextInt( childCount );
@@ -923,12 +931,12 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
-    private GBPTreeBuilder<MutableLong,MutableLong> index()
+    private GBPTreeBuilder<KEY,VALUE> index()
     {
         return index( layout );
     }
 
-    private <KEY, VALUE> GBPTreeBuilder<KEY,VALUE> index( Layout<KEY,VALUE> layout )
+    private GBPTreeBuilder<KEY,VALUE> index( Layout<KEY,VALUE> layout )
     {
         return new GBPTreeBuilder<>( pageCache, indexFile, layout );
     }
@@ -951,7 +959,7 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
-    private void treeWithHeight( GBPTree<MutableLong,MutableLong> index, int height ) throws IOException
+    private void treeWithHeight( GBPTree<KEY,VALUE> index, int height ) throws IOException
     {
         treeWithHeight( index, layout, height );
     }
@@ -980,10 +988,10 @@ public class GBPTreeConsistencyCheckerTest
         return index.inspect();
     }
 
-    private static void assertReportNotATreeNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportNotATreeNode( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void notATreeNode( long pageId, File file )
@@ -995,10 +1003,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportUnknownTreeNodeType( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportUnknownTreeNodeType( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void unknownTreeNodeType( long pageId, byte treeNodeType, File file )
@@ -1010,11 +1018,11 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportMisalignedSiblingPointers( GBPTree<MutableLong,MutableLong> index ) throws IOException
+    private static <KEY,VALUE> void assertReportMisalignedSiblingPointers( GBPTree<KEY,VALUE> index ) throws IOException
     {
         MutableBoolean corruptedSiblingPointerCalled = new MutableBoolean();
         MutableBoolean rightmostNodeHasRightSiblingCalled = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration,
@@ -1033,10 +1041,10 @@ public class GBPTreeConsistencyCheckerTest
         assertTrue( corruptedSiblingPointerCalled.getValue() || rightmostNodeHasRightSiblingCalled.getValue() );
     }
 
-    private static void assertReportPointerToOldVersionOfTreeNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportPointerToOldVersionOfTreeNode( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer, File file )
@@ -1049,11 +1057,11 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportPointerGenerationLowerThanNodeGeneration( GBPTree<MutableLong,MutableLong> index, long targetNode,
+    private static <KEY,VALUE> void assertReportPointerGenerationLowerThanNodeGeneration( GBPTree<KEY,VALUE> index, long targetNode,
             GBPTreePointerType expectedPointerType ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointerGeneration, long pointer,
@@ -1067,10 +1075,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportKeysOutOfOrderInNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportKeysOutOfOrderInNode( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void keysOutOfOrderInNode( long pageId, File file )
@@ -1082,14 +1090,14 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportKeysLocatedInWrongNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportKeysLocatedInWrongNode( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         Set<Long> allNodesWithKeysLocatedInWrongNode = new HashSet<>();
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
-            public void keysLocatedInWrongNode( KeyRange<MutableLong> range, MutableLong key, int pos, int keyCount, long pageId, File file )
+            public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, File file )
             {
                 called.setTrue();
                 allNodesWithKeysLocatedInWrongNode.add( pageId );
@@ -1099,10 +1107,10 @@ public class GBPTreeConsistencyCheckerTest
         assertTrue( allNodesWithKeysLocatedInWrongNode.contains( targetNode ) );
     }
 
-    private static void assertReportAllocSpaceOverlapActiveKeys( GBPTree<RawBytes,RawBytes> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportAllocSpaceOverlapActiveKeys( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void nodeMetaInconsistency( long pageId, String message, File file )
@@ -1115,10 +1123,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportAllocSpaceOverlapOffsetArray( GBPTree<RawBytes,RawBytes> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportAllocSpaceOverlapOffsetArray( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void nodeMetaInconsistency( long pageId, String message, File file )
@@ -1131,10 +1139,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportSpaceAreasNotSummingToTotalSpace( GBPTree<RawBytes,RawBytes> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportSpaceAreasNotSummingToTotalSpace( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void nodeMetaInconsistency( long pageId, String message, File file )
@@ -1147,10 +1155,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportAllocOffsetMisplaced( GBPTree<RawBytes,RawBytes> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportAllocOffsetMisplaced( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void nodeMetaInconsistency( long pageId, String message, File file )
@@ -1163,10 +1171,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportUnusedPage( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportUnusedPage( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void unusedPage( long pageId, File file )
@@ -1178,10 +1186,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportActiveTreeNodeInFreelist( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportActiveTreeNodeInFreelist( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void pageIdSeenMultipleTimes( long pageId, File file )
@@ -1193,10 +1201,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportIdExceedLastId( GBPTree<MutableLong,MutableLong> index, long targetLastId, long targetPageId ) throws IOException
+    private static <KEY,VALUE> void assertReportIdExceedLastId( GBPTree<KEY,VALUE> index, long targetLastId, long targetPageId ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void pageIdExceedLastId( long lastId, long pageId, File file )
@@ -1209,11 +1217,11 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportCrashedGSPP( GBPTree<MutableLong,MutableLong> index, long targetNode, GBPTreePointerType targetPointerType )
+    private static <KEY,VALUE> void assertReportCrashedGSPP( GBPTree<KEY,VALUE> index, long targetNode, GBPTreePointerType targetPointerType )
             throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void crashedPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA,
@@ -1227,11 +1235,11 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportBrokenGSPP( GBPTree<MutableLong,MutableLong> index, long targetNode, GBPTreePointerType targetPointerType )
+    private static <KEY,VALUE> void assertReportBrokenGSPP( GBPTree<KEY,VALUE> index, long targetNode, GBPTreePointerType targetPointerType )
             throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void brokenPointer( long pageId, GBPTreePointerType pointerType, long generationA, long readPointerA, long pointerA, byte stateA,
@@ -1245,10 +1253,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportUnreasonableKeyCount( GBPTree<MutableLong,MutableLong> index, long targetNode, int targetKeyCount ) throws IOException
+    private static <KEY,VALUE> void assertReportUnreasonableKeyCount( GBPTree<KEY,VALUE> index, long targetNode, int targetKeyCount ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void unreasonableKeyCount( long pageId, int keyCount, File file )
@@ -1261,10 +1269,10 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportAnyStructuralInconsistency( GBPTree<MutableLong,MutableLong> index ) throws IOException
+    private static <KEY,VALUE> void assertReportAnyStructuralInconsistency( GBPTree<KEY,VALUE> index ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
             public void rightmostNodeHasRightSibling( long rightSiblingPointer, long rightmostNode, File file )
@@ -1281,7 +1289,7 @@ public class GBPTreeConsistencyCheckerTest
             }
 
             @Override
-            public void keysLocatedInWrongNode( KeyRange<MutableLong> range, MutableLong mutableLong, int pos, int keyCount, long pageId, File file )
+            public void keysLocatedInWrongNode( KeyRange<KEY> range, KEY key, int pos, int keyCount, long pageId, File file )
             {
                 called.setTrue();
             }
@@ -1293,7 +1301,7 @@ public class GBPTreeConsistencyCheckerTest
             }
 
             @Override
-            public void childNodeFoundAmongParentNodes( KeyRange<MutableLong> superRange, int level, long pageId, File file )
+            public void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId, File file )
             {
                 called.setTrue();
             }
@@ -1301,13 +1309,13 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportCircularChildPointer( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    private static <KEY,VALUE> void assertReportCircularChildPointer( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
         {
             @Override
-            public void childNodeFoundAmongParentNodes( KeyRange<MutableLong> superRange, int level, long pageId, File file )
+            public void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId, File file )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
