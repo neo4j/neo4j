@@ -51,7 +51,6 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
 
 @RunWith( Parameterized.class )
 public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
@@ -115,7 +114,7 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         {
             connection3 = connectAndPerformBoltHandshake( newConnection() );
 
-            connection3.send( util.chunk( BoltV4Messages.hello() ) );
+            connection3.send( util.defaultAuth() );
             assertThat( connection3, util.eventuallyReceives(
                     msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
@@ -204,7 +203,7 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
     {
         connectAndPerformBoltHandshake( connection );
 
-        connection.send( util.chunk( BoltV4Messages.hello() ) );
+        connection.send( util.defaultAuth() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         SECONDS.sleep( sleepSeconds ); // sleep a bit to allow worker thread return back to the pool
@@ -215,8 +214,8 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
 
     private TransportConnection connectAndPerformBoltHandshake( TransportConnection connection ) throws Exception
     {
-        connection.connect( address ).send( util.acceptedVersions( 4, 0, 0, 0 ) );
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 4} ) );
+        connection.connect( address ).send( util.defaultAcceptedVersions() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         return connection;
     }
 

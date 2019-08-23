@@ -38,14 +38,14 @@ class BookmarkParsingException extends BoltIOException
     static BookmarkParsingException newInvalidBookmarkError( Object bookmarkObject, String message, Throwable cause )
     {
         return new BookmarkParsingException( Status.Transaction.InvalidBookmark,
-                String.format( "Supplied bookmark list [%s] is not a list of bookmark conforming to pattern {database_id}:{tx_id}. %s", bookmarkObject,
+                String.format( "Supplied bookmark list [%s] contains a value which does not conform to pattern {database_id}:{tx_id}. %s", bookmarkObject,
                         message ), cause );
     }
 
     static BookmarkParsingException newInvalidBookmarkError( Object bookmarkObject )
     {
         return new BookmarkParsingException( Status.Transaction.InvalidBookmark,
-                String.format( "Supplied bookmark list [%s] is not a list of bookmark conforming to pattern {database_id}:{tx_id}.", bookmarkObject ) );
+                String.format( "Supplied bookmark list [%s] contains a value which does not conform to pattern {database_id}:{tx_id}.", bookmarkObject ) );
     }
 
     static BookmarkParsingException newInvalidBookmarkMixtureError( ListValue bookmarks )

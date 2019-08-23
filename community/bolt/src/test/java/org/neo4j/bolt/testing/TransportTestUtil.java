@@ -170,6 +170,11 @@ public class TransportTestUtil
         return chunk( BoltV4Messages.run( statement, params ), BoltV4Messages.pullAll() );
     }
 
+    public byte[] defaultRunAutoCommitTxWithoutResult( String statement, MapValue params ) throws IOException
+    {
+        return chunk( BoltV4Messages.run( statement, params ), BoltV4Messages.discardAll() );
+    }
+
     public byte[] defaultRunExplicitCommitTxAndCommit( String statement ) throws IOException
     {
         return chunk( BoltV4Messages.begin(), BoltV4Messages.run( statement ), BoltV4Messages.pullAll(), BoltV4Messages.commit() );

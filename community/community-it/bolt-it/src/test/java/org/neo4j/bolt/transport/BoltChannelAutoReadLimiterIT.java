@@ -32,7 +32,6 @@ import org.neo4j.bolt.runtime.scheduling.BoltConnectionReadLimiter;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -108,7 +107,7 @@ public class BoltChannelAutoReadLimiterIT
 
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
-                .send( util.chunk( BoltV4Messages.hello() ) );
+                .send( util.defaultAuth() );
 
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
@@ -116,9 +115,8 @@ public class BoltChannelAutoReadLimiterIT
         // when
         for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
         {
-            connection.send( util.chunk(
-                    BoltV4Messages.run( "CALL boltissue.sleep( $data )", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
-                    BoltV4Messages.discardAll() ) );
+            connection.send( util.defaultRunAutoCommitTxWithoutResult(
+                    "CALL boltissue.sleep( $data )", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ) );
         }
 
         // expect

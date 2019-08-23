@@ -122,9 +122,9 @@ public class BoltIT extends ExclusiveServerTestBase
         SocketConnection conn = new SocketConnection();
         conn.connect( new HostnamePort( host, port ) );
         conn.send(
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0} );
-        assertThat( conn.recv( 4 ), equalTo( new byte[]{0, 0, 0, 1} ) );
+        assertThat( conn.recv( 4 ), equalTo( new byte[]{0, 0, 0, 4} ) );
     }
 
     private <T> T getDependency( Class<T> clazz )

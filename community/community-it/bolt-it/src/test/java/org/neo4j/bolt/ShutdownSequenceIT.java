@@ -36,13 +36,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.runtime.ExecutorBoltScheduler;
-import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v3.messaging.request.HelloMessage;
-import org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory;
+import org.neo4j.bolt.runtime.scheduling.ExecutorBoltScheduler;
+import org.neo4j.bolt.testing.TransportTestUtil;
+import org.neo4j.bolt.testing.client.SocketConnection;
+import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -71,14 +69,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.fail;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.bolt.testing.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.testing.MessageMatchers.msgRecord;
+import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.testing.StreamMatchers.eqRecord;
+import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
@@ -87,14 +83,12 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class ShutdownSequenceIT
 {
     private static final String PREFIX = RandomStringUtils.randomAlphabetic( 1000 );
-    private static final String USER_AGENT = "TestClient/4.0";
 
     private AssertableLogProvider internalLogProvider = new AssertableLogProvider();
     private AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
-    private TransportTestUtil util =
-            new TransportTestUtil( BoltProtocolV4ComponentFactory.newNeo4jPack(), BoltProtocolV4ComponentFactory.newMessageEncoder() );
+    private TransportTestUtil util = new TransportTestUtil();
     private HostnamePort address;
 
     @Rule
@@ -125,11 +119,9 @@ public class ShutdownSequenceIT
         var connection = connectAndAuthenticate();
 
         // This calls a procedure that creates 1000 nodes with 50ms pauses between each node
-        connection.send( util.chunk( new RunMessage( "CALL test.stream.nodes(1000, 50)" ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
-
         // Ask for streaming to start
-        connection.send( util.chunk( new PullMessage( ValueUtils.asMapValue( MapUtil.map( "n", -1L ) ) ) ) );
+        connection.send( util.defaultRunAutoCommitTx( "CALL test.stream.nodes(1000, 50)" ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // Shutdown the server
         server.getManagementService().shutdown();
@@ -163,11 +155,9 @@ public class ShutdownSequenceIT
         var connection = connectAndAuthenticate();
 
         // This calls a procedure that generates a stream of strings with 10ms pauses between each item
-        connection.send( util.chunk( new RunMessage( "CALL test.stream.strings($limit, 10)", ValueUtils.asMapValue( MapUtil.map( "limit", count ) ) ) ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
-
         // Ask for streaming to start
-        connection.send( util.chunk( new PullMessage( ValueUtils.asMapValue( MapUtil.map( "n", -1L ) ) ) ) );
+        connection.send( util.defaultRunAutoCommitTx( "CALL test.stream.strings($limit, 10)", ValueUtils.asMapValue( MapUtil.map( "limit", count ) ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // Consume records in another thread
         semaphore.acquire();
@@ -221,10 +211,10 @@ public class ShutdownSequenceIT
     {
         var connection = new SocketConnection();
 
-        connection.connect( address ).send( util.acceptedVersions( 4, 0, 0, 0 ) );
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 4} ) );
+        connection.connect( address ).send( util.defaultAcceptedVersions() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
 
-        connection.send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
+        connection.send( util.defaultAuth() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         return connection;
