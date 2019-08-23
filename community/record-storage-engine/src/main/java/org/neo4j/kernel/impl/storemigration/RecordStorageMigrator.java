@@ -702,7 +702,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
         }
 
-        for ( Map.Entry<Long,SchemaRule> entry : rules.entrySet() ) {
+        for ( Map.Entry<Long,SchemaRule> entry : rules.entrySet() )
+        {
             SchemaRule rule = entry.getValue();
 
             if ( rule instanceof IndexDescriptor )
