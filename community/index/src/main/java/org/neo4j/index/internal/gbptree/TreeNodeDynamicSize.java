@@ -1371,17 +1371,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         StringJoiner joiner = new StringJoiner( ", ", "Meta data for tree node is inconsistent, id=" + nodeId + ": ", "" );
         boolean hasInconsistency = false;
 
-        // Verify activeSpace + deadSpace + allocSpace == totalSpace
-        int activeSpace = totalActiveSpaceRaw( cursor, keyCount, type );
-        int deadSpace = getDeadSpace( cursor );
-        int allocSpace = getAllocSpace( cursor, keyCount, type );
-        if ( activeSpace + deadSpace + allocSpace != totalSpace )
-        {
-            hasInconsistency = true;
-            joiner.add( format( "Space areas did not sum to total space; activeSpace=%d, deadSpace=%d, allocSpace=%d, totalSpace=%d",
-                    activeSpace, deadSpace, allocSpace, totalSpace ) );
-        }
-
         // Verify allocOffset >= offsetArray
         int allocOffset = getAllocOffset( cursor );
         int offsetArray = keyPosOffset( keyCount, type );
@@ -1391,15 +1380,33 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             joiner.add( format( "Overlap between offsetArray and allocSpace, offsetArray=%d, allocOffset=%d", offsetArray, allocOffset ) );
         }
 
-        int lowestActiveKeyOffset = lowestActiveKeyOffset( cursor, keyCount, type );
-        if ( lowestActiveKeyOffset < allocOffset )
+        // If keyCount is unreasonable we will likely go out of bounds in those checks
+        if ( reasonableKeyCount( keyCount ) )
         {
-            hasInconsistency = true;
-            joiner.add( format( "Overlap between allocSpace and active keys, allocOffset=%d, lowestActiveKeyOffset=%d", allocOffset, lowestActiveKeyOffset ) );
+            // Verify activeSpace + deadSpace + allocSpace == totalSpace
+            int activeSpace = totalActiveSpaceRaw( cursor, keyCount, type );
+            int deadSpace = getDeadSpace( cursor );
+            int allocSpace = getAllocSpace( cursor, keyCount, type );
+            if ( activeSpace + deadSpace + allocSpace != totalSpace )
+            {
+                hasInconsistency = true;
+                joiner.add( format( "Space areas did not sum to total space; activeSpace=%d, deadSpace=%d, allocSpace=%d, totalSpace=%d",
+                        activeSpace, deadSpace, allocSpace, totalSpace ) );
+            }
+
+            // Verify no overlap between alloc space and active keys
+            int lowestActiveKeyOffset = lowestActiveKeyOffset( cursor, keyCount, type );
+            if ( lowestActiveKeyOffset < allocOffset )
+            {
+                hasInconsistency = true;
+                joiner.add(
+                        format( "Overlap between allocSpace and active keys, allocOffset=%d, lowestActiveKeyOffset=%d", allocOffset, lowestActiveKeyOffset ) );
+            }
         }
 
         if ( allocOffset < pageSize && allocOffset >= 0 )
         {
+            // Verify allocOffset point at start of key
             cursor.setOffset( allocOffset );
             long keyValueAtAllocOffset = readKeyValueSize( cursor );
             if ( keyValueAtAllocOffset == 0 )

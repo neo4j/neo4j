@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.index.internal.gbptree.GBPTreeGenerationTarget.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
+import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_KEYCOUNT;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
@@ -79,14 +80,14 @@ public final class GBPTreeCorruption
 
     public static <KEY, VALUE> PageCorruption<KEY,VALUE> rightSiblingPointToNonExisting()
     {
-        return ( cursor, layout, node, treeState ) -> TreeNode
-                .setRightSibling( cursor, GenerationSafePointer.MAX_POINTER, treeState.stableGeneration(), treeState.unstableGeneration() );
+        return ( cursor, layout, node, treeState ) ->
+                overwriteGSPP( cursor, GBPTreePointerType.rightSibling().offset( node ), treeState.stableGeneration(), GenerationSafePointer.MAX_POINTER );
     }
 
     public static <KEY, VALUE> PageCorruption<KEY,VALUE> leftSiblingPointToNonExisting()
     {
-        return ( cursor, layout, node, treeState ) -> TreeNode
-                .setLeftSibling( cursor, GenerationSafePointer.MAX_POINTER, treeState.stableGeneration(), treeState.unstableGeneration() );
+        return ( cursor, layout, node, treeState ) ->
+                overwriteGSPP( cursor, GBPTreePointerType.leftSibling().offset( node ), treeState.stableGeneration(), GenerationSafePointer.MAX_POINTER );
     }
 
     public static <KEY, VALUE> PageCorruption<KEY,VALUE> rightSiblingPointerHasTooLowGeneration()
@@ -116,7 +117,11 @@ public final class GBPTreeCorruption
     public static <KEY, VALUE> PageCorruption<KEY,VALUE> setChild( int childPos, long childPointer )
     {
         return ( cursor, layout, node, treeState ) ->
-                node.setChildAt( cursor, childPointer, childPos, treeState.stableGeneration(), treeState.unstableGeneration() );
+        {
+            GenerationKeeper childGeneration = new GenerationKeeper();
+            node.childAt( cursor, childPos, treeState.stableGeneration(), treeState.unstableGeneration(), childGeneration );
+            overwriteGSPP( cursor, GBPTreePointerType.child( childPos ).offset( node ), childGeneration.generation, childPointer );
+        };
     }
 
     public static <KEY, VALUE> PageCorruption<KEY,VALUE> hasSuccessor()
@@ -154,10 +159,11 @@ public final class GBPTreeCorruption
             int lowerKeyPos = firstKeyPos < secondKeyPos ? firstKeyPos : secondKeyPos;
             int higherKeyPos = firstKeyPos == lowerKeyPos ? secondKeyPos : firstKeyPos;
 
-            // Record key and right child on higher position
+            // Record key and right child on higher position together with generation of child pointer
             KEY key = layout.newKey();
-            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.LEAF );
-            long rightChild = node.childAt( cursor, higherKeyPos + 1, treeState.stableGeneration(), treeState.unstableGeneration() );
+            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.INTERNAL );
+            final GenerationKeeper childPointerGeneration = new GenerationKeeper();
+            long rightChild = node.childAt( cursor, higherKeyPos + 1, treeState.stableGeneration(), treeState.unstableGeneration(), childPointerGeneration );
 
             // Remove key and right child, may need to defragment node to make sure we have room for insert later
             node.removeKeyAndRightChildAt( cursor, higherKeyPos, keyCount );
@@ -165,6 +171,25 @@ public final class GBPTreeCorruption
 
             // Insert key and right child in lower position
             node.insertKeyAndRightChildAt( cursor, key, rightChild, lowerKeyPos, keyCount - 1, treeState.stableGeneration(), treeState.unstableGeneration() );
+
+            // Overwrite the newly inserted child to reset the generation
+            final int childOffset = node.childOffset( lowerKeyPos + 1 );
+            overwriteGSPP( cursor, childOffset, childPointerGeneration.generation, rightChild );
+        };
+    }
+
+    public static <KEY,VALUE> PageCorruption<KEY,VALUE> swapChildOrder( int firstChildPos, int secondChildPos, int keyCount )
+    {
+        return ( cursor, layout, node, treeState ) -> {
+            // Read first and second child together with generation
+            final GenerationKeeper firstChildGeneration = new GenerationKeeper();
+            long firstChild = node.childAt( cursor, firstChildPos, treeState.stableGeneration(), treeState.unstableGeneration(), firstChildGeneration );
+            final GenerationKeeper secondChildGeneration = new GenerationKeeper();
+            long secondChild = node.childAt( cursor, secondChildPos, treeState.stableGeneration(), treeState.unstableGeneration(), secondChildGeneration );
+
+            // Overwrite respective child with the other
+            overwriteGSPP( cursor, GBPTreePointerType.child( firstChildPos ).offset( node ), secondChildGeneration.generation, secondChild );
+            overwriteGSPP( cursor, GBPTreePointerType.child( secondChildPos ).offset( node ), firstChildGeneration.generation, firstChild );
         };
     }
 
@@ -277,7 +302,7 @@ public final class GBPTreeCorruption
     public static <KEY, VALUE> PageCorruption<KEY,VALUE> setKeyCount( int keyCount )
     {
         return ( cursor, layout, node, treeState ) -> {
-            TreeNode.setKeyCount( cursor, keyCount );
+            cursor.putInt( BYTE_POS_KEYCOUNT, keyCount );
         };
     }
 

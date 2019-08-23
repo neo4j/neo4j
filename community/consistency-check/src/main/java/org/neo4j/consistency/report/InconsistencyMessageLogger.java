@@ -75,7 +75,7 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
 
     private static String buildMessage( String message )
     {
-        StringBuilder builder = joinLines( message );
+        StringBuilder builder = tabAfterLinebreak( message );
         return builder.toString();
     }
 
@@ -93,6 +93,17 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
         builder.append( System.lineSeparator() ).append( TAB ).append( "+ " ).append( newRecord );
         appendArgs( builder, args );
         return builder.toString();
+    }
+
+    private static StringBuilder tabAfterLinebreak( String message )
+    {
+        String[] lines = message.split( "\n" );
+        StringBuilder builder = new StringBuilder( lines[0].trim() );
+        for ( int i = 1; i < lines.length; i++ )
+        {
+            builder.append( System.lineSeparator() ).append( TAB ).append( lines[i].trim() );
+        }
+        return builder;
     }
 
     private static StringBuilder joinLines( String message )
