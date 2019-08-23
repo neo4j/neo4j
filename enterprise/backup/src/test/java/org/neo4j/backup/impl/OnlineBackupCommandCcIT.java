@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 import java.util.stream.LongStream;
@@ -52,7 +53,6 @@ import java.util.stream.LongStream;
 import org.neo4j.causalclustering.ClusterHelper;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
-import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
@@ -169,7 +169,7 @@ public class OnlineBackupCommandCcIT
         Cluster cluster = startCluster( recordFormat );
 
         // and the database has indexes
-        ClusterHelper.createIndexes( cluster.getMemberWithAnyRole( Role.LEADER ).database() );
+        ClusterHelper.createIndexes( cluster.awaitLeader().database() );
 
         // and the database is being populated
         AtomicBoolean populateDatabaseFlag = new AtomicBoolean( true );
@@ -259,7 +259,7 @@ public class OnlineBackupCommandCcIT
     {
         // given
         Cluster cluster = startCluster( recordFormat );
-        ClusterHelper.createIndexes( cluster.getMemberWithAnyRole( Role.LEADER ).database() );
+        ClusterHelper.createIndexes( cluster.awaitLeader().database() );
         String customAddress = CausalClusteringTestHelpers.backupAddress( clusterLeader( cluster ).database() );
 
         // and
@@ -632,7 +632,14 @@ public class OnlineBackupCommandCcIT
 
     private static CoreClusterMember clusterLeader( Cluster cluster )
     {
-        return cluster.getMemberWithRole( Role.LEADER );
+        try
+        {
+            return cluster.awaitLeader();
+        }
+        catch ( TimeoutException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public static DbRepresentation getBackupDbRepresentation( String name, File backupDir )
