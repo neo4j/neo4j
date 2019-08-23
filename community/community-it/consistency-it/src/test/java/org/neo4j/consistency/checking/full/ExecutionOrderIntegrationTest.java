@@ -446,12 +446,6 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordReference<NeoStoreRecord> graph()
-        {
-            return logging( access.graph() );
-        }
-
-        @Override
         public boolean shouldCheck( long id, MultiPassStore store )
         {
             return access.shouldCheck( id, store );

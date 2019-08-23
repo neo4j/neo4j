@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -156,12 +155,6 @@ public class DirectRecordAccess implements RecordAccess
     public RecordReference<DynamicRecord> propertyKeyName( int id )
     {
         return referenceTo( access.getPropertyKeyNameStore(), id );
-    }
-
-    @Override
-    public RecordReference<NeoStoreRecord> graph()
-    {
-        return new DirectRecordReference<>( access.getRawNeoStores().getMetaDataStore().graphPropertyRecord(), this );
     }
 
     @Override

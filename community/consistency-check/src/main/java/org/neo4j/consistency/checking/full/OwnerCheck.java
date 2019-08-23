@@ -145,18 +145,7 @@ class OwnerCheck implements CheckDecorator
     public OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> decorateNeoStoreChecker(
             OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> checker )
     {
-        if ( owners == null )
-        {
-            return checker;
-        }
-        return new PrimitiveCheckerDecorator<NeoStoreRecord, NeoStoreConsistencyReport>( checker )
-        {
-            @Override
-            PropertyOwner owner( NeoStoreRecord record )
-            {
-                return PropertyOwner.OWNING_GRAPH;
-            }
-        };
+        return checker;
     }
 
     @Override

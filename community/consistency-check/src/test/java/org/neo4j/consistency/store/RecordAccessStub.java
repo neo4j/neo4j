@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
-import static java.util.Collections.singletonMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
@@ -546,12 +545,6 @@ public class RecordAccessStub implements RecordAccess
     public RecordReference<DynamicRecord> propertyKeyName( int id )
     {
         return reference( propertyKeyNames, id, Version.LATEST );
-    }
-
-    @Override
-    public RecordReference<NeoStoreRecord> graph()
-    {
-        return reference( singletonMap( -1L, graph ), -1, Version.LATEST );
     }
 
     @Override
