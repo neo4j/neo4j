@@ -41,15 +41,22 @@ case object pushdownPropertyReads {
           val newPropertyReadOptima =
             propertiesForPlan.flatMap {
               case p @ Property(v: LogicalVariable, _) =>
-                val optimum = acc.variableOptima(v.name)
-                if (optimum.lowestCardinality < acc.incomingCardinality && !acc.availableProperties.contains(p))
-                  Some((optimum.logicalPlanId, p))
-                else
-                  None
+                acc.variableOptima.get(v.name) match {
+                  case Some(VarLowestCardinality(lowestCardinality, logicalPlanId)) =>
+                    if (lowestCardinality < acc.incomingCardinality && !acc.availableProperties.contains(p))
+                      Some((logicalPlanId, p))
+                    else
+                      None
+                  // this happens for variables introduced in expressions, we ignore those for now
+                  case None => None
+                }
+
             }
 
           val outgoingCardinality = cardinalities(plan.id)
           val outgoingReadOptima = acc.propertyReadOptima ++ newPropertyReadOptima
+
+          // TODO: handle aliasing in projections
 
           plan match {
             case _: Aggregation |

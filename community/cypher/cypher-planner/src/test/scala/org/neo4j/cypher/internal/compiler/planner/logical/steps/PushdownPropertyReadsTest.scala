@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
+import org.neo4j.cypher.internal.v4_0.util.symbols.CTNode
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
@@ -504,5 +505,16 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
         .filter("id(n) <> 0")
         .allNodeScan("n")
         .build()
+  }
+
+  test("should ignore expression variable property reads (for now)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("list")
+      .projection("[x IN [n] | x.prop] AS list").withCardinality(5).newVar("x", CTNode)
+      .allNodeScan("n").withCardinality(5)
+
+    val plan = planBuilder.build()
+    val rewritten = pushdownPropertyReads.x(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
   }
 }

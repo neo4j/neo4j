@@ -134,6 +134,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           if (predicate.exprs.size == 1) buildExpression(predicate.exprs.head) else buildExpression(predicate)
         FilterPipe(source, predicateExpression)(id = id)
 
+      case CacheProperties(_, properties) =>
+        val runtimeProperties = properties.toArray.map(buildExpression(_))
+        CachePropertiesPipe(source, runtimeProperties)(id = id)
+
       case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandAll) =>
         ExpandAllPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 

@@ -464,10 +464,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   // AST construction
-  private def varFor(name: String): Variable = Variable(name)(pos)
-  private def labelName(s: String): LabelName = LabelName(s)(pos)
-  private def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
-  private def literalInt(value: Long): SignedDecimalIntegerLiteral =
+  protected def varFor(name: String): Variable = Variable(name)(pos)
+  protected def labelName(s: String): LabelName = LabelName(s)(pos)
+  protected def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
+  protected def literalInt(value: Long): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(value.toString)(pos)
 
 }
