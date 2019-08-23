@@ -178,6 +178,7 @@ public class IndexedIdGenerator implements IdGenerator
      * See more in {@link IdRangeMarker}.
      */
     private final AtomicLong highestWrittenId = new AtomicLong();
+    private final File file;
 
     /**
      * {@code false} after construction and before a call to {@link IdGenerator#start(FreeIds)}, where false means that operations made this freelist
@@ -195,6 +196,7 @@ public class IndexedIdGenerator implements IdGenerator
     IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
             int idsPerEntryOnCreate, LongSupplier initialHighId, long maxId, OpenOption... openOptions )
     {
+        this.file = file;
         Preconditions.checkArgument( Integer.bitCount( idsPerEntryOnCreate ) == 1, "Requires idsPerEntry to be a power of 2, was %d", idsPerEntryOnCreate );
         int cacheCapacity = idType.highActivity() ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
@@ -455,6 +457,11 @@ public class IndexedIdGenerator implements IdGenerator
     public void markHighestWrittenAtHighId()
     {
         this.highestWrittenId.set( highId.get() - 1 );
+    }
+
+    public File file()
+    {
+        return file;
     }
 
     /**

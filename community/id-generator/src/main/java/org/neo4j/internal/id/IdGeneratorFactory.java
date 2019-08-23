@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import java.io.File;
 import java.nio.file.OpenOption;
+import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
@@ -37,4 +38,6 @@ public interface IdGeneratorFactory
     void visit( Consumer<IdGenerator> visitor );
 
     void clearCache();
+
+    Collection<File> listIdFiles();
 }

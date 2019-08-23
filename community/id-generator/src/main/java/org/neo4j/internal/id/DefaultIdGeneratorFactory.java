@@ -21,9 +21,11 @@ package org.neo4j.internal.id;
 
 import java.io.File;
 import java.nio.file.OpenOption;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
@@ -34,7 +36,7 @@ import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final EnumMap<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
+    private final EnumMap<IdType, IndexedIdGenerator> generators = new EnumMap<>( IdType.class );
     protected final FileSystemAbstraction fs;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
 
@@ -47,13 +49,13 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     @Override
     public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
-        IdGenerator generator = instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, openOptions );
+        IndexedIdGenerator generator = instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, openOptions );
         generators.put( idType, generator );
         return generator;
     }
 
-    protected IdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, File fileName,
-            LongSupplier highIdSupplier, long maxValue, IdType idType, OpenOption[] openOptions )
+    protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, OpenOption[] openOptions )
     {
         // highId not used when opening an IndexedIdGenerator
         return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, highIdSupplier, maxValue, openOptions );
@@ -73,7 +75,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
         fs.deleteFile( fileName );
 
-        IdGenerator generator = new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, () -> highId, maxId, openOptions );
+        IndexedIdGenerator generator = new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, () -> highId, maxId, openOptions );
         generator.checkpoint( UNLIMITED );
         generators.put( idType, generator );
         return generator;
@@ -89,5 +91,11 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     public void clearCache()
     {
         generators.values().forEach( IdGenerator::clearCache );
+    }
+
+    @Override
+    public Collection<File> listIdFiles()
+    {
+        return generators.values().stream().map( IndexedIdGenerator::file ).collect( Collectors.toList() );
     }
 }

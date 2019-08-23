@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
@@ -595,12 +596,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
         PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions );
         // This index already exists, verify meta data aligns with expectations
 
+        MutableBoolean pagedFileOpen = new MutableBoolean( true );
         boolean success = false;
         try
         {
             // We're only interested in the page size really, so don't involve layout at this point
             Meta meta = readMeta( null, pagedFile );
-            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, meta.getPageSize(), openOptions );
+            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, meta.getPageSize(), pagedFileOpen, openOptions );
             success = true;
             return pagedFile;
         }
@@ -610,7 +612,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         finally
         {
-            if ( !success )
+            if ( !success && pagedFileOpen.booleanValue() )
             {
                 pagedFile.close();
             }
@@ -871,7 +873,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private static PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile, int pageSize, OpenOption... openOptions )
+    private static PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile, int pageSize, MutableBoolean pagedFileOpen,
+            OpenOption... openOptions )
             throws IOException
     {
         // This index was created with another page size, re-open with that actual page size
@@ -885,7 +888,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
                         pageSize, pageCache.pageSize() );
             }
             pagedFile.close();
-            return pageCache.map( indexFile, pageSize, openOptions );
+            pagedFileOpen.setFalse();
+            PagedFile remappedFile = pageCache.map( indexFile, pageSize, openOptions );
+            pagedFileOpen.setTrue();
+            return remappedFile;
         }
         return pagedFile;
     }

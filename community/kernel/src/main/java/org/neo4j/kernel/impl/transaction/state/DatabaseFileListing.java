@@ -26,10 +26,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -46,16 +48,19 @@ public class DatabaseFileListing
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
+    private final IdGeneratorFactory idGeneratorFactory;
     private static final Function<File,StoreFileMetadata> logFileMapper = file -> new StoreFileMetadata( file, 1, true );
     private final SchemaAndIndexingFileIndexListing fileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 
     public DatabaseFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
-            LabelScanStore labelScanStore, IndexingService indexingService, StorageEngine storageEngine )
+            LabelScanStore labelScanStore, IndexingService indexingService, StorageEngine storageEngine,
+            IdGeneratorFactory idGeneratorFactory )
     {
         this.databaseLayout = databaseLayout;
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
+        this.idGeneratorFactory = idGeneratorFactory;
         this.fileIndexListing = new SchemaAndIndexingFileIndexListing( labelScanStore, indexingService );
         this.additionalProviders = new CopyOnWriteArraySet<>();
     }
@@ -103,26 +108,23 @@ public class DatabaseFileListing
         }
     }
 
-    private void gatherNonRecordStores( Collection<StoreFileMetadata> files, boolean includeLogs )
+    private void gatherLogFiles( Collection<StoreFileMetadata> files )
     {
-        if ( includeLogs )
+        File[] logFiles = this.logFiles.logFiles();
+        for ( File logFile : logFiles )
         {
-            File[] logFiles = this.logFiles.logFiles();
-            for ( File logFile : logFiles )
-            {
-                files.add( logFileMapper.apply( logFile ) );
-            }
+            files.add( logFileMapper.apply( logFile ) );
         }
     }
 
     public class StoreFileListingBuilder
     {
         private boolean excludeLogFiles;
-        private boolean excludeNonRecordStoreFiles;
         private boolean excludeNeoStoreFiles;
         private boolean excludeLabelScanStoreFiles;
         private boolean excludeSchemaIndexStoreFiles;
         private boolean excludeAdditionalProviders;
+        private boolean excludeIdFiles;
 
         private StoreFileListingBuilder()
         {
@@ -131,11 +133,11 @@ public class DatabaseFileListing
         private void excludeAll( boolean initiateInclusive )
         {
             this.excludeLogFiles = initiateInclusive;
-            this.excludeNonRecordStoreFiles = initiateInclusive;
             this.excludeNeoStoreFiles = initiateInclusive;
             this.excludeLabelScanStoreFiles = initiateInclusive;
             this.excludeSchemaIndexStoreFiles = initiateInclusive;
             this.excludeAdditionalProviders = initiateInclusive;
+            this.excludeIdFiles = initiateInclusive;
         }
 
         public StoreFileListingBuilder excludeAll()
@@ -153,12 +155,6 @@ public class DatabaseFileListing
         public StoreFileListingBuilder excludeLogFiles()
         {
             excludeLogFiles = true;
-            return this;
-        }
-
-        public StoreFileListingBuilder excludeNonRecordStoreFiles()
-        {
-            excludeNonRecordStoreFiles = true;
             return this;
         }
 
@@ -186,15 +182,15 @@ public class DatabaseFileListing
             return this;
         }
 
-        public StoreFileListingBuilder includeLogFiles()
+        public StoreFileListingBuilder excludeIdFiles()
         {
-            excludeLogFiles = false;
+            excludeIdFiles = true;
             return this;
         }
 
-        public StoreFileListingBuilder includeNonRecordStoreFiles()
+        public StoreFileListingBuilder includeLogFiles()
         {
-            excludeNonRecordStoreFiles = false;
+            excludeLogFiles = false;
             return this;
         }
 
@@ -222,19 +218,29 @@ public class DatabaseFileListing
             return this;
         }
 
+        public StoreFileListingBuilder includeIdFiles()
+        {
+            excludeIdFiles = false;
+            return this;
+        }
+
         public ResourceIterator<StoreFileMetadata> build() throws IOException
         {
             List<StoreFileMetadata> files = new ArrayList<>();
             List<Resource> resources = new ArrayList<>();
             try
             {
-                if ( !excludeNonRecordStoreFiles )
+                if ( !excludeLogFiles )
                 {
-                    gatherNonRecordStores( files, !excludeLogFiles );
+                    gatherLogFiles( files );
                 }
                 if ( !excludeNeoStoreFiles )
                 {
                     gatherNeoStoreFiles( files );
+                }
+                if ( !excludeIdFiles )
+                {
+                    gatherIdFiles( files );
                 }
                 if ( !excludeLabelScanStoreFiles )
                 {
@@ -269,6 +275,11 @@ public class DatabaseFileListing
 
             return resourceIterator( files.iterator(), new MultiResource( resources ) );
         }
+    }
+
+    private void gatherIdFiles( List<StoreFileMetadata> targetFiles )
+    {
+        targetFiles.addAll( idGeneratorFactory.listIdFiles().stream().map( file -> new StoreFileMetadata( file, 0 ) ).collect( Collectors.toList() ) );
     }
 
     private void gatherNeoStoreFiles( final Collection<StoreFileMetadata> targetFiles )

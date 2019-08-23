@@ -649,7 +649,8 @@ public class Database extends LifecycleAdapter
 
         life.add( kernel );
 
-        final DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, indexingService, storageEngine );
+        final DatabaseFileListing fileListing =
+                new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, indexingService, storageEngine, idGeneratorFactory );
         databaseDependencies.satisfyDependency( fileListing );
 
         return new DatabaseKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
@@ -829,6 +830,7 @@ public class Database extends LifecycleAdapter
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
         DatabaseFileListing.StoreFileListingBuilder fileListingBuilder = getDatabaseFileListing().builder();
+        fileListingBuilder.excludeIdFiles();
         if ( !includeLogs )
         {
             fileListingBuilder.excludeLogFiles();

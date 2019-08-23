@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.file.OpenOption;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -140,6 +142,12 @@ class BufferingIdGeneratorFactoryTest
         public void clearCache()
         {
             // no-op
+        }
+
+        @Override
+        public Collection<File> listIdFiles()
+        {
+            return Collections.emptyList();
         }
     }
 }

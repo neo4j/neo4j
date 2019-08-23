@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import java.io.File;
 import java.nio.file.OpenOption;
+import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
@@ -86,6 +87,12 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     public void clearCache()
     {
         delegate.clearCache();
+    }
+
+    @Override
+    public Collection<File> listIdFiles()
+    {
+        return delegate.listIdFiles();
     }
 
     private IdGenerator wrapAndKeep( IdType idType, IdGenerator generator )

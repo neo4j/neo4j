@@ -21,6 +21,8 @@ package org.neo4j.internal.id;
 
 import java.io.File;
 import java.nio.file.OpenOption;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -73,5 +75,11 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     public void clearCache()
     {
         idGenerators.values().forEach( IdGenerator::clearCache );
+    }
+
+    @Override
+    public Collection<File> listIdFiles()
+    {
+        return Collections.emptyList();
     }
 }
