@@ -33,13 +33,15 @@ object ExpressionParser {
     case a:ASTNode => a.dup(a.children.toSeq :+ AbstractLogicalPlanBuilder.pos)
   })
 
+  def cleanup(expression: Expression): Expression =
+    injectCachedNodeProperties.andThen(invalidateInputPositions)(expression).asInstanceOf[Expression]
+
   private val regex = s"(.+) [Aa][Ss] ([a-zA-Z0-9` @]+)".r
   private val expParser = new ExpressionParser
 
   def parseProjections(projections: String*): Map[String, Expression] = {
     projections.map {
-      case regex(ExpressionParser(expression), alias) => (VariableParser.unescaped(alias),
-        injectCachedNodeProperties.andThen(invalidateInputPositions)(expression).asInstanceOf[Expression])
+      case regex(ExpressionParser(expression), alias) => (VariableParser.unescaped(alias), expression)
       case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a projection")
     }.toMap
   }
@@ -56,7 +58,7 @@ class ExpressionParser extends Expressions {
   def parse(text: String): Expression = {
     val res = ReportingParseRunner(parser).run(text)
     res.result match {
-      case Some(e) => e
+      case Some(e) => ExpressionParser.cleanup(e)
       case None => throw new IllegalArgumentException(s"Could not parse expression: ${res.parseErrors}")
     }
   }

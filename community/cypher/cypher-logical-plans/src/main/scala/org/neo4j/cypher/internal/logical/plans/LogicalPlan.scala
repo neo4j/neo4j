@@ -214,7 +214,7 @@ abstract class LogicalPlan(idGen: IdGen)
           } else {
             val lhsAcc = lhsStack.head
             lhsStack = lhsStack.tail
-            combineLeftAndRight(lhsAcc, acc, current)
+            acc = combineLeftAndRight(lhsAcc, acc, current)
           }
       }
 

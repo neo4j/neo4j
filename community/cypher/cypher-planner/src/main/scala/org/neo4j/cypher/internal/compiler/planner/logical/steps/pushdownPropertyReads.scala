@@ -1,6 +1,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.logical.plans.{AggregatingPlan, Aggregation, CacheProperties, LogicalPlan}
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{LogicalProperty, LogicalVariable, Property, Variable}
@@ -21,12 +21,14 @@ case object pushdownPropertyReads {
       semanticTable.types.get(variable)
         .exists(t => t.actual == CTNode.invariant || t.actual == CTRelationship.invariant)
 
-    case class Acc(variables: Map[String, VarLowestCardinality],
-                   propertyReadOptima: Seq[(Id, Property)])
     case class VarLowestCardinality(lowestCardinality: Cardinality, logicalPlanId: Id)
+    case class Acc(variableOptima: Map[String, VarLowestCardinality],
+                   propertyReadOptima: Seq[(Id, Property)],
+                   availableProperties: Set[Property],
+                   incomingCardinality: Cardinality)
 
-    val Acc(_, propertyReadOptima) =
-      logicalPlan.foldPlan(Acc(Map.empty, Seq.empty))(
+    val Acc(_, propertyReadOptima, _, _) =
+      logicalPlan.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Cardinality.SINGLE))(
         (acc, plan) => {
           val propertiesForPlan =
             plan.treeFold(List.empty[Property]) {
@@ -36,45 +38,61 @@ case object pushdownPropertyReads {
                 acc2 => (p :: acc2, Some(acc3 => acc3) )
             }
 
-          val incomingCardinality = plan.lhs.map(source => cardinalities(source.id)).getOrElse(Cardinality.SINGLE)
           val newPropertyReadOptima =
             propertiesForPlan.flatMap {
               case p @ Property(v: LogicalVariable, _) =>
-                val optimum = acc.variables(v.name)
-                if (optimum.lowestCardinality < incomingCardinality)
+                val optimum = acc.variableOptima(v.name)
+                if (optimum.lowestCardinality < acc.incomingCardinality && !acc.availableProperties.contains(p))
                   Some((optimum.logicalPlanId, p))
                 else
                   None
             }
 
           val outgoingCardinality = cardinalities(plan.id)
+          val outgoingReadOptima = acc.propertyReadOptima ++ newPropertyReadOptima
 
-          val outgoigVariableCardinalities =
-            plan match {
-              case agg: Aggregation =>
-                val newVariables = agg.availableSymbols
-                newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id))).toMap
+          plan match {
+            case _: Aggregation |
+                 _: OrderedAggregation =>
+              val newVariables = plan.availableSymbols
+              val outgoingVariableOptima = newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id))).toMap
 
-              case _ =>
-                val newLowestCardinalities =
-                  acc.variables.mapValues( x =>
-                    if (outgoingCardinality < x.lowestCardinality) {
-                      VarLowestCardinality(outgoingCardinality, plan.id)
-                    } else {
-                      x
-                    }
-                  )
+              Acc(outgoingVariableOptima, outgoingReadOptima, Set.empty, outgoingCardinality)
+            case _ =>
+              val newLowestCardinalities =
+                acc.variableOptima.mapValues(x =>
+                  if (outgoingCardinality < x.lowestCardinality) {
+                    VarLowestCardinality(outgoingCardinality, plan.id)
+                  } else {
+                    x
+                  }
+                )
 
-                val currentVariables = plan.availableSymbols
-                val newVariables = currentVariables -- acc.variables.keySet
-                val newVariableCardinalities = newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id)))
-                newLowestCardinalities ++ newVariableCardinalities
-            }
+              val currentVariables = plan.availableSymbols
+              val newVariables = currentVariables -- acc.variableOptima.keySet
+              val newVariableCardinalities = newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id)))
+              val outgoingVariableOptima = newLowestCardinalities ++ newVariableCardinalities
 
-          Acc(outgoigVariableCardinalities, acc.propertyReadOptima ++ newPropertyReadOptima)
+              Acc(outgoingVariableOptima, outgoingReadOptima, acc.availableProperties ++ propertiesForPlan, outgoingCardinality)
+          }
         },
         (lhsAcc, rhsAcc, plan) => {
-          Acc(Map.empty, lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima)
+          val mergedVariableOptima =
+            lhsAcc.variableOptima ++ rhsAcc.variableOptima.map {
+              case (v, rhsOptimum) =>
+                lhsAcc.variableOptima.get(v) match {
+                  case Some(lhsOptimum) =>
+                    (v, Seq(lhsOptimum, rhsOptimum).minBy(_.lowestCardinality))
+                  case None =>
+                    (v, rhsOptimum)
+                }
+            }
+
+          Acc(
+            mergedVariableOptima,
+            lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
+            lhsAcc.availableProperties ++ rhsAcc.availableProperties,
+            cardinalities(plan.id))
         }
       )
 
