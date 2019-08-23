@@ -594,11 +594,20 @@ class SchemaAcceptanceTest
     }
 
     @Test
-    void cannotCreateConstraintWithSameNameAsExistingIndexWithGeneratedName()
+    void cannotCreateIndexWithSameNameAsExistingIndexWithGeneratedName()
     {
         IndexDefinition index = createIndex( db, label, propertyKey ); // Index with generated name.
         ConstraintViolationException exception =
                 assertThrows( ConstraintViolationException.class, () -> createIndex( db, index.getName(), otherLabel, secondPropertyKey ) );
+        assertThat( exception.getMessage(), containsString( index.getName() ) );
+    }
+
+    @Test
+    void cannotCreateConstraintWithSameNameAsExistingIndexWithGeneratedName()
+    {
+        IndexDefinition index = createIndex( db, label, propertyKey ); // Index with generated name.
+        ConstraintViolationException exception =
+                assertThrows( ConstraintViolationException.class, () -> createUniquenessConstraint( index.getName(), otherLabel, secondPropertyKey ) );
         assertThat( exception.getMessage(), containsString( index.getName() ) );
     }
 
