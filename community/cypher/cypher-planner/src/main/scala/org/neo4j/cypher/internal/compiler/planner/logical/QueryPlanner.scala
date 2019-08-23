@@ -112,7 +112,14 @@ case object QueryPlanner
   */
 case object plannerQueryPartPlanner {
 
-  def plan(plannerQueryPart: PlannerQueryPart, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) =
+  /**
+   * Plan a part of a query
+   * @param plannerQueryPart the part to plan
+   * @param context the context
+   * @param distinctifyUnions if `true`, a distinct will be inserted for distinct UNIONs.
+   * @return the plan
+   */
+  def plan(plannerQueryPart: PlannerQueryPart, context: LogicalPlanningContext, distinctifyUnions: Boolean = true): (LogicalPlan, LogicalPlanningContext) =
     plannerQueryPart match {
       case pq:SinglePlannerQuery =>
         PlanSingleQuery()(pq, context)
@@ -120,14 +127,14 @@ case object plannerQueryPartPlanner {
         val projectionsForPart = unionMappings.map(um => um.unionVariable.name -> um.variableInPart).toMap
         val projectionsForQuery = unionMappings.map(um => um.unionVariable.name -> um.variableInQuery).toMap
 
-        val (partPlan, partContext) = plan(part, context)
+        val (partPlan, partContext) = plan(part, context, distinctifyUnions = false) // Only one distinct at the top level
         val partPlanWithProjection = partContext.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, partContext)
 
         val (queryPlan, finalContext) = PlanSingleQuery()(query, partContext)
         val queryPlanWithProjection = finalContext.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, Map.empty, finalContext)
 
         val unionPlan = finalContext.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, finalContext)
-        if (distinct)
+        if (distinct && distinctifyUnions)
           (finalContext.logicalPlanProducer.planDistinctForUnion(unionPlan, finalContext), finalContext)
         else
           (unionPlan, finalContext)

@@ -137,7 +137,6 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         .|.projection(s"1 AS $b5")
         .|.nodeByLabelScan(a5, "C")
         .projection(s"$a2 AS $a4", s"$b2 AS $b4")
-        .distinct(s"$a2 AS $a2", s"$b2 AS $b2") // TODO can we get rid of this distinct? - it is not needed!
         .union()
         .|.projection(s"$a3 AS $a2", s"$b3 AS $b2")
         .|.projection(s"1 AS $b3")

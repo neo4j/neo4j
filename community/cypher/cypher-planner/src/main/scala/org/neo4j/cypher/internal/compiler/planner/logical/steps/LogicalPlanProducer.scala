@@ -737,10 +737,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val returnAll = left.availableSymbols.map { s => s -> Variable(s)(InputPosition.NONE) }
 
     val solved = solveds.get(left.id) match {
-      case u: UnionQuery => u.copy(distinct = true)
+      case u: UnionQuery => markDistinctInUnion(u)
       case _ => throw new IllegalStateException("Planning a distinct for union, but no union was planned before.")
     }
     annotate(Distinct(left, returnAll.toMap), solved, providedOrders.get(left.id), context)
+  }
+
+  private def markDistinctInUnion(query: PlannerQueryPart): PlannerQueryPart = {
+    query match {
+      case u@UnionQuery(part, _, _, _) => u.copy(part = markDistinctInUnion(part), distinct = true)
+      case s => s
+    }
   }
 
   /**
