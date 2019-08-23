@@ -112,7 +112,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
 
     // then
-    a [CypherTypeException] should be thrownBy execute(logicalQuery, runtime)
+    a [CypherTypeException] should be thrownBy consume(execute(logicalQuery, runtime))
   }
 
   test("should cache properties") {
