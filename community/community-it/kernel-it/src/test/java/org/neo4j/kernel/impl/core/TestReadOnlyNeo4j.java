@@ -74,6 +74,7 @@ public class TestReadOnlyNeo4j
         {
             readGraphDb.createNode();
             tx.success();
+            fail( "Should have failed" );
         }
         catch ( WriteOperationsNotAllowedException e )
         {
@@ -83,7 +84,7 @@ public class TestReadOnlyNeo4j
     }
 
     @Test
-    public void testWhatHappensWhenYouOpenDbInReadOnlyModeWithMissingIndex() throws IOException
+    public void databaseNotStartInReadOnlyModeWithMissingIndex() throws IOException
     {
         File databaseDir = testDirectory.databaseDir();
         FileSystemAbstraction fs = testDirectory.getFileSystem();
@@ -114,52 +115,6 @@ public class TestReadOnlyNeo4j
                 readGraphDb.shutdown();
             }
         }
-    }
-
-    private void deleteIndexFolder( File databaseDir, FileSystemAbstraction fs ) throws IOException
-    {
-        fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ) );
-    }
-
-    private void createIndex( File databaseDir, FileSystemAbstraction fs )
-    {
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( fs )
-                .newEmbeddedDatabase( databaseDir );
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().indexFor( Label.label( "label" ) ).on( "prop" ).create();
-            tx.success();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
-        }
-        db.shutdown();
-    }
-
-    private DbRepresentation createSomeData( File databaseDir, FileSystemAbstraction fs )
-    {
-        RelationshipType type = withName( "KNOWS" );
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( fs )
-                .newImpermanentDatabase( databaseDir );
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node prevNode = db.createNode();
-            for ( int i = 0; i < 100; i++ )
-            {
-                Node node = db.createNode();
-                Relationship rel = prevNode.createRelationshipTo( node, type );
-                node.setProperty( "someKey" + i % 10, i % 15 );
-                rel.setProperty( "since", System.currentTimeMillis() );
-            }
-            tx.success();
-        }
-        DbRepresentation result = DbRepresentation.of( db );
-        db.shutdown();
-        return result;
     }
 
     @Test
@@ -224,5 +179,51 @@ public class TestReadOnlyNeo4j
         assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
         transaction.close();
         db.shutdown();
+    }
+
+    private void deleteIndexFolder( File databaseDir, FileSystemAbstraction fs ) throws IOException
+    {
+        fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ) );
+    }
+
+    private void createIndex( File databaseDir, FileSystemAbstraction fs )
+    {
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                .setFileSystem( fs )
+                .newEmbeddedDatabase( databaseDir );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( Label.label( "label" ) ).on( "prop" ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+        db.shutdown();
+    }
+
+    private DbRepresentation createSomeData( File databaseDir, FileSystemAbstraction fs )
+    {
+        RelationshipType type = withName( "KNOWS" );
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                .setFileSystem( fs )
+                .newImpermanentDatabase( databaseDir );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node prevNode = db.createNode();
+            for ( int i = 0; i < 100; i++ )
+            {
+                Node node = db.createNode();
+                Relationship rel = prevNode.createRelationshipTo( node, type );
+                node.setProperty( "someKey" + i % 10, i % 15 );
+                rel.setProperty( "since", System.currentTimeMillis() );
+            }
+            tx.success();
+        }
+        DbRepresentation result = DbRepresentation.of( db );
+        db.shutdown();
+        return result;
     }
 }

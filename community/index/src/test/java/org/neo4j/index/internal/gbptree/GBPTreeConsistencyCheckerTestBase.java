@@ -780,50 +780,6 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         }
     }
 
-    //todo
-    //  Tree structure inconsistencies:
-    //    > Pointer generation lower than node generation
-    //      X Child pointer generation lower than node generation
-    //      X Sibling pointer generation lower than node generation
-    //    > Sibling pointers don't align
-    //      X Sibling pointer generation to low
-    //      X Sibling pointer not pointing to correct sibling
-    //    > None-tree node
-    //      X Root, internal or leaf is none-tree node
-    //    > Unknown tree node type
-    //      X Root, internal or leaf has unknown tree node type
-    //    > Node in tree has successor
-    //      X Root, internal or leaf has successor
-    //    > Broken GSPP
-    //      X Should detect crashed GSPP
-    //      X Should detect broken GSPP
-    //      - Should not report crashed GSPP if allowed
-    //    > Level hierarchy
-    //      X Child pointer point two levels down
-    //      X Child pointer point to upper level same stack
-    //      X Child pointer point to same level
-    //      X Child pointer point to upper level not same stack
-    //      X Child pointer point to child owned by other internal node
-    //      X Sibling pointer point to lower level
-    //      X Sibling pointer point to upper level
-    //  Key order inconsistencies:
-    //      X Keys out of order in isolated node
-    //      X Keys not within parent range
-    //  Node meta inconsistency:
-    //      X Dynamic layout: Space areas did not sum to total space
-    //      X Dynamic layout: Overlap between offsetArray and allocSpace
-    //      X Dynamic layout: Overlap between allocSpace and activeKeys
-    //      X Dynamic layout: Misplaced allocOffset
-    //      X Unreasonable keyCount
-    //  Free list inconsistencies:
-    //  A page can be either used as a freelist page, used as a tree node (unstable generation), listed in freelist (stable generation), listen in freelist
-    //  (unstable generation)
-    //      X Page missing from freelist
-    //      X Extra page on free list
-    //      X Extra empty page in file
-    //  Tree meta inconsistencies:
-    //    > Can not read meta data.
-
     private static <KEY, VALUE> GBPTreeCorruption.IndexCorruption<KEY,VALUE> page( long targetNode, GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption )
     {
         return GBPTreeCorruption.pageSpecificCorruption( targetNode, corruption );
