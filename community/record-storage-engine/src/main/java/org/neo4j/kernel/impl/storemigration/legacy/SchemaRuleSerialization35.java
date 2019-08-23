@@ -40,6 +40,7 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleDeserializer2_0to3_1.defaultIndexName;
 import static org.neo4j.string.UTF8.getDecodedStringFrom;
 
 /**
@@ -259,7 +260,7 @@ public class SchemaRuleSerialization35
             }
             else
             {
-                prototype = prototype.withName( "index_" + id );
+                prototype = prototype.withName( defaultIndexName( id ) );
             }
             return prototype.materialise( id );
         }
@@ -276,7 +277,7 @@ public class SchemaRuleSerialization35
             }
             else
             {
-                prototype = prototype.withName( "index_" + id );
+                prototype = prototype.withName( defaultIndexName( id ) );
             }
             IndexDescriptor index = prototype.materialise( id );
             if ( readOwningConstraint != NO_OWNING_CONSTRAINT_YET )
