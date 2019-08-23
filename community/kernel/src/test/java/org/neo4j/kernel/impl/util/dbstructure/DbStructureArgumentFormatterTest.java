@@ -23,7 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
@@ -67,6 +70,17 @@ class DbStructureArgumentFormatterTest
     {
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 23, 42 );
         assertEquals( "IndexPrototype.forSchema( SchemaDescriptor.forLabel( 23, 42 ) )" +
+                        ".withName( \"" + index.getName() + "\" ).materialise( " + index.getId() + " )",
+                formatArgument( index ) );
+
+        index = TestIndexDescriptorFactory.forSchema(
+                SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {23}, new int[] {42} ) );
+        assertEquals( "IndexPrototype.forSchema( SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {23}, new int[] {42} ) )" +
+                        ".withName( \"" + index.getName() + "\" ).materialise( " + index.getId() + " )",
+                formatArgument( index ) );
+
+        index = TestIndexDescriptorFactory.forSchema( SchemaDescriptor.forRelType( 23, 42 ) );
+        assertEquals( "IndexPrototype.forSchema( SchemaDescriptor.forRelType( 23, 42 ) )" +
                         ".withName( \"" + index.getName() + "\" ).materialise( " + index.getId() + " )",
                 formatArgument( index ) );
     }
