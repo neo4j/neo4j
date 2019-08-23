@@ -90,7 +90,6 @@ class FileUtilsTest
     @Test
     void deletePathRecursively() throws IOException
     {
-        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
         File root = testDirectory.directory( "a" );
         File child = new File( root, "b" );
         File file = new File( child, "c" );
@@ -107,7 +106,6 @@ class FileUtilsTest
     @Test
     void deletePathRecursivelyWithFilter() throws IOException
     {
-        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
         File root = testDirectory.directory( "a" );
         File child = new File( root, "b" );
         File file = new File( child, "c" );
@@ -132,7 +130,6 @@ class FileUtilsTest
     @Test
     void deleteNestedPathRecursivelyWithFilter() throws IOException
     {
-        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
         File root = testDirectory.directory( "a" );
         File child = new File( root, "a" );
         File file = new File( child, "aaFile" );
@@ -278,22 +275,21 @@ class FileUtilsTest
     void allMacsHaveHighIO()
     {
         assumeTrue( SystemUtils.IS_OS_MAC );
-        assertTrue( FileUtils.highIODevice( Paths.get( "." ), false ) );
+        assertTrue( FileUtils.highIODevice( Paths.get( "." ) ) );
     }
 
     @Test
-    void windowsNeverHaveHighIO()
+    void allWindowsHaveHighIO()
     {
-        // Future work: Maybe we should do like on Mac and assume true on Windows as well?
         assumeTrue( SystemUtils.IS_OS_WINDOWS );
-        assertFalse( FileUtils.highIODevice( Paths.get( "." ), false ) );
+        assertTrue( FileUtils.highIODevice( Paths.get( "." ) ) );
     }
 
     @Test
     void onLinuxDevShmHasHighIO()
     {
         assumeTrue( SystemUtils.IS_OS_LINUX );
-        assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ), false ) );
+        assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ) ) );
     }
 
     @Test

@@ -390,7 +390,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 @Override
                 public boolean highIO()
                 {
-                    return FileUtils.highIODevice( sourceDirectoryStructure.databaseDirectory().toPath(), super.highIO() );
+                    return FileUtils.highIODevice( sourceDirectoryStructure.databaseDirectory().toPath() );
                 }
             };
             AdditionalInitialIds additionalInitialIds =

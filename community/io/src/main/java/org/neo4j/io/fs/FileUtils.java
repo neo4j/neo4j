@@ -464,20 +464,11 @@ public class FileUtils
      *
      * @param pathOnDevice Any path, hypothetical or real, that once fully resolved, would exist on a storage device
      * that either supports high IO, or not.
-     * @param defaultHunch The default hunch for whether the device supports high IO or not. This will be returned if
-     * we otherwise have no clue about the nature of the storage device.
      * @return Our best-effort estimate for whether or not this device supports a high IO workload.
      */
-    public static boolean highIODevice( Path pathOnDevice, boolean defaultHunch )
+    public static boolean highIODevice( Path pathOnDevice )
     {
-        // This method has been manually tested and correctly identifies the high IO volumes on our test servers.
-        if ( SystemUtils.IS_OS_MAC )
-        {
-            // Most macs have flash storage, so let's assume true for them.
-            return true;
-        }
-
-        if ( SystemUtils.IS_OS_LINUX )
+       if ( SystemUtils.IS_OS_LINUX )
         {
             try
             {
@@ -519,13 +510,18 @@ public class FileUtils
                     }
                 }
             }
-            catch ( Exception e )
+            catch ( Exception ignored )
             {
-                return defaultHunch;
+                // This Linux system apparently has an unfamiliar storage configuration.
+                // Let's just assume that whatever is going on here, it's probably fast.
+                return true;
             }
         }
 
-        return defaultHunch;
+        // Most systems that are not running Linux, will be either MacOS or Windows, and those are likely to be laptops.
+        // Nearly all modern laptops have SSDs as their primary storage, and in any case won't be doing performance critical work.
+        // So we just assume that all non-Linux systems have high IO.
+        return true;
     }
 
     private static Path rotationalPathFor( Path deviceName )
