@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -273,6 +274,23 @@ class IdRangeMarkerTest
             }
         } );
         assertEquals( expectedIds, deletedIdsInTree );
+    }
+
+    @Test
+    void shouldBatchWriteIdBridging()
+    {
+        // given
+        Writer<IdRangeKey,IdRange> writer = mock( Writer.class );
+        try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, writer, mock( Lock.class ), IdRangeMerger.DEFAULT, true,
+                new AtomicBoolean(), 1, new AtomicLong( 0 ), true ) )
+        {
+            // when
+            marker.markDeleted( 10 );
+        }
+
+        // then
+        // one time for the bridging and one time for the delete
+        verify( writer, times( 2 ) ).merge( any(), any(), any() );
     }
 
     private ValueMerger realMergerMock()

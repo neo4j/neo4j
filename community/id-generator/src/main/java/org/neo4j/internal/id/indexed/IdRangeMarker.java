@@ -184,8 +184,13 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
 
     private void prepareRange( long id, boolean addition )
     {
-        key.setIdRangeIdx( id / idsPerEntry );
+        key.setIdRangeIdx( idRangeIndex( id ) );
         value.clear( generation, addition );
+    }
+
+    private long idRangeIndex( long id )
+    {
+        return id / idsPerEntry;
     }
 
     private int idOffset( long id )
@@ -204,20 +209,35 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
         long highestWrittenId = this.highestWrittenId.get();
         if ( bridgeIdGaps && highestWrittenId < id )
         {
+            key.setIdRangeIdx( -1 );
+            boolean dirty = false;
             while ( highestWrittenId < id - 1 )
             {
                 long bridgeId = ++highestWrittenId;
                 if ( !isReservedId( bridgeId ) )
                 {
-                    prepareRange( bridgeId, true );
+                    if ( idRangeIndex( bridgeId ) != key.getIdRangeIdx() )
+                    {
+                        if ( key.getIdRangeIdx() != -1 )
+                        {
+                            writer.merge( key, value, merger );
+                        }
+                        prepareRange( bridgeId, true );
+                    }
                     value.setCommitBit( idOffset( bridgeId ) );
                     if ( !started ) // i.e. in recovery mode
                     {
                         value.setReuseBit( idOffset( bridgeId ) );
                     }
-                    writer.merge( key, value, merger );
+                    dirty = true;
                 }
             }
+
+            if ( dirty )
+            {
+                writer.merge( key, value, merger );
+            }
+
             // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id will be written
             // so to try to isolate updates to highestWrittenId to this method we can might as well do that right here.
             this.highestWrittenId.set( id );
