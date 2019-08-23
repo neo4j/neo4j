@@ -76,7 +76,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         LAST_TRANSACTION_ID( 3, "Last committed transaction" ),
         STORE_VERSION( 4, "Store format version" ),
         // Obsolete field was used to store first graph property, keep it to avoid conflicts and migrations
-        // FIRST_GRAPH_PROPERTY( 5, "First property record containing graph properties" )
+        FIRST_GRAPH_PROPERTY( 5, "First property record containing graph properties" ),
         LAST_CONSTRAINT_TRANSACTION( 6, "Last committed transaction containing constraint changes" ),
         UPGRADE_TRANSACTION_ID( 7, "Transaction id most recent upgrade was performed at" ),
         UPGRADE_TIME( 8, "Time of last upgrade" ),
@@ -507,6 +507,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             long lastCommittedTxId = getRecordValue( cursor, Position.LAST_TRANSACTION_ID );
             lastCommittingTxField.set( lastCommittedTxId );
             storeVersionField = getRecordValue( cursor, Position.STORE_VERSION );
+            getRecordValue( cursor, Position.FIRST_GRAPH_PROPERTY );
             latestConstraintIntroducingTxField = getRecordValue( cursor, Position.LAST_CONSTRAINT_TRANSACTION );
             upgradeTxIdField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_ID );
             upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );

@@ -253,28 +253,6 @@ class TransactionApplierFacadeTest
     }
 
     @Test
-    void testVisitNeoStoreCommand() throws Exception
-    {
-// Make sure it just calls through to visit
-        Command.NeoStoreCommand cmd = mock( Command.NeoStoreCommand.class );
-        when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
-
-        // WHEN
-        boolean result = facade.visitNeoStoreCommand( cmd );
-
-        // THEN
-        InOrder inOrder = inOrder( txApplier1, txApplier2, txApplier3 );
-
-        inOrder.verify( txApplier1 ).visitNeoStoreCommand( cmd );
-        inOrder.verify( txApplier2 ).visitNeoStoreCommand( cmd );
-        inOrder.verify( txApplier3 ).visitNeoStoreCommand( cmd );
-
-        inOrder.verifyNoMoreInteractions();
-
-        assertFalse( result );
-    }
-
-    @Test
     void testVisitNodeCountsCommand() throws Exception
     {
         Command.NodeCountsCommand cmd = mock( Command.NodeCountsCommand.class );

@@ -34,7 +34,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -107,9 +106,6 @@ public interface ConsistencyReport
 
         @Documented( "The referenced property is owned by another Relationship." )
         void multipleOwners( RelationshipRecord relationship );
-
-        @Documented( "The referenced property is owned by the neo store (graph global property)." )
-        void multipleOwners( NeoStoreRecord neoStore );
 
         @Documented( "The property chain contains multiple properties that have the same property key id, " +
                 "which means that the entity has at least one duplicate property." )

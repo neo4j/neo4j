@@ -356,9 +356,10 @@ public abstract class Command implements StorageCommand
 
     // Command that was used for graph properties.
     // Here only for compatibility reasons for older versions (before 4.0)
+    @Deprecated( forRemoval = true )
     public static class NeoStoreCommand extends BaseCommand<NeoStoreRecord>
     {
-        public NeoStoreCommand( NeoStoreRecord before, NeoStoreRecord after )
+        NeoStoreCommand( NeoStoreRecord before, NeoStoreRecord after )
         {
             super( before, after );
         }
@@ -366,7 +367,7 @@ public abstract class Command implements StorageCommand
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
-            return handler.visitNeoStoreCommand( this );
+            return false;
         }
 
         @Override

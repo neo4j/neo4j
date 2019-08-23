@@ -31,7 +31,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -354,28 +353,6 @@ class PhysicalLogCommandReaderV4_0Test
         assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
         assertTrue( relationshipGroupCommand.getBefore().isUseFixedReferences() );
         assertTrue( relationshipGroupCommand.getAfter().isUseFixedReferences() );
-    }
-
-    @Test
-    void shouldReadNeoStoreCommand() throws Throwable
-    {
-        // Given
-        InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        NeoStoreRecord before = new NeoStoreRecord();
-        NeoStoreRecord after = new NeoStoreRecord();
-        after.setNextProp( 42 );
-
-        new Command.NeoStoreCommand( before, after ).serialize( channel );
-
-        // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
-        assertTrue( command instanceof Command.NeoStoreCommand);
-
-        Command.NeoStoreCommand neoStoreCommand = (Command.NeoStoreCommand) command;
-
-        // Then
-        assertBeforeAndAfterEquals( neoStoreCommand, before, after );
     }
 
     @Test

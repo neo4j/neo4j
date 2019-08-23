@@ -37,11 +37,6 @@ public class ResourceIds
         return indexEntryResourceId_4_x( labelId, predicates );
     }
 
-    public static long graphPropertyResource()
-    {
-        return 0L;
-    }
-
     /**
      * Produces a 64-bit hashcode for strings that are used as names of schema entities, like indexes and constraints.
      * @param schemaName The name to compute a hash code for.

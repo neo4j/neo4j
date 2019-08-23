@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import java.io.IOException;
 
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
-import org.neo4j.internal.recordstorage.Command.NeoStoreCommand;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
@@ -55,8 +54,6 @@ public interface CommandVisitor
     boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException;
 
     boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException;
-
-    boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException;
 
     boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException;
 
@@ -113,12 +110,6 @@ public interface CommandVisitor
 
         @Override
         public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
-        {
-            return false;
-        }
-
-        @Override
-        public boolean visitNeoStoreCommand( NeoStoreCommand command )
         {
             return false;
         }

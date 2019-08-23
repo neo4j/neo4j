@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -90,11 +89,6 @@ public class TransactionWriter
         RelationshipTypeTokenRecord after = withName( new RelationshipTypeTokenRecord( id ), dynamicIds, relType );
         after.setInternal( internal );
         otherCommands.add( new Command.RelationshipTypeTokenCommand( before, after ) );
-    }
-
-    public void update( NeoStoreRecord before, NeoStoreRecord after )
-    {
-        otherCommands.add( new Command.NeoStoreCommand( before, after ) );
     }
 
     public void update( LabelTokenRecord before, LabelTokenRecord after )
@@ -253,11 +247,6 @@ public class TransactionWriter
     public void add( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
     {
         otherCommands.add( new Command.PropertyKeyTokenCommand( before, after ) );
-    }
-
-    public void add( NeoStoreRecord before, NeoStoreRecord after )
-    {
-        otherCommands.add( new Command.NeoStoreCommand( before, after ) );
     }
 
     public void incrementNodeCount( int labelId, long delta )

@@ -26,7 +26,7 @@ public interface NeoCommandType
     byte REL_COMMAND = (byte) 3;
     byte REL_TYPE_COMMAND = (byte) 4;
     byte PROP_INDEX_COMMAND = (byte) 5;
-    byte NEOSTORE_COMMAND = (byte) 6;
+    byte NEOSTORE_COMMAND = (byte) 6; // Command type of graph property commands. No longer used as of 4.0.
     byte LEGACY_SCHEMA_RULE_COMMAND = (byte) 7; // Command type of previous (legacy) schema commands. No longer used as of 4.0. Use SCHEMA_RULE_COMMAND instead.
     byte LABEL_KEY_COMMAND = (byte) 8;
     byte REL_GROUP_COMMAND = (byte) 9;

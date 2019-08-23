@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -93,7 +92,6 @@ public class TransactionRecordState implements RecordState
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
 
-    private RecordChanges<NeoStoreRecord, Void> neoStoreRecord;
     private boolean prepared;
 
     TransactionRecordState(
@@ -125,8 +123,7 @@ public class TransactionRecordState implements RecordState
     @Override
     public boolean hasChanges()
     {
-        return recordChangeSet.hasChanges() ||
-                (neoStoreRecord != null && neoStoreRecord.changeSize() > 0);
+        return recordChangeSet.hasChanges();
     }
 
     @Override
@@ -136,8 +133,7 @@ public class TransactionRecordState implements RecordState
 
         integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
 
-        int noOfCommands = recordChangeSet.changeSize() +
-                           (neoStoreRecord != null ? neoStoreRecord.changeSize() : 0);
+        int noOfCommands = recordChangeSet.changeSize();
 
         for ( RecordProxy<LabelTokenRecord, Void> record : recordChangeSet.getLabelTokenChanges().changes() )
         {
@@ -241,14 +237,6 @@ public class TransactionRecordState implements RecordState
         addFiltered( commands, Mode.CREATE, propCommands, relCommands, relGroupCommands, nodeCommands );
         addFiltered( commands, Mode.UPDATE, propCommands, relCommands, relGroupCommands, nodeCommands );
         addFiltered( commands, Mode.DELETE, relCommands, relGroupCommands, nodeCommands );
-
-        if ( neoStoreRecord != null )
-        {
-            for ( RecordProxy<NeoStoreRecord, Void> change : neoStoreRecord.changes() )
-            {
-                commands.add( new Command.NeoStoreCommand( change.getBefore(), change.forReadingData() ) );
-            }
-        }
 
         EnumMap<Mode,List<Command>> schemaChangeByMode = new EnumMap<>( Mode.class );
         for ( RecordProxy<SchemaRecord,SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )

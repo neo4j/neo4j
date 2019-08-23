@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -83,8 +82,6 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             return visitRelationshipTypeTokenCommand( channel );
         case NeoCommandType.LABEL_KEY_COMMAND:
             return visitLabelTokenCommand( channel );
-        case NeoCommandType.NEOSTORE_COMMAND:
-            return visitNeoStoreCommand( channel );
         case NeoCommandType.REL_GROUP_COMMAND:
             return visitRelationshipGroupCommand( channel );
         case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
@@ -566,21 +563,6 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         default:
             throw new IOException( "Unknown schema map value type: " + type );
         } // switch clause
-    }
-
-    private Command visitNeoStoreCommand( ReadableChannel channel ) throws IOException
-    {
-        NeoStoreRecord before = readNeoStoreRecord( channel );
-        NeoStoreRecord after = readNeoStoreRecord( channel );
-        return new Command.NeoStoreCommand( before, after );
-    }
-
-    private NeoStoreRecord readNeoStoreRecord( ReadableChannel channel ) throws IOException
-    {
-        long nextProp = channel.getLong();
-        NeoStoreRecord record = new NeoStoreRecord();
-        record.setNextProp( nextProp );
-        return record;
     }
 
     private NodeRecord readNodeRecord( long id, ReadableChannel channel ) throws IOException

@@ -23,7 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -49,10 +48,6 @@ public abstract class PrimitiveRecordCheck
                 else if ( other instanceof RelationshipRecord )
                 {
                     engine.report().multipleOwners( (RelationshipRecord) other );
-                }
-                else if ( other instanceof NeoStoreRecord )
-                {
-                    engine.report().multipleOwners( (NeoStoreRecord) other );
                 }
             };
 

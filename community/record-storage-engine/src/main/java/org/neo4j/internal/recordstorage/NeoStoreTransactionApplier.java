@@ -170,12 +170,6 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         }
     }
 
-    @Override
-    public boolean visitNeoStoreCommand( Command.NeoStoreCommand command )
-    {
-        return false;
-    }
-
     private <RECORD extends AbstractBaseRecord> void updateStore( CommonAbstractStore<RECORD,?> store, BaseCommand<RECORD> command )
     {
         store.updateRecord( selectRecordByCommandVersion( command ), idUpdateListener );

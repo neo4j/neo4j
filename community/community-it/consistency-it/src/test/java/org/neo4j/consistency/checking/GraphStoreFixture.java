@@ -69,7 +69,6 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -527,11 +526,6 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         {
             writer.relationshipType( id, relationshipType, internal, dynIds( id, relTypeDynIds, relationshipType ) );
             tokenHolders.relationshipTypeTokens().addToken( new NamedToken( relationshipType, id ) );
-        }
-
-        public void update( NeoStoreRecord before, NeoStoreRecord after )
-        {
-            writer.update( before, after );
         }
 
         public void create( NodeRecord node )

@@ -63,8 +63,6 @@ class LogTruncationTest
     {
         NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
-        permutations.put( Command.NeoStoreCommand.class,
-                new Command[] { new Command.NeoStoreCommand( new NeoStoreRecord(), after ) } );
         permutations.put( Command.NodeCommand.class, new Command[] { new Command.NodeCommand(
                 new NodeRecord( 12L, false, 13L, 13L ), new NodeRecord( 0, false, 0, 0 ) ) } );
         permutations.put( Command.RelationshipCommand.class,
@@ -123,10 +121,13 @@ class LogTruncationTest
                 {
                     commands.addAll( asList( permutations.get( cmd ) ) );
                 }
-                else if ( !isAbstract( cmd.getModifiers() ) )
+                else if ( !Command.NeoStoreCommand.class.equals( cmd ) )
                 {
-                    throw new AssertionError( "Unknown command type: " + cmd + ", please add missing instantiation to "
-                            + "test serialization of this command." );
+                    if ( !isAbstract( cmd.getModifiers() ) )
+                    {
+                        throw new AssertionError(
+                                "Unknown command type: " + cmd + ", please add missing instantiation to " + "test serialization of this command." );
+                    }
                 }
             }
         }

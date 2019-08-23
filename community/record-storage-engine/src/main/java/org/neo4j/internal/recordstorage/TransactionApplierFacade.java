@@ -112,12 +112,6 @@ public class TransactionApplierFacade implements TransactionApplier
     }
 
     @Override
-    public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
-    {
-        return visit( command );
-    }
-
-    @Override
     public boolean visitNodeCountsCommand( Command.NodeCountsCommand command ) throws IOException
     {
         return visit( command );
