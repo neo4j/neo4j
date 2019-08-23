@@ -42,7 +42,6 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.LabelTokenConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.NeoStoreConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistencyReport;
@@ -66,7 +65,6 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -205,13 +203,6 @@ public class ExecutionOrderIntegrationTest
                 RecordCheck<REC, REP> checker )
         {
             return new LoggingChecker<>( checker, log );
-        }
-
-        @Override
-        public OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> decorateNeoStoreChecker(
-                OwningRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> checker )
-        {
-            return logging( checker );
         }
 
         @Override

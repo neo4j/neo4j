@@ -30,7 +30,6 @@ import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -46,7 +45,6 @@ import static org.neo4j.consistency.checking.RecordCheckTestBase.NONE;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.array;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.check;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.dummyDynamicCheck;
-import static org.neo4j.consistency.checking.RecordCheckTestBase.dummyNeoStoreCheck;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.dummyNodeCheck;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.dummyPropertyChecker;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.dummyPropertyKeyCheck;
@@ -231,35 +229,6 @@ class OwnerCheckTest
     }
 
     @Test
-    void shouldReportRelationshipWithReferenceToTheGraphGlobalChain()
-    {
-        // given
-        OwnerCheck decorator = new OwnerCheck( true );
-        RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> relationshipChecker =
-                decorator.decorateRelationshipChecker( dummyRelationshipChecker() );
-        RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> neoStoreCheck =
-                decorator.decorateNeoStoreChecker( dummyNeoStoreCheck() );
-
-        RecordAccessStub records = new RecordAccessStub();
-
-        NeoStoreRecord master = records.add( new NeoStoreRecord() );
-        master.setNextProp( 7 );
-        RelationshipRecord relationship = records.add( inUse( new RelationshipRecord( 1, 0, 1, 0 ) ) );
-        relationship.setNextProp( 7 );
-
-        // when
-        ConsistencyReport.NeoStoreConsistencyReport masterReport =
-                check( ConsistencyReport.NeoStoreConsistencyReport.class, neoStoreCheck, master, records );
-        ConsistencyReport.RelationshipConsistencyReport relationshipReport =
-                check( ConsistencyReport.RelationshipConsistencyReport.class,
-                       relationshipChecker, relationship, records );
-
-        // then
-        verifyZeroInteractions( masterReport );
-        verify( relationshipReport ).multipleOwners( master );
-    }
-
-    @Test
     void shouldReportNodeWithSamePropertyChainAsRelationship()
     {
         // given
@@ -285,89 +254,6 @@ class OwnerCheckTest
         // then
         verifyZeroInteractions( relationshipReport );
         verify( nodeReport ).multipleOwners( relationship );
-    }
-
-    @Test
-    void shouldReportNodeWithReferenceToTheGraphGlobalChain()
-    {
-        // given
-        OwnerCheck decorator = new OwnerCheck( true );
-        RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeChecker =
-                decorator.decorateNodeChecker( dummyNodeCheck() );
-        RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> neoStoreCheck =
-                decorator.decorateNeoStoreChecker( dummyNeoStoreCheck() );
-
-        RecordAccessStub records = new RecordAccessStub();
-
-        NodeRecord node = records.add( inUse( new NodeRecord( 1, false, NONE, 7 ) ) );
-        NeoStoreRecord master = records.add( new NeoStoreRecord() );
-        master.setNextProp( node.getNextProp() );
-
-        // when
-        ConsistencyReport.NeoStoreConsistencyReport masterReport =
-                check( ConsistencyReport.NeoStoreConsistencyReport.class, neoStoreCheck, master, records );
-        ConsistencyReport.NodeConsistencyReport nodeReport =
-                check( ConsistencyReport.NodeConsistencyReport.class, nodeChecker, node, records );
-
-        // then
-        verifyZeroInteractions( masterReport );
-        verify( nodeReport ).multipleOwners( master );
-    }
-
-    @Test
-    void shouldReportNodeStoreReferencingSameChainAsNode()
-    {
-        // given
-        OwnerCheck decorator = new OwnerCheck( true );
-        RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeChecker =
-                decorator.decorateNodeChecker( dummyNodeCheck() );
-        RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> neoStoreCheck =
-                decorator.decorateNeoStoreChecker( dummyNeoStoreCheck() );
-
-        RecordAccessStub records = new RecordAccessStub();
-
-        NodeRecord node = records.add( inUse( new NodeRecord( 1, false, NONE, 7 ) ) );
-        NeoStoreRecord master = records.add( new NeoStoreRecord() );
-        master.setNextProp( node.getNextProp() );
-
-        // when
-        ConsistencyReport.NodeConsistencyReport nodeReport =
-                check( ConsistencyReport.NodeConsistencyReport.class, nodeChecker, node, records );
-        ConsistencyReport.NeoStoreConsistencyReport masterReport =
-                check( ConsistencyReport.NeoStoreConsistencyReport.class, neoStoreCheck, master, records );
-
-        // then
-        verifyZeroInteractions( nodeReport );
-        verify( masterReport ).multipleOwners( node );
-    }
-
-    @Test
-    void shouldReportNodeStoreReferencingSameChainAsRelationship()
-    {
-        // given
-        OwnerCheck decorator = new OwnerCheck( true );
-        RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> relationshipChecker =
-                decorator.decorateRelationshipChecker( dummyRelationshipChecker() );
-        RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> neoStoreCheck =
-                decorator.decorateNeoStoreChecker( dummyNeoStoreCheck() );
-
-        RecordAccessStub records = new RecordAccessStub();
-
-        NeoStoreRecord master = records.add( new NeoStoreRecord() );
-        master.setNextProp( 7 );
-        RelationshipRecord relationship = records.add( inUse( new RelationshipRecord( 1, 0, 1, 0 ) ) );
-        relationship.setNextProp( 7 );
-
-        // when
-        ConsistencyReport.RelationshipConsistencyReport relationshipReport =
-                check( ConsistencyReport.RelationshipConsistencyReport.class,
-                       relationshipChecker, relationship, records );
-        ConsistencyReport.NeoStoreConsistencyReport masterReport =
-                check( ConsistencyReport.NeoStoreConsistencyReport.class, neoStoreCheck, master, records );
-
-        // then
-        verifyZeroInteractions( relationshipReport );
-        verify( masterReport ).multipleOwners( relationship );
     }
 
     @Test
@@ -446,35 +332,6 @@ class OwnerCheckTest
         // then
         verifyNoMoreInteractions( report );
         verifyNoMoreInteractions( relationshipReport );
-    }
-
-    @Test
-    void shouldNotReportOrphanIfOwnedByNeoStore()
-    {
-        // given
-        RecordAccessStub records = new RecordAccessStub();
-        OwnerCheck decorator = new OwnerCheck( true );
-
-        PropertyRecord record = inUse( new PropertyRecord( 42 ) );
-        ConsistencyReport.PropertyConsistencyReport report =
-                check( ConsistencyReport.PropertyConsistencyReport.class,
-                       decorator.decoratePropertyChecker( dummyPropertyChecker() ),
-                       record, records );
-        NeoStoreRecord master = inUse( new NeoStoreRecord() );
-        master.setNextProp( 42 );
-        ConsistencyReport.NeoStoreConsistencyReport masterReport =
-                check( ConsistencyReport.NeoStoreConsistencyReport.class,
-                       decorator.decorateNeoStoreChecker( dummyNeoStoreCheck() ),
-                       master, records );
-
-        // when
-        decorator.scanForOrphanChains( ProgressMonitorFactory.NONE );
-
-        records.checkDeferred();
-
-        // then
-        verifyNoMoreInteractions( report );
-        verifyNoMoreInteractions( masterReport );
     }
 
     @Test
