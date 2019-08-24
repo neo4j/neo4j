@@ -351,6 +351,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case Limit(_, count, DoNotIncludeTies) =>
         PlanDescriptionImpl(id, name = "Limit", children, Seq(Expression(count)), variables)
 
+      case CacheProperties(_, properties) =>
+        PlanDescriptionImpl(id, "CacheProperties", children, properties.toSeq.map(Expression(_)), variables)
+
       case LockNodes(_, nodesToLock) =>
         PlanDescriptionImpl(id, name = "LockNodes", children, Seq(KeyNames(nodesToLock.toSeq)), variables)
 
