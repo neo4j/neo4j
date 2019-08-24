@@ -79,9 +79,9 @@ final class ThreadPool
         return new PooledJobHandle( future, registryKey, registry );
     }
 
-    boolean hasThreads()
+    int activeThreadCount()
     {
-        return threadFactory.getThreadGroup().activeCount() > 0;
+        return threadFactory.getThreadGroup().activeCount();
     }
 
     void cancelAllJobs()

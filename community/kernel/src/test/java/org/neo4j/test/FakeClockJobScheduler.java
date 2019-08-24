@@ -20,14 +20,15 @@
 package org.neo4j.test;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
+import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
@@ -156,9 +157,9 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public List<Group> activeGroups()
+    public Stream<ActiveGroup> activeGroups()
     {
-        return List.of();
+        return Stream.empty();
     }
 
     @Override

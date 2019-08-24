@@ -19,11 +19,11 @@
  */
 package org.neo4j.scheduler;
 
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -94,8 +94,8 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
     JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
 
     /**
-     * Produce a list of groups that have active threads running.
-     * @return A list of active scheduling groups.
+     * Return a stream of all active scheduling groups.
+     * @return all active groups.
      */
-    List<Group> activeGroups();
+    Stream<ActiveGroup> activeGroups();
 }

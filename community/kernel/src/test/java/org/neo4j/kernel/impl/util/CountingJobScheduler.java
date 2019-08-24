@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
+import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -102,7 +103,7 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public List<Group> activeGroups()
+    public Stream<ActiveGroup> activeGroups()
     {
         return delegate.activeGroups();
     }

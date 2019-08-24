@@ -387,12 +387,12 @@ class CentralJobSchedulerTest
     void shouldListActiveGroups()
     {
         life.start();
-        assertEquals( List.of(), scheduler.activeGroups() );
+        assertEquals( List.of(), scheduler.activeGroups().map( ag -> ag.group ) );
 
         BinaryLatch firstLatch = new BinaryLatch();
         scheduler.schedule( Group.CHECKPOINT, firstLatch::release );
         firstLatch.await();
-        assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups() );
+        assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups().map( ag -> ag.group ) );
     }
 
     private void awaitFirstInvocation() throws InterruptedException

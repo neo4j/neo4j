@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.scheduler;
 
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -27,8 +26,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -114,7 +115,7 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
-    public List<Group> activeGroups()
+    public Stream<ActiveGroup> activeGroups()
     {
         throw new UnsupportedOperationException();
     }

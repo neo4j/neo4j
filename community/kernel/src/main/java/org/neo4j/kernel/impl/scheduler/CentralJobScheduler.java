@@ -28,10 +28,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.impl.scheduler.ThreadPool.ThreadPoolParameters;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -156,17 +158,18 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public List<Group> activeGroups()
+    public Stream<ActiveGroup> activeGroups()
     {
-        List<Group> groups = new ArrayList<>();
+        List<ActiveGroup> groups = new ArrayList<>();
         pools.forEachStarted( ( group, pool ) ->
         {
-            if ( pool.hasThreads() )
+            int activeThreadCount = pool.activeThreadCount();
+            if ( activeThreadCount > 0 )
             {
-                groups.add( group );
+                groups.add( new ActiveGroup( group, activeThreadCount ) );
             }
         } );
-        return groups;
+        return groups.stream();
     }
 
     @Override

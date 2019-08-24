@@ -160,7 +160,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         ) );
     }
 
-    private class ImmediateJobScheduler extends JobSchedulerAdapter
+    private static class ImmediateJobScheduler extends JobSchedulerAdapter
     {
         @Override
         public JobHandle schedule( Group group, Runnable job )
@@ -170,7 +170,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         }
     }
 
-    private class EvilJob implements CleanupJob
+    private static class EvilJob implements CleanupJob
     {
 
         @Override
@@ -204,7 +204,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
         }
     }
 
-    private class DummyJob implements CleanupJob
+    private static class DummyJob implements CleanupJob
     {
         private final String name;
         private final List<DummyJob> allRuns;
