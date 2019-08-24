@@ -29,4 +29,9 @@ import java.util.concurrent.ThreadFactory;
  */
 public interface SchedulerThreadFactory extends ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory
 {
+    /**
+     * Get the {@link ThreadGroup} instance that all threads from this thread factory are allocated within.
+     * @return The {@link ThreadGroup} for this thread factory.
+     */
+    ThreadGroup getThreadGroup();
 }

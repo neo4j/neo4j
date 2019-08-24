@@ -26,39 +26,44 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.SchedulerThreadFactory;
 
-final class GroupedDaemonThreadFactory implements SchedulerThreadFactory
+public class GroupedDaemonThreadFactory implements SchedulerThreadFactory
 {
-    private final Group group;
-    private final ThreadGroup threadGroup;
+    protected final Group group;
+    protected final ThreadGroup threadGroup;
 
-    GroupedDaemonThreadFactory( Group group, ThreadGroup parentThreadGroup )
+    protected GroupedDaemonThreadFactory( Group group, ThreadGroup parentThreadGroup )
     {
         this.group = group;
         threadGroup = new ThreadGroup( parentThreadGroup, group.groupName() );
     }
 
     @Override
-    public Thread newThread( @SuppressWarnings( "NullableProblems" ) Runnable job )
+    public Thread newThread( Runnable job )
     {
         Thread thread = new Thread( threadGroup, job, group.threadName() )
         {
             @Override
             public String toString()
             {
-                StringBuilder sb = new StringBuilder( "Thread[" ).append( getName() );
-                ThreadGroup group = getThreadGroup();
-                String sep = ", in ";
-                while ( group != null )
-                {
-                    sb.append( sep ).append( group.getName() );
-                    group = group.getParent();
-                    sep = "/";
-                }
-                return sb.append( ']' ).toString();
+                return threadToString( this );
             }
         };
         thread.setDaemon( true );
         return thread;
+    }
+
+    protected static String threadToString( Thread thread )
+    {
+        StringBuilder sb = new StringBuilder( "Thread[" ).append( thread.getName() );
+        ThreadGroup group = thread.getThreadGroup();
+        String sep = ", in ";
+        while ( group != null )
+        {
+            sb.append( sep ).append( group.getName() );
+            group = group.getParent();
+            sep = "/";
+        }
+        return sb.append( ']' ).toString();
     }
 
     @Override
@@ -85,5 +90,11 @@ final class GroupedDaemonThreadFactory implements SchedulerThreadFactory
         ForkJoinWorkerThread worker = reference.get();
         worker.setName( group.threadName() );
         return worker;
+    }
+
+    @Override
+    public ThreadGroup getThreadGroup()
+    {
+        return threadGroup;
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -152,6 +153,12 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
             processSchedule();
         }
         return handle;
+    }
+
+    @Override
+    public List<Group> activeGroups()
+    {
+        return List.of();
     }
 
     @Override

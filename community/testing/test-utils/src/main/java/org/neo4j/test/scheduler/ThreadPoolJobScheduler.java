@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.scheduler;
 
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -108,6 +109,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
 
     @Override
     public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<Group> activeGroups()
     {
         throw new UnsupportedOperationException();
     }

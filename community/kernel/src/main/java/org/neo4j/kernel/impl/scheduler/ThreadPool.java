@@ -50,7 +50,7 @@ final class ThreadPool
         registry = new ConcurrentHashMap<>();
     }
 
-    public ThreadFactory getThreadFactory()
+    ThreadFactory getThreadFactory()
     {
         return threadFactory;
     }
@@ -77,6 +77,11 @@ final class ThreadPool
         Future<?> future = executor.submit( registeredJob );
         registry.put( registryKey, future );
         return new PooledJobHandle( future, registryKey, registry );
+    }
+
+    boolean hasThreads()
+    {
+        return threadFactory.getThreadGroup().activeCount() > 0;
     }
 
     void cancelAllJobs()

@@ -19,6 +19,7 @@
  */
 package org.neo4j.scheduler;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -91,4 +92,10 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
 
     /** Schedule a recurring job where the first invocation is delayed the specified time */
     JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
+
+    /**
+     * Produce a list of groups that have active threads running.
+     * @return A list of active scheduling groups.
+     */
+    List<Group> activeGroups();
 }

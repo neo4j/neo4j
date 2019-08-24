@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.scheduler;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.scheduler.Group;
@@ -56,13 +57,24 @@ final class ThreadPoolManager
         }
     }
 
+    synchronized void forEachStarted( BiConsumer<Group, ThreadPool> consumer )
+    {
+        assertNotShutDown();
+        pools.forEach( consumer );
+    }
+
     private synchronized ThreadPool createThreadPool( Group group, ThreadPool.ThreadPoolParameters parameters )
+    {
+        assertNotShutDown();
+        return new ThreadPool( group, topLevelGroup, requireNonNullElseGet( parameters, ThreadPool.ThreadPoolParameters::new ) );
+    }
+
+    private void assertNotShutDown()
     {
         if ( shutdown )
         {
             throw new IllegalStateException( "ThreadPoolManager is shutdown." );
         }
-        return new ThreadPool( group, topLevelGroup, requireNonNullElseGet( parameters, ThreadPool.ThreadPoolParameters::new ) );
     }
 
     synchronized InterruptedException shutDownAll()

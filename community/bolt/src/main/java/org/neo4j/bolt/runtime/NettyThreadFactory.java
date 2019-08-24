@@ -24,21 +24,17 @@ import io.netty.util.concurrent.FastThreadLocalThread;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 
+import org.neo4j.kernel.impl.scheduler.GroupedDaemonThreadFactory;
 import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.SchedulerThreadFactory;
 
 /**
  * Factory for providing {@link FastThreadLocalThread}s for netty to allow faster access and cleanup.
  */
-public class NettyThreadFactory implements SchedulerThreadFactory
+public class NettyThreadFactory extends GroupedDaemonThreadFactory
 {
-    private final Group group;
-    private final ThreadGroup threadGroup;
-
     public NettyThreadFactory( Group group, ThreadGroup parentThreadGroup )
     {
-        this.group = group;
-        threadGroup = new ThreadGroup( parentThreadGroup, group.groupName() );
+        super( group, parentThreadGroup );
     }
 
     @Override
@@ -48,23 +44,14 @@ public class NettyThreadFactory implements SchedulerThreadFactory
     }
 
     @Override
-    public Thread newThread( @SuppressWarnings( "NullableProblems" ) Runnable r )
+    public Thread newThread( Runnable r )
     {
         return new FastThreadLocalThread( threadGroup, r, group.threadName() )
         {
             @Override
             public String toString()
             {
-                StringBuilder sb = new StringBuilder( "Thread[" ).append( getName() );
-                ThreadGroup group = getThreadGroup();
-                String sep = ", in ";
-                while ( group != null )
-                {
-                    sb.append( sep ).append( group.getName() );
-                    group = group.getParent();
-                    sep = "/";
-                }
-                return sb.append( ']' ).toString();
+                return threadToString( this );
             }
         };
     }

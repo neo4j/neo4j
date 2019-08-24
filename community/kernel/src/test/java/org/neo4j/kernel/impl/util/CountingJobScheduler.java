@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +99,12 @@ public class CountingJobScheduler implements JobScheduler
     {
         counter.getAndIncrement();
         return delegate.scheduleRecurring( group, runnable, initialDelay, period, timeUnit );
+    }
+
+    @Override
+    public List<Group> activeGroups()
+    {
+        return delegate.activeGroups();
     }
 
     @Override

@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.scheduler;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
@@ -151,6 +153,20 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     {
         return scheduler.submit(
                 group, runnable, unit.toNanos( initialDelay ), unit.toNanos( period ) );
+    }
+
+    @Override
+    public List<Group> activeGroups()
+    {
+        List<Group> groups = new ArrayList<>();
+        pools.forEachStarted( ( group, pool ) ->
+        {
+            if ( pool.hasThreads() )
+            {
+                groups.add( group );
+            }
+        } );
+        return groups;
     }
 
     @Override

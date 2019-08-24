@@ -53,6 +53,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -84,7 +85,7 @@ class CentralJobSchedulerTest
     // Tests schedules a recurring job to run 5 times with 100ms in between.
     // The timeout of 10s should be enough.
     @Test
-    void shouldRunRecurringJob() throws Throwable
+    void shouldRunRecurringJob()
     {
         assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
         {
@@ -219,7 +220,7 @@ class CentralJobSchedulerTest
     }
 
     @Test
-    void waitTerminationOnDelayedJobMustWaitUntilJobCompletion() throws Exception
+    void waitTerminationOnDelayedJobMustWaitUntilJobCompletion()
     {
         assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
         {
@@ -240,7 +241,7 @@ class CentralJobSchedulerTest
     }
 
     @Test
-    void scheduledTasksThatThrowsMustPropagateException() throws Exception
+    void scheduledTasksThatThrowsMustPropagateException()
     {
         assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
         {
@@ -261,7 +262,7 @@ class CentralJobSchedulerTest
     }
 
     @Test
-    void scheduledTasksThatThrowsShouldStop() throws Exception
+    void scheduledTasksThatThrowsShouldStop()
     {
         assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
         {
@@ -380,6 +381,18 @@ class CentralJobSchedulerTest
         scheduler.threadFactory( Group.BOLT_WORKER );
         assertThrows( IllegalStateException.class, () -> scheduler.setParallelism( Group.BOLT_WORKER, 2 ) );
         assertThrows( IllegalStateException.class, () -> scheduler.setThreadFactory( Group.BOLT_WORKER, ( a, b ) -> mock( SchedulerThreadFactory.class ) ) );
+    }
+
+    @Test
+    void shouldListActiveGroups()
+    {
+        life.start();
+        assertEquals( List.of(), scheduler.activeGroups() );
+
+        BinaryLatch firstLatch = new BinaryLatch();
+        scheduler.schedule( Group.CHECKPOINT, firstLatch::release );
+        firstLatch.await();
+        assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups() );
     }
 
     private void awaitFirstInvocation() throws InterruptedException
