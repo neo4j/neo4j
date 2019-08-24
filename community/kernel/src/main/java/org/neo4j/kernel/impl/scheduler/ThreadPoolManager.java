@@ -49,9 +49,14 @@ final class ThreadPoolManager
         return pools.computeIfAbsent( group, g -> createThreadPool( g, parameters ) );
     }
 
+    boolean isStarted( Group group )
+    {
+        return pools.containsKey( group );
+    }
+
     void assumeNotStarted( Group group )
     {
-        if ( pools.containsKey( group ) )
+        if ( !isStarted( group ) )
         {
             throw new IllegalStateException( group.groupName() + " is already been started. " );
         }

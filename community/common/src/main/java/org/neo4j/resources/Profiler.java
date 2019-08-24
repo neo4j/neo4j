@@ -26,7 +26,7 @@ import java.io.PrintStream;
  * <p>
  * The profiler is created with the {@link #profiler()} method, and is ready to use. Threads are profiled individually, and profiling is started with the
  * {@link #profile()} family of methods. Profiling can be selectively stopped by closing the returned {@link ProfiledInterval} instance. When you are done
- * collecting profiling data, call {@link #finish()}. The {@link #finish()} mehtod must be called before the profiling data can be printed, and calling
+ * collecting profiling data, call {@link #finish()}. The {@link #finish()} method must be called before the profiling data can be printed, and calling
  * {@link #finish()} will cause all on-going profiling to stop. Once the profiling has finished, the profile data can be printed with the
  * {@link #printProfile(PrintStream, String)} method.
  * <p>

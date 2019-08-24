@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -116,6 +117,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
 
     @Override
     public Stream<ActiveGroup> activeGroups()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void profileGroup( Group group, Profiler profiler )
     {
         throw new UnsupportedOperationException();
     }

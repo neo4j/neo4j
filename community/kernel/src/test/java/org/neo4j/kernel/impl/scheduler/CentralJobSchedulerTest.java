@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.SchedulerThreadFactory;
@@ -47,6 +50,7 @@ import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -393,6 +397,26 @@ class CentralJobSchedulerTest
         scheduler.schedule( Group.CHECKPOINT, firstLatch::release );
         firstLatch.await();
         assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups().map( ag -> ag.group ) );
+    }
+
+    @Test
+    void shouldProfileGroup() throws InterruptedException
+    {
+        life.start();
+        BinaryLatch checkpointLatch = new BinaryLatch();
+        scheduler.schedule( Group.CHECKPOINT, checkpointLatch::await );
+        Profiler profiler = Profiler.profiler();
+        scheduler.profileGroup( Group.CHECKPOINT, profiler );
+        Thread.sleep( 1000 );
+        checkpointLatch.release();
+        profiler.finish();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream out = new PrintStream( baos );
+        profiler.printProfile( out, "Test Title" );
+        out.flush();
+
+        assertThat( baos.toString(), containsString( "BinaryLatch.await" ) );
     }
 
     private void awaitFirstInvocation() throws InterruptedException

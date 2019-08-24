@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -82,6 +85,16 @@ final class ThreadPool
     int activeThreadCount()
     {
         return threadFactory.getThreadGroup().activeCount();
+    }
+
+    Stream<Thread> activeThreads()
+    {
+        ThreadGroup threadGroup = threadFactory.getThreadGroup();
+        int activeCountEstimate = threadGroup.activeCount();
+        int activeCountFudge = Math.max( (int) Math.sqrt( activeCountEstimate ), 10 );
+        Thread[] snapshot = new Thread[activeCountEstimate + activeCountFudge];
+        threadGroup.enumerate( snapshot );
+        return Arrays.stream( snapshot ).filter( Objects::nonNull );
     }
 
     void cancelAllJobs()
