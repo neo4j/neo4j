@@ -31,7 +31,7 @@ import java.util.concurrent.locks.LockSupport;
 
 class SamplingProfiler implements Profiler
 {
-    private static final long DEFAULT_SAMPLE_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos( 1 );
+    private static final long DEFAULT_SAMPLE_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos( 20 );
 
     private final ConcurrentLinkedQueue<Thread> samplerThreads = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean stopped = new AtomicBoolean();
@@ -65,7 +65,7 @@ class SamplingProfiler implements Profiler
         out.println( "### " + profileTitle );
         if ( underSampling.get() > 0 )
         {
-            long allSamplesTotal = samples.reduceToLong( Long.MAX_VALUE, ( thread, sample ) -> sample.get(), 0, ( a, b ) -> a + b );
+            long allSamplesTotal = samples.reduceToLong( Long.MAX_VALUE, ( thread, sample ) -> sample.get(), 0, Long::sum );
             out.println( "Info: Did not achieve target sampling frequency. " + underSampling + " of " + allSamplesTotal + " samples were delayed." );
         }
         for ( Map.Entry<Thread,Sample> entry : samples.entrySet() )
