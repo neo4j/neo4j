@@ -56,7 +56,7 @@ final class ThreadPoolManager
 
     void assumeNotStarted( Group group )
     {
-        if ( !isStarted( group ) )
+        if ( isStarted( group ) )
         {
             throw new IllegalStateException( group.groupName() + " is already been started. " );
         }
