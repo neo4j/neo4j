@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.logical.builder.TokenResolver
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
-import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput, QueryStatistics}
+import org.neo4j.cypher.internal.runtime.{InputDataStream, InputDataStreamTestSupport, NoInput, QueryStatistics}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, ExecutionPlan, LogicalQuery, RuntimeContext}
@@ -63,6 +62,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                                            workloadMode: Boolean = false)
   extends CypherFunSuite
   with AstConstructionTestSupport
+  with InputDataStreamTestSupport
   with BeforeAndAfterEach
   with TokenResolver {
 
@@ -216,111 +216,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
         return
     }
     fail(s"${condition.errorMsg} in $nAttempts attempts!")
-  }
-
-  // INPUT
-
-  val NO_INPUT = new InputValues
-
-  def inputValues(rows: Array[Any]*): InputValues =
-    new InputValues().and(rows: _*)
-
-  def batchedInputValues(batchSize: Int, rows: Array[Any]*): InputValues = {
-    val input = new InputValues()
-    rows.grouped(batchSize).foreach(batch => input.and(batch: _*))
-    input
-  }
-
-  //noinspection ScalaUnnecessaryParentheses
-  def inputColumns(nBatches: Int, batchSize: Int, valueFunctions: (Int => Any)*): InputValues = {
-    val input = new InputValues()
-    for (batch <- 0 until nBatches) {
-      val rows = for (row <- 0 until batchSize) yield valueFunctions.map(_(batch * batchSize + row)).toArray
-      input.and(rows: _*)
-    }
-    input
-  }
-
-  def iteratorInput(batches: Iterator[Array[Any]]*): InputDataStream = {
-    new IteratorInputStream(batches.map(_.map(_.map(ValueUtils.of))): _*)
-  }
-
-  class InputValues() {
-    val batches = new ArrayBuffer[IndexedSeq[Array[Any]]]
-
-    def and(rows: Array[Any]*): InputValues = {
-      batches += rows.toIndexedSeq
-      this
-    }
-
-    def flatten: IndexedSeq[Array[Any]] =
-      batches.flatten
-
-    def stream(): BufferInputStream = new BufferInputStream(batches.map(_.map(row => row.map(ValueUtils.of))))
-  }
-
-  class BufferInputStream(data: ArrayBuffer[IndexedSeq[Array[AnyValue]]]) extends InputDataStream {
-    private val batchIndex = new AtomicInteger(0)
-
-    override def nextInputBatch(): InputCursor = {
-      val i = batchIndex.getAndIncrement()
-      if (i < data.size)
-        new BufferInputCursor(data(i))
-      else
-        null
-    }
-
-    def hasMore: Boolean = batchIndex.get() < data.size
-  }
-
-  class BufferInputCursor(data: IndexedSeq[Array[AnyValue]]) extends InputCursor {
-    private var i = -1
-
-    override def next(): Boolean = {
-      i += 1
-      i < data.size
-    }
-
-    override def value(offset: Int): AnyValue =
-      data(i)(offset)
-
-    override def close(): Unit = {}
-  }
-
-  /**
-    * Input data stream that streams data from multiple iterators, where each iterator corresponds to a batch.
-    * It does not buffer any data.
-    *
-    * @param data the iterators
-    */
-  class IteratorInputStream(data: Iterator[Array[AnyValue]]*) extends InputDataStream {
-    private val batchIndex = new AtomicInteger(0)
-    override def nextInputBatch(): InputCursor = {
-      val i = batchIndex.getAndIncrement()
-      if (i < data.size) {
-        new IteratorInputCursor(data(i))
-      } else {
-        null
-      }
-    }
-  }
-
-  class IteratorInputCursor(data: Iterator[Array[AnyValue]]) extends InputCursor {
-    private var _next: Array[AnyValue] = _
-
-    override def next(): Boolean = {
-      if (data.hasNext) {
-        _next = data.next()
-        true
-      } else {
-        _next = null
-        false
-      }
-    }
-
-    override def value(offset: Int): AnyValue = _next(offset)
-
-    override def close(): Unit = {}
   }
 
   // GRAPHS
