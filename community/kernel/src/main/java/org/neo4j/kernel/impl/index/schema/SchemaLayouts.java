@@ -33,8 +33,8 @@ import java.util.function.Function;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
 import org.neo4j.index.internal.gbptree.Meta;
-import org.neo4j.index.internal.gbptree.MetaToLayoutFactory;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -45,9 +45,9 @@ import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactor
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsReader;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-public class SchemaLayouts implements MetaToLayoutFactory
+public class SchemaLayouts implements LayoutBootstrapper
 {
-    private final List<MetaToLayoutFactory> allSchemaLayout;
+    private final List<LayoutBootstrapper> allSchemaLayout;
 
     public SchemaLayouts()
     {
@@ -72,7 +72,7 @@ public class SchemaLayouts implements MetaToLayoutFactory
     @Override
     public Layout<?,?> create( File indexFile, PageCache pageCache, Meta meta, String targetLayout ) throws IOException
     {
-        for ( MetaToLayoutFactory factory : allSchemaLayout )
+        for ( LayoutBootstrapper factory : allSchemaLayout )
         {
             final Layout<?,?> layout = factory.create( indexFile, pageCache, meta, targetLayout );
             if ( layout != null && matchingLayout( meta, layout ) )
@@ -97,7 +97,7 @@ public class SchemaLayouts implements MetaToLayoutFactory
         }
     }
 
-    private static MetaToLayoutFactory genericLayout()
+    private static LayoutBootstrapper genericLayout()
     {
         return ( indexFile, pageCache, meta, targetLayout ) ->
         {
@@ -115,7 +115,7 @@ public class SchemaLayouts implements MetaToLayoutFactory
         };
     }
 
-    private static MetaToLayoutFactory spatialLayoutFactory( CoordinateReferenceSystem crs )
+    private static LayoutBootstrapper spatialLayoutFactory( CoordinateReferenceSystem crs )
     {
         return ( indexFile, pageCache, meta, targetLayout ) -> {
             if ( targetLayout.equals( crs.getName() ) )

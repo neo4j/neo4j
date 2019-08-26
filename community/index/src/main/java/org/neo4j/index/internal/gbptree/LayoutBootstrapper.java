@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
 
-public interface MetaToLayoutFactory
+public interface LayoutBootstrapper
 {
     Layout<?,?> create( File indexFile, PageCache pageCache, Meta meta, String targetLayout ) throws IOException;
 }

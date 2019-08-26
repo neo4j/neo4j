@@ -41,13 +41,13 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 public class GBPTreeBootstrapper
 {
     private final PageCache pageCache;
-    private final MetaToLayoutFactory layoutFactory;
+    private final LayoutBootstrapper layoutBootstrapper;
     private final boolean readOnly;
 
-    public GBPTreeBootstrapper( PageCache pageCache, MetaToLayoutFactory layoutFactory, boolean readOnly )
+    public GBPTreeBootstrapper( PageCache pageCache, LayoutBootstrapper layoutBootstrapper, boolean readOnly )
     {
         this.pageCache = pageCache;
-        this.layoutFactory = layoutFactory;
+        this.layoutBootstrapper = layoutBootstrapper;
         this.readOnly = readOnly;
     }
 
@@ -63,7 +63,7 @@ public class GBPTreeBootstrapper
             TreeState state = TreeStatePair.selectNewestValidState( statePair );
 
             // Create layout and treeNode from meta
-            Layout<?,?> layout = layoutFactory.create( file, pageCache, meta, targetLayout );
+            Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta, targetLayout );
             TreeNodeSelector.Factory factory = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
             TreeNode<?,?> treeNode = factory.create( meta.getPageSize(), layout );
             GBPTree<?,?> tree =
