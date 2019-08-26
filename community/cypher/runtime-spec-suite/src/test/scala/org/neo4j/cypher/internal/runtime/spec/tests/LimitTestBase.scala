@@ -113,6 +113,24 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     input.hasMore should be(true)
   }
 
+  test("should support limit in the first of two pipelines") {
+    // given
+    val nodesPerLabel = 100
+    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expandAll("(x)-->(y)") // NOTE: This assumes Expand is a pipeline breaker
+      .limit(9)
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("y").withRows(rowCount(900))
+  }
+
   test("should support apply-limit") {
     // given
     val nodesPerLabel = 100
@@ -216,23 +234,23 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     // This is a hypothetical query used to excersise some logic
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a1")
-      .limit(2)
-      .limit(3)
-      .limit(4)
+      .limit(12)
+      .limit(13)
+      .limit(14)
       .expandAll("(b1)<--(a1)")
-      .limit(5)
-      .limit(6)
-      .limit(7)
+      .limit(15)
+      .limit(16)
+      .limit(17)
       .expandAll("(x)-->(b1)")
-      .limit(8)
-      .limit(9)
-      .limit(10)
+      .limit(18)
+      .limit(19)
+      .limit(20)
       .allNodeScan("x")
       .build()
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("a1").withRows(rowCount(2))
+    runtimeResult should beColumns("a1").withRows(rowCount(12))
   }
 
   // TODO: Bug (already tracked)
