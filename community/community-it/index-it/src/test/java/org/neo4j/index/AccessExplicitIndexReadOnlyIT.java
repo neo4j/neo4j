@@ -22,12 +22,15 @@ package org.neo4j.index;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -39,13 +42,12 @@ import static org.junit.Assert.fail;
 public class AccessExplicitIndexReadOnlyIT
 {
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule().startLazily();
+    public final DatabaseRule db = new EmbeddedDatabaseRule();
 
     @Test
     public void shouldListAndReadExplicitIndexesForReadOnlyDb() throws Exception
     {
         // given a db with some nodes and populated explicit indexes
-        db.ensureStarted();
         String key = "key";
         try ( Transaction tx = db.beginTx() )
         {
@@ -83,26 +85,37 @@ public class AccessExplicitIndexReadOnlyIT
     public void shouldNotCreateIndexesForReadOnlyDb()
     {
         // given
-        db.withSetting( GraphDatabaseSettings.read_only, TRUE.toString() );
-
-        // when
-        try ( Transaction tx = db.beginTx() )
+        final DatabaseLayout databaseLayout = db.databaseLayout();
+        // Make sure we have database to start on
+        db.shutdown();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+                .setConfig( GraphDatabaseSettings.read_only, TRUE.toString() )
+                .newGraphDatabase();
+        try
         {
-            db.index().forNodes( "NODE" );
-            fail( "Should've failed" );
+            // when
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.index().forNodes( "NODE" );
+                fail( "Should've failed" );
+            }
+            catch ( WriteOperationsNotAllowedException e )
+            {
+                // then good
+            }
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.index().forRelationships( "RELATIONSHIP" );
+                fail( "Should've failed" );
+            }
+            catch ( WriteOperationsNotAllowedException e )
+            {
+                // then good
+            }
         }
-        catch ( WriteOperationsNotAllowedException e )
+        finally
         {
-            // then good
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.index().forRelationships( "RELATIONSHIP" );
-            fail( "Should've failed" );
-        }
-        catch ( WriteOperationsNotAllowedException e )
-        {
-            // then good
+            db.shutdown();
         }
     }
 }
