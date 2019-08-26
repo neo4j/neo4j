@@ -161,8 +161,13 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     @Override
     public boolean consistencyCheck( ProxyFactory proxyFactory )
     {
-        // todo how and what do we report to reporter here?
-        return !isDirty();
+        final LuceneIndexConsistencyCheckVisitor visitor = proxyFactory.getClass( LuceneIndexConsistencyCheckVisitor.class );
+        final boolean isConsistent = !isDirty();
+        if ( !isConsistent )
+        {
+            visitor.isInconsistent( descriptor );
+        }
+        return isConsistent;
     }
 
     @Override
