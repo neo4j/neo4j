@@ -148,7 +148,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
         notificationLogger.log(MissingParametersNotification(missingParameterNames))
       }
       val reusabilityState = runtime match {
-        case m: AdministrationCommandRuntime                          =>
+        case m: AdministrationCommandRuntime =>
           if (m.isApplicableAdministrationCommand(logicalPlanState)) {
             shouldCache = false
             FineToReuse
@@ -164,7 +164,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
             }
           }
         case _ if SchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
-        case _                                                        =>
+        case _ =>
           val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
           val fingerprintReference = new PlanFingerprintReference(fingerprint)
           MaybeReusable(fingerprintReference)
