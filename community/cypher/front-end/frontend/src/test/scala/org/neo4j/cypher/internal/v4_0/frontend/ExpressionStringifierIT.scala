@@ -34,7 +34,6 @@ class ExpressionStringifierIT extends CypherFunSuite with Parser with Expression
       "(1)+2" -> "1 + 2",
       "(1+2)*3" -> "(1 + 2) * 3",
       "1+2*3" -> "1 + 2 * 3",
-      "filter(x in [1,2,3] WHERE x is not null)" -> "filter(x IN [1, 2, 3] WHERE x IS NOT NULL)",
       "collect(n)[3]" -> "collect(n)[3]",
       "collect(n)[3..4]" -> "collect(n)[3..4]",
       "collect(n)[2..]" -> "collect(n)[2..]",
@@ -62,7 +61,6 @@ class ExpressionStringifierIT extends CypherFunSuite with Parser with Expression
       "n{.*,.bar,baz:42,variable}" -> "n{.*, .bar, baz: 42, variable}",
       "n:A:B" -> "n:A:B",
       "not(true)" -> "not true",
-      "extract(x in [1,2,3] | x * 2)" -> "extract(x IN [1, 2, 3] | x * 2)",
       "case when 1 = n.prop then 1 when 2 = n.prop then 2 else 4 end" ->
         "CASE WHEN 1 = n.prop THEN 1 WHEN 2 = n.prop THEN 2 ELSE 4 END",
       "case n.prop when 1 then '1' when 2 then '2' else '4' end" ->

@@ -103,9 +103,6 @@ case class ExpressionStringifier(
       case PatternExpression(RelationshipsPattern(relChain)) =>
         patterns.apply(relChain)
 
-      case FilterExpression(scope, expression) =>
-        s"filter${prettyScope(scope, expression)}"
-
       case AnyIterablePredicate(scope, expression) =>
         s"any${prettyScope(scope, expression)}"
 
@@ -118,13 +115,6 @@ case class ExpressionStringifier(
         val e = s.extractExpression.map(ex => " | " + inner(ast)(ex)).getOrElse("")
         val expr = inner(ast)(expression)
         s"[$v IN $expr$p$e]"
-
-      case ExtractExpression(s, expression) =>
-        val v = apply(s.variable)
-        val p = s.innerPredicate.map(e => " WHERE " + inner(ast)(e)).getOrElse("")
-        val e = s.extractExpression.map(e => " | " + inner(ast)(e)).getOrElse("")
-        val expr = inner(ast)(expression)
-        s"extract($v IN $expr$p$e)"
 
       case PatternComprehension(variable, RelationshipsPattern(relChain), predicate, proj) =>
         val v = variable.map(apply).map(_ + " = ").getOrElse("")

@@ -22,27 +22,6 @@
 
 Feature: ReturnAcceptance
 
-  Scenario: Filter should work
-    Given an empty graph
-    And having executed:
-      """
-      CREATE (a {foo: 1})-[:T]->({foo: 1}),
-        (a)-[:T]->({foo: 2}),
-        (a)-[:T]->({foo: 3})
-      """
-    When executing query:
-      """
-      MATCH (a {foo: 1})
-      MATCH p=(a)-->()
-      RETURN filter(x IN nodes(p) WHERE x.foo > 2) AS n
-      """
-    Then the result should be:
-      | n            |
-      | [({foo: 3})] |
-      | []           |
-      | []           |
-    And no side effects
-
   Scenario: LIMIT 0 should stop side effects
     Given an empty graph
     When executing query:

@@ -249,21 +249,11 @@ case class AstGenerator(simpleStrings: Boolean = true) {
     innerPredicate <- option(_expression)
   } yield FilterScope(variable, innerPredicate)(pos)
 
-  def _filter: Gen[FilterExpression] = for {
-    scope <- _filterScope
-    expression <- _expression
-  } yield FilterExpression(scope, expression)(pos)
-
   def _extractScope: Gen[ExtractScope] = for {
     variable <- _variable
     innerPredicate <- option(_expression)
     extractExpression <- option(_expression)
   } yield ExtractScope(variable, innerPredicate, extractExpression)(pos)
-
-  def _extract: Gen[ExtractExpression] = for {
-    scope <- _extractScope
-    expression <- _expression
-  } yield ExtractExpression(scope, expression)(pos)
 
   def _listComprehension: Gen[ListComprehension] = for {
     scope <- _extractScope
@@ -416,8 +406,6 @@ case class AstGenerator(simpleStrings: Boolean = true) {
         lzy(_listSlice),
         lzy(_listComprehension),
         lzy(_containerIndex),
-        lzy(_extract),
-        lzy(_filter),
         lzy(_existsSubClause),
         lzy(_patternComprehension)
       )

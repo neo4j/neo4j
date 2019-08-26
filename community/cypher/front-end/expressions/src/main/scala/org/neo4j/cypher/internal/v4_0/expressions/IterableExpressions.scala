@@ -45,7 +45,6 @@ case class ExtractExpression(scope: ExtractScope, expression: Expression)(val po
 
   def variable = scope.variable
   def innerPredicate = scope.innerPredicate
-  def extractExpression = scope.extractExpression
 }
 
 object ExtractExpression {

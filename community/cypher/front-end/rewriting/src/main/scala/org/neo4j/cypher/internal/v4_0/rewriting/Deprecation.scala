@@ -75,28 +75,7 @@ object Deprecations {
         // "old name" -> "new name"
       )(CaseInsensitiveOrdered)
 
-    override val find: PartialFunction[Any, Deprecation] = {
-
-      val additionalDeprecations: PartialFunction[Any, Deprecation] = {
-
-        // extract => list comprehension
-        case e@ExtractExpression(scope, expression) =>
-          Deprecation(
-            () => ListComprehension(scope, expression)(e.position),
-            () => Some(DeprecatedFunctionNotification(e.position, "extract(...)", "[...]"))
-          )
-
-        // filter => list comprehension
-        case e@FilterExpression(scope, expression) =>
-          Deprecation(
-            () => ListComprehension(ExtractScope(scope.variable, scope.innerPredicate, None)(scope.position), expression)(e.position),
-            () => Some(DeprecatedFunctionNotification(e.position, "filter(...)", "[...]"))
-          )
-
-      }
-
-      additionalDeprecations.orElse(V1.find)
-    }
+    override val find: PartialFunction[Any, Deprecation] = V1.find
   }
 
   object CaseInsensitiveOrdered extends Ordering[String] {

@@ -56,36 +56,20 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
         }
     }
 
-    // DEPRECATED FUNCTIONS
-
-    @Test
-    void deprecatedFilter()
-    {
-        assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds",
-                                                          containsItem( deprecatedFeatureWarning ) );
-    }
-
-    @Test
-    void deprecatedExtract()
-    {
-        assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens",
-                             containsItem( deprecatedFeatureWarning ) );
-    }
+    // DEPRECATED PROCEDURE THINGS
 
     @Test
     void deprecatedProcedureCalls() throws Exception
     {
         db.getDependencyResolver().provideDependency( GlobalProcedures.class ).get().registerProcedure( TestProcedures.class );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
-                                                         {
-                                                             assertNotifications( version + "explain CALL oldProc()",
-                                                                                  containsItem( deprecatedProcedureWarning ) );
-                                                             assertNotifications( version + "explain CALL oldProc() RETURN 1",
-                                                                                  containsItem( deprecatedProcedureWarning ) );
-                                                         } );
+        {
+            assertNotifications( version + "explain CALL oldProc()",
+                    containsItem( deprecatedProcedureWarning ) );
+            assertNotifications( version + "explain CALL oldProc() RETURN 1",
+                    containsItem( deprecatedProcedureWarning ) );
+        } );
     }
-
-    // DEPRECATED PROCEDURE THINGS
 
     @Test
     void deprecatedProcedureResultField() throws Exception

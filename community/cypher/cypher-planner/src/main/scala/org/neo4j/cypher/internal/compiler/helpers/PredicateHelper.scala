@@ -44,12 +44,6 @@ object PredicateHelper {
       GreaterThan(
         FunctionInvocation(FunctionName(functions.Length.name)(e.position), e)(e.position),
         UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
-    case e: FilterExpression => GreaterThan(
-      FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
-      UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
-    case e: ExtractExpression => GreaterThan(
-      FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
-      UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
     case e: ListComprehension => GreaterThan(
       FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
       UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)

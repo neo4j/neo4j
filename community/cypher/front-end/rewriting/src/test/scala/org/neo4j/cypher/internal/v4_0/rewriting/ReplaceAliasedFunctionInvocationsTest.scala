@@ -56,25 +56,4 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
     val after = prop(function("datetime"), "epochMillis")
     rewriter(before) should equal(after)
   }
-
-  test("should rewrite extract() in V2") {
-    val before = ExtractExpression(ExtractScope(varFor("a"), None, None)(pos),
-                                   literalFloat(3.0))(pos)
-    val expected = listComprehension(varFor("a"), literalFloat(3.0), None, None)
-
-    replaceAliasedFunctionInvocations(Deprecations.V1)(before) should equal(before)
-    replaceAliasedFunctionInvocations(Deprecations.V2)(before) should equal(expected)
-  }
-
-  test("should rewrite filter() in V2") {
-    val scopePosition = InputPosition(30, 1, 31)
-    val before = FilterExpression(FilterScope(varFor("a"), Some(trueLiteral))(scopePosition),
-                                  literalFloat(3.0))(pos)
-    val expected = ListComprehension(ExtractScope(varFor("a"), Some(trueLiteral), None)(scopePosition),
-                                     literalFloat(3.0))(pos)
-
-    replaceAliasedFunctionInvocations(Deprecations.V1)(before) should equal(before)
-    replaceAliasedFunctionInvocations(Deprecations.V2)(before) should equal(expected)
-  }
-
 }

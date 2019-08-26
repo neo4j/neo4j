@@ -232,16 +232,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         // ITERABLES
 
       case x:FilterExpression =>
-        FilteringExpressions.checkPredicateDefined(x) chain
-          FilteringExpressions.semanticCheck(ctx, x) chain
-          specifyType(types(x.expression), x)
+        SemanticError("Filter is no longer supported. You can achieve the same result using list comprehension", x.position)
 
       case x:ExtractExpression =>
-        FilteringExpressions.checkPredicateNotDefined(x) chain
-          checkExtractExpressionDefined(x) chain
-          FilteringExpressions.semanticCheck(ctx, x) chain
-          checkInnerExtractExpression(x) chain
-          FilteringExpressions.failIfAggregating(x.extractExpression)
+        SemanticError("Extract is no longer supported. You can achieve the same result using list comprehension", x.position)
 
       case x:ListComprehension =>
         FilteringExpressions.semanticCheck(ctx, x) chain
@@ -627,22 +621,6 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
     stringTypes | numberTypes | listTypes | temporalTypes
   }
-
-  private def checkExtractExpressionDefined(x: ExtractExpression): SemanticCheck =
-    when (x.scope.extractExpression.isEmpty) {
-      SemanticError(s"${x.name}(...) requires '| expression' (an extract expression)", x.position)
-    }
-
-  private def checkInnerExtractExpression(x: ExtractExpression): SemanticCheck =
-    x.scope.extractExpression.fold(SemanticCheckResult.success) {
-      e => withScopedState {
-        declareVariable(x.variable, FilteringExpressions.possibleInnerTypes(x)) chain
-          check(SemanticContext.Simple, e)
-      } chain {
-        val outerTypes: TypeGenerator = types(e)(_).wrapInList
-        specifyType(outerTypes, x)
-      }
-    }
 
   private def checkInnerListComprehension(x: ListComprehension): SemanticCheck =
     x.extractExpression match {

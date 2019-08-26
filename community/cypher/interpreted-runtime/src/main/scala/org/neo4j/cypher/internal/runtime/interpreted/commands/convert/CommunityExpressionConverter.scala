@@ -105,19 +105,6 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
         .ListSlice(self.toCommandExpression(id, e.list), toCommandExpression(id, e.from, self), toCommandExpression(id, e.to, self))
       case e: ast.ContainerIndex => commandexpressions
         .ContainerIndex(self.toCommandExpression(id, e.expr), self.toCommandExpression(id, e.idx))
-      case e: ast.FilterExpression =>
-        val ev = ExpressionVariable.cast(e.scope.variable)
-        commandexpressions.FilterFunction(self.toCommandExpression(id, e.expression),
-                                          ev.name,
-                                          ev.offset,
-                                          e.innerPredicate.map(self.toCommandPredicate(id, _)).getOrElse(predicates.True()))
-
-      case e: ast.ExtractExpression =>
-        val ev = ExpressionVariable.cast(e.scope.variable)
-          commandexpressions.ExtractFunction(self.toCommandExpression(id, e.expression),
-                                             ev.name,
-                                             ev.offset,
-                                             self.toCommandExpression(id, e.scope.extractExpression.get))
 
       case e: ast.ListComprehension => listComprehension(id, e, self)
       case e: ast.AllIterablePredicate =>

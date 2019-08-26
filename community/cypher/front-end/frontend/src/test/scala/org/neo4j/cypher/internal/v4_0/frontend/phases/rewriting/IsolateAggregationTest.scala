@@ -131,18 +131,6 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       "UNWIND [1,2,3] AS a WITH collect(a) AS `  AGGREGATION44` RETURN reduce(y=0, x IN `  AGGREGATION44` | x) AS z")
   }
 
-  test("UNWIND [1,2,3] AS a RETURN filter(x IN collect(a) WHERE x <> 0) AS z") {
-    assertRewrite(
-      "UNWIND [1,2,3] AS a RETURN filter(x IN collect(a) WHERE x <> 0) AS z",
-      "UNWIND [1,2,3] AS a WITH collect(a) AS `  AGGREGATION39` RETURN filter(x IN `  AGGREGATION39` WHERE x <> 0) AS z")
-  }
-
-  test("UNWIND [1,2,3] AS a RETURN extract(x IN collect(a) | x) AS z") {
-    assertRewrite(
-      "UNWIND [1,2,3] AS a RETURN extract(x IN collect(a) | x) AS z",
-      "UNWIND [1,2,3] AS a WITH collect(a) AS `  AGGREGATION40` RETURN extract(x IN `  AGGREGATION40` | x) AS z")
-  }
-
   test("UNWIND [1,2,3] AS a RETURN [x IN collect(a) | x] AS z") {
     assertRewrite(
       "UNWIND [1,2,3] AS a RETURN [x IN collect(a) | x] AS z",

@@ -78,8 +78,6 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
   def toCommandPredicate(id: Id, in: ast.Expression): Predicate = in match {
     case e: ast.PatternExpression => predicates.NonEmpty(toCommandExpression(id, e))
-    case e: ast.FilterExpression => predicates.NonEmpty(toCommandExpression(id, e))
-    case e: ast.ExtractExpression => predicates.NonEmpty(toCommandExpression(id, e))
     case e: ast.ListComprehension => predicates.NonEmpty(toCommandExpression(id, e))
     case e => toCommandExpression(id, e) match {
       case c: Predicate => c

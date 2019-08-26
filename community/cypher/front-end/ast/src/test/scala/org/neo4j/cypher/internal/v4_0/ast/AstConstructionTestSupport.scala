@@ -192,12 +192,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def allInList(variable: LogicalVariable, collection: Expression, predicate: Expression): AllIterablePredicate =
     AllIterablePredicate(variable, collection, Some(predicate) )(pos)
 
-  def filter(variable: LogicalVariable, collection: Expression, predicate: Expression): FilterExpression =
-    FilterExpression(variable, collection, Some(predicate) )(pos)
-
-  def extract(variable: LogicalVariable, collection: Expression, extract: Expression): ExtractExpression =
-    ExtractExpression(variable, collection, None, Some(extract) )(pos)
-
   def reduce(accumulator: LogicalVariable,
              init: Expression,
              variable: LogicalVariable,
