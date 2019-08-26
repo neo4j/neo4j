@@ -68,7 +68,6 @@ public class GBPTreeStructure<KEY, VALUE>
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK ) )
             {
-                // TODO add printing of meta information here when that abstraction has been merged.
                 visitMeta( cursor, visitor );
                 visitTreeState( cursor, visitor );
             }

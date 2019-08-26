@@ -121,7 +121,6 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     {
         try
         {
-            // todo: This can not throw anymore. Only report inconsistencies
             return tree.consistencyCheck( visitor );
         }
         catch ( IOException e )

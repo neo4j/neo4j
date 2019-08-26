@@ -23,6 +23,9 @@ import java.io.File;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 
+/**
+ * The @Documented annotations are used for error messages in consistency checker.
+ */
 public interface GBPTreeConsistencyCheckVisitor<KEY>
 {
     String indexInconsistent = "Index will be excluded from further consistency checks. Index file: %s.";

@@ -32,6 +32,9 @@ import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
 import static org.neo4j.index.internal.gbptree.TreeNode.goTo;
 
+/**
+ * Use together with {@link GBPTree#corrupt(IndexCorruption)}
+ */
 public final class GBPTreeCorruption
 {
     private GBPTreeCorruption()

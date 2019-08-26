@@ -1199,7 +1199,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param printPosition whether or not to print position for each key.
      * @param printState whether or not to print the tree state.
      * @param printHeader whether or not to print header of each tree node
-     * @param printFreelist whether or not to freelist
+     * @param printFreelist whether or not to print freelist
      * @throws IOException on I/O error.
      */
     @SuppressWarnings( "SameParameterValue" )
