@@ -49,43 +49,43 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   // CREATE DATABASE
 
   test("CREATE DATABASE foo") {
-    yields(ast.CreateDatabase("foo", replace = false, ifNotExists = false))
+    yields(ast.CreateDatabase("foo", ast.IfExistsThrowError()))
   }
 
   test("CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase("foo.bar", replace = false, ifNotExists = false))
+    yields(ast.CreateDatabase("foo.bar", ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase("foo.bar", replace = false, ifNotExists = false))
+    yields(ast.CreateDatabase("foo.bar", ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE DATABASE `foo-bar42`") {
-    yields(ast.CreateDatabase("foo-bar42", replace = false, ifNotExists = false))
+    yields(ast.CreateDatabase("foo-bar42", ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE DATABASE `_foo-bar42`") {
-    yields(ast.CreateDatabase("_foo-bar42", replace = false, ifNotExists = false))
+    yields(ast.CreateDatabase("_foo-bar42", ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE DATABASE ``") {
-    yields(ast.CreateDatabase("", replace = false, ifNotExists = false))
+    yields(ast.CreateDatabase("", ast.IfExistsThrowError()))
   }
 
   test("CREATE DATABASE IF NOT EXISTS foo") {
-    yields(ast.CreateDatabase("foo", replace = false, ifNotExists = true))
+    yields(ast.CreateDatabase("foo", ast.IfExistsDoNothing()))
   }
 
   test("CATALOG CREATE DATABASE IF NOT EXISTS `_foo-bar42`") {
-    yields(ast.CreateDatabase("_foo-bar42", replace = false, ifNotExists = true))
+    yields(ast.CreateDatabase("_foo-bar42", ast.IfExistsDoNothing()))
   }
 
   test("CREATE OR REPLACE DATABASE foo") {
-    yields(ast.CreateDatabase("foo", replace = true, ifNotExists = false))
+    yields(ast.CreateDatabase("foo", ast.IfExistsReplace()))
   }
 
   test("CATALOG CREATE OR REPLACE DATABASE `_foo-bar42`") {
-    yields(ast.CreateDatabase("_foo-bar42", replace = true, ifNotExists = false))
+    yields(ast.CreateDatabase("_foo-bar42", ast.IfExistsReplace()))
   }
 
   test("CREATE DATABASE foo.bar") {

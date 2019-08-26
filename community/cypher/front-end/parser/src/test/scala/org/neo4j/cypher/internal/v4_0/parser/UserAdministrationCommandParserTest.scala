@@ -39,107 +39,107 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Creating user
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER `foo` SET PASSwORD 'password'") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER `!#\"~` SeT PASSWORD 'password'") {
-    yields(ast.CreateUser("!#\"~", Some("password"), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("!#\"~", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SeT PASSWORD 'pasS5Wor%d'") {
-    yields(ast.CreateUser("foo", Some("pasS5Wor%d"), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("pasS5Wor%d"), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SET PASSwORD ''") {
-    yields(ast.CreateUser("foo", Some(""), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some(""), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE uSER foo SET PASSWORD $password") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREaTE USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE required") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' CHAngE NOT REQUIRED") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SET PASSWORD $password SET  PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = false, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = false, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDed") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = Some(true), replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS ACtiVE") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = Some(false), replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = Some(false), ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED SET   STATuS SUSPENDED") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = Some(true), replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = false, suspended = Some(true), ast.IfExistsThrowError()))
   }
 
   test("CREATE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), replace = false, ifNotExists = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsThrowError()))
   }
 
   test("CREATE USER `` SET PASSwORD 'password'") {
-    yields(ast.CreateUser("", Some("password"), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CREATE USER `f:oo` SET PASSWORD 'password'") {
-    yields(ast.CreateUser("f:oo", Some("password"), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = false))
+    yields(ast.CreateUser("f:oo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE USER IF NOT EXISTS foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, replace = false, ifNotExists = true))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
   }
 
   test("CREATE uSER IF NOT EXISTS foo SET PASSWORD $password") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, replace = false, ifNotExists = true))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
   }
 
   test("CATALOG CREATE USER IF NOT EXISTS foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, replace = false, ifNotExists = true))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
   }
 
   test("CREATE USER IF NOT EXISTS foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), replace = false, ifNotExists = true))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing()))
   }
 
   test("CATALOG CREATE OR REPLACE USER foo SET PASSWORD 'password'") {
-    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, replace = true, ifNotExists = false))
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsReplace()))
   }
 
   test("CREATE OR REPLACE uSER foo SET PASSWORD $password") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, replace = true, ifNotExists = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsReplace()))
   }
 
   test("CATALOG CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, replace = true, ifNotExists = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsReplace()))
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), replace = true, ifNotExists = false))
+    yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace()))
   }
 
   test("CREATE USER foo") {

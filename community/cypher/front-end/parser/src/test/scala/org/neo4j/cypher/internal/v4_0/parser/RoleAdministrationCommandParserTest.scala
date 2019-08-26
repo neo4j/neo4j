@@ -98,43 +98,43 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Creating role
 
   test("CREATE ROLE foo") {
-    yields(ast.CreateRole("foo", None, replace = false, ifNotExists = false))
+    yields(ast.CreateRole("foo", None, ast.IfExistsThrowError()))
   }
 
   test("CATALOG CREATE ROLE `foo`") {
-    yields(ast.CreateRole("foo", None, replace = false, ifNotExists = false))
+    yields(ast.CreateRole("foo", None, ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE ``") {
-    yields(ast.CreateRole("", None, replace = false, ifNotExists = false))
+    yields(ast.CreateRole("", None, ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE foo AS COPY OF bar") {
-    yields(ast.CreateRole("foo", Some("bar"), replace = false, ifNotExists = false))
+    yields(ast.CreateRole("foo", Some("bar"), ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE foo AS COPY OF ``") {
-    yields(ast.CreateRole("foo", Some(""), replace = false, ifNotExists = false))
+    yields(ast.CreateRole("foo", Some(""), ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE `` AS COPY OF bar") {
-    yields(ast.CreateRole("", Some("bar"), replace = false, ifNotExists = false))
+    yields(ast.CreateRole("", Some("bar"), ast.IfExistsThrowError()))
   }
 
   test("CREATE ROLE IF NOT EXISTS foo") {
-    yields(ast.CreateRole("foo", None, replace = false, ifNotExists = true))
+    yields(ast.CreateRole("foo", None, ast.IfExistsDoNothing()))
   }
 
   test("CREATE ROLE IF NOT EXISTS foo AS COPY OF bar") {
-    yields(ast.CreateRole("foo", Some("bar"), replace = false, ifNotExists = true))
+    yields(ast.CreateRole("foo", Some("bar"), ast.IfExistsDoNothing()))
   }
 
   test("CREATE OR REPLACE ROLE foo") {
-    yields(ast.CreateRole("foo", None, replace = true, ifNotExists = false))
+    yields(ast.CreateRole("foo", None, ast.IfExistsReplace()))
   }
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF bar") {
-    yields(ast.CreateRole("foo", Some("bar"), replace = true, ifNotExists = false))
+    yields(ast.CreateRole("foo", Some("bar"), ast.IfExistsReplace()))
   }
 
   test("CATALOG CREATE ROLE \"foo\"") {

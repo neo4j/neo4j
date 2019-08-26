@@ -68,7 +68,7 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x: ShowUsers =>
       s"${x.name}"
 
-    case x @ CreateUser(userName, _, initialParameterPassword, requirePasswordChange, suspended, _, _) =>
+    case x @ CreateUser(userName, _, initialParameterPassword, requirePasswordChange, suspended, _) =>
       val userNameString = Prettifier.escapeName(userName)
       val password = if (initialParameterPassword.isDefined)
         s"$$${initialParameterPassword.get.name}"
@@ -107,10 +107,10 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ ShowRoles(withUsers, _) =>
       s"${x.name}${if (withUsers) " WITH USERS" else ""}"
 
-    case x @ CreateRole(roleName, None, _, _) =>
+    case x @ CreateRole(roleName, None, _) =>
       s"${x.name} ${Prettifier.escapeName(roleName)}"
 
-    case x @ CreateRole(roleName, Some(fromRole), _, _) =>
+    case x @ CreateRole(roleName, Some(fromRole), _) =>
       s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
 
     case x @ DropRole(roleName, _) =>
@@ -164,7 +164,7 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ ShowDatabase(dbName) =>
       s"${x.name} ${Prettifier.escapeName(dbName)}"
 
-    case x @ CreateDatabase(dbName, _, _) =>
+    case x @ CreateDatabase(dbName, _) =>
       s"${x.name} ${Prettifier.escapeName(dbName)}"
 
     case x @ DropDatabase(dbName, _) =>

@@ -41,6 +41,11 @@ sealed trait MultiGraphDDL extends CatalogDDL {
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
+trait IfExistsDo
+final case class IfExistsReplace() extends IfExistsDo
+final case class IfExistsDoNothing() extends IfExistsDo
+final case class IfExistsThrowError() extends IfExistsDo
+
 final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name: String = "SHOW USERS"
@@ -55,13 +60,15 @@ final case class CreateUser(userName: String,
                             initialParameterPassword: Option[Parameter],
                             requirePasswordChange: Boolean,
                             suspended: Option[Boolean],
-                            replace: Boolean,
-                            ifNotExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
+                            ifExistsDo: IfExistsDo)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
   assert(initialStringPassword.isDefined || initialParameterPassword.isDefined)
   assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
-  assert(!(replace && ifNotExists))
 
-  override def name: String = if (replace) "CREATE OR REPLACE USER" else if (ifNotExists) "CREATE USER IF NOT EXISTS" else "CREATE USER"
+  override def name: String = ifExistsDo match {
+    case _: IfExistsReplace => "CREATE OR REPLACE USER"
+    case _: IfExistsDoNothing => "CREATE USER IF NOT EXISTS"
+    case _ => "CREATE USER"
+  }
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -117,10 +124,13 @@ final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: I
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateRole(roleName: String, from: Option[String], replace: Boolean, ifNotExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
-  assert(!(replace && ifNotExists))
+final case class CreateRole(roleName: String, from: Option[String], ifExistsDo: IfExistsDo)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
-  override def name: String = if (replace) "CREATE OR REPLACE ROLE" else if (ifNotExists) "CREATE ROLE IF NOT EXISTS" else "CREATE ROLE"
+  override def name: String = ifExistsDo match {
+    case _: IfExistsReplace => "CREATE OR REPLACE ROLE"
+    case _: IfExistsDoNothing => "CREATE ROLE IF NOT EXISTS"
+    case _ => "CREATE ROLE"
+  }
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -362,10 +372,13 @@ final case class ShowDatabase(dbName: String)(val position: InputPosition) exten
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateDatabase(dbName: String, replace: Boolean, ifNotExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
-  assert(!(replace && ifNotExists))
+final case class CreateDatabase(dbName: String, ifExistsDo: IfExistsDo)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
-  override def name: String = if (replace) "CREATE OR REPLACE DATABASE" else if (ifNotExists) "CREATE DATABASE IF NOT EXISTS" else "CREATE DATABASE"
+  override def name: String = ifExistsDo match {
+    case _: IfExistsReplace => "CREATE OR REPLACE DATABASE"
+    case _: IfExistsDoNothing => "CREATE DATABASE IF NOT EXISTS"
+    case _ => "CREATE DATABASE"
+  }
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

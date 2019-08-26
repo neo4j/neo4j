@@ -100,11 +100,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       }
 
     // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD $password
-    case CreateUser(userName, _, Some(_), _, _, _) =>
+    case CreateUser(_, userName, _, Some(_), _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Did not resolve parameters correctly.")
 
     // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD
-    case CreateUser(userName, _, _, _, _, _) =>
+    case CreateUser(_, userName, _, _, _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
 
     // DROP USER [IF EXISTS] foo
