@@ -259,7 +259,6 @@ public class BatchInserterImpl implements BatchInserter
         this.jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         try
         {
-
             life.add( jobScheduler );
 
             locker = tryLockStore( fileSystem, databaseLayout );
@@ -293,6 +292,7 @@ public class BatchInserterImpl implements BatchInserter
             life.start();
             neoStores = sf.openAllNeoStores( true );
             neoStores.verifyStoreOk();
+            neoStores.start();
             this.pageCache = pageCache;
 
             nodeStore = neoStores.getNodeStore();
