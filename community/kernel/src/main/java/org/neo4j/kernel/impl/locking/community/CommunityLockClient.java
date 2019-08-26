@@ -337,7 +337,7 @@ public class CommunityLockClient implements Locks.Client
         releaseLocks();
     }
 
-    private void releaseLocks()
+    private synchronized void releaseLocks()
     {
         exclusiveLocks.forEachValue( typeWriteReleaser );
         sharedLocks.forEachValue( typeReadReleaser );
