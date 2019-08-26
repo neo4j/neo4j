@@ -2402,7 +2402,7 @@ public abstract class CodeGenerationTest
     {
         // given
         ClassHandle handle;
-        String simpleClassName = "SimpleClass" + UUID.randomUUID().toString();
+        String simpleClassName = "SimpleClass" + Integer.toHexString( UUID.randomUUID().hashCode() );
         try ( ClassGenerator simple = generateClass( NamedBase.class, simpleClassName ) )
         {
             simple.field( toType, "toValue" );
