@@ -25,10 +25,12 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -895,6 +897,64 @@ class SchemaAcceptanceTest
                 assertFalse( indexes.hasNext() );
                 tx.commit();
             }
+        }
+
+        @RepeatedTest( 10 )
+        void awaitIndexesMustNotThrowOnConcurrentlyDroppedIndexes() throws Exception
+        {
+            AtomicBoolean stop = new AtomicBoolean();
+            LinkedList<IndexDefinition> indexes = new LinkedList<>();
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                for ( int i = 0; i < 50; i++ )
+                {
+                    indexes.add( db.schema().indexFor( Label.label( "Label_" + i ) ).on( "propl_" + i ).create() );
+                }
+                tx.commit();
+            }
+
+            Future<Void> firstFuture = first.submit( () ->
+            {
+                startLatch.await();
+                while ( !stop.get() )
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        db.schema().awaitIndexesOnline( 1, TimeUnit.SECONDS );
+                        tx.commit();
+                    }
+                }
+            } );
+
+            Future<Void> secondFuture = second.submit( () ->
+            {
+                startLatch.await();
+                IndexDefinition index;
+                try
+                {
+                    while ( (index = indexes.poll()) != null )
+                    {
+                        try ( Transaction tx = db.beginTx() )
+                        {
+                            Thread.sleep( 1 );
+                            db.schema().getIndexByName( index.getName() ).drop();
+                            tx.commit();
+                        }
+                    }
+                }
+                finally
+                {
+                    stop.set( true );
+                }
+                return null;
+            } );
+
+            raceTransactions( firstFuture, secondFuture );
+
+            // Then these must not throw.
+            firstFuture.get();
+            secondFuture.get();
         }
 
         private Callable<Void> schemaTransaction( ThrowingSupplier<Object, Exception> action )
