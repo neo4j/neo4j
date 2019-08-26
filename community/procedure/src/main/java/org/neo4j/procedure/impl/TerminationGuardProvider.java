@@ -34,7 +34,7 @@ public class TerminationGuardProvider implements ThrowingFunction<Context,Termin
         return new TransactionTerminationGuard( ktx );
     }
 
-    private class TransactionTerminationGuard implements TerminationGuard
+    private static class TransactionTerminationGuard implements TerminationGuard
     {
         private final KernelTransaction ktx;
 
