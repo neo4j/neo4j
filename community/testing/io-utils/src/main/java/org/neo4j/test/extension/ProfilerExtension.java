@@ -42,7 +42,7 @@ import org.neo4j.test.rule.TestDirectory;
  * Here is an example of how to use it:
  *
  * <pre><code>
- *     {@literal @}ExtendWith( {TestDirectoryExtension.class, PorfilerExtension.class} )
+ *     {@literal @}ExtendWith( {TestDirectoryExtension.class, ProfilerExtension.class} )
  *     public class MyTest
  *     {
  *         {@literal @}Inject
@@ -103,15 +103,21 @@ public class ProfilerExtension extends StatefullFieldExtension<Profiler> impleme
             profiler.finish();
             if ( context.getExecutionException().isPresent() )
             {
+                String displayName = "Profile: " + context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + "." + context.getDisplayName();
+                profiler.printProfile( System.err, displayName );
+
                 ExtensionContext.Store testDirStore = getStore( context, TestDirectoryExtension.TEST_DIRECTORY_NAMESPACE );
                 TestDirectory testDir = testDirStore.get( TestDirectoryExtension.TEST_DIRECTORY, TestDirectory.class );
-                File profileOutputFile = testDir.createFile( "profiler-output.txt" );
-                FileSystemAbstraction fs = testDir.getFileSystem();
 
-                try ( PrintStream out = new PrintStream( fs.openAsOutputStream( profileOutputFile, false ) ) )
+                if ( testDir != null )
                 {
-                    String displayName = context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + "." + context.getDisplayName();
-                    profiler.printProfile( out, displayName );
+                    File profileOutputFile = testDir.createFile( "profiler-output.txt" );
+                    FileSystemAbstraction fs = testDir.getFileSystem();
+
+                    try ( PrintStream out = new PrintStream( fs.openAsOutputStream( profileOutputFile, false ) ) )
+                    {
+                        profiler.printProfile( out, displayName );
+                    }
                 }
             }
         }
