@@ -93,6 +93,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: LoadCSV =>
         PlanDescriptionImpl(id, "LoadCSV", NoChildren, Seq.empty, variables)
 
+      case _: Input =>
+        PlanDescriptionImpl(id, "Input", NoChildren, Seq.empty, variables)
+
       case NodeCountFromCountStore(variable, labelNames, _) =>
         val arguments = Seq(CountNodesExpression(variable, labelNames.map(l => l.map(_.name))))
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)

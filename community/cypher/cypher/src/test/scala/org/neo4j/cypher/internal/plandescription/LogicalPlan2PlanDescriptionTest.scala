@@ -116,6 +116,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         PlanDescriptionImpl(id, "NodeHashJoin", TwoChildren(lhsPD, rhsPD),
                             Seq(KeyNames(Seq("a")), EstimatedRows(2345), CYPHER_VERSION, RUNTIME_VERSION,
                                 Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a", "b"))
+
+      , attach(Input(Seq("a", "b")), 4.0) ->
+        PlanDescriptionImpl(id, "Input", NoChildren,
+                            Seq(EstimatedRows(4), CYPHER_VERSION, RUNTIME_VERSION,
+                                Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a", "b"))
     )
 
     forAll(modeCombinations) {
