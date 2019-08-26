@@ -48,6 +48,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
@@ -391,12 +392,12 @@ class CentralJobSchedulerTest
     void shouldListActiveGroups()
     {
         life.start();
-        assertEquals( List.of(), scheduler.activeGroups().map( ag -> ag.group ) );
+        assertEquals( List.of(), scheduler.activeGroups().map( ag -> ag.group ).collect( toList() ) );
 
         BinaryLatch firstLatch = new BinaryLatch();
         scheduler.schedule( Group.CHECKPOINT, firstLatch::release );
         firstLatch.await();
-        assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups().map( ag -> ag.group ) );
+        assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups().map( ag -> ag.group ).collect( toList() ) );
     }
 
     @Test
