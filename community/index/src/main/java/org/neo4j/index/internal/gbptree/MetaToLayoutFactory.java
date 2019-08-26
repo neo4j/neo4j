@@ -19,8 +19,12 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-// todo We could have an implementation of this that use service loading to load all available layouts and match. But that's for later.
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.io.pagecache.PageCache;
+
 public interface MetaToLayoutFactory
 {
-    Layout<?,?> create( Meta meta, String targetLayout );
+    Layout<?,?> create( File indexFile, PageCache pageCache, Meta meta, String targetLayout ) throws IOException;
 }

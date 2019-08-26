@@ -21,7 +21,6 @@ package org.neo4j.consistency;
 
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.bouncycastle.util.Arrays;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -29,8 +28,12 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,6 +41,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBootstrapper;
@@ -67,6 +71,8 @@ import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitiali
 
 public class ConsistencyCheckWithCorruptGBPTreeIT
 {
+    private static final Label label = Label.label( "label" );
+    private static final String propKey1 = "key1";
     private PageCacheRule pageCacheRule = new PageCacheRule();
     private TestDirectory testDirectory = TestDirectory.testDirectory();
     private RandomRule random = new RandomRule();
@@ -74,26 +80,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( pageCacheRule ).around( random );
 
-    @Before
-    public void setup()
-    {
-        File dataDir = testDirectory.storeDir();
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dataDir );
-        try
-        {
-            createAnIndex( db );
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
     @Test
     public void assertTreeHeightIsAsExpected() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Integer> heightRef = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> heightRef.setValue( inspection.getLastLevel() ) );
+        corruptIndexes( ( tree, inspection ) -> heightRef.setValue( inspection.getLastLevel() ) );
 
         final int height = heightRef.getValue();
         assertEquals( "This test assumes height of index tree is 2 but height for this index was " + height +
@@ -103,8 +95,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void notATreeNode() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ) );
         } );
@@ -118,8 +111,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void unknownTreeNodeType() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.unknownTreeNodeType() ) );
         } );
@@ -133,8 +127,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void siblingsDontPointToEachOther() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             targetNode.setValue( inspection.getLeafNodes().get( 0 ) );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.rightSiblingPointToNonExisting() ) );
         } );
@@ -148,7 +143,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void rightmostNodeHasRightSibling() throws Exception
     {
-        corruptIndex( ( tree, inspection ) -> {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        corruptIndexes( ( tree, inspection ) -> {
             final long root = inspection.getRootNode();
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( root, GBPTreeCorruption.setPointer( GBPTreePointerType.rightSibling(), 10 ) ) );
         } );
@@ -162,8 +158,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void pointerToOldVersionOfTreeNode() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.corrupt(
                     GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.setPointer( GBPTreePointerType.successor(), 6 ) ) );
@@ -178,9 +175,10 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void pointerHasLowerGenerationThanNode() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         MutableObject<Long> rightSibling = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             final List<Long> leafNodes = inspection.getLeafNodes();
             targetNode.setValue( leafNodes.get( 0 ) );
             rightSibling.setValue( leafNodes.get( 1 ) );
@@ -198,8 +196,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void keysOutOfOrderInNode() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             targetNode.setValue( inspection.getLeafNodes().get( 0 ) );
             int keyCount = inspection.getKeyCounts().get( targetNode.getValue() );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.swapKeyOrderLeaf( 0, 1, keyCount ) ) );
@@ -214,7 +213,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void keysLocatedInWrongNode() throws Exception
     {
-        corruptIndex( ( tree, inspection ) -> {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        corruptIndexes( ( tree, inspection ) -> {
             final Long internalNode = inspection.getNodesPerLevel().get( 1 ).get( 0 );
             int keyCount = inspection.getKeyCounts().get( internalNode );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( internalNode, GBPTreeCorruption.swapChildOrder( 0, 1, keyCount ) ) );
@@ -229,7 +229,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void unusedPage() throws Exception
     {
-        corruptIndex( ( tree, inspection ) -> {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        corruptIndexes( ( tree, inspection ) -> {
             final Long internalNode = inspection.getNodesPerLevel().get( 1 ).get( 0 );
             int keyCount = inspection.getKeyCounts().get( internalNode );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( internalNode,GBPTreeCorruption.setKeyCount( keyCount - 1 ) ) );
@@ -244,7 +245,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void pageIdExceedLastId() throws Exception
     {
-        corruptIndex( ( tree, inspection ) -> {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        corruptIndexes( ( tree, inspection ) -> {
             tree.corrupt( GBPTreeCorruption.decrementFreelistWritePos() );
         } );
 
@@ -257,7 +259,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void nodeMetaInconsistency() throws Exception
     {
-        corruptIndex( ( tree, inspection ) -> {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        corruptIndexes( ( tree, inspection ) -> {
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( inspection.getRootNode(), GBPTreeCorruption.decrementAllocOffsetInDynamicNode() ) );
         } );
 
@@ -270,8 +273,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void pageIdSeenMultipleTimes() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.corrupt( GBPTreeCorruption.addFreelistEntry( targetNode.getValue() ) );
         } );
@@ -287,8 +291,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void crashPointer() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
-        corruptIndex( false, ( tree, inspection ) -> {
+        corruptIndexes( false, ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.crashed( GBPTreePointerType.rightSibling() ) ) );
         } );
@@ -302,8 +307,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void brokenPointer() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ) );
         } );
@@ -317,8 +323,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void unreasonableKeyCount() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             targetNode.setValue( inspection.getRootNode() );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.setKeyCount( Integer.MAX_VALUE ) ) );
         } );
@@ -332,7 +339,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void childNodeFoundAmongParentNodes() throws Exception
     {
-        corruptIndex( ( tree, inspection ) -> {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        corruptIndexes( ( tree, inspection ) -> {
             final long rootNode = inspection.getRootNode();
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( rootNode, GBPTreeCorruption.setChild( 0, rootNode ) ) );
         } );
@@ -346,7 +354,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     public void shouldIncludeIndexFileInConsistencyReport() throws Exception
     {
-        File indexFile = corruptIndex( ( tree, inspection ) -> {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        List<File> indexFiles = corruptIndexes( ( tree, inspection ) -> {
             final long rootNode = inspection.getRootNode();
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( rootNode, GBPTreeCorruption.notATreeNode() ) );
         } );
@@ -354,14 +363,15 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
-        assertResultContainsMessage( result, "Index file: " + indexFile.getAbsolutePath() );
+        assertResultContainsMessage( result, "Index file: " + indexFiles.get( 0 ).getAbsolutePath() );
     }
 
     @Test
     public void multipleCorruptions() throws Exception
     {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> internalNode = new MutableObject<>();
-        corruptIndex( ( tree, inspection ) -> {
+        corruptIndexes( ( tree, inspection ) -> {
             long leafNode = inspection.getLeafNodes().get( 0 );
             internalNode.setValue( inspection.getNodesPerLevel().get( 1 ).get( 1 ) );
             final Integer internalNodeKeyCount = inspection.getKeyCounts().get( internalNode.getValue() );
@@ -378,6 +388,41 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         assertResultContainsMessage( result,
                 "Index inconsistency: Pointer (left sibling) in tree node " + internalNode.getValue() +
                         " has pointer generation 0, but target node 0 has a higher generation 4." );
+    }
+
+    @Test
+    public void multipleCorruptionsInFusionIndex() throws Exception
+    {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE20, db ->
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        // Also make sure we have some numbers
+                        for ( int i = 0; i < 1000; i++ )
+                        {
+                            Node node = db.createNode( label );
+                            node.setProperty( propKey1, i );
+                            Node secondNode = db.createNode( label );
+                            secondNode.setProperty( propKey1, LocalDate.ofEpochDay( i ) );
+                        }
+                        tx.success();
+                    }
+                }
+        );
+
+        final List<File> files = corruptIndexes( true, ( tree, inspection ) -> {
+            long leafNode = inspection.getLeafNodes().get( 1 );
+            long internalNode = inspection.getInternalNodes().get( 0 );
+            tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( leafNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ) );
+            tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( internalNode, GBPTreeCorruption.setChild( 0, internalNode ) ) );
+        } );
+
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        for ( File file : files )
+        {
+            assertResultContainsMessage( result,
+                    "Index will be excluded from further consistency checks. Index file: " + file.getAbsolutePath() );
+        }
     }
 
     private void assertResultContainsMessage( ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
@@ -406,48 +451,75 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false );
     }
 
-    private File corruptIndex( CorruptionInject corruptionInject ) throws Exception
+    private void setup( GraphDatabaseSettings.SchemaIndex schemaIndex )
     {
-        return corruptIndex( true, corruptionInject );
+        setup( schemaIndex, db -> {} );
     }
 
-    private File corruptIndex( boolean readOnly, CorruptionInject corruptionInject ) throws Exception
+    private void setup( GraphDatabaseSettings.SchemaIndex schemaIndex, Consumer<GraphDatabaseService> additionalSetup )
+    {
+        File dataDir = testDirectory.storeDir();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dataDir )
+                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
+                .newGraphDatabase();
+        try
+        {
+            createAnIndex( db );
+            additionalSetup.accept( db );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private List<File> corruptIndexes( CorruptionInject corruptionInject ) throws Exception
+    {
+        return corruptIndexes( true, corruptionInject );
+    }
+
+    private List<File> corruptIndexes( boolean readOnly, CorruptionInject corruptionInject ) throws Exception
     {
         FileSystemAbstraction fs = testDirectory.getFileSystem();
         File indexDir = new File( testDirectory.storeDir(), "schema/index/" );
-        File indexFile = fs.streamFilesRecursive( indexDir )
+        List<File> allFiles = fs.streamFilesRecursive( indexDir )
                 .map( FileHandle::getFile )
-                .findFirst()
-                .orElseThrow( () -> new IllegalStateException( "Test need at least one index file" ) );
+                .collect( Collectors.toList() );
+        List<File> treeFiles = new ArrayList<>();
         try ( JobScheduler jobScheduler = createInitialisedScheduler();
               PageCache pageCache = createPageCache( fs, jobScheduler ) )
         {
             SchemaLayouts schemaLayouts = new SchemaLayouts();
             GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( pageCache, schemaLayouts, readOnly );
-            GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( indexFile, "generic1" );
-            try ( GBPTree<?,?> gbpTree = bootstrap.tree )
+            for ( File file : allFiles )
             {
-                GBPTreeInspection<?,?> inspection = gbpTree.inspect();
-                corruptionInject.corrupt( gbpTree, inspection );
+                GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file, "generic1" );
+                if ( bootstrap.isTree() )
+                {
+                    treeFiles.add( file );
+                    try ( GBPTree<?,?> gbpTree = bootstrap.getTree() )
+                    {
+                        GBPTreeInspection<?,?> inspection = gbpTree.inspect();
+                        corruptionInject.corrupt( gbpTree, inspection );
+                    }
+                }
             }
         }
-        return indexFile;
+        return treeFiles;
     }
 
     private void createAnIndex( GraphDatabaseService db )
     {
-        Label label = Label.label( "label" );
-        String propKey1 = "key1";
         String longString = longString();
 
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 40; i++ )
             {
-                Node firstNode = db.createNode( label );
+                Node node = db.createNode( label );
                 // Using long string that only differ in the end make sure index tree will be higher which we need to mess up internal pointers
                 String value = longString + i;
-                firstNode.setProperty( propKey1, value );
+                node.setProperty( propKey1, value );
             }
             tx.success();
         }
