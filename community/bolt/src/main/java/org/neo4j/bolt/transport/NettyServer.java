@@ -24,11 +24,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.ServerChannel;
 import io.netty.channel.epoll.Epoll;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
@@ -46,7 +44,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.FeatureToggles;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.function.ThrowingAction.executeAll;
 
@@ -57,6 +54,8 @@ import static org.neo4j.function.ThrowingAction.executeAll;
 public class NettyServer extends LifecycleAdapter
 {
     private static final boolean USE_EPOLL = FeatureToggles.flag( NettyServer.class, "useEpoll", true );
+    private static final int SHUTDOWN_QUIET_PERIOD = FeatureToggles.getInteger( NettyServer.class, "shutdownQuietPeriod", 5 );
+    private static final int SHUTDOWN_TIMEOUT = FeatureToggles.getInteger( NettyServer.class, "shutdownTimeout", 15 );
 
     private final ServerConfigurationProvider configurationProvider;
     private final ProtocolInitializer initializer;
@@ -196,7 +195,7 @@ public class NettyServer extends LifecycleAdapter
             try
             {
                 internalLog.debug( "Shutting down event loop group" );
-                eventLoopGroup.shutdownGracefully().syncUninterruptibly();
+                eventLoopGroup.shutdownGracefully( SHUTDOWN_QUIET_PERIOD, SHUTDOWN_TIMEOUT, SECONDS ).syncUninterruptibly();
                 internalLog.debug( "Event loop group shut down" );
             }
             catch ( Throwable t )

@@ -315,10 +315,6 @@ public class ShutdownSequenceIT
 
                 txc.commit();
             }
-            catch ( Exception exc )
-            {
-                return Stream.of( new Output( "error: " + exc.toString() ) );
-            }
 
             return Arrays.stream( props );
         }
