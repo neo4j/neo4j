@@ -84,6 +84,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def listOfString(stringValues: String*): ListLiteral =
     ListLiteral(stringValues.toSeq.map(literalString))(pos)
 
+  def index(expression: Expression, idx: Int): ContainerIndex =
+    ContainerIndex(expression, literal(idx))(pos)
+
   def mapOf(keysAndValues: (String, Expression)*): MapExpression =
     MapExpression(keysAndValues.map {
       case (k, v) => PropertyKeyName(k)(pos) -> v

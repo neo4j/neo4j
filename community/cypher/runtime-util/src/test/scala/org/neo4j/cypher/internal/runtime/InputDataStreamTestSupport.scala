@@ -53,6 +53,10 @@ trait InputDataStreamTestSupport {
     new IteratorInputStream(batches.map(_.map(_.map(ValueUtils.of))): _*)
   }
 
+  def iteratorInputRaw(batches: Iterator[Array[AnyValue]]*): InputDataStream = {
+    new IteratorInputStream(batches: _*)
+  }
+
   class InputValues() {
     val batches = new ArrayBuffer[IndexedSeq[Array[Any]]]
 
