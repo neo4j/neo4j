@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.io.IOException;
+
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -57,7 +59,7 @@ class DirectRecordStoreMigrator
     }
 
     public void migrate( DatabaseLayout fromDirectoryStructure, RecordFormats fromFormat, DatabaseLayout toDirectoryStructure,
-            RecordFormats toFormat, ProgressReporter progressReporter, StoreType[] types, StoreType... additionalTypesToOpen )
+            RecordFormats toFormat, ProgressReporter progressReporter, StoreType[] types, StoreType... additionalTypesToOpen ) throws IOException
     {
         StoreType[] storesToOpen = ArrayUtil.concat( types, additionalTypesToOpen );
         progressReporter.start( storesToOpen.length );
@@ -70,6 +72,7 @@ class DirectRecordStoreMigrator
                     new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance() )
                         .openNeoStores( true, storesToOpen ) )
         {
+            toStores.start();
             for ( StoreType type : types )
             {
                 // This condition will exclude counts store first and foremost.

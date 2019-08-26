@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -173,6 +174,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, formats,
                 logService.getInternalLogProvider() );
         NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
+        try
+        {
+            stores.start();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
         return createMigrationTargetSchemaRuleAccess( stores );
     }
 

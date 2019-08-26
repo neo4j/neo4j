@@ -36,9 +36,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.OptionalLong;
-import java.util.Set;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
@@ -671,6 +669,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           oldFormat );
                   NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
             {
+                dstStore.start();
                 TokenHolders srcTokenHolders = new TokenHolders(
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),

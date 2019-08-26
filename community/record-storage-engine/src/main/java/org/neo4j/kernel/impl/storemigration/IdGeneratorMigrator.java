@@ -112,6 +112,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         try ( NeoStores stores = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() ).openNeoStores(
                 storesInDbDirectory.toArray( StoreType[]::new ) ) )
         {
+            stores.start();
             buildIdFiles( migrationLayout, storesInDbDirectory, rebuiltIdGenerators, renameList, stores );
         }
         // Build the ones from the migration directory, those stores that have been migrated
@@ -123,6 +124,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         try ( NeoStores stores = createStoreFactory( migrationLayout, newFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() )
                 .openNeoStores( storesInMigrationDirectory.toArray( StoreType[]::new ) ) )
         {
+            stores.start();
             buildIdFiles( migrationLayout, storesInMigrationDirectory, rebuiltIdGenerators, renameList, stores );
         }
         for ( File emptyPlaceHolderStoreFile : placeHolderStoreFiles )
