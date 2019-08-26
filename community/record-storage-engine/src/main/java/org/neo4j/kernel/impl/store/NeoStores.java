@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
-import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -66,15 +65,6 @@ public class NeoStores implements AutoCloseable
                                                                  " to be able to use it.";
 
     private static final StoreType[] STORE_TYPES = StoreType.values();
-
-    private final Predicate<StoreType> INSTANTIATED_STORES = new Predicate<>()
-    {
-        @Override
-        public boolean test( StoreType type )
-        {
-            return stores[type.ordinal()] != null;
-        }
-    };
 
     private final FileSystemAbstraction fileSystem;
     private final DatabaseLayout layout;

@@ -324,8 +324,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Schema index application
             appliers.add( new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSync, indexUpdatesSync,
-                    neoStores.getNodeStore(), neoStores.getRelationshipStore(),
-                    neoStores.getPropertyStore(), this, schemaCache, indexActivator ) );
+                    neoStores.getNodeStore(), neoStores.getPropertyStore(), this, schemaCache, indexActivator ) );
         }
 
         // Perform the application

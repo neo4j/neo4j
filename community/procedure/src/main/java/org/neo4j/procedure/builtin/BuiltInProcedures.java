@@ -22,16 +22,12 @@ package org.neo4j.procedure.builtin;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
@@ -39,7 +35,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -347,26 +342,6 @@ public class BuiltInProcedures
             propertyNames.add( tokens.propertyKeyGetName( propertyId ) );
         }
         return propertyNames;
-    }
-
-    private static <T> Stream<T> toStream( PrimitiveLongResourceIterator iterator, LongFunction<T> mapper )
-    {
-        Iterator<T> it = new Iterator<>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public T next()
-            {
-                return mapper.apply( iterator.next() );
-            }
-        };
-
-        return Iterators.stream( it, Spliterator.ORDERED );
     }
 
     private IndexProcedures indexProcedures()

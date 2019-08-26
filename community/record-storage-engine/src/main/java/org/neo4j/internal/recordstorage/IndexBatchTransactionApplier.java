@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -64,7 +63,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     public IndexBatchTransactionApplier( IndexUpdateListener indexUpdateListener,
             WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync,
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync,
-            NodeStore nodeStore, RelationshipStore relationshipStore,
+            NodeStore nodeStore,
             PropertyStore propertyStore, StorageEngine storageEngine,
             SchemaCache schemaCache, IndexActivator indexActivator )
     {
@@ -74,7 +73,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         this.propertyStore = propertyStore;
         this.storageEngine = storageEngine;
         this.schemaCache = schemaCache;
-        this.transactionApplier = new SingleTransactionApplier( nodeStore, relationshipStore );
+        this.transactionApplier = new SingleTransactionApplier( nodeStore );
         this.indexActivator = indexActivator;
     }
 
@@ -139,14 +138,12 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private class SingleTransactionApplier extends TransactionApplier.Adapter
     {
         private final NodeStore nodeStore;
-        private RelationshipStore relationshipStore;
         private final PropertyCommandsExtractor indexUpdatesExtractor = new PropertyCommandsExtractor();
         private List<IndexDescriptor> createdIndexes;
 
-        SingleTransactionApplier( NodeStore nodeStore, RelationshipStore relationshipStore )
+        SingleTransactionApplier( NodeStore nodeStore )
         {
             this.nodeStore = nodeStore;
-            this.relationshipStore = relationshipStore;
         }
 
         @Override

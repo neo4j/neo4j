@@ -157,9 +157,9 @@ public class FullCheck
         {
             MultiPassStore.Factory multiPass = new MultiPassStore.Factory(
                     decorator, recordAccess, cacheAccess, report, reportMonitor );
-            ConsistencyCheckTasks taskCreator = new ConsistencyCheckTasks( progress, processEverything,
-                    nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes, directStoreAccess.tokenHolders(),
-                    multiPass, reporter, threads );
+            ConsistencyCheckTasks taskCreator =
+                    new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes,
+                            multiPass, reporter, threads );
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
             TaskExecutor.execute( tasks, decorator::prepare );
@@ -190,7 +190,7 @@ public class FullCheck
         return records;
     }
 
-    private class RebuildPreventingCountsInitializer implements DataInitializer<CountsTracker.Updater>
+    private static class RebuildPreventingCountsInitializer implements DataInitializer<CountsTracker.Updater>
     {
         @Override
         public void initialize( CountsTracker.Updater updater )

@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -61,7 +60,7 @@ class IndexBatchTransactionApplierTest
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync, indexUpdatesSync,
-                mock( NodeStore.class ), mock( RelationshipStore.class ), propertyStore,
+                mock( NodeStore.class ), propertyStore,
                 mock( StorageEngine.class ), mock( SchemaCache.class ), new IndexActivator( indexUpdateListener ) ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands() ) )
@@ -99,7 +98,7 @@ class IndexBatchTransactionApplierTest
         IndexDescriptor rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
         IndexDescriptor rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync,
-                indexUpdatesSync, mock( NodeStore.class ), mock( RelationshipStore.class ), propertyStore,
+                indexUpdatesSync, mock( NodeStore.class ), propertyStore,
                 mock( StorageEngine.class ), mock( SchemaCache.class ), indexActivator ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands() ) )

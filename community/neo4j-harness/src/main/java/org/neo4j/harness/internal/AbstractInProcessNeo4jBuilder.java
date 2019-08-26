@@ -21,7 +21,6 @@ package org.neo4j.harness.internal;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -293,25 +292,6 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     private String randomFolderName()
     {
         return DigestUtils.md5Hex( Long.toString( ThreadLocalRandom.current().nextLong() ) );
-    }
-
-    private static String toStringForThirdPartyPackageProperty( List<ThirdPartyJaxRsPackage> extensions )
-    {
-        int packageCount = extensions.size();
-        if ( packageCount == 0 )
-        {
-            return StringUtils.EMPTY;
-        }
-        StringBuilder builder = new StringBuilder();
-        ThirdPartyJaxRsPackage jaxRsPackage;
-        for ( int i = 0; i < packageCount - 1; i++ )
-        {
-            jaxRsPackage = extensions.get( i );
-            describeJaxRsPackage( builder, jaxRsPackage ).append( ',' );
-        }
-        jaxRsPackage = extensions.get( packageCount - 1 );
-        describeJaxRsPackage( builder, jaxRsPackage );
-        return builder.toString();
     }
 
     private static StringBuilder describeJaxRsPackage( StringBuilder builder, ThirdPartyJaxRsPackage jaxRsPackage )

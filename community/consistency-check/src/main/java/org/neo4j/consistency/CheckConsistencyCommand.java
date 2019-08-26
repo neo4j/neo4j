@@ -172,24 +172,6 @@ public class CheckConsistencyCommand extends AbstractCommand
         }
     }
 
-    private static Config loadAdditionalConfig( Optional<Path> additionalConfigFile )
-    {
-        if ( additionalConfigFile.isPresent() )
-        {
-            try
-            {
-                return Config.newBuilder().fromFile( additionalConfigFile.get().toFile() ).build();
-            }
-            catch ( Exception e )
-            {
-                throw new IllegalArgumentException(
-                        String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
-            }
-        }
-
-        return Config.defaults();
-    }
-
     private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration )
     {
         if ( checkRecoveryState( databaseLayout, additionalConfiguration ) )

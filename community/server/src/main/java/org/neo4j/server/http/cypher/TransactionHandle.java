@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
@@ -67,7 +66,6 @@ class TransactionHandle implements TransactionTerminationHandle
     private final LoginContext loginContext;
     private final ClientConnectionInfo connectionInfo;
     private long customTransactionTimeoutMillis;
-    private final Log log;
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
     private GraphDatabaseQueryService queryService;
@@ -86,7 +84,6 @@ class TransactionHandle implements TransactionTerminationHandle
         this.loginContext = loginContext;
         this.connectionInfo = connectionInfo;
         this.customTransactionTimeoutMillis = customTransactionTimeoutMillis;
-        this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
     }
 
