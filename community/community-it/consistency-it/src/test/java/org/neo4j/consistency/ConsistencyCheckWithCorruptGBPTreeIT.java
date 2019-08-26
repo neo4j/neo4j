@@ -358,19 +358,26 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
-    public void lotsOfCorruptions() throws Exception
+    public void multipleCorruptions() throws Exception
     {
+        MutableObject<Long> internalNode = new MutableObject<>();
         corruptIndex( ( tree, inspection ) -> {
             long leafNode = inspection.getLeafNodes().get( 0 );
-            long internalNode = inspection.getNodesPerLevel().get( 1 ).get( 1 );
-            final Integer internalNodeKeyCount = inspection.getKeyCounts().get( internalNode );
+            internalNode.setValue( inspection.getNodesPerLevel().get( 1 ).get( 1 ) );
+            final Integer internalNodeKeyCount = inspection.getKeyCounts().get( internalNode.getValue() );
             tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( leafNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ) );
-            tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( internalNode, GBPTreeCorruption.swapChildOrder( 0, 1, internalNodeKeyCount ) ) );
-            tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( internalNode, GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ) );
+            tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( internalNode.getValue(), GBPTreeCorruption.swapChildOrder( 0, 1, internalNodeKeyCount ) ) );
+            tree.corrupt( GBPTreeCorruption.pageSpecificCorruption( internalNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ) );
         } );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
-        Files.lines( result.reportFile().toPath() ).forEach( System.out::println );
+        assertResultContainsMessage( result, "Index inconsistency: Sibling pointers misaligned." );
+        assertResultContainsMessage( result, "Index inconsistency: Expected range for this tree node is" );
+        assertResultContainsMessage( result,
+                "Index inconsistency: Broken pointer found in tree node " + internalNode.getValue() + ", pointerType='left sibling'" );
+        assertResultContainsMessage( result,
+                "Index inconsistency: Pointer (left sibling) in tree node " + internalNode.getValue() +
+                        " has pointer generation 0, but target node 0 has a higher generation 4." );
     }
 
     private void assertResultContainsMessage( ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
