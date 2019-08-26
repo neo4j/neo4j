@@ -697,6 +697,82 @@ public abstract class CodeGenerationTest
     }
 
     @Test
+    void shouldGenerateNestedWhileLoopInnerBreakWithLabel() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
+                                                              param( TypeReference.parameterizedType( Iterator.class, Runnable.class ), "targetTargets" ),
+                                                              param( TypeReference.parameterizedType( Iterator.class, Boolean.class ), "stopTargets" ) ) )
+            {
+                try ( CodeBlock outer = callEach.whileLoop( invoke( callEach.load( "targetTargets" ),
+                                                                   methodReference( Iterator.class, boolean.class, "hasNext" ) ), "outerLabel" ) )
+                {
+                    outer.declare( TypeReference.typeReference( Iterator.class ), "targets" );
+                    outer.assign( outer.local( "targets" ), Expression.cast( Iterator.class,
+                                                                           invoke( callEach.load( "targetTargets" ),
+                                                                                   methodReference( Iterator.class, Object.class, "next" ) ) ) );
+
+                    try ( CodeBlock inner = outer.whileLoop( invoke( outer.load( "targets" ),
+                                                                    methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                    {
+                        inner.declare( TypeReference.typeReference( Runnable.class ), "target" );
+                        inner.assign( inner.local( "target" ), Expression.cast( Runnable.class,
+                                                                              invoke( outer.load( "targets" ),
+                                                                                      methodReference( Iterator.class, Object.class, "next" ) ) ) );
+
+                        inner.declare( TypeReference.BOOLEAN, "stop" );
+                        inner.assign( inner.local( "stop" ), invoke(
+                                Expression.cast( Boolean.class,
+                                                 invoke( callEach.load( "stopTargets" ),
+                                                         methodReference( Iterator.class, Object.class, "next" ) ) ),
+                                methodReference( Boolean.class, boolean.class, "booleanValue" ) ) );
+
+                        try ( CodeBlock ifBlock = inner.ifStatement( inner.load( "stop" ) ) )
+                        {
+                            ifBlock.breaks("outerLabel");
+                        }
+
+                        inner.expression( invoke(
+                                inner.load( "target" ),
+                                methodReference( Runnable.class, void.class, "run" ) ) );
+                    }
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable a = mock( Runnable.class );
+        Runnable b = mock( Runnable.class );
+        Runnable c = mock( Runnable.class );
+        Runnable d = mock( Runnable.class );
+        Runnable e = mock( Runnable.class );
+        Runnable f = mock( Runnable.class );
+
+        // when
+        Iterator<Iterator<Runnable>> input =
+            Arrays.asList(
+                Arrays.asList( a, b ).iterator(),
+                Arrays.asList( c, d ).iterator(),
+                Arrays.asList( e, f ).iterator()
+            ).iterator();
+        Iterator<Boolean> stops = Arrays.asList( false, false, false, true, false, false ).iterator();
+
+        MethodHandle callEach = instanceMethod( handle.newInstance(), "callEach", Iterator.class, Iterator.class );
+        callEach.invoke( input, stops );
+
+        // then
+        InOrder order = inOrder( a, b, c, d, e, f );
+        order.verify( a ).run();
+        order.verify( b ).run();
+        order.verify( c ).run();
+        verifyNoMoreInteractions( a, b, c, d, e, f );
+    }
+
+    @Test
     void shouldGenerateNestedWhileLoopDoubleContinue() throws Throwable
     {
         // given
