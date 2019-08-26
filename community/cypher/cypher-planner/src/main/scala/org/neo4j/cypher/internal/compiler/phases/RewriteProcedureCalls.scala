@@ -75,6 +75,9 @@ case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseS
   override def process(from: BaseState, context: PlannerContext): BaseState = {
     val rewrittenStatement = from.statement().endoRewrite(rewriter(context.planContext))
     from.withStatement(rewrittenStatement)
+      // normalizeWithAndReturnClauses aliases return columns, but only now do we have return columns for procedure calls
+      // so now we can assign them in the state.
+      .withReturnColumns(rewrittenStatement.returnColumns.map(_.name))
   }
 
   override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))

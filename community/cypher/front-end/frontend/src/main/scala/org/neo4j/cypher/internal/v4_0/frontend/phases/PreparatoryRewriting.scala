@@ -33,8 +33,6 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
       mergeInPredicates))
 
     from.withStatement(rewrittenStatement)
-      // normalizeWithAndReturnClauses aliases return columns so now we can assign them in the state
-      .withReturnColumns(rewrittenStatement.returnColumns.map(_.name))
   }
 
   override val phase = AST_REWRITE
