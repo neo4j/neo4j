@@ -11,3 +11,6 @@ Feature "LargeCreateQuery": Scenario "Generate the movie graph correctly"
 
 // TCK expects error but query is valid
 Feature "SemanticErrorAcceptance": Scenario "Failing when using MATCH after OPTIONAL MATCH"
+
+// TODO: queries with old syntax, remove once a new TCK release is out
+Feature "ListComprehension": Scenario "Using a list comprehension in a WHERE"

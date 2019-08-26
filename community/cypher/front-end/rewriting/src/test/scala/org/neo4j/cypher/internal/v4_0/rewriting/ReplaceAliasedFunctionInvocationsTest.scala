@@ -25,11 +25,7 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val rewriter = replaceAliasedFunctionInvocations(Deprecations.V1)
-  private val deprecatedNameMap = Map(
-    "toInt" -> "toInteger",
-    "upper" -> "toUpper",
-    "lower" -> "toLower",
-    "rels" -> "relationships")
+  private val deprecatedNameMap = Deprecations.V1.functionRenames
 
   test("should rewrite deprecated names regardless of casing") {
     for ((oldName, newName) <- deprecatedNameMap ) {

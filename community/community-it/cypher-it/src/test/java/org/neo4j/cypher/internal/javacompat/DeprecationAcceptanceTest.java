@@ -59,38 +59,6 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     // DEPRECATED FUNCTIONS
 
     @Test
-    void deprecatedToInt()
-    {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
-                .forEach( version -> assertNotifications( version + " EXPLAIN RETURN toInt('1') AS one",
-                                                          containsItem( deprecatedFeatureWarning ) ) );
-    }
-
-    @Test
-    void deprecatedUpper()
-    {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
-                .forEach( version -> assertNotifications( version + " EXPLAIN RETURN upper('foo') AS one",
-                                                          containsItem( deprecatedFeatureWarning ) ) );
-    }
-
-    @Test
-    void deprecatedLower()
-    {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
-                .forEach( version -> assertNotifications( version + " EXPLAIN RETURN lower('BAR') AS one",
-                                                          containsItem( deprecatedFeatureWarning ) ) );
-    }
-
-    @Test
-    void deprecatedRels()
-    {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
-                .forEach( version -> assertNotifications( version + " EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r",
-                                                          containsItem( deprecatedFeatureWarning ) ) );
-    }
-
-    @Test
     void deprecatedFilter()
     {
         assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds",

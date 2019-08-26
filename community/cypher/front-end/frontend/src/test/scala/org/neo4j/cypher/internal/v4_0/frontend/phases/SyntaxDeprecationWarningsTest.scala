@@ -29,9 +29,6 @@ class SyntaxDeprecationWarningsTest extends CypherFunSuite {
   private val returnPos = InputPosition(7, 1, 8)
 
   test("should warn about V1 deprecations") {
-    check(V1, "RETURN toInt(2.71828)") should equal(Set(DeprecatedFunctionNotification(returnPos, "toInt", "toInteger")))
-    check(V1, "RETURN upper('hello')") should equal(Set(DeprecatedFunctionNotification(returnPos, "upper", "toUpper")))
-    check(V1, "RETURN rels($r)") should equal(Set(DeprecatedFunctionNotification(returnPos, "rels", "relationships")))
     check(V1, "RETURN timestamp()") shouldBe empty
   }
 
