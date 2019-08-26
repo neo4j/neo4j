@@ -34,7 +34,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("simple var-length-expand ") {
+  test("simple var-length-expand") {
     // given
     val n = sizeHint / 6
     val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
@@ -162,7 +162,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("simple var-length-expand-into") {
     // given
-    val n = closestMultipleOf(sizeHint / 5, 4)
+    val n = closestMultipleOf(10, 4)
     val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
 
     // when

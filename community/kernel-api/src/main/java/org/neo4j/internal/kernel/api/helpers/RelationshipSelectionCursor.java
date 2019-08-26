@@ -41,7 +41,7 @@ public interface RelationshipSelectionCursor extends AutoCloseable
 
     long propertiesReference();
 
-    final class EMPTY implements RelationshipSelectionCursor
+    final class Empty implements RelationshipSelectionCursor
     {
         @Override
         public boolean next()
@@ -92,5 +92,5 @@ public interface RelationshipSelectionCursor extends AutoCloseable
         }
     }
 
-    RelationshipSelectionCursor EMPTY = new EMPTY();
+    RelationshipSelectionCursor EMPTY = new Empty();
 }

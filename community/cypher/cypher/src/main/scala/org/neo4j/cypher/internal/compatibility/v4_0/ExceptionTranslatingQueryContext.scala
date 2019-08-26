@@ -222,8 +222,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipSelectionCursor =
     translateException(inner.getRelationshipsCursor(node, dir, types))
 
-  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
-    translateException(inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId))
+  override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): RelationshipValue =
+    translateException(inner.relationshipById(relationshipId, startNodeId, endNodeId, typeId))
 
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,

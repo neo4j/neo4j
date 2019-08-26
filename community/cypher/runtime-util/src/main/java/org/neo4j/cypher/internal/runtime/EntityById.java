@@ -31,4 +31,5 @@ public interface EntityById
 
     RelationshipValue relationshipById( long id );
 
+    RelationshipValue relationshipById( long id, long startNode, long endNode, int type );
 }

@@ -227,12 +227,15 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long,
-                                  endNodeId: Long): RelationshipValue = try {
-    fromRelationshipProxy(entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId))
-  } catch {
-    case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
-  }
+  override def relationshipById(relationshipId: Long,
+                                startNodeId: Long,
+                                endNodeId: Long,
+                                typeId: Int): RelationshipValue =
+    try {
+      fromRelationshipProxy(entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId))
+    } catch {
+      case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
+    }
 
   override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,

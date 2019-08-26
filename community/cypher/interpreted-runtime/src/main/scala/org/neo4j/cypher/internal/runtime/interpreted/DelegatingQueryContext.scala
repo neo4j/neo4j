@@ -93,8 +93,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit =  singleDbHit(inner.singleRelationship(id, cursor))
 
-  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
-    inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId)
+  override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): RelationshipValue =
+    inner.relationshipById(relationshipId, startNodeId, endNodeId, typeId)
 
   override def nodeOps: NodeOperations = inner.nodeOps
 
