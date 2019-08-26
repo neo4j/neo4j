@@ -55,7 +55,7 @@ public class AlreadyConstrainedException extends SchemaKernelException
                 return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT, constraint.schema() );
 
             case CONSTRAINT_CREATION:
-                return ALREADY_CONSTRAINED_MESSAGE_PREFIX + constraint.prettyPrint( tokenNameLookup );
+                return ALREADY_CONSTRAINED_MESSAGE_PREFIX + constraint.userDescription( tokenNameLookup );
 
             default:
                 return format( NO_CONTEXT_FORMAT, constraint );

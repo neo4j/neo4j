@@ -204,7 +204,7 @@ class ConstraintIndexCreatorTest
     }
 
     @Test
-    void shouldReuseExistingOrphanedConstraintIndex() throws Exception
+    void shouldThrowOnExistingOrphanedConstraintIndex() throws Exception
     {
         // given
         IndexingService indexingService = mock( IndexingService.class );
@@ -217,20 +217,16 @@ class ConstraintIndexCreatorTest
         when( schemaRead.index( descriptor ) ).thenReturn( indexReference );
         when( schemaRead.indexGetOwningUniquenessConstraintId( indexReference ) )
                 .thenReturn( null ); // which means it has no owner
-        ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        IndexDescriptor constraintIndex = creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() );
+        assertThrows( AlreadyConstrainedException.class, () -> creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() ) );
 
         // then
-        assertEquals( orphanedConstraintIndexId, constraintIndex.getId() );
         assertEquals( 0, kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
         verify( schemaRead ).index( descriptor );
-        verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );
-        verify( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
     }
 
     @Test
@@ -249,8 +245,7 @@ class ConstraintIndexCreatorTest
                 .thenReturn( constraintIndexOwnerId ); // which means there's an owner
         when( tokenRead.nodeLabelName( LABEL_ID ) ).thenReturn( "MyLabel" );
         when( tokenRead.propertyKeyName( PROPERTY_KEY_ID ) ).thenReturn( "MyKey" );
-        ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         // when
         assertThrows( AlreadyConstrainedException.class, () ->
@@ -260,10 +255,8 @@ class ConstraintIndexCreatorTest
         } );
 
         // then
-        assertEquals( 0,
-                kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
+        assertEquals( 0, kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
         verify( schemaRead ).index( descriptor );
-        verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );
     }
 

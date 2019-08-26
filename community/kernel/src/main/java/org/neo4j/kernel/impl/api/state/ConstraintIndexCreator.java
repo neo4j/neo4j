@@ -23,15 +23,14 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -103,7 +102,8 @@ public class ConstraintIndexCreator
         SchemaRead schemaRead = transaction.schemaRead();
         try
         {
-            index = getOrCreateUniquenessConstraintIndex( schemaRead, transaction.tokenRead(), constraint, provider );
+            SilentTokenNameLookup tokenLookup = new SilentTokenNameLookup( transaction.tokenRead() );
+            index = checkAndCreateConstraintIndex( schemaRead, tokenLookup, constraint, provider );
         }
         catch ( AlreadyConstrainedException e )
         {
@@ -229,25 +229,16 @@ public class ConstraintIndexCreator
         }
     }
 
-    private IndexDescriptor getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead, TokenRead tokenRead, IndexBackedConstraintDescriptor constraint,
-            String provider ) throws SchemaKernelException
+    private IndexDescriptor checkAndCreateConstraintIndex(
+            SchemaRead schemaRead, TokenNameLookup tokenLookup, IndexBackedConstraintDescriptor constraint, String provider ) throws SchemaKernelException
     {
         IndexDescriptor descriptor = schemaRead.index( constraint.schema() );
         if ( descriptor != IndexDescriptor.NO_INDEX )
         {
             if ( descriptor.isUnique() )
             {
-                // OK so we found a matching constraint index. We check whether or not it has an owner
-                // because this may have been a left-over constraint index from a previously failed
-                // constraint creation, due to crash or similar, hence the missing owner.
-                if ( schemaRead.indexGetOwningUniquenessConstraintId( descriptor ) == null )
-                {
-                    return descriptor;
-                }
-                throw new AlreadyConstrainedException(
-                        constraint,
-                        OperationContext.CONSTRAINT_CREATION,
-                        new SilentTokenNameLookup( tokenRead ) );
+                // Looks like there is already a constraint like this.
+                throw new AlreadyConstrainedException( constraint, CONSTRAINT_CREATION, tokenLookup );
             }
             // There's already an index for the schema of this constraint, which isn't of the type we're after.
             throw new AlreadyIndexedException( constraint.schema(), CONSTRAINT_CREATION );
