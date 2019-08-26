@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2002-2018 "Neo4j,"
+# Copyright (c) 2002-2019 "Neo4j,"
 # Neo4j Sweden AB [http://neo4j.com]
 #
 # This file is part of Neo4j.
@@ -167,6 +167,10 @@ do_start() {
   if [[ "${NEO4J_PID:-}" ]] ; then
     echo "Neo4j is already running (pid ${NEO4J_PID})."
     exit 0
+  fi
+  # check dir for pidfile exists
+  if [[ ! -d $(dirname "${NEO4J_PIDFILE}") ]]; then
+    mkdir -p $(dirname "${NEO4J_PIDFILE}")
   fi
 
   echo "Starting Neo4j."
