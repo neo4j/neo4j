@@ -139,7 +139,7 @@ class UpdateDeletedIndexIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
         return indexDefinition;
