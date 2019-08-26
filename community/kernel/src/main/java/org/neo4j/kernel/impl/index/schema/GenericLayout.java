@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
@@ -29,7 +30,7 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
 
     GenericLayout( int numberOfSlots, IndexSpecificSpaceFillingCurveSettings spatialSettings )
     {
-        super( "NSIL", 0, 5 );
+        super( Layout.namedIdentifier( "NSIL", numberOfSlots ), 0, 5 );
         this.numberOfSlots = numberOfSlots;
         this.spatialSettings = spatialSettings;
     }
