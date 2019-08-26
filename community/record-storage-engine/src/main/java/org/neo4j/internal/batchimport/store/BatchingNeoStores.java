@@ -248,8 +248,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         temporaryNeoStores = instantiateTempStores();
         instantiateExtensions();
 
-        neoStores.makeStoreOk();
-        temporaryNeoStores.makeStoreOk();
+        neoStores.start();
+        temporaryNeoStores.start();
     }
 
     private NeoStores instantiateTempStores()

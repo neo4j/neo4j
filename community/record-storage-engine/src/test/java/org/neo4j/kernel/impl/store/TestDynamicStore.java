@@ -83,7 +83,7 @@ class TestDynamicStore
     private DynamicArrayStore createDynamicArrayStore() throws IOException
     {
         neoStores = storeFactory.openAllNeoStores( true );
-        neoStores.makeStoreOk();
+        neoStores.start();
         return neoStores.getPropertyStore().getArrayStore();
     }
 

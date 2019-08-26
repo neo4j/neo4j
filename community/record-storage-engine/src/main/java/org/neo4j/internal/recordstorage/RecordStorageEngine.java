@@ -346,7 +346,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void start() throws Exception
     {
-        neoStores.makeStoreOk();
+        neoStores.start();
         countsStore.start();
         idController.start();
     }

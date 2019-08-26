@@ -371,7 +371,7 @@ public class NeoStores implements AutoCloseable
         return (SchemaStore) getStore( StoreType.SCHEMA );
     }
 
-    public void makeStoreOk() throws IOException
+    public void start() throws IOException
     {
         visitStores( CommonAbstractStore::start );
     }
