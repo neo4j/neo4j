@@ -127,11 +127,11 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     public QueryExecution executeQuery( FullyParsedQuery query, MapValue parameters, TransactionalContext context,
-            boolean prePopulate, InputDataStream input, QuerySubscriber subscriber ) throws QueryExecutionKernelException
+            boolean prePopulate, QuerySubscriber subscriber ) throws QueryExecutionKernelException
     {
         try
         {
-            return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate, input, subscriber );
+            return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate, subscriber );
         }
         catch ( Neo4jException e )
         {

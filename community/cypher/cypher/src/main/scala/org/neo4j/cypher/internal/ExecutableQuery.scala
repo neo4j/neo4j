@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber, TransactionalContext}
@@ -39,7 +38,6 @@ trait ExecutableQuery extends CacheabilityInfo {
     * @param queryOptions           execution options
     * @param params                 the parameters
     * @param prePopulateResults     if false, nodes and relationships might be returned as references in the results
-    * @param input                  stream of existing records as input
     * @param subscriber             The subscriber where results should be streamed to.
     * @return the QueryExecution that controls the demand to the subscriber
     */
@@ -48,7 +46,6 @@ trait ExecutableQuery extends CacheabilityInfo {
               queryOptions: QueryOptions,
               params: MapValue,
               prePopulateResults: Boolean,
-              input: InputDataStream,
               subscriber: QuerySubscriber): QueryExecution
 
   /**

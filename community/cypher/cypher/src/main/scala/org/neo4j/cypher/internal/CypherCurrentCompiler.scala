@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher._
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
@@ -36,7 +35,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
-import org.neo4j.cypher.{CypherExecutionMode, CypherVersion, _}
+import org.neo4j.cypher.{CypherExecutionMode, CypherVersion}
 import org.neo4j.exceptions.{Neo4jException, ParameterNotFoundException, ParameterWrongTypeException}
 import org.neo4j.graphdb.{Notification, QueryExecutionType}
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
@@ -237,7 +236,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                          shouldCloseTransaction: Boolean,
                          queryOptions: QueryOptions,
                          params: MapValue, prePopulateResults: Boolean,
-                         input: InputDataStream,
                          subscriber: QuerySubscriber): QueryExecution = {
 
       val taskCloser = new TaskCloser
@@ -245,7 +243,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       if (shouldCloseTransaction) taskCloser.addTask(_ => queryContext.transactionalContext.close())
       taskCloser.addTask(_ => queryContext.resources.close())
       try {
-        innerExecute(transactionalContext, queryOptions, taskCloser, queryContext, params, prePopulateResults, input, subscriber)
+        innerExecute(transactionalContext, queryOptions, taskCloser, queryContext, params, prePopulateResults, NoInput, subscriber)
       } catch {
         case e: Throwable =>
           subscriber.onError(e)

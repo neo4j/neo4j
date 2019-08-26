@@ -26,7 +26,6 @@ import java.{lang, util}
 import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
-import org.neo4j.cypher.internal.runtime.{InputDataStream, NoInput}
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.v4_0.expressions.functions.FunctionInfo
@@ -147,11 +146,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               context: TransactionalContext,
               profile: Boolean,
               prePopulate: Boolean,
-              input: InputDataStream,
               subscriber: QuerySubscriber): QueryExecution = {
     val queryTracer = tracer.compileQuery(query.description)
     closing(context, queryTracer) {
-      doExecute(query, params, context, shouldCloseTransaction = true, profile, prePopulate, input, queryTracer, subscriber)
+      doExecute(query, params, context, shouldCloseTransaction = true, profile, prePopulate, queryTracer, subscriber)
     }
   }
 
@@ -179,7 +177,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     val queryTracer = tracer.compileQuery(query)
     closing(context, queryTracer) {
       val preParsedQuery = preParser.preParseQuery(query, profile)
-      doExecute(preParsedQuery, params, context, shouldCloseTransaction, profile, prePopulate, NoInput, queryTracer, subscriber)
+      doExecute(preParsedQuery, params, context, shouldCloseTransaction, profile, prePopulate, queryTracer, subscriber)
     }
   }
 
@@ -196,7 +194,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         shouldCloseTransaction: Boolean,
                         profile: Boolean,
                         prePopulate: Boolean,
-                        input: InputDataStream,
                         tracer: QueryCompilationEvent,
                         subscriber: QuerySubscriber): QueryExecution = {
 
@@ -206,7 +203,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
     val combinedParams = params.updatedWith(executableQuery.extractedParams)
     context.executingQuery().compilationCompleted(executableQuery.compilerInfo, executableQuery.queryType, supplier(executableQuery.planDescription()))
-    executableQuery.execute(context, shouldCloseTransaction, query.options, combinedParams, prePopulate, input, subscriber)
+    executableQuery.execute(context, shouldCloseTransaction, query.options, combinedParams, prePopulate, subscriber)
   }
 
   /*

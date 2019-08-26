@@ -269,6 +269,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def sortItem(e: Expression): AscSortItem =
     AscSortItem(e)(pos)
 
+  def input(variables: Variable*): InputDataStream =
+    InputDataStream(variables)(pos)
+
   def unwind(e: Expression, v: Variable): Unwind =
     Unwind(e, v)(pos)
 
