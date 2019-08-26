@@ -567,10 +567,6 @@ case class AstGenerator(simpleStrings: Boolean = true) {
     pattern <- _pattern
   } yield Create(pattern)(pos)
 
-  def _createUnique: Gen[CreateUnique] = for {
-    pattern <- _pattern
-  } yield CreateUnique(pattern)(pos)
-
   def _unwind: Gen[Unwind] = for {
     expression <- _expression
     variable <- _variable
@@ -699,7 +695,6 @@ case class AstGenerator(simpleStrings: Boolean = true) {
     lzy(_return),
     lzy(_match),
     lzy(_create),
-    lzy(_createUnique),
     lzy(_unwind),
     lzy(_set),
     lzy(_delete),

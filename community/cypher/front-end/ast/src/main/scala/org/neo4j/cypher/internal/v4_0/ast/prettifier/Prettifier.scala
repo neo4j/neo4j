@@ -230,7 +230,6 @@ case class Prettifier(expr: ExpressionStringifier) {
     case l: LoadCSV => asString(l)
     case f: Foreach => asString(f)
     case s: Start => asString(s)
-    case c: CreateUnique => asString(c)
     case _ => clause.asCanonicalStringVal // TODO
   }
 
@@ -385,11 +384,6 @@ case class Prettifier(expr: ExpressionStringifier) {
 
     val where = start.where.map(asString).map(indentedNewLine).getOrElse("")
     s"START ${startItems.mkString(s",$NL      ")}$where"
-  }
-
-  private def asString(c: CreateUnique): String = {
-    val p = expr.patterns.apply(c.pattern)
-    s"CREATE UNIQUE $p"
   }
 
   private def asString(properties: Seq[Property]): String =

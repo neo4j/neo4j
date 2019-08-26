@@ -51,14 +51,6 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     assert(result === expected)
   }
 
-  test("match (a) create unique (a)-[:X]->() return a") {
-    val original = parser.parse("match (a) create unique p=(a)-[:X]->() return p", exceptionFactory)
-    val expected = parser.parse("match (a) create unique p=(a)-[`  UNNAMED30`:X]->(`  UNNAMED37`) return p", exceptionFactory)
-
-    val result = original.rewrite(nameUpdatingClauses)
-    assert(result === expected)
-  }
-
   test("match (a) create (a)-[:X]->() return a") {
     val original = parser.parse("match (a) create (a)-[:X]->() return a", exceptionFactory)
     val expected = parser.parse("match (a) create (a)-[`  UNNAMED21`:X]->(`  UNNAMED28`) return a", exceptionFactory)

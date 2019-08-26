@@ -38,7 +38,6 @@ object literalReplacement {
   private val literalMatcher: PartialFunction[Any, LiteralReplacements => (LiteralReplacements, Option[LiteralReplacements => LiteralReplacements])] = {
     case _: Match |
          _: Create |
-         _: CreateUnique |
          _: Merge |
          _: SetClause |
          _: Return |

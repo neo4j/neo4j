@@ -446,11 +446,7 @@ class PrettifierIT extends CypherFunSuite {
         """FOREACH ( n IN [1, 2, 3] |
           |  CREATE ({key: n})
           |  CREATE ({foreignKey: n})
-          |)""".stripMargin,
-
-      "create unique (a)--(b) RETURN a" ->
-        """CREATE UNIQUE (a)--(b)
-          |RETURN a""".stripMargin
+          |)""".stripMargin
     ) ++ startTests("node") ++ startTests("relationship") ++ privilegeTests()
 
   def privilegeTests(): Seq[(String, String)] = {

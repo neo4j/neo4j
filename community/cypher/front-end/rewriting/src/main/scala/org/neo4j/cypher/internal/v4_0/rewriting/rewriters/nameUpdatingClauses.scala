@@ -25,9 +25,6 @@ case object nameUpdatingClauses extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val findingRewriter: Rewriter = Rewriter.lift {
-    case createUnique@CreateUnique(pattern) =>
-      val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
-      createUnique.copy(pattern = rewrittenPattern)(createUnique.position)
 
     case create@Create(pattern) =>
       val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)

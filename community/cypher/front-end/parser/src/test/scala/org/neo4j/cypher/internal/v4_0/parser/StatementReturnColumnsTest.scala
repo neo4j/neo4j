@@ -42,7 +42,6 @@ class StatementReturnColumnsTest extends CypherFunSuite with ParserTest[ast.Stat
 
   test("Updates") {
     parsing("MATCH (n) CREATE ()") shouldGive List.empty
-    parsing("MATCH (n) CREATE UNIQUE ()") shouldGive List.empty
     parsing("MATCH (n) SET n.prop=12") shouldGive List.empty
     parsing("MATCH (n) REMOVE n.prop") shouldGive List.empty
     parsing("MATCH (n) DELETE (m)") shouldGive List.empty
