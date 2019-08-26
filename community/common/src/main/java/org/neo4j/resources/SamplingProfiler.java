@@ -31,6 +31,7 @@ import java.util.concurrent.locks.LockSupport;
 
 class SamplingProfiler implements Profiler
 {
+    private static final ThreadGroup SAMPLER_GROUP = new ThreadGroup( "StackSamplers" );
     private static final long DEFAULT_SAMPLE_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos( 20 );
 
     private final ConcurrentLinkedQueue<Thread> samplerThreads = new ConcurrentLinkedQueue<>();
@@ -90,7 +91,7 @@ class SamplingProfiler implements Profiler
     {
         long capturedSampleIntervalNanos = sampleIntervalNanos.get();
         long baseline = System.nanoTime();
-        Thread samplerThread = new Thread( () ->
+        Thread samplerThread = new Thread( SAMPLER_GROUP, () ->
         {
             long nextSleepBaseline = initialDelayNanos > 0 ? sleep( baseline, initialDelayNanos ) : baseline;
             Sample root = samples.computeIfAbsent( threadToProfile, k -> new Sample( null ) );
