@@ -69,26 +69,16 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )
 
     // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD password
-    case CreateUser(source, userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional, replace) => (context, parameterMapping, securityContext) =>
-      if(suspendedOptional.isDefined)  // Users are always active in community
+    case CreateUser(source, userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional) => (context, parameterMapping, securityContext) =>
+      if (suspendedOptional.isDefined) // Users are always active in community
         throw new CantCompileQueryException(s"Failed to create the specified user '$userName': 'SET STATUS' is not available in community edition.")
 
       try {
         validatePassword(initialPassword)
-        val query = if (replace) {
-          """OPTIONAL MATCH (old:User {name: $name})
-            |DETACH DELETE old
-            |
-            |CREATE (new:User {name: $name, credentials: $credentials, passwordChangeRequired: $passwordChangeRequired, suspended: false})
-            |RETURN new.name
-          """.stripMargin
-        } else {
+        UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
           // NOTE: If username already exists we will violate a constraint
           """CREATE (u:User {name: $name, credentials: $credentials, passwordChangeRequired: $passwordChangeRequired, suspended: false})
-            |RETURN u.name""".stripMargin
-        }
-
-        UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine, query,
+            |RETURN u.name""".stripMargin,
           VirtualValues.map(
             Array("name", "credentials", "passwordChangeRequired"),
             Array(
@@ -110,11 +100,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       }
 
     // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD $password
-    case CreateUser(userName, _, Some(_), _, _, _, _) =>
+    case CreateUser(userName, _, Some(_), _, _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Did not resolve parameters correctly.")
 
     // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD
-    case CreateUser(userName, _, _, _, _, _, _) =>
+    case CreateUser(userName, _, _, _, _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
 
     // DROP USER [IF EXISTS] foo
@@ -125,7 +115,6 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           |RETURN user""".stripMargin,
         VirtualValues.map(Array("name"), Array(Values.stringValue(userName))),
         QueryHandler
-          .handleNoResult(() =>Some(new InvalidArgumentsException(s"Failed to delete the specified user '$userName': User does not exist.")))
           .handleError {
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
               new IllegalStateException(s"Failed to delete the specified user '$userName': $followerError", error)
@@ -197,6 +186,15 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
            |MATCH (node:$label {name: $$name})
            |RETURN node.name AS name
         """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))), QueryHandler.ignoreOnResult())
+
+    // Ensure that the role or user exists before being dropped
+    case EnsureNodeExists(label, name) => (_, _, _) =>
+      UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
+        s"""MATCH (node:$label {name: $$name})
+           |RETURN node""".stripMargin,
+        VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
+        QueryHandler.handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to delete the specified ${label.toLowerCase} '$name': $label does not exist.")))
+      )
 
     // SUPPORT PROCEDURES (need to be cleared before here)
     case SystemProcedureCall(_, queryString, params) => (_, _, _) =>
