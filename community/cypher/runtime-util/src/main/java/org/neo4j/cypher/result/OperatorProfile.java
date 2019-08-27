@@ -52,6 +52,11 @@ public interface OperatorProfile
      */
     long pageCacheMisses();
 
+    /**
+     * Make sure that any invalid values are replaced with NO_DATA.
+     */
+    void sanitize();
+
     default double pageCacheHitRatio()
     {
         return ( pageCacheHits() == NO_DATA || pageCacheMisses() == NO_DATA ) ?
@@ -65,31 +70,36 @@ public interface OperatorProfile
         @Override
         public long time()
         {
-            return -1;
+            return NO_DATA;
         }
 
         @Override
         public long dbHits()
         {
-            return -1;
+            return NO_DATA;
         }
 
         @Override
         public long rows()
         {
-            return -1;
+            return NO_DATA;
         }
 
         @Override
         public long pageCacheHits()
         {
-            return -1;
+            return NO_DATA;
         }
 
         @Override
         public long pageCacheMisses()
         {
-            return -1;
+            return NO_DATA;
+        }
+
+        @Override
+        public void sanitize()
+        {
         }
     };
 }

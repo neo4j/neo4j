@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.profiling
 
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 
 class ProfilingTracerTest extends CypherFunSuite {
@@ -34,7 +35,7 @@ class ProfilingTracerTest extends CypherFunSuite {
     }
   }
 
-  val id = Id.INVALID_ID
+  private val id = Id.INVALID_ID
 
   test("shouldReportExecutionTimeOfQueryExecution") {
     // given
@@ -68,6 +69,31 @@ class ProfilingTracerTest extends CypherFunSuite {
 
     // then
     tracer.timeOf(operatorId) should equal(12 + 45)
+  }
+
+  test("multiple uses of the same Id with NO_DATA should produce NO_DATA") {
+    // given
+    val clock = new Clock
+    val operatorId = id
+    val tracer = new ProfilingTracer(clock, NoKernelStatisticProvider)
+
+    // when
+    val event1 = tracer.executeOperator(operatorId, false)
+    clock.progress(12)
+    event1.close()
+
+    val event2 = tracer.executeOperator(operatorId, false)
+    clock.progress(45)
+    event2.close()
+
+    // then
+    val profile = tracer.operatorProfile(operatorId.x)
+    profile.time() should equal(OperatorProfile.NO_DATA)
+    profile.dbHits() should equal(OperatorProfile.NO_DATA)
+    profile.rows() should equal(OperatorProfile.NO_DATA)
+    profile.pageCacheHits() should equal(OperatorProfile.NO_DATA)
+    profile.pageCacheMisses() should equal(OperatorProfile.NO_DATA)
+    profile.pageCacheHitRatio() should equal(OperatorProfile.NO_DATA)
   }
 
   test("shouldReportDbHitsOfQueryExecution") {

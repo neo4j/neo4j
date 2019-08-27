@@ -106,4 +106,6 @@ case class SystemCommandProfile(rowCount: Long) extends QueryProfile with Operat
   override def pageCacheHits(): Long = OperatorProfile.NO_DATA
 
   override def pageCacheMisses(): Long = OperatorProfile.NO_DATA
+
+  override def sanitize(): Unit = {}
 }

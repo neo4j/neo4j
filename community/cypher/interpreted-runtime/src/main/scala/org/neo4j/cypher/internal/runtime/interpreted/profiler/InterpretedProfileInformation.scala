@@ -32,6 +32,8 @@ class InterpretedProfileInformation extends QueryProfile {
                           override val pageCacheMisses: Long) extends OperatorProfile {
 
     override def time: Long = OperatorProfile.NO_DATA
+
+    override def sanitize(): Unit = throw new UnsupportedOperationException("Immutable OperatorData cannot be sanitized.")
   }
 
   val pageCacheMap: mutable.Map[Id, PageCacheStats] = mutable.Map.empty.withDefault(_ => PageCacheStats(0,0))

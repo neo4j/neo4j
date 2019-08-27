@@ -56,7 +56,15 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
     public OperatorProfile operatorProfile( int operatorId )
     {
         ProfilingTracerData value = data.get( operatorId );
-        return value == null ? ZERO : value;
+        if ( value == null )
+        {
+            return ZERO;
+        }
+        else
+        {
+            value.sanitize();
+            return value;
+        }
     }
 
     public long timeOf( Id operatorId )
