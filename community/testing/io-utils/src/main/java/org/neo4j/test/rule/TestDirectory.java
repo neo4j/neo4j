@@ -166,11 +166,16 @@ public class TestDirectory extends ExternalResource
 
     public File directory()
     {
-        if ( testDirectory == null )
+        if ( !isInitialised() )
         {
             throw new IllegalStateException( "Not initialized" );
         }
         return testDirectory;
+    }
+
+    public boolean isInitialised()
+    {
+        return testDirectory != null;
     }
 
     public File directory( String name, String... path )
@@ -291,7 +296,7 @@ public class TestDirectory extends ExternalResource
     {
         try
         {
-            if ( success && testDirectory != null && !keepDirectoryAfterSuccessfulTest )
+            if ( success && isInitialised() && !keepDirectoryAfterSuccessfulTest )
             {
                 fileSystem.deleteRecursively( testDirectory );
             }

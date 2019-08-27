@@ -25,7 +25,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.platform.commons.JUnitException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.OutputStream;
 import java.io.PrintStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -104,19 +106,21 @@ public class ProfilerExtension extends StatefullFieldExtension<Profiler> impleme
             if ( context.getExecutionException().isPresent() )
             {
                 String displayName = "Profile: " + context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + "." + context.getDisplayName();
-                profiler.printProfile( System.err, displayName );
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                profiler.printProfile( new PrintStream( buffer ), displayName );
+                buffer.writeTo( System.err );
 
                 ExtensionContext.Store testDirStore = getStore( context, TestDirectoryExtension.TEST_DIRECTORY_NAMESPACE );
                 TestDirectory testDir = testDirStore.get( TestDirectoryExtension.TEST_DIRECTORY, TestDirectory.class );
 
-                if ( testDir != null )
+                if ( testDir != null && testDir.isInitialised() )
                 {
                     File profileOutputFile = testDir.createFile( "profiler-output.txt" );
                     FileSystemAbstraction fs = testDir.getFileSystem();
 
-                    try ( PrintStream out = new PrintStream( fs.openAsOutputStream( profileOutputFile, false ) ) )
+                    try ( OutputStream out = fs.openAsOutputStream( profileOutputFile, false ) )
                     {
-                        profiler.printProfile( out, displayName );
+                        buffer.writeTo( out );
                     }
                 }
             }
