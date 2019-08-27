@@ -781,23 +781,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled =
             setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE );
 
-    @Description( "Whether or not to use a blacklist for java serialization filtering, rather than the default whitelist. NOTE: blacklists are " +
-            "typically much less secure, and should be avoided if possible" )
-    public static final Setting<Boolean> java_serialization_filter_use_blacklist =
-            setting( "dbms.java_serialization_filter.use_blacklist", BOOLEAN, FALSE );
-
-    @Description( "The classes whose objects may be deserialized using Java object serialization. Defaults should only be overridden by expert users. " +
-            "To Lax a filter may reduce system security whilst to strict a filter may prevent the system from functioning." )
-    public static final Setting<List<String>> java_serialization_filter_whitelist =
-            setting( "dbms.java_serialization_filter.whitelist", STRING_LIST, "org.neo4j.**,com.neo4j.**,com.hazelcast.**" );
-
-    @Description( "The classes whose objects may *not* be deserialized using Java object serialization. Defaults should only be overridden by expert users." )
-    public static final Setting<List<String>> java_serialization_filter_blacklist =
-            setting( "dbms.java_serialization_filter.blacklist", STRING_LIST, "" +
-                    "org.apache.commons.beanutils.BeanComparator," +
-                    "org.apache.commons.collections.functors.**," +
-                    "org.apache.commons.collections4.functors.**" );
-
     @Description( "If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged." )
     @Dynamic
