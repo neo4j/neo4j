@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
@@ -31,6 +32,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -60,11 +62,12 @@ public class StoreInfoCommand implements AdminCommand
 
         Validators.CONTAINS_EXISTING_DATABASE.validate( databaseDirectory.toFile() );
 
-        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
+        try ( Closeable ignored = StoreLockChecker.check( databaseLayout.getStoreLayout() );
+                DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 JobScheduler jobScheduler = createInitialisedScheduler();
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, jobScheduler ) )
         {
-            DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
             final String storeVersion = new StoreVersionCheck( pageCache )
                     .getVersion( databaseLayout.metadataStore() )
                     .orElseThrow( () -> new CommandFailed( String.format( "Could not find version metadata in store '%s'", databaseDirectory ) ) );
@@ -78,6 +81,10 @@ public class StoreInfoCommand implements AdminCommand
             findSuccessor( format )
                     .map( next -> String.format( fmt, "Store format superseded in:", next.introductionVersion() ) )
                     .ifPresent( out );
+        }
+        catch ( StoreLockException e )
+        {
+            throw new CommandFailed( "the database is in use -- stop Neo4j and try again", e );
         }
         catch ( Exception e )
         {
