@@ -161,19 +161,21 @@ trait ExecutionEngineHelper {
 
   def execute(fpq: FullyParsedQuery, params: Map[String, Any]): RewindableExecutionResult = {
     val subscriber = new RecordingQuerySubscriber
-    val context = graph.transactionalContext(query = fpq.description -> params.toMap)
-    RewindableExecutionResult(
-      eengine.execute(
-        query = fpq,
-        params = ExecutionEngineHelper.asMapValue(params),
-        context = context,
-        profile = false,
-        prePopulate = false,
-        subscriber = subscriber
-      ),
-      new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
-      subscriber
-    )
+    graph.withTx { tx =>
+      val context = graph.transactionalContext(tx, query = fpq.description -> params.toMap)
+      RewindableExecutionResult(
+        eengine.execute(
+          query = fpq,
+          params = ExecutionEngineHelper.asMapValue(params),
+          context = context,
+          profile = false,
+          prePopulate = false,
+          subscriber = subscriber
+        ),
+        new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
+        subscriber
+      )
+    }
   }
 
   def executeOfficial(q: String, params: (String, Any)*): Result =
