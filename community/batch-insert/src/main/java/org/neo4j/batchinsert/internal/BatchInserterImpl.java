@@ -334,7 +334,7 @@ public class BatchInserterImpl implements BatchInserter
             actions = new BatchSchemaActions();
 
             // Record access
-            recordAccess = new DirectRecordAccessSet( neoStores );
+            recordAccess = new DirectRecordAccessSet( neoStores, idGeneratorFactory );
             relationshipCreator = new RelationshipCreator(
                 new RelationshipGroupGetter( relationshipGroupStore ), relationshipGroupStore.getStoreHeaderInt() );
             propertyTraverser = new PropertyTraverser();

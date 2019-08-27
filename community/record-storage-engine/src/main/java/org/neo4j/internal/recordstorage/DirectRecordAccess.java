@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.internal.helpers.collection.IterableWrapper;
+import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.util.IntCounter;
@@ -201,7 +202,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         {
             if ( changed )
             {
-                store.updateRecord( record );
+                store.updateRecord( record, IdUpdateListener.IGNORE );
             }
         }
 

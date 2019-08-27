@@ -63,12 +63,13 @@ class RecordPropertyCursorTest
     private NeoStores neoStores;
     private PropertyCreator creator;
     private NodeRecord owner;
+    private DefaultIdGeneratorFactory idGeneratorFactory;
 
     @BeforeEach
     void setup()
     {
-        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
-                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate() ),
+        idGeneratorFactory = new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate() );
+        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), idGeneratorFactory,
                 pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() ).openAllNeoStores( true );
         creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         owner = neoStores.getNodeStore().newRecord();
@@ -150,7 +151,7 @@ class RecordPropertyCursorTest
 
     private long storeValuesAsPropertyChain( PropertyCreator creator, NodeRecord owner, Value[] values )
     {
-        DirectRecordAccessSet access = new DirectRecordAccessSet( neoStores );
+        DirectRecordAccessSet access = new DirectRecordAccessSet( neoStores, idGeneratorFactory );
         long firstPropertyId = creator.createPropertyChain( owner, blocksOf( creator, values ), access.getPropertyRecords() );
         access.close();
         return firstPropertyId;

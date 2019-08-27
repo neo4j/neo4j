@@ -22,6 +22,7 @@ package org.neo4j.internal.id;
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.EnumMap;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -76,5 +77,11 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
         generator.checkpoint( UNLIMITED );
         generators.put( idType, generator );
         return generator;
+    }
+
+    @Override
+    public void visit( Consumer<IdGenerator> visitor )
+    {
+        generators.values().forEach( visitor );
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -44,30 +46,18 @@ public class DirectRecordAccessSet implements RecordAccessSet
     private final DirectRecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenRecords;
     private final DirectRecordAccess<LabelTokenRecord, Void> labelTokenRecords;
     private final DirectRecordAccess[] all;
+    private final IdGeneratorFactory idGeneratorFactory;
 
-    public DirectRecordAccessSet( NeoStores neoStores )
+    public DirectRecordAccessSet( NeoStores neoStores, IdGeneratorFactory idGeneratorFactory )
     {
-        this(
-                neoStores.getNodeStore(),
-                neoStores.getPropertyStore(),
-                neoStores.getRelationshipStore(),
-                neoStores.getRelationshipGroupStore(),
-                neoStores.getPropertyKeyTokenStore(),
-                neoStores.getRelationshipTypeTokenStore(),
-                neoStores.getLabelTokenStore(),
-                neoStores.getSchemaStore() );
-    }
-
-    public DirectRecordAccessSet(
-            RecordStore<NodeRecord> nodeStore,
-            PropertyStore propertyStore,
-            RecordStore<RelationshipRecord> relationshipStore,
-            RecordStore<RelationshipGroupRecord> relationshipGroupStore,
-            RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore,
-            RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore,
-            RecordStore<LabelTokenRecord> labelTokenStore,
-            SchemaStore schemaStore )
-    {
+        RecordStore<NodeRecord> nodeStore = neoStores.getNodeStore();
+        PropertyStore propertyStore = neoStores.getPropertyStore();
+        RecordStore<RelationshipRecord> relationshipStore = neoStores.getRelationshipStore();
+        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
+        RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
+        RecordStore<LabelTokenRecord> labelTokenStore = neoStores.getLabelTokenStore();
+        SchemaStore schemaStore = neoStores.getSchemaStore();
         Loaders loaders = new Loaders( nodeStore, propertyStore, relationshipStore, relationshipGroupStore,
                 propertyKeyTokenStore, relationshipTypeTokenStore, labelTokenStore, schemaStore );
         nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader() );
@@ -83,6 +73,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
                 nodeRecords, propertyRecords, relationshipRecords, relationshipGroupRecords,
                 propertyKeyTokenRecords, relationshipTypeTokenRecords, labelTokenRecords
         };
+        this.idGeneratorFactory = idGeneratorFactory;
     }
 
     @Override
@@ -141,6 +132,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
         {
             access.close();
         }
+        idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
     }
 
     public void commit()

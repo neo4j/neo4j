@@ -93,7 +93,7 @@ class RelationshipCreatorTest
         long nodeId = createNodeWithRelationships( DENSE_NODE_THRESHOLD );
         NeoStores neoStores = flipToNeoStores();
 
-        Tracker tracker = new Tracker( neoStores );
+        Tracker tracker = new Tracker( neoStores, idGeneratorFactory );
         RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
         RelationshipCreator relationshipCreator = new RelationshipCreator( groupGetter, 5 );
 
@@ -133,9 +133,9 @@ class RelationshipCreatorTest
         private final Set<Long> relationshipLocksAcquired = new HashSet<>();
         private final Set<Long> changedRelationships = new HashSet<>();
 
-        Tracker( NeoStores neoStores )
+        Tracker( NeoStores neoStores, IdGeneratorFactory idGeneratorFactory )
         {
-            this.delegate = new DirectRecordAccessSet( neoStores );
+            this.delegate = new DirectRecordAccessSet( neoStores, idGeneratorFactory );
             this.relRecords = new TrackingRecordAccess<>( delegate.getRelRecords(), this );
         }
 

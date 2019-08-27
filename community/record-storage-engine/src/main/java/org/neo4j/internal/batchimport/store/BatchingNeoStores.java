@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
@@ -36,9 +35,8 @@ import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingProp
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.internal.batchimport.store.io.IoTracer;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
-import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
@@ -393,7 +391,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         if ( neoStores != null )
         {
-            Stream.of( IdType.values() ).forEach( idType -> ((IndexedIdGenerator) idGeneratorFactory.get( idType )).markHighestWrittenAtHighId() );
+            idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
         }
     }
 

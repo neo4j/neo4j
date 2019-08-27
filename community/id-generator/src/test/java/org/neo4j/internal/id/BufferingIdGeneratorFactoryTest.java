@@ -24,8 +24,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.file.OpenOption;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.id.IdController.ConditionSnapshot;
 import org.neo4j.internal.id.IdGenerator.CommitMarker;
@@ -126,6 +128,12 @@ class BufferingIdGeneratorFactoryTest
         public IdGenerator get( IdType idType )
         {
             return generators[idType.ordinal()];
+        }
+
+        @Override
+        public void visit( Consumer<IdGenerator> visitor )
+        {
+            Stream.of( generators ).forEach( visitor );
         }
     }
 }

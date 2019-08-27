@@ -21,14 +21,16 @@ package org.neo4j.internal.id;
 
 import java.io.File;
 import java.nio.file.OpenOption;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.PageCache;
 
 /**
- * Wraps {@link IdGenerator} so that ids can be {@link IdGenerator#freeId(long) freed} at safe points in time, after all transactions
+ * Wraps {@link IdGenerator} so that ids can be {@link IdGenerator#reuseMarker()} freed using reuse marker} at safe points in time, after all transactions
  * which were active at the time of freeing, have been closed.
  */
 public class BufferingIdGeneratorFactory implements IdGeneratorFactory
@@ -72,6 +74,12 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     {
         IdGenerator generator = overriddenIdGenerators[idType.ordinal()];
         return generator != null ? generator : delegate.get( idType );
+    }
+
+    @Override
+    public void visit( Consumer<IdGenerator> visitor )
+    {
+        Stream.of( overriddenIdGenerators ).forEach( visitor );
     }
 
     private IdGenerator wrapAndKeep( IdType idType, IdGenerator generator )

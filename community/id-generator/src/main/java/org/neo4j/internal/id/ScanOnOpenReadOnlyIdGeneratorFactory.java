@@ -22,6 +22,7 @@ package org.neo4j.internal.id;
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.EnumMap;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.pagecache.PageCache;
@@ -60,5 +61,11 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
             throw new IllegalStateException( "IdGenerator for " + idType + " not opened" );
         }
         return idGenerator;
+    }
+
+    @Override
+    public void visit( Consumer<IdGenerator> visitor )
+    {
+        idGenerators.values().forEach( visitor );
     }
 }
