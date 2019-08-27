@@ -78,7 +78,7 @@ class ProfilerExtensionTest
     {
         // Because this test *aborts* rather than fails or completes normally, we will be in a state where we both have an
         // execution exception *and* the TestDirectoryExtension cleans up after itself as if the test was a success.
-        // In this case, the profiler extension will see an uninisialised TestDirectoryExtension, and must be able to cope
+        // In this case, the profiler extension will see an uninitialised TestDirectoryExtension, and must be able to cope
         // with that. Furthermore, these particular tests are arranged such that the TestDirectoryExtension has its
         // lifecycle nested within the ProfilerExtension, which means that the test directory will do its cleanup
         // before the profiler extension gets to write its results.
@@ -97,7 +97,7 @@ class ProfilerExtensionTest
     private static void execute( Class<?> testClass, String testName, TestExecutionListener... testExecutionListeners )
     {
         LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request()
-                .selectors( selectMethod( testClass, testName ))
+                .selectors( selectMethod( testClass, testName ) )
                 .configurationParameter( TEST_TOGGLE, "true" )
                 .build();
         Launcher launcher = LauncherFactory.create();

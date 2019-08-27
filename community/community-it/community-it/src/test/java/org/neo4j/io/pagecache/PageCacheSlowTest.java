@@ -527,7 +527,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                   PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1 ) )
             {
                 adversary.setProbabilityFactor( 1.0 );
-            profiler.profile();
+                profiler.profile();
 
                 for ( int i = 0; i < 1000; i++ )
                 {

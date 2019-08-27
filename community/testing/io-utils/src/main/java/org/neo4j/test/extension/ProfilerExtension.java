@@ -39,7 +39,7 @@ import org.neo4j.test.rule.TestDirectory;
  * of where the time was spent. This is particularly useful for tests that has a tendency to fail with a timeout, and this extension can be used to diagnose
  * such flaky tests.
  * <p>
- * The profile output is printed to a {@code profiler-output.txt} file in the test directory by default.
+ * The profile output is printed to {@link System#err}, and to a {@code profiler-output.txt} file in the test directory, by default.
  * <p>
  * Here is an example of how to use it:
  *
