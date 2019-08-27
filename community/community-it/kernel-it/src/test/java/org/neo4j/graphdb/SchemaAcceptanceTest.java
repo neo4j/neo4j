@@ -25,8 +25,9 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -96,7 +97,7 @@ class SchemaAcceptanceTest
         IndexDefinition index = createIndex( db, label, propertyKey );
 
         // THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getIndexes( db, label ), containsOnly( index ) );
         }
@@ -109,7 +110,7 @@ class SchemaAcceptanceTest
         IndexDefinition index = createIndex( db, label, propertyKey, secondPropertyKey );
 
         // THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getIndexes( db, label ), containsOnly( index ) );
         }
@@ -204,7 +205,7 @@ class SchemaAcceptanceTest
         dropIndex( index );
 
         // THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getIndexes( db, label ), isEmpty() );
         }
@@ -233,7 +234,7 @@ class SchemaAcceptanceTest
         }
 
         // THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
         }
@@ -258,7 +259,7 @@ class SchemaAcceptanceTest
         }
 
         // THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
         }
@@ -313,7 +314,7 @@ class SchemaAcceptanceTest
         waitForIndex( db, index );
 
         // THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db, transaction ), containsOnly( node ) );
         }
@@ -400,7 +401,7 @@ class SchemaAcceptanceTest
         createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getConstraints( db, label ), containsOnly( constraint1 ) );
         }
@@ -414,7 +415,7 @@ class SchemaAcceptanceTest
         ConstraintDefinition constraint2 = createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getConstraints( db ), containsOnly( constraint1, constraint2 ) );
         }
@@ -430,7 +431,7 @@ class SchemaAcceptanceTest
         dropConstraint( db, constraint );
 
         // THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getConstraints( db, label ), isEmpty() );
         }
@@ -903,7 +904,7 @@ class SchemaAcceptanceTest
         void awaitIndexesMustNotThrowOnConcurrentlyDroppedIndexes() throws Exception
         {
             AtomicBoolean stop = new AtomicBoolean();
-            LinkedList<IndexDefinition> indexes = new LinkedList<>();
+            Queue<IndexDefinition> indexes = new ConcurrentLinkedQueue<>();
 
             try ( Transaction tx = db.beginTx() )
             {
@@ -921,7 +922,16 @@ class SchemaAcceptanceTest
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
-                        db.schema().awaitIndexesOnline( 1, TimeUnit.SECONDS );
+                        try
+                        {
+                            db.schema().awaitIndexesOnline( 1, TimeUnit.SECONDS );
+                        }
+                        catch ( Exception e )
+                        {
+                            stop.set( true );
+                            indexes.clear();
+                            throw e;
+                        }
                         tx.commit();
                     }
                 }

@@ -94,6 +94,11 @@ public class SchemaCache
         return schemaCacheState.hasConstraintRule( descriptor );
     }
 
+    public boolean hasIndex( IndexDescriptor index )
+    {
+        return schemaCacheState.hasIndex( index );
+    }
+
     public boolean hasIndex( SchemaDescriptor descriptor )
     {
         return schemaCacheState.hasIndex( descriptor );
@@ -314,6 +319,11 @@ public class SchemaCache
         boolean hasConstraintRule( ConstraintDescriptor descriptor )
         {
             return constraints.contains( descriptor );
+        }
+
+        boolean hasIndex( IndexDescriptor index )
+        {
+            return indexDescriptorById.containsKey( index.getId() );
         }
 
         boolean hasIndex( SchemaDescriptor descriptor )

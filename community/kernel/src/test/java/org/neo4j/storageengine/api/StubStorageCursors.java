@@ -131,6 +131,12 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
+    public boolean indexExists( IndexDescriptor index )
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
     public ConstraintDescriptor constraintGetForName( String name )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );

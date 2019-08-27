@@ -119,6 +119,12 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
+    public boolean indexExists( IndexDescriptor index )
+    {
+        return schemaCache.hasIndex( index );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexesGetAll()
     {
         return schemaCache.indexDescriptors().iterator();

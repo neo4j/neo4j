@@ -50,6 +50,13 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
     IndexDescriptor indexGetForName( String name );
 
     /**
+     * Check whether or not the given index exists in the store.
+     * @param index The index to check.
+     * @return {@code true} if the index exists, {@code false} otherwise.
+     */
+    boolean indexExists( IndexDescriptor index );
+
+    /**
      * Get the constraint with the given name.
      * @param name name of the constraint to find.
      * @return {@link ConstraintDescriptor} associated with the given {@code name}.

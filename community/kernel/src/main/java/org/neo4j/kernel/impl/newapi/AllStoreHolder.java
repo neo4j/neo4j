@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
@@ -415,12 +416,75 @@ public class AllStoreHolder extends Read
         return acquireSharedSchemaLock( index );
     }
 
+    private void unlockIndex( IndexDescriptor index )
+    {
+        if ( index != null )
+        {
+            releaseSharedSchemaLock( index );
+        }
+    }
+
     /**
      * Maps all index descriptors according to {@link #lockedIndex(IndexDescriptor)}.
      */
     private Iterator<IndexDescriptor> lockedIndexes( Iterator<IndexDescriptor> indexes )
     {
-        return Iterators.map( this::lockedIndex, indexes );
+        // Since the schema cache gives us snapshots views of the schema cache,
+        // the indexes could be dropped in-between us getting the snapshot, and
+        // taking the shared schema locks. Thus, after we take the lock, we need
+        // to filter out indexes that no longer exists.
+        Collection<IndexDescriptor> coll = Iterators.asCollection( indexes );
+        boolean checkTxState = ktx.hasTxStateWithChanges();
+        Iterator<IndexDescriptor> itr = coll.iterator();
+        while ( itr.hasNext() )
+        {
+            IndexDescriptor index = lockedIndex( itr.next() );
+            if ( checkTxState && ktx.txState().indexChanges().isAdded( index ) )
+            {
+                continue;
+            }
+            if ( !storageReader.indexExists( index ) )
+            {
+                unlockIndex( index );
+                itr.remove();
+            }
+        }
+        return coll.iterator();
+    }
+
+    private ConstraintDescriptor lockConstraint( ConstraintDescriptor constraint )
+    {
+        SchemaDescriptor schema = constraint.schema();
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.lockingKeys() );
+        return constraint;
+    }
+
+    private void unlockConstraint( ConstraintDescriptor constraint )
+    {
+        SchemaDescriptor schema = constraint.schema();
+        ktx.statementLocks().pessimistic().releaseShared( schema.keyType(), schema.lockingKeys() );
+    }
+
+    private Iterator<ConstraintDescriptor> lockConstraints( Iterator<ConstraintDescriptor> constraints )
+    {
+        // Same deal as with `lockedIndexes`.
+        Collection<ConstraintDescriptor> coll = Iterators.asCollection( constraints );
+        boolean checkTxState = ktx.hasTxStateWithChanges();
+        Iterator<ConstraintDescriptor> itr = coll.iterator();
+        while ( itr.hasNext() )
+        {
+            ConstraintDescriptor constraint = lockConstraint( itr.next() );
+            if ( checkTxState && ktx.txState().constraintsChanges().isAdded( constraint ) )
+            {
+                continue;
+            }
+            if ( !storageReader.constraintExists( constraint ) )
+            {
+                unlockConstraint( constraint );
+                itr.remove();
+            }
+        }
+        return coll.iterator();
     }
 
     @Override
@@ -775,7 +839,7 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = constraintsGetAll( storageReader );
-        return Iterators.map( this::lockConstraint, constraints );
+        return lockConstraints( constraints );
     }
 
     Iterator<ConstraintDescriptor> constraintsGetAll( StorageSchemaReader reader )
@@ -1042,12 +1106,5 @@ public class AllStoreHolder extends Read
     public void release()
     {
         indexReaderCache.close();
-    }
-
-    private ConstraintDescriptor lockConstraint( ConstraintDescriptor constraint )
-    {
-        SchemaDescriptor schema = constraint.schema();
-        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.lockingKeys() );
-        return constraint;
     }
 }
