@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -134,72 +133,59 @@ class IndexRecoveryIT
     @Test
     void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated() throws IOException
     {
-        try
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
-            assertTimeoutPreemptively( TIMEOUT, () ->
-            {
-                // Given
-                startDb();
+            // Given
+            startDb();
 
-                Semaphore populationSemaphore = new Semaphore( 0 );
+            Semaphore populationSemaphore = new Semaphore( 0 );
+            Future<Void> killFuture;
+            try
+            {
                 when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
                         indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
                 createIndex( myLabel );
 
                 // And Given
-                Future<Void> killFuture = killDbInSeparateThread();
+                killFuture = killDbInSeparateThread();
                 int iterations = 0;
                 do
                 {
-                    synchronized ( this )
-                    {
-                        rotateLogsAndCheckPoint();
-                    }
+                    rotateLogsAndCheckPoint();
                     Thread.sleep( 10 );
                 } while ( iterations++ < 100 && !killFuture.isDone() );
-
+            }
+            finally
+            {
                 populationSemaphore.release();
-                killFuture.get();
-
-                when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
-                Semaphore recoverySemaphore = new Semaphore( 0 );
-                try
-                {
-                    when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
-                            indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
-                    boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), testDirectory.databaseLayout(), defaults() );
-                    monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
-                    // When
-                    startDb();
-
-                    assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
-                    assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
-                    // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
-                    // we will not gonna need to get index populators during recovery index service start
-                    verify( mockedIndexProvider, times( recoveryRequired ? 3 : 2 ) ).getPopulator( any( IndexDescriptor.class ),
-                            any( IndexSamplingConfig.class ), any() );
-                    verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-                }
-                finally
-                {
-                    recoverySemaphore.release();
-                }
-            } );
-        }
-        catch ( Throwable t )
-        {
-            t.printStackTrace();
-            var file = testDirectory.file( "logs/debug.log" );
-            if ( file.exists() )
-            {
-                System.out.println( Files.readString( file .toPath() ) );
             }
-            else
+
+            killFuture.get();
+
+            when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
+            Semaphore recoverySemaphore = new Semaphore( 0 );
+            try
             {
-                System.out.println( "No debug.log file" );
+                when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
+                        indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
+                boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), testDirectory.databaseLayout(), defaults() );
+                monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
+                // When
+                startDb();
+
+                assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
+                assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
+                // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
+                // we will not gonna need to get index populators during recovery index service start
+                verify( mockedIndexProvider, times( recoveryRequired ? 3 : 2 ) ).getPopulator( any( IndexDescriptor.class ),
+                        any( IndexSamplingConfig.class ), any() );
+                verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
             }
-            throw t;
-        }
+            finally
+            {
+                recoverySemaphore.release();
+            }
+        } );
     }
 
     @Test
@@ -391,7 +377,7 @@ class IndexRecoveryIT
         return result;
     }
 
-    private void rotateLogsAndCheckPoint() throws IOException
+    private synchronized void rotateLogsAndCheckPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
