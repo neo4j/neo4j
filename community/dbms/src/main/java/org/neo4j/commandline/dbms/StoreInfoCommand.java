@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import picocli.CommandLine.Parameters;
 
+import java.io.Closeable;
 import java.io.File;
 
 import org.neo4j.cli.AbstractCommand;
@@ -31,6 +32,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -61,10 +63,11 @@ public class StoreInfoCommand extends AbstractCommand
     {
         Validators.CONTAINS_EXISTING_DATABASE.validate( storePath );
 
-        try ( JobScheduler jobScheduler = createInitialisedScheduler();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( storePath );
+        try ( Closeable ignored = DatabaseLockChecker.check( databaseLayout );
+                JobScheduler jobScheduler = createInitialisedScheduler();
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( ctx.fs(), jobScheduler ) )
         {
-            DatabaseLayout databaseLayout = DatabaseLayout.of( storePath );
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
             StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( ctx.fs(), databaseLayout, Config.defaults(), pageCache,
                     NullLogService.getInstance() );
@@ -80,6 +83,10 @@ public class StoreInfoCommand extends AbstractCommand
             versionInformation.successor()
                     .map( next -> format( fmt, "Store format superseded in:", next.introductionNeo4jVersion() ) )
                     .ifPresent( ctx.out()::println );
+        }
+        catch ( FileLockException e )
+        {
+            throw new CommandFailedException( "The database is in use. Stop database '" + databaseLayout.getDatabaseName() + "' and try again.", e );
         }
         catch ( Exception e )
         {
