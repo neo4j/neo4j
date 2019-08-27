@@ -764,6 +764,17 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> pagecache_warmup_enabled =
             newBuilder( "unsupported.dbms.memory.pagecache.warmup.enable", BOOL, true ).build();
 
+    @Internal
+    @Description( "Page cache warmup can be configured to prefetch files, preferably when cache size is bigger than store size. " +
+            "Files to be prefetched can be filtered by 'unsupported.dbms.memory.pagecache.warmup.preload.whitelist'." )
+    public static final Setting<Boolean> pagecache_warmup_prefetch =
+            newBuilder( "unsupported.dbms.memory.pagecache.warmup.preload", BOOL, false ).build();
+
+    @Internal
+    @Description( "Page cache warmup prefetch file whitelist regex. By default matches all files" )
+    public static final Setting<String> pagecache_warmup_prefetch_whitelist =
+            newBuilder( "unsupported.dbms.memory.pagecache.warmup.preload.whitelist", STRING, "*" ).build();
+
     @Description( "Allows the enabling or disabling of the file watcher service." +
             " This is an auxiliary service but should be left enabled in almost all cases." )
     public static final Setting<Boolean> filewatcher_enabled = newBuilder( "dbms.filewatcher.enabled", BOOL, true ).build();
