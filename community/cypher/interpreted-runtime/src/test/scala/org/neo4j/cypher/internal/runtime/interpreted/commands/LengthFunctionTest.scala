@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{LengthFunction, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values.intValue
@@ -43,29 +44,23 @@ class LengthFunctionTest extends CypherFunSuite {
     //then
     result should equal(intValue(1))
   }
-  test("length can still be used on collections") {
+  test("length cannot be used on collections") {
     //given
     val l = Seq("it", "was", "the")
     val m = ExecutionContext.from("l" -> l)
     val lengthFunction = LengthFunction(Variable("l"))
 
-    //when
-    val result = lengthFunction(m, QueryStateHelper.empty)
-
-    //then
-    result should equal(intValue(3))
+    //when/then
+    intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
   }
 
-  test("length can still be used on strings") {
+  test("length cannot be used on strings") {
     //given
     val s = "it was the"
     val m = ExecutionContext.from("s" -> s)
     val lengthFunction = LengthFunction(Variable("s"))
 
-    //when
-    val result = lengthFunction(m, QueryStateHelper.empty)
-
-    //then
-    result should equal(intValue(10))
+    //when/then
+    intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
   }
 }

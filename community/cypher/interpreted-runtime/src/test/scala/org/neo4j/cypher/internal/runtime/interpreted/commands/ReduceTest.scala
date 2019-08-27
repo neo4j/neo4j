@@ -31,7 +31,7 @@ class ReduceTest extends CypherFunSuite {
 
   test("canReturnSomethingFromAnIterable") {
     val l = Seq("x", "xxx", "xx")
-    val expression = Add(ExpressionVariable(0, "acc"), LengthFunction(ExpressionVariable(1, "n")))
+    val expression = Add(ExpressionVariable(0, "acc"), SizeFunction(ExpressionVariable(1, "n")))
     val collection = Variable("l")
     val m = ExecutionContext.from("l" -> l)
     val s = QueryStateHelper.emptyWith(expressionVariables = new Array(2))

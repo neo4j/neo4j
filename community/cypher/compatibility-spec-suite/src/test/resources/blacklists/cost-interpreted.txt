@@ -14,3 +14,5 @@ Feature "SemanticErrorAcceptance": Scenario "Failing when using MATCH after OPTI
 
 // TODO: queries with old syntax, remove once a new TCK release is out
 Feature "ListComprehension": Scenario "Using a list comprehension in a WHERE"
+Feature "ListOperations": Scenario "Collect and filter using a list comprehension"
+Feature "FunctionsAcceptance": Scenario "Functions should return null if they get path containing unbound"

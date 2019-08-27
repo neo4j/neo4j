@@ -85,44 +85,6 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    void shouldWarnWhenUsingLengthOnNonPath()
-    {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
-        {
-            // pattern
-            shouldNotifyInStream( version, "explain match (a) where a.name='Alice' return length((a)-->()-->())", new InputPosition( 63, 1, 64 ),
-                    LENGTH_ON_NON_PATH );
-
-            // collection
-            shouldNotifyInStream( version, " explain return length([1, 2, 3])", new InputPosition( 33, 1, 34 ), LENGTH_ON_NON_PATH );
-
-            // string
-            shouldNotifyInStream( version, " explain return length('a string')", new InputPosition( 33, 1, 34 ), LENGTH_ON_NON_PATH );
-        } );
-    }
-
-    @Test
-    void shouldNotNotifyWhenUsingLengthOnPath()
-    {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach(
-                version -> shouldNotNotifyInStream( version, " explain match p=(a)-[*]->(b) return length(p)" ) );
-    }
-
-    @Test
-    void shouldNotNotifyWhenUsingSizeOnCollection()
-    {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach(
-                version -> shouldNotNotifyInStream( version, "explain return size([1, 2, 3])" ) );
-    }
-
-    @Test
-    void shouldNotNotifyWhenUsingSizeOnString()
-    {
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach(
-                version -> shouldNotNotifyInStream( version, " explain return size('a string')" ) );
-    }
-
-    @Test
     void shouldNotNotifyForCostUnsupportedUpdateQueryIfPlannerNotExplicitlyRequested()
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach(

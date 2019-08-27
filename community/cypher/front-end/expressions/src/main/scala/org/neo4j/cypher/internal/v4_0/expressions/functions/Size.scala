@@ -26,5 +26,4 @@ case object Size extends Function with TypeSignatures {
     TypeSignature(name, CTList(CTAny), CTInteger, "Returns the number of items in a list."),
     TypeSignature(name, CTString, CTInteger, "Returns the number of Unicode characters in a string.")
   )
-//TODO:  size() applied to pattern expression
 }

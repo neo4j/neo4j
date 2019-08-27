@@ -1010,7 +1010,6 @@ public final class CypherFunctions
         }
     }
 
-    //NOTE all usage except for paths is deprecated
     public static IntegralValue length( AnyValue item )
     {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -1020,11 +1019,11 @@ public final class CypherFunctions
         }
         else if ( item instanceof TextValue )
         {
-            return longValue( ((TextValue) item).length() );
+            throw new CypherTypeException( "LENGTH cannot be used on strings", null );
         }
         else if ( item instanceof SequenceValue )
         {
-            return longValue( ((SequenceValue) item).length() );
+            throw new CypherTypeException( "LENGTH cannot be used on lists", null );
         }
         else
         {

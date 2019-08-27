@@ -30,7 +30,7 @@ case class SizeFunction(inner: Expression)
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.size( value )
 
-  override def rewrite(f: Expression => Expression): Expression = f(LengthFunction(inner.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(SizeFunction(inner.rewrite(f)))
 
   override def arguments: Seq[Expression] = Seq(inner)
 

@@ -22,10 +22,7 @@ import org.neo4j.cypher.internal.v4_0.util.symbols._
 case object Length extends Function with TypeSignatures {
   def name = "length"
 
-  //NOTE using CTString and CTCollection here is deprecated
   override val signatures = Vector(
-    TypeSignature.deprecated(name, CTString, CTInteger, "Returns the length of a string."),
-    TypeSignature.deprecated(name, CTList(CTAny), CTInteger, "Returns the length of a list."),
     TypeSignature(name, CTPath, CTInteger, "Returns the length of a path.")
   )
 }
