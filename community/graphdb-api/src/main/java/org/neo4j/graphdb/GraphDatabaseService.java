@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphdb;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.annotations.api.PublicApi;
-import org.neo4j.graphdb.Result.ResultVisitor;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -367,7 +367,7 @@ public interface GraphDatabaseService
 
     /**
      * Executes query in a separate transaction.
-     * Query execution result will be closed as part of method execution.
+     * Capable to execute periodic commit queries.
      *
      * @param query The query to execute
      * @throws QueryExecutionException If the Query contains errors
@@ -375,14 +375,29 @@ public interface GraphDatabaseService
     void executeTransactionally( String query ) throws QueryExecutionException;
 
     /**
-     * Executes query in a separate transaction and allow to query result to be consumed by provided visitor.
+     * Executes query in a separate transaction and allow to query result to be consumed by provided {@link ResultConsumer}.
+     * Capable to execute periodic commit queries.
      *
      * @param query The query to execute
-     * @param visitor Visitor that will be used to consume query execution result.
+     * @param parameters Parameters for the query
+     * @param resultConsumer Query results consumer
      * @throws QueryExecutionException If the query contains errors
-     * @throws E exception that will be throw by visitor while consuming query result
      */
-    <E extends Exception> void executeTransactionally( String query, ResultVisitor<E> visitor ) throws QueryExecutionException, E;
+    void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer ) throws QueryExecutionException;
+
+    /**
+     * Executes query in a separate transaction and allows query result to be consumed by provided {@link ResultConsumer}.
+     * If query will not gonna be able to complete within provided timeout time interval it will be terminated.
+     *
+     * Capable to execute periodic commit queries.
+     *
+     * @param query The query to execute
+     * @param parameters Parameters for the query
+     * @param resultConsumer Query results consumer
+     * @param timeout Maximum duration of underlying transaction
+     * @throws QueryExecutionException If the query contains errors
+     */
+    void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer, Duration timeout ) throws QueryExecutionException;
 
     /**
      * Executes a query and returns an iterable that contains the result set.

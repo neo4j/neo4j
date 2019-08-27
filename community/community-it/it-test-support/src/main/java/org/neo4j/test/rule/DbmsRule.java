@@ -20,6 +20,7 @@
 package org.neo4j.test.rule;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +40,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.ResultConsumer;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
@@ -155,9 +157,16 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
-    public <E extends Exception> void executeTransactionally( String query, Result.ResultVisitor<E> visitor ) throws QueryExecutionException, E
+    public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer ) throws QueryExecutionException
     {
-        getGraphDatabaseAPI().executeTransactionally( query, visitor );
+        getGraphDatabaseAPI().executeTransactionally( query, parameters, resultConsumer );
+    }
+
+    @Override
+    public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer, Duration timeout )
+            throws QueryExecutionException
+    {
+        getGraphDatabaseAPI().executeTransactionally( query, parameters, resultConsumer, timeout );
     }
 
     @Override

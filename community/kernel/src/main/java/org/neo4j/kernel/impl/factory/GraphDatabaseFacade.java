@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -43,7 +43,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Result.ResultVisitor;
+import org.neo4j.graphdb.ResultConsumer;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -108,9 +108,13 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
+import static org.neo4j.graphdb.ResultConsumer.EMPTY_CONSUMER;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.values.storable.Values.utf8Value;
@@ -296,21 +300,24 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public void executeTransactionally( String query ) throws QueryExecutionException
     {
-        try ( var internalTransaction = beginTransaction( org.neo4j.internal.kernel.api.Transaction.Type.implicit, AUTH_DISABLED ) )
-        {
-            execute( query ).close();
-            internalTransaction.commit();
-        }
+        executeTransactionally( query, emptyMap(), EMPTY_CONSUMER );
     }
 
     @Override
-    public <E extends Exception> void executeTransactionally( String query, ResultVisitor<E> visitor ) throws QueryExecutionException, E
+    public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer ) throws QueryExecutionException
     {
-        try ( var internalTransaction = beginTransaction( org.neo4j.internal.kernel.api.Transaction.Type.implicit, AUTH_DISABLED ) )
+        executeTransactionally( query, parameters, resultConsumer, config.get( transaction_timeout ) );
+    }
+
+    @Override
+    public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer, Duration timeout )
+            throws QueryExecutionException
+    {
+        try ( var internalTransaction = beginTransaction( implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout.toMillis(), MILLISECONDS ) )
         {
-            try ( var result = execute( query ) )
+            try ( var result = execute( query, parameters ) )
             {
-                result.accept( visitor );
+                resultConsumer.accept( result );
             }
             internalTransaction.commit();
         }
@@ -319,13 +326,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public Result execute( String query ) throws QueryExecutionException
     {
-        return execute( query, Collections.emptyMap() );
+        return execute( query, emptyMap() );
     }
 
     @Override
     public Result execute( String query, long timeout, TimeUnit unit ) throws QueryExecutionException
     {
-        return execute( query, Collections.emptyMap(), timeout, unit );
+        return execute( query, emptyMap(), timeout, unit );
     }
 
     @Override

@@ -21,14 +21,20 @@ package org.neo4j.kernel;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.ResultConsumer;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.graphdb.ResultConsumer.EMPTY_CONSUMER;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 @DbmsExtension
 class TransactionalQueryExecutionIT
@@ -54,9 +60,20 @@ class TransactionalQueryExecutionIT
         db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
         db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
         db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
-        var countingResultVisitor = new CountingResultVisitor();
-        db.executeTransactionally( "MATCH (n:CONSUMABLE) RETURN n", countingResultVisitor );
+        var countingResultVisitor = new CountingResultConsumer();
+        db.executeTransactionally( "MATCH (n:CONSUMABLE) RETURN n", Collections.emptyMap(), countingResultVisitor );
         assertEquals( 4L, countingResultVisitor.getNodeCounter() );
+    }
+
+    @Test
+    void executeQueryWithParametersTransactionally()
+    {
+        db.executeTransactionally( "CREATE (n:NODE) SET n = $data RETURN n", map( "data", map( "key", "value" ) ), EMPTY_CONSUMER );
+
+        try ( var transaction = db.beginTx() )
+        {
+            assertNotNull( db.findNode( Label.label( "NODE" ), "key", "value" ) );
+        }
     }
 
     private long countMarkedNodes( Label marker )
@@ -67,23 +84,26 @@ class TransactionalQueryExecutionIT
         }
     }
 
-    private static class CountingResultVisitor implements Result.ResultVisitor<RuntimeException>
+    private static class CountingResultConsumer implements ResultConsumer
     {
         private int nodeCounter;
-
-        @Override
-        public boolean visit( Result.ResultRow row )
-        {
-            if ( row.get( "n" ) != null )
-            {
-                nodeCounter++;
-            }
-            return true;
-        }
 
         int getNodeCounter()
         {
             return nodeCounter;
+        }
+
+        @Override
+        public void accept( Result result )
+        {
+            while ( result.hasNext() )
+            {
+                var row = result.next();
+                if ( row.get( "n" ) != null )
+                {
+                    nodeCounter++;
+                }
+            }
         }
     }
 }
