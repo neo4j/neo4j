@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.{Label, Node, RelationshipType}
 
 abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
@@ -406,5 +407,61 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
+  }
+
+  test("should handle node reference as input") {
+    // given
+    val n = 17
+    val nodes = nodeGraph(n, "Honey")
+    val relTuples = (for(i <- 0 until n) yield {
+      Seq(
+        (i, (2 * i) % n, "OTHER"),
+        (i, (i + 1) % n, "NEXT")
+        )
+    }).reduce(_ ++ _)
+
+    val rels = connect(nodes, relTuples)
+
+    val input = inputValues(nodes.map(Array[Any](_)):_*)
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .expand("(x)-[r]->(y)")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = relTuples.zip(rels).map {
+      case ((f, t, _), rel) => Array(nodes(f), nodes(t), rel)
+    }
+
+    runtimeResult should beColumns("x", "y", "r").withRows(expected)
+  }
+
+  test("should gracefully handle non-node reference as input") {
+    // given
+    val n = 17
+    val nodes = nodeGraph(n, "Honey")
+    val relTuples = (for(i <- 0 until n) yield {
+      Seq(
+        (i, (2 * i) % n, "OTHER"),
+        (i, (i + 1) % n, "NEXT")
+        )
+    }).reduce(_ ++ _)
+
+    val rels = connect(nodes, relTuples)
+
+    val input = inputValues((1 to n).map(Array[Any](_)):_*)
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "r")
+      .expand("(x)-[r]->(y)")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    a [ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
   }
 }
