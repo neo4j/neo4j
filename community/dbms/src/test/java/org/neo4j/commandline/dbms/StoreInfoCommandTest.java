@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -39,6 +40,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.internal.locker.DatabaseLocker;
+import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
@@ -47,6 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -151,6 +155,22 @@ class StoreInfoCommandTest
         Exception exception = assertThrows( Exception.class, () -> command.execute() );
         assertThat( exception, new RootCauseMatcher( IllegalArgumentException.class ) );
         assertThat( exception.getMessage(), containsString( "Unknown store version 'v9.9.9'" ) );
+    }
+
+    @Test
+    void respectLockFiles() throws IOException
+    {
+        RecordFormats currentFormat = RecordFormatSelector.defaultFormat();
+        prepareNeoStoreFile( currentFormat.storeVersion() );
+
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              Locker locker = new DatabaseLocker( fileSystem, databaseLayout ) )
+        {
+            locker.checkLock();
+            CommandLine.populateCommand( command, databaseDirectory.toFile().getAbsolutePath() );
+            Exception exception = assertThrows( Exception.class, () -> command.execute() );
+            assertEquals( "The database is in use. Stop database 'foo' and try again.", exception.getMessage() );
+        }
     }
 
     private void prepareNeoStoreFile( String storeVersion ) throws IOException
