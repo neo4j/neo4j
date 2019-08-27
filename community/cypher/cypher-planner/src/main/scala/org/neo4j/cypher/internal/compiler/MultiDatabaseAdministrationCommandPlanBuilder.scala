@@ -56,7 +56,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case _: ShowUsers =>
         Some(plans.ShowUsers())
 
-      // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo WITH PASSWORD password
+      // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD password
       case c@CreateUser(userName, Some(initialStringPassword), initialParameterPassword, requirePasswordChange, suspended, ifExistsDo) =>
         NameValidator.assertValidUsername(userName)
         val source = ifExistsDo match {
@@ -68,7 +68,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           plans.CreateUser(source, userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
-      // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo WITH PASSWORD $password
+      // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH PASSWORD $password
       case c@CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended, ifExistsDo) =>
         NameValidator.assertValidUsername(userName)
         val source = ifExistsDo match {
@@ -80,7 +80,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           plans.CreateUser(source, userName, None, initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
-      // DROP USER [IF EXISTS] foo
+      // DROP USER foo [IF EXISTS]
       case c@DropUser(userName, ifExists) =>
         val source = if (ifExists) Some(plans.DoNothingIfNotExists("User", userName)) else Some(plans.EnsureNodeExists("User", userName))
         Some(plans.LogSystemCommand(
@@ -127,7 +127,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case ShowRoles(withUsers, showAll) =>
         Some(plans.ShowRoles(withUsers, showAll))
 
-      // CREATE [OR REPLACE] ROLE [IF NOT EXISTS] foo
+      // CREATE [OR REPLACE] ROLE foo [IF NOT EXISTS]
       case c@CreateRole(roleName, None, ifExistsDo) =>
         NameValidator.assertValidRoleName(roleName)
         val source = ifExistsDo match {
@@ -137,7 +137,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         }
         Some(plans.LogSystemCommand(plans.CreateRole(source, roleName), prettifier.asString(c)))
 
-      // CREATE [OR REPLACE] ROLE [IF NOT EXISTS] foo AS COPY OF bar
+      // CREATE [OR REPLACE] ROLE foo [IF NOT EXISTS] AS COPY OF bar
       case c@CreateRole(roleName, Some(fromName), ifExistsDo) =>
         NameValidator.assertValidRoleName(roleName)
         val source = ifExistsDo match {
@@ -152,7 +152,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
             ), roleName, fromName, "GRANTED")
           ), roleName, fromName, "DENIED"), prettifier.asString(c)))
 
-      // DROP ROLE [IF EXISTS] foo
+      // DROP ROLE foo [IF EXISTS]
       case c@DropRole(roleName, ifExists) =>
         val source = if (ifExists) Some(plans.DoNothingIfNotExists("Role", roleName)) else Some(plans.EnsureNodeExists("Role", roleName))
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
@@ -278,7 +278,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       case ShowDatabase(dbName) =>
         Some(plans.ShowDatabase(new NormalizedDatabaseName(dbName)))
 
-      // CREATE [OR REPLACE] DATABASE [IF NOT EXISTS] foo
+      // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case CreateDatabase(dbName, ifExistsDo) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         try {
@@ -293,7 +293,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         }
         Some(plans.EnsureValidNumberOfDatabases(Some(plans.CreateDatabase(source, normalizedName))))
 
-      // DROP DATABASE [IF EXISTS] foo
+      // DROP DATABASE foo [IF EXISTS]
       case DropDatabase(dbName, ifExists) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         val source = if (ifExists) Some(plans.DoNothingIfNotExists("Database", normalizedName.name())) else None

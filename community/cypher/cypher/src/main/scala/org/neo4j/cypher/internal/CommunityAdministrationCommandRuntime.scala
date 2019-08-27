@@ -68,7 +68,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         VirtualValues.EMPTY_MAP
       )
 
-    // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD password
+    // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD password
     case CreateUser(source, userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional) => (context, parameterMapping, securityContext) =>
       if (suspendedOptional.isDefined) // Users are always active in community
         throw new CantCompileQueryException(s"Failed to create the specified user '$userName': 'SET STATUS' is not available in community edition.")
@@ -99,15 +99,15 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         if (initialPassword != null) util.Arrays.fill(initialPassword, 0.toByte)
       }
 
-    // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD $password
+    // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD $password
     case CreateUser(_, userName, _, Some(_), _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Did not resolve parameters correctly.")
 
-    // CREATE [OR REPLACE] USER [IF NOT EXISTS] foo SET PASSWORD
+    // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD
     case CreateUser(_, userName, _, _, _, _) =>
       throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
 
-    // DROP USER [IF EXISTS] foo
+    // DROP USER foo [IF EXISTS]
     case DropUser(source, userName) => (context, parameterMapping, securityContext) =>
       if (securityContext.subject().hasUsername(userName)) throw new InvalidArgumentsException(s"Failed to delete the specified user '$userName': Deleting yourself is not allowed.")
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,

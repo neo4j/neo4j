@@ -72,11 +72,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase("", ast.IfExistsThrowError()))
   }
 
-  test("CREATE DATABASE IF NOT EXISTS foo") {
+  test("CREATE DATABASE foo IF NOT EXISTS") {
     yields(ast.CreateDatabase("foo", ast.IfExistsDoNothing()))
   }
 
-  test("CATALOG CREATE DATABASE IF NOT EXISTS `_foo-bar42`") {
+  test("CATALOG CREATE DATABASE `_foo-bar42` IF NOT EXISTS") {
     yields(ast.CreateDatabase("_foo-bar42", ast.IfExistsDoNothing()))
   }
 
@@ -116,11 +116,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     failsToParse
   }
 
-  test("CATALOG CREATE DATABASE IF NOT EXISTS _foo-bar42") {
+  test("CATALOG CREATE DATABASE _foo-bar42 IF NOT EXISTS") {
     failsToParse
   }
 
-  test("CREATE DATABASE IF NOT EXISTS") {
+  test("CREATE DATABASE  IF NOT EXISTS") {
     failsToParse
   }
 
@@ -132,7 +132,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     failsToParse
   }
 
-  test("CREATE OR REPLACE DATABASE IF NOT EXISTS foo") {
+  test("CREATE OR REPLACE DATABASE foo IF NOT EXISTS") {
     failsToParse
   }
 
@@ -146,7 +146,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.DropDatabase("foo.bar", ifExists = false))
   }
 
-  test("DROP DATABASE IF EXISTS foo") {
+  test("DROP DATABASE foo IF EXISTS") {
     yields(ast.DropDatabase("foo", ifExists = true))
   }
 
@@ -158,7 +158,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     failsToParse
   }
 
-  test("DROP DATABASE IF EXISTS") {
+  test("DROP DATABASE  IF EXISTS") {
     failsToParse
   }
 

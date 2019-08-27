@@ -44,7 +44,7 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("CREATE ROLE IF NOT EXISTS foo", "Unsupported administration command: CREATE ROLE IF NOT EXISTS foo")
+    assertFailure("CREATE ROLE foo IF NOT EXISTS", "Unsupported administration command: CREATE ROLE foo IF NOT EXISTS")
     assertFailure("CREATE OR REPLACE ROLE foo", "Unsupported administration command: CREATE OR REPLACE ROLE foo")
   }
 
@@ -69,7 +69,7 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("DROP ROLE IF EXISTS foo", "Unsupported administration command: DROP ROLE IF EXISTS foo")
+    assertFailure("DROP ROLE foo IF EXISTS", "Unsupported administration command: DROP ROLE foo IF EXISTS")
   }
 
   test("should fail on dropping non-existing role from community with correct error message") {

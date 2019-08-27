@@ -121,11 +121,11 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.CreateRole("", Some("bar"), ast.IfExistsThrowError()))
   }
 
-  test("CREATE ROLE IF NOT EXISTS foo") {
+  test("CREATE ROLE foo IF NOT EXISTS") {
     yields(ast.CreateRole("foo", None, ast.IfExistsDoNothing()))
   }
 
-  test("CREATE ROLE IF NOT EXISTS foo AS COPY OF bar") {
+  test("CREATE ROLE foo IF NOT EXISTS AS COPY OF bar") {
     yields(ast.CreateRole("foo", Some("bar"), ast.IfExistsDoNothing()))
   }
 
@@ -145,7 +145,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("CREATE ROLE IF NOT EXISTS") {
+  test("CREATE ROLE  IF NOT EXISTS") {
     failsToParse
   }
 
@@ -157,7 +157,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("CREATE ROLE IF NOT EXISTS foo AS COPY OF") {
+  test("CREATE ROLE foo IF NOT EXISTS AS COPY OF") {
     failsToParse
   }
 
@@ -165,7 +165,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("CREATE OR REPLACE ROLE IF NOT EXISTS foo") {
+  test("CREATE OR REPLACE ROLE foo IF NOT EXISTS") {
     failsToParse
   }
 
@@ -180,11 +180,11 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.DropRole("", ifExists = false))
   }
 
-  test("DROP ROLE IF EXISTS foo") {
+  test("DROP ROLE foo IF EXISTS") {
     yields(ast.DropRole("foo", ifExists = true))
   }
 
-  test("DROP ROLE IF EXISTS ``") {
+  test("DROP ROLE `` IF EXISTS") {
     yields(ast.DropRole("", ifExists = true))
   }
 
@@ -192,7 +192,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("DROP ROLE IF EXISTS ") {
+  test("DROP ROLE  IF EXISTS") {
     failsToParse
   }
 

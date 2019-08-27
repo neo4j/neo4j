@@ -166,8 +166,8 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   test("should fail on creating database from community") {
     setup( defaultConfig )
     assertFailure("CREATE DATABASE foo", "Unsupported administration command: CREATE DATABASE foo")
-    assertFailure(s"CREATE DATABASE IF NOT EXISTS $DEFAULT_DATABASE_NAME",
-      s"Unsupported administration command: CREATE DATABASE IF NOT EXISTS $DEFAULT_DATABASE_NAME")
+    assertFailure(s"CREATE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS",
+      s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS")
     assertFailure(s"CREATE OR REPLACE DATABASE $DEFAULT_DATABASE_NAME",
       s"Unsupported administration command: CREATE OR REPLACE DATABASE $DEFAULT_DATABASE_NAME")
   }
@@ -184,8 +184,8 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME",
       s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME")
 
-    assertFailure(s"DROP DATABASE IF EXISTS $DEFAULT_DATABASE_NAME",
-      s"Unsupported administration command: DROP DATABASE IF EXISTS $DEFAULT_DATABASE_NAME")
+    assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS",
+      s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS")
   }
 
   test("should fail on dropping non-existing database with correct error message") {

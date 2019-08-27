@@ -239,7 +239,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet shouldBe Set(existingUser)
 
     // WHEN
-    execute("CREATE USER IF NOT EXISTS neo4j SET PASSWORD 'password' CHANGE NOT REQUIRED")
+    execute("CREATE USER neo4j IF NOT EXISTS SET PASSWORD 'password' CHANGE NOT REQUIRED")
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(existingUser)
@@ -409,7 +409,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
 
     // WHEN
-    execute("DROP USER IF EXISTS foo")
+    execute("DROP USER foo IF EXISTS")
 
     // THEN
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
@@ -417,7 +417,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // and an invalid (non-existing) one
 
     // WHEN
-    execute("DROP USER IF EXISTS `:foo`")
+    execute("DROP USER `:foo` IF EXISTS")
 
     // THEN
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))

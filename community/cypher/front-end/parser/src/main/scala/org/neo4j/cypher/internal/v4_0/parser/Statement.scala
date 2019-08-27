@@ -70,34 +70,34 @@ trait Statement extends Parser
   }
 
   def CreateUser: Rule1[CreateUser] = rule("CATALOG CREATE USER") {
-    // CREATE [OR REPLACE] USER [IF NOT EXISTS] username SET PASSWORD stringLiteralPassword optionalStatus
-    group(createUserOptionalIfNotExists ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
-    optionalStatus) ~~>> ((ifExistsDo, userName, initialPassword, suspended) =>
-      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange = true, suspended, ifExistsDo)) |
-    // CREATE [OR REPLACE] USER [IF NOT EXISTS] username SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(createUserOptionalIfNotExists ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
-    optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((ifExistsDo, userName, initialPassword, requirePasswordChange, suspended) =>
-      ast.CreateUser(userName, Some(initialPassword.value), None, requirePasswordChange.getOrElse(true), suspended, ifExistsDo)) |
+    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD stringLiteralPassword optionalStatus
+    group(createUserStart ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, suspended) =>
+      ast.CreateUser(userNameAndIfExistsDo._1, Some(initialPassword.value), None, requirePasswordChange = true, suspended, userNameAndIfExistsDo._2)) |
+    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
+    group(createUserStart ~~ keyword("SET PASSWORD") ~~ StringLiteral ~~
+    optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, requirePasswordChange, suspended) =>
+      ast.CreateUser(userNameAndIfExistsDo._1, Some(initialPassword.value), None, requirePasswordChange.getOrElse(true), suspended, userNameAndIfExistsDo._2)) |
     //
-    // CREATE [OR REPLACE] USER [IF NOT EXISTS] username SET PASSWORD parameterPassword optionalStatus
-    group(createUserOptionalIfNotExists ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
-    optionalStatus) ~~>> ((ifExistsDo, userName, initialPassword, suspended) =>
-      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange = true, suspended, ifExistsDo)) |
-    // CREATE [OR REPLACE] USER [IF NOT EXISTS] username SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(createUserOptionalIfNotExists ~~ SymbolicNameString ~~ keyword("SET PASSWORD") ~~ Parameter ~~
-    optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((ifExistsDo, userName, initialPassword, requirePasswordChange, suspended) =>
-      ast.CreateUser(userName, None, Some(initialPassword), requirePasswordChange.getOrElse(true), suspended, ifExistsDo))
+    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD parameterPassword optionalStatus
+    group(createUserStart ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, suspended) =>
+      ast.CreateUser(userNameAndIfExistsDo._1, None, Some(initialPassword), requirePasswordChange = true, suspended, userNameAndIfExistsDo._2)) |
+    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
+    group(createUserStart ~~ keyword("SET PASSWORD") ~~ Parameter ~~
+    optionalRequirePasswordChange ~~ optionalStatus) ~~>> ((userNameAndIfExistsDo, initialPassword, requirePasswordChange, suspended) =>
+      ast.CreateUser(userNameAndIfExistsDo._1, None, Some(initialPassword), requirePasswordChange.getOrElse(true), suspended, userNameAndIfExistsDo._2))
   }
 
-  def createUserOptionalIfNotExists: Rule1[IfExistsDo] = {
-    // returns (replace, ifNotExists) as a boolean tuple, but not allowed together
-    keyword("CREATE OR REPLACE USER") ~>>> (_ => _ => IfExistsReplace()) |
-    keyword("CREATE USER IF NOT EXISTS") ~>>> (_ => _ => IfExistsDoNothing()) |
-    keyword("CREATE USER") ~>>> (_ => _ => IfExistsThrowError())
+  def createUserStart: Rule1[(String, IfExistsDo)] = {
+    // returns (userName, IfExistsDo)
+    group(keyword("CREATE OR REPLACE USER") ~~ SymbolicNameString) ~~> ((_, IfExistsReplace())) |
+    group(keyword("CREATE USER") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS")) ~~> ((_, IfExistsDoNothing())) |
+    group(keyword("CREATE USER") ~~ SymbolicNameString) ~~> ((_, IfExistsThrowError()))
   }
 
   def DropUser: Rule1[DropUser] = rule("CATALOG DROP USER") {
-    group(keyword("DROP USER IF EXISTS") ~~ SymbolicNameString) ~~>> (ast.DropUser(_, ifExists = true)) |
+    group(keyword("DROP USER") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropUser(_, ifExists = true)) |
     group(keyword("DROP USER") ~~ SymbolicNameString) ~~>> (ast.DropUser(_, ifExists = false))
   }
 
@@ -182,14 +182,14 @@ trait Statement extends Parser
   def CreateRole: Rule1[CreateRole] = rule("CATALOG CREATE ROLE") {
     group(keyword("CREATE OR REPLACE ROLE") ~~ SymbolicNameString ~~
       optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsReplace())) |
-    group(keyword("CREATE ROLE IF NOT EXISTS") ~~ SymbolicNameString ~~
+    group(keyword("CREATE ROLE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS") ~~
       optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsDoNothing())) |
     group(keyword("CREATE ROLE") ~~ SymbolicNameString ~~
       optional(keyword("AS COPY OF") ~~ SymbolicNameString)) ~~>> (ast.CreateRole(_, _, IfExistsThrowError()))
   }
 
   def DropRole: Rule1[DropRole] = rule("CATALOG DROP ROLE") {
-    group(keyword("DROP ROLE IF EXISTS") ~~ SymbolicNameString) ~~>> (ast.DropRole(_, ifExists = true)) |
+    group(keyword("DROP ROLE") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropRole(_, ifExists = true)) |
     group(keyword("DROP ROLE") ~~ SymbolicNameString) ~~>> (ast.DropRole(_, ifExists = false))
   }
 
@@ -383,12 +383,12 @@ trait Statement extends Parser
 
   def CreateDatabase: Rule1[CreateDatabase] = rule("CATALOG CREATE DATABASE") {
     group(keyword("CREATE OR REPLACE DATABASE") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_, IfExistsReplace())) |
-    group(keyword("CREATE DATABASE IF NOT EXISTS") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_, IfExistsDoNothing())) |
+    group(keyword("CREATE DATABASE") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS")) ~~>> (ast.CreateDatabase(_, IfExistsDoNothing())) |
     group(keyword("CREATE DATABASE") ~~ SymbolicNameString) ~~>> (ast.CreateDatabase(_, IfExistsThrowError()))
   }
 
   def DropDatabase: Rule1[DropDatabase] = rule("CATALOG DROP DATABASE") {
-    group(keyword("DROP DATABASE IF EXISTS") ~~ SymbolicNameString) ~~>> (ast.DropDatabase(_, ifExists = true)) |
+    group(keyword("DROP DATABASE") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropDatabase(_, ifExists = true)) |
     group(keyword("DROP DATABASE") ~~ SymbolicNameString) ~~>> (ast.DropDatabase(_, ifExists = false))
   }
 

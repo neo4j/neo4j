@@ -110,19 +110,19 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.CreateUser("f:oo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsThrowError()))
   }
 
-  test("CATALOG CREATE USER IF NOT EXISTS foo SET PASSWORD 'password'") {
+  test("CATALOG CREATE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
     yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
   }
 
-  test("CREATE uSER IF NOT EXISTS foo SET PASSWORD $password") {
+  test("CREATE uSER foo IF NOT EXISTS SET PASSWORD $password") {
     yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
   }
 
-  test("CATALOG CREATE USER IF NOT EXISTS foo SET PASSWORD $password CHANGE REQUIRED") {
+  test("CATALOG CREATE USER foo IF NOT EXISTS SET PASSWORD $password CHANGE REQUIRED") {
     yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = None, ast.IfExistsDoNothing()))
   }
 
-  test("CREATE USER IF NOT EXISTS foo SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
+  test("CREATE USER foo IF NOT EXISTS SET PASSWORD $password CHANGE REQUIRED SET STATUS SUSPENDED") {
     yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsDoNothing()))
   }
 
@@ -198,11 +198,11 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("CREATE USER IF NOT EXISTS foo") {
+  test("CREATE USER foo IF NOT EXISTS") {
     failsToParse
   }
 
-  test("CREATE USER IF NOT EXISTS foo SET PASSWORD") {
+  test("CREATE USER foo IF NOT EXISTS SET PASSWORD") {
     failsToParse
   }
 
@@ -214,7 +214,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("CREATE OR REPLACE USER IF NOT EXISTS foo SET PASSWORD 'password'") {
+  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
     failsToParse
   }
 
@@ -232,15 +232,15 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.DropUser("f:oo", ifExists = false))
   }
 
-  test("DROP USER IF EXISTS foo") {
+  test("DROP USER foo IF EXISTS") {
     yields(ast.DropUser("foo", ifExists = true))
   }
 
-  test("DROP USER IF EXISTS ``") {
+  test("DROP USER `` IF EXISTS") {
     yields(ast.DropUser("", ifExists = true))
   }
 
-  test("DROP USER IF EXISTS `f:oo`") {
+  test("DROP USER `f:oo` IF EXISTS") {
     yields(ast.DropUser("f:oo", ifExists = true))
   }
 
@@ -248,7 +248,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("DROP USER IF EXISTS ") {
+  test("DROP USER  IF EXISTS") {
     failsToParse
   }
 

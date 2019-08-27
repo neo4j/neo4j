@@ -68,18 +68,23 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x: ShowUsers =>
       s"${x.name}"
 
-    case x @ CreateUser(userName, _, initialParameterPassword, requirePasswordChange, suspended, _) =>
+    case x @ CreateUser(userName, _, initialParameterPassword, requirePasswordChange, suspended, ifExistsDo) =>
       val userNameString = Prettifier.escapeName(userName)
+      val ifNotExists = ifExistsDo match {
+        case _: IfExistsDoNothing => " IF NOT EXISTS"
+        case _ => ""
+      }
       val password = if (initialParameterPassword.isDefined)
         s"$$${initialParameterPassword.get.name}"
       else "'******'"
       val passwordString = s"SET PASSWORD $password CHANGE ${if (!requirePasswordChange) "NOT " else ""}REQUIRED"
       val statusString = if(suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}"
                          else ""
-      s"${x.name} $userNameString $passwordString$statusString"
+      s"${x.name} $userNameString$ifNotExists $passwordString$statusString"
 
-    case x @ DropUser(userName, _) =>
-      s"${x.name} ${Prettifier.escapeName(userName)}"
+    case x @ DropUser(userName, ifExists) =>
+      if (ifExists) s"${x.name} ${Prettifier.escapeName(userName)} IF EXISTS"
+      else s"${x.name} ${Prettifier.escapeName(userName)}"
 
     case x @ AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
       val userNameString = Prettifier.escapeName(userName)
@@ -107,14 +112,21 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ ShowRoles(withUsers, _) =>
       s"${x.name}${if (withUsers) " WITH USERS" else ""}"
 
-    case x @ CreateRole(roleName, None, _) =>
-      s"${x.name} ${Prettifier.escapeName(roleName)}"
+    case x @ CreateRole(roleName, None, ifExistsDo) =>
+      ifExistsDo match {
+        case _: IfExistsDoNothing => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS"
+        case _ => s"${x.name} ${Prettifier.escapeName(roleName)}"
+      }
 
-    case x @ CreateRole(roleName, Some(fromRole), _) =>
-      s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
+    case x @ CreateRole(roleName, Some(fromRole), ifExistsDo) =>
+      ifExistsDo match {
+        case _: IfExistsDoNothing => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS AS COPY OF ${Prettifier.escapeName(fromRole)}"
+        case _ => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
+      }
 
-    case x @ DropRole(roleName, _) =>
-      s"${x.name} ${Prettifier.escapeName(roleName)}"
+    case x @ DropRole(roleName, ifExists) =>
+      if (ifExists) s"${x.name} ${Prettifier.escapeName(roleName)} IF EXISTS"
+      else s"${x.name} ${Prettifier.escapeName(roleName)}"
 
     case x @ GrantRolesToUsers(roleNames, userNames) if roleNames.length > 1 =>
       s"${x.name}S ${roleNames.map(Prettifier.escapeName).mkString(", " )} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
@@ -164,11 +176,15 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ ShowDatabase(dbName) =>
       s"${x.name} ${Prettifier.escapeName(dbName)}"
 
-    case x @ CreateDatabase(dbName, _) =>
-      s"${x.name} ${Prettifier.escapeName(dbName)}"
+    case x @ CreateDatabase(dbName, ifExistsDo) =>
+      ifExistsDo match {
+        case _: IfExistsDoNothing => s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS"
+        case _ => s"${x.name} ${Prettifier.escapeName(dbName)}"
+      }
 
-    case x @ DropDatabase(dbName, _) =>
-      s"${x.name} ${Prettifier.escapeName(dbName)}"
+    case x @ DropDatabase(dbName, ifExists) =>
+      if (ifExists) s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS"
+      else s"${x.name} ${Prettifier.escapeName(dbName)}"
 
     case x @ StartDatabase(dbName) =>
       s"${x.name} ${Prettifier.escapeName(dbName)}"
