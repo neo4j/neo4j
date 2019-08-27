@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe.projectBackwards
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, RelationshipContainer}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -78,12 +79,12 @@ case class VarLengthExpandPipe(source: Pipe,
             }
           }
         }
-        val needsFlipping = if (dir == SemanticDirection.BOTH) projectedDir == SemanticDirection.INCOMING else dir != projectedDir
-        val projectedRels = if (needsFlipping) {
-          rels.reverse
-        } else {
-          rels
-        }
+        val projectedRels =
+          if (projectBackwards(dir, projectedDir)) {
+            rels.reverse
+          } else {
+            rels
+          }
         (node, projectedRels)
       }
 
@@ -115,10 +116,11 @@ case class VarLengthExpandPipe(source: Pipe,
             expand(row, node)
 
           case IsNoValue() =>
-            if (nodeInScope)
+            if (nodeInScope) {
               row.set(relName, Values.NO_VALUE)
-            else
+            } else {
               row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
+            }
             Iterator(row)
           case value => throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
         }
@@ -136,3 +138,12 @@ case class VarLengthExpandPipe(source: Pipe,
       }
     }
   }
+
+object VarLengthExpandPipe {
+  def projectBackwards(dir: SemanticDirection, projectedDir: SemanticDirection): Boolean =
+    if (dir == SemanticDirection.BOTH) {
+      projectedDir == SemanticDirection.INCOMING
+    } else {
+      dir != projectedDir
+    }
+}
