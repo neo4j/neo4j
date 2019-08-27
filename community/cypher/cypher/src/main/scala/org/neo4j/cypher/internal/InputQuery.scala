@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.{internal, _}
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.BaseState
@@ -48,7 +48,7 @@ case class PreParsedQuery(statement: String, rawStatement: String, options: Quer
     s"CYPHER ${f.version} ${f.plannerInfo} ${f.runtimeInfo} ${f.updateStrategyInfo} ${f.expressionEngineInfo} ${f.debugFlags} $statement"
   }
 
-  override def cacheKey: AnyRef = statementWithVersionAndPlanner
+  override def cacheKey: String = statementWithVersionAndPlanner
 
   def rawPreparserOptions: String = rawStatement.take(rawStatement.length - statement.length)
 
@@ -66,13 +66,13 @@ case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends Inp
 
   override def withRecompilationLimitReached: FullyParsedQuery = copy(options = options.withRecompilationLimitReached)
 
-  override def cacheKey: AnyRef = CacheKey(statement = state.statement(), fields = options.cacheKey)
-
-  case class CacheKey(statement: Statement, fields: options.CacheKey)
+  override def cacheKey: FullyParsedQuery.CacheKey = FullyParsedQuery.CacheKey(statement = state.statement(), fields = options.cacheKey)
 
 }
 
 object FullyParsedQuery {
+
+  case class CacheKey(statement: Statement, fields: QueryOptions.CacheKey)
 
   private val prettifier = Prettifier(ExpressionStringifier())
 
@@ -101,7 +101,7 @@ case class QueryOptions(offset: InputPosition,
 
   def withRecompilationLimitReached: QueryOptions = copy(recompilationLimitReached = true)
 
-  def cacheKey: CacheKey = CacheKey(
+  def cacheKey: QueryOptions.CacheKey = QueryOptions.CacheKey(
     version = version.name,
     plannerInfo = planner match {
       case CypherPlannerOption.default => ""
@@ -123,6 +123,9 @@ case class QueryOptions(offset: InputPosition,
     debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
   )
 
+}
+
+object QueryOptions {
   case class CacheKey(version: String,
                       plannerInfo: String,
                       runtimeInfo: String,
@@ -130,9 +133,6 @@ case class QueryOptions(offset: InputPosition,
                       expressionEngineInfo: String,
                       debugFlags: String)
 
-}
-
-object QueryOptions {
   val default: QueryOptions = QueryOptions(InputPosition.NONE,
     false,
     CypherVersion.default,
