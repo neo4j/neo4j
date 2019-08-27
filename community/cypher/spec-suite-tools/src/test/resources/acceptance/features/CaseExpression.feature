@@ -205,7 +205,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WHERE (CASE
-               WHEN id(n) >= 0 THEN length((n)-->())
+               WHEN id(n) >= 0 THEN size((n)-->())
                ELSE 42
              END) > 0
       RETURN n
@@ -227,7 +227,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WHERE (CASE
-               WHEN id(n) < 0 THEN length((n)-->())
+               WHEN id(n) < 0 THEN size((n)-->())
                ELSE 42
              END) > 0
       RETURN n
@@ -251,7 +251,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WHERE (CASE
-               WHEN id(n) < 0 THEN length((n)-[:X]->())
+               WHEN id(n) < 0 THEN size((n)-[:X]->())
                ELSE 42
              END) > 0
       RETURN n
@@ -275,7 +275,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WHERE (CASE
-               WHEN id(n) < 0 THEN length((n)-->(:X))
+               WHEN id(n) < 0 THEN size((n)-->(:X))
                ELSE 42
              END) > 0
       RETURN n

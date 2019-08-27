@@ -393,11 +393,11 @@ Feature: ShortestPathAcceptance
     MATCH path = allShortestPaths((a:A)-[:REL*0..100]-(c:C))
     WITH nodes(path) AS pathNodes
     WITH pathNodes[0] AS p, pathNodes[3] as c
-    RETURN length((c)-[:REL]-(:B)-[:REL]-(:B)-[:REL]-(p)) AS length
+    RETURN size((c)-[:REL]-(:B)-[:REL]-(:B)-[:REL]-(p)) AS size
     """
     Then the result should be:
-      | length |
-      | 1      |
+      | size |
+      | 1    |
     And no side effects
 
 

@@ -94,8 +94,8 @@ Feature: PatternExpressionAcceptance
       """
       MATCH (n)
       WHERE (n)-->() AND (CASE
-                            WHEN n:A THEN length((n)-->(:C))
-                            WHEN n:B THEN length((n)-->(:D))
+                            WHEN n:A THEN size((n)-->(:C))
+                            WHEN n:B THEN size((n)-->(:D))
                             ELSE 42
                           END) > 1
       RETURN n
@@ -253,7 +253,7 @@ Feature: PatternExpressionAcceptance
       | 3 |
     And no side effects
 
-  Scenario: Using `length()` on outgoing pattern expression
+  Scenario: Using `size()` on outgoing pattern expression
     Given an empty graph
     And having executed:
       """
@@ -268,7 +268,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:X)
-      WHERE length((n)-->()) > 2
+      WHERE size((n)-->()) > 2
       RETURN n
       """
     Then the result should be:
@@ -276,7 +276,7 @@ Feature: PatternExpressionAcceptance
       | (:X {n: 1}) |
     And no side effects
 
-  Scenario: Using `length()` on incoming pattern expression
+  Scenario: Using `size()` on incoming pattern expression
     Given an empty graph
     And having executed:
       """
@@ -291,7 +291,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:X)
-      WHERE length((n)<--()) > 2
+      WHERE size((n)<--()) > 2
       RETURN n
       """
     Then the result should be:
@@ -299,7 +299,7 @@ Feature: PatternExpressionAcceptance
       | (:X {n: 2}) |
     And no side effects
 
-  Scenario: Using `length()` on undirected pattern expression
+  Scenario: Using `size()` on undirected pattern expression
     Given an empty graph
     And having executed:
       """
@@ -314,7 +314,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:X)
-      WHERE length((n)--()) > 2
+      WHERE size((n)--()) > 2
       RETURN n
       """
     Then the result should be:
@@ -323,7 +323,7 @@ Feature: PatternExpressionAcceptance
       | (:X {n: 2}) |
     And no side effects
 
-  Scenario: Using `length()` on pattern expression with complex relationship predicate
+  Scenario: Using `size()` on pattern expression with complex relationship predicate
     Given an empty graph
     And having executed:
       """
@@ -338,7 +338,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n)
-      WHERE length((n)-[:X|Y]-()) > 2
+      WHERE size((n)-[:X|Y]-()) > 2
       RETURN n
       """
     Then the result should be:
@@ -379,7 +379,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH p = (n:X)-->(b)
-      RETURN n, [x IN nodes(p) | length((x)-->(:Y))] AS list
+      RETURN n, [x IN nodes(p) | size((x)-->(:Y))] AS list
       """
     Then the result should be:
       | n           | list   |
@@ -405,7 +405,7 @@ Feature: PatternExpressionAcceptance
       """
     Then a SyntaxError should be raised at compile time: UndefinedVariable
 
-  Scenario: Get node degree via length of pattern expression
+  Scenario: Get node degree via size of pattern expression
     Given an empty graph
     And having executed:
       """
@@ -417,14 +417,14 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (a:X)
-      RETURN length((a)-->()) AS length
+      RETURN size((a)-->()) AS size
       """
     Then the result should be:
-      | length |
-      | 3      |
+      | size |
+      | 3    |
     And no side effects
 
-  Scenario: Get node degree via length of pattern expression that specifies a relationship type
+  Scenario: Get node degree via size of pattern expression that specifies a relationship type
     Given an empty graph
     And having executed:
       """
@@ -437,14 +437,14 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (a:X)
-      RETURN length((a)-[:T]->()) AS length
+      RETURN size((a)-[:T]->()) AS size
       """
     Then the result should be:
-      | length |
-      | 3      |
+      | size |
+      | 3    |
     And no side effects
 
-  Scenario: Get node degree via length of pattern expression that specifies multiple relationship types
+  Scenario: Get node degree via size of pattern expression that specifies multiple relationship types
     Given an empty graph
     And having executed:
       """
@@ -457,11 +457,11 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (a:X)
-      RETURN length((a)-[:T|OTHER]->()) AS length
+      RETURN size((a)-[:T|OTHER]->()) AS size
       """
     Then the result should be:
-      | length |
-      | 4      |
+      | size |
+      | 4    |
     And no side effects
 
   Scenario: Nested pattern comprehensions
