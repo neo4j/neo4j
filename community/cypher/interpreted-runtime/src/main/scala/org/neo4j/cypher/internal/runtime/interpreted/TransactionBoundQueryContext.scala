@@ -207,26 +207,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Array[Int]): RelationshipSelectionCursor = {
-
-    val cursor = allocateNodeCursor()
-    try {
-      val read = reads()
-      val cursors = transactionalContext.cursors
-      read.singleNode(node, cursor)
-      if (!cursor.next()) RelationshipSelectionCursor.EMPTY
-      else {
-        dir match {
-          case OUTGOING => outgoingCursor(cursors, cursor, types)
-          case INCOMING => incomingCursor(cursors, cursor, types)
-          case BOTH => allCursor(cursors, cursor, types)
-        }
-      }
-    } finally {
-      cursor.close()
-    }
-  }
-
   override def relationshipById(relationshipId: Long,
                                 startNodeId: Long,
                                 endNodeId: Long,
