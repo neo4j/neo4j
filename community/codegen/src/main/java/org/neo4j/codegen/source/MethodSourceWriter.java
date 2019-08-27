@@ -514,7 +514,9 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         {
             append( "(" );
             append( "(" ).append( type.fullName() ).append( ") " );
+            append( "(" );
             expression.accept( this );
+            append( ")" );
             append( ")" );
         }
         else

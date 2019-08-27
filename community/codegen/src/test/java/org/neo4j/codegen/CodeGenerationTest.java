@@ -2189,7 +2189,7 @@ public abstract class CodeGenerationTest
         castTest( Integer.TYPE, 42, Long.TYPE, 42L );
         castTest( Float.TYPE, 42.0F, Long.TYPE, 42L );
         castTest( Double.TYPE, 42.0, Long.TYPE, 42L );
-        castTest( Integer.TYPE, 42, Integer.TYPE, 42 );
+        castTest( Long.TYPE, 42L, Integer.TYPE, 42 );
         castTest( Float.TYPE, 42.0F, Integer.TYPE, 42 );
         castTest( Double.TYPE, 42.0D, Integer.TYPE, 42 );
     }
@@ -2409,8 +2409,12 @@ public abstract class CodeGenerationTest
             simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( fromType, "fromValue" ) )
                     .invokeSuper( new ExpressionTemplate[]{load( "name", typeReference( String.class ) )},
                             new TypeReference[]{typeReference( String.class )} )
+                    // Add and then subtract fromValue to get a more complex expression with the same result, i.e.
+                    // toValue = (toType) ((fromValue + fromValue) - fromValue)
                     .put( self( simple.handle() ), toType, "toValue",
-                            cast( toType, load( "fromValue", typeReference( fromType ) ) ) )
+                            cast( toType, subtract( add( load( "fromValue", typeReference( fromType ) ),
+                                    load( "fromValue", typeReference( fromType ) ), typeReference( fromType ) ),
+                                    load( "fromValue", typeReference( fromType ) ), typeReference( fromType ) ) ) )
                     .build() );
             handle = simple.handle();
         }

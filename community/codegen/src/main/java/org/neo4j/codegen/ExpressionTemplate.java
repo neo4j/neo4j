@@ -191,6 +191,30 @@ public abstract class ExpressionTemplate
         };
     }
 
+    public static ExpressionTemplate add( ExpressionTemplate lhs, ExpressionTemplate rhs, TypeReference type )
+    {
+        return new ExpressionTemplate( type )
+        {
+            @Override
+            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
+            {
+                visitor.add( lhs.materialize( method ), rhs.materialize( method ) );
+            }
+        };
+    }
+
+    public static ExpressionTemplate subtract( ExpressionTemplate lhs, ExpressionTemplate rhs, TypeReference type )
+    {
+        return new ExpressionTemplate( type )
+        {
+            @Override
+            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
+            {
+                visitor.subtract( lhs.materialize( method ), rhs.materialize( method ) );
+            }
+        };
+    }
+
     abstract void templateAccept( CodeBlock method, ExpressionVisitor visitor );
 
     private static Expression[] tryMaterialize( ExpressionTemplate[] templates )
