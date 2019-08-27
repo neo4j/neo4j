@@ -35,8 +35,6 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         Clock SYSTEM_TIMER = System::nanoTime;
     }
 
-    private static final ProfilingTracerData ZERO = new ProfilingTracerData();
-
     private final Clock clock;
     private final KernelStatisticProvider statisticProvider;
     private final Map<Integer, ProfilingTracerData> data = new HashMap<>();
@@ -58,7 +56,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         ProfilingTracerData value = data.get( operatorId );
         if ( value == null )
         {
-            return ZERO;
+            return OperatorProfile.ZERO;
         }
         else
         {

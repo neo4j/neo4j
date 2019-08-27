@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.profiling;
 
+import java.util.Arrays;
+
 import org.neo4j.cypher.result.OperatorProfile;
 
 public class ProfilingTracerData implements OperatorProfile
@@ -91,5 +93,41 @@ public class ProfilingTracerData implements OperatorProfile
         {
             pageCacheMisses = OperatorProfile.NO_DATA;
         }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode( new long[] { this.time(), this.dbHits(), this.rows(), this.pageCacheHits(), this.pageCacheMisses()} );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( !(o instanceof OperatorProfile) )
+        {
+            return false;
+        }
+        OperatorProfile that = (OperatorProfile) o;
+        return this.time() == that.time() &&
+               this.dbHits() == that.dbHits() &&
+               this.rows() == that.rows() &&
+               this.pageCacheHits() == that.pageCacheHits() &&
+               this.pageCacheMisses() == that.pageCacheMisses();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "Operator Profile { time: %d, dbHits: %d, rows: %d, page cache hits: %d, page cache misses: %d }",
+                              this.time(),
+                              this.dbHits(),
+                              this.rows(),
+                              this.pageCacheHits(),
+                              this.pageCacheMisses() );
     }
 }

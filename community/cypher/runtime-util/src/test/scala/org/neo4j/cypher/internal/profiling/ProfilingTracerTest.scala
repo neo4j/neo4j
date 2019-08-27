@@ -80,10 +80,14 @@ class ProfilingTracerTest extends CypherFunSuite {
     // when
     val event1 = tracer.executeOperator(operatorId, false)
     clock.progress(12)
+    event1.dbHits(OperatorProfile.NO_DATA.toInt)
+    event1.rows(OperatorProfile.NO_DATA.toInt)
     event1.close()
 
     val event2 = tracer.executeOperator(operatorId, false)
     clock.progress(45)
+    event2.dbHits(OperatorProfile.NO_DATA.toInt)
+    event2.rows(OperatorProfile.NO_DATA.toInt)
     event2.close()
 
     // then

@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
-import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
+import java.util
+
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
 
 import scala.collection.mutable
 
@@ -34,6 +36,21 @@ class InterpretedProfileInformation extends QueryProfile {
     override def time: Long = OperatorProfile.NO_DATA
 
     override def sanitize(): Unit = throw new UnsupportedOperationException("Immutable OperatorData cannot be sanitized.")
+
+    override def hashCode: Int = util.Arrays.hashCode(
+      Array(this.time(), this.dbHits, this.rows, this.pageCacheHits, this.pageCacheMisses))
+
+    override def equals(o: Any): Boolean = o match {
+      case that: OperatorProfile =>
+        this.time == that.time &&
+          this.dbHits == that.dbHits &&
+          this.rows == that.rows &&
+          this.pageCacheHits == that.pageCacheHits &&
+          this.pageCacheMisses == that.pageCacheMisses
+      case _ => false
+    }
+
+    override def toString: String = s"Operator Profile { time: ${this.time}, dbHits: ${this.dbHits}, rows: ${this.rows}, page cache hits: ${this.pageCacheHits}, page cache misses: ${this.pageCacheMisses} }"
   }
 
   val pageCacheMap: mutable.Map[Id, PageCacheStats] = mutable.Map.empty.withDefault(_ => PageCacheStats(0,0))

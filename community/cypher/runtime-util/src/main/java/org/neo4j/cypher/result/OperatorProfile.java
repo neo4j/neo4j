@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.result;
 
+import java.util.Arrays;
+
 import org.neo4j.internal.helpers.MathUtil;
 
 /**
@@ -59,47 +61,107 @@ public interface OperatorProfile
 
     default double pageCacheHitRatio()
     {
-        return ( pageCacheHits() == NO_DATA || pageCacheMisses() == NO_DATA ) ?
+        return ( pageCacheHits() == NO_DATA || pageCacheMisses() == NO_DATA) ?
                NO_DATA : MathUtil.portion( pageCacheHits(), pageCacheMisses() );
     }
 
     long NO_DATA = -1L;
 
-    OperatorProfile NONE = new OperatorProfile()
+    OperatorProfile NONE = new ConstOperatorProfile( NO_DATA );
+    OperatorProfile ZERO = new ConstOperatorProfile( 0 );
+
+    class ConstOperatorProfile implements OperatorProfile
     {
+
+        private long time;
+        private long dbHits;
+        private long rows;
+        private long pageCacheHits;
+        private long pageCacheMisses;
+
+        ConstOperatorProfile( long value )
+        {
+            this( value, value, value, value, value );
+        }
+
+        public ConstOperatorProfile( long time, long dbHits, long rows, long pageCacheHits, long pageCacheMisses )
+        {
+            this.time = time;
+            this.dbHits = dbHits;
+            this.rows = rows;
+            this.pageCacheHits = pageCacheHits;
+            this.pageCacheMisses = pageCacheMisses;
+        }
+
         @Override
         public long time()
         {
-            return NO_DATA;
+            return time;
         }
 
         @Override
         public long dbHits()
         {
-            return NO_DATA;
+            return dbHits;
         }
 
         @Override
         public long rows()
         {
-            return NO_DATA;
+            return rows;
         }
 
         @Override
         public long pageCacheHits()
         {
-            return NO_DATA;
+            return pageCacheHits;
         }
 
         @Override
         public long pageCacheMisses()
         {
-            return NO_DATA;
+            return pageCacheMisses;
         }
 
         @Override
         public void sanitize()
         {
         }
-    };
+
+        @Override
+        public int hashCode()
+        {
+            return Arrays.hashCode( new long[]{this.time(), this.dbHits(), this.rows(), this.pageCacheHits(), this.pageCacheMisses()} );
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( !(o instanceof OperatorProfile) )
+            {
+                return false;
+            }
+            OperatorProfile that = (OperatorProfile) o;
+            return this.time() == that.time() &&
+                   this.dbHits() == that.dbHits() &&
+                   this.rows() == that.rows() &&
+                   this.pageCacheHits() == that.pageCacheHits() &&
+                   this.pageCacheMisses() == that.pageCacheMisses();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "Operator Profile { time: %d, dbHits: %d, rows: %d, page cache hits: %d, page cache misses: %d }",
+                                  this.time(),
+                                  this.dbHits(),
+                                  this.rows(),
+                                  this.pageCacheHits(),
+                                  this.pageCacheMisses() );
+        }
+    }
 }
