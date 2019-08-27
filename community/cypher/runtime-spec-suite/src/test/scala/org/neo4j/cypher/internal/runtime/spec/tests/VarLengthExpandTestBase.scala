@@ -158,6 +158,24 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
+  test("var-length-expand with length 0") {
+    // given
+    val (nodes, _) = lollipopGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[r*0]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n))
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
   // VAR EXPAND INTO
 
   test("simple var-length-expand-into") {
