@@ -216,6 +216,8 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
                 long bridgeId = ++highestWrittenId;
                 if ( !isReservedId( bridgeId ) )
                 {
+                    // Since we're potentially setting multiple bits in this loop we have to monitor when we cross the range boundary
+                    // to the next range. This check checks this and if so writes that range before moving over to the next range.
                     if ( idRangeIndex( bridgeId ) != key.getIdRangeIdx() )
                     {
                         if ( key.getIdRangeIdx() != -1 )
@@ -224,11 +226,16 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
                         }
                         prepareRange( bridgeId, true );
                     }
+
+                    // Mark this id as deleted
                     value.setCommitBit( idOffset( bridgeId ) );
                     if ( !started ) // i.e. in recovery mode
                     {
+                        // We're doing this bridging in recovery and we can therefore mark this id as free right away
                         value.setReuseBit( idOffset( bridgeId ) );
                     }
+
+                    // Set this flag so that the last range (if updated) will be written below, when exiting this loop
                     dirty = true;
                 }
             }
