@@ -278,6 +278,27 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint * 2L) // all node scan
   }
 
+  test("should profile dbHits with var-expand") {
+    // given
+    val SIZE = sizeHint / 4
+    val (nodes, relationships) = circleGraph(SIZE)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expand("(x)-[*1..3]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val matchesPerVarExpand = 3
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() shouldBe (SIZE * (1 + costOfExpand) * matchesPerVarExpand) // expand
+    queryProfile.operatorProfile(2).dbHits() should be >= SIZE.toLong // all node scan
+  }
+
   test("should profile dbHits with node hash join") {
     // given
     nodePropertyGraph(sizeHint,{
