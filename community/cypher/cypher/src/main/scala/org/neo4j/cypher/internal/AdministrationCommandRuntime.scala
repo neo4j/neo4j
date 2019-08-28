@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 
 trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
+  protected val followerError = "Administration commands must be executed on the LEADER server."
+
   def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean
 
   def validatePassword(password: Array[Byte]): Array[Byte] = {

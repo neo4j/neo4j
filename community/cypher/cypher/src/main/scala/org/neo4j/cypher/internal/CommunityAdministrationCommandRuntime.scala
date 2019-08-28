@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.procs.{QueryHandler, SystemCommandExecutionPlan
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
+import org.neo4j.kernel.api.exceptions.{InvalidArgumentsException, Status}
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
 import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.values.storable.{TextValue, Values}
@@ -115,7 +116,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         VirtualValues.map(Array("name"), Array(Values.stringValue(userName))),
         QueryHandler
           .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to delete the specified user '$userName': User does not exist.")))
-          .handleError(e => new IllegalStateException(s"Failed to delete the specified user '$userName'.", e))
+          .handleError {
+            case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
+              new IllegalStateException(s"Failed to delete the specified user '$userName': $followerError", error)
+            case error => new IllegalStateException(s"Failed to delete the specified user '$userName'.", error)
+          }
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
@@ -132,7 +137,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         VirtualValues.map(Array("name", "credentials"),
           Array(Values.stringValue(currentUser), Values.stringValue(authManager.createCredentialForPassword(validatePassword(newPassword)).serialize()))),
         QueryHandler
-          .handleError(e => new IllegalStateException(s"User '$currentUser' failed to alter their own password.", e))
+          .handleError {
+            case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
+              new IllegalStateException(s"User '$currentUser' failed to alter their own password: $followerError", error)
+            case error => new IllegalStateException(s"User '$currentUser' failed to alter their own password.", error)
+          }
           .handleResult((_, value) => {
             val oldCredentials = authManager.deserialize(value.asInstanceOf[TextValue].stringValue())
             if (!oldCredentials.matchesPassword(currentPassword))
