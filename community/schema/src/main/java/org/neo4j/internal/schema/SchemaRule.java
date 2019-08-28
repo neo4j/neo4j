@@ -83,6 +83,8 @@ public interface SchemaRule extends SchemaDescriptorSupplier
      */
     static String generateName( SchemaDescriptorSupplier rule, String[] entityTokenNames, String[] propertyNames )
     {
+        sanitiseTokens( entityTokenNames );
+        sanitiseTokens( propertyNames );
         if ( rule instanceof IndexRef<?> )
         {
             return generateName( (IndexRef<?>) rule, entityTokenNames, propertyNames );
@@ -92,6 +94,17 @@ public interface SchemaRule extends SchemaDescriptorSupplier
             return generateName( (ConstraintDescriptor) rule, entityTokenNames, propertyNames );
         }
         throw new IllegalArgumentException( "Don't know how to generate a name for this SchemaDescriptorSupplier implementation: " + rule + "." );
+    }
+
+    private static void sanitiseTokens( String[] tokens )
+    {
+        for ( int i = 0; i < tokens.length; i++ )
+        {
+            if ( tokens[i].indexOf( '\0' ) != -1 )
+            {
+                tokens[i] = tokens[i].replace( "\0", "\\0" );
+            }
+        }
     }
 
     /**

@@ -60,9 +60,16 @@ class SchemaRuleTest
         assertName( existsRelTypeConstraint, new String[] {"A"}, new String[] {"B", "C"}, "Property existence constraint on ()-[:A]-() (B,C)" );
     }
 
+    @Test
+    void mustNotGenerateBrokenNamesWhenTokensContainNullBytes()
+    {
+        assertName( IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ), new String[]{"a\0b"}, new String[]{"c\0d"}, "Index on :a\\0b (c\\0d)" );
+    }
+
     private void assertName( SchemaDescriptorSupplier schemaish, String[] entityTokenNames, String[] propertyNames, String expectedName )
     {
         String generateName = SchemaRule.generateName( schemaish, entityTokenNames, propertyNames );
         assertEquals( expectedName, generateName );
+        assertEquals( expectedName, SchemaRule.sanitiseName( generateName ) );
     }
 }
