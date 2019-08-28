@@ -27,74 +27,65 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("returned variables are added to scope after sub-query") {
 
-    val q =
-      query(
-        with_(literal(1).as("a")),
-        subQuery(
-          with_(literal(1).as("b")),
-          return_(varFor("b").as("b"), literal(1).as("c"))
-        ),
-        return_(
-          varFor("a").as("a"), varFor("b").as("b"), varFor("c").as("c"))
-      )
+    query(
+      with_(literal(1).as("a")),
+      subQuery(
+        with_(literal(1).as("b")),
+        return_(varFor("b").as("b"), literal(1).as("c"))
+      ),
+      return_(
+        varFor("a").as("a"), varFor("b").as("b"), varFor("c").as("c"))
+    )
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
 
-    val result = SemanticChecker.check(q, SemanticState.clean)
-
-    result.errors.size shouldEqual 0
   }
 
   test("outer scope is not seen in uncorrelated sub-query") {
 
-    val q =
-      query(
-        with_(literal(1).as("a")),
-        subQuery(
-          return_(varFor("a").as("b"))
-        ),
-        return_(varFor("a").as("a"))
-      )
-
-    val result = SemanticChecker.check(q, SemanticState.clean)
-
-    result.errors.size shouldEqual 1
-    result.errors.head.msg should include("Variable `a` not defined")
+    query(
+      with_(literal(1).as("a")),
+      subQuery(
+        return_(varFor("a").as("b"))
+      ),
+      return_(varFor("a").as("a"))
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.should(include("Variable `a` not defined")))
   }
 
   test("subquery scoping works with order by") {
 
-    val q =
-      query(
-        with_(literal(1).as("a")),
-        subQuery(
-          with_(literal(1).as("b")),
-          return_(
-            orderBy(varFor("b").asc, varFor("c").asc),
-            varFor("b").as("b"), literal(1).as("c"))
-        ),
+    query(
+      with_(literal(1).as("a")),
+      subQuery(
+        with_(literal(1).as("b")),
         return_(
-          orderBy(varFor("a").asc, varFor("b").asc, varFor("c").asc),
-          varFor("a").as("a"), varFor("b").as("b"), varFor("b").as("c"))
-      )
-
-    val result = SemanticChecker.check(q, SemanticState.clean)
-
-    result.errors.size shouldEqual 0
+          orderBy(varFor("b").asc, varFor("c").asc),
+          varFor("b").as("b"), literal(1).as("c"))
+      ),
+      return_(
+        orderBy(varFor("a").asc, varFor("b").asc, varFor("c").asc),
+        varFor("a").as("a"), varFor("b").as("b"), varFor("b").as("c"))
+    )
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
   }
 
-  test("fails on variable name collision") {
+  test("subquery can't return variable that already exists outside") {
 
-    val sq = singleQuery(
+    singleQuery(
       with_(literal(1).as("x")),
       subQuery(
         return_(literal(2).as("x"))
       ),
       return_(literal(1).as("y"))
     )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.should(include("Variable `x` already declared")))
 
-    val result = sq.semanticCheck(SemanticState.clean)
-
-    result.errors.size shouldEqual 1
-    result.errors.head.msg should include("Variable `x` already declared")
   }
 
   test("subquery allows union with valid return statements at the end") {
@@ -166,101 +157,44 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     result.errors.head.msg should include ("All sub queries in an UNION must have the same column names")
   }
 
-  test("uncorrelated subquery with union") {
+  test("subquery with union") {
 
-    val q =
-      query(
-        with_(literal(1).as("a")),
-        subQuery(unionDistinct(
-          singleQuery(
-            return_(literal(2).as("b"))
-          ),
-          singleQuery(
-            return_(literal(3).as("b"))
-          )
-        )),
-        return_(varFor("a").aliased, varFor("b").aliased)
-      )
-
-    val result = SemanticChecker.check(q, clean)
-
-    result.errors.size shouldEqual 0
+    query(
+      with_(literal(1).as("a")),
+      subQuery(unionDistinct(
+        singleQuery(
+          return_(literal(2).as("b"))
+        ),
+        singleQuery(
+          return_(literal(3).as("b"))
+        )
+      )),
+      return_(varFor("a").aliased, varFor("b").aliased)
+    )
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
   }
 
-  test("uncorrelated subquery with invalid union") {
+  test("subquery with invalid union") {
 
-    val q =
-      query(
-        with_(literal(1).as("a")),
-        subQuery(unionDistinct(
-          singleQuery(
-            return_(literal(2).as("b"))
-          ),
-          singleQuery(
-            return_(literal(3).as("c"))
-          )
-        )),
-        return_(varFor("a").aliased)
-      )
-
-    val result = SemanticChecker.check(q, clean)
-
-    result.errors.size shouldEqual 1
-    result.errors.head.msg.should(include("All sub queries in an UNION must have the same column names"))
+    query(
+      with_(literal(1).as("a")),
+      subQuery(unionDistinct(
+        singleQuery(
+          return_(literal(2).as("b"))
+        ),
+        singleQuery(
+          return_(literal(3).as("c"))
+        )
+      )),
+      return_(varFor("a").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.should(include("All sub queries in an UNION must have the same column names")))
   }
 
-  test("correlated subquery with union") {
-
-    val q =
-      query(
-        with_(literal(1).as("a")),
-        subQuery(unionDistinct(
-          singleQuery(
-            with_(varFor("a").aliased),
-            return_(varFor("a").as("b"))
-          ),
-          singleQuery(
-            with_(varFor("a").aliased),
-            return_(varFor("a").as("b"))
-          )
-        )),
-        return_(varFor("a").aliased, varFor("b").aliased)
-      )
-
-    val result = SemanticChecker.check(q, clean)
-
-    result.errors.size shouldEqual 0
-  }
-
-  test("correlated subquery with union with different imports") {
-
-    val q =
-      query(
-        with_(literal(1).as("a"), literal(1).as("b"), literal(1).as("c")),
-        subQuery(unionDistinct(
-          singleQuery(
-            with_(varFor("a").aliased),
-            return_(varFor("a").as("x"))
-          ),
-          singleQuery(
-            with_(varFor("b").aliased),
-            return_(varFor("b").as("x"))
-          ),
-          singleQuery(
-            with_(varFor("c").aliased),
-            return_(varFor("c").as("x"))
-          )
-        )),
-        return_(varFor("a").aliased, varFor("b").aliased, varFor("c").aliased, varFor("x").aliased)
-      )
-
-    val result = SemanticChecker.check(q, clean)
-
-    result.errors.foreach(println)
-    result.errors.size shouldEqual 0
-  }
-
-  test("importing variables using leading WITH") {
+  test("correlated subquery importing variables using leading WITH") {
 
     singleQuery(
       with_(literal(1).as("x")),
@@ -274,7 +208,52 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .errors.size.shouldEqual(0)
   }
 
+  test("correlated subquery with union") {
+
+    query(
+      with_(literal(1).as("a")),
+      subQuery(unionDistinct(
+        singleQuery(
+          with_(varFor("a").aliased),
+          return_(varFor("a").as("b"))
+        ),
+        singleQuery(
+          with_(varFor("a").aliased),
+          return_(varFor("a").as("b"))
+        )
+      )),
+      return_(varFor("a").aliased, varFor("b").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(0))
+  }
+
+  test("correlated subquery with union with different imports") {
+
+    query(
+      with_(literal(1).as("a"), literal(1).as("b"), literal(1).as("c")),
+      subQuery(unionDistinct(
+        singleQuery(
+          with_(varFor("a").aliased),
+          return_(varFor("a").as("x"))
+        ),
+        singleQuery(
+          with_(varFor("b").aliased),
+          return_(varFor("b").as("x"))
+        ),
+        singleQuery(
+          with_(varFor("c").aliased),
+          return_(varFor("c").as("x"))
+        )
+      )),
+      return_(varFor("a").aliased, varFor("b").aliased, varFor("c").aliased, varFor("x").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(0))
+  }
+
   test("importing WITH must be first clause") {
+
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -287,10 +266,10 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .semanticCheck(clean)
       .tap(_.errors.size.shouldEqual(1))
       .tap(_.errors.head.msg.should(include("Variable `x` not defined")))
-
   }
 
   test("importing WITH must be clean pass-through") {
+
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -305,6 +284,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("importing variables using pass-through WITH and then introducing more") {
+
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
