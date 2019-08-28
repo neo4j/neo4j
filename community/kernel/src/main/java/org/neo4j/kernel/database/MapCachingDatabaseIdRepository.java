@@ -71,4 +71,11 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
         databaseIdsByName.remove( databaseId.name() );
         databaseIdsByUuid.remove( databaseId.uuid() );
     }
+
+    @Override
+    public void cache( DatabaseId databaseId )
+    {
+        this.databaseIdsByName.put( databaseId.name(), databaseId );
+        this.databaseIdsByUuid.put( databaseId.uuid(), databaseId );
+    }
 }

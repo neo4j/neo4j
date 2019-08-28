@@ -39,9 +39,9 @@ class MapCachingDatabaseIdRepositoryTest
 {
     private DatabaseIdRepository delegate = Mockito.mock( DatabaseIdRepository.class );
 
-    private String otherDbName = "i am a database";
-    private UUID otherUuid = UUID.randomUUID();
-    private DatabaseId otherDbId = new DatabaseId( otherDbName, otherUuid );
+    private DatabaseId otherDbId = TestDatabaseIdRepository.randomDatabaseId();
+    private String otherDbName = otherDbId.name();
+    private UUID otherUuid = otherDbId.uuid();
     private DatabaseIdRepository.Caching databaseIdRepository;
 
     @BeforeEach
@@ -89,12 +89,25 @@ class MapCachingDatabaseIdRepositoryTest
     {
         databaseIdRepository.getByName( otherDbName ).get();
         databaseIdRepository.getByUuid( otherUuid ).get();
+
         databaseIdRepository.invalidate( otherDbId );
+
         databaseIdRepository.getByName( otherDbName ).get();
         databaseIdRepository.getByUuid( otherUuid ).get();
 
         verify( delegate, times( 2 ) ).getByName( otherDbName );
         verify( delegate, times( 2 ) ).getByUuid( otherUuid );
+    }
+
+    @Test
+    void shouldCacheDbOnRequest()
+    {
+        databaseIdRepository.cache( otherDbId );
+
+        databaseIdRepository.getByName( otherDbName );
+        databaseIdRepository.getByUuid( otherUuid );
+
+        verifyZeroInteractions( delegate );
     }
 
     @Test

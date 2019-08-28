@@ -76,6 +76,12 @@ class DatabaseManagerTest
                 }
 
                 @Override
+                public void cache( DatabaseId databaseId )
+                {
+
+                }
+
+                @Override
                 public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
                 {
                     if ( KNOWN_DATABASE_NAME.equals( databaseName.name() ) )
