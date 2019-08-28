@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -403,6 +403,9 @@ public class AllStoreHolder extends Read
     }
 
     /**
+     * Lock the given index if it is valid and exists.
+     *
+     * If the given index descriptor does not reference an index that exists, then {@link IndexDescriptor#NO_INDEX} is returned.
      *
      * @param index committed, transaction-added or even null.
      * @return The validated index descriptor, which is not necessarily the same as the one given as an argument.
@@ -413,15 +416,16 @@ public class AllStoreHolder extends Read
         {
             return IndexDescriptor.NO_INDEX;
         }
-        return acquireSharedSchemaLock( index );
-    }
-
-    private void unlockIndex( IndexDescriptor index )
-    {
-        if ( index != null )
+        index = acquireSharedSchemaLock( index );
+        // Since the schema cache gives us snapshots views of the schema, the indexes could be dropped in-between us
+        // getting the snapshot, and taking the shared schema locks.
+        // Thus, after we take the lock, we need to filter out indexes that no longer exists.
+        if ( !indexExists( index ) )
         {
             releaseSharedSchemaLock( index );
+            index = IndexDescriptor.NO_INDEX;
         }
+        return index;
     }
 
     /**
@@ -429,62 +433,48 @@ public class AllStoreHolder extends Read
      */
     private Iterator<IndexDescriptor> lockIndexes( Iterator<IndexDescriptor> indexes )
     {
-        // Since the schema cache gives us snapshots views of the schema cache,
-        // the indexes could be dropped in-between us getting the snapshot, and
-        // taking the shared schema locks. Thus, after we take the lock, we need
-        // to filter out indexes that no longer exists.
-        Collection<IndexDescriptor> coll = Iterators.asCollection( indexes );
-        boolean checkTxState = ktx.hasTxStateWithChanges();
-        Iterator<IndexDescriptor> itr = coll.iterator();
-        while ( itr.hasNext() )
+        Predicate<IndexDescriptor> exists = index -> index != IndexDescriptor.NO_INDEX;
+        return Iterators.filter( exists, Iterators.map( this::lockIndex, indexes ) );
+    }
+
+    private boolean indexExists( IndexDescriptor index )
+    {
+        if ( ktx.hasTxStateWithChanges() )
         {
-            IndexDescriptor index = lockIndex( itr.next() );
-            if ( checkTxState && ktx.txState().indexChanges().isAdded( index ) )
-            {
-                continue;
-            }
-            if ( !storageReader.indexExists( index ) )
-            {
-                unlockIndex( index );
-                itr.remove();
-            }
+            DiffSets<IndexDescriptor> changes = ktx.txState().indexChanges();
+            return changes.isAdded( index ) || (storageReader.indexExists( index ) && !changes.isRemoved( index ) );
         }
-        return coll.iterator();
+        return storageReader.indexExists( index );
     }
 
     private ConstraintDescriptor lockConstraint( ConstraintDescriptor constraint )
     {
-        SchemaDescriptor schema = constraint.schema();
-        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.lockingKeys() );
+        constraint = acquireSharedSchemaLock( constraint );
+        if ( !constraintExists( constraint ) )
+        {
+            releaseSharedSchemaLock( constraint );
+            constraint = null;
+        }
         return constraint;
-    }
-
-    private void unlockConstraint( ConstraintDescriptor constraint )
-    {
-        SchemaDescriptor schema = constraint.schema();
-        ktx.statementLocks().pessimistic().releaseShared( schema.keyType(), schema.lockingKeys() );
     }
 
     private Iterator<ConstraintDescriptor> lockConstraints( Iterator<ConstraintDescriptor> constraints )
     {
-        // Same deal as with `lockedIndexes`.
-        Collection<ConstraintDescriptor> coll = Iterators.asCollection( constraints );
-        boolean checkTxState = ktx.hasTxStateWithChanges();
-        Iterator<ConstraintDescriptor> itr = coll.iterator();
-        while ( itr.hasNext() )
+        return Iterators.filter( Objects::nonNull, Iterators.map( this::lockConstraint, constraints ) );
+    }
+
+    @Override
+    public boolean constraintExists( ConstraintDescriptor constraint )
+    {
+        acquireSharedSchemaLock( constraint );
+        ktx.assertOpen();
+
+        if ( ktx.hasTxStateWithChanges() )
         {
-            ConstraintDescriptor constraint = lockConstraint( itr.next() );
-            if ( checkTxState && ktx.txState().constraintsChanges().isAdded( constraint ) )
-            {
-                continue;
-            }
-            if ( !storageReader.constraintExists( constraint ) )
-            {
-                unlockConstraint( constraint );
-                itr.remove();
-            }
+            DiffSets<ConstraintDescriptor> changes = ktx.txState().constraintsChanges();
+            return changes.isAdded( constraint ) || (storageReader.constraintExists( constraint ) && !changes.isRemoved( constraint ) );
         }
-        return coll.iterator();
+        return storageReader.constraintExists( constraint );
     }
 
     @Override
@@ -594,11 +584,7 @@ public class AllStoreHolder extends Read
                     ktx.txState().constraintsChanges().filterAdded( namePredicate ).apply( Iterators.iterator( constraint ) );
             constraint = singleOrNull( constraints );
         }
-        if ( constraint == null )
-        {
-            return null;
-        }
-        return acquireSharedSchemaLock( constraint );
+        return lockConstraint( constraint );
     }
 
     @Override
@@ -623,8 +609,7 @@ public class AllStoreHolder extends Read
     public InternalIndexState indexGetState( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        SchemaDescriptor schema = index.schema();
-        acquireSharedSchemaLock( schema );
+        acquireSharedSchemaLock( index );
         ktx.assertOpen();
 
         return indexGetStateLocked( index );
@@ -650,7 +635,7 @@ public class AllStoreHolder extends Read
             throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        acquireSharedSchemaLock( index.schema() );
+        acquireSharedSchemaLock( index );
         ktx.assertOpen();
         return indexGetPopulationProgressLocked( index );
     }
@@ -671,7 +656,7 @@ public class AllStoreHolder extends Read
     @Override
     public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
-        acquireSharedSchemaLock( index.schema() );
+        acquireSharedSchemaLock( index );
         ktx.assertOpen();
         return storageReader.indexGetOwningUniquenessConstraintId( storageReader.indexGetForSchema( index.schema() ) );
     }
@@ -687,8 +672,7 @@ public class AllStoreHolder extends Read
     public double indexUniqueValuesSelectivity( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        SchemaDescriptor schema = index.schema();
-        acquireSharedSchemaLock( schema );
+        acquireSharedSchemaLock( index );
         ktx.assertOpen();
         IndexDescriptor storageIndex = storageReader.indexGetForSchema( index.schema() );
         if ( storageIndex == null )
@@ -705,8 +689,7 @@ public class AllStoreHolder extends Read
     public long indexSize( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        SchemaDescriptor schema = index.schema();
-        acquireSharedSchemaLock( schema );
+        acquireSharedSchemaLock( index );
         ktx.assertOpen();
         IndexDescriptor storageIndex = storageReader.indexGetForSchema( index.schema() );
         if ( storageIndex == null )
@@ -787,33 +770,16 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor schema )
     {
-        acquireSharedSchemaLock( descriptor );
-        ktx.assertOpen();
-        Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetForSchema( descriptor );
-        if ( ktx.hasTxStateWithChanges() )
-        {
-            return ktx.txState().constraintsChangesForSchema( descriptor ).apply( constraints );
-        }
-        return constraints;
-    }
-
-    @Override
-    public boolean constraintExists( ConstraintDescriptor descriptor )
-    {
-        SchemaDescriptor schema = descriptor.schema();
         acquireSharedSchemaLock( schema );
         ktx.assertOpen();
-        boolean inStore = storageReader.constraintExists( descriptor );
+        Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetForSchema( schema );
         if ( ktx.hasTxStateWithChanges() )
         {
-            DiffSets<ConstraintDescriptor> diffSet =
-                    ktx.txState().constraintsChangesForSchema( descriptor.schema() );
-            return diffSet.isAdded( descriptor ) || (inStore && !diffSet.isRemoved( descriptor ));
+            return ktx.txState().constraintsChangesForSchema( schema ).apply( constraints );
         }
-
-        return inStore;
+        return constraints;
     }
 
     @Override
