@@ -53,7 +53,7 @@ class RightmostInChain
         long newRightmostNode = cursor.getCurrentPageId();
 
         // Assert we have reached expected node and that we agree about being siblings
-        assertSiblingsAgreeOnBeingSibling( currentRightmostNode, currentRightmostNodeGeneration, currentRightmostRightSiblingPointer,
+        assertSiblingsAgreeOnBeingSiblings( currentRightmostNode, currentRightmostNodeGeneration, currentRightmostRightSiblingPointer,
                 currentRightmostRightSiblingPointerGeneration, newRightmostNode, newRightmostNodeGeneration, newRightmostLeftSiblingPointer,
                 newRightmostLeftSiblingPointerGeneration, visitor );
         // Assert that both sibling pointers have reasonable generations
@@ -94,7 +94,7 @@ class RightmostInChain
         }
     }
 
-    private void assertSiblingsAgreeOnBeingSibling( long currentRightmostNode, long currentRightmostNodeGeneration,
+    private void assertSiblingsAgreeOnBeingSiblings( long currentRightmostNode, long currentRightmostNodeGeneration,
             long currentRightmostRightSiblingPointer, long currentRightmostRightSiblingPointerGeneration, long newRightmostNode,
             long newRightmostNodeGeneration, long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGeneration,
             GBPTreeConsistencyCheckVisitor visitor )

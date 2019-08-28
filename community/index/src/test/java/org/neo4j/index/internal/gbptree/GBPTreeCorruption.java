@@ -33,7 +33,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
 import static org.neo4j.index.internal.gbptree.TreeNode.goTo;
 
 /**
- * Use together with {@link GBPTree#corrupt(IndexCorruption)}
+ * Use together with {@link GBPTree#unsafe(GBPTreeUnsafe)}
  */
 public final class GBPTreeCorruption
 {
@@ -360,8 +360,7 @@ public final class GBPTreeCorruption
         void corrupt( PageCursor pageCursor, Layout<KEY,VALUE> layout, TreeNode<KEY,VALUE> node, TreeState treeState ) throws IOException;
     }
 
-    interface IndexCorruption<KEY,VALUE>
+    interface IndexCorruption<KEY,VALUE> extends GBPTreeUnsafe<KEY,VALUE>
     {
-        void corrupt( PagedFile pagedFile, Layout<KEY,VALUE> layout, TreeNode<KEY,VALUE> node, TreeState treeState ) throws IOException;
     }
 }

@@ -1167,15 +1167,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    @VisibleForTesting
-    public GBPTreeInspection<KEY,VALUE> inspect() throws IOException
-    {
-        InspectingVisitor<KEY,VALUE> inspection = new InspectingVisitor<>();
-        visit( inspection );
-        return inspection.get();
-    }
-
-    public void visit( GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
+    public <VISITOR extends GBPTreeVisitor<KEY,VALUE>> VISITOR visit( VISITOR visitor ) throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
@@ -1183,6 +1175,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                     .visitTree( cursor, writer.cursor, visitor );
             freeList.visitFreelist( visitor );
         }
+        return visitor;
     }
 
     @SuppressWarnings( "unused" )
@@ -1265,7 +1258,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     @VisibleForTesting
-    public void corrupt( GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption ) throws IOException
+    public void unsafe( GBPTreeUnsafe<KEY,VALUE> unsafe ) throws IOException
     {
         TreeState state;
         try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
@@ -1274,7 +1267,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             Pair<TreeState,TreeState> states = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
             state = TreeStatePair.selectNewestValidState( states );
         }
-        corruption.corrupt( pagedFile, layout, bTreeNode, state );
+        unsafe.access( pagedFile, layout, bTreeNode, state );
     }
 
     @Override

@@ -19,24 +19,25 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.eclipse.collections.api.list.primitive.ImmutableLongList;
+
 import java.util.List;
 import java.util.Map;
 
 public class GBPTreeInspection<KEY,VALUE>
 {
-    private final List<Long> internalNodes;
-    private final List<Long> leafNodes;
-    private final List<Long> allNodes;
+    private final ImmutableLongList internalNodes;
+    private final ImmutableLongList leafNodes;
+    private final ImmutableLongList allNodes;
     private final Map<Long,Integer> keyCounts;
-    private final List<List<Long>> nodesPerLevel;
+    private final List<ImmutableLongList> nodesPerLevel;
     private final List<InspectingVisitor.FreelistEntry> allFreelistEntries;
     private final long rootNode;
     private final int lastLevel;
     private final TreeState treeState;
 
-    GBPTreeInspection( List<Long> internalNodes, List<Long> leafNodes, List<Long> allNodes, Map<Long,Integer> keyCounts, List<List<Long>> nodesPerLevel,
-            List<InspectingVisitor.FreelistEntry> allFreelistEntries, long rootNode, int lastLevel,
-            TreeState treeState )
+    GBPTreeInspection( ImmutableLongList internalNodes, ImmutableLongList leafNodes, ImmutableLongList allNodes, Map<Long,Integer> keyCounts,
+            List<ImmutableLongList> nodesPerLevel, List<InspectingVisitor.FreelistEntry> allFreelistEntries, long rootNode, int lastLevel, TreeState treeState )
     {
         this.internalNodes = internalNodes;
         this.leafNodes = leafNodes;
@@ -49,17 +50,17 @@ public class GBPTreeInspection<KEY,VALUE>
         this.treeState = treeState;
     }
 
-    public List<Long> getInternalNodes()
+    public ImmutableLongList getInternalNodes()
     {
         return internalNodes;
     }
 
-    public List<Long> getLeafNodes()
+    public ImmutableLongList getLeafNodes()
     {
         return leafNodes;
     }
 
-    public List<Long> getAllNodes()
+    public ImmutableLongList getAllNodes()
     {
         return allNodes;
     }
@@ -69,7 +70,7 @@ public class GBPTreeInspection<KEY,VALUE>
         return keyCounts;
     }
 
-    public List<List<Long>> getNodesPerLevel()
+    public List<ImmutableLongList> getNodesPerLevel()
     {
         return nodesPerLevel;
     }

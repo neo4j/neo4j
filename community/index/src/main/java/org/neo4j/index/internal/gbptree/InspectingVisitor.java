@@ -20,42 +20,50 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.list.primitive.ImmutableLongList;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 
-class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VALUE>
+public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VALUE>
 {
-    private final List<Long> internalNodes = new ArrayList<>();
-    private final List<Long> leafNodes = new ArrayList<>();
-    private final List<Long> allNodes = new ArrayList<>();
+    private final MutableLongList internalNodes = LongLists.mutable.empty();
+    private final MutableLongList leafNodes = LongLists.mutable.empty();
+    private final MutableLongList allNodes = LongLists.mutable.empty();
     private final Map<Long,Integer> allKeyCounts = new HashMap<>();
-    private final List<List<Long>> nodesPerLevel = new ArrayList<>();
+    private final List<LongList> nodesPerLevel = new ArrayList<>();
     private final List<FreelistEntry> allFreelistEntries = new ArrayList<>();
     private long rootNode;
     private int lastLevel;
     private TreeState treeState;
-    private ArrayList<Long> currentLevelNodes;
+    private MutableLongList currentLevelNodes;
     private long currentFreelistPage;
 
-    InspectingVisitor()
+    public InspectingVisitor()
     {
         clear();
     }
 
     public GBPTreeInspection<KEY,VALUE> get()
     {
+        final List<ImmutableLongList> immutableNodesPerLevel = nodesPerLevel.stream()
+                .map( LongLists.immutable::ofAll )
+                .collect( Collectors.toList() );
         return new GBPTreeInspection<>(
-                unmodifiableList( internalNodes ),
-                unmodifiableList( leafNodes ),
-                unmodifiableList( allNodes ),
+                LongLists.immutable.ofAll( internalNodes ),
+                LongLists.immutable.ofAll( leafNodes ),
+                LongLists.immutable.ofAll( allNodes ),
                 unmodifiableMap( allKeyCounts ),
-                unmodifiableList( nodesPerLevel ),
+                immutableNodesPerLevel,
                 unmodifiableList( allFreelistEntries ),
                 rootNode,
                 lastLevel,
@@ -72,7 +80,7 @@ class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VALUE>
     public void beginLevel( int level )
     {
         lastLevel = level;
-        currentLevelNodes = new ArrayList<>();
+        currentLevelNodes = LongLists.mutable.empty();
         nodesPerLevel.add( currentLevelNodes );
     }
 
