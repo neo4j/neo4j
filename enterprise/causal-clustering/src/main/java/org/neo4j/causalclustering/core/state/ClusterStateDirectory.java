@@ -24,6 +24,7 @@ package org.neo4j.causalclustering.core.state;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -147,5 +148,14 @@ public class ClusterStateDirectory
             throw new IllegalStateException( "Cluster state has not been initialized" );
         }
         return stateDir;
+    }
+
+    public boolean isEmpty() throws IOException
+    {
+        if ( !initialized )
+        {
+            throw new IllegalStateException( "Cluster state has not been initialized" );
+        }
+        return !Files.list( stateDir.toPath() ).findAny().isPresent();
     }
 }

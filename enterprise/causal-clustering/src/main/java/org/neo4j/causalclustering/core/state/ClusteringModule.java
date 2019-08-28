@@ -22,10 +22,10 @@
  */
 package org.neo4j.causalclustering.core.state;
 
-import java.io.File;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
@@ -43,6 +43,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
@@ -56,8 +58,8 @@ public class ClusteringModule
     private final CoreTopologyService topologyService;
     private final ClusterBinder clusterBinder;
 
-    public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself,
-            PlatformModule platformModule, File clusterStateDirectory )
+    public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself, PlatformModule platformModule,
+            ClusterStateDirectory clusterStateDirectory, LocalDatabase localDatabase )
     {
         LifeSupport life = platformModule.life;
         Config config = platformModule.config;
@@ -72,6 +74,7 @@ public class ClusteringModule
                         userLogProvider, hostnameResolver, resolveStrategy( config, logProvider ) );
 
         life.add( topologyService );
+        life.add( clusterStateCleaner( localDatabase, clusterStateDirectory, fileSystem ) );
 
         dependencies.satisfyDependency( topologyService ); // for tests
 
@@ -79,17 +82,36 @@ public class ClusteringModule
                 new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider, platformModule.monitors );
 
         SimpleStorage<ClusterId> clusterIdStorage =
-                new SimpleFileStorage<>( fileSystem, clusterStateDirectory, CLUSTER_ID_NAME, new ClusterId.Marshal(),
-                        logProvider );
+                new SimpleFileStorage<>( fileSystem, clusterStateDirectory.get(), CLUSTER_ID_NAME, new ClusterId.Marshal(), logProvider );
 
         SimpleStorage<DatabaseName> dbNameStorage =
-                new SimpleFileStorage<>( fileSystem, clusterStateDirectory, DB_NAME, new DatabaseName.Marshal(), logProvider );
+                new SimpleFileStorage<>( fileSystem, clusterStateDirectory.get(), DB_NAME, new DatabaseName.Marshal(), logProvider );
 
         String dbName = config.get( CausalClusteringSettings.database );
         int minimumCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
 
         clusterBinder = new ClusterBinder( clusterIdStorage, dbNameStorage, topologyService, Clocks.systemClock(), () -> sleep( 100 ), 300_000,
                 coreBootstrapper, dbName, minimumCoreHosts, logProvider );
+    }
+
+    /**
+     * Cluster state existing without a corresponding database is an illegal state. It likely indicates a previously failed store copy.
+     * In this event we remove and re-initialize the cluster state (equivalent to manually executing an unbind command).
+     */
+    static Lifecycle clusterStateCleaner( LocalDatabase localDatabase, ClusterStateDirectory clusterStateDirectory, FileSystemAbstraction fs )
+    {
+        return new LifecycleAdapter()
+        {
+            @Override
+            public void start() throws Throwable
+            {
+                if ( localDatabase.isEmpty() && !clusterStateDirectory.isEmpty() )
+                {
+                    fs.deleteRecursively( clusterStateDirectory.get() );
+                    clusterStateDirectory.initialize( fs );
+                }
+            }
+        };
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )

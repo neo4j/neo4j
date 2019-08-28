@@ -244,7 +244,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
 
         ClusteringModule clusteringModule = getClusteringModule( platformModule, discoveryServiceFactory,
-                clusterStateDirectory, identityModule, dependencies );
+                clusterStateDirectory, identityModule, dependencies, localDatabase );
 
         // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
         dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
@@ -369,13 +369,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    protected ClusteringModule getClusteringModule( PlatformModule platformModule,
-                                                  DiscoveryServiceFactory discoveryServiceFactory,
-                                                  ClusterStateDirectory clusterStateDirectory,
-                                                  IdentityModule identityModule, Dependencies dependencies )
+    protected ClusteringModule getClusteringModule( PlatformModule platformModule, DiscoveryServiceFactory discoveryServiceFactory,
+            ClusterStateDirectory clusterStateDirectory, IdentityModule identityModule, Dependencies dependencies, LocalDatabase db )
     {
-        return new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
-                platformModule, clusterStateDirectory.get() );
+        return new ClusteringModule( discoveryServiceFactory, identityModule.myself(), platformModule, clusterStateDirectory, db );
     }
 
     protected DuplexPipelineWrapperFactory pipelineWrapperFactory()
