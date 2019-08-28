@@ -333,6 +333,10 @@ public class Dijkstra<CostType> implements
                             ++numberOfTraversedRelationShips;
                             // Target node
                             Node target = relationship.getOtherNode( currentNode );
+                            if ( otherDistances.containsKey( target ) )
+                            {
+                                continue;
+                            }
                             // Find out if an eventual path would go in the opposite
                             // direction of the edge
                             boolean backwardsEdge = relationship.getEndNode().equals( currentNode ) ^ backwards;
@@ -558,9 +562,8 @@ public class Dijkstra<CostType> implements
         {
             return Collections.emptyList();
         }
-        // Currently we use a set to avoid duplicate paths
-        // TODO: can this be done smarter?
-        Set<List<PropertyContainer>> paths = new HashSet<>();
+
+        List<List<PropertyContainer>> paths = new LinkedList<>();
         for ( Node middleNode : foundPathsMiddleNodes )
         {
             List<List<PropertyContainer>> paths1 = Util.constructAllPathsToNode(
@@ -581,7 +584,8 @@ public class Dijkstra<CostType> implements
                 }
             }
         }
-        return new LinkedList<>( paths );
+
+        return paths;
     }
 
     /**
@@ -599,9 +603,8 @@ public class Dijkstra<CostType> implements
         {
             return null;
         }
-        // Currently we use a set to avoid duplicate paths
-        // TODO: can this be done smarter?
-        Set<List<Node>> paths = new HashSet<>();
+
+        List<List<Node>> paths = new LinkedList<>();
         for ( Node middleNode : foundPathsMiddleNodes )
         {
             List<List<Node>> paths1 = Util.constructAllPathsToNodeAsNodes(
@@ -622,7 +625,8 @@ public class Dijkstra<CostType> implements
                 }
             }
         }
-        return new LinkedList<>( paths );
+
+        return paths;
     }
 
     /**
@@ -640,9 +644,8 @@ public class Dijkstra<CostType> implements
         {
             return null;
         }
-        // Currently we use a set to avoid duplicate paths
-        // TODO: can this be done smarter?
-        Set<List<Relationship>> paths = new HashSet<>();
+
+        List<List<Relationship>> paths = new LinkedList<>();
         for ( Node middleNode : foundPathsMiddleNodes )
         {
             List<List<Relationship>> paths1 = Util.constructAllPathsToNodeAsRelationships(
@@ -663,7 +666,8 @@ public class Dijkstra<CostType> implements
                 }
             }
         }
-        return new LinkedList<>( paths );
+
+        return paths;
     }
 
     /**
