@@ -28,7 +28,8 @@ case object pushdownPropertyReads {
                    incomingCardinality: Cardinality)
 
     val Acc(_, propertyReadOptima, _, _) =
-      logicalPlan.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Cardinality.SINGLE))(
+      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Cardinality.SINGLE))(
+        logicalPlan,
         (acc, plan) => {
           val propertiesForPlan =
             plan.treeFold(List.empty[Property]) {

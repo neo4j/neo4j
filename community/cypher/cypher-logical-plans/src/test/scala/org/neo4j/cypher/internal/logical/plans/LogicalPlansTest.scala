@@ -34,30 +34,30 @@ class LogicalPlansTest extends CypherFunSuite {
 
     implicit val idGen: IdGen = new SequentialIdGen
 
-   /*
-    *         a
-    *        / \
-    *       b   c
-    *      /   / \
-    *     d   e   f
-    */
-    val d = AllNodesScan("d", Set.empty)
-    val e = AllNodesScan("e", Set.empty)
-    val f = AllNodesScan("f", Set.empty)
-    val b = Selection(List(True()(pos)), d)
-    val c = Apply(e, f)
-    val a = Apply(b, c)
+    /*
+     *         p5(Apply)
+     *        /  \
+     *       p1  p4(Apply)
+     *      /   /  \
+     *     p0  p2  p3
+     */
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = Selection(List(True()(pos)), p0)
+    val p2 = AllNodesScan("p2", Set.empty)
+    val p3 = AllNodesScan("p3", Set.empty)
+    val p4 = Apply(p2, p3)
+    val p5 = Apply(p1, p4)
 
     val idStrings = new IdStrings()
-    LogicalPlans.map(a, idStrings)
+    LogicalPlans.map(p5, idStrings)
 
     idStrings.calls should equal(List(
-      "onLeaf Id(2)",
-      "onLeaf Id(1)",
-      "onTwoChildPlan Id(4) Id(1) Id(2)",
-      "onLeaf Id(0)",
-      "onOneChildPlan Id(3) Id(0)",
-      "onTwoChildPlan Id(5) Id(3) Id(4)"
+      "onLeaf p3",
+      "onLeaf p2",
+      "onTwoChildPlan p4 p2 p3",
+      "onLeaf p0",
+      "onOneChildPlan p1 p0",
+      "onTwoChildPlan p5 p1 p4"
     ))
   }
 
@@ -84,5 +84,133 @@ class LogicalPlansTest extends CypherFunSuite {
     }
   }
 
-  private def id(plan: LogicalPlan) = "Id("+plan.id.x+")"
+  test("LogicalPlans.foldPlan: apply plan") {
+
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = Selection(List(True()(pos)), p0)
+    val p2 = AllNodesScan("p2", Set.empty)
+    val p3 = Apply(p1, p2)
+
+    val foldedString =
+      LogicalPlans.foldPlan("")(p3,
+        (acc, plan) => s"$acc->${id(plan)}",
+        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+
+    foldedString shouldBe "->p0->p1->p2->p3"
+  }
+
+  test("LogicalPlans.foldPlan: apply plan with selection on rhs") {
+
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = AllNodesScan("p2", Set.empty)
+    val p2 = Selection(List(True()(pos)), p1)
+    val p3 = Apply(p0, p2)
+
+    val foldedString =
+      LogicalPlans.foldPlan("")(p3,
+        (acc, plan) => s"$acc->${id(plan)}",
+        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+
+    foldedString shouldBe "->p0->p1->p2->p3"
+  }
+
+  test("LogicalPlans.foldPlan: apply plan with selection on top") {
+
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = AllNodesScan("p2", Set.empty)
+    val p2 = Apply(p0, p1)
+    val p3 = Selection(List(True()(pos)), p2)
+
+    val foldedString =
+      LogicalPlans.foldPlan("")(p3,
+        (acc, plan) => s"$acc->${id(plan)}",
+        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+
+    foldedString shouldBe "->p0->p1->p2->p3"
+  }
+
+  test("LogicalPlans.foldPlan: cartesian product") {
+
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = AllNodesScan("p2", Set.empty)
+    val p2 = CartesianProduct(p0, p1)
+    val p3 = Selection(List(True()(pos)), p2)
+
+    val foldedString =
+      LogicalPlans.foldPlan("")(p3,
+        (acc, plan) => s"$acc->${id(plan)}",
+        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+
+    foldedString shouldBe "p2(->p0, ->p1)->p3"
+  }
+
+  test("LogicalPlans.foldPlan: applies and cartesian product") {
+
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    /*
+     *         p7(Apply)
+     *        /  \
+     *       p1  p6(Apply)
+     *      /   /   \
+     *     p0  p2   p5(CartesianProduct)
+     *             /   \
+     *            p3    p4
+     */
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = Selection(List(True()(pos)), p0)
+    val p2 = AllNodesScan("p2", Set.empty)
+    val p3 = AllNodesScan("p3", Set.empty)
+    val p4 = AllNodesScan("p4", Set.empty)
+    val p5 = CartesianProduct(p3, p4)
+    val p6 = Apply(p2, p5)
+    val p7 = Apply(p1, p6)
+
+    val foldedString =
+      LogicalPlans.foldPlan("")(p7,
+        (acc, plan) => s"$acc->${id(plan)}",
+        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+
+    foldedString shouldBe "p5(->p0->p1->p2->p3, ->p0->p1->p2->p4)->p6->p7"
+  }
+
+  test("LogicalPlans.foldPlan: cartesian product and applies") {
+
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    /*
+     *         p7
+     *         |
+     *         p6(CartesianProduct)
+     *        /         \
+     *       p2(Apply)  p5(Apply)
+     *      /   \      /    \
+     *     p0   p1    p3    p4
+     */
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = AllNodesScan("p1", Set.empty)
+    val p2 = Apply(p0, p1)
+    val p3 = AllNodesScan("p3", Set.empty)
+    val p4 = AllNodesScan("p4", Set.empty)
+    val p5 = Apply(p3, p4)
+    val p6 = CartesianProduct(p2, p5)
+    val p7 = Selection(List(True()(pos)), p6)
+
+    val foldedString =
+      LogicalPlans.foldPlan("")(p7,
+        (acc, plan) => s"$acc->${id(plan)}",
+        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+
+    foldedString shouldBe "p6(->p0->p1->p2, ->p3->p4->p5)->p7"
+  }
+
+  private def id(plan: LogicalPlan) = "p"+plan.id.x
 }

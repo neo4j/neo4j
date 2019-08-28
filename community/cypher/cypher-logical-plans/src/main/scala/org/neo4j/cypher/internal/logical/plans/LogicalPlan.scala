@@ -173,56 +173,6 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
-  def foldPlan[ACC](initialAcc: ACC)(f: (ACC, LogicalPlan) => ACC,
-                                     combineLeftAndRight: (ACC, ACC, LogicalPlan) => ACC): ACC = {
-    var stack: List[LogicalPlan] = this :: Nil
-    var argumentStack: List[ACC] = initialAcc :: Nil
-    var lhsStack: List[ACC] = Nil
-    var acc: ACC = initialAcc
-    var comingFrom: LogicalPlan = null
-
-    def populate(): Unit = {
-      while (!stack.head.isLeaf) {
-        stack = stack.head.lhs.get :: stack
-      }
-    }
-
-    populate()
-
-    while (stack != Nil) {
-      val current :: newStack = stack
-      stack = newStack
-
-      (current.lhs, current.rhs) match {
-        case (None, None) =>
-          acc = f(acc, current)
-        case (Some(_), None) =>
-          acc = f(acc, current)
-        case (Some(lhs), Some(rhs)) if comingFrom eq lhs =>
-          if (current.isInstanceOf[ApplyPlan]) {
-            argumentStack = acc :: argumentStack
-          } else {
-            lhsStack = acc :: lhsStack
-            acc = argumentStack.head
-          }
-          stack = rhs :: current :: stack
-          populate()
-        case (Some(_), Some(rhs)) if comingFrom eq rhs =>
-          if (current.isInstanceOf[ApplyPlan]) {
-            argumentStack = argumentStack.tail
-            acc = f(acc, current)
-          } else {
-            val lhsAcc = lhsStack.head
-            lhsStack = lhsStack.tail
-            acc = combineLeftAndRight(lhsAcc, acc, current)
-          }
-      }
-
-      comingFrom = current
-    }
-    acc
-  }
-
   def indexUsage: Seq[IndexUsage] = {
     import org.neo4j.cypher.internal.v4_0.util.Foldable._
     this.fold(Seq.empty[IndexUsage]) {

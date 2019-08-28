@@ -30,7 +30,7 @@ object LogicalPlans {
   }
 
   /**
-    * Traverses the logical plan tree structure and maps the tree in a bottom but fashion.
+    * Traverses the logical plan tree structure and maps the tree in a bottom up fashion.
     *
     * Given a logical plan such as:
     *
@@ -106,5 +106,68 @@ object LogicalPlans {
     val result = resultStack.pop()
     assert(resultStack.isEmpty, "Should have emptied the stack of pipes by now!")
     result
+  }
+
+  /**
+    * Fold over this logical plan tree in execution order.
+    *
+    * In this fold, the plan tree is visited in execution order, starting from
+    * the leftmost leaf, and moving towards the root. Unlike a fold over a linear
+    * structure, the plan is a binary tree, and therefore we need an additional
+    * function for combining the left and right sides of some operators.
+    *
+    * NOTE: To avoid unpleasant surprises it is important that ACC is immutable,
+    *       unless you really know what you're doing. The same ACC instance might
+    *       be passed into several callback with the expectation of it being unchanged.
+    */
+  def foldPlan[ACC](initialAcc: ACC)(root: LogicalPlan,
+                                     f: (ACC, LogicalPlan) => ACC,
+                                     combineLeftAndRight: (ACC, ACC, LogicalPlan) => ACC): ACC = {
+    var stack: List[LogicalPlan] = root :: Nil
+    var argumentStack: List[ACC] = initialAcc :: Nil
+    var lhsStack: List[ACC] = Nil
+    var acc: ACC = initialAcc
+    var comingFrom: LogicalPlan = null
+
+    def populate(): Unit = {
+      while (!stack.head.isLeaf) {
+        stack = stack.head.lhs.get :: stack
+      }
+    }
+
+    populate()
+
+    while (stack != Nil) {
+      val current :: newStack = stack
+      stack = newStack
+
+      (current.lhs, current.rhs) match {
+        case (None, None) =>
+          acc = f(acc, current)
+        case (Some(_), None) =>
+          acc = f(acc, current)
+        case (Some(lhs), Some(rhs)) if comingFrom eq lhs =>
+          if (current.isInstanceOf[ApplyPlan]) {
+            argumentStack = acc :: argumentStack
+          } else {
+            lhsStack = acc :: lhsStack
+            acc = argumentStack.head
+          }
+          stack = rhs :: current :: stack
+          populate()
+        case (Some(_), Some(rhs)) if comingFrom eq rhs =>
+          if (current.isInstanceOf[ApplyPlan]) {
+            argumentStack = argumentStack.tail
+            acc = f(acc, current)
+          } else {
+            val lhsAcc = lhsStack.head
+            lhsStack = lhsStack.tail
+            acc = combineLeftAndRight(lhsAcc, acc, current)
+          }
+      }
+
+      comingFrom = current
+    }
+    acc
   }
 }
