@@ -103,6 +103,7 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def alias: Option[LogicalVariable]
   def name: String
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult
+  def isPassThrough: Boolean = alias.contains(expression)
 
   def semanticCheck: SemanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression)
 }

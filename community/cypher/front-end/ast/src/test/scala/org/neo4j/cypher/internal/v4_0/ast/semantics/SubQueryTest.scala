@@ -22,6 +22,9 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
+
+  private val clean = SemanticState.clean
+
   test("returned variables are added to scope after sub-query") {
 
     val q =
@@ -54,26 +57,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val result = SemanticChecker.check(q, SemanticState.clean)
 
     result.errors.size shouldEqual 1
-    result.errors.head.msg should include ("Variable `a` not defined")
-  }
-
-  // This is subject to change when we implement correlated subqueries
-  test("outer scope is not seen in subquery beginning with with") {
-
-    val q =
-      query(
-        with_(literal(1).as("a")),
-        subQuery(
-          with_(varFor("a").as("b")),
-          return_(varFor("b").as("c"))
-        ),
-        return_(varFor("a").as("a"))
-      )
-
-    val result = SemanticChecker.check(q, SemanticState.clean)
-
-    result.errors.size shouldEqual 1
-    result.errors.head.msg should include ("Variable `a` not defined")
+    result.errors.head.msg should include("Variable `a` not defined")
   }
 
   test("subquery scoping works with order by") {
@@ -110,7 +94,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val result = sq.semanticCheck(SemanticState.clean)
 
     result.errors.size shouldEqual 1
-    result.errors.head.msg should include ("Variable `x` already declared")
+    result.errors.head.msg should include("Variable `x` already declared")
   }
 
   test("subquery allows union with valid return statements at the end") {
@@ -180,6 +164,293 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
     result.errors.size shouldEqual 1
     result.errors.head.msg should include ("All sub queries in an UNION must have the same column names")
+  }
+
+  test("uncorrelated subquery with union") {
+
+    val q =
+      query(
+        with_(literal(1).as("a")),
+        subQuery(unionDistinct(
+          singleQuery(
+            return_(literal(2).as("b"))
+          ),
+          singleQuery(
+            return_(literal(3).as("b"))
+          )
+        )),
+        return_(varFor("a").aliased, varFor("b").aliased)
+      )
+
+    val result = SemanticChecker.check(q, clean)
+
+    result.errors.size shouldEqual 0
+  }
+
+  test("uncorrelated subquery with invalid union") {
+
+    val q =
+      query(
+        with_(literal(1).as("a")),
+        subQuery(unionDistinct(
+          singleQuery(
+            return_(literal(2).as("b"))
+          ),
+          singleQuery(
+            return_(literal(3).as("c"))
+          )
+        )),
+        return_(varFor("a").aliased)
+      )
+
+    val result = SemanticChecker.check(q, clean)
+
+    result.errors.size shouldEqual 1
+    result.errors.head.msg.should(include("All sub queries in an UNION must have the same column names"))
+  }
+
+  test("correlated subquery with union") {
+
+    val q =
+      query(
+        with_(literal(1).as("a")),
+        subQuery(unionDistinct(
+          singleQuery(
+            with_(varFor("a").aliased),
+            return_(varFor("a").as("b"))
+          ),
+          singleQuery(
+            with_(varFor("a").aliased),
+            return_(varFor("a").as("b"))
+          )
+        )),
+        return_(varFor("a").aliased, varFor("b").aliased)
+      )
+
+    val result = SemanticChecker.check(q, clean)
+
+    result.errors.size shouldEqual 0
+  }
+
+  test("correlated subquery with union with different imports") {
+
+    val q =
+      query(
+        with_(literal(1).as("a"), literal(1).as("b"), literal(1).as("c")),
+        subQuery(unionDistinct(
+          singleQuery(
+            with_(varFor("a").aliased),
+            return_(varFor("a").as("x"))
+          ),
+          singleQuery(
+            with_(varFor("b").aliased),
+            return_(varFor("b").as("x"))
+          ),
+          singleQuery(
+            with_(varFor("c").aliased),
+            return_(varFor("c").as("x"))
+          )
+        )),
+        return_(varFor("a").aliased, varFor("b").aliased, varFor("c").aliased, varFor("x").aliased)
+      )
+
+    val result = SemanticChecker.check(q, clean)
+
+    result.errors.foreach(println)
+    result.errors.size shouldEqual 0
+  }
+
+  test("importing variables using leading WITH") {
+
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        with_(varFor("x").aliased),
+        return_(varFor("x").as("y"))
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased)
+    )
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
+  }
+
+  test("importing WITH must be first clause") {
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        unwind(listOf(literal(1)), varFor("a")),
+        with_(varFor("x").aliased),
+        return_(varFor("x").as("y"))
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.should(include("Variable `x` not defined")))
+
+  }
+
+  test("importing WITH must be clean pass-through") {
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        with_(varFor("x").aliased, literal(2).as("y")),
+        return_(varFor("x").as("z"))
+      ),
+      return_(varFor("x").aliased, varFor("z").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.should(include("Variable `x` not defined")))
+  }
+
+  test("importing variables using pass-through WITH and then introducing more") {
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        with_(varFor("x").aliased),
+        with_(varFor("x").aliased, literal(2).as("y")),
+        return_(varFor("x").as("z"), varFor("y").aliased)
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased)
+    )
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
+  }
+
+  test("nested uncorrelated subquery") {
+
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        with_(literal(1).as("y")),
+        subQuery(
+          with_(literal(1).as("z")),
+          return_(varFor("z").aliased)
+        ),
+        return_(varFor("y").aliased, varFor("z").aliased)
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased, varFor("z").aliased)
+    )
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
+  }
+
+  test("nested uncorrelated subquery can't access any outer scopes") {
+
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        with_(literal(1).as("y")),
+        subQuery(
+          with_(literal(1).as("z")),
+          with_(varFor("x").as("a"), varFor("y").as("b"), varFor("z").aliased),
+          return_(varFor("z").aliased)
+        ),
+        return_(varFor("y").aliased, varFor("z").aliased)
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased, varFor("z").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(2))
+      .tap(_.errors(0).msg.should(include("Variable `x` not defined")))
+      .tap(_.errors(1).msg.should(include("Variable `y` not defined")))
+  }
+
+  test("nested correlated subquery") {
+
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        with_(varFor("x").aliased),
+        with_(varFor("x").as("y")),
+        subQuery(
+          with_(varFor("y").aliased),
+          with_(varFor("y").as("z")),
+          return_(varFor("z").aliased)
+        ),
+        return_(varFor("y").aliased, varFor("z").aliased)
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased, varFor("z").aliased)
+    )
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
+  }
+
+  test("subquery inside correlated subquery can't import from outer scope") {
+
+    singleQuery(
+      with_(literal(1).as("x"), literal(2).as("y")),
+      subQuery(
+        with_(varFor("x").aliased),
+        subQuery(
+          with_(varFor("y").aliased),
+          return_(literal(3).as("z"))
+        ),
+        return_(varFor("z").aliased)
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased, varFor("z").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors(0).msg.should(include("Variable `y` not defined")))
+  }
+
+  test("subquery without return") {
+
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        with_(literal(2).as("y")),
+        create(nodePat("n"))
+      ),
+      return_(varFor("x").aliased, varFor("n").aliased, varFor("y").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(2))
+      .tap(_.errors(0).msg.should(include("Variable `n` not defined")))
+      .tap(_.errors(1).msg.should(include("Variable `y` not defined")))
+  }
+
+  test("extracting imported variables from leading WITH") {
+
+    singleQuery(
+      return_(varFor("x").as("y"))
+    ).importColumns
+      .shouldEqual(Seq())
+
+    singleQuery(
+      with_(literal(1).as("x")),
+      with_(varFor("x").aliased),
+      return_(varFor("x").as("y"))
+    ).importColumns
+      .shouldEqual(Seq())
+
+    singleQuery(
+      with_(literal(1).as("x"), varFor("x").aliased),
+      return_(varFor("x").as("y"))
+    ).importColumns
+      .shouldEqual(Seq())
+
+    singleQuery(
+      with_(varFor("x").aliased),
+      return_(varFor("x").as("y"))
+    ).importColumns
+      .shouldEqual(Seq("x"))
+
+    singleQuery(
+      from(varFor("foo")),
+      with_(varFor("x").aliased),
+      return_(varFor("x").as("y"))
+    ).importColumns
+      .shouldEqual(Seq())
+  }
+
+  implicit class AnyOps[A](a: A) {
+    def tap[X](e: A => X): A = {
+      e(a)
+      a
+    }
   }
 
 }

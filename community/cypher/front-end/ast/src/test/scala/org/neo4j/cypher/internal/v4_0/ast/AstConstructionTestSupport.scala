@@ -239,6 +239,15 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
 
+  def nodePat(name: String): NodePattern =
+    NodePattern(Some(Variable(name)(pos)), Seq(), None)(pos)
+
+  def nodePat(name: String, labels: String*): NodePattern =
+    NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None)(pos)
+
+  def query(part: QueryPart): Query =
+    Query(None, part)(pos)
+
   def patternExpression(nodeVar1: Variable, nodeVar2: Variable) =
     PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(nodeVar1), Seq.empty, None)(pos),
@@ -252,11 +261,14 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def singleQuery(cs: Clause*): SingleQuery =
     SingleQuery(cs)(pos)
 
-  def subQuery(cs: Clause*): SubQuery =
-    SubQuery(Query(None, SingleQuery(cs)(pos))(pos))(pos)
+  def unionDistinct(qs: SingleQuery*): QueryPart =
+    qs.reduceLeft[QueryPart](UnionDistinct(_, _)(pos))
 
-  def subQuery(query: QueryPart): SubQuery =
-    SubQuery(Query(None, query)(pos))(pos)
+  def subQuery(cs: Clause*): SubQuery =
+    SubQuery(SingleQuery(cs)(pos))(pos)
+
+  def subQuery(part: QueryPart): SubQuery =
+    SubQuery(part)(pos)
 
   def create(pattern: PatternElement, where: Option[Where] = None): Create =
     Create(Pattern(Seq(EveryPath(pattern)))(pos))(pos)
@@ -291,6 +303,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       Some(Vector()), None
     )(pos)
 
+  def from(e: Expression): FromGraph =
+    FromGraph(e)(pos)
+
   def union(part: QueryPart, query: SingleQuery): UnionDistinct = UnionDistinct(part, query)(pos)
 
   implicit class ExpressionOps(expr: Expression) {
@@ -298,6 +313,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
     def asc: AscSortItem = AscSortItem(expr)(pos)
     def desc: DescSortItem = DescSortItem(expr)(pos)
+  }
+
+  implicit class VariableOps(v: Variable) {
+    def aliased: AliasedReturnItem = AliasedReturnItem(v, v)(pos)
   }
 
   implicit class NumberLiteralOps(nl: NumberLiteral) {

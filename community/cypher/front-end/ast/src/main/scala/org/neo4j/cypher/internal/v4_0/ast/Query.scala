@@ -47,12 +47,19 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
    * looks up the final scope after the last clause
    */
   def finalScope(scope: Scope): Scope
+
+  /**
+   * Semantic check for when this `QueryPart` is in a subquery, and might import
+   * variables from the `outer` scope
+   */
+  def semanticCheckWithImports(outer: SemanticState): SemanticCheck
 }
 
-case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart {
+
+case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart with SemanticAnalysisTooling {
   assert(clauses.nonEmpty)
 
-  override def containsUpdates =
+  override def containsUpdates: Boolean =
     clauses.exists {
       case call: CallClause => !call.containsNoUpdates
       case _: UpdateClause => true
@@ -61,12 +68,50 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def returnColumns: List[LogicalVariable] = clauses.last.returnColumns
 
-  override def semanticCheck =
+  def semanticCheckAbstract(cls: Seq[Clause]): SemanticCheck =
     checkStandaloneCall chain
     checkOrder chain
     checkClauses chain
     checkIndexHints chain
     checkInputDataStream
+
+  override def semanticCheck: SemanticCheck =
+    semanticCheckAbstract(clauses)
+
+  def leadingWith: Option[With] = {
+    def hasImportFormat(w: With) = w match {
+      case With(false, ri, None, None, None, None) =>
+        ri.items.forall(_.isPassThrough)
+      case _ =>
+        false
+    }
+
+    clauses
+      .headOption.collect { case w: With if hasImportFormat(w) => w }
+  }
+
+  def clausesExceptLeadingWith: Seq[Clause] =
+    clauses.filterNot(leadingWith.contains)
+
+  def importColumns: Seq[String] = leadingWith match {
+    case Some(w) => w.returnItems.items.map(_.name)
+    case _       => Seq.empty
+  }
+
+  override def semanticCheckWithImports(outer: SemanticState): SemanticCheck = {
+    def importVariables: SemanticCheck =
+      leadingWith match {
+        case Some(wth) =>
+          withState(outer)(wth.semanticCheck) chain
+            wth.semanticCheckContinuation(outer.currentScope.scope)
+        case None =>
+          SemanticCheckResult.success
+      }
+
+    importVariables chain
+      semanticCheckAbstract(clausesExceptLeadingWith)
+
+  }
 
   private def checkIndexHints: SemanticCheck = s => {
     val hints = clauses.collect { case m: Match => m.hints }.flatten
@@ -196,14 +241,26 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
 
   def containsUpdates: Boolean = part.containsUpdates || query.containsUpdates
 
-  def semanticCheck: SemanticCheck =
+  def semanticCheckAbstract(partCheck: QueryPart => SemanticCheck, queryCheck: SingleQuery => SemanticCheck): SemanticCheck =
     checkUnionAggregation chain
-      withScopedState(part.semanticCheck) chain
-      withScopedState(query.semanticCheck) chain
+      withScopedState(partCheck(part)) chain
+      withScopedState(queryCheck(query)) chain
       checkColumnNamesAgree chain
-      checkInputDataStream chain
       defineUnionVariables chain
+      checkInputDataStream chain
       SemanticState.recordCurrentScope(this)
+
+  def semanticCheck: SemanticCheck =
+    semanticCheckAbstract(
+      part => part.semanticCheck,
+      query => query.semanticCheck
+    )
+
+  def semanticCheckWithImports(outer: SemanticState): SemanticCheck =
+    semanticCheckAbstract(
+      part => part.semanticCheckWithImports(outer),
+      query => query.semanticCheckWithImports(outer)
+    )
 
   private def defineUnionVariables: SemanticCheck = (state: SemanticState) => {
     var result = SemanticCheckResult.success(state)

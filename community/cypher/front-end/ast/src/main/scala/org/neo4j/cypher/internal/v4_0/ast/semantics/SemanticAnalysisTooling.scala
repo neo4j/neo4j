@@ -46,6 +46,10 @@ trait SemanticAnalysisTooling {
       }
     }
 
+  /** Runs `check` on `state`. Discards produced state, but retains produced errors */
+  def withState(state: SemanticState)(check: SemanticCheck): SemanticCheck = s =>
+    check(state).copy(state = s)
+
   def specifyType(typeGen: TypeGenerator, expression: Expression): SemanticState => Either[SemanticError, SemanticState] =
     s => specifyType(typeGen(s), expression)(s)
 
@@ -186,6 +190,9 @@ trait SemanticAnalysisTooling {
 
   def implicitVariable(v:LogicalVariable, possibleType: CypherType): SemanticState => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitVariable(v, possibleType)
+
+  def declareVariables(symbols: Iterable[Symbol]): SemanticCheck =
+    symbols.foldSemanticCheck(symbol => declareVariable(symbol.definition.asVariable, symbol.types))
 
   def requireFeatureSupport(msg: String, feature: SemanticFeature, position: InputPosition): SemanticCheck =
     s => {

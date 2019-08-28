@@ -817,25 +817,23 @@ case class Return(distinct: Boolean,
     }
 }
 
-case class SubQuery(query: Query)(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {
+case class SubQuery(part: QueryPart)(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {
 
   override def name: String = "CALL"
 
   override def semanticCheck: SemanticCheck =
       checkSubquery
 
-  def checkSubquery: SemanticCheck = { s: SemanticState =>
-    // Uncorrelated subquery
-    // - The subquery should not see the outer scope
-    // - Returned variables are added to outer scope
-    val input: Scope = s.currentScope.scope
-    val branch: SemanticState = s.newSiblingScope
-    val inner: SemanticCheckResult = query.semanticCheck(branch)
-    val output: Scope = query.finalScope(inner.state.currentScope.scope)
-    val imported: SemanticState = inner.state.newSiblingScope.importValuesFromScope(input)
-    val merged: SemanticCheckResult =
-      output.valueSymbolTable.values
-        .foldSemanticCheck(symbol => declareVariable(symbol.definition.asVariable, symbol.types))(imported)
+  def checkSubquery: SemanticCheck = { outer: SemanticState =>
+    val empty: SemanticState = outer.newBaseScope
+    val inner: SemanticCheckResult = part.semanticCheckWithImports(outer)(empty)
+    val output: Scope = part.finalScope(inner.state.currentScope.scope)
+
+    val after: SemanticState =
+      inner.state
+        .copy(currentScope = outer.currentScope.newSiblingScope)
+        .importValuesFromScope(outer.currentScope.scope)
+    val merged: SemanticCheckResult = declareVariables(output.valueSymbolTable.values)(after)
 
     SemanticCheckResult(merged.state, inner.errors ++ merged.errors)
   }
