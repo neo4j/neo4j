@@ -368,9 +368,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
 
     /**
      * Should generate three paths. The three paths must have the prefix: a, b, and c. The three paths must have the sufix: f and g.
-     * <p>
      * All the edges have cost 0.
-     * <p>
      */
     @Test
     public void test9()
