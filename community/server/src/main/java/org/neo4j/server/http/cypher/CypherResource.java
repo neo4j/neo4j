@@ -52,7 +52,10 @@ import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 @Path( CypherResource.DB_TRANSACTION_PATH )
 public class CypherResource
 {
-    static final String DB_TRANSACTION_PATH = "/{databaseName}/transaction";
+    public static final String NAME = "transaction";
+    static final String TRANSACTION = "tx";
+    private static final String DB_NAME = "databaseName";
+    static final String DB_TRANSACTION_PATH = "/{" + DB_NAME + "}/" + TRANSACTION;
 
     private final HttpTransactionManager httpTransactionManager;
     private final TransactionUriScheme uriScheme;
@@ -66,7 +69,7 @@ public class CypherResource
             @Context Log log,
             @Context HttpHeaders headers,
             @Context HttpServletRequest request,
-            @PathParam( "databaseName" ) String databaseName )
+            @PathParam( DB_NAME ) String databaseName )
     {
         this.httpTransactionManager = httpTransactionManager;
         this.databaseName = databaseName;
@@ -256,7 +259,7 @@ public class CypherResource
         {
             UriBuilder builder = uriInfo.getBaseUriBuilder().path( databaseName );
             dbUri = builder.build();
-            cypherUri = builder.path( "transaction" ).build();
+            cypherUri = builder.path( TRANSACTION ).build();
         }
 
         @Override

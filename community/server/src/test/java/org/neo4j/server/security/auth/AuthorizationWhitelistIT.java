@@ -79,7 +79,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         server.start();
 
         // Then I should get a unauthorized response for access to the DB
-        HTTP.Response response = HTTP.GET( server.baseUri().resolve( "db/data" ).toString() );
+        HTTP.Response response = HTTP.GET( server.baseUri().resolve( "db/neo4j" ).toString() );
         assertThat( response.status(), equalTo( 401 ) );
     }
 

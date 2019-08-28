@@ -40,6 +40,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
+import static java.net.http.HttpClient.Redirect.NORMAL;
 import static java.util.Collections.unmodifiableMap;
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -63,7 +64,8 @@ public final class HTTP
 {
 
     private static final Builder BUILDER = new Builder().withHeaders( ACCEPT, APPLICATION_JSON );
-    private static final HttpClient CLIENT = createClient();
+    private static final HttpClient CLIENT = createClient( false );
+    private static final HttpClient CLIENT_WITH_REDIRECT = createClient( true );
 
     private HTTP()
     {
@@ -112,18 +114,19 @@ public final class HTTP
 
     public static Response request( String method, String uri, Object payload )
     {
-        return BUILDER.request( method, uri, payload );
+        return BUILDER.request( method, uri, payload, false );
     }
 
-    private static HttpClient createClient()
+    private static HttpClient createClient( boolean allowsRedirect )
     {
         try
         {
             var sslContext = SSLContext.getInstance( "TLS" );
             sslContext.init( null, new TrustManager[]{new InsecureTrustManager()}, null );
 
+            var policy = allowsRedirect ? NORMAL : NEVER;
             return HttpClient.newBuilder()
-                    .followRedirects( NEVER )
+                    .followRedirects( policy )
                     .sslContext( sslContext )
                     .build();
         }
@@ -169,41 +172,41 @@ public final class HTTP
 
         public Response POST( String uri )
         {
-            return request( "POST", uri );
+            return request( "POST", uri, false );
         }
 
         public Response POST( String uri, Object payload )
         {
-            return request( "POST", uri, payload );
+            return request( "POST", uri, payload, false );
         }
 
         public Response POST( String uri, RawPayload payload )
         {
-            return request( "POST", uri, payload );
+            return request( "POST", uri, payload, false );
         }
 
         public Response DELETE( String uri )
         {
-            return request( "DELETE", uri );
+            return request( "DELETE", uri, false );
         }
 
         public Response GET( String uri )
         {
-            return request( "GET", uri );
+            return request( "GET", uri, false );
         }
 
-        public Response request( String method, String uri )
+        public Response request( String method, String uri, boolean allowsRedirect )
         {
             var request = requestBuilder( uri ).method( method, BodyPublishers.noBody() ).build();
-            var response = send( request );
+            var response = send( request, allowsRedirect );
             return new Response( response );
         }
 
-        public Response request( String method, String uri, Object payload )
+        public Response request( String method, String uri, Object payload, boolean allowsRedirect )
         {
             if ( payload == null )
             {
-                return request( method, uri );
+                return request( method, uri, allowsRedirect );
             }
             var jsonPayload = payload instanceof RawPayload ? ((RawPayload) payload).get() : createJsonFrom( payload );
 
@@ -212,7 +215,7 @@ public final class HTTP
                     .setHeader( CONTENT_TYPE, APPLICATION_JSON )
                     .build();
 
-            var response = send( request );
+            var response = send( request, allowsRedirect );
 
             return new Response( response );
         }
@@ -241,11 +244,12 @@ public final class HTTP
             return builder;
         }
 
-        private static HttpResponse<String> send( HttpRequest request )
+        private static HttpResponse<String> send( HttpRequest request, boolean allowsRedirect )
         {
+            var client = allowsRedirect ? CLIENT_WITH_REDIRECT : CLIENT;
             try
             {
-                return CLIENT.sendAsync( request, BodyHandlers.ofString() ).get( 4, TimeUnit.MINUTES );
+                return client.sendAsync( request, BodyHandlers.ofString() ).get( 4, TimeUnit.MINUTES );
             }
             catch ( Exception e )
             {

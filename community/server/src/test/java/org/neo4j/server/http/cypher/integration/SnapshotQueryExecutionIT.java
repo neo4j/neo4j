@@ -116,13 +116,8 @@ public class SnapshotQueryExecutionIT extends ExclusiveServerTestBase
     private HTTP.Response executeOverHTTP( String query )
     {
         HTTP.Builder httpClientBuilder = HTTP.withBaseUri( server.baseUri() );
-        HTTP.Response transactionStart = httpClientBuilder.POST( transactionURI() );
+        HTTP.Response transactionStart = httpClientBuilder.POST( txEndpoint() );
         assertThat( transactionStart.status(), equalTo( 201 ) );
         return httpClientBuilder.POST( transactionStart.location(), quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
-    }
-
-    private static String transactionURI()
-    {
-        return "db/data/transaction";
     }
 }

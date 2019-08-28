@@ -62,7 +62,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
     public void shouldReturnReadOnlyStatusWhenCreatingNodes() throws Exception
     {
         // Given
-        HTTP.Response response = http.POST( "db/data/transaction/commit",
+        HTTP.Response response = http.POST( txEndpoint(),
                 quotedJson( "{ 'statements': [ { 'statement': 'CREATE (node)' } ] }" ) );
 
         // Then
@@ -79,7 +79,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
     {
         // Given
         // When
-        HTTP.Response response = http.POST( "db/data/transaction/commit",
+        HTTP.Response response = http.POST( txEndpoint(),
                 quotedJson( "{ 'statements': [ { 'statement': 'CREATE (node:Node)' } ] }" ) );
 
         // Then

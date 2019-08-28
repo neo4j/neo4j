@@ -61,10 +61,6 @@ public class ServerSettings implements SettingsDeclaration
     public static final Setting<Integer> maximum_response_header_size =
             newBuilder( "unsupported.dbms.max_http_response_header_size", INT, 20480 ).build();
 
-    @Description( "Comma-separated list of custom security rules for Neo4j to use." )
-    public static final Setting<List<String>> security_rules =
-            newBuilder( "dbms.security.http_authorization_classes", listOf( STRING ), emptyList() ).build();
-
     @Description( "Number of Neo4j worker threads. This setting is only valid for REST, and does not influence bolt-server. " +
             "It sets the amount of worker threads for the Jetty server used by neo4j-server. " +
             "This option can be tuned when you plan to execute multiple, concurrent REST requests, " +
@@ -173,6 +169,16 @@ public class ServerSettings implements SettingsDeclaration
     @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
     public static final Setting<String> browser_remoteContentHostnameWhitelist =
             newBuilder( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost").build();
+
+    @Internal
+    @Description( "The legacy data endpoint. This is kept for back-compatibility purpose." )
+    public static final Setting<URI> rest_api_path =
+            newBuilder( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db/data" ) ).build();
+
+    @Internal
+    @Description( "The legacy manage endpoint. This is kept for back-compatibility purpose." )
+    public static final Setting<URI> management_api_path =
+            newBuilder( "unsupported.dbms.uris.management", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db/manage" ) ).build();
 
     @Internal
     @Description( "The start endpoint of database api." )

@@ -78,7 +78,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         startServer();
 
         String baseUri = server.baseUri().toString();
-        HTTP.Response response = POST( baseUri + "db/data/transaction", quotedJson( "{'statements':[]}" ) );
+        HTTP.Response response = POST( baseUri + txEndpoint(), quotedJson( "{'statements':[]}" ) );
 
         assertThat( response.location(), startsWith( baseUri ) );
         assertThat( response.get( "commit" ).asText(), startsWith( baseUri ) );

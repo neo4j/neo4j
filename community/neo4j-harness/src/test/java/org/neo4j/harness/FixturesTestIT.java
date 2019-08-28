@@ -70,7 +70,7 @@ class FixturesTestIT
         try ( InProcessNeo4j server = getServerBuilder( targetFolder ).withFixture( fixture ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
+            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
             assertThat( response.status(), equalTo( 200 ) );
@@ -98,7 +98,7 @@ class FixturesTestIT
         try ( InProcessNeo4j server = getServerBuilder( targetFolder ).withFixture( targetFolder ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
+            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
             assertThat( response.toString(), response.get( "results" ).get(0).get("data").size(), equalTo(3) );
@@ -126,7 +126,7 @@ class FixturesTestIT
                 .build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
+            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
             assertThat( response.get( "results" ).get(0).get("data").size(), equalTo(2));
@@ -145,7 +145,7 @@ class FixturesTestIT
                 .build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
+            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
             assertThat( response.get( "results" ).get(0).get("data").size(), equalTo(1));
@@ -166,7 +166,7 @@ class FixturesTestIT
                 .withFixture( targetFolder ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
+            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
             assertThat( response.get( "results" ).get(0).get("data").size(), equalTo(1));
@@ -214,7 +214,7 @@ class FixturesTestIT
                 .build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
+            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/neo4j/tx/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
             assertThat( response.get( "results" ).get( 0 ).get( "data" ).size(), equalTo( 1 ) );

@@ -42,10 +42,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class HttpTransactionManager
 {
-    // this is how the default DB is referred to in HTTP API,
-    // which is different from how it is referred to internally
-    private static final String DEFAULT_HTTP_DB_NAME = "data";
-
     private final TransactionHandleRegistry transactionRegistry;
     private final DatabaseService database;
     private final LogProvider userLogProvider;
@@ -72,7 +68,7 @@ public class HttpTransactionManager
         Optional<GraphDatabaseFacade> graph;
         try
         {
-            graph = Optional.of( DEFAULT_HTTP_DB_NAME.equals( databaseName ) ? database.getDatabase() : database.getDatabase( databaseName ) );
+            graph = Optional.of( database.getDatabase( databaseName ) );
         }
         catch ( DatabaseNotFoundException e )
         {

@@ -46,7 +46,7 @@ public final class FunctionalTestHelper
 
     private String databaseUri()
     {
-        return databaseUri( "data" );
+        return databaseUri( "neo4j" );
     }
 
     private String databaseUri( String databaseName )
@@ -61,11 +61,11 @@ public final class FunctionalTestHelper
 
     public String txCommitUri()
     {
-        return databaseUri() + "transaction/commit";
+        return databaseUri() + "tx/commit";
     }
 
     public String txCommitUri( String databaseName )
     {
-        return databaseUri( databaseName ) + "transaction/commit";
+        return databaseUri( databaseName ) + "tx/commit";
     }
 }

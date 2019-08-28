@@ -37,7 +37,9 @@ import org.neo4j.test.server.SharedServerTestBase;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.http.cypher.integration.TransactionMatchers.matches;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -48,11 +50,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     @Rule
     public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
-
-    private Long idFor( String name )
-    {
-        return data.get().get( name ).getId();
-    }
 
     @Override
     public GraphDatabaseService graphdb()
@@ -65,54 +62,54 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return ((GraphDatabaseAPI)graphdb()).getDependencyResolver().resolveDependency( cls );
     }
 
-    protected static String getDataUri()
+    protected static String defaultDatabaseUri()
     {
-        return getDatabaseUri( "data" );
+        return databaseUri( "neo4j" );
     }
 
-    private static String getDatabaseUri( String databaseName )
+    private static String databaseUri( String databaseName )
     {
-        return getDatabaseUri( databaseName, getLocalHttpPort() );
+        return databaseUri( getLocalHttpPort(), databaseName );
     }
 
-    private static String getDatabaseUri( String databaseName, int port )
+    private static String databaseUri( int port, String databaseName )
     {
         return String.format( "http://localhost:%s/db/%s/", port, databaseName );
     }
 
-    protected String getDatabaseUri()
+    protected String databaseUri()
     {
         return "http://localhost:" + getLocalHttpPort() + "/db/";
     }
 
-    protected String txUri()
+    protected static String txUri()
     {
-        return getDataUri() + "transaction";
+        return defaultDatabaseUri() + "tx";
     }
 
-    protected String txUri( String databaseName )
+    protected static String txUri( String databaseName )
     {
-        return getDatabaseUri( databaseName ) + "transaction";
+        return databaseUri( databaseName ) + "tx";
     }
 
     protected static String txCommitUri()
     {
-        return getDataUri() + "transaction/commit";
+        return defaultDatabaseUri() + "tx/commit";
     }
 
     public static String txCommitUri( String databaseName )
     {
-        return getDatabaseUri( databaseName ) + "transaction/commit";
+        return databaseUri( databaseName ) + "tx/commit";
     }
 
     public static String txCommitUri( String databaseName, int port )
     {
-        return getDatabaseUri( databaseName, port ) + "transaction/commit";
+        return databaseUri( port, databaseName ) + "tx/commit";
     }
 
-    protected String txUri( long txId )
+    protected static String txUri( long txId )
     {
-        return getDataUri() + "transaction/" + txId;
+        return defaultDatabaseUri() + "tx/" + txId;
     }
 
     public static long extractTxId( HTTP.Response response )
@@ -149,5 +146,10 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         assertEquals( "[]", response.get( "errors" ).toString() );
         assertEquals( 0, response.get( "errors" ).size() );
+    }
+
+    public static void assertHasTxLocation( HTTP.Response begin )
+    {
+        assertThat( begin.location(), matches( txUri() + "/\\d+" ) );
     }
 }

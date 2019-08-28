@@ -79,7 +79,7 @@ class JavaAggregationFunctionsTestIT
         try ( InProcessNeo4j server = createServer( MyFunctions.class ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                     quotedJson(
                             "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.myFunc() AS someNumber' } ] " +
                             "}" ) );
@@ -98,7 +98,7 @@ class JavaAggregationFunctionsTestIT
         try ( InProcessNeo4j server = createServer( MyFunctions.class ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                     quotedJson(
                             "{ 'statements': [ { 'statement': 'RETURN org.neo4j.harness.funcThatThrows()' } ] }" ) );
 

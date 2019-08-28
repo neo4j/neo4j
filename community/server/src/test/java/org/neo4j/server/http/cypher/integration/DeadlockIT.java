@@ -59,7 +59,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         }
 
         // When I lock node:First
-        HTTP.Response begin = http.POST( "db/data/transaction",
+        HTTP.Response begin = http.POST( txUri(),
                 quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ));
 
         // and I lock node:Second, and wait for a lock on node:First in another transaction
@@ -82,7 +82,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
     {
         return state ->
         {
-            HTTP.Response post = http.POST( "db/data/transaction",
+            HTTP.Response post = http.POST( txUri(),
                     quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
             secondNodeLocked.countDown();
             http.POST( post.location(),

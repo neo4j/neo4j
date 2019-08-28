@@ -20,21 +20,16 @@
 package org.neo4j.server.http.cypher.integration;
 
 import org.codehaus.jackson.JsonNode;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.ParameterizedTransactionEndpointsTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,32 +38,14 @@ import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.SyntaxError;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoStackTraces;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
-import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 /**
  * Tests for error messages and graceful handling of problems with the transactional endpoint.
  */
-@RunWith( Parameterized.class )
-public class TransactionErrorIT extends AbstractRestFunctionalTestBase
+public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBase
 {
-    @Parameterized.Parameter
-    public String db;
-
-    @Parameterized.Parameters
-    public static Collection<String> databaseNames()
-    {
-        return asList( "data", "neo4j" );
-    }
-
-    private String txUri;
-    @Before
-    public void setup()
-    {
-        txUri = txUri( db );
-    }
-
     @Test
     public void begin__commit_with_invalid_cypher() throws Exception
     {
@@ -125,10 +102,10 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
 
             // begin and execute and commit
             HTTP.RawPayload payload = quotedJson("{ 'statements': [ { 'statement': '" + query + "' } ] }");
-            HTTP.Response response = POST( txUri + "/commit", payload);
+            HTTP.Response response = POST( txUri + "/commit", payload );
 
             assertThat( response.status(), equalTo( 200 ) );
-            assertThat( response, hasErrors(Status.Statement.ArithmeticError) );
+            assertThat( response, hasErrors( Status.Statement.ArithmeticError ) );
 
             JsonNode message = response.get( "errors" ).get( 0 ).get( "message" );
             assertTrue("Expected LOAD CSV line number information",

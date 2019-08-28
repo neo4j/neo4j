@@ -50,12 +50,12 @@ public class AuthorizationDisabledIT extends ExclusiveServerTestBase
         server.start();
 
         // Then I should have write access
-        HTTP.Response response = HTTP.POST( server.baseUri().resolve( "db/data/transaction/commit" ).toString(),
+        HTTP.Response response = HTTP.POST( server.baseUri().resolve( txCommitEndpoint() ).toString(),
                 rawPayload( "{\"statements\": [{\"statement\": \"CREATE ({name:'My Node'})\"}]}" ) );
         assertThat( response.status(), equalTo( 200 ) );
 
         // Then I should have read access
-        response = HTTP.POST( server.baseUri().resolve( "db/data/transaction/commit" ).toString(),
+        response = HTTP.POST( server.baseUri().resolve( txCommitEndpoint() ).toString(),
                 rawPayload( "{\"statements\": [{\"statement\": \"MATCH (n {name:'My Node'}) RETURN n\"}]}" ) );
         assertThat( response.status(), equalTo( 200 ) );
         String responseBody = response.rawContent();

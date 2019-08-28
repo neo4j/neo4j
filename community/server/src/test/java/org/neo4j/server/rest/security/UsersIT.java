@@ -164,7 +164,7 @@ public class UsersIT extends ExclusiveServerTestBase
 
     private String cypherURL()
     {
-        return server.baseUri().resolve( "db/data/transaction/commit" ).toString();
+        return server.baseUri().resolve( "db/neo4j/tx/commit" ).toString();
     }
 
     private HTTP.RawPayload simpleCypherRequestBody()

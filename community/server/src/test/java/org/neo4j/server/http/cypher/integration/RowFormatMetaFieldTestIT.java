@@ -34,7 +34,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoErrors;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.matches;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.rowContainsAMetaListAtIndex;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.rowContainsMetaNodesAtIndex;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.rowContainsMetaRelsAtIndex;
@@ -50,7 +49,7 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
     public void setUp()
     {
         // begin
-        Response begin = http.POST( "db/data/transaction" );
+        Response begin = http.POST( txUri() );
 
         assertThat( begin.status(), equalTo( 201 ) );
         assertHasTxLocation( begin );
@@ -131,10 +130,5 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
     private HTTP.RawPayload queryAsJsonRow( String query )
     {
         return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'row' ] } ] }" );
-    }
-
-    private void assertHasTxLocation( Response begin )
-    {
-        assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
     }
 }

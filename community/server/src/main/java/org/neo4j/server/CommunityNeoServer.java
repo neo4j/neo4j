@@ -31,6 +31,7 @@ import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;
 import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.DatabaseModule;
+import org.neo4j.server.modules.LegacyTransactionModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
@@ -58,6 +59,7 @@ public class CommunityNeoServer extends AbstractNeoServer
         return Arrays.asList(
                 createDBMSModule(),
                 new DatabaseModule( webServer, getConfig(), userLogProvider ),
+                new LegacyTransactionModule( webServer, getConfig(), userLogProvider ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider, this ),
                 new Neo4jBrowserModule( webServer ),
                 createAuthorizationModule() );

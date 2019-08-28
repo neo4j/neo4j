@@ -85,7 +85,7 @@ public class TransactionMatchers
         };
     }
 
-    static Matcher<String> matches( final String pattern )
+    public static Matcher<String> matches( final String pattern )
     {
         final Pattern regex = Pattern.compile( pattern );
 

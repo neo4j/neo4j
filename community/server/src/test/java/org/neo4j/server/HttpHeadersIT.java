@@ -174,7 +174,7 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
     private static Map<String,List<String>> runRequestAndGetHeaders( URI baseUri ) throws Exception
     {
-        var uri = baseUri.resolve( "db/data/transaction/commit" );
+        var uri = baseUri.resolve( txCommitEndpoint() );
 
         var request = HttpRequest.newBuilder( uri )
                 .header( ACCEPT, APPLICATION_JSON )

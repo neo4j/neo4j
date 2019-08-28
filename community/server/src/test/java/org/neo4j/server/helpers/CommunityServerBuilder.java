@@ -65,6 +65,7 @@ public class CommunityServerBuilder
     private String maxThreads;
     private String dataDir;
     private String dbUri = "/db";
+    private String restUri = "/db/data";
     private PreFlightTasks preflightTasks;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
@@ -74,7 +75,6 @@ public class CommunityServerBuilder
         System.setProperty( "sun.net.http.allowRestrictedHeaders", "true" );
     }
 
-    private String[] securityRuleClassNames;
     private boolean persistent;
     private boolean httpEnabled = true;
     private boolean httpsEnabled;
@@ -138,7 +138,10 @@ public class CommunityServerBuilder
 
     public Map<String, String> createConfiguration( File temporaryFolder )
     {
-        Map<String, String> properties = stringMap( ServerSettings.db_api_path.name(), dbUri );
+        Map<String, String> properties = stringMap(
+                ServerSettings.db_api_path.name(), dbUri,
+                ServerSettings.rest_api_path.name(), restUri
+        );
 
         ServerTestUtils.addDefaultRelativeProperties( properties, temporaryFolder );
 
@@ -155,12 +158,6 @@ public class CommunityServerBuilder
         if ( thirdPartyPackages.keySet().size() > 0 )
         {
             properties.put( ServerSettings.third_party_packages.name(), asOneLine( thirdPartyPackages ) );
-        }
-
-        if ( securityRuleClassNames != null && securityRuleClassNames.length > 0 )
-        {
-            String propertyKeys = org.apache.commons.lang.StringUtils.join( securityRuleClassNames, "," );
-            properties.put( ServerSettings.security_rules.name(), propertyKeys );
         }
 
         properties.put( HttpConnector.enabled.name(), String.valueOf( httpEnabled ) );
@@ -226,24 +223,15 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withRelativeDatabaseApiUriPath( String uri )
+    public CommunityServerBuilder withRelativeDatabaseApiPath( String uri )
     {
-        try
-        {
-            URI theUri = new URI( uri );
-            if ( theUri.isAbsolute() )
-            {
-                this.dbUri = theUri.getPath();
-            }
-            else
-            {
-                this.dbUri = theUri.toString();
-            }
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
+        this.dbUri = getPath( uri );
+        return this;
+    }
+
+    public CommunityServerBuilder withRelativeRestApiPath( String uri )
+    {
+        this.restUri = getPath( uri );
         return this;
     }
 
@@ -277,12 +265,6 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withSecurityRules( String... securityRuleClassNames )
-    {
-        this.securityRuleClassNames = securityRuleClassNames;
-        return this;
-    }
-
     public CommunityServerBuilder withHttpsEnabled()
     {
         httpsEnabled = true;
@@ -299,6 +281,26 @@ public class CommunityServerBuilder
     {
         arbitraryProperties.put( key, value );
         return this;
+    }
+
+    private String getPath( String uri )
+    {
+        try
+        {
+            URI theUri = new URI( uri );
+            if ( theUri.isAbsolute() )
+            {
+                return theUri.getPath();
+            }
+            else
+            {
+                return theUri.toString();
+            }
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     private File buildBefore() throws IOException

@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -32,6 +33,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.PortUtils;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static java.net.http.HttpClient.newBuilder;
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -39,6 +41,7 @@ import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.WILDCARD;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -117,11 +120,11 @@ public class ServerConfigIT extends ExclusiveServerTestBase
 
         server = serverOnRandomPorts()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .withRelativeDatabaseApiUriPath( "/" + dbUri )
+                .withRelativeDatabaseApiPath( "/" + dbUri )
                 .build();
         server.start();
 
-        var uri = server.baseUri() + dbUri + "/data/transaction/commit";
+        var uri = server.baseUri() + dbUri + "/neo4j/tx/commit";
         var txRequest = HttpRequest.newBuilder( URI.create( uri ) )
                 .header( ACCEPT, APPLICATION_JSON )
                 .header( CONTENT_TYPE, APPLICATION_JSON )
@@ -134,6 +137,34 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         var discoveryResponse = newHttpClient().send( discoveryRequest, ofString() );
         assertEquals( 200, txResponse.statusCode() );
         assertThat( discoveryResponse.body(), containsString( dbUri ) );
+    }
+
+    @Test
+    public void shouldPickupRelativeUrisForRestApi() throws Exception
+    {
+        var dbUri = "a/different/rest/api/path";
+
+        server = serverOnRandomPorts()
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .withRelativeRestApiPath( "/" + dbUri )
+                .build();
+        server.start();
+
+        var uri = server.baseUri() + dbUri + "/transaction/commit";
+        var txRequest = HttpRequest.newBuilder( URI.create( uri ) )
+                .header( ACCEPT, APPLICATION_JSON )
+                .header( CONTENT_TYPE, APPLICATION_JSON )
+                .POST( HttpRequest.BodyPublishers.ofString( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) )
+                .build();
+        var txResponse = newBuilder().followRedirects( HttpClient.Redirect.NORMAL ).build().send( txRequest, discarding() );
+        System.out.println( txResponse );
+        assertEquals( 200, txResponse.statusCode() );
+
+        // however this legacy url should not be inside the discovery service.
+        var discoveryRequest = HttpRequest.newBuilder( server.baseUri() ).GET().build();
+        var discoveryResponse = newHttpClient().send( discoveryRequest, ofString() );
+        assertEquals( 200, txResponse.statusCode() );
+        assertThat( discoveryResponse.body(), not( containsString( dbUri ) ) );
     }
 
     @Test

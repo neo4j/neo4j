@@ -73,15 +73,15 @@ public class HttpTransactionManagerTest
     }
 
     @Test
-    public void shouldGetTransactionFacadeOfDefaultDatabase()
+    public void shouldGetEmptyTransactionFacadeOfDatabaseData()
     {
         DatabaseService database = mock( DatabaseService.class );
         HttpTransactionManager manager = newTransactionManager( database );
         final Optional<GraphDatabaseFacade> graphDatabaseFacade = manager.getGraphDatabaseFacade( "data" );
 
-        assertTrue( graphDatabaseFacade.isPresent() );
+        assertFalse( graphDatabaseFacade.isPresent() );
 
-        verify( database ).getDatabase();
+        verify( database ).getDatabase( "data" );
     }
 
     @Test
@@ -112,13 +112,12 @@ public class HttpTransactionManagerTest
     {
         JobScheduler jobScheduler = mock( JobScheduler.class );
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        GraphDatabaseFacade data = graphWithName( "data" );
-        when( database.getDatabase() ).thenReturn( data );
+        var defaultDatabase = "neo4j";
         when( database.getDatabase( any( String.class ) ) ).thenAnswer( invocation -> {
             Object[] args = invocation.getArguments();
             String db = (String) args[0];
 
-            if ( db.equals( "neo4j" ) || db.equals( "system" ) )
+            if ( db.equals( defaultDatabase ) || db.equals( "system" ) )
             {
                 return graphWithName( db );
             }

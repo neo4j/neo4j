@@ -68,7 +68,7 @@ public class TransactionTimeoutIT extends ExclusiveServerTestBase
 
     private String txURI()
     {
-        return server.baseUri().toString() + "db/data/transaction";
+        return server.baseUri().toString() + txEndpoint();
     }
 
 }

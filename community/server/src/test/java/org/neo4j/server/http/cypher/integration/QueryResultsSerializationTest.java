@@ -52,7 +52,6 @@ import static org.neo4j.server.http.cypher.integration.TransactionMatchers.graph
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.graphContainsDeletedRelationships;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.graphContainsNoDeletedEntities;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
-import static org.neo4j.server.http.cypher.integration.TransactionMatchers.matches;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.restContainsDeletedEntities;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.restContainsNoDeletedEntities;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.rowContainsDeletedEntities;
@@ -70,7 +69,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void setUp()
     {
         // begin
-        Response begin = http.POST( "db/data/transaction" );
+        Response begin = http.POST( txUri() );
 
         assertThat( begin.status(), equalTo( 201 ) );
         assertHasTxLocation( begin );
@@ -858,11 +857,6 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 return (Long) r.columnAs( "c" ).next();
             }
         }
-    }
-
-    private void assertHasTxLocation( Response begin )
-    {
-        assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
     }
 
     /**

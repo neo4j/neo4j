@@ -57,14 +57,14 @@ class ClientConnectionInfoTest
         // given
         ClientConnectionInfo clientConnection =
                 new HttpConnectionInfo( "http-42", "http",
-                        new InetSocketAddress( "127.0.0.1", 1337 ), null, "/db/data/transaction/45/commit" );
+                        new InetSocketAddress( "127.0.0.1", 1337 ), null, "/db/neo4j/tx/45/commit" );
 
         // when
         String connectionDetails = clientConnection.asConnectionDetails();
 
         // then
         assertEquals(
-                "server-session\thttp\t127.0.0.1\t/db/data/transaction/45/commit",
+                "server-session\thttp\t127.0.0.1\t/db/neo4j/tx/45/commit",
                 connectionDetails );
     }
 

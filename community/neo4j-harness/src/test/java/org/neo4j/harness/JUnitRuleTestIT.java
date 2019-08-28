@@ -100,7 +100,7 @@ public class JUnitRuleTestIT
         // When I run this test
 
         // Then
-        HTTP.Response response = HTTP.POST( neo4j.httpURI().toString() + "db/data/transaction/commit",
+        HTTP.Response response = HTTP.POST( neo4j.httpURI().toString() + "db/neo4j/tx/commit",
                 quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
         assertThat( response.get( "results" ).get( 0 ).get( "data" ).size(), equalTo( 2 ) );

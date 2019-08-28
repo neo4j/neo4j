@@ -56,7 +56,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 401 )
                 .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
-                .get( dataURL() );
+                .get( databaseURL() );
 
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
@@ -103,7 +103,7 @@ public class AuthenticationIT extends CommunityServerTestBase
                 .expectedStatus( 401 )
                 .withHeader( HttpHeaders.AUTHORIZATION, HTTP.basicAuthHeader( "neo4j", "incorrect" ) )
                 .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
-                .post( dataURL() );
+                .post( databaseURL() );
 
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
@@ -128,7 +128,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 403 )
                 .withHeader( HttpHeaders.AUTHORIZATION, HTTP.basicAuthHeader( "neo4j", "neo4j" ) )
-                .get( dataURL() );
+                .get( databaseURL() );
 
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
@@ -145,7 +145,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServerWithConfiguredUser();
 
         // When
-        HTTP.Response response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" ).GET( dataURL() );
+        HTTP.Response response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" ).GET( databaseURL() );
 
         // Then
         assertThat( response.status(), equalTo( 400 ) );
@@ -160,7 +160,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServerWithConfiguredUser();
 
         // When & then
-        assertAuthorizationRequired( "POST", "db/data/transaction/commit", RawPayload.quotedJson(
+        assertAuthorizationRequired( "POST", txCommitEndpoint(), RawPayload.quotedJson(
                 "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ), 200 );
         assertAuthorizationRequired( "GET",  "db/data/nowhere", 404 );
 
@@ -174,7 +174,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServer( false );
 
         // When & then
-        assertEquals( 200, HTTP.POST( server.baseUri().resolve( "db/data/transaction/commit" ).toString(),
+        assertEquals( 200, HTTP.POST( txCommitURL(),
                 RawPayload.quotedJson( "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ) ).status() );
         assertEquals( 404, HTTP.GET( server.baseUri().resolve( "db/data/nowhere" ).toString() ).status() );
     }
@@ -225,12 +225,12 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // When & then
         assertEquals( 403, HTTP.withBasicAuth( "neo4j", "neo4j" )
-                .POST( server.baseUri().resolve( "db/data/node" ).toString(),
+                .POST( server.baseUri().resolve( databaseURL() + "node" ).toString(),
                         RawPayload.quotedJson( "{'name':'jake'}" ) ).status() );
         assertEquals( 403, HTTP.withBasicAuth( "neo4j", "neo4j" )
-                .GET( server.baseUri().resolve( "db/data/node/1234" ).toString() ).status() );
+                .GET( server.baseUri().resolve( databaseURL() + "node/1234" ).toString() ).status() );
         assertEquals( 403, HTTP.withBasicAuth( "neo4j", "neo4j" )
-                .POST( server.baseUri().resolve( "db/data/transaction/commit" ).toString(),
+                .POST( server.baseUri().resolve( txCommitURL() ).toString(),
                         RawPayload.quotedJson( "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ) ).status() );
     }
 
@@ -251,14 +251,14 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // When malformed header
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" )
-                .request( method, server.baseUri().resolve( path ).toString(), payload );
+                .request( method, server.baseUri().resolve( path ).toString(), payload, false );
         assertThat(response.status(), equalTo(400));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Request.InvalidFormat"));
         assertThat(response.get("errors").get(0).get( "message" ).asText(), equalTo("Invalid authentication header."));
 
         // When invalid credential
         response = HTTP.withBasicAuth( "neo4j", "incorrect" )
-                .request( method, server.baseUri().resolve( path ).toString(), payload );
+                .request( method, server.baseUri().resolve( path ).toString(), payload, false );
         assertThat(response.status(), equalTo(401));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.Unauthorized"));
         assertThat(response.get("errors").get(0).get("message").asText(), equalTo("Invalid username or password."));
@@ -266,7 +266,7 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // When authorized
         response = HTTP.withBasicAuth( "neo4j", "secret" )
-                .request( method, server.baseUri().resolve( path ).toString(), payload );
+                .request( method, server.baseUri().resolve( path ).toString(), payload, false );
         assertThat(response.status(), equalTo(expectedAuthorizedStatus));
     }
 

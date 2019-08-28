@@ -49,4 +49,14 @@ public class ExclusiveServerTestBase
             return null;
         } );
     }
+
+    protected static String txEndpoint()
+    {
+        return "db/neo4j/tx";
+    }
+
+    protected static String txCommitEndpoint()
+    {
+        return txEndpoint() + "/commit";
+    }
 }

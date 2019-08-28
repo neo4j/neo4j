@@ -142,7 +142,7 @@ class JavaProceduresTest
         try ( InProcessNeo4j server = createServer( MyProcedures.class ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                     quotedJson( "{ 'statements': [ { 'statement': 'CALL org.neo4j.harness.myProc' } ] }" ) );
 
             JsonNode result = response.get( "results" ).get( 0 );
@@ -159,7 +159,7 @@ class JavaProceduresTest
         try ( InProcessNeo4j server = createServer( MyProcedures.class ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                     quotedJson( "{ 'statements': [ { 'statement': 'CALL org.neo4j.harness.procThatThrows' } ] }" ) );
 
             String error = response.get( "errors" ).get( 0 ).get( "message" ).asText();
@@ -175,7 +175,7 @@ class JavaProceduresTest
         try ( InProcessNeo4j server = createServer( MyProceduresUsingMyService.class ).build() )
         {
             // Then
-            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                     quotedJson( "{ 'statements': [ { 'statement': 'CALL hello' } ] }" ) );
 
             assertEquals( "[]", response.get( "errors" ).toString() );
@@ -203,7 +203,7 @@ class JavaProceduresTest
 
     private void assertQueryGetsValue( Neo4j server, String query, long value ) throws Throwable
     {
-        HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+        HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
 
         assertEquals( "[]", response.get( "errors" ).toString() );
@@ -214,7 +214,7 @@ class JavaProceduresTest
 
     private void assertQueryGetsError( Neo4j server, String query, String error ) throws Throwable
     {
-        HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+        HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
 
         assertThat( response.get( "errors" ).toString(), containsString( error ) );

@@ -122,11 +122,10 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldUseXForwardedHostAndXForwardedProtoHeadersInCypherResponseRepresentations() throws Exception
     {
-        String endpoint = "db/data/transaction";
         String jsonString = "{\"statements\" : [{ \"statement\": \"MATCH (n) RETURN n\", " +
                 "\"resultDataContents\":[\"REST\"] }] }";
 
-        var entity = sendPostRequest( endpoint, jsonString,
+        var entity = sendPostRequest( txUri(), jsonString,
                 X_FORWARDED_HOST, "jimwebber.org:2354",
                 X_FORWARDED_PROTO, "https" );
 
@@ -145,9 +144,9 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
         return newHttpClient().send( request, ofString() ).body();
     }
 
-    private static String sendPostRequest( String endpoint, String payload, String... headers ) throws Exception
+    private static String sendPostRequest( String uri, String payload, String... headers ) throws Exception
     {
-        var request = HttpRequest.newBuilder( URI.create( serverUri() + endpoint ) )
+        var request = HttpRequest.newBuilder( URI.create( uri ) )
                 .header( ACCEPT, APPLICATION_JSON )
                 .header( CONTENT_TYPE, APPLICATION_JSON )
                 .headers( headers )
