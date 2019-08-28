@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -37,6 +40,8 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 
@@ -49,6 +54,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     private final StorageEngineFactory storageEngineFactory;
     private final IndexProviderMap indexProviderMap;
     private final Log log;
+    private final List<File> indexDirectoriesToDelete = new ArrayList<>();
 
     IndexConfigMigrator( FileSystemAbstraction fs, Config config, PageCache pageCache, LogService logService, StorageEngineFactory storageEngineFactory,
             IndexProviderMap indexProviderMap, Log log )
@@ -66,6 +72,15 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
             String versionToMigrateTo ) throws IOException, KernelException
+    {
+        if ( needConfigMigration( versionToMigrateFrom, versionToMigrateTo ) )
+        {
+            migrateIndexConfigs( directoryLayout, migrationLayout, versionToMigrateTo );
+        }
+    }
+
+    private void migrateIndexConfigs( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, String versionToMigrateTo )
+            throws IOException, KernelException
     {
         try ( SchemaRuleMigrationAccess ruleAccess = storageEngineFactory
                 .schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService, versionToMigrateTo ) )
@@ -104,8 +119,18 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
+            throws IOException
     {
-        // Nothing to move
+        if ( needConfigMigration( versionToMigrateFrom, versionToMigrateTo ) )
+        {
+            for ( IndexMigration indexMigration : IndexMigration.nonRetired() )
+            {
+                for ( File nonRetiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
+                {
+                    fs.deleteRecursively( nonRetiredRootDirectory );
+                }
+            }
+        }
     }
 
     @Override
@@ -113,5 +138,12 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
     {
         // Nothing to clean up
+    }
+
+    private boolean needConfigMigration( String versionToMigrateFrom, String versionToMigrateTo )
+    {
+        StoreVersion fromVersionInformation = storageEngineFactory.versionInformation( versionToMigrateFrom );
+        StoreVersion toVersionInformation = storageEngineFactory.versionInformation( versionToMigrateTo );
+        return !fromVersionInformation.hasCompatibleCapabilities( toVersionInformation, CapabilityType.INDEX_CONFIG );
     }
 }

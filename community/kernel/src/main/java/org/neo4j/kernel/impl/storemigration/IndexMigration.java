@@ -231,6 +231,13 @@ enum IndexMigration
                 .toArray( IndexMigration[]::new );
     }
 
+    public static IndexMigration[] nonRetired()
+    {
+        return Arrays.stream( IndexMigration.values() )
+                .filter( p -> !p.retired )
+                .toArray( IndexMigration[]::new );
+    }
+
     private static File getSpatialSubDirectory( long indexId, File baseProviderDir )
     {
         return path( baseProviderDir, String.valueOf( indexId ), spatialDirectoryName );

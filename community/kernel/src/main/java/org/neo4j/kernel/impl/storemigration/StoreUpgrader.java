@@ -38,7 +38,7 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.LuceneCapability;
+import org.neo4j.storageengine.api.IndexCapabilities;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
@@ -144,7 +144,7 @@ public class StoreUpgrader
             if ( storeVersion.isPresent() )
             {
                 StoreVersion version = storeVersionCheck.versionInformation( storeVersion.get() );
-                if ( version.hasCapability( LuceneCapability.LUCENE_5 ) )
+                if ( version.hasCapability( IndexCapabilities.LuceneCapability.LUCENE_5 ) )
                 {
                     throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
                 }
@@ -196,8 +196,9 @@ public class StoreUpgrader
         {
             versionToMigrateFrom =
                     MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
+            String versionToMigrateTo = storeVersionCheck.configuredVersion();
             moveMigratedFilesToStoreDirectory( participants, migrationLayout, dbDirectoryLayout,
-                    versionToMigrateFrom, storeVersionCheck.storeVersion().orElseThrow( () -> new IOException( "Store version not found" ) ) );
+                    versionToMigrateFrom, versionToMigrateTo );
         }
 
         progressMonitor.startTransactionLogsMigration();

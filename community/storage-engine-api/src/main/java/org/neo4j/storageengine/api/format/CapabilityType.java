@@ -23,5 +23,7 @@ public enum CapabilityType
 {
     FORMAT,
     STORE,
-    INDEX
+    INDEX,
+    INDEX_PROVIDER,
+    INDEX_CONFIG;
 }

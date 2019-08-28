@@ -33,6 +33,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 
@@ -58,6 +60,14 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
             String versionToMigrateTo ) throws KernelException, IOException
     {
+        if ( needProviderMigration( versionToMigrateFrom, versionToMigrateTo ) )
+        {
+            migrateIndexProviders( migrationLayout, versionToMigrateTo );
+        }
+    }
+
+    private void migrateIndexProviders( DatabaseLayout migrationLayout, String versionToMigrateTo ) throws IOException, KernelException
+    {
         try ( SchemaRuleMigrationAccess ruleAccess = storageEngineFactory
                 .schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService, versionToMigrateTo ) )
         {
@@ -77,12 +87,15 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
     public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
             throws IOException
     {
-        // All old indexes need to be deleted because either they have changed provider or they've had there configuration migrated, see IndexConfigMigrator.
-        for ( IndexMigration indexMigration : IndexMigration.values() )
+        if ( needProviderMigration( versionToMigrateFrom, versionToMigrateTo ) )
         {
-            for ( File retiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
+            // All retired indexes need to be deleted because they have had there provider migrated.
+            for ( IndexMigration indexMigration : IndexMigration.retired() )
             {
-                fs.deleteRecursively( retiredRootDirectory );
+                for ( File retiredRootDirectory : indexMigration.providerRootDirectories( directoryLayout ) )
+                {
+                    fs.deleteRecursively( retiredRootDirectory );
+                }
             }
         }
     }
@@ -113,5 +126,12 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
             }
         }
         return rule;
+    }
+
+    private boolean needProviderMigration( String versionToMigrateFrom, String versionToMigrateTo )
+    {
+        StoreVersion fromVersionInformation = storageEngineFactory.versionInformation( versionToMigrateFrom );
+        StoreVersion toVersionInformation = storageEngineFactory.versionInformation( versionToMigrateTo );
+        return !fromVersionInformation.hasCompatibleCapabilities( toVersionInformation, CapabilityType.INDEX_PROVIDER );
     }
 }

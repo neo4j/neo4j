@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.LuceneCapability;
+import org.neo4j.storageengine.api.IndexCapabilities;
 
 public class StandardV4_0 extends BaseRecordFormats
 {
@@ -52,7 +52,9 @@ public class StandardV4_0 extends BaseRecordFormats
                 RecordStorageCapability.FLEXIBLE_SCHEMA_STORE,
                 RecordStorageCapability.INTERNAL_TOKENS,
                 RecordStorageCapability.GBPTREE_ID_FILES,
-                LuceneCapability.LUCENE_8 );
+                IndexCapabilities.LuceneCapability.LUCENE_8,
+                IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
+                IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG );
     }
 
     @Override

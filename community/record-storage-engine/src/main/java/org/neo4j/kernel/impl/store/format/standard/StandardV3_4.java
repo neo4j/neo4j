@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.storageengine.api.LuceneCapability;
+import org.neo4j.storageengine.api.IndexCapabilities;
 
 public class StandardV3_4 extends BaseRecordFormats
 {
@@ -48,7 +48,7 @@ public class StandardV3_4 extends BaseRecordFormats
                 RecordStorageCapability.DENSE_NODES,
                 RecordStorageCapability.POINT_PROPERTIES,
                 RecordStorageCapability.TEMPORAL_PROPERTIES,
-                LuceneCapability.LUCENE_5 );
+                IndexCapabilities.LuceneCapability.LUCENE_5 );
     }
 
     @Override
