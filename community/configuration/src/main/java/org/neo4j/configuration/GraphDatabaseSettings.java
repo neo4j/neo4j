@@ -773,7 +773,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Internal
     @Description( "Page cache warmup prefetch file whitelist regex. By default matches all files" )
     public static final Setting<String> pagecache_warmup_prefetch_whitelist =
-            newBuilder( "unsupported.dbms.memory.pagecache.warmup.preload.whitelist", STRING, "*" ).build();
+            newBuilder( "unsupported.dbms.memory.pagecache.warmup.preload.whitelist", STRING, ".*" ).build();
 
     @Description( "Allows the enabling or disabling of the file watcher service." +
             " This is an auxiliary service but should be left enabled in almost all cases." )
