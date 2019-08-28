@@ -10,12 +10,12 @@ import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Rewriter, bottomUp}
 
 import scala.collection.mutable
 
-case object pushdownPropertyReads {
+case object PushdownPropertyReads {
 
-  def x(logicalPlan: LogicalPlan,
-        cardinalities: Cardinalities,
-        attributes: Attributes[LogicalPlan],
-        semanticTable: SemanticTable): LogicalPlan = {
+  def pushdown(logicalPlan: LogicalPlan,
+               cardinalities: Cardinalities,
+               attributes: Attributes[LogicalPlan],
+               semanticTable: SemanticTable): LogicalPlan = {
 
     def isNodeOrRel(variable: LogicalVariable): Boolean =
       semanticTable.types.get(variable)
@@ -51,7 +51,6 @@ case object pushdownPropertyReads {
                   // this happens for variables introduced in expressions, we ignore those for now
                   case None => None
                 }
-
             }
 
           val outgoingCardinality = cardinalities(plan.id)
@@ -117,46 +116,4 @@ case object pushdownPropertyReads {
 
     propertyReadInsertRewriter(logicalPlan).asInstanceOf[LogicalPlan]
   }
-//
-//  def isAllowedToMoveBelow(projection: Projection, plan: LogicalPlan): Boolean = {
-//    plan match {
-//      case p if p.lhs.isEmpty || p.rhs.isDefined => false // This guarantees that the last plan for which this returns true has a LHS
-//      case _: Expand => true // TODO this is a lie
-//      case _: Selection => true
-//      case _ => false
-//    }
-//  }
-//
-//  def pushdown(projection: Projection, childPlans: Seq[LogicalPlan]): LogicalPlan = {
-//    val rewrittenChildPlans = childPlans.toArray
-//
-//    for (i <- rewrittenChildPlans.indices.reverse) {
-//        if (i == rewrittenChildPlans.length - 1) {
-//          val source = rewrittenChildPlans(i)
-//          val inner = source.lhs.get
-//
-//          val newProjection = projection.copy(source = inner)(SameId(projection.id)) // TODO assign new cardinality
-//
-//          // Copy source
-//          val newChildrenOfSource = source.children.toSeq.map {
-//            case `inner` => newProjection
-//            case x => x
-//          }
-//          rewrittenChildPlans(i) = source.dup(newChildrenOfSource)
-//        } else {
-//          val source = rewrittenChildPlans(i)
-//          val child = rewrittenChildPlans(i + 1)
-//
-//          // Copy source
-//          val newChildrenOfSource = source.children.toSeq.map {
-//            case c if c == childPlans(i + 1) => child
-//            case x => x
-//          }
-//          rewrittenChildPlans(i) = source.dup(newChildrenOfSource)
-//        }
-//    }
-//    rewrittenChildPlans.head
-//  }
-//
-//  override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }

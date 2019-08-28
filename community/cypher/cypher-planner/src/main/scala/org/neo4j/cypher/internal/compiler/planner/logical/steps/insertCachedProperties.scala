@@ -38,7 +38,7 @@ case object insertCachedProperties extends Transformer[PlannerContext, LogicalPl
 
     val cardinalities = from.planningAttributes.cardinalities
     val attributes = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
-    val logicalPlan = pushdownPropertyReads.x(from.logicalPlan, cardinalities, attributes, from.semanticTable())
+    val logicalPlan = PushdownPropertyReads.pushdown(from.logicalPlan, cardinalities, attributes, from.semanticTable())
 
     def isNode(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTNode.invariant)
     def isRel(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTRelationship.invariant)

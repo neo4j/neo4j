@@ -35,7 +35,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .expandAll("(n)-->(m)").withCardinality(50)
       .allNodeScan("n").withCardinality(5)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -54,7 +54,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .filter("id(n) <> 0").withCardinality(5)
       .allNodeScan("n").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -71,7 +71,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .produceResults("x")
       .nodeIndexOperator("n:N(prop > 0)").withCardinality(1)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -87,7 +87,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .|.allNodeScan("n", "m").withCardinality(100)
       .allNodeScan("m").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -106,7 +106,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m")).withCardinality(50)
       .allNodeScan("m").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -124,7 +124,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .expandAll("(m)-->(q)").withCardinality(50)
       .allNodeScan("m").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -144,7 +144,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .|.allNodeScan("n", "m").withCardinality(100)
       .allNodeScan("m").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -166,7 +166,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .|.allNodeScan("n", "m").withCardinality(100)
       .allNodeScan("m").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -192,7 +192,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .allNodeScan("n").withCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = pushdownPropertyReads.x(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -204,7 +204,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .|.allNodeScan("n").withCardinality(100)
       .allNodeScan("m").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -226,7 +226,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .|.allNodeScan("n").withCardinality(100)
       .allNodeScan("m").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -252,7 +252,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .allNodeScan("n").withCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = pushdownPropertyReads.x(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -269,7 +269,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .allNodeScan("n").withCardinality(1)
 
     val plan = planBuilder.build()
-    val rewritten = pushdownPropertyReads.x(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
       .apply()
@@ -293,7 +293,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .|.allNodeScan("m").withCardinality(10)
       .allNodeScan("n").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -318,7 +318,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .allNodeScan("n").withCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = pushdownPropertyReads.x(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -333,7 +333,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .allNodeScan("n").withCardinality(100)
 
     val plan = planBuilder.build()
-    val rewritten = pushdownPropertyReads.x(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -347,7 +347,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .allNodeScan("n").withCardinality(100)
 
     val plan = planBuilder.build()
-    val rewritten = pushdownPropertyReads.x(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -362,7 +362,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .allNodeScan("m").withCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = pushdownPropertyReads.x(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
       .projection("m.prop AS x")
@@ -383,7 +383,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .expandAll("(n)-->(m)").withCardinality(50)
       .allNodeScan("n").withCardinality(5)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -402,7 +402,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .filter("id(n) <> 0").withCardinality(5)
       .allNodeScan("n").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -424,7 +424,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .filter("id(n) <> 0").withCardinality(5)
       .allNodeScan("n").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -447,7 +447,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .filter("id(n) <> 0").withCardinality(5)
       .allNodeScan("n").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -469,7 +469,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .filter("id(n) <> 0").withCardinality(5)
       .allNodeScan("n").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -493,7 +493,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .filter("id(n) <> 0").withCardinality(5)
       .allNodeScan("n").withCardinality(10)
 
-    val rewritten = pushdownPropertyReads.x(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -514,7 +514,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .allNodeScan("n").withCardinality(5)
 
     val plan = planBuilder.build()
-    val rewritten = pushdownPropertyReads.x(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 }
