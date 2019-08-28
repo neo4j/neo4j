@@ -21,9 +21,9 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class ConstraintValidationException extends Neo4jException
+public class ConstraintViolationException extends Neo4jException
 {
-    public ConstraintValidationException( String message, Throwable cause )
+    public ConstraintViolationException( String message, Throwable cause )
     {
         super( message, cause );
     }
