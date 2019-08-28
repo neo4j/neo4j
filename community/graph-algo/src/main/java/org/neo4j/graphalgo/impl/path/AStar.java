@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
+import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.PathImpl;
@@ -47,14 +48,16 @@ import static org.neo4j.internal.helpers.collection.Iterables.option;
 
 public class AStar implements PathFinder<WeightedPath>
 {
+    private final EvaluationContext context;
     private final PathExpander<?> expander;
     private final CostEvaluator<Double> lengthEvaluator;
     private final EstimateEvaluator<Double> estimateEvaluator;
     private Metadata lastMetadata;
 
-    public AStar( PathExpander<?> expander,
+    public AStar( EvaluationContext context, PathExpander<?> expander,
             CostEvaluator<Double> lengthEvaluator, EstimateEvaluator<Double> estimateEvaluator )
     {
+        this.context = context;
         this.expander = expander;
         this.lengthEvaluator = lengthEvaluator;
         this.estimateEvaluator = estimateEvaluator;
@@ -68,7 +71,7 @@ public class AStar implements PathFinder<WeightedPath>
         while ( iterator.hasNext() )
         {
             Node node = iterator.next();
-            GraphDatabaseService graphDb = node.getGraphDatabase();
+            GraphDatabaseService graphDb = context.databaseService();
             if ( node.equals( end ) )
             {
                 // Hit, return path

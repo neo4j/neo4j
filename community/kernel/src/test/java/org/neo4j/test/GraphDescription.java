@@ -35,7 +35,6 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 
@@ -200,7 +199,7 @@ public class GraphDescription implements GraphDefinition
         }
     }
 
-    public static TestData.Producer<Map<String, Node>> createGraphFor( final GraphHolder holder, final boolean destroy )
+    public static TestData.Producer<Map<String, Node>> createGraphFor( final GraphHolder holder )
     {
         return new TestData.Producer<>()
         {
@@ -208,15 +207,6 @@ public class GraphDescription implements GraphDefinition
             public Map<String,Node> create( GraphDefinition graph, String title, String documentation )
             {
                 return graph.create( holder.graphdb() );
-            }
-
-            @Override
-            public void destroy( Map<String,Node> product, boolean successful )
-            {
-                if ( destroy )
-                {
-                    GraphDescription.destroy( product );
-                }
             }
         };
     }
@@ -290,27 +280,6 @@ public class GraphDescription implements GraphDefinition
         List<REL> relationships = new ArrayList<>();
         parse( definition, nodes, relationships );
         return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ) );
-    }
-
-    public static void destroy( Map<String, Node> nodes )
-    {
-        if ( nodes.isEmpty() )
-        {
-            return;
-        }
-        GraphDatabaseService db = nodes.values().iterator().next().getGraphDatabase();
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( Node node : db.getAllNodes() )
-            {
-                for ( Relationship rel : node.getRelationships() )
-                {
-                    rel.delete();
-                }
-                node.delete();
-            }
-            tx.commit();
-        }
     }
 
     public static GraphDescription create( Graph graph )

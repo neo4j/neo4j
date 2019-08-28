@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
 
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
@@ -29,12 +29,14 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
         EntityRepresentation
 {
     private final Relationship rel;
+    private final GraphDatabaseService databaseService;
     private TransactionStateChecker checker;
 
-    public RelationshipRepresentation( Relationship rel )
+    public RelationshipRepresentation( Relationship rel, GraphDatabaseService databaseService )
     {
         super( RepresentationType.RELATIONSHIP );
         this.rel = rel;
+        this.databaseService = databaseService;
     }
 
     public void setTransactionStateChecker( TransactionStateChecker checker )
@@ -105,11 +107,11 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     {
         if ( isDeleted() )
         {
-            return new MapRepresentation( map( "id", rel.getId(), "deleted", Boolean.TRUE ) );
+            return new MapRepresentation( map( "id", rel.getId(), "deleted", Boolean.TRUE ), databaseService );
         }
         else
         {
-            return new MapRepresentation( map( "id", rel.getId(), "type", rel.getType().name() ) );
+            return new MapRepresentation( map( "id", rel.getId(), "type", rel.getType().name() ), databaseService );
         }
     }
 
@@ -127,18 +129,5 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
             new PropertiesRepresentation( rel ).serialize( properties );
             properties.done();
         }
-    }
-
-    public static ListRepresentation list( Iterable<Relationship> relationships )
-    {
-        return new ListRepresentation( RepresentationType.RELATIONSHIP,
-                new IterableWrapper<Representation, Relationship>( relationships )
-                {
-                    @Override
-                    protected Representation underlyingObjectToObject( Relationship relationship )
-                    {
-                        return new RelationshipRepresentation( relationship );
-                    }
-                } );
     }
 }

@@ -19,33 +19,35 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
-public class MapRepresentationTest
+class MapRepresentationTest
 {
     @Test
-    public void shouldSerializeMapWithSimpleTypes() throws Exception
+    void shouldSerializeMapWithSimpleTypes() throws Exception
     {
         MapRepresentation rep = new MapRepresentation( map( "nulls", null, "strings", "a string", "numbers", 42,
-                "booleans", true ) );
+                "booleans", true ), mock( GraphDatabaseService.class ) );
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
         String serializedMap = format.assemble( rep );
@@ -59,14 +61,14 @@ public class MapRepresentationTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldSerializeMapWithArrayTypes() throws Exception
+    void shouldSerializeMapWithArrayTypes() throws Exception
     {
         MapRepresentation rep = new MapRepresentation( map(
                 "strings", new String[]{"a string", "another string"},
                 "numbers", new int[]{42, 87},
                 "booleans", new boolean[]{true, false},
                 "Booleans", new Boolean[]{TRUE, FALSE}
-        ) );
+        ), mock( GraphDatabaseService.class ) );
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
         String serializedMap = format.assemble( rep );
@@ -80,11 +82,11 @@ public class MapRepresentationTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldSerializeMapWithListsOfSimpleTypes() throws Exception
+    void shouldSerializeMapWithListsOfSimpleTypes() throws Exception
     {
         MapRepresentation rep = new MapRepresentation( map( "lists of nulls", asList( null, null ),
                 "lists of strings", asList( "a string", "another string" ), "lists of numbers", asList( 23, 87, 42 ),
-                "lists of booleans", asList( true, false, true ) ) );
+                "lists of booleans", asList( true, false, true ) ), mock( GraphDatabaseService.class ) );
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
         String serializedMap = format.assemble( rep );
@@ -97,12 +99,12 @@ public class MapRepresentationTest
     }
 
     @Test
-    public void shouldSerializeMapWithMapsOfSimpleTypes() throws Exception
+    void shouldSerializeMapWithMapsOfSimpleTypes() throws Exception
     {
         MapRepresentation rep = new MapRepresentation( map( "maps with nulls", map( "nulls", null ),
                 "maps with strings", map( "strings", "a string" ),
                 "maps with numbers", map( "numbers", 42 ),
-                "maps with booleans", map( "booleans", true ) ) );
+                "maps with booleans", map( "booleans", true ) ), mock( GraphDatabaseService.class ) );
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
         String serializedMap = format.assemble( rep );
@@ -116,13 +118,13 @@ public class MapRepresentationTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldSerializeArbitrarilyNestedMapsAndLists() throws Exception
+    void shouldSerializeArbitrarilyNestedMapsAndLists() throws Exception
     {
         MapRepresentation rep = new MapRepresentation(
                 map(
                         "a map with a list in it", map( "a list", asList( 42, 87 ) ),
                         "a list with a map in it", asList( map( "foo", "bar", "baz", false ) )
-                )
+                ), mock( GraphDatabaseService.class )
         );
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
@@ -137,7 +139,7 @@ public class MapRepresentationTest
     }
 
     @Test
-    public void shouldSerializeMapsWithNullKeys() throws Exception
+    void shouldSerializeMapsWithNullKeys() throws Exception
     {
         Object[] values = {null,
                 "string",
@@ -153,7 +155,7 @@ public class MapRepresentationTest
 
         for ( Object value : values )
         {
-            MapRepresentation rep = new MapRepresentation( map( (Object) null, value ) );
+            MapRepresentation rep = new MapRepresentation( map( (Object) null, value ), mock( GraphDatabaseService.class ) );
             OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
             String serializedMap = format.assemble( rep );

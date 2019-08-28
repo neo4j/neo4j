@@ -31,7 +31,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -100,12 +99,6 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     public long getId()
     {
         return nodeId;
-    }
-
-    @Override
-    public GraphDatabaseService getGraphDatabase()
-    {
-        return spi.getGraphDatabase();
     }
 
     @Override

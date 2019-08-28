@@ -70,14 +70,6 @@ import org.neo4j.annotations.api.PublicApi;
 public interface PropertyContainer
 {
     /**
-     * Get the {@link GraphDatabaseService} that this {@link Node} or
-     * {@link Relationship} belongs to.
-     *
-     * @return The GraphDatabase this Node or Relationship belongs to.
-     */
-    GraphDatabaseService getGraphDatabase();
-
-    /**
      * Returns <code>true</code> if this property container has a property
      * accessible through the given key, <code>false</code> otherwise. If key is
      * <code>null</code>, this method returns <code>false</code>.

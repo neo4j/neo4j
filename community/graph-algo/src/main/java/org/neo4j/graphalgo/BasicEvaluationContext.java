@@ -17,22 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.graphalgo;
 
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 
-public interface EmbeddedProxySPI
+public class BasicEvaluationContext implements EvaluationContext
 {
-    KernelTransaction kernelTransaction();
+    private final Transaction transaction;
+    private final GraphDatabaseService databaseService;
 
-    void assertInUnterminatedTransaction();
+    public BasicEvaluationContext( Transaction transaction, GraphDatabaseService databaseService )
+    {
+        this.transaction = transaction;
+        this.databaseService = databaseService;
+    }
 
-    RelationshipProxy newRelationshipProxy( long id );
+    @Override
+    public Transaction transaction()
+    {
+        return transaction;
+    }
 
-    RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );
-
-    NodeProxy newNodeProxy( long nodeId );
-
-    RelationshipType getRelationshipTypeById( int type );
+    @Override
+    public GraphDatabaseService databaseService()
+    {
+        return databaseService;
+    }
 }

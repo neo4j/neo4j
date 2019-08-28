@@ -19,93 +19,96 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
 import static org.neo4j.test.mockito.mock.GraphMock.node;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 
-public class NodeRepresentationTest
+class NodeRepresentationTest
 {
     @Test
-    public void shouldHaveSelfLink()
+    void shouldHaveSelfLink()
     {
         assertUriMatches( uriPattern( "" ), noderep( 1234 ).selfUri() );
     }
 
     @Test
-    public void shouldHaveAllRelationshipsLink()
+    void shouldHaveAllRelationshipsLink()
     {
         assertUriMatches( uriPattern( "/relationships/all" ), noderep( 1234 ).allRelationshipsUri() );
     }
 
     @Test
-    public void shouldHaveIncomingRelationshipsLink()
+    void shouldHaveIncomingRelationshipsLink()
     {
         assertUriMatches( uriPattern( "/relationships/in" ), noderep( 1234 ).incomingRelationshipsUri() );
     }
 
     @Test
-    public void shouldHaveOutgoingRelationshipsLink()
+    void shouldHaveOutgoingRelationshipsLink()
     {
         assertUriMatches( uriPattern( "/relationships/out" ), noderep( 1234 ).outgoingRelationshipsUri() );
     }
 
     @Test
-    public void shouldHaveAllTypedRelationshipsLinkTemplate()
+    void shouldHaveAllTypedRelationshipsLinkTemplate()
     {
         assertUriMatches( uriPattern( "/relationships/all/\\{-list\\|&\\|types\\}" ),
                 noderep( 1234 ).allTypedRelationshipsUriTemplate() );
     }
 
     @Test
-    public void shouldHaveIncomingTypedRelationshipsLinkTemplate()
+    void shouldHaveIncomingTypedRelationshipsLinkTemplate()
     {
         assertUriMatches( uriPattern( "/relationships/in/\\{-list\\|&\\|types\\}" ),
                 noderep( 1234 ).incomingTypedRelationshipsUriTemplate() );
     }
 
     @Test
-    public void shouldHaveOutgoingTypedRelationshipsLinkTemplate()
+    void shouldHaveOutgoingTypedRelationshipsLinkTemplate()
     {
         assertUriMatches( uriPattern( "/relationships/out/\\{-list\\|&\\|types\\}" ),
                 noderep( 1234 ).outgoingTypedRelationshipsUriTemplate() );
     }
 
     @Test
-    public void shouldHaveRelationshipCreationLink()
+    void shouldHaveRelationshipCreationLink()
     {
         assertUriMatches( uriPattern( "/relationships" ), noderep( 1234 ).relationshipCreationUri() );
     }
 
     @Test
-    public void shouldHavePropertiesLink()
+    void shouldHavePropertiesLink()
     {
         assertUriMatches( uriPattern( "/properties" ), noderep( 1234 ).propertiesUri() );
     }
 
     @Test
-    public void shouldHavePropertyLinkTemplate()
+    void shouldHavePropertyLinkTemplate()
     {
         assertUriMatches( uriPattern( "/properties/\\{key\\}" ), noderep( 1234 ).propertyUriTemplate() );
     }
 
     @Test
-    public void shouldHaveTraverseLinkTemplate()
+    void shouldHaveTraverseLinkTemplate()
     {
         assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ), noderep( 1234 ).traverseUriTemplate() );
     }
 
     @Test
-    public void shouldSerialiseToMap()
+    void shouldSerialiseToMap()
     {
         Map<String, Object> repr = serialize( noderep( 1234 ) );
         assertNotNull( repr );
@@ -113,17 +116,17 @@ public class NodeRepresentationTest
     }
 
     @Test
-    public void shouldHaveLabelsLink()
+    void shouldHaveLabelsLink()
     {
         assertUriMatches( uriPattern( "/labels" ), noderep( 1234 ).labelsUriTemplate() );
     }
 
     private NodeRepresentation noderep( long id )
     {
-        return new NodeRepresentation( node( id, properties(), "Label" ) );
+        return new NodeRepresentation( node( id, properties(), "Label" ), mock( GraphDatabaseService.class ) );
     }
 
-    public static void verifySerialisation( Map<String, Object> noderep )
+    static void verifySerialisation( Map<String,Object> noderep )
     {
         assertUriMatches( uriPattern( "" ), noderep.get( "self" )
                 .toString() );

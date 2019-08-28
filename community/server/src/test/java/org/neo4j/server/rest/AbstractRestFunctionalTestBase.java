@@ -44,7 +44,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
     @Rule
-    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this ) );
 
     @Rule
     public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );

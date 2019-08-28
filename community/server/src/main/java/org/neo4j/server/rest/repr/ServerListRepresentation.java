@@ -21,11 +21,16 @@ package org.neo4j.server.rest.repr;
 
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+
 public class ServerListRepresentation extends ListRepresentation
 {
-    public ServerListRepresentation( RepresentationType type, Iterable<? extends Representation> content )
+    private final GraphDatabaseService databaseService;
+
+    public ServerListRepresentation( RepresentationType type, Iterable<? extends Representation> content, GraphDatabaseService databaseService )
     {
         super( type, content );
+        this.databaseService = databaseService;
     }
 
     @Override
@@ -43,11 +48,11 @@ public class ServerListRepresentation extends ListRepresentation
             }
             else if ( val instanceof Iterable )
             {
-                serializer.addList( ObjectToRepresentationConverter.getListRepresentation( (Iterable) val ) );
+                serializer.addList( ObjectToRepresentationConverter.getListRepresentation( (Iterable) val, databaseService ) );
             }
             else if ( val instanceof Map )
             {
-                serializer.addMapping( ObjectToRepresentationConverter.getMapRepresentation( (Map) val ) );
+                serializer.addMapping( ObjectToRepresentationConverter.getMapRepresentation( (Map) val, databaseService ) );
             }
             else if ( val instanceof MappingRepresentation )
             {

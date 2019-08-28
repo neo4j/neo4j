@@ -34,7 +34,6 @@ import javax.ws.rs.core.MediaType;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 
 import static java.net.http.HttpClient.newHttpClient;
@@ -49,19 +48,7 @@ import static org.junit.Assert.assertTrue;
 
 public class RESTRequestGenerator
 {
-    public static final Producer<RESTRequestGenerator> PRODUCER = new Producer<>()
-    {
-        @Override
-        public RESTRequestGenerator create( GraphDefinition graph, String title, String documentation )
-        {
-            return new RESTRequestGenerator();
-        }
-
-        @Override
-        public void destroy( RESTRequestGenerator product, boolean successful )
-        {
-        }
-    };
+    public static final Producer<RESTRequestGenerator> PRODUCER = ( graph, title, documentation ) -> new RESTRequestGenerator();
 
     private int expectedResponseStatus = -1;
     private MediaType expectedMediaType = MediaType.valueOf( "application/json; charset=UTF-8" );

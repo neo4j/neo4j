@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -285,12 +284,6 @@ public class SchemaProcedure
         }
 
         @Override
-        public GraphDatabaseService getGraphDatabase()
-        {
-            return null;
-        }
-
-        @Override
         public boolean hasProperty( String key )
         {
             return false;
@@ -498,12 +491,6 @@ public class SchemaProcedure
         public boolean hasLabel( Label label )
         {
             return false;
-        }
-
-        @Override
-        public GraphDatabaseService getGraphDatabase()
-        {
-            return null;
         }
 
         @Override

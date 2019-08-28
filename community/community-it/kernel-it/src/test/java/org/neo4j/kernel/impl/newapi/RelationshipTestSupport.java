@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
@@ -96,7 +96,7 @@ class RelationshipTestSupport
         try ( Transaction tx = graphDb.beginTx() )
         {
             node = graphDb.createNode();
-            relationshipMap = buildSparseDenseRels( node );
+            relationshipMap = buildSparseDenseRels( graphDb, node );
             tx.commit();
         }
         return new StartNode( node.getId(), relationshipMap );
@@ -109,7 +109,7 @@ class RelationshipTestSupport
         try ( Transaction tx = graphDb.beginTx() )
         {
             node = graphDb.createNode();
-            relationshipMap = buildSparseDenseRels( node );
+            relationshipMap = buildSparseDenseRels( graphDb, node );
 
             List<StartRelationship> bulk = new ArrayList<>();
             RelationshipType bulkType = withName( "BULK" );
@@ -208,12 +208,12 @@ class RelationshipTestSupport
         }
     }
 
-    private static Map<String,List<StartRelationship>> buildSparseDenseRels( Node node )
+    private static Map<String,List<StartRelationship>> buildSparseDenseRels( GraphDatabaseService databaseService, Node node )
     {
         Map<String,List<StartRelationship>> relationshipMap = new HashMap<>();
-        for ( Function<Node,StartRelationship> rel : SPARSE_DENSE_RELS )
+        for ( BiFunction<GraphDatabaseService,Node,StartRelationship> rel : SPARSE_DENSE_RELS )
         {
-            StartRelationship r = rel.apply( node );
+            StartRelationship r = rel.apply( databaseService, node );
             List<StartRelationship> relsOfType = relationshipMap.computeIfAbsent( computeKey( r ), key -> new ArrayList<>() );
             relsOfType.add( r );
         }
@@ -249,7 +249,7 @@ class RelationshipTestSupport
         return type + "-" + direction;
     }
 
-    private static final Function<Node,StartRelationship>[] SPARSE_DENSE_RELS = Iterators.array(
+    private static final BiFunction<GraphDatabaseService,Node,StartRelationship>[] SPARSE_DENSE_RELS = Iterators.array(
             loop( "FOO" ), // loops are the hardest, let's have two to try to interfere with outgoing/incoming code
             outgoing( "FOO" ),
             outgoing( "BAR" ),
@@ -262,11 +262,10 @@ class RelationshipTestSupport
             loop( "FOO" )
     );
 
-    private static Function<Node,StartRelationship> outgoing( String type )
+    private static BiFunction<GraphDatabaseService,Node,StartRelationship> outgoing( String type )
     {
-        return node ->
+        return ( db, node ) ->
         {
-            GraphDatabaseService db = node.getGraphDatabase();
             RelationshipType relType = withName( type );
             return new StartRelationship(
                     node.createRelationshipTo( db.createNode(), relType ).getId(),
@@ -275,11 +274,10 @@ class RelationshipTestSupport
         };
     }
 
-    private static Function<Node,StartRelationship> incoming( String type )
+    private static BiFunction<GraphDatabaseService,Node,StartRelationship> incoming( String type )
     {
-        return node ->
+        return ( db, node ) ->
         {
-            GraphDatabaseService db = node.getGraphDatabase();
             RelationshipType relType = withName( type );
             return new StartRelationship(
                     db.createNode().createRelationshipTo( node, relType ).getId(),
@@ -288,9 +286,9 @@ class RelationshipTestSupport
         };
     }
 
-    private static Function<Node,StartRelationship> loop( String type )
+    private static BiFunction<GraphDatabaseService,Node,StartRelationship> loop( String type )
     {
-        return node ->
+        return ( db, node ) ->
         {
             RelationshipType relType = withName( type );
             return new StartRelationship(

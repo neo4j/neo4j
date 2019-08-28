@@ -255,6 +255,12 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public InternalTransaction transaction()
+        {
+            return delegate.transaction();
+        }
+
+        @Override
         public boolean isTopLevelTx()
         {
             return delegate.isTopLevelTx();

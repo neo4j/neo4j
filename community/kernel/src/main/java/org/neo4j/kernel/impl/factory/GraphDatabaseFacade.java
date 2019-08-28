@@ -32,7 +32,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
@@ -874,12 +873,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public KernelTransaction kernelTransaction()
     {
         return statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-    }
-
-    @Override
-    public GraphDatabaseService getGraphDatabase()
-    {
-        return this;
     }
 
     @Override

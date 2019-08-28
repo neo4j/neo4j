@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.graphalgo.GraphAlgoFactory;
+import org.neo4j.graphalgo.BasicEvaluationContext;
+import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.path.ExactDepthPathFinder;
 import org.neo4j.graphdb.Direction;
@@ -40,6 +41,9 @@ import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphalgo.GraphAlgoFactory.pathsWithLength;
+import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
+import static org.neo4j.graphdb.PathExpanders.forDirection;
 
 class TestExactDepthPathFinder extends Neo4jAlgoTestCase
 {
@@ -63,11 +67,6 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "SOURCE,z,9,0,TARGET" );
     }
 
-    private static PathFinder<Path> newFinder()
-    {
-        return new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 4, 4, true );
-    }
-
     @Test
     void testSingle()
     {
@@ -77,7 +76,8 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             possiblePaths.add( "SOURCE,z,9,0,TARGET" );
             possiblePaths.add( "SOURCE,SUPER,r,SPIDER,TARGET" );
             createGraph();
-            PathFinder<Path> finder = newFinder();
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            PathFinder<Path> finder = newFinder( context );
             Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) );
             assertNotNull( path );
             assertThat( getPathDef( path ), is( in( possiblePaths ) ) );
@@ -92,7 +92,9 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
         try ( Transaction transaction = graphDb.beginTx() )
         {
             createGraph();
-            assertPaths( newFinder().findAllPaths( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) ), "SOURCE,z,9,0,TARGET",
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            PathFinder<Path> finder = newFinder( context );
+            assertPaths( finder.findAllPaths( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) ), "SOURCE,z,9,0,TARGET",
                     "SOURCE,SUPER,r,SPIDER,TARGET" );
             transaction.commit();
         }
@@ -114,11 +116,11 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             graph.makeEdgeChain( "a,h,i,j,k,g" );
             Node a = graph.getNode( "a" );
             Node g = graph.getNode( "g" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.forDirection( Direction.OUTGOING ), 3, Integer.MAX_VALUE, false ).findAllPaths( a, g ),
-                    "a,b,c,g" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.forDirection( Direction.OUTGOING ), 4, Integer.MAX_VALUE, false ).findAllPaths( a, g ),
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            assertPaths( new ExactDepthPathFinder( context, forDirection( Direction.OUTGOING ), 3, Integer.MAX_VALUE, false ).findAllPaths( a, g ), "a,b,c,g" );
+            assertPaths( new ExactDepthPathFinder( context, forDirection( Direction.OUTGOING ), 4, Integer.MAX_VALUE, false ).findAllPaths( a, g ),
                     "a,d,e,f,g" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.forDirection( Direction.OUTGOING ), 5, Integer.MAX_VALUE, false ).findAllPaths( a, g ),
+            assertPaths( new ExactDepthPathFinder( context, forDirection( Direction.OUTGOING ), 5, Integer.MAX_VALUE, false ).findAllPaths( a, g ),
                     "a,h,i,j,k,g" );
             transaction.commit();
         }
@@ -139,9 +141,10 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             graph.makeEdgeChain( "a,h,i,j,k,g" );
             Node a = graph.getNode( "a" );
             Node g = graph.getNode( "g" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 3, Integer.MAX_VALUE, false ).findAllPaths( a, g ), "a,b,c,g" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 4, Integer.MAX_VALUE, false ).findAllPaths( a, g ), "a,d,e,f,g" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 5, Integer.MAX_VALUE, false ).findAllPaths( a, g ), "a,h,i,j,k,g" );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 3, Integer.MAX_VALUE, false ).findAllPaths( a, g ), "a,b,c,g" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 4, Integer.MAX_VALUE, false ).findAllPaths( a, g ), "a,d,e,f,g" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 5, Integer.MAX_VALUE, false ).findAllPaths( a, g ), "a,h,i,j,k,g" );
             transaction.commit();
         }
     }
@@ -155,8 +158,9 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             graph.makeEdgeChain( "a,b,c" );
             Node a = graph.getNode( "a" );
             Node c = graph.getNode( "c" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 2, Integer.MAX_VALUE, false ).findAllPaths( a, c ), "a,b,c" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 2, Integer.MAX_VALUE, false ).findAllPaths( a, c ), "a,b,c" );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 2, Integer.MAX_VALUE, false ).findAllPaths( a, c ), "a,b,c" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 2, Integer.MAX_VALUE, false ).findAllPaths( a, c ), "a,b,c" );
             transaction.commit();
         }
     }
@@ -170,8 +174,9 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             graph.makeEdgeChain( "a,b,c,d" );
             Node a = graph.getNode( "a" );
             Node d = graph.getNode( "d" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 3, Integer.MAX_VALUE, false ).findAllPaths( a, d ), "a,b,c,d" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 3, Integer.MAX_VALUE, false ).findAllPaths( a, d ), "a,b,c,d" );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 3, Integer.MAX_VALUE, false ).findAllPaths( a, d ), "a,b,c,d" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 3, Integer.MAX_VALUE, false ).findAllPaths( a, d ), "a,b,c,d" );
             transaction.commit();
         }
     }
@@ -185,10 +190,11 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             graph.makeEdgeChain( "a,b" );
             Node a = graph.getNode( "a" );
             Node b = graph.getNode( "b" );
-            ExactDepthPathFinder pathFinder = new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 1, Integer.MAX_VALUE, false );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            ExactDepthPathFinder pathFinder = new ExactDepthPathFinder( context, allTypesAndDirections(), 1, Integer.MAX_VALUE, false );
             Iterable<Path> allPaths = pathFinder.findAllPaths( a, b );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b" );
             transaction.commit();
         }
     }
@@ -205,10 +211,11 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             graph.makeEdge( "a", "c" );
             Node a = graph.getNode( "a" );
             Node b = graph.getNode( "b" );
-            ExactDepthPathFinder pathFinder = new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 1, Integer.MAX_VALUE, false );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            ExactDepthPathFinder pathFinder = new ExactDepthPathFinder( context, allTypesAndDirections(), 1, Integer.MAX_VALUE, false );
             Iterable<Path> allPaths = pathFinder.findAllPaths( a, b );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b" );
             transaction.commit();
         }
     }
@@ -226,10 +233,11 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             graph.makeEdgeChain( "a,c" );
             Node a = graph.getNode( "a" );
             Node b = graph.getNode( "b" );
-            ExactDepthPathFinder pathFinder = new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 1, Integer.MAX_VALUE, false );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            ExactDepthPathFinder pathFinder = new ExactDepthPathFinder( context, allTypesAndDirections(), 1, Integer.MAX_VALUE, false );
             Iterable<Path> allPaths = pathFinder.findAllPaths( a, b );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b", "a,b" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b", "a,b" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b", "a,b" );
+            assertPaths( new ExactDepthPathFinder( context, allTypesAndDirections(), 1, Integer.MAX_VALUE, false ).findAllPaths( a, b ), "a,b", "a,b" );
             transaction.commit();
         }
     }
@@ -254,12 +262,13 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             PathExpander<Object> expander = PathExpanders.forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING );
             Node a = graph.getNode( "a" );
             Node k = graph.getNode( "k" );
-            assertPaths( GraphAlgoFactory.pathsWithLength( expander, 3 ).findAllPaths( a, k ), "a,c,g,k" );
-            assertPaths( GraphAlgoFactory.pathsWithLength( expander, 4 ).findAllPaths( a, k ), "a,b,d,j,k" );
-            assertPaths( GraphAlgoFactory.pathsWithLength( expander, 5 ).findAllPaths( a, k ) );
-            assertPaths( GraphAlgoFactory.pathsWithLength( expander, 6 ).findAllPaths( a, k ), "a,b,d,h,i,j,k" );
-            assertPaths( GraphAlgoFactory.pathsWithLength( expander, 7 ).findAllPaths( a, k ), "a,b,e,f,h,i,j,k" );
-            assertPaths( GraphAlgoFactory.pathsWithLength( expander, 8 ).findAllPaths( a, k ) );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            assertPaths( pathsWithLength( context, expander, 3 ).findAllPaths( a, k ), "a,c,g,k" );
+            assertPaths( pathsWithLength( context, expander, 4 ).findAllPaths( a, k ), "a,b,d,j,k" );
+            assertPaths( pathsWithLength( context, expander, 5 ).findAllPaths( a, k ) );
+            assertPaths( pathsWithLength( context, expander, 6 ).findAllPaths( a, k ), "a,b,d,h,i,j,k" );
+            assertPaths( pathsWithLength( context, expander, 7 ).findAllPaths( a, k ), "a,b,e,f,h,i,j,k" );
+            assertPaths( pathsWithLength( context, expander, 8 ).findAllPaths( a, k ) );
             transaction.commit();
         }
     }
@@ -279,9 +288,10 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             graph.makeEdgeChain( "a,b,c,d,b,c,e" );
             Node a = graph.getNode( "a" );
             Node e = graph.getNode( "e" );
-            assertPaths( GraphAlgoFactory.pathsWithLength( PathExpanders.forType( MyRelTypes.R1 ), 3 ).findAllPaths( a, e ), "a,b,c,e", "a,b,c,e" );
-            assertPaths( GraphAlgoFactory.pathsWithLength( PathExpanders.forType( MyRelTypes.R1 ), 4 ).findAllPaths( a, e ), "a,b,d,c,e" );
-            assertPaths( GraphAlgoFactory.pathsWithLength( PathExpanders.forType( MyRelTypes.R1 ), 6 ).findAllPaths( a, e ) );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            assertPaths( pathsWithLength( context, PathExpanders.forType( MyRelTypes.R1 ), 3 ).findAllPaths( a, e ), "a,b,c,e", "a,b,c,e" );
+            assertPaths( pathsWithLength( context, PathExpanders.forType( MyRelTypes.R1 ), 4 ).findAllPaths( a, e ), "a,b,d,c,e" );
+            assertPaths( pathsWithLength( context, PathExpanders.forType( MyRelTypes.R1 ), 6 ).findAllPaths( a, e ) );
             transaction.commit();
         }
     }
@@ -301,9 +311,15 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase
             graph.makeEdgeChain( "a,b,c,d,b,c,e" );
             Node a = graph.getNode( "a" );
             Node e = graph.getNode( "e" );
-            assertPaths( new ExactDepthPathFinder( PathExpanders.forDirection( Direction.OUTGOING ), 6, Integer.MAX_VALUE, true ).findAllPaths( a, e ),
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            assertPaths( new ExactDepthPathFinder( context, forDirection( Direction.OUTGOING ), 6, Integer.MAX_VALUE, true ).findAllPaths( a, e ),
                     "a,b,c,d,b,c,e" );
             transaction.commit();
         }
+    }
+
+    private static PathFinder<Path> newFinder( EvaluationContext context )
+    {
+        return new ExactDepthPathFinder( context, allTypesAndDirections(), 4, 4, true );
     }
 }

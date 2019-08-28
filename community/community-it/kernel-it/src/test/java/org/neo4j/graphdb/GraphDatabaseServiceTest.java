@@ -203,9 +203,9 @@ public class GraphDatabaseServiceTest
         GraphDatabaseService db = globalDb;
         Node n1 = createNode( db );
         Node n2 = createNode( db );
-        Relationship r3 = createRelationship( n1 );
-        Relationship r2 = createRelationship( n1 );
-        Relationship r1 = createRelationship( n1 );
+        Relationship r3 = createRelationship( db, n1 );
+        Relationship r2 = createRelationship( db, n1 );
+        Relationship r1 = createRelationship( db, n1 );
 
         // WHEN creating a deadlock scenario where the final deadlock would have happened due to locks
         //      acquired during linkage of relationship records
@@ -295,9 +295,9 @@ public class GraphDatabaseServiceTest
         };
     }
 
-    private Relationship createRelationship( Node node )
+    private Relationship createRelationship( GraphDatabaseService db, Node node )
     {
-        try ( Transaction tx = node.getGraphDatabase().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Relationship rel = node.createRelationshipTo( node, MyRelTypes.TEST );
             tx.commit();

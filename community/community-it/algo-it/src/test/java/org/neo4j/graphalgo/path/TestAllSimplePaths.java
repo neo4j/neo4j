@@ -22,6 +22,8 @@ package org.neo4j.graphalgo.path;
 import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.graphalgo.BasicEvaluationContext;
+import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Path;
@@ -30,9 +32,9 @@ import org.neo4j.graphdb.Transaction;
 
 class TestAllSimplePaths extends Neo4jAlgoTestCase
 {
-    private static PathFinder<Path> instantiatePathFinder( int maxDepth )
+    private static PathFinder<Path> instantiatePathFinder( EvaluationContext context, int maxDepth )
     {
-        return GraphAlgoFactory.allSimplePaths( PathExpanders.allTypesAndDirections(), maxDepth );
+        return GraphAlgoFactory.allSimplePaths( context, PathExpanders.allTypesAndDirections(), maxDepth );
     }
 
     @Test
@@ -53,7 +55,7 @@ class TestAllSimplePaths extends Neo4jAlgoTestCase
             graph.makeEdge( "c", "d" );
             graph.makeEdge( "c", "e" );
 
-            PathFinder<Path> finder = instantiatePathFinder( 10 );
+            PathFinder<Path> finder = instantiatePathFinder( new BasicEvaluationContext( transaction, graphDb ), 10 );
             Iterable<Path> paths = finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) );
             assertPaths( paths, "a,b,c,e", "a,b,c,e", "a,b,d,c,e" );
             transaction.commit();
@@ -75,7 +77,7 @@ class TestAllSimplePaths extends Neo4jAlgoTestCase
             graph.makeEdge( "b", "c" );
             graph.makeEdge( "c", "d" );
 
-            PathFinder<Path> finder = instantiatePathFinder( 10 );
+            PathFinder<Path> finder = instantiatePathFinder( new BasicEvaluationContext( transaction, graphDb ), 10 );
             Iterable<Path> paths = finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) );
             assertPaths( paths, "a,b,c,d", "a,b,c,d", "a,b,c,d" );
             transaction.commit();

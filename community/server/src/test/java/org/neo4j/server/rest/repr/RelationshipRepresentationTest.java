@@ -19,12 +19,15 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.neo4j.graphdb.GraphDatabaseService;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
@@ -33,46 +36,46 @@ import static org.neo4j.test.mockito.mock.GraphMock.node;
 import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 
-public class RelationshipRepresentationTest
+class RelationshipRepresentationTest
 {
     @Test
-    public void shouldHaveSelfLink()
+    void shouldHaveSelfLink()
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN, relrep( 1234 ).selfUri() );
     }
 
     @Test
-    public void shouldHaveType()
+    void shouldHaveType()
     {
         assertNotNull( relrep( 1234 ).getType() );
     }
 
     @Test
-    public void shouldHaveStartNodeLink()
+    void shouldHaveStartNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, relrep( 1234 ).startNodeUri() );
     }
 
     @Test
-    public void shouldHaveEndNodeLink()
+    void shouldHaveEndNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, relrep( 1234 ).endNodeUri() );
     }
 
     @Test
-    public void shouldHavePropertiesLink()
+    void shouldHavePropertiesLink()
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties", relrep( 1234 ).propertiesUri() );
     }
 
     @Test
-    public void shouldHavePropertyLinkTemplate()
+    void shouldHavePropertyLinkTemplate()
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", relrep( 1234 ).propertyUriTemplate() );
     }
 
     @Test
-    public void shouldSerialiseToMap()
+    void shouldSerialiseToMap()
     {
         Map<String, Object> repr = serialize( relrep( 1234 ) );
         assertNotNull( repr );
@@ -82,10 +85,10 @@ public class RelationshipRepresentationTest
     private RelationshipRepresentation relrep( long id )
     {
         return new RelationshipRepresentation(
-                relationship( id, node( 0, properties() ), "LOVES", node( 1, properties() ) ) );
+                relationship( id, node( 0, properties() ), "LOVES", node( 1, properties() ) ), mock( GraphDatabaseService.class ) );
     }
 
-    public static void verifySerialisation( Map<String, Object> relrep )
+    static void verifySerialisation( Map<String,Object> relrep )
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN, relrep.get( "self" )
                 .toString() );

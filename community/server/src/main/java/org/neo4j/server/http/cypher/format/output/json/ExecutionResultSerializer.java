@@ -38,6 +38,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
+import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.FailureEvent;
 import org.neo4j.server.http.cypher.format.api.OutputEvent;
@@ -48,7 +49,6 @@ import org.neo4j.server.http.cypher.format.api.StatementStartEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.server.http.cypher.format.input.json.InputStatement;
-import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
 
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.OPEN;
 import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
@@ -123,7 +123,7 @@ class ExecutionResultSerializer
 
             try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
             {
-                writer.write( out, recordEvent, txStateChecker );
+                writer.write( out, recordEvent, txStateChecker, container.getDb() );
             }
             finally
             {

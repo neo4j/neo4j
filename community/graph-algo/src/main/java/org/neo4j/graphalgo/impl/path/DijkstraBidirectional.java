@@ -22,6 +22,7 @@ package org.neo4j.graphalgo.impl.path;
 import org.apache.commons.lang3.mutable.MutableDouble;
 
 import org.neo4j.graphalgo.CostEvaluator;
+import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.DijkstraBranchCollisionDetector;
@@ -63,6 +64,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.firstOrNull;
  */
 public class DijkstraBidirectional implements PathFinder<WeightedPath>
 {
+    private final EvaluationContext context;
     private final PathExpander expander;
     private final InitialBranchState stateFactory;
     private final CostEvaluator<Double> costEvaluator;
@@ -70,12 +72,12 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     private Traverser lastTraverser;
 
     /**
-     * See {@link #DijkstraBidirectional(PathExpander, CostEvaluator, double)}
+     * See {@link #DijkstraBidirectional(EvaluationContext, PathExpander, CostEvaluator, double)}
      * Using {@link NoneStrictMath#EPSILON} as tolerance.
      */
-    public DijkstraBidirectional( PathExpander expander, CostEvaluator<Double> costEvaluator )
+    public DijkstraBidirectional( EvaluationContext context, PathExpander expander, CostEvaluator<Double> costEvaluator )
     {
-        this( expander, costEvaluator, NoneStrictMath.EPSILON );
+        this( context, expander, costEvaluator, NoneStrictMath.EPSILON );
     }
 
     /**
@@ -86,8 +88,9 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
      *                          relationship
      * @param epsilon           The tolerance level to be used when comparing floating point numbers.
      */
-    public DijkstraBidirectional( PathExpander expander, CostEvaluator<Double> costEvaluator, double epsilon )
+    public DijkstraBidirectional( EvaluationContext context, PathExpander expander, CostEvaluator<Double> costEvaluator, double epsilon )
     {
+        this.context = context;
         this.expander = expander;
         this.costEvaluator = costEvaluator;
         this.epsilon = epsilon;
@@ -109,7 +112,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         PathExpander dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
                 startSideShortest, endSideShortest, epsilon );
 
-        GraphDatabaseService db = start.getGraphDatabase();
+        GraphDatabaseService db = context.databaseService();
 
         TraversalDescription side = db.traversalDescription().expand( dijkstraExpander, stateFactory )
                 .order( new DijkstraSelectorFactory( interest, costEvaluator ) )

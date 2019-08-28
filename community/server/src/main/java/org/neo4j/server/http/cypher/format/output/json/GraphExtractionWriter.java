@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -38,7 +39,8 @@ import org.neo4j.server.http.cypher.format.api.RecordEvent;
 class GraphExtractionWriter implements ResultDataContentWriter
 {
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker ) throws IOException
+    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker, GraphDatabaseService databaseService )
+            throws IOException
     {
         Set<Node> nodes = new HashSet<>();
         Set<Relationship> relationships = new HashSet<>();

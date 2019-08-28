@@ -23,10 +23,11 @@ import org.codehaus.jackson.JsonGenerator;
 
 import java.io.IOException;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 
 public interface ResultDataContentWriter
 {
-    void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker ) throws IOException;
+    void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker, GraphDatabaseService databaseService ) throws IOException;
 }

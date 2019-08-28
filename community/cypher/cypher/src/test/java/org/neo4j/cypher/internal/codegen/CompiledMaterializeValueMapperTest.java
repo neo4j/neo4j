@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.codegen;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -154,12 +153,6 @@ class CompiledMaterializeValueMapperTest
 
         @Override
         public KernelTransaction kernelTransaction()
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public GraphDatabaseService getGraphDatabase()
         {
             throw new IllegalStateException( "Should not be used" );
         }

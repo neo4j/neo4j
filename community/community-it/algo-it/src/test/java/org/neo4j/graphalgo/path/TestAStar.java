@@ -27,9 +27,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.neo4j.graphalgo.BasicEvaluationContext;
 import org.neo4j.graphalgo.EstimateEvaluator;
+import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.path.TraversalAStar;
@@ -64,14 +67,16 @@ class TestAStar extends Neo4jAlgoTestCase
     private static Stream<Arguments> params()
     {
         return Stream.of(
-            arguments( aStar( allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR ) ),
-            arguments( new TraversalAStar( allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR ) )
+            arguments( (Function<EvaluationContext,PathFinder<WeightedPath>>) context ->
+                            aStar( context, allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR ) ),
+            arguments( (Function<EvaluationContext,PathFinder<WeightedPath>>) context ->
+                    new TraversalAStar( context, allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR ) )
         );
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void pathToSelfReturnsZero( PathFinder<WeightedPath> finder )
+    void pathToSelfReturnsZero( Function<EvaluationContext, PathFinder<WeightedPath>> finderFactory )
     {
 
         // GIVEN
@@ -80,7 +85,8 @@ class TestAStar extends Neo4jAlgoTestCase
             Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
 
             // WHEN
-            WeightedPath path = finder.findSinglePath( start, start );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            WeightedPath path = finderFactory.apply( context ).findSinglePath( start, start );
             // THEN
             assertNotNull( path );
             assertEquals( start, path.startNode() );
@@ -92,7 +98,7 @@ class TestAStar extends Neo4jAlgoTestCase
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void allPathsToSelfReturnsZero( PathFinder<WeightedPath> finder )
+    void allPathsToSelfReturnsZero( Function<EvaluationContext, PathFinder<WeightedPath>> finderFactory )
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
@@ -100,7 +106,8 @@ class TestAStar extends Neo4jAlgoTestCase
             Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
 
             // WHEN
-            ResourceIterable<WeightedPath> paths = Iterables.asResourceIterable( finder.findAllPaths( start, start ) );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            ResourceIterable<WeightedPath> paths = Iterables.asResourceIterable( finderFactory.apply( context ).findAllPaths( start, start ) );
 
             // THEN
             for ( WeightedPath path : paths )
@@ -116,7 +123,7 @@ class TestAStar extends Neo4jAlgoTestCase
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void wikipediaExample( PathFinder<WeightedPath> finder )
+    void wikipediaExample( Function<EvaluationContext, PathFinder<WeightedPath>> finderFactory )
     {
         /* GIVEN
          *
@@ -151,7 +158,8 @@ class TestAStar extends Neo4jAlgoTestCase
             graph.makeEdge( "e", "end", "length", 2 );
 
             // WHEN
-            WeightedPath path = finder.findSinglePath( start, end );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            WeightedPath path = finderFactory.apply( context ).findSinglePath( start, end );
             // THEN
             assertPathDef( path, "start", "d", "e", "end" );
             transaction.commit();
@@ -170,7 +178,7 @@ class TestAStar extends Neo4jAlgoTestCase
      */
     @ParameterizedTest
     @MethodSource( "params" )
-    void testSimplest( PathFinder<WeightedPath> finder )
+    void testSimplest( Function<EvaluationContext, PathFinder<WeightedPath>> finderFactory )
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
@@ -183,7 +191,8 @@ class TestAStar extends Neo4jAlgoTestCase
             Relationship relAC = graph.makeEdge( "A", "C", "length", (short) 10 );
 
             int counter = 0;
-            Iterable<WeightedPath> allPaths = finder.findAllPaths( nodeA, nodeC );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            Iterable<WeightedPath> allPaths = finderFactory.apply( context ).findAllPaths( nodeA, nodeC );
             for ( WeightedPath path : allPaths )
             {
                 assertEquals( (Double) 5d, (Double) path.weight() );
@@ -198,7 +207,7 @@ class TestAStar extends Neo4jAlgoTestCase
     @SuppressWarnings( {"rawtypes", "unchecked"} )
     @ParameterizedTest
     @MethodSource( "params" )
-    void canUseBranchState( PathFinder<WeightedPath> finder )
+    void canUseBranchState( Function<EvaluationContext, PathFinder<WeightedPath>> finderFactory )
     {
         // This test doesn't use the predefined finder, which only means an unnecessary instantiation
         // if such an object. And this test will be run twice (once for each finder type in data()).
@@ -254,8 +263,10 @@ class TestAStar extends Neo4jAlgoTestCase
             };
 
             double initialStateValue = 0D;
+            var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder<WeightedPath> traversalFinder =
-                    new TraversalAStar( expander, new InitialBranchState.State( initialStateValue, initialStateValue ), doubleCostEvaluator( "length" ),
+                    new TraversalAStar( context, expander,
+                            new InitialBranchState.State( initialStateValue, initialStateValue ), doubleCostEvaluator( "length" ),
                             ESTIMATE_EVALUATOR );
             WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC );
             assertEquals( (Double) 5.0D, (Double) path.weight() );
@@ -272,7 +283,8 @@ class TestAStar extends Neo4jAlgoTestCase
         try ( Transaction transaction = graphDb.beginTx() )
         {
             EstimateEvaluator<Double> estimator = ( node, goal ) -> (Double) node.getProperty( "estimate" );
-            PathFinder<WeightedPath> finder = aStar( allTypesAndDirections(), doubleCostEvaluator( "weight", 0d ), estimator );
+            var context = new BasicEvaluationContext( transaction, graphDb );
+            PathFinder<WeightedPath> finder = aStar( context, allTypesAndDirections(), doubleCostEvaluator( "weight", 0d ), estimator );
 
             final Node node1 = graph.makeNode( "1", "estimate", 0.003d );
             final Node node2 = graph.makeNode( "2", "estimate", 0.002d );

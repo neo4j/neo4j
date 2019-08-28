@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
@@ -41,31 +41,31 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class StreamingJsonFormatTest
+class StreamingJsonFormatTest
 {
     private OutputFormat json;
     private ByteArrayOutputStream stream;
 
-    @Before
-    public void createOutputFormat() throws Exception
+    @BeforeEach
+    void createOutputFormat() throws Exception
     {
         stream = new ByteArrayOutputStream();
         json = new OutputFormat( new StreamingJsonFormat().writeTo(stream).usePrettyPrinter(), new URI( "http://localhost/" ) );
     }
 
     @Test
-    public void canFormatNode()
+    void canFormatNode()
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction transaction = db.beginTx() )
         {
             final Node n = db.createNode();
-            json.assemble( new NodeRepresentation( n ) );
+            json.assemble( new NodeRepresentation( n, db ) );
         }
         finally
         {
@@ -74,14 +74,14 @@ public class StreamingJsonFormatTest
         assertTrue( stream.toString().contains( "\"self\" : \"http://localhost/node/0\"," ) );
     }
     @Test
-    public void canFormatString()
+    void canFormatString()
     {
         json.assemble( ValueRepresentation.string( "expected value" ) );
         assertEquals( stream.toString(), "\"expected value\"" );
     }
 
     @Test
-    public void canFormatListOfStrings()
+    void canFormatListOfStrings()
     {
         json.assemble( ListRepresentation.strings( "hello", "world" ) );
         String expectedString = JsonHelper.createJsonFrom( Arrays.asList( "hello", "world" ) );
@@ -89,14 +89,14 @@ public class StreamingJsonFormatTest
     }
 
     @Test
-    public void canFormatInteger()
+    void canFormatInteger()
     {
         json.assemble( ValueRepresentation.number( 10 ) );
         assertEquals( "10", stream.toString() );
     }
 
     @Test
-    public void canFormatEmptyObject()
+    void canFormatEmptyObject()
     {
         json.assemble( new MappingRepresentation( "empty" )
         {
@@ -109,7 +109,7 @@ public class StreamingJsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithStringField()
+    void canFormatObjectWithStringField()
     {
         json.assemble( new MappingRepresentation( "string" )
         {
@@ -123,7 +123,7 @@ public class StreamingJsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithUriField()
+    void canFormatObjectWithUriField()
     {
         json.assemble( new MappingRepresentation( "uri" )
         {
@@ -139,7 +139,7 @@ public class StreamingJsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithNestedObject()
+    void canFormatObjectWithNestedObject()
     {
         json.assemble( new MappingRepresentation( "nesting" )
         {

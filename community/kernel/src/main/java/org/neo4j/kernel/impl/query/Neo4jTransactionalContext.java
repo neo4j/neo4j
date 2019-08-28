@@ -101,6 +101,12 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
+    public InternalTransaction transaction()
+    {
+        return transaction;
+    }
+
+    @Override
     public boolean isTopLevelTx()
     {
         return transaction.transactionType() == KernelTransaction.Type.implicit;

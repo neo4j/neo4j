@@ -30,7 +30,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -141,12 +140,6 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     {
         initializeData();
         return endNode;
-    }
-
-    @Override
-    public GraphDatabaseService getGraphDatabase()
-    {
-        return spi.getGraphDatabase();
     }
 
     @Override

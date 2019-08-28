@@ -23,6 +23,7 @@ import org.codehaus.jackson.JsonGenerator;
 
 import java.io.IOException;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
@@ -30,7 +31,8 @@ import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 class RowWriter implements ResultDataContentWriter
 {
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker ) throws IOException
+    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker, GraphDatabaseService databaseService )
+            throws IOException
     {
         out.writeArrayFieldStart( "row" );
         try

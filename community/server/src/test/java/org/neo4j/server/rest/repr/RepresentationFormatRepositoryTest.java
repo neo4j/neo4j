@@ -31,6 +31,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -99,7 +101,7 @@ public class RepresentationFormatRepositoryTest
         OutputFormat format = repository.outputFormat( asList( MediaType.APPLICATION_JSON_TYPE ), null,
                 streamingHeader() );
         assertNotNull( format );
-        Response returnedResponse = format.response( responseBuilder, new MapRepresentation( map( "a", "test" ) ) );
+        Response returnedResponse = format.response( responseBuilder, new MapRepresentation( map( "a", "test" ), mock( GraphDatabaseService.class ) ) );
         assertSame( response, returnedResponse );
         StreamingOutput streamingOutput = ref.get();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

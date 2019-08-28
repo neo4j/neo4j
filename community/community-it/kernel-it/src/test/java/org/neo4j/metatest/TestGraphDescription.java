@@ -55,7 +55,7 @@ public class TestGraphDescription implements GraphHolder
 {
     private static GraphDatabaseService graphdb;
     @Rule
-    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this ) );
     private static DatabaseManagementService managementService;
 
     @Test

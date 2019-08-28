@@ -22,8 +22,7 @@ package org.neo4j.server.http.cypher.format.output.json;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,24 +36,25 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 
-public class RowWriterTest
+class RowWriterTest
 {
     @Test
-    public void shouldWriteNestedMaps() throws Exception
+    void shouldWriteNestedMaps() throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         JsonGenerator json = new JsonFactory( new Neo4jJsonCodec() ).createJsonGenerator( out );
 
         JsonNode row = serialize( out, json, new RowWriter() );
 
-        MatcherAssert.assertThat( row.size(), equalTo( 1 ) );
+        assertThat( row.size(), equalTo( 1 ) );
         JsonNode firstCell = row.get( 0 );
-        MatcherAssert.assertThat( firstCell.get( "one" ).get( "two" ).size(), is( 2 ) );
-        MatcherAssert.assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
-        MatcherAssert.assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ) );
+        assertThat( firstCell.get( "one" ).get( "two" ).size(), is( 2 ) );
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
+        assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ) );
     }
 
     private JsonNode serialize( ByteArrayOutputStream out, JsonGenerator json, ResultDataContentWriter
@@ -65,7 +65,7 @@ public class RowWriterTest
 
         json.writeStartObject();
         // RETURN {one:{two:[true, {three: 42}]}}
-        resultDataContentWriter.write( json, recordEvent, null );
+        resultDataContentWriter.write( json, recordEvent, null, null );
         json.writeEndObject();
         json.flush();
         json.close();

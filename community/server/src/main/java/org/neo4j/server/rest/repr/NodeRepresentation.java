@@ -21,6 +21,7 @@ package org.neo4j.server.rest.repr;
 
 import java.util.Collection;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
@@ -29,16 +30,17 @@ import org.neo4j.server.http.cypher.TransactionStateChecker;
 
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
-public final class NodeRepresentation extends ObjectRepresentation implements ExtensibleRepresentation,
-        EntityRepresentation
+public final class NodeRepresentation extends ObjectRepresentation implements ExtensibleRepresentation, EntityRepresentation
 {
     private final Node node;
+    private final GraphDatabaseService databaseService;
     private TransactionStateChecker checker;
 
-    public NodeRepresentation( Node node )
+    public NodeRepresentation( Node node, GraphDatabaseService databaseService )
     {
         super( RepresentationType.NODE );
         this.node = node;
+        this.databaseService = databaseService;
     }
 
     public void setTransactionStateChecker( TransactionStateChecker checker )
@@ -151,11 +153,11 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
     {
         if ( isDeleted() )
         {
-            return new MapRepresentation( map( "id", node.getId(), "deleted", Boolean.TRUE ) );
+            return new MapRepresentation( map( "id", node.getId(), "deleted", Boolean.TRUE ), databaseService );
         }
         else
         {
-            Collection<String> labels = Iterables.asCollection( new IterableWrapper<String,Label>( node.getLabels() )
+            Collection<String> labels = Iterables.asCollection( new IterableWrapper<>( node.getLabels() )
             {
                 @Override
                 protected String underlyingObjectToObject( Label label )
@@ -163,7 +165,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
                     return label.name();
                 }
             } );
-            return new MapRepresentation( map( "id", node.getId(), "labels", labels ) );
+            return new MapRepresentation( map( "id", node.getId(), "labels", labels ), databaseService );
         }
     }
 
@@ -183,21 +185,9 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
             if ( writer.isInteractive() )
             {
                 serializer.putList( "relationship_types", ListRepresentation.relationshipTypes(
-                        node.getGraphDatabase().getAllRelationshipTypes() ) );
+                        databaseService.getAllRelationshipTypes() ) );
             }
             properties.done();
         }
-    }
-
-    public static ListRepresentation list( Iterable<Node> nodes )
-    {
-        return new ListRepresentation( RepresentationType.NODE, new IterableWrapper<Representation, Node>( nodes )
-        {
-            @Override
-            protected Representation underlyingObjectToObject( Node node )
-            {
-                return new NodeRepresentation( node );
-            }
-        } );
     }
 }

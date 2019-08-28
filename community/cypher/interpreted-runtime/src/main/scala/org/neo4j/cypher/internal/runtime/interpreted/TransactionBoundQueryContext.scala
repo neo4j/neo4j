@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyD
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.exceptions.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.graphalgo.BasicEvaluationContext
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb._
@@ -46,7 +47,6 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, 
 import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
-import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -818,9 +818,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     // The RULE compiler makes use of older kernel API capabilities for variable length expanding
     // TODO: Consider re-writing this using similar code to the COST var-length expand
-    val baseTraversalDescription: TraversalDescription = transactionalContext.graph
-      .asInstanceOf[GraphDatabaseCypherService]
-      .getGraphDatabaseService
+    val baseTraversalDescription: TraversalDescription = getDatabaseService
       .traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
@@ -835,6 +833,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       baseTraversalDescription.expand(expander.build())
     }
     traversalDescription.traverse(entityAccessor.newNodeProxy(realNode)).iterator().asScala
+  }
+
+  private def getDatabaseService = {
+    transactionalContext.graph
+      .asInstanceOf[GraphDatabaseCypherService]
+      .getGraphDatabaseService
   }
 
   override def nodeCountByCountStore(labelId: Int): Long = {
@@ -909,7 +913,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       override def test(path: Path): Boolean = pathPredicate.test(path)
     }
 
-    new ShortestPath(depth, expanderWithAllPredicates.build(), shortestPathPredicate) {
+    new ShortestPath(new BasicEvaluationContext(transactionalContext.tc.transaction(), getDatabaseService), depth, expanderWithAllPredicates.build(), shortestPathPredicate) {
       override protected def filterNextLevelNodes(nextNode: Node): Node =
         if (filters.isEmpty) nextNode
         else if (filters.forall(filter => filter test nextNode)) nextNode

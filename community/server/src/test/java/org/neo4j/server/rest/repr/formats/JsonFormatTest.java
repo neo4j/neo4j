@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
@@ -40,6 +41,7 @@ import org.neo4j.server.rest.repr.ServerListRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class JsonFormatTest
 {
@@ -158,7 +160,7 @@ public class JsonFormatTest
 
                     }
                 } );
-                serializer.putList( "foo", new ServerListRepresentation( RepresentationType.MAP, maps ) );
+                serializer.putList( "foo", new ServerListRepresentation( RepresentationType.MAP, maps, mock( GraphDatabaseService.class ) ) );
             }
         } );
 

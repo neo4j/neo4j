@@ -22,6 +22,8 @@ package org.neo4j.graphalgo.path;
 import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.graphalgo.BasicEvaluationContext;
+import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpanders;
@@ -31,11 +33,6 @@ import static org.neo4j.graphalgo.GraphAlgoFactory.allPaths;
 
 class TestAllPaths extends Neo4jAlgoTestCase
 {
-    private static PathFinder<Path> instantiatePathFinder( int maxDepth )
-    {
-        return allPaths( PathExpanders.allTypesAndDirections(), maxDepth );
-    }
-
     @Test
     void testCircularGraph()
     {
@@ -53,8 +50,9 @@ class TestAllPaths extends Neo4jAlgoTestCase
             graph.makeEdge( "b", "d" );
             graph.makeEdge( "c", "d" );
             graph.makeEdge( "c", "e" );
+            var context = new BasicEvaluationContext( transaction, graphDb );
 
-            PathFinder<Path> finder = instantiatePathFinder( 10 );
+            PathFinder<Path> finder = instantiatePathFinder( context, 10 );
             Iterable<Path> paths = finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) );
             assertPaths( paths, "a,b,c,e", "a,b,c,e", "a,b,d,c,e", "a,b,c,d,b,c,e", "a,b,c,d,b,c,e", "a,b,c,b,d,c,e", "a,b,c,b,d,c,e", "a,b,d,c,b,c,e",
                     "a,b,d,c,b,c,e" );
@@ -76,11 +74,17 @@ class TestAllPaths extends Neo4jAlgoTestCase
             graph.makeEdge( "b", "c" );
             graph.makeEdge( "b", "c" );
             graph.makeEdge( "c", "d" );
+            var context = new BasicEvaluationContext( transaction, graphDb );
 
-            PathFinder<Path> finder = instantiatePathFinder( 10 );
+            PathFinder<Path> finder = instantiatePathFinder( context, 10 );
             Iterable<Path> paths = finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) );
             assertPaths( paths, "a,b,c,d", "a,b,c,d", "a,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d" );
             transaction.commit();
         }
+    }
+
+    private static PathFinder<Path> instantiatePathFinder( EvaluationContext context, int maxDepth )
+    {
+        return allPaths( context, PathExpanders.allTypesAndDirections(), maxDepth );
     }
 }

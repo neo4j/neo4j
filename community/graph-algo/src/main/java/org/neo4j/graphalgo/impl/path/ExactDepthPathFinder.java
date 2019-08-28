@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.impl.util.LiteDepthFirstSelector;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -44,13 +45,15 @@ import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
  */
 public class ExactDepthPathFinder extends TraversalPathFinder
 {
+    private final EvaluationContext context;
     private final PathExpander expander;
     private final int onDepth;
     private final int startThreshold;
     private final Uniqueness uniqueness;
 
-    public ExactDepthPathFinder( PathExpander expander, int onDepth, int startThreshold, boolean allowLoops )
+    public ExactDepthPathFinder( EvaluationContext context, PathExpander expander, int onDepth, int startThreshold, boolean allowLoops )
     {
+        this.context = context;
         this.expander = expander;
         this.onDepth = onDepth;
         this.startThreshold = startThreshold;
@@ -60,7 +63,7 @@ public class ExactDepthPathFinder extends TraversalPathFinder
     @Override
     protected Traverser instantiateTraverser( Node start, Node end )
     {
-        GraphDatabaseService db = start.getGraphDatabase();
+        GraphDatabaseService db = context.databaseService();
         TraversalDescription side =
                 db.traversalDescription().breadthFirst().uniqueness( uniqueness ).order(
                         ( startSource, expander ) -> new LiteDepthFirstSelector( startSource, startThreshold, expander ) );

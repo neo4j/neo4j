@@ -21,6 +21,7 @@ package org.neo4j.graphalgo.impl.path;
 
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
+import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory;
@@ -50,6 +51,7 @@ import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
  */
 public class TraversalAStar implements PathFinder<WeightedPath>
 {
+    private final EvaluationContext context;
     private final CostEvaluator<Double> costEvaluator;
     private final PathExpander expander;
     private final InitialBranchState initialState;
@@ -59,30 +61,31 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     private boolean stopAfterLowestWeight;
 
     @SuppressWarnings( "unchecked" )
-    public <T> TraversalAStar( PathExpander<T> expander,
+    public <T> TraversalAStar( EvaluationContext context, PathExpander<T> expander,
             CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator )
     {
-        this( expander, NO_STATE, costEvaluator, estimateEvaluator, true );
+        this( context, expander, NO_STATE, costEvaluator, estimateEvaluator, true );
     }
 
-    public <T> TraversalAStar( PathExpander<T> expander, InitialBranchState<T> initialState,
+    public <T> TraversalAStar( EvaluationContext context, PathExpander<T> expander, InitialBranchState<T> initialState,
             CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator )
     {
-        this( expander, initialState, costEvaluator, estimateEvaluator, true );
+        this( context, expander, initialState, costEvaluator, estimateEvaluator, true );
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> TraversalAStar( PathExpander<T> expander,
+    public <T> TraversalAStar( EvaluationContext context, PathExpander<T> expander,
             CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator,
             boolean stopAfterLowestWeight )
     {
-        this( expander, NO_STATE, costEvaluator, estimateEvaluator, stopAfterLowestWeight );
+        this( context, expander, NO_STATE, costEvaluator, estimateEvaluator, stopAfterLowestWeight );
     }
 
-    public <T> TraversalAStar( PathExpander<T> expander, InitialBranchState<T> initialState,
+    public <T> TraversalAStar( EvaluationContext context, PathExpander<T> expander, InitialBranchState<T> initialState,
             CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator,
             boolean stopAfterLowestWeight )
     {
+        this.context = context;
         this.costEvaluator = costEvaluator;
         this.estimateEvaluator = estimateEvaluator;
         this.stopAfterLowestWeight = stopAfterLowestWeight;
@@ -114,7 +117,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
             interest = PathInterestFactory.single();
         }
 
-        GraphDatabaseService db = start.getGraphDatabase();
+        GraphDatabaseService db = context.databaseService();
         TraversalDescription traversalDescription = db.traversalDescription().uniqueness( Uniqueness.NONE )
                 .expand( expander, initialState );
 

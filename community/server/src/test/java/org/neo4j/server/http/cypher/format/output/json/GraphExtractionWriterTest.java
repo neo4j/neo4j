@@ -22,7 +22,8 @@ package org.neo4j.server.http.cypher.format.output.json;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.Statement;
@@ -43,9 +45,7 @@ import org.neo4j.test.Property;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mockito.mock.GraphMock.node;
@@ -54,7 +54,7 @@ import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Link.link;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 
-public class GraphExtractionWriterTest
+class GraphExtractionWriterTest
 {
     private final Node n1 = node( 17, properties( property( "name", "n1" ) ), "Foo" );
     private final Node n2 = node( 666, properties( property( "name", "n2" ) ) );
@@ -64,7 +64,7 @@ public class GraphExtractionWriterTest
     private final TransactionStateChecker checker = new TransactionStateChecker( mock( Statement.class ), id -> false, id -> false );
 
     @Test
-    public void shouldExtractNodesFromRow() throws Exception
+    void shouldExtractNodesFromRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -79,11 +79,11 @@ public class GraphExtractionWriterTest
 
         // then
         assertNodes( result );
-        assertEquals( "there should be no relationships", 0, result.get( "graph" ).get( "relationships" ).size() );
+        assertEquals( 0, result.get( "graph" ).get( "relationships" ).size(), "there should be no relationships" );
     }
 
     @Test
-    public void shouldExtractRelationshipsFromRowAndNodesFromRelationships() throws Exception
+    void shouldExtractRelationshipsFromRowAndNodesFromRelationships() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -99,7 +99,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractPathFromRowAndExtractNodesAndRelationshipsFromPath() throws Exception
+    void shouldExtractPathFromRowAndExtractNodesAndRelationshipsFromPath() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -114,7 +114,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractGraphFromMapInTheRow() throws Exception
+    void shouldExtractGraphFromMapInTheRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -132,7 +132,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractGraphFromListInTheRow() throws Exception
+    void shouldExtractGraphFromListInTheRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -150,7 +150,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractGraphFromListInMapInTheRow() throws Exception
+    void shouldExtractGraphFromListInMapInTheRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -170,7 +170,7 @@ public class GraphExtractionWriterTest
     }
 
     @Test
-    public void shouldExtractGraphFromMapInListInTheRow() throws Exception
+    void shouldExtractGraphFromMapInListInTheRow() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -201,7 +201,7 @@ public class GraphExtractionWriterTest
         try
         {
             RecordEvent recordEvent = new RecordEvent( new ArrayList<>( row.keySet() ), row::get );
-            new GraphExtractionWriter().write( json, recordEvent , checker );
+            new GraphExtractionWriter().write( json, recordEvent , checker, mock( GraphDatabaseService.class ) );
         }
         finally
         {
@@ -216,7 +216,7 @@ public class GraphExtractionWriterTest
     private void assertNodes( JsonNode result )
     {
         JsonNode nodes = result.get( "graph" ).get( "nodes" );
-        assertEquals( "there should be 3 nodes", 3, nodes.size() );
+        assertEquals( 3, nodes.size(), "there should be 3 nodes" );
         assertNode( "17", nodes, asList( "Foo" ), property( "name", "n1" ) );
         assertNode( "666", nodes, Arrays.asList(), property( "name", "n2" ) );
         assertNode( "42", nodes, asList( "Foo", "Bar" ), property( "name", "n3" ) );
@@ -225,7 +225,7 @@ public class GraphExtractionWriterTest
     private void assertRelationships( JsonNode result )
     {
         JsonNode relationships = result.get( "graph" ).get( "relationships" );
-        assertEquals( "there should be 2 relationships", 2, relationships.size() );
+        assertEquals( 2, relationships.size(), "there should be 2 relationships" );
         assertRelationship( "7", relationships, "17", "ONE", "666", property( "name", "r1" ) );
         assertRelationship( "8", relationships, "17", "TWO", "42", property( "name", "r2" ) );
     }
@@ -237,7 +237,7 @@ public class GraphExtractionWriterTest
         JsonNode node = get( nodes, id );
         assertListEquals( "Node[" + id + "].labels", labels, node.get( "labels" ) );
         JsonNode props = node.get( "properties" );
-        assertEquals( "length( Node[" + id + "].properties )", properties.length, props.size() );
+        assertEquals( properties.length, props.size(), "length( Node[" + id + "].properties )" );
         for ( Property property : properties )
         {
             assertJsonEquals( "Node[" + id + "].properties[" + property.key() + "]",
@@ -249,12 +249,12 @@ public class GraphExtractionWriterTest
                                             String endNodeId, Property... properties )
     {
         JsonNode relationship = get( relationships, id );
-        assertEquals( "Relationship[" + id + "].labels", type, relationship.get( "type" ).getTextValue() );
-        assertEquals( "Relationship[" + id + "].startNode", startNodeId,
-                      relationship.get( "startNode" ).getTextValue() );
-        assertEquals( "Relationship[" + id + "].endNode", endNodeId, relationship.get( "endNode" ).getTextValue() );
+        assertEquals( type, relationship.get( "type" ).getTextValue(), "Relationship[" + id + "].labels" );
+        assertEquals( startNodeId,
+                      relationship.get( "startNode" ).getTextValue(), "Relationship[" + id + "].startNode" );
+        assertEquals( endNodeId, relationship.get( "endNode" ).getTextValue(), "Relationship[" + id + "].endNode" );
         JsonNode props = relationship.get( "properties" );
-        assertEquals( "length( Relationship[" + id + "].properties )", properties.length, props.size() );
+        assertEquals( properties.length, props.size(), "length( Relationship[" + id + "].properties )" );
         for ( Property property : properties )
         {
             assertJsonEquals( "Relationship[" + id + "].properties[" + property.key() + "]",
@@ -266,31 +266,31 @@ public class GraphExtractionWriterTest
     {
         if ( expected == null )
         {
-            assertTrue( message, actual == null || actual.isNull() );
+            Assertions.assertTrue( actual == null || actual.isNull(), message );
         }
         else if ( expected instanceof String )
         {
-            assertEquals( message, expected, actual.getTextValue() );
+            assertEquals( expected, actual.getTextValue(), message );
         }
         else if ( expected instanceof Number )
         {
-            assertEquals( message, expected, actual.getNumberValue() );
+            assertEquals( expected, actual.getNumberValue(), message );
         }
         else
         {
-            fail( message + " - unexpected type - " + expected );
+            Assertions.fail( message + " - unexpected type - " + expected );
         }
     }
 
     private static void assertListEquals( String what, List<String> expected, JsonNode jsonNode )
     {
-        assertTrue( what + " - should be a list", jsonNode.isArray() );
+        Assertions.assertTrue( jsonNode.isArray(), what + " - should be a list" );
         List<String> actual = new ArrayList<>( jsonNode.size() );
         for ( JsonNode node : jsonNode )
         {
             actual.add( node.getTextValue() );
         }
-        assertEquals( what, expected, actual );
+        assertEquals( expected, actual, what );
     }
 
     private static JsonNode get( Iterable<JsonNode> jsonNodes, String id )
