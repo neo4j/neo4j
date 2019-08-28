@@ -407,7 +407,7 @@ public class AllStoreHolder extends Read
      * @param index committed, transaction-added or even null.
      * @return The validated index descriptor, which is not necessarily the same as the one given as an argument.
      */
-    private IndexDescriptor lockedIndex( IndexDescriptor index )
+    private IndexDescriptor lockIndex( IndexDescriptor index )
     {
         if ( index == null )
         {
@@ -425,9 +425,9 @@ public class AllStoreHolder extends Read
     }
 
     /**
-     * Maps all index descriptors according to {@link #lockedIndex(IndexDescriptor)}.
+     * Maps all index descriptors according to {@link #lockIndex(IndexDescriptor)}.
      */
-    private Iterator<IndexDescriptor> lockedIndexes( Iterator<IndexDescriptor> indexes )
+    private Iterator<IndexDescriptor> lockIndexes( Iterator<IndexDescriptor> indexes )
     {
         // Since the schema cache gives us snapshots views of the schema cache,
         // the indexes could be dropped in-between us getting the snapshot, and
@@ -438,7 +438,7 @@ public class AllStoreHolder extends Read
         Iterator<IndexDescriptor> itr = coll.iterator();
         while ( itr.hasNext() )
         {
-            IndexDescriptor index = lockedIndex( itr.next() );
+            IndexDescriptor index = lockIndex( itr.next() );
             if ( checkTxState && ktx.txState().indexChanges().isAdded( index ) )
             {
                 continue;
@@ -491,7 +491,7 @@ public class AllStoreHolder extends Read
     public IndexDescriptor index( SchemaDescriptor schema )
     {
         ktx.assertOpen();
-        return lockedIndex( indexGetForSchema( storageReader, schema ) );
+        return lockIndex( indexGetForSchema( storageReader, schema ) );
     }
 
     IndexDescriptor indexGetForSchema( StorageSchemaReader reader, SchemaDescriptor schema )
@@ -526,7 +526,7 @@ public class AllStoreHolder extends Read
     {
         acquireSharedLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
-        return lockedIndexes( indexesGetForLabel( storageReader, labelId ) );
+        return lockIndexes( indexesGetForLabel( storageReader, labelId ) );
     }
 
     Iterator<IndexDescriptor> indexesGetForLabel( StorageSchemaReader reader, int labelId )
@@ -553,7 +553,7 @@ public class AllStoreHolder extends Read
     {
         acquireSharedLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
         ktx.assertOpen();
-        return lockedIndexes( indexesGetForRelationshipType( storageReader, relationshipType ) );
+        return lockIndexes( indexesGetForRelationshipType( storageReader, relationshipType ) );
     }
 
     Iterator<IndexDescriptor> indexesGetForRelationshipType( StorageSchemaReader reader, int relationshipType )
@@ -578,7 +578,7 @@ public class AllStoreHolder extends Read
             Iterator<IndexDescriptor> indexes = ktx.txState().indexChanges().filterAdded( namePredicate ).apply( Iterators.iterator( index ) );
             index = singleOrNull( indexes );
         }
-        return lockedIndex( index );
+        return lockIndex( index );
     }
 
     @Override
@@ -606,7 +606,7 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
         Iterator<IndexDescriptor> iterator = indexesGetAll( storageReader );
-        return lockedIndexes( iterator );
+        return lockIndexes( iterator );
     }
 
     Iterator<IndexDescriptor> indexesGetAll( StorageSchemaReader reader )
