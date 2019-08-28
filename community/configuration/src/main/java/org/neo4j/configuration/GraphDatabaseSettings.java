@@ -766,7 +766,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Internal
     @Description( "Page cache warmup can be configured to prefetch files, preferably when cache size is bigger than store size. " +
-            "Files to be prefetched can be filtered by 'unsupported.dbms.memory.pagecache.warmup.preload.whitelist'." )
+            "Files to be prefetched can be filtered by 'unsupported.dbms.memory.pagecache.warmup.preload.whitelist'. " +
+            "Enabling this disables page cache warmup profiling " )
     public static final Setting<Boolean> pagecache_warmup_prefetch =
             newBuilder( "unsupported.dbms.memory.pagecache.warmup.preload", BOOL, false ).build();
 
