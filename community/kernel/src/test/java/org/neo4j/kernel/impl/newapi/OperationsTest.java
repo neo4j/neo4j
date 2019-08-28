@@ -541,6 +541,8 @@ class OperationsTest
         RelExistenceConstraintDescriptor existenceConstraint = existsForRelType( relTypeId, 3, 4, 5 );
         when( storageReader.constraintsGetAll() )
                 .thenReturn( Iterators.iterator( uniquenessConstraint, existenceConstraint ) );
+        when( storageReader.constraintExists( uniquenessConstraint ) ).thenReturn( true );
+        when( storageReader.constraintExists( existenceConstraint ) ).thenReturn( true );
 
         // when
         Iterator<ConstraintDescriptor> result = allStoreHolder.constraintsGetAll( );
