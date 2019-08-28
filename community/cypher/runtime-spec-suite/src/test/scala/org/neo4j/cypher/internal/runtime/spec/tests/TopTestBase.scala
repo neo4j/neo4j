@@ -23,13 +23,11 @@ import org.neo4j.cypher.internal.logical.plans.{Ascending, Descending}
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
-abstract class SortTestBase[CONTEXT <: RuntimeContext](
+abstract class TopTestBase[CONTEXT <: RuntimeContext](
                                                         edition: Edition[CONTEXT],
                                                         runtime: CypherRuntime[CONTEXT],
                                                         sizeHint: Int
                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
-
-  // TODO more tests
 
   test("empty input gives empty output") {
     // when
@@ -37,7 +35,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .sort(Seq(Ascending("x"), Ascending("y")))
+      .top(Seq(Ascending("x"), Ascending("y")), 10)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -51,46 +49,49 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // when
     val nodes = select(nodeGraph(sizeHint), nullProbability = 0.52)
     val input = inputValues(nodes.map(n => Array[Any](n)): _*)
+    val limit = nodes.size - 1;
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending("x")))
+      .top(Seq(Ascending("x")), limit)
       .input(nodes = Seq("x"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = nodes.sortBy(n => if (n == null) Long.MaxValue else n.getId)
+    val expected = nodes.sortBy(n => if (n == null) Long.MaxValue else n.getId).take(limit)
     runtimeResult should beColumns("x").withRows(inOrder(expected.map(x => Array[Any](x))))
   }
 
-  test("should sort many columns") {
+  test("should top many columns") {
     val input = inputValues((0 until sizeHint).map(i => Array[Any](i % 2, i % 4, i)): _*)
+    val limit = sizeHint - 10;
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
-      .sort(Seq(Descending("a"), Ascending("b"), Descending("c")))
+      .top(Seq(Descending("a"), Ascending("b"), Descending("c")), limit)
       .input(variables = Seq("a", "b", "c"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = input.flatten.sortBy(arr => (-arr(0).asInstanceOf[Int], arr(1).asInstanceOf[Int], -arr(2).asInstanceOf[Int]))
+    val expected = input.flatten.sortBy(arr => (-arr(0).asInstanceOf[Int], arr(1).asInstanceOf[Int], -arr(2).asInstanceOf[Int])).take(limit)
     runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
   }
 
-  test("should sort under apply") {
+  test("should top under apply") {
     val nodesPerLabel = 100
     val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val limit = nodesPerLabel - 10;
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
       .apply()
-      .|.sort(Seq(Ascending("b")))
+      .|.top(Seq(Ascending("b")), limit)
       .|.expandAll("(a)-->(b)")
       .|.argument("a")
       .allNodeScan("a")
@@ -101,7 +102,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = for{
       x <- aNodes
-      y <- bNodes.sortBy(_.getId)
+      y <- bNodes.sortBy(_.getId).take(limit)
     } yield Array[Any](x, y)
 
     runtimeResult should beColumns("a", "b").withRows(expected)
