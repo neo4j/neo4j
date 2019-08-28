@@ -28,7 +28,7 @@ import org.neo4j.graphdb.{Label, Node, RelationshipType}
 abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  sizeHint: Int
+  protected  val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should expand and provide variables for relationship and end node - outgoing") {
@@ -411,7 +411,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should handle node reference as input") {
     // given
-    val n = 17
+    val n = sizeHint
     val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n) yield {
       Seq(
@@ -442,7 +442,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should gracefully handle non-node reference as input") {
     // given
-    val n = 17
+    val n = sizeHint
     val nodes = nodeGraph(n, "Honey")
     val relTuples = (for(i <- 0 until n) yield {
       Seq(
