@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime.{QueryContext, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.internal.schema.IndexDescriptor
@@ -160,7 +160,7 @@ trait ExecutionEngineHelper {
     }
   }
 
-  def execute(fpq: FullyParsedQuery, params: Map[String, Any]): RewindableExecutionResult = {
+  def execute(fpq: FullyParsedQuery, params: Map[String, Any], input: InputDataStream): RewindableExecutionResult = {
     val subscriber = new RecordingQuerySubscriber
     graph.withTx { tx =>
       val context = graph.transactionalContext(tx, query = fpq.description -> params.toMap)
@@ -171,6 +171,7 @@ trait ExecutionEngineHelper {
           context = context,
           profile = false,
           prePopulate = false,
+          input = input,
           subscriber = subscriber
         ),
         new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
