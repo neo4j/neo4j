@@ -52,16 +52,53 @@ public class QueryObfuscation
             {
                 passwordParams.add( password.substring( 1 ) );
             }
-            else if ( password.charAt( 0 ) == '{' )
-            {
-                passwordParams.add( password.substring( 1, password.length() - 1 ) );
-            }
             else
             {
                 queryText = queryText.replace( password, OBFUSCATED_LITERAL );
             }
         }
 
+        return queryText;
+    }
+
+    private static final Pattern DDL_PASSWORD_PATTERN = Pattern.compile(
+            // CREATE USER user SET PASSWORD
+            // ALTER USER user SET PASSWORD
+            // ALTER CURRENT USER SET PASSWORD
+            "^(?:(?:ALTER|CREATE)\\s+(?:CURRENT\\s+)?USER\\s+(?:(?:`)?\\w+(?:`)? )?SET\\s+PASSWORD\\s+)" +
+            // password can be in single, double quotes, or parametrized
+            // FROM password TO password
+            "(?:FROM\\s+)?(['\"$]\\w+['\"]?)(?:\\s+TO\\s+)?(['\"$]\\w+['\"]?)?"
+        );
+
+    static String obfuscateDDL( String queryText, Set<String> passwordParams )
+    {
+        Matcher matcher = DDL_PASSWORD_PATTERN.matcher( queryText );
+
+        while ( matcher.find() )
+        {
+            String password = matcher.group( 1 ).trim();
+            if ( password.charAt( 0 ) == '$' )
+            {
+                passwordParams.add( password.substring( 1 ) );
+            }
+            else
+            {
+                queryText = queryText.replace( password, OBFUSCATED_LITERAL );
+            }
+            String toPassword = matcher.group( 2 );
+            if ( toPassword != null )
+            {
+                if ( toPassword.charAt( 0 ) == '$' )
+                {
+                    passwordParams.add( toPassword.substring( 1 ) );
+                }
+                else
+                {
+                    queryText = queryText.replace( toPassword, OBFUSCATED_LITERAL );
+                }
+            }
+        }
         return queryText;
     }
 

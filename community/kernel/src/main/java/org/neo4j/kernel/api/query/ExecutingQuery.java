@@ -46,6 +46,7 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 /**
  * Represents a currently running query.
@@ -327,7 +328,7 @@ public class ExecutingQuery
 
     private boolean queryNeedsObfuscation()
     {
-        return queryType == QueryExecutionType.QueryType.DBMS || queryType == null;
+        return queryType == QueryExecutionType.QueryType.DBMS || queryType == null || databaseId.equals( SYSTEM_DATABASE_ID );
     }
 
     private void obfuscateQuery()
@@ -335,7 +336,14 @@ public class ExecutingQuery
         if ( obfuscatedQueryText == null )
         {
             Set<String> passwordParams = new HashSet<>();
-            this.obfuscatedQueryText = QueryObfuscation.obfuscateText( rawQueryText, passwordParams );
+            if ( databaseId.equals( SYSTEM_DATABASE_ID ) )
+            {
+                this.obfuscatedQueryText = QueryObfuscation.obfuscateDDL( rawQueryText, passwordParams );
+            }
+            else
+            {
+                this.obfuscatedQueryText = QueryObfuscation.obfuscateText( rawQueryText, passwordParams );
+            }
             this.obfuscatedQueryParameters = QueryObfuscation.obfuscateParams( rawQueryParameters, passwordParams );
         }
     }
