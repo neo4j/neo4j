@@ -31,14 +31,16 @@ import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, bottomUp}
   *
   * It traverses the plan and swaps property lookups for cached properties where possible.
   */
-case object insertCachedProperties extends Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] {
-
+case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
   override def transform(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
 
-    val cardinalities = from.planningAttributes.cardinalities
-    val attributes = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
-    val logicalPlan = PushdownPropertyReads.pushdown(from.logicalPlan, cardinalities, attributes, from.semanticTable())
+    val logicalPlan =
+      if (pushdownPropertyReads) {
+        val cardinalities = from.planningAttributes.cardinalities
+        val attributes = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
+        PushdownPropertyReads.pushdown(from.logicalPlan, cardinalities, attributes, from.semanticTable())
+      } else from.logicalPlan
 
     def isNode(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTNode.invariant)
     def isRel(variable: Variable) = from.semanticTable().types.get(variable).exists(t => t.actual == CTRelationship.invariant)

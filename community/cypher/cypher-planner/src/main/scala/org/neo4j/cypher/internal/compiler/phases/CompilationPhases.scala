@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.insertCachedProperties
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
 import org.neo4j.cypher.internal.compiler.planner.logical.{OptionalMatchRemover, QueryPlanner}
 import org.neo4j.cypher.internal.compiler.planner.{CheckForUnresolvedTokens, ResolveTokens}
 import org.neo4j.cypher.internal.compiler.{MultiDatabaseAdministrationCommandPlanBuilder, SchemaCommandPlanBuilder, UnsupportedSystemCommand}
@@ -81,7 +81,7 @@ object CompilationPhases {
           OptionalMatchRemover andThen
           QueryPlanner.adds(CompilationContains[LogicalPlan]) andThen
           PlanRewriter(sequencer) andThen
-          insertCachedProperties andThen
+          InsertCachedProperties(true) andThen
           If((s: LogicalPlanState) => s.query.readOnly)(
             CheckForUnresolvedTokens
           )
