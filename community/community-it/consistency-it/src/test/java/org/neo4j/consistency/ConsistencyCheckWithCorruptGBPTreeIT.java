@@ -45,6 +45,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBootstrapper;
@@ -106,7 +107,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ) );
         } );
 
-        final Config config = Config.defaults( ConsistencyCheckSettings.consistency_check_indexes, Settings.FALSE );
+        final Config config = Config.defaults( MapUtil.stringMap(
+                ConsistencyCheckSettings.consistency_check_index_structure.name(), Settings.FALSE,
+                ConsistencyCheckSettings.consistency_check_indexes.name(), Settings.FALSE ) );
         ConsistencyCheckService.Result result = runConsistencyCheck( config );
 
         assertTrue( "Expected store to be consistent when not checking indexes.", result.isSuccessful() );
