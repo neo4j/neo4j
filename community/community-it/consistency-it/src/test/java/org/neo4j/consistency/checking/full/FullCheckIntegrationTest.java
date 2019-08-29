@@ -2225,7 +2225,7 @@ public class FullCheckIntegrationTest
             throws ConsistencyCheckIncompleteException
     {
         Config config = config();
-        final var consistencyFlags = new ConsistencyFlags( true, true, true, true );
+        final var consistencyFlags = new ConsistencyFlags( true, true, true, true, true );
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
                 consistencyFlags, config );
         return checker.execute( stores, counts, FormattedLog.toOutputStream( System.out ) );

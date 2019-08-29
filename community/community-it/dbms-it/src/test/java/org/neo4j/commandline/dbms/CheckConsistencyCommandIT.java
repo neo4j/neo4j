@@ -99,6 +99,7 @@ class CheckConsistencyCommandIT
                 "check-consistency ([--database=<database>] | [--backup=<path>]) [--verbose]%n" +
                 "                  [--additional-config=<path>] [--check-graph=<true/false>]%n" +
                 "                  [--check-indexes=<true/false>]%n" +
+                "                  [--check-index-structure=<true/false>]%n" +
                 "                  [--check-label-scan-store=<true/false>]%n" +
                 "                  [--check-property-owners=<true/false>] [--report-dir=<path>]%n" +
                 "%n" +
@@ -128,6 +129,9 @@ class CheckConsistencyCommandIT
                 "                              Default: true%n" +
                 "      --check-indexes=<true/false>%n" +
                 "                            Perform consistency checks on indexes.%n" +
+                "                              Default: true%n" +
+                "      --check-index-structure=<true/false>%n" +
+                "                            Perform structure checks on indexes.%n" +
                 "                              Default: true%n" +
                 "      --check-label-scan-store=<true/false>%n" +
                 "                            Perform consistency checks on the label scan store.%n" +
@@ -317,12 +321,12 @@ class CheckConsistencyCommandIT
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--check-graph=false",
-            "--check-indexes=false", "--check-label-scan-store=false", "--check-property-owners=true" );
+            "--check-indexes=false", "--check-index-structure=false", "--check-label-scan-store=false", "--check-property-owners=true" );
         checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                        any(), eq( new ConsistencyFlags( false, false, false, true ) ) );
+                        any(), eq( new ConsistencyFlags( false, false, false, false, true ) ) );
     }
 
     @Test

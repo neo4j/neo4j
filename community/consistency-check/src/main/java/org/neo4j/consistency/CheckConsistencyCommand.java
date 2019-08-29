@@ -141,8 +141,8 @@ public class CheckConsistencyCommand extends AbstractCommand
                 ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                         .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory, logProvider, fileSystem,
                             verbose, options.getReportDir().toFile().getCanonicalFile(),
-                                new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckLabelScanStore(),
-                                        options.isCheckPropertyOwners() ) );
+                                new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure(),
+                                        options.isCheckLabelScanStore(), options.isCheckPropertyOwners() ) );
 
                 if ( !consistencyCheckResult.isSuccessful() )
                 {

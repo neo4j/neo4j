@@ -41,6 +41,10 @@ public class ConsistencyCheckOptions
             description = "Perform consistency checks on indexes." )
     private boolean checkIndexes = true;
 
+    @Option( names = "--check-index-structure", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
+            description = "Perform structure checks on indexes." )
+    private boolean checkIndexStructure = true;
+
     @Option( names = "--check-label-scan-store", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
             description = "Perform consistency checks on the label scan store." )
     private boolean checkLabelScanStore = true;
@@ -62,6 +66,11 @@ public class ConsistencyCheckOptions
     public boolean isCheckIndexes()
     {
         return checkIndexes;
+    }
+
+    public boolean isCheckIndexStructure()
+    {
+        return checkIndexStructure;
     }
 
     public boolean isCheckLabelScanStore()

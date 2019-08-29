@@ -67,6 +67,7 @@ public class FullCheck
     private final boolean checkPropertyOwners;
     private final boolean checkLabelScanStore;
     private final boolean checkIndexes;
+    private final boolean checkIndexStructure;
     private final ProgressMonitorFactory progressFactory;
     private final IndexSamplingConfig samplingConfig;
     private final boolean checkGraph;
@@ -88,6 +89,7 @@ public class FullCheck
         this.samplingConfig = new IndexSamplingConfig( config );
         this.checkGraph = consistencyFlags.isCheckGraph();
         this.checkIndexes = consistencyFlags.isCheckIndexes();
+        this.checkIndexStructure = consistencyFlags.isCheckIndexStructure();
         this.checkLabelScanStore = consistencyFlags.isCheckLabelScanStore();
         this.checkPropertyOwners = consistencyFlags.isCheckPropertyOwners();
     }
@@ -157,7 +159,10 @@ public class FullCheck
                     new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes,
                             multiPass, reporter, threads );
 
-            consistencyCheckIndexes( indexes, reporter, progressFactory );
+            if ( checkIndexStructure )
+            {
+                consistencyCheckIndexStructure( indexes, reporter, progressFactory );
+            }
 
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
@@ -179,7 +184,7 @@ public class FullCheck
                 readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
     }
 
-    private static void consistencyCheckIndexes( IndexAccessors indexes, ConsistencyReporter report,
+    private static void consistencyCheckIndexStructure( IndexAccessors indexes, ConsistencyReporter report,
             ProgressMonitorFactory progressMonitorFactory )
     {
         List<IndexDescriptor> rulesToRemove = new ArrayList<>();

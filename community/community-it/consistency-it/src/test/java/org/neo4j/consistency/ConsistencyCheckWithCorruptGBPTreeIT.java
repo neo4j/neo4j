@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -96,6 +97,22 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         final int height = heightRef.getValue();
         assertEquals( "This test assumes height of index tree is 2 but height for this index was " + height +
                 ". This is most easily regulated by changing number of nodes in setup.", 2, height );
+    }
+
+    @Test
+    public void shouldNotCheckIndexesIfConfiguredNotTo() throws Exception
+    {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        MutableObject<Long> targetNode = new MutableObject<>();
+        corruptIndexes( ( tree, inspection ) -> {
+            targetNode.setValue( inspection.getRootNode() );
+            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ) );
+        } );
+
+        ConsistencyFlags flags = new ConsistencyFlags( true, false, false, true, true );
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
+
+        assertTrue( "Expected store to be consistent when not checking indexes.", result.isSuccessful() );
     }
 
     @Test
@@ -465,13 +482,26 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         return runConsistencyCheck( logProvider, ProgressMonitorFactory.NONE );
     }
 
+    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ConsistencyFlags consistencyFlags )
+            throws ConsistencyCheckIncompleteException
+    {
+        return runConsistencyCheck( logProvider, ProgressMonitorFactory.NONE, consistencyFlags );
+    }
+
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ProgressMonitorFactory progressFactory )
+            throws ConsistencyCheckIncompleteException
+    {
+        return runConsistencyCheck( logProvider, progressFactory, ConsistencyFlags.DEFAULT );
+    }
+
+    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ProgressMonitorFactory progressFactory,
+            ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults( neo4j_home, testDirectory.directory().toPath().toAbsolutePath() );
-        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false );
+        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false, consistencyFlags );
     }
 
     private void setup( GraphDatabaseSettings.SchemaIndex schemaIndex )

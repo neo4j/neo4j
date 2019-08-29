@@ -24,20 +24,24 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class ConsistencyFlags
 {
-    public static final ConsistencyFlags DEFAULT = new ConsistencyFlags( true, true, true, false );
+    public static final ConsistencyFlags DEFAULT = new ConsistencyFlags( true, true, true, true, false );
 
     private final boolean checkGraph;
     private final boolean checkIndexes;
+    private final boolean checkIndexStructure;
     private final boolean checkLabelScanStore;
     private final boolean checkPropertyOwners;
 
     public ConsistencyFlags( boolean checkGraph,
             boolean checkIndexes,
+            boolean checkIndexStructure,
             boolean checkLabelScanStore,
             boolean checkPropertyOwners )
+
     {
         this.checkGraph = checkGraph;
         this.checkIndexes = checkIndexes;
+        this.checkIndexStructure = checkIndexStructure;
         this.checkLabelScanStore = checkLabelScanStore;
         this.checkPropertyOwners = checkPropertyOwners;
     }
@@ -50,6 +54,11 @@ public class ConsistencyFlags
     public boolean isCheckIndexes()
     {
         return checkIndexes;
+    }
+
+    public boolean isCheckIndexStructure()
+    {
+        return checkIndexStructure;
     }
 
     public boolean isCheckLabelScanStore()
