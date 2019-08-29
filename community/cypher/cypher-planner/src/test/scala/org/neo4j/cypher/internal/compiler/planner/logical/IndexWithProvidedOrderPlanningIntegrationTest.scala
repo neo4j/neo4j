@@ -35,6 +35,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
   val DESCENDING = TestOrder(IndexOrderDescending, "DESC", DESC, Descending)
   val DESCENDING_BOTH = TestOrder(IndexOrderDescending, "DESC", BOTH, Descending)
 
+  override val pushdownPropertyReads: Boolean = false
+
   for (TestOrder(plannedOrder, cypherToken, orderCapability, sortOrder) <- List(ASCENDING, DESCENDING, DESCENDING_BOTH)) {
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order") {

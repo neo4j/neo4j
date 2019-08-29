@@ -712,7 +712,21 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planUnionForOrLeaves(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    annotate(Union(left, right), solveds.get(left.id), ProvidedOrder.empty, context)
+    val plan = Union(left, right)
+
+    /* TODO: This is not correct in any way: solveds.get(left.id)
+     LogicalPlan.solved contains a PlannerQuery, but to represent a Union, we'd need a UnionQuery instead
+     Not very important at the moment, but dirty.
+     */
+    val solved = solveds.get(left.id)
+    solveds.set(plan.id, solved)
+
+    // Even if solveds is broken, it's nice to get the cardinality correct
+    val lhsCardinality = cardinalities(left.id)
+    val rhsCardinality = cardinalities(right.id)
+    cardinalities.set(plan.id, lhsCardinality + rhsCardinality)
+    providedOrders.set(plan.id, ProvidedOrder.empty)
+    plan
   }
 
   def planDistinctForOrLeaves(left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {

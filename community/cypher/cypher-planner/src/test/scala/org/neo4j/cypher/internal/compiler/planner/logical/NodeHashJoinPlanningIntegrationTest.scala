@@ -79,15 +79,21 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       Selection(
         ands(
           not(equals(varFor("r1"), varFor("r2"))),
-          equals(prop("a", "prop"), prop("c", "prop"))
+          equals(cachedNodeProp("a", "prop"), cachedNodeProp("c", "prop"))
         ),
         NodeHashJoin(
           Set("b"),
           Expand(
-            NodeByLabelScan("a", labelName("A"), Set.empty),
+            CacheProperties(
+              NodeByLabelScan("a", labelName("A"), Set.empty),
+              Set(cachedNodeProp("a", "prop"))
+            ),
             "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "b", "r1", ExpandAll),
           Expand(
-            NodeByLabelScan("c", labelName("C"), Set.empty),
+            CacheProperties(
+              NodeByLabelScan("c", labelName("C"), Set.empty),
+              Set(cachedNodeProp("c", "prop"))
+            ),
             "c", SemanticDirection.INCOMING, Seq(RelTypeName("X") _), "b", "r2", ExpandAll)
         )
       )

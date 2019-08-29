@@ -54,6 +54,8 @@ import scala.reflect.ClassTag
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
+  val pushdownPropertyReads: Boolean = true
+
   val parser = new CypherParser
   val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
   val innerVariableNamer = new GeneratingNamer
@@ -84,7 +86,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     parsing(newPlain, innerVariableNamer, literalExtraction = Never) andThen
       prepareForCaching andThen
-      planPipeLine(newPlain)
+      planPipeLine(newPlain, pushdownPropertyReads)
   }
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {

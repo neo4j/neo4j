@@ -601,7 +601,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
                         ), _
               ),
       MergeCreateNode(
-                      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _, _), _,_ ,_ // Create part
+                      RollUpApply(
+                        CacheProperties(Argument(SetExtractor()), _),
+                      _/* <- This is the subQuery */, _, _, _), _,_ ,_ // Create part
                      ), _
       ) => ()
     }
@@ -617,9 +619,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       case AntiConditionalApply(
       Optional(
                Selection(_,
+                    CacheProperties(
                          RollUpApply(
                                      Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _, _) // Match part
-                        ), _
+                    , _)
+               ), _
               ),
       MergeCreateRelationship(
                       RollUpApply(

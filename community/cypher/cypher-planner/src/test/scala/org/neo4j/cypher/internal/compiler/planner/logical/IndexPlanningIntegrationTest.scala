@@ -29,6 +29,8 @@ import scala.concurrent.{Await, Future}
 
 class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
+  override val pushdownPropertyReads: Boolean = false
+
   test("should not plan index usage if predicate depends on variable from same QueryGraph") {
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {

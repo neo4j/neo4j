@@ -65,7 +65,7 @@ object CompilationPhases {
       ProcedureWarnings
 
   // Phase 3
-  def planPipeLine(sequencer: String => RewriterStepSequencer): Transformer[PlannerContext, BaseState, LogicalPlanState] =
+  def planPipeLine(sequencer: String => RewriterStepSequencer, pushdownPropertyReads: Boolean = true): Transformer[PlannerContext, BaseState, LogicalPlanState] =
     SchemaCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
         isolateAggregation andThen
@@ -81,7 +81,7 @@ object CompilationPhases {
           OptionalMatchRemover andThen
           QueryPlanner.adds(CompilationContains[LogicalPlan]) andThen
           PlanRewriter(sequencer) andThen
-          InsertCachedProperties(true) andThen
+          InsertCachedProperties(pushdownPropertyReads) andThen
           If((s: LogicalPlanState) => s.query.readOnly)(
             CheckForUnresolvedTokens
           )
