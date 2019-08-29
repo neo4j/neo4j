@@ -28,6 +28,8 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -95,6 +97,19 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         final int height = heightRef.getValue();
         assertEquals( "This test assumes height of index tree is 2 but height for this index was " + height +
                 ". This is most easily regulated by changing number of nodes in setup.", 2, height );
+    }
+
+    @Test
+    public void shouldReportProgress() throws Exception
+    {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+
+        Writer writer = new StringWriter();
+        ProgressMonitorFactory factory = ProgressMonitorFactory.textual( writer );
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), factory );
+
+        assertTrue( "Expected new database to be clean.", result.isSuccessful() );
+        assertTrue( writer.toString().contains( "Index structure consistency check" ) );
     }
 
     @Test
@@ -448,10 +463,15 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider ) throws ConsistencyCheckIncompleteException
     {
+        return runConsistencyCheck( logProvider, ProgressMonitorFactory.NONE );
+    }
+
+    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ProgressMonitorFactory progressFactory )
+            throws ConsistencyCheckIncompleteException
+    {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults( neo4j_home, testDirectory.directory().toPath().toAbsolutePath() );
-        ProgressMonitorFactory progressFactory = NONE;
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false );
     }
 

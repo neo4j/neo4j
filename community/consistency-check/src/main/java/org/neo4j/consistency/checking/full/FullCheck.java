@@ -44,6 +44,8 @@ import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -155,7 +157,7 @@ public class FullCheck
                     new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes,
                             multiPass, reporter, threads );
 
-            consistencyCheckIndexes( indexes, reporter );
+            consistencyCheckIndexes( indexes, reporter, progressFactory );
 
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
@@ -176,9 +178,13 @@ public class FullCheck
                 readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
     }
 
-    private static void consistencyCheckIndexes( IndexAccessors indexes, ConsistencyReporter report )
+    private static void consistencyCheckIndexes( IndexAccessors indexes, ConsistencyReporter report,
+            ProgressMonitorFactory progressMonitorFactory )
     {
         List<IndexDescriptor> rulesToRemove = new ArrayList<>();
+        final long indexCount = Iterables.count( indexes.onlineRules() );
+        final ProgressListener listener = progressMonitorFactory.singlePart( "Index structure consistency check", indexCount );
+        listener.started();
         for ( IndexDescriptor onlineRule : indexes.onlineRules() )
         {
             ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.INDEX );
@@ -189,11 +195,13 @@ public class FullCheck
                 rulesToRemove.add( onlineRule );
             }
             handler.updateSummary();
+            listener.add( 1 );
         }
         for ( IndexDescriptor toRemove : rulesToRemove )
         {
             indexes.remove( toRemove );
         }
+        listener.done();
     }
 
     private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )
