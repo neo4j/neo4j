@@ -72,7 +72,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 

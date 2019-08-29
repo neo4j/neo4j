@@ -161,6 +161,7 @@ public class FullCheck
 
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
+            progress.build();
             TaskExecutor.execute( tasks, decorator::prepare );
         }
         catch ( Exception e )
