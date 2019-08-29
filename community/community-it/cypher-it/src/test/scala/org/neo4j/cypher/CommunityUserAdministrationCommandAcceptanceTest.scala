@@ -92,6 +92,20 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin("bar", "password", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
+  test("should create user using if not exists") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+
+    // WHEN
+    execute("CREATE USER bar IF NOT EXISTS SET PASSWORD 'password'")
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("bar"))
+    testUserLogin("bar", "wrong", AuthenticationResult.FAILURE)
+    testUserLogin("bar", "password", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
   test("should create user with mixed password") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
@@ -326,6 +340,18 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
   }
 
+  test("should drop existing user using if exists") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("DROP USER foo IF EXISTS")
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+  }
+
   test("should re-create dropped user") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
@@ -371,6 +397,15 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     the[InvalidArgumentsException] thrownBy {
       // WHEN
       executeOnSystem("foo", "bar", "DROP USER foo")
+      // THEN
+    } should have message "Failed to delete the specified user 'foo': Deleting yourself is not allowed."
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      executeOnSystem("foo", "bar", "DROP USER foo IF EXISTS")
       // THEN
     } should have message "Failed to delete the specified user 'foo': Deleting yourself is not allowed."
 
