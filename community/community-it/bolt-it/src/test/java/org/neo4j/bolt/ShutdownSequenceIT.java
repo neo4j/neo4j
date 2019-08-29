@@ -61,6 +61,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.OtherThreadRule;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -97,7 +98,7 @@ public class ShutdownSequenceIT
     private HostnamePort address;
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
+    public RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( fsRule ).around( server );
 
     @Rule
     public OtherThreadRule<Void> otherThread = new OtherThreadRule<>( 1, MINUTES );
