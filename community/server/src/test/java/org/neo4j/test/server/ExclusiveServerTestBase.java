@@ -52,11 +52,21 @@ public class ExclusiveServerTestBase
 
     protected static String txEndpoint()
     {
-        return "db/neo4j/tx";
+        return txEndpoint( "neo4j" );
+    }
+
+    private static String txEndpoint( String database )
+    {
+        return String.format( "db/%s/tx", database );
     }
 
     protected static String txCommitEndpoint()
     {
-        return txEndpoint() + "/commit";
+        return txCommitEndpoint( "neo4j" );
+    }
+
+    protected static String txCommitEndpoint( String database )
+    {
+        return txEndpoint( database ) + "/commit";
     }
 }

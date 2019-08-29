@@ -76,6 +76,11 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
 
     protected String txCommitURL()
     {
-        return server.baseUri().resolve( txCommitEndpoint() ).toString();
+        return txCommitURL( "neo4j" );
+    }
+
+    protected String txCommitURL( String database )
+    {
+        return server.baseUri().resolve( txCommitEndpoint( database ) ).toString();
     }
 }

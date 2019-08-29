@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -37,19 +38,18 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.string.UTF8;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -58,8 +58,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 public class AuthProceduresIT
@@ -67,6 +70,7 @@ public class AuthProceduresIT
     private static final String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
 
     private GraphDatabaseAPI db;
+    private GraphDatabaseAPI systemDb;
     private EphemeralFileSystemAbstraction fs;
     private BasicSystemGraphRealm authManager;
     private LoginContext admin;
@@ -76,10 +80,19 @@ public class AuthProceduresIT
     void setup() throws InvalidAuthTokenException, IOException
     {
         fs = new EphemeralFileSystemAbstraction();
-        db = (GraphDatabaseAPI) createGraphDatabase( fs );
+        removePreviousAuthFile();
+        DatabaseManagementServiceBuilder graphDatabaseFactory = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).impermanent()
+                .setConfig( GraphDatabaseSettings.auth_enabled, true );
+        managementService = graphDatabaseFactory.build();
+
+        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        systemDb = (GraphDatabaseAPI) managementService.database( SYSTEM_DATABASE_NAME );
         authManager = db.getDependencyResolver().resolveDependency( BasicSystemGraphRealm.class );
+
+        assertSuccess( login( "neo4j", "neo4j" ), "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'temp'" );
+        assertSuccess( login( "neo4j", "temp" ), "ALTER CURRENT USER SET PASSWORD FROM 'temp' TO 'neo4j'" );
         admin = login( "neo4j", "neo4j" );
-        admin.subject().setPasswordChangeNoLongerRequired();
+
     }
 
     @AfterEach
@@ -92,65 +105,93 @@ public class AuthProceduresIT
     //---------- change password -----------
 
     @Test
+    void shouldGiveErrorMessageForChangePasswordProcedure()
+    {
+        assertFail( admin, "CALL dbms.security.changePassword('abc123')", "This procedure is no longer available, use: 'ALTER CURRENT USER SET PASSWORD'" );
+    }
+
+    @Test
     void shouldChangePassword() throws Throwable
     {
-
         // Given
-        assertEmpty( admin, "CALL dbms.security.changePassword('abc')" );
+        assertSuccess( admin, "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'abc'" );
 
-        assert authManager.getUser( "neo4j" ).credentials().matchesPassword( UTF8.encode( "abc" ) );
+        assertThat( login( "neo4j", "neo4j" ).subject().getAuthenticationResult(), equalTo( FAILURE ) );
+        assertThat( login( "neo4j", "abc" ).subject().getAuthenticationResult(), equalTo( SUCCESS ) );
     }
 
     @Test
     void shouldNotChangeOwnPasswordIfNewPasswordInvalid()
     {
-        assertFail( admin, "CALL dbms.security.changePassword( '' )", "A password cannot be empty." );
-        assertFail( admin, "CALL dbms.security.changePassword( 'neo4j' )", "Old password and new password cannot be the same." );
+        assertFail( admin, "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO ''", "A password cannot be empty." );
+        assertFail( admin, "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'neo4j'", "Old password and new password cannot be the same." );
     }
 
     @Test
     void newUserShouldBeAbleToChangePassword() throws Throwable
     {
         // Given
-        authManager.newUser( "andres", UTF8.encode( "banana" ), true );
+        assertSuccess( LoginContext.AUTH_DISABLED, "CREATE USER andres SET PASSWORD 'banana'" );
 
         // Then
-        assertEmpty( login("andres", "banana"), "CALL dbms.security.changePassword('abc')" );
+        assertSuccess( login( "andres", "banana" ), "ALTER CURRENT USER SET PASSWORD FROM 'banana' TO 'abc'" );
     }
 
     @Test
     void newUserShouldNotBeAbleToCallOtherProcedures() throws Throwable
     {
         // Given
-        authManager.newUser( "andres", UTF8.encode( "banana" ), true );
+        assertSuccess( admin, "CREATE USER andres SET PASSWORD 'banana'" );
         LoginContext user = login("andres", "banana");
 
         // Then
-        assertFail( user, "CALL dbms.procedures",
-                "The credentials you provided were valid, but must be changed before you can use this instance." );
+        assertThat( execute( user, "CALL dbms.procedures", r ->
+                {
+                    assert !r.hasNext();
+                } ),
+                containsString( "The credentials you provided were valid, but must be changed before you can use this instance." ) );
     }
 
     //---------- create user -----------
 
     @Test
-    void shouldCreateUser() throws InvalidArgumentsException
+    void shouldCreateUser()
     {
-        assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', true)" );
-        assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( true ) );
+        assertSuccess( admin, "CALL dbms.security.createUser('andres', '123', true)" );
+
+        assertSuccess( admin, "SHOW USERS", r -> {
+            Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
+            assertTrue( users.containsAll( Set.of(
+                    Map.of( "user", "neo4j", "passwordChangeRequired", false ),
+                    Map.of( "user", "andres", "passwordChangeRequired", true )
+            ) ) );
+        } );
     }
 
     @Test
-    void shouldCreateUserWithNoPasswordChange() throws InvalidArgumentsException
+    void shouldCreateUserWithNoPasswordChange()
     {
-        assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', false)" );
-        assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( false ) );
+        assertSuccess( admin, "CALL dbms.security.createUser('andres', '123', false)" );
+        assertSuccess( admin, "SHOW USERS", r -> {
+            Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
+            assertTrue( users.containsAll( Set.of(
+                    Map.of( "user", "neo4j", "passwordChangeRequired", false ),
+                    Map.of( "user", "andres", "passwordChangeRequired", false )
+            ) ) );
+        } );
     }
 
     @Test
-    void shouldCreateUserWithDefault() throws InvalidArgumentsException
+    void shouldCreateUserWithDefault()
     {
-        assertEmpty( admin, "CALL dbms.security.createUser('andres', '123')" );
-        assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( true ) );
+        assertSuccess( admin, "CALL dbms.security.createUser('andres', '123')" );
+        assertSuccess( admin, "SHOW USERS", r -> {
+            Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
+            assertTrue( users.containsAll( Set.of(
+                    Map.of( "user", "neo4j", "passwordChangeRequired", false ),
+                    Map.of( "user", "andres", "passwordChangeRequired", true )
+            ) ) );
+        } );
     }
 
     @Test
@@ -173,84 +214,70 @@ public class AuthProceduresIT
     void shouldNotCreateExistingUser()
     {
         assertFail( admin, "CALL dbms.security.createUser('neo4j', '1234', true)",
-                "The specified user 'neo4j' already exists" );
+                "Failed to create the specified user 'neo4j': User already exists." );
         assertFail( admin, "CALL dbms.security.createUser('neo4j', '', true)", "A password cannot be empty." );
     }
 
     //---------- delete user -----------
 
     @Test
-    void shouldDeleteUser() throws Exception
+    void shouldDeleteUser()
     {
-        authManager.newUser( "andres", UTF8.encode( "123" ), false );
-        assertEmpty( admin, "CALL dbms.security.deleteUser('andres')" );
-        try
-        {
-            authManager.getUser( "andres" );
-            fail( "Andres should no longer exist, expected exception." );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            assertThat( e.getMessage(), containsString( "User 'andres' does not exist." ) );
-        }
-        catch ( Throwable t )
-        {
-            assertThat( t.getClass(), equalTo( InvalidArgumentsException.class ) );
-        }
+        // GIVEN
+        assertSuccess( admin, "CREATE USER andres SET PASSWORD '123' CHANGE NOT REQUIRED" );
+
+        // WHEN
+        assertSuccess( admin, "CALL dbms.security.deleteUser('andres')" );
+
+        // THEN
+        assertSuccess( admin, "SHOW USERS", r -> {
+            Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
+            assertTrue( users.contains( Map.of( "user", "neo4j", "passwordChangeRequired", false ) ) );
+        } );
     }
 
     @Test
     void shouldNotDeleteNonExistentUser()
     {
-        assertFail( admin, "CALL dbms.security.deleteUser('nonExistentUser')", "User 'nonExistentUser' does not exist" );
+        assertFail( admin, "CALL dbms.security.deleteUser('nonExistentUser')",
+                "Failed to delete the specified user 'nonExistentUser': User does not exist." );
     }
 
     //---------- list users -----------
 
     @Test
-    void shouldListUsers() throws Exception
+    void shouldListUsers()
     {
-        authManager.newUser( "andres", UTF8.encode( "123" ), false );
-        assertSuccess( admin, "CALL dbms.security.listUsers() YIELD username",
-                r -> assertKeyIs( r, "username", "neo4j", "andres" ) );
+        assertSuccess( admin, "CREATE USER andres SET PASSWORD '123' CHANGE NOT REQUIRED" );
+        assertSuccess( admin, "CALL dbms.security.listUsers() YIELD username", r ->
+        {
+            String[] items = new String[]{"neo4j", "andres"};
+            List<Object> results = r.stream().map( s -> s.get( "username" ) ).collect( Collectors.toList() );
+            assertEquals( Arrays.asList( items ).size(), results.size() );
+            assertThat( results, containsInAnyOrder( items ) );
+        } );
     }
 
     @Test
-    void shouldReturnUsersWithFlags() throws Exception
+    void shouldReturnUsersWithFlags()
     {
-        authManager.newUser( "andres", UTF8.encode( "123" ), false );
+        assertSuccess( admin, "CREATE USER andres SET PASSWORD '123'" );
         Map<String,Object> expected = map(
-                "neo4j", listOf( PWD_CHANGE ),
-                "andres", listOf()
+                "neo4j", emptyList(),
+                "andres", List.of( PWD_CHANGE )
         );
         assertSuccess( admin, "CALL dbms.security.listUsers()",
                 r -> assertKeyIsMap( r, "username", "flags", expected ) );
     }
 
     @Test
-    void shouldShowCurrentUser() throws Exception
+    void shouldShowCurrentUser()
     {
-        assertSuccess( admin, "CALL dbms.showCurrentUser()",
-                r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", listOf( PWD_CHANGE ) ) ) );
-
-        authManager.newUser( "andres", UTF8.encode( "123" ), false );
-        LoginContext andres = login( "andres", "123" );
-        assertSuccess( andres, "CALL dbms.showCurrentUser()",
-                r -> assertKeyIsMap( r, "username", "flags", map( "andres", listOf() ) ) );
+        assertThat( execute( admin, "CALL dbms.showCurrentUser()",
+                r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", emptyList() ) ) ), equalTo( "" ) );
     }
 
     //---------- utility -----------
-
-    private GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs ) throws IOException
-    {
-        removePreviousAuthFile();
-
-        DatabaseManagementServiceBuilder graphDatabaseFactory = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).impermanent()
-                .setConfig( GraphDatabaseSettings.auth_enabled, true );
-
-        managementService = graphDatabaseFactory.build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
-    }
 
     private void removePreviousAuthFile() throws IOException
     {
@@ -266,30 +293,41 @@ public class AuthProceduresIT
         return authManager.login( newBasicAuthToken( username, password ) );
     }
 
-    private void assertEmpty( LoginContext subject, String query )
+    private void assertSuccess( LoginContext subject, String query )
     {
-        assertThat( execute( subject, query, r ->
-                {
-                    assert !r.hasNext();
-                } ),
-                equalTo( "" ) );
+        assertSuccess( subject, query, r ->
+        {
+            assert !r.hasNext();
+        } );
+    }
+
+    private void assertSuccess( LoginContext subject, String query, Consumer<ResourceIterator<Map<String,Object>>> resultConsumer )
+    {
+        try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.implicit, subject ) )
+        {
+            Result result = systemDb.execute( query );
+            resultConsumer.accept( result );
+            tx.commit();
+        }
     }
 
     private void assertFail( LoginContext subject, String query, String partOfErrorMsg )
     {
-        assertThat( execute( subject, query, r ->
-                {
-                    assert !r.hasNext();
-                } ),
-                containsString( partOfErrorMsg ) );
-    }
-
-    private void assertSuccess( LoginContext subject, String query,
-            Consumer<ResourceIterator<Map<String,Object>>> resultConsumer )
-    {
-        assertThat(
-                execute( subject, query, resultConsumer ),
-                equalTo( "" ) );
+        Consumer<ResourceIterator<Map<String,Object>>> resultConsumer = row ->
+        {
+            assert !row.hasNext();
+        };
+        try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.implicit, subject ) )
+        {
+            Result result = systemDb.execute( query );
+            resultConsumer.accept( result );
+            tx.commit();
+            fail( "Expected query to fail" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getMessage(), containsString( partOfErrorMsg ) );
+        }
     }
 
     private String execute( LoginContext subject, String query,
@@ -307,34 +345,12 @@ public class AuthProceduresIT
         }
     }
 
-    private List<Object> getObjectsAsList( ResourceIterator<Map<String,Object>> r, String key )
-    {
-        return r.stream().map( s -> s.get( key ) ).collect( Collectors.toList() );
-    }
-
-    private void assertKeyIs( ResourceIterator<Map<String,Object>> r, String key, String... items )
-    {
-        assertKeyIsArray( r, key, items );
-    }
-
-    private void assertKeyIsArray( ResourceIterator<Map<String,Object>> r, String key, String[] items )
-    {
-        List<Object> results = getObjectsAsList( r, key );
-        assertEquals( Arrays.asList( items ).size(), results.size() );
-        assertThat( results, containsInAnyOrder( items ) );
-    }
-
     protected String[] with( String[] strs, String... moreStr )
     {
         return Stream.concat( Arrays.stream(strs), Arrays.stream( moreStr ) ).toArray( String[]::new );
     }
 
-    private static List<String> listOf( String... values )
-    {
-        return Arrays.asList( values );
-    }
-
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings( {"unchecked", "SameParameterValue"} )
     static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
     {
         List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
