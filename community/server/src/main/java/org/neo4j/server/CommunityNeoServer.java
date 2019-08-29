@@ -58,8 +58,8 @@ public class CommunityNeoServer extends AbstractNeoServer
     {
         return Arrays.asList(
                 createDBMSModule(),
-                new DatabaseModule( webServer, getConfig(), userLogProvider ),
-                new LegacyTransactionModule( webServer, getConfig(), userLogProvider ),
+                new DatabaseModule( webServer, getConfig() ),
+                new LegacyTransactionModule( webServer, getConfig() ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider, this ),
                 new Neo4jBrowserModule( webServer ),
                 createAuthorizationModule() );
@@ -77,7 +77,7 @@ public class CommunityNeoServer extends AbstractNeoServer
         // ConnectorPortRegister isn't available until runtime, so defer loading until then
         Supplier<DiscoverableURIs> discoverableURIs  = () -> communityDiscoverableURIs( getConfig(),
                 getSystemDatabaseDependencyResolver().resolveDependency( ConnectorPortRegister.class ) );
-        return new DBMSModule( webServer, getConfig(), discoverableURIs );
+        return new DBMSModule( webServer, getConfig(), discoverableURIs, userLogProvider );
     }
 
     protected AuthorizationModule createAuthorizationModule()

@@ -22,15 +22,11 @@ package org.neo4j.server.modules;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.CypherResource;
 import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
 import org.neo4j.server.http.cypher.format.output.json.JsonMessageBodyWriter;
-import org.neo4j.server.rest.web.CorsFilter;
 import org.neo4j.server.web.WebServer;
-
-import static org.neo4j.server.configuration.ServerSettings.http_access_control_allow_origin;
 
 /**
  * Mounts the database REST API.
@@ -39,19 +35,16 @@ public class DatabaseModule implements ServerModule
 {
     private final Config config;
     private final WebServer webServer;
-    private final LogProvider logProvider;
 
-    public DatabaseModule( WebServer webServer, Config config, LogProvider logProvider )
+    public DatabaseModule( WebServer webServer, Config config )
     {
         this.webServer = webServer;
         this.config = config;
-        this.logProvider = logProvider;
     }
 
     @Override
     public void start()
     {
-        webServer.addFilter( new CorsFilter( logProvider, config.get( http_access_control_allow_origin ) ), "/*" );
         webServer.addJAXRSClasses( jaxRsClasses(), mountPoint(), null );
     }
 

@@ -26,7 +26,6 @@ import java.net.URI;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.WebServer;
 
@@ -50,7 +49,7 @@ public class DatabaseModuleTest
         Config config = Config.defaults( ServerSettings.db_api_path, URI.create( "/db/data" ) );
 
         // When
-        DatabaseModule module = new DatabaseModule( webServer, config, NullLogProvider.getInstance() );
+        DatabaseModule module = new DatabaseModule( webServer, config );
         module.start();
 
         // Then

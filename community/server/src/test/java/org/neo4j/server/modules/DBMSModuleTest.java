@@ -28,12 +28,15 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.dbms.UserService;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -62,8 +65,9 @@ public class DBMSModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
         when( config.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( true );
+        when( config.get( ServerSettings.http_paths_blacklist ) ).thenReturn( emptyList() );
 
-        DBMSModule module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder().build() );
+        DBMSModule module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder().build(), NullLogProvider.getInstance() );
 
         module.start();
 
@@ -81,8 +85,9 @@ public class DBMSModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
         when( config.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( false );
+        when( config.get( ServerSettings.http_paths_blacklist ) ).thenReturn( emptyList() );
 
-        DBMSModule module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder().build() );
+        DBMSModule module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder().build(), NullLogProvider.getInstance() );
 
         module.start();
 

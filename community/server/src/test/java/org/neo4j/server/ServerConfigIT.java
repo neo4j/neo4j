@@ -95,6 +95,21 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     }
 
     @Test
+    public void shouldBlacklistPaths() throws Exception
+    {
+        server = serverOnRandomPorts()
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .withProperty( ServerSettings.http_paths_blacklist.name(), "/*" )
+                .build();
+        server.start();
+
+        var request = HttpRequest.newBuilder( server.baseUri() ).GET().build();
+        var response = newHttpClient().send( request, discarding() );
+
+        assertThat( response.statusCode(), is( 403 ) );
+    }
+
+    @Test
     public void shouldPickUpAddressFromConfig() throws Exception
     {
         var nonDefaultAddress = new SocketAddress( "0.0.0.0", 0 );

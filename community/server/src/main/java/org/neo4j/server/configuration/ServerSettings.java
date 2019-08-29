@@ -141,9 +141,13 @@ public class ServerSettings implements SettingsDeclaration
             "Value is expected to contain directives like 'max-age', 'includeSubDomains' and 'preload'." )
     public static final Setting<String> http_strict_transport_security = newBuilder( "dbms.security.http_strict_transport_security", STRING, null ).build();
 
-    @Description( "Defines a list of patterns of http endpoints where Neo4j authentication is not required to fetch content." )
+    @Description( "Defines a whitelist of http paths where Neo4j authentication is not required." )
     public static final Setting<List<String>> http_auth_whitelist =
             newBuilder( "dbms.security.http_auth_whitelist", listOf( STRING ), List.of( "/", "/browser.*" ) ).build();
+
+    @Description( "Defines a blacklist of http paths that should not be accessed." )
+    public static final Setting<List<String>> http_paths_blacklist =
+            newBuilder( "dbms.security.http_paths_blacklist", listOf( STRING ), emptyList() ).build();
 
     @Internal
     @Description( "Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this " +

@@ -22,7 +22,6 @@ package org.neo4j.server.helpers;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -285,21 +284,14 @@ public class CommunityServerBuilder
 
     private String getPath( String uri )
     {
-        try
+        URI theUri = URI.create( uri );
+        if ( theUri.isAbsolute() )
         {
-            URI theUri = new URI( uri );
-            if ( theUri.isAbsolute() )
-            {
-                return theUri.getPath();
-            }
-            else
-            {
-                return theUri.toString();
-            }
+            return theUri.getPath();
         }
-        catch ( URISyntaxException e )
+        else
         {
-            throw new RuntimeException( e );
+            return theUri.toString();
         }
     }
 

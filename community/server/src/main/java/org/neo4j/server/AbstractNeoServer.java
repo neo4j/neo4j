@@ -187,7 +187,7 @@ public abstract class AbstractNeoServer implements NeoServer
     /**
      * Use this method to register server modules from subclasses
      */
-    protected final void registerModule( ServerModule module )
+    private void registerModule( ServerModule module )
     {
         serverModules.add( module );
     }
