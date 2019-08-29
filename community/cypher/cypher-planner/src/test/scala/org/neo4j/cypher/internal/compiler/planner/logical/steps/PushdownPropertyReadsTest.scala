@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
 import org.neo4j.cypher.internal.v4_0.util.symbols.CTNode
+import org.neo4j.cypher.internal.v4_0.util.symbols.CTInteger
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
@@ -551,6 +552,93 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
       .expand("(n)-->(m)").withCardinality(235)
       .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withCardinality(90)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should pushdown read through renaming projection") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .projection("n AS mysteryNode").withCardinality(235).newVar("mysteryNode", CTNode)
+      .expand("(n)-->(m)").withCardinality(235)
+      .allNodeScan("n").withCardinality(90)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("n", "m")
+        .filter("mysteryNode.prop == 'NOT-IMPORTANT'")
+        .projection("n AS mysteryNode")
+        .expand("(n)-->(m)")
+        .cacheProperties("n.prop")
+        .allNodeScan("n")
+        .build()
+  }
+
+  test("should pushdown read through 2 renaming projections") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("unknownNode.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .projection("mysteryNode AS unknownNode").withCardinality(235).newVar("unknownNode", CTNode)
+      .projection("n AS mysteryNode").withCardinality(235).newVar("mysteryNode", CTNode)
+      .expand("(n)-->(m)").withCardinality(235)
+      .allNodeScan("n").withCardinality(90)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("n", "m")
+        .filter("unknownNode.prop == 'NOT-IMPORTANT'")
+        .projection("mysteryNode AS unknownNode").newVar("unknownNode", CTNode)
+        .projection("n AS mysteryNode").newVar("mysteryNode", CTNode)
+        .expand("(n)-->(m)")
+        .cacheProperties("n.prop")
+        .allNodeScan("n")
+        .build()
+  }
+
+  test("should pushdown read through unrelated renaming projection") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .projection("m AS mysteryNode").withCardinality(235).newVar("mysteryNode", CTNode)
+      .expand("(n)-->(m)").withCardinality(235)
+      .allNodeScan("n").withCardinality(90)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("n", "m")
+        .filter("n.prop == 'NOT-IMPORTANT'")
+        .projection("m AS mysteryNode")
+        .expand("(n)-->(m)")
+        .cacheProperties("n.prop")
+        .allNodeScan("n")
+        .build()
+  }
+
+  test("should not pushdown read if property is available, but renamed") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .projection("n AS mysteryNode").withCardinality(235).newVar("mysteryNode", CTNode)
+      .expand("(n)-->(m)").withCardinality(235)
+      .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withCardinality(90)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should ignore unrelated renaming") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .projection("x AS mysteryVariable").withCardinality(5).newVar("mysteryVariable", CTInteger)
+      .projection("1 AS x").withCardinality(5).newVar("x", CTInteger)
+      .allNodeScan("n").withCardinality(5)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)

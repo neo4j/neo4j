@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, Id}
 import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CTRelationship}
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, InputPosition, Rewriter, bottomUp}
+import org.neo4j.exceptions.InternalException
 
 import scala.collection.mutable
 
@@ -40,9 +41,9 @@ case object PushdownPropertyReads {
       semanticTable.types.get(variable)
         .exists(t => t.actual == CTNode.invariant || t.actual == CTRelationship.invariant)
 
-    case class VarLowestCardinality(lowestCardinality: Cardinality, logicalPlanId: Id)
-    case class Acc(variableOptima: Map[String, VarLowestCardinality],
-                   propertyReadOptima: Seq[(Id, Property)],
+    case class CardinalityOptimum(cardinality: Cardinality, logicalPlanId: Id, variableName: String)
+    case class Acc(variableOptima: Map[String, CardinalityOptimum],
+                   propertyReadOptima: Seq[(CardinalityOptimum, Property)],
                    availableProperties: Set[Property],
                    incomingCardinality: Cardinality)
 
@@ -62,9 +63,9 @@ case object PushdownPropertyReads {
             propertiesForPlan.flatMap {
               case p @ Property(v: LogicalVariable, _) =>
                 acc.variableOptima.get(v.name) match {
-                  case Some(VarLowestCardinality(lowestCardinality, logicalPlanId)) =>
-                    if (lowestCardinality < acc.incomingCardinality && !acc.availableProperties.contains(p))
-                      Some((logicalPlanId, p))
+                  case Some(optimum: CardinalityOptimum) =>
+                    if (optimum.cardinality < acc.incomingCardinality && !acc.availableProperties.contains(p))
+                      Some((optimum, p))
                     else
                       None
                   // this happens for variables introduced in expressions, we ignore those for now
@@ -81,23 +82,47 @@ case object PushdownPropertyReads {
             case _: Aggregation |
                  _: OrderedAggregation =>
               val newVariables = plan.availableSymbols
-              val outgoingVariableOptima = newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id))).toMap
+              val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
 
               Acc(outgoingVariableOptima, outgoingReadOptima, Set.empty, outgoingCardinality)
 
+            case p: ProjectingPlan => // except for aggregations which were already matched
+              val renamings: Map[String, String] =
+                p.projectExpressions.collect {
+                  case (key, v: Variable) if key != v.name => (v.name, key)
+                }
+
+              val renamedVariableOptima =
+                acc.variableOptima.map {
+                  case (oldName, optimum) =>
+                    (renamings.getOrElse(oldName, oldName), optimum)
+                }
+
+              val renamedAvailableProperties =
+                acc.availableProperties.map(
+                  prop => {
+                    val propVariable = prop.map.asInstanceOf[LogicalVariable].name
+                    renamings.get(propVariable) match {
+                      case Some(newName) => propertyWithName(newName, prop)
+                      case None => prop
+                    }
+                  })
+
+              Acc(renamedVariableOptima, outgoingReadOptima, renamedAvailableProperties, outgoingCardinality)
+
             case _ =>
               val newLowestCardinalities =
-                acc.variableOptima.mapValues(x =>
-                  if (outgoingCardinality < x.lowestCardinality) {
-                    VarLowestCardinality(outgoingCardinality, plan.id)
+                acc.variableOptima.mapValues(optimum =>
+                  if (outgoingCardinality < optimum.cardinality) {
+                    CardinalityOptimum(outgoingCardinality, plan.id, optimum.variableName)
                   } else {
-                    x
+                    optimum
                   }
                 )
 
               val currentVariables = plan.availableSymbols
               val newVariables = currentVariables -- acc.variableOptima.keySet
-              val newVariableCardinalities = newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id)))
+              val newVariableCardinalities = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v)))
               val outgoingVariableOptima = newLowestCardinalities ++ newVariableCardinalities
 
               val propertiesFromIndex: Seq[Property] =
@@ -121,7 +146,7 @@ case object PushdownPropertyReads {
             case _: Union =>
               val newVariables = plan.availableSymbols
               val outgoingCardinality = cardinalities(plan.id)
-              val outgoingVariableOptima = newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id))).toMap
+              val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
               Acc(outgoingVariableOptima, lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima, Set.empty, outgoingCardinality)
 
             case _ =>
@@ -130,7 +155,7 @@ case object PushdownPropertyReads {
                   case (v, rhsOptimum) =>
                     lhsAcc.variableOptima.get(v) match {
                   case Some(lhsOptimum) =>
-                    (v, Seq(lhsOptimum, rhsOptimum).minBy(_.lowestCardinality))
+                    (v, Seq(lhsOptimum, rhsOptimum).minBy(_.cardinality))
                   case None =>
                     (v, rhsOptimum)
                 }
@@ -146,8 +171,8 @@ case object PushdownPropertyReads {
 
     val propertyMap = new mutable.HashMap[Id, Set[LogicalProperty]]
     propertyReadOptima foreach {
-      case (id, property) =>
-        propertyMap(id) = propertyMap.getOrElse(id, Set.empty) + property
+      case (CardinalityOptimum(_, id, variableNameAtOptimum), property) =>
+        propertyMap(id) = propertyMap.getOrElse(id, Set.empty) + propertyWithName(variableNameAtOptimum, property)
     }
 
     val propertyReadInsertRewriter = bottomUp(Rewriter.lift {
@@ -158,6 +183,16 @@ case object PushdownPropertyReads {
     propertyReadInsertRewriter(logicalPlan).asInstanceOf[LogicalPlan]
   }
 
-private def asProperty(idName: String)(indexedProperty: IndexedProperty): Property =
-  Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(indexedProperty.propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
+  private def asProperty(idName: String)(indexedProperty: IndexedProperty): Property =
+    Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(indexedProperty.propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
+
+  private def propertyWithName(idName: String, p: Property): Property =
+    p match {
+      case Property(v: LogicalVariable, propertyKey) =>
+        if (v.name == idName)
+          p
+        else
+          Property(Variable(idName)(InputPosition.NONE), propertyKey)(InputPosition.NONE)
+      case _ => throw new InternalException(s"Unexpected property read of non-variable `${p.map}`")
+    }
 }
