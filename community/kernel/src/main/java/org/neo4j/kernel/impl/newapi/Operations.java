@@ -167,8 +167,9 @@ public class Operations implements Write, SchemaWrite
     public long nodeCreate()
     {
         ktx.assertOpen();
+        TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
-        ktx.txState().nodeDoCreate( nodeId );
+        txState.nodeDoCreate( nodeId );
         return nodeId;
     }
 
