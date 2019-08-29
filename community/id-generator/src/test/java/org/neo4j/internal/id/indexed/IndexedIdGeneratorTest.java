@@ -341,9 +341,9 @@ class IndexedIdGeneratorTest
         markUsed( id );
         markDeleted( id );
         markFree( id );
-        try ( ReuseMarker reuseMarker = freelist.reuseMarker() )
+        try ( IdRangeMarker marker = freelist.lockAndInstantiateMarker( true ) )
         {
-            reuseMarker.markReserved( id );
+            marker.markReserved( id );
         }
 
         // when

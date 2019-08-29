@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.id.IdGenerator.ReuseMarker;
+import org.neo4j.internal.id.indexed.IndexedIdGenerator.ReservedMarker;
 
 import static org.neo4j.internal.id.indexed.IdRange.IdState;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
@@ -47,7 +47,7 @@ class FreeIdScanner implements Closeable
     private final GBPTree<IdRangeKey, IdRange> tree;
     private final ConcurrentLongQueue cache;
     private final AtomicBoolean atLeastOneIdOnFreelist;
-    private final Supplier<ReuseMarker> reuseMarkerSupplier;
+    private final Supplier<ReservedMarker> markerSupplier;
     private final long generation;
     private final ScanLock lock;
     private volatile Seeker<IdRangeKey, IdRange> scanner;
@@ -55,14 +55,14 @@ class FreeIdScanner implements Closeable
     private int pendingItemsToCacheCursor;
     private int nextPosInRange;
 
-    FreeIdScanner( int idsPerEntry, GBPTree<IdRangeKey, IdRange> tree, ConcurrentLongQueue cache, AtomicBoolean atLeastOneIdOnFreelist,
-            Supplier<ReuseMarker> reuseMarkerSupplier, long generation, boolean strictlyPrioritizeFreelistOverHighId )
+    FreeIdScanner( int idsPerEntry, GBPTree<IdRangeKey,IdRange> tree, ConcurrentLongQueue cache, AtomicBoolean atLeastOneIdOnFreelist,
+            Supplier<ReservedMarker> markerSupplier, long generation, boolean strictlyPrioritizeFreelistOverHighId )
     {
         this.idsPerEntry = idsPerEntry;
         this.tree = tree;
         this.cache = cache;
         this.atLeastOneIdOnFreelist = atLeastOneIdOnFreelist;
-        this.reuseMarkerSupplier = reuseMarkerSupplier;
+        this.markerSupplier = markerSupplier;
         this.pendingItemsToCache = new long[cache.capacity()];
         this.generation = generation;
         this.lock = strictlyPrioritizeFreelistOverHighId ? ScanLock.lockyAndPessimistic() : ScanLock.lockFreeAndOptimistic();
@@ -122,7 +122,7 @@ class FreeIdScanner implements Closeable
         try
         {
             // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache revert that by marking them as free again
-            try ( ReuseMarker marker = reuseMarkerSupplier.get() )
+            try ( ReservedMarker marker = markerSupplier.get() )
             {
                 long id;
                 do
@@ -130,7 +130,7 @@ class FreeIdScanner implements Closeable
                     id = cache.takeOrDefault( -1 );
                     if ( id != -1 )
                     {
-                        marker.markFree( id );
+                        marker.markUnreserved( id );
                     }
                 }
                 while ( id != -1 );
@@ -157,7 +157,7 @@ class FreeIdScanner implements Closeable
 
     private void markIdsAsReserved()
     {
-        try ( ReuseMarker marker = reuseMarkerSupplier.get() )
+        try ( ReservedMarker marker = markerSupplier.get() )
         {
             for ( int i = 0; i < pendingItemsToCacheCursor; i++ )
             {

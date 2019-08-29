@@ -34,12 +34,15 @@ import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.internal.id.IdValidator.isReservedId;
+import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
+import static org.neo4j.internal.id.indexed.IdRange.BITSET_RESERVED;
+import static org.neo4j.internal.id.indexed.IdRange.BITSET_REUSE;
 
 /**
  * Contains logic for merging ID state changes into the tree backing an {@link IndexedIdGenerator}.
  * Basically manipulates {@link IdRangeKey} and {@link IdRange} instances and sends to {@link Writer#merge(Object, Object, ValueMerger)}.
  */
-class IdRangeMarker implements CommitMarker, ReuseMarker
+class IdRangeMarker implements CommitMarker, ReuseMarker, IndexedIdGenerator.ReservedMarker
 {
     /**
      * Number of ids that is contained in one {@link IdRange}
@@ -141,7 +144,7 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
         {
             // this is by convention: if reserved ID is marked as RESERVED again then it becomes USED
             prepareRange( id, false );
-            value.setCommitAndReuseBit( idOffset( id ) );
+            value.setBitsForAllTypes( idOffset( id ) );
             writer.mergeIfExists( key, value, merger );
         }
     }
@@ -153,7 +156,7 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
         if ( !isReservedId( id ) )
         {
             prepareRange( id, true );
-            value.setCommitBit( idOffset( id ) );
+            value.setBit( BITSET_COMMIT, idOffset( id ) );
             writer.merge( key, value, merger );
         }
     }
@@ -163,8 +166,19 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
     {
         if ( !isReservedId( id ) )
         {
+            prepareRange( id, true );
+            value.setBit( BITSET_RESERVED, idOffset( id ) );
+            writer.merge( key, value, merger );
+        }
+    }
+
+    @Override
+    public void markUnreserved( long id )
+    {
+        if ( !isReservedId( id ) )
+        {
             prepareRange( id, false );
-            value.setReuseBit( idOffset( id ) );
+            value.setBit( BITSET_RESERVED, idOffset( id ) );
             writer.merge( key, value, merger );
         }
     }
@@ -175,7 +189,7 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
         if ( !isReservedId( id ) )
         {
             prepareRange( id, true );
-            value.setReuseBit( idOffset( id ) );
+            value.setBit( BITSET_REUSE, idOffset( id ) );
             writer.merge( key, value, merger );
         }
 
@@ -228,11 +242,11 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
                     }
 
                     // Mark this id as deleted
-                    value.setCommitBit( idOffset( bridgeId ) );
+                    value.setBit( BITSET_COMMIT, idOffset( bridgeId ) );
                     if ( !started ) // i.e. in recovery mode
                     {
                         // We're doing this bridging in recovery and we can therefore mark this id as free right away
-                        value.setReuseBit( idOffset( bridgeId ) );
+                        value.setBit( BITSET_REUSE, idOffset( bridgeId ) );
                     }
 
                     // Set this flag so that the last range (if updated) will be written below, when exiting this loop

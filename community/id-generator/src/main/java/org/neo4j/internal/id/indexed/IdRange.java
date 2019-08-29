@@ -29,136 +29,82 @@ import static java.util.Arrays.fill;
 
 /**
  * Value in a GB+Tree for indexing id states. Accompanies that with a generation, i.e. which generation this value were written in.
- * ID states are kept in one or more {@code long}s where each long holds two 32-bits bit-sets, one for commit bits and one for reuse bits.
- * The combination of commit/reuse bits makes up the state of an ID, like this:
- *
- * <pre>
- *     <--------------- REUSE BITS ---------------> <--------------- COMMIT BITS -------------->
- *  MSB[    ,    ][    ,    ][    ,    ][   x,    ] [    ,    ][    ,    ][    ,    ][   x,    ]LSB
- *                                          ▲                                            ▲
- *                                          │                                            │
- *                                          └───── BITS THAT MAKE UP ID AT OFFSET 4 ─────┘
- * </pre>
+ * ID states are kept in three bit-sets, each consisting of one or more {@code long}s. The three bit-sets are:
+ * <ul>
+ *     <li>Commit bits, i.e. 0=used, 1=unused</li>
+ *     <li>Reuse bits, i.e. 0=not reusable, 1=free</li>
+ *     <li>Reserved bits, i.e. 0=not reserved, 1=reserved</li>
+ * </ul>
  *
  * Each {@link IdRange} is associated with an {@link IdRangeKey} which specifies the range, e.g. an ID range of 3 in a layout where ids-per-entry is 128
  * holds IDs between 384-511.
- *
- * These are the various states that an ID can have:
- * <pre>
- *
- * </pre>
- *
- * <table border="1">
- *     <tr>
- *         <th>REUSE</th>
- *         <th>COMMIT</th>
- *         <th>STATE</th>
- *     </tr>
- *     <tr>
- *         <td>0</td>
- *         <td>0</td>
- *         <td>USED</td>
- *     </tr>
- *     <tr>
- *         <td>0</td>
- *         <td>1</td>
- *         <td>DELETED</td>
- *     </tr>
- *     <tr>
- *         <td>1</td>
- *         <td>1</td>
- *         <td>FREE</td>
- *     </tr>
- *     <tr>
- *         <td>1</td>
- *         <td>0</td>
- *         <td>-</td>
- *     </tr>
- * </table>
- *
- * <pre>
- *     R: recovery
- *     S: single instance
- *     C: clustering
- *
- *     USED    -> USED        R
- *     USED    -> DELETED     RSC
- *     USED    -> FREE        C
- *     DELETED -> USED        RC
- *     DELETED -> DELETED     R
- *     DELETED -> FREE        SC
- *     FREE    -> USED        RC
- *     FREE    -> DELETED     RSC
- *     FREE    -> FREE
- * </pre>
  */
 class IdRange
 {
+    private static final int BITSET_COUNT = 3;
+
+    static final int BITSET_COMMIT = 0;
+    static final int BITSET_REUSE = 1;
+    static final int BITSET_RESERVED = 2;
+
     /**
      * Each {@code long} contains two bit-sets, one for commit bits and one for reuse bits
      */
-    static final int BITSET_SIZE = Long.SIZE / 2;
-    private static final long COMMIT_BITS_MASK = 0xFFFFFFFFL;
+    static final int BITSET_SIZE = Long.SIZE;
 
     private long generation;
     private transient boolean addition;
-    private final long[] longs;
+    private final long[][] bitsets;
+    private final int numOfLongs;
 
     IdRange( int numOfLongs )
     {
-        this.longs = new long[numOfLongs];
+        this.bitsets = new long[BITSET_COUNT][numOfLongs];
+        this.numOfLongs = numOfLongs;
     }
 
     IdState getState( int n )
     {
         int longIndex = n / BITSET_SIZE;
         int bitIndex = n % BITSET_SIZE;
-        long bits = longs[longIndex];
-        boolean commitBit = (bits & commitBitMask( bitIndex )) != 0;
+        boolean commitBit = (bitsets[BITSET_COMMIT][longIndex] & bitMask( bitIndex )) != 0;
         if ( commitBit )
         {
-            boolean reuseBit = (bits & reuseBitMask( bitIndex )) != 0;
-            return reuseBit ? IdState.FREE : IdState.DELETED;
+            boolean reuseBit = (bitsets[BITSET_REUSE][longIndex] & bitMask( bitIndex )) != 0;
+            boolean reservedBit = (bitsets[BITSET_RESERVED][longIndex] & bitMask( bitIndex )) != 0;
+            return reuseBit && !reservedBit ? IdState.FREE : IdState.DELETED;
         }
         return IdState.USED;
     }
 
-    private long commitBitMask( int bitIndex )
+    private long bitMask( int bitIndex )
     {
         return 1L << bitIndex;
     }
 
-    private long reuseBitMask( int bitIndex )
-    {
-        return 1L << (bitIndex + BITSET_SIZE);
-    }
-
-    void setCommitBit( int n )
+    void setBit( int type, int n )
     {
         int longIndex = n / BITSET_SIZE;
         int bitIndex = n % BITSET_SIZE;
-        longs[longIndex] |= commitBitMask( bitIndex );
+        bitsets[type][longIndex] |= bitMask( bitIndex );
     }
 
-    void setReuseBit( int n )
+    void setBitsForAllTypes( int n )
     {
         int longIndex = n / BITSET_SIZE;
         int bitIndex = n % BITSET_SIZE;
-        longs[longIndex] |= reuseBitMask( bitIndex );
-    }
-
-    void setCommitAndReuseBit( int n )
-    {
-        int longIndex = n / BITSET_SIZE;
-        int bitIndex = n % BITSET_SIZE;
-        longs[longIndex] |= commitBitMask( bitIndex ) | reuseBitMask( bitIndex );
+        bitsets[BITSET_COMMIT][longIndex] |= bitMask( bitIndex );
+        bitsets[BITSET_REUSE][longIndex] |= bitMask( bitIndex );
+        bitsets[BITSET_RESERVED][longIndex] |= bitMask( bitIndex );
     }
 
     void clear( long generation, boolean addition )
     {
         this.generation = generation;
         this.addition = addition;
-        fill( longs, 0 );
+        fill( bitsets[BITSET_COMMIT], 0 );
+        fill( bitsets[BITSET_REUSE], 0 );
+        fill( bitsets[BITSET_RESERVED], 0 );
     }
 
     long getGeneration()
@@ -171,30 +117,28 @@ class IdRange
         this.generation = generation;
     }
 
-    long[] getLongs()
+    long[][] getBitsets()
     {
-        return longs;
+        return bitsets;
     }
 
     void normalize()
     {
-        for ( int i = 0; i < longs.length; i++ )
+        for ( int i = 0; i < numOfLongs; i++ )
         {
             // Set the reuse bits to whatever the commit bits are. This will let USED be USED and DELETED will become FREE
-            long commitBits = longs[i] & COMMIT_BITS_MASK;
-            longs[i] = commitBits | (commitBits << BITSET_SIZE);
+            bitsets[BITSET_REUSE][i] = bitsets[BITSET_COMMIT][i];
+            bitsets[BITSET_RESERVED][i] = 0;
         }
     }
 
     boolean mergeFrom( IdRange other, boolean recoveryMode )
     {
-        for ( int i = 0; i < longs.length; i++ )
+        for ( int i = 0; i < numOfLongs; i++ )
         {
-            long from = other.longs[i];
-            if ( from == 0 )
-            {
-                continue;
-            }
+            long commit = other.bitsets[BITSET_COMMIT][i];
+            long reuse = other.bitsets[BITSET_REUSE][i];
+            long reserved = other.bitsets[BITSET_RESERVED][i];
 
             if ( !recoveryMode )
             {
@@ -202,9 +146,15 @@ class IdRange
             }
             // else anything goes
 
-            longs[i] = other.addition
-                       ? longs[i] | from
-                       : longs[i] & ~from;
+            bitsets[BITSET_COMMIT][i] = other.addition
+                                      ? bitsets[BITSET_COMMIT][i] | commit
+                                      : bitsets[BITSET_COMMIT][i] & ~commit;
+            bitsets[BITSET_REUSE][i] = other.addition
+                                      ? bitsets[BITSET_REUSE][i] | reuse
+                                      : bitsets[BITSET_REUSE][i] & ~reuse;
+            bitsets[BITSET_RESERVED][i] = other.addition
+                                      ? bitsets[BITSET_RESERVED][i] | reserved
+                                      : bitsets[BITSET_RESERVED][i] & ~reserved;
         }
 
         return true;
@@ -212,12 +162,11 @@ class IdRange
 
     private void verifyMerge( IdRange other, int i )
     {
-        long into = longs[i];
-        long from = other.longs[i];
-        long commitBits = from & COMMIT_BITS_MASK;
+        long into = bitsets[BITSET_COMMIT][i];
+        long from = other.bitsets[BITSET_COMMIT][i];
         if ( other.addition )
         {
-            if ( (longs[i] & commitBits ) != 0 )
+            if ( (into & from ) != 0 )
             {
                 throw new IllegalStateException( format( "Illegal addition ID state transition longIdx: %d%ninto: %s%nfrom: %s",
                         i, toPaddedBinaryString( into ), toPaddedBinaryString( from ) ) );
@@ -245,21 +194,28 @@ class IdRange
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < longs.length; i++ )
+        appendBitset( builder, bitsets[BITSET_COMMIT], "commit  " );
+        appendBitset( builder, bitsets[BITSET_REUSE], "reuse   " );
+        appendBitset( builder, bitsets[BITSET_RESERVED], "reserved" );
+        builder.append( " gen:" ).append( generation );
+        return builder.toString();
+    }
+
+    private void appendBitset( StringBuilder builder, long[] bitset, String name )
+    {
+        for ( int i = 0; i < bitset.length; i++ )
         {
             if ( i > 0 )
             {
                 builder.append( " , " );
             }
-            builder.append( toPaddedBinaryString( longs[i] ) );
+            builder.append( toPaddedBinaryString( bitset[i] ) );
         }
-        builder.append( " gen:" ).append( generation );
-        return builder.toString();
     }
 
     public boolean isEmpty()
     {
-        for ( long bits : longs )
+        for ( long bits : bitsets[BITSET_COMMIT] )
         {
             if ( bits != 0 )
             {

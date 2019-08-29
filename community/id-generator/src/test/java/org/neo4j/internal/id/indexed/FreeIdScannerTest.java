@@ -42,7 +42,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
-import org.neo4j.internal.id.IdGenerator.ReuseMarker;
+import org.neo4j.internal.id.indexed.IndexedIdGenerator.ReservedMarker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
@@ -425,7 +425,7 @@ class FreeIdScannerTest
         // then
         assertEquals( 5, cacheSizeBeforeClear );
         assertEquals( 0, cache.size() );
-        assertEquals( LongLists.immutable.of( 0, 1, 2, 3, 4 ), reuser.freedIds );
+        assertEquals( LongLists.immutable.of( 0, 1, 2, 3, 4 ), reuser.unreservedIds );
     }
 
     @Test
@@ -573,10 +573,10 @@ class FreeIdScannerTest
         };
     }
 
-    private static class FoundIdMarker implements Supplier<ReuseMarker>, ReuseMarker
+    private static class FoundIdMarker implements Supplier<ReservedMarker>, ReservedMarker
     {
         private final MutableLongList reservedIds = LongLists.mutable.empty();
-        private final MutableLongList freedIds = LongLists.mutable.empty();
+        private final MutableLongList unreservedIds = LongLists.mutable.empty();
 
         @Override
         public void markReserved( long id )
@@ -585,9 +585,9 @@ class FreeIdScannerTest
         }
 
         @Override
-        public void markFree( long id )
+        public void markUnreserved( long id )
         {
-            freedIds.add( id );
+            unreservedIds.add( id );
         }
 
         @Override
@@ -597,7 +597,7 @@ class FreeIdScannerTest
         }
 
         @Override
-        public ReuseMarker get()
+        public ReservedMarker get()
         {
             return this;
         }

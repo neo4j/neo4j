@@ -69,7 +69,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     public int valueSize( IdRange ignore )
     {
         // generation + state bit-sets
-        return Long.BYTES + longsPerEntry * Long.BYTES;
+        return Long.BYTES + longsPerEntry * Long.BYTES * IdRange.BITSET_SIZE;
     }
 
     @Override
@@ -82,7 +82,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     public void writeValue( PageCursor cursor, IdRange value )
     {
         cursor.putLong( value.getGeneration() );
-        writeLongs( cursor, value.getLongs() );
+        writeLongs( cursor, value.getBitsets() );
     }
 
     @Override
@@ -95,22 +95,29 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     public void readValue( PageCursor cursor, IdRange into, int ignore )
     {
         into.setGeneration( cursor.getLong() );
-        readLongs( cursor, into.getLongs() );
+        readLongs( cursor, into.getBitsets() );
     }
 
-    private static void writeLongs( PageCursor cursor, long[] octlets )
+    private static void writeLongs( PageCursor cursor, long[][] groups )
     {
-        for ( long octlet : octlets )
+        for ( long[] group : groups )
         {
-            cursor.putLong( octlet );
+            for ( long octlet : group )
+            {
+                cursor.putLong( octlet );
+            }
         }
     }
 
-    private static void readLongs( PageCursor cursor, long[] octlets )
+    private static void readLongs( PageCursor cursor, long[][] groups )
     {
-        for ( int i = 0; i < octlets.length; i++ )
+        for ( int i = 0; i < groups.length; i++ )
         {
-            octlets[i] = cursor.getLong();
+            long[] group = groups[i];
+            for ( int ii = 0; ii < group.length; ii++ )
+            {
+                group[ii] = cursor.getLong();
+            }
         }
     }
 
@@ -135,7 +142,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     @Override
     public int minorVersion()
     {
-        return 1;
+        return 2;
     }
 
     @Override

@@ -74,7 +74,6 @@ public interface IdGenerator extends IdSequence, Closeable
     interface ReuseMarker extends AutoCloseable
     {
         void markFree( long id );
-        void markReserved( long id );
         @Override
         void close();
     }
@@ -181,11 +180,6 @@ public interface IdGenerator extends IdSequence, Closeable
 
     ReuseMarker NOOP_REUSE_MARKER = new ReuseMarker()
     {
-        @Override
-        public void markReserved( long id )
-        {   // no-op
-        }
-
         @Override
         public void markFree( long id )
         {   // no-op

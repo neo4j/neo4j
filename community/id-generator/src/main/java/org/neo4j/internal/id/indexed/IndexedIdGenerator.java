@@ -233,7 +233,8 @@ public class IndexedIdGenerator implements IdGenerator
                 new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry ), recoveryCleanupWorkCollector, openOptions );
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
-        this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist, this::reuseMarker, generation, strictlyPrioritizeFreelist );
+        this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
+                () -> lockAndInstantiateMarker( true ), generation, strictlyPrioritizeFreelist );
     }
 
     @Override
@@ -331,7 +332,7 @@ public class IndexedIdGenerator implements IdGenerator
         return lockAndInstantiateMarker( true );
     }
 
-    private IdRangeMarker lockAndInstantiateMarker( boolean bridgeIdGaps )
+    IdRangeMarker lockAndInstantiateMarker( boolean bridgeIdGaps )
     {
         commitAndReuseLock.lock();
         try
@@ -515,5 +516,13 @@ public class IndexedIdGenerator implements IdGenerator
             } );
             System.out.println( header );
         }
+    }
+
+    interface ReservedMarker extends AutoCloseable
+    {
+        void markReserved( long id );
+        void markUnreserved( long id );
+        @Override
+        void close();
     }
 }
