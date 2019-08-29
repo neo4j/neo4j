@@ -22,21 +22,12 @@ package org.neo4j.commandline.dbms;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Arrays;
-import java.util.Scanner;
-import java.util.stream.Collectors;
-
-import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -63,29 +54,5 @@ public class StoreInfoCommandIT
         {
             database.shutdown();
         }
-    }
-
-    @Test
-    public void respectLockFiles() throws Exception
-    {
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() ).newGraphDatabase();
-        Process process = runInSeparateProcess( testDirectory.storeDir().getAbsolutePath() );
-        assertEquals( 1, process.waitFor() );
-        assertTrue( new Scanner( process.getErrorStream() ).nextLine().contains( "the database is in use" ) );
-        database.shutdown();
-    }
-
-    private Process runInSeparateProcess( String storeDirectory ) throws Exception
-    {
-        String classpath = Arrays.stream( ((URLClassLoader) Thread.currentThread().getContextClassLoader())
-                .getURLs() )
-                .map( URL::getFile )
-                .collect( Collectors.joining( File.pathSeparator ) );
-        return new ProcessBuilder(
-                System.getProperty( "java.home" ) + "/bin/java",
-                "-classpath", classpath,
-                AdminTool.class.getName(), "store-info",
-                "--store", storeDirectory
-        ).start();
     }
 }
