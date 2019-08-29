@@ -86,6 +86,14 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         super.maintenance();
     }
 
+    @Override
+    public void clearCache()
+    {
+        buffer.clear();
+
+        super.clearCache();
+    }
+
     void clear()
     {
         buffer.clear();
