@@ -24,7 +24,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
-import io.netty.util.ReferenceCountUtil;
 
 /**
  * Translates websocket frames to bytebufs, and bytebufs to frames. Intermediary layer between our binary protocol
@@ -35,20 +34,13 @@ public class WebSocketFrameTranslator extends ChannelDuplexHandler
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
-        try
+        if ( msg instanceof BinaryWebSocketFrame )
         {
-            if ( msg instanceof BinaryWebSocketFrame )
-            {
-                ctx.fireChannelRead( ((BinaryWebSocketFrame) msg).content() );
-            }
-            else
-            {
-                ctx.fireChannelRead( msg );
-            }
+            ctx.fireChannelRead( ((BinaryWebSocketFrame) msg).content() );
         }
-        finally
+        else
         {
-            ReferenceCountUtil.release(msg);
+            ctx.fireChannelRead( msg );
         }
     }
 
