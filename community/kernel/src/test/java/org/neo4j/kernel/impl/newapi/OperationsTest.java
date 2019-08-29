@@ -90,6 +90,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -129,13 +130,11 @@ class OperationsTest
     private IndexingService indexingService;
     private TokenHolders tokenHolders;
     private CommandCreationContext creationContext;
-    private IndexingProvidersService indexingProvidersService;
-    private TxState realTxState;
 
     @BeforeEach
     void setUp() throws Exception
     {
-        realTxState = new TxState();
+        TxState realTxState = new TxState();
         txState = Mockito.spy( realTxState );
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.empty() );
         when( transaction.statementLocks() ).thenReturn( new SimpleStatementLocks( locks ) );
@@ -169,7 +168,7 @@ class OperationsTest
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         tokenHolders = mockedTokenHolders();
         creationContext = mock( CommandCreationContext.class );
-        indexingProvidersService = mock( IndexingProvidersService.class );
+        IndexingProvidersService indexingProvidersService = mock( IndexingProvidersService.class );
         when( indexingProvidersService.indexProviderByName( "native-btree-1.0" ) ).thenReturn( new IndexProviderDescriptor( "native-btree", "1.0" ) );
         when( indexingProvidersService.indexProviderByName( "provider-1.0" ) ).thenReturn( new IndexProviderDescriptor( "provider", "1.0" ) );
         when( indexingProvidersService.completeConfiguration( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
@@ -551,8 +550,8 @@ class OperationsTest
         assertThat( Iterators.count( result ), Matchers.is( 2L ) );
         assertThat( asList( result ), empty() );
         order.verify( storageReader ).constraintsGetAll();
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId );
+        order.verify( locks, atLeastOnce() ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
+        order.verify( locks, atLeastOnce() ).acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId );
     }
 
     @Test
@@ -585,6 +584,7 @@ class OperationsTest
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
         when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( index );
+        when( storageReader.indexExists( index ) ).thenReturn( true );
 
         // when
         operations.indexDrop( index );
@@ -603,6 +603,7 @@ class OperationsTest
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
         when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( index );
+        when( storageReader.indexExists( index ) ).thenReturn( true );
 
         // when
         operations.indexDrop( index.schema() );
@@ -811,6 +812,7 @@ class OperationsTest
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor ).withName( "constraint" );
         IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).withName( "constraint" ).materialise( 13 );
         when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+        when( storageReader.indexExists( index ) ).thenReturn( true );
         when( storageReader.indexGetForSchema( descriptor ) ).thenReturn( index );
 
         // when
@@ -979,7 +981,7 @@ class OperationsTest
     }
 
     @Test
-    void uniqueIndexesMustBeNamedAfterTheirConstraints() throws Exception
+    void uniqueIndexesMustBeNamedAfterTheirConstraints()
     {
         when( creationContext.reserveSchema() ).thenReturn( 1L, 2L, 3L );
         operations.indexUniqueCreate( ConstraintDescriptorFactory.uniqueForLabel( 1, 1 ).withName( "My bla bla constraint" ), "provider-1.0" );
