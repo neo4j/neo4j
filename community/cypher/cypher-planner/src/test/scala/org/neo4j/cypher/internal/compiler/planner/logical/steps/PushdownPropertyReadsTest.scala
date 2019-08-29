@@ -517,4 +517,30 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
+
+  test("should not pushdown read past union into LHS") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.prop AS x").withCardinality(100)
+      .union().withCardinality(100)
+      .|.nodeByLabelScan("n", "A").withCardinality(90)
+      .nodeByLabelScan("n", "B").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown read past union into RHS") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.prop AS x").withCardinality(100)
+      .union().withCardinality(100)
+      .|.nodeByLabelScan("n", "A").withCardinality(10)
+      .nodeByLabelScan("n", "B").withCardinality(90)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
 }

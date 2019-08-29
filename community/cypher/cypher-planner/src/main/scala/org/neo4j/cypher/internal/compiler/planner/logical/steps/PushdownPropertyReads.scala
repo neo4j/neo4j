@@ -103,22 +103,31 @@ case object PushdownPropertyReads {
           }
         },
         (lhsAcc, rhsAcc, plan) => {
-          val mergedVariableOptima =
-            lhsAcc.variableOptima ++ rhsAcc.variableOptima.map {
-              case (v, rhsOptimum) =>
-                lhsAcc.variableOptima.get(v) match {
+
+          plan match {
+            case _: Union =>
+              val newVariables = plan.availableSymbols
+              val outgoingCardinality = cardinalities(plan.id)
+              val outgoingVariableOptima = newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id))).toMap
+              Acc(outgoingVariableOptima, lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima, Set.empty, outgoingCardinality)
+
+            case _ =>
+              val mergedVariableOptima =
+                lhsAcc.variableOptima ++ rhsAcc.variableOptima.map {
+                  case (v, rhsOptimum) =>
+                    lhsAcc.variableOptima.get(v) match {
                   case Some(lhsOptimum) =>
                     (v, Seq(lhsOptimum, rhsOptimum).minBy(_.lowestCardinality))
                   case None =>
                     (v, rhsOptimum)
                 }
-            }
+              }
 
-          Acc(
-            mergedVariableOptima,
-            lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
-            lhsAcc.availableProperties ++ rhsAcc.availableProperties,
-            cardinalities(plan.id))
+              Acc(mergedVariableOptima,
+                  lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
+                  lhsAcc.availableProperties ++ rhsAcc.availableProperties,
+                  cardinalities(plan.id))
+          }
         }
       )
 
