@@ -87,6 +87,17 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
         }
     }
 
+    /**
+     * Returns the top <code>totalCount</code> elements, but in no particular order
+     */
+    public Iterator<T> unorderedIterator()
+    {
+        return heap.iterator();
+    }
+
+    /**
+     * Must call _before_ calling <code>iterator()</code>.
+     */
     public void sort()
     {
         count = heap.size();
@@ -99,6 +110,9 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
         }
     }
 
+    /**
+     * Must call _after_ calling <code>sort()</code>.
+     */
     @Override
     public Iterator<T> iterator()
     {
