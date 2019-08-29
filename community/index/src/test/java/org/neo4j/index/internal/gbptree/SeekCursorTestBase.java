@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -57,8 +58,10 @@ import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @ExtendWith( RandomExtension.class )
+@ResourceLock( SHARED_RESOURCE )
 abstract class SeekCursorTestBase<KEY, VALUE>
 {
     private static final int PAGE_SIZE = 256;
