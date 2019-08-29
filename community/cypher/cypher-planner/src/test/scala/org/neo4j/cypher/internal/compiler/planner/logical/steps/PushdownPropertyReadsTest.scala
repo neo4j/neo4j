@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
+import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
 import org.neo4j.cypher.internal.v4_0.util.symbols.CTNode
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -538,6 +539,18 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .union().withCardinality(100)
       .|.nodeByLabelScan("n", "A").withCardinality(10)
       .nodeByLabelScan("n", "B").withCardinality(90)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown read if property is available from index") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .expand("(n)-->(m)").withCardinality(235)
+      .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)

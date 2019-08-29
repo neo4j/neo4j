@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.{LogicalProperty, LogicalVariable, Property, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, Id}
 import org.neo4j.cypher.internal.v4_0.util.symbols.{CTNode, CTRelationship}
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, InputPosition, Rewriter, bottomUp}
 
 import scala.collection.mutable
 
@@ -84,6 +84,7 @@ case object PushdownPropertyReads {
               val outgoingVariableOptima = newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id))).toMap
 
               Acc(outgoingVariableOptima, outgoingReadOptima, Set.empty, outgoingCardinality)
+
             case _ =>
               val newLowestCardinalities =
                 acc.variableOptima.mapValues(x =>
@@ -99,7 +100,19 @@ case object PushdownPropertyReads {
               val newVariableCardinalities = newVariables.map(v => (v, VarLowestCardinality(outgoingCardinality, plan.id)))
               val outgoingVariableOptima = newLowestCardinalities ++ newVariableCardinalities
 
-              Acc(outgoingVariableOptima, outgoingReadOptima, acc.availableProperties ++ propertiesForPlan, outgoingCardinality)
+              val propertiesFromIndex: Seq[Property] =
+                plan match {
+                  case indexPlan: IndexLeafPlan =>
+                    indexPlan.properties
+                      .filter(_.getValueFromIndex == CanGetValue) // NOTE: as we pushdown before inserting cached properties
+                                                                  //       the getValue behaviour will still be CanGetValue
+                                                                  //       instead of GetValue
+                      .map(asProperty(indexPlan.idName))
+                  case _ => Seq.empty
+                }
+              val outgoingAvailableProperties = acc.availableProperties ++ propertiesForPlan ++ propertiesFromIndex
+
+              Acc(outgoingVariableOptima, outgoingReadOptima, outgoingAvailableProperties, outgoingCardinality)
           }
         },
         (lhsAcc, rhsAcc, plan) => {
@@ -144,4 +157,7 @@ case object PushdownPropertyReads {
 
     propertyReadInsertRewriter(logicalPlan).asInstanceOf[LogicalPlan]
   }
+
+private def asProperty(idName: String)(indexedProperty: IndexedProperty): Property =
+  Property(Variable(idName)(InputPosition.NONE), PropertyKeyName(indexedProperty.propertyKeyToken.name)(InputPosition.NONE))(InputPosition.NONE)
 }
