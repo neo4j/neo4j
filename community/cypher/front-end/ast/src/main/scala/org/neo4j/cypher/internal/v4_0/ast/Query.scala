@@ -69,6 +69,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   override def returnColumns: List[LogicalVariable] = clauses.last.returnColumns
 
   def semanticCheckAbstract(cls: Seq[Clause]): SemanticCheck =
+    checkCorrelatedSubQueriesFeature chain
     checkStandaloneCall chain
     checkOrder chain
     checkClauses chain
@@ -78,7 +79,12 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   override def semanticCheck: SemanticCheck =
     semanticCheckAbstract(clauses)
 
-  def leadingWith: Option[With] = {
+  private def checkCorrelatedSubQueriesFeature: SemanticCheck =
+    when(importWith.isDefined)(
+      requireFeatureSupport(s"Importing variables into subqueries", SemanticFeature.CorrelatedSubQueries, importWith.get.position)
+    )
+
+  def importWith: Option[With] = {
     def hasImportFormat(w: With) = w match {
       case With(false, ri, None, None, None, None) =>
         ri.items.forall(_.isPassThrough)
@@ -90,17 +96,17 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       .headOption.collect { case w: With if hasImportFormat(w) => w }
   }
 
-  def clausesExceptLeadingWith: Seq[Clause] =
-    clauses.filterNot(leadingWith.contains)
+  def clausesExceptImportWith: Seq[Clause] =
+    clauses.filterNot(importWith.contains)
 
-  def importColumns: Seq[String] = leadingWith match {
+  def importColumns: Seq[String] = importWith match {
     case Some(w) => w.returnItems.items.map(_.name)
     case _       => Seq.empty
   }
 
   override def semanticCheckWithImports(outer: SemanticState): SemanticCheck = {
     def importVariables: SemanticCheck =
-      leadingWith match {
+      importWith match {
         case Some(wth) =>
           withState(outer)(wth.semanticCheck) chain
             wth.semanticCheckContinuation(outer.currentScope.scope)
@@ -109,7 +115,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       }
 
     importVariables chain
-      semanticCheckAbstract(clausesExceptLeadingWith)
+      semanticCheckAbstract(clausesExceptImportWith)
 
   }
 

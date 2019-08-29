@@ -24,6 +24,9 @@ sealed trait FeatureToString {
 }
 
 object SemanticFeature {
+  case object CorrelatedSubQueries extends SemanticFeature with FeatureToString {
+    override def name: String = "correlated subqueries"
+  }
   case object MultipleDatabases extends SemanticFeature with FeatureToString {
     override def name: String = "multiple databases"
   }

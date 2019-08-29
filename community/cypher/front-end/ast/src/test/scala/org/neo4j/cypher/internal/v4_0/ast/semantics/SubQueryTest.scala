@@ -376,7 +376,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .tap(_.errors(0).msg.should(include("Variable `y` not defined")))
   }
 
-  test("subquery without return") {
+  test("subquery ending in update exports nothing") {
 
     singleQuery(
       with_(literal(1).as("x")),
