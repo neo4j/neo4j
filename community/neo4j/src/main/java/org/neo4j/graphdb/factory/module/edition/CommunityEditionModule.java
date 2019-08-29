@@ -31,8 +31,8 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
@@ -199,7 +200,8 @@ public class CommunityEditionModule extends StandaloneEditionModule
     {
         ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
         Config config = globalModule.getGlobalConfig();
-        return new SingleInstanceRoutingProcedureInstaller( databaseManager, portRegister, config );
+        LogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
+        return new SingleInstanceRoutingProcedureInstaller( databaseManager, portRegister, config, logProvider );
     }
 
     @Override

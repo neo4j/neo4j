@@ -55,6 +55,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller.DEFAULT_NAMESPACE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -154,7 +155,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
     protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config )
     {
-        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, config );
+        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, config, nullLogProvider() );
     }
 
     protected List<SocketAddress> expectedWriters( SocketAddress selfAddress )

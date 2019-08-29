@@ -32,6 +32,8 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -55,12 +57,14 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
     private final DatabaseManager<?> databaseManager;
 
     protected final Config config;
+    protected final Log log;
 
-    protected BaseGetRoutingTableProcedure( List<String> namespace, DatabaseManager<?> databaseManager, Config config )
+    protected BaseGetRoutingTableProcedure( List<String> namespace, DatabaseManager<?> databaseManager, Config config, LogProvider logProvider )
     {
         this.signature = buildSignature( namespace );
         this.databaseManager = databaseManager;
         this.config = config;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -78,6 +82,7 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
         var routingContext = extractRoutingContext( input );
 
         var result = invoke( databaseId, routingContext );
+        log.debug( "Routing result for database %s and routing context %s is %s", databaseId, routingContext, result );
         assertRoutingResultNotEmpty( result, databaseId );
 
         return RawIterator.<AnyValue[],ProcedureException>of( RoutingResultFormat.build( result ) );
