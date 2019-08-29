@@ -178,6 +178,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 
   private def checkClauses: SemanticCheck = s => {
+    val lastIndex = clauses.size - 1
     val result = clauses.zipWithIndex.foldLeft(SemanticCheckResult.success(s.newChildScope)) {
       case (lastResult, (clause, idx)) =>
         val next = clause match {
@@ -186,8 +187,15 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           case c: HorizonClause =>
             checkHorizon(c, lastResult.state.clearInitialWith, lastResult.errors)
           case _ =>
-            val result = clause.semanticCheck(lastResult.state.clearInitialWith)
-            SemanticCheckResult(result.state, lastResult.errors ++ result.errors)
+            val checked = clause.semanticCheck(lastResult.state.clearInitialWith)
+            val errors = lastResult.errors ++ checked.errors
+            val resultState = clause match {
+              case _: UpdateClause if idx == lastIndex =>
+                checked.state.newSiblingScope
+              case _ =>
+                checked.state
+            }
+            SemanticCheckResult(resultState, errors)
         }
 
         next.copy(state = next.state.recordCurrentScope(clause))
