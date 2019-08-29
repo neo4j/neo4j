@@ -99,7 +99,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 @TestDirectoryExtension
 class IndexRecoveryIT
 {
-    private static final Duration TIMEOUT = Duration.ofMinutes( 1 );
+    private static final Duration TIMEOUT = Duration.ofMinutes( 5 );
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseAPI db;
