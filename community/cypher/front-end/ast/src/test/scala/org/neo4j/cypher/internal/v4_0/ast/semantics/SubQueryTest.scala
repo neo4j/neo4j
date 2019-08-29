@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.expressions.NodePattern
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -110,6 +111,75 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
     result.errors.size shouldEqual 1
     result.errors.head.msg should include ("Variable `x` already declared")
+  }
+
+  test("subquery allows union with valid return statements at the end") {
+
+    val sq = singleQuery(
+      subQuery(
+        union(
+          singleQuery(return_(literal(2).as("x"))),
+          singleQuery(return_(literal(2).as("x")))
+        )
+      ),
+      return_(varFor("x").as("x"))
+    )
+
+    val result = sq.semanticCheck(SemanticState.clean)
+
+    result.errors.size shouldEqual 0
+  }
+
+  test("subquery allows union with valid return columns in different order at the end") {
+
+    val sq = singleQuery(
+      subQuery(
+        union(
+          singleQuery(return_(literal(2).as("x"), literal(2).as("y"))),
+          singleQuery(return_(literal(2).as("y"), literal(2).as("x")))
+        )
+      ),
+      return_(varFor("x").as("x"), varFor("y").as("y"))
+    )
+
+    val result = sq.semanticCheck(SemanticState.clean)
+
+    result.errors.size shouldEqual 0
+  }
+
+  test("subquery allows union without return statement at the end") {
+
+    val sq = singleQuery(
+      subQuery(
+        union(
+          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos))),
+          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)))
+        )
+      ),
+      return_(countStar().as("count"))
+    )
+
+    val result = sq.semanticCheck(SemanticState.clean)
+
+    result.errors.size shouldEqual 0
+  }
+
+  test("subquery disallows union with different return columns at the end") {
+
+    val sq = singleQuery(
+      subQuery(
+        union(
+          singleQuery(return_(literal(2).as("x"), literal(2).as("y"), literal(2).as("z"))),
+          singleQuery(return_(literal(2).as("y"), literal(2).as("x")))
+        )
+      ),
+      return_(varFor("x").as("x"), varFor("y").as("y"))
+    )
+
+    val result = sq.semanticCheck(SemanticState.clean)
+
+    result.errors.size shouldEqual 1
+    result.errors.head.msg should include ("All sub queries in an UNION must have the same column names")
   }
 
 }

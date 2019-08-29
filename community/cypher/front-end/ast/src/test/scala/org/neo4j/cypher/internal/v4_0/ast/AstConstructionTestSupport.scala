@@ -248,6 +248,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def subQuery(cs: Clause*): SubQuery =
     SubQuery(Query(None, SingleQuery(cs)(pos))(pos))(pos)
 
+  def subQuery(query: QueryPart): SubQuery =
+    SubQuery(Query(None, query)(pos))(pos)
+
   def create(pattern: PatternElement, where: Option[Where] = None): Create =
     Create(Pattern(Seq(EveryPath(pattern)))(pos))(pos)
 
@@ -281,6 +284,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       Some(Vector()), None
     )(pos)
 
+  def union(part: QueryPart, query: SingleQuery): UnionDistinct = UnionDistinct(part, query)(pos)
 
   implicit class ExpressionOps(expr: Expression) {
     def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos)
@@ -291,6 +295,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   implicit class NumberLiteralOps(nl: NumberLiteral) {
     def unaliased: UnaliasedReturnItem = UnaliasedReturnItem(nl, nl.stringVal)(pos)
+  }
+
+  implicit class UnionLiteralOps(u: UnionDistinct) {
+    def all: UnionAll = UnionAll(u.part, u.query)(pos)
   }
 
 

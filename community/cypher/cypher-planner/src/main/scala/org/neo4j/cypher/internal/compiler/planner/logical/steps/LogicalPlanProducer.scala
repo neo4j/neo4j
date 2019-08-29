@@ -712,7 +712,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planUnionForOrLeaves(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    // FIXME how does this even work?
     annotate(Union(left, right), solveds.get(left.id), ProvidedOrder.empty, context)
   }
 
