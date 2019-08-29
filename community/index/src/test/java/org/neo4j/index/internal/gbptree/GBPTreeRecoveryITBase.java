@@ -37,10 +37,9 @@ import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -52,7 +51,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
-@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
+@EphemeralTestDirectoryExtension
+@ExtendWith( RandomExtension.class )
 abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 {
     private static final int PAGE_SIZE = 256;

@@ -41,7 +41,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Long.max;
@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( DefaultFileSystemExtension.class )
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class StoreLogServiceTest
 {
     @Inject

@@ -20,14 +20,13 @@
 package org.neo4j.kernel.extension;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.service.Services;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,7 +38,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
  * Base class for testing a {@link ExtensionFactory}. The base test cases in this
  * class verifies that a extension upholds the {@link ExtensionFactory} contract.
  */
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 public abstract class ExtensionFactoryContractTest
 {
     @Inject

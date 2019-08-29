@@ -21,7 +21,6 @@ package org.neo4j.io.fs.watcher;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
@@ -31,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class DatabaseLayoutWatcherTest
 {
     @Inject

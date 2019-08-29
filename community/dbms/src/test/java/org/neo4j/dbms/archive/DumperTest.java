@@ -22,7 +22,6 @@ package org.neo4j.dbms.archive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -35,7 +34,7 @@ import java.nio.file.Path;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
@@ -43,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.archive.CompressionFormat.GZIP;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class DumperTest
 {
     @Inject

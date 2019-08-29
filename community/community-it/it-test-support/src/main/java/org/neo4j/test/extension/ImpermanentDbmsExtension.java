@@ -29,6 +29,7 @@ import java.lang.annotation.Target;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 /**
  * See {@link DbmsExtension} for documentation.
@@ -38,7 +39,8 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 @Inherited
 @Target( {ElementType.TYPE, ElementType.METHOD} )
 @Retention( RetentionPolicy.RUNTIME )
-@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, DbmsSupportExtension.class} )
+@EphemeralTestDirectoryExtension
+@ExtendWith( DbmsSupportExtension.class )
 public @interface ImpermanentDbmsExtension
 {
     String injectableDatabase() default GraphDatabaseSettings.DEFAULT_DATABASE_NAME;

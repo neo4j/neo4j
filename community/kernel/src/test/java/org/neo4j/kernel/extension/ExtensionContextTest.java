@@ -20,7 +20,6 @@
 package org.neo4j.kernel.extension;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
@@ -35,7 +34,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -46,7 +45,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class ExtensionContextTest
 {
     @Inject

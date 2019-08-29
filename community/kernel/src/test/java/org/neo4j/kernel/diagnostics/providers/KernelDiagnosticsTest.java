@@ -36,7 +36,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -45,7 +45,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 @ExtendWith( DefaultFileSystemExtension.class )
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class KernelDiagnosticsTest
 {
     @Inject

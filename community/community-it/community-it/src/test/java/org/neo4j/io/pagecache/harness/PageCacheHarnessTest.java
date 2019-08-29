@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.resources.Profiler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.ProfilerExtension;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.time.Duration.ofMillis;
@@ -56,7 +56,8 @@ import static org.neo4j.io.pagecache.randomharness.Command.UnmapFile;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
 
-@ExtendWith( {TestDirectoryExtension.class, ProfilerExtension.class} )
+@TestDirectoryExtension
+@ExtendWith( ProfilerExtension.class )
 abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     @Inject

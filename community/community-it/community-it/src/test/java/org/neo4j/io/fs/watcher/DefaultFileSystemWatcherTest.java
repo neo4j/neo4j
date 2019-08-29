@@ -20,7 +20,6 @@
 package org.neo4j.io.fs.watcher;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +35,7 @@ import java.util.List;
 
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -53,7 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class DefaultFileSystemWatcherTest
 {
     @Inject

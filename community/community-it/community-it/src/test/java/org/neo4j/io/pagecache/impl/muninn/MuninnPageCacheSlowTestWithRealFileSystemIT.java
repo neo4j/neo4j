@@ -19,14 +19,12 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class MuninnPageCacheSlowTestWithRealFileSystemIT extends MuninnPageCacheSlowIT
 {
     @Inject

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -50,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 public class TransactionAppenderStressTest
 {
     @Inject

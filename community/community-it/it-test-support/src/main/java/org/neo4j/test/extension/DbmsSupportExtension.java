@@ -36,6 +36,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.stream;
@@ -114,12 +115,12 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
 
     protected TestDirectory getTestDirectory( ExtensionContext context )
     {
-        TestDirectory testDir =
-                context.getStore( TestDirectoryExtension.TEST_DIRECTORY_NAMESPACE ).get( TestDirectoryExtension.TEST_DIRECTORY, TestDirectory.class );
+        TestDirectory testDir = context.getStore( TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE )
+                .get( TestDirectorySupportExtension.TEST_DIRECTORY, TestDirectory.class );
         if ( testDir == null )
         {
             throw new IllegalStateException(
-                    TestDirectoryExtension.class.getSimpleName() + " not in scope, make sure to add it before the " + getClass().getSimpleName() );
+                    TestDirectorySupportExtension.class.getSimpleName() + " not in scope, make sure to add it before the " + getClass().getSimpleName() );
         }
         return testDir;
     }

@@ -43,10 +43,9 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -65,7 +64,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * This test tries to reproduce this race. It will not produce false negatives, but sometimes false positives
  * since it's non-deterministic.
  */
-@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, LifeExtension.class} )
+@TestDirectoryExtension
+@ExtendWith( LifeExtension.class )
 class TransactionLogFileRotateAndReadRaceIT
 {
     @Inject

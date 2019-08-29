@@ -38,10 +38,9 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.index.schema.GatheringNodeValueClient;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
@@ -55,7 +54,8 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
+@EphemeralTestDirectoryExtension
+@ExtendWith( RandomExtension.class )
 public class SimpleIndexReaderDistinctValuesTest
 {
     @Inject

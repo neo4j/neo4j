@@ -29,6 +29,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import java.io.File;
 import java.util.Optional;
 
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,9 +43,9 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FI
 /**
  * This test is disabled by default and not executed directly by test runner.
  * It will be executed by a specific test executor as part of extensions lifecycle testing.
- * @see TestDirectoryExtensionTest#failedTestShouldKeepDirectory()
+ * @see TestDirectoryExtensionTestSupport#failedTestShouldKeepDirectory()
  */
-@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+@TestDirectoryExtension
 @ExtendWith( DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.class )
 @ResourceLock( SHARED_RESOURCE )
 class DirectoryExtensionLifecycleVerificationTest

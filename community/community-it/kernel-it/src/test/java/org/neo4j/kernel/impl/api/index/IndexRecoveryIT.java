@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,7 +69,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
@@ -97,7 +96,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class IndexRecoveryIT
 {
     private static final Duration TIMEOUT = Duration.ofMinutes( 1 );

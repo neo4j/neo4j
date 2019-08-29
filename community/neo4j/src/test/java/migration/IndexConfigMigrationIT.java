@@ -21,7 +21,6 @@ package migration;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +59,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.config.CrsConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -87,7 +86,7 @@ import static org.neo4j.values.storable.Values.COMPARATOR;
 /**
  * This test should verify that index configurations from a 3.5 store stay intact when opened again, with migration if needed.
  */
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class IndexConfigMigrationIT
 {
     private static final CrsConfig wgs84 = CrsConfig.group( WGS84 );

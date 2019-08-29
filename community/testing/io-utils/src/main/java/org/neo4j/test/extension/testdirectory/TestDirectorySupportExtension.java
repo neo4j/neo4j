@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.extension;
+package org.neo4j.test.extension.testdirectory;
 
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.extension.FileSystemExtension;
+import org.neo4j.test.extension.StatefullFieldExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -39,7 +41,7 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
-public class TestDirectoryExtension extends StatefullFieldExtension<TestDirectory>
+public class TestDirectorySupportExtension extends StatefullFieldExtension<TestDirectory>
         implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback
 {
     public static final String TEST_DIRECTORY = "testDirectory";

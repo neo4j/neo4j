@@ -27,11 +27,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.neo4j.test.extension.DefaultFileSystemExtension;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 
 @Target( {ElementType.TYPE, ElementType.METHOD} )
 @Retention( RetentionPolicy.RUNTIME )
-@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, PageCacheSupportExtension.class} )
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectorySupportExtension.class, PageCacheSupportExtension.class} )
 public @interface PageCacheExtension
 {
 }

@@ -20,7 +20,6 @@
 package org.neo4j.configuration.ssl;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +32,7 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.string.SecureString;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.unmodifiableMap;
@@ -45,7 +44,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_valida
 import static org.neo4j.configuration.ssl.SslPolicyScope.TESTING;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class SslPolicyConfigValidatorTest
 {
     @Inject

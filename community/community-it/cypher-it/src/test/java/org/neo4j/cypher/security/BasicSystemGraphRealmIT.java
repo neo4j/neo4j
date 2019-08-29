@@ -22,7 +22,6 @@ package org.neo4j.cypher.security;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import picocli.CommandLine;
 
 import java.io.PrintStream;
@@ -36,7 +35,7 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,7 +55,7 @@ import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 import static org.neo4j.server.security.auth.BasicSystemGraphRealmTest.clearedPasswordWithSameLengthAs;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 public class BasicSystemGraphRealmIT
 {
     private BasicSystemGraphRealmTestHelper.TestDatabaseManager dbManager;

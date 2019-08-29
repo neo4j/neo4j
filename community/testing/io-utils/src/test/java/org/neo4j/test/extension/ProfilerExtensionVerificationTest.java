@@ -29,13 +29,15 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import java.util.Optional;
 
 import org.neo4j.resources.Profiler;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 
-@ExtendWith( {TestDirectoryExtension.class, ProfilerExtension.class} )
+@TestDirectoryExtension
+@ExtendWith( ProfilerExtension.class )
 @ExtendWith( ProfilerExtensionVerificationTest.ConfigurationParameterCondition.class )
 @ResourceLock( ExecutionSharedContext.SHARED_RESOURCE )
 class ProfilerExtensionVerificationTest
@@ -43,10 +45,10 @@ class ProfilerExtensionVerificationTest
     static final String TEST_DIR = "test dir";
 
     @Inject
-    TestDirectory testDirectory;
+    private TestDirectory testDirectory;
 
     @Inject
-    Profiler profiler;
+    private Profiler profiler;
 
     @Test
     void testThatPasses() throws Exception

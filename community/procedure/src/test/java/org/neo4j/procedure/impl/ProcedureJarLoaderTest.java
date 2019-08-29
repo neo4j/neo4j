@@ -21,7 +21,6 @@ package org.neo4j.procedure.impl;
 
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,7 +50,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserFunction;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.jar.JarBuilder;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.AnyValue;
@@ -75,7 +74,7 @@ import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
 @SuppressWarnings( "WeakerAccess" )
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 public class ProcedureJarLoaderTest
 {
     @Inject

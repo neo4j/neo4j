@@ -20,13 +20,12 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.io.pagecache.stress.Condition;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
@@ -38,7 +37,7 @@ import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
  *
  * Configured to run until it sees a million evictions, which should take few minutes.
  */
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class MuninnPageCacheStressIT
 {
     @Inject

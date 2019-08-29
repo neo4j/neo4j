@@ -20,7 +20,6 @@
 package org.neo4j.test.impl;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.InputStream;
@@ -28,24 +27,24 @@ import java.io.OutputStream;
 
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class ChannelOutputStreamTest
 {
     @Inject
-    TestDirectory tmpDir;
+    private TestDirectory testDirectory;
 
     @Test
     void shouldStoreAByteAtBoundary() throws Exception
     {
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
-            File workFile = tmpDir.file( "a" );
-            fs.mkdirs( tmpDir.directory() );
+            File workFile = testDirectory.file( "a" );
+            fs.mkdirs( testDirectory.directory() );
             OutputStream out = fs.openAsOutputStream( workFile, false );
 
             // When I write a byte[] that is larger than the internal buffer in

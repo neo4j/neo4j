@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,11 +30,12 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
-class ClassLevelTestDirectoryExtensionTest
+@EphemeralTestDirectoryExtension
+class ClassLevelTestDirectoryExtensionTestSupport
 {
     @Inject
     FileSystemAbstraction fs;

@@ -32,6 +32,7 @@ import java.io.PrintStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.resources.Profiler;
+import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 /**
@@ -110,8 +111,8 @@ public class ProfilerExtension extends StatefullFieldExtension<Profiler> impleme
                 profiler.printProfile( new PrintStream( buffer ), displayName );
                 buffer.writeTo( System.err );
 
-                ExtensionContext.Store testDirStore = getStore( context, TestDirectoryExtension.TEST_DIRECTORY_NAMESPACE );
-                TestDirectory testDir = testDirStore.get( TestDirectoryExtension.TEST_DIRECTORY, TestDirectory.class );
+                ExtensionContext.Store testDirStore = getStore( context, TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE );
+                TestDirectory testDir = testDirStore.get( TestDirectorySupportExtension.TEST_DIRECTORY, TestDirectory.class );
 
                 if ( testDir != null && testDir.isInitialised() )
                 {

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.internal;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
 
@@ -30,7 +29,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptyMap;
@@ -38,7 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class LockerLifecycleAdapterTest
 {
     @Inject

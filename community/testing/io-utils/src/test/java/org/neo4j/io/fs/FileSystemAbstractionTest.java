@@ -23,7 +23,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +42,7 @@ import java.util.stream.Stream;
 import org.neo4j.function.Predicates;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -65,7 +64,7 @@ import static org.neo4j.io.fs.FileHandle.HANDLE_DELETE;
 import static org.neo4j.io.fs.FileHandle.handleRename;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 public abstract class FileSystemAbstractionTest
 {
     @Inject

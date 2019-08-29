@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.factory.module;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +33,7 @@ import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SkipThreadLeakageGuard;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 
 @SkipThreadLeakageGuard
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class GlobalModuleTest
 {
     @Inject

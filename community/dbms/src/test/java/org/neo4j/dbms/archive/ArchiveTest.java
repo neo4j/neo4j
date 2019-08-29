@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.archive;
 
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -35,7 +34,7 @@ import java.util.Optional;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.Files.isDirectory;
@@ -44,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.function.Predicates.alwaysFalse;
 import static org.neo4j.internal.helpers.collection.Pair.pair;
 
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 class ArchiveTest
 {
     @Inject

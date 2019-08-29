@@ -17,11 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.extension;
+package org.neo4j.test.extension.testdirectory;
 
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-@TestDirectoryExtension
-class ProfiledTemplateVerification extends ProfiledTestTemplate
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+
+@Target( {ElementType.TYPE, ElementType.METHOD} )
+@Retention( RetentionPolicy.RUNTIME )
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectorySupportExtension.class} )
+public @interface EphemeralTestDirectoryExtension
 {
 }

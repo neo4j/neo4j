@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -30,7 +29,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
@@ -47,7 +46,7 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
  * @param <WriteSupport> The test support for the current test.
  */
 @SuppressWarnings( "WeakerAccess" )
-@ExtendWith( TestDirectoryExtension.class )
+@TestDirectoryExtension
 @ResourceLock( SHARED_RESOURCE )
 public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWriteTestSupport>
 {
