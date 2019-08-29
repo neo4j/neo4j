@@ -171,7 +171,10 @@ public class FullCheck
                     nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes, directStoreAccess.tokenHolders(),
                     multiPass, reporter, threads );
 
-            consistencyCheckIndexes( indexes, reporter, progressFactory );
+            if ( checkIndexes )
+            {
+                consistencyCheckIndexes( indexes, reporter, progressFactory );
+            }
 
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );

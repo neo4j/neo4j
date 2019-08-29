@@ -57,6 +57,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -96,13 +97,29 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
+    public void shouldNotCheckIndexesIfConfiguredNotTo() throws Exception
+    {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        MutableObject<Long> targetNode = new MutableObject<>();
+        corruptIndexes( ( tree, inspection ) -> {
+            targetNode.setValue( inspection.getRootNode() );
+            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ) );
+        } );
+
+        final Config config = Config.defaults( ConsistencyCheckSettings.consistency_check_indexes, Settings.FALSE );
+        ConsistencyCheckService.Result result = runConsistencyCheck( config );
+
+        assertTrue( "Expected store to be consistent when not checking indexes.", result.isSuccessful() );
+    }
+
+    @Test
     public void shouldReportProgress() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
 
         Writer writer = new StringWriter();
         ProgressMonitorFactory factory = ProgressMonitorFactory.textual( writer );
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), factory );
+        ConsistencyCheckService.Result result = runConsistencyCheck( factory );
 
         assertTrue( "Expected new database to be clean.", result.isSuccessful() );
         assertTrue( writer.toString().contains( "Index structure consistency check" ) );
@@ -118,7 +135,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Page: " + targetNode.getValue() + " is not a tree node page." );
@@ -134,7 +151,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.unknownTreeNodeType() ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Page: " + targetNode.getValue() + " has an unknown tree node type:" );
@@ -150,7 +167,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.rightSiblingPointToNonExisting() ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Sibling pointers misaligned." );
@@ -165,7 +182,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( root, GBPTreeCorruption.setPointer( GBPTreePointerType.rightSibling(), 10 ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Expected rightmost node to have no right sibling but was 10" );
@@ -182,7 +199,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
                     GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.setPointer( GBPTreePointerType.successor(), 6 ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "We ended up on tree node " + targetNode.getValue() + " which has a newer generation, successor is: 6" );
@@ -201,7 +218,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.rightSiblingPointerHasTooLowGeneration() ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result,
@@ -220,7 +237,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.swapKeyOrderLeaf( 0, 1, keyCount ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, String.format( "Keys in tree node %d are out of order.", targetNode.getValue() ) );
@@ -236,7 +253,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( internalNode, GBPTreeCorruption.swapChildOrder( 0, 1, keyCount ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Expected range for this tree node is" );
@@ -252,7 +269,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( internalNode,GBPTreeCorruption.setKeyCount( keyCount - 1 ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Index has a leaked page that will never be reclaimed, pageId=" );
@@ -266,7 +283,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.decrementFreelistWritePos() );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Index has a leaked page that will never be reclaimed, pageId=" );
@@ -280,7 +297,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( inspection.getRootNode(), GBPTreeCorruption.decrementAllocOffsetInDynamicNode() ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "has inconsistent meta data: Meta data for tree node is inconsistent" );
@@ -296,7 +313,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.addFreelistEntry( targetNode.getValue() ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result,
@@ -314,7 +331,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.crashed( GBPTreePointerType.rightSibling() ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Crashed pointer found in tree node " + targetNode.getValue() );
@@ -330,7 +347,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Broken pointer found in tree node " + targetNode.getValue() );
@@ -346,7 +363,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.setKeyCount( Integer.MAX_VALUE ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Unexpected keyCount on pageId " + targetNode.getValue() + ", keyCount=" + Integer.MAX_VALUE );
@@ -361,7 +378,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( rootNode, GBPTreeCorruption.setChild( 0, rootNode ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Circular reference, child tree node found among parent nodes. Parents:" );
@@ -376,7 +393,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( rootNode, GBPTreeCorruption.notATreeNode() ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
 
         assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
         assertResultContainsMessage( result, "Index file: " + indexFiles.get( 0 ).getAbsolutePath() );
@@ -396,7 +413,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( internalNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
         assertResultContainsMessage( result, "Index inconsistency: Sibling pointers misaligned." );
         assertResultContainsMessage( result, "Index inconsistency: Expected range for this tree node is" );
         assertResultContainsMessage( result,
@@ -433,7 +450,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( internalNode, GBPTreeCorruption.setChild( 0, internalNode ) ) );
         } );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck();
         for ( File file : files )
         {
             assertResultContainsMessage( result,
@@ -458,17 +475,27 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         assertTrue( errorMessage, reportContainExpectedMessage );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider ) throws ConsistencyCheckIncompleteException
+    private ConsistencyCheckService.Result runConsistencyCheck() throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( logProvider, ProgressMonitorFactory.NONE );
+        return runConsistencyCheck( Config.defaults() );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ProgressMonitorFactory progressFactory )
+    private ConsistencyCheckService.Result runConsistencyCheck( Config config ) throws ConsistencyCheckIncompleteException
+    {
+        return runConsistencyCheck( ProgressMonitorFactory.NONE, config );
+    }
+
+    private ConsistencyCheckService.Result runConsistencyCheck( ProgressMonitorFactory progressFactory ) throws ConsistencyCheckIncompleteException
+    {
+        return runConsistencyCheck( progressFactory, Config.defaults() );
+    }
+
+    private ConsistencyCheckService.Result runConsistencyCheck( ProgressMonitorFactory progressFactory, Config config )
             throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.storeDir() );
-        Config config = Config.defaults();
+        LogProvider logProvider = NullLogProvider.getInstance();
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false );
     }
 
