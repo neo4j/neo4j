@@ -75,7 +75,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     DebugLog.beginTime()
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
-    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode)
+    runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode)
     runtimeTestSupport.start()
     super.beforeEach()
   }
@@ -84,6 +84,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     DebugLog.log("")
     shutdownDatabase()
     afterTest()
+  }
+  
+  protected def createRuntimeTestSupport(graphDb: GraphDatabaseService, edition: Edition[CONTEXT], workloadMode: Boolean): RuntimeTestSupport[CONTEXT] = {
+    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode)
   }
 
   protected def shutdownDatabase(): Unit = {

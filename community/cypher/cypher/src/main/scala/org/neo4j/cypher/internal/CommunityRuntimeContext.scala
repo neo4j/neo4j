@@ -41,7 +41,8 @@ case class CommunityRuntimeContextManager(log: Log, config: CypherRuntimeConfigu
                       schemaRead: SchemaRead,
                       clock: Clock,
                       debugOptions: Set[String],
-                      ignore: Boolean
+                      ignore: Boolean,
+                      ignore2: Boolean
                      ): CommunityRuntimeContext =
     CommunityRuntimeContext(tokenContext, schemaRead, log, config)
 

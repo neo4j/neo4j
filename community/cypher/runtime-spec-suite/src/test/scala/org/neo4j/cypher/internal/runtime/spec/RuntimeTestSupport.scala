@@ -51,7 +51,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   private val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
   private val lifeSupport = new LifeSupport
   private val resolver: DependencyResolver = cypherGraphDb.getDependencyResolver
-  private val runtimeContextManager = edition.newRuntimeContextManager(resolver, lifeSupport)
+  protected val runtimeContextManager = edition.newRuntimeContextManager(resolver, lifeSupport)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
   var txHolder = new ThreadLocal[InternalTransaction]
@@ -116,12 +116,13 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
-  private def newRuntimeContext(txContext: TransactionalContext, queryContext: QueryContext): CONTEXT = {
+  protected def newRuntimeContext(txContext: TransactionalContext, queryContext: QueryContext): CONTEXT = {
     runtimeContextManager.create(queryContext,
                                  txContext.kernelTransaction().schemaRead(),
                                  MasterCompiler.CLOCK,
                                  Set.empty,
-                                 compileExpressions = false)
+                                 compileExpressions = false, 
+                                 noDatabaseAccess = false)
   }
 
   private def newQueryContext(txContext: TransactionalContext, maybeCursorFactory: Option[CursorFactory] = None): QueryContext = {

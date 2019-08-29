@@ -107,7 +107,8 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
              schemaRead: SchemaRead,
              clock: Clock,
              debugOptions: Set[String],
-             compileExpressions: Boolean
+             compileExpressions: Boolean,
+             noDatabaseAccess: Boolean
             ): CONTEXT
 
   /**

@@ -121,7 +121,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                transactionalContext.kernelTransaction().schemaRead(),
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
-                                               query.options.useCompiledExpressions)
+                                               query.options.useCompiledExpressions,
+                                               query.options.noDatabaseAccess)
 
     val logicalQuery = LogicalQuery(logicalPlan,
                                     planState.queryText,
