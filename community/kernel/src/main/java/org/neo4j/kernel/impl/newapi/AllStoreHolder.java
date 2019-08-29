@@ -449,6 +449,10 @@ public class AllStoreHolder extends Read
 
     private ConstraintDescriptor lockConstraint( ConstraintDescriptor constraint )
     {
+        if ( constraint == null )
+        {
+            return null;
+        }
         constraint = acquireSharedSchemaLock( constraint );
         if ( !constraintExists( constraint ) )
         {
