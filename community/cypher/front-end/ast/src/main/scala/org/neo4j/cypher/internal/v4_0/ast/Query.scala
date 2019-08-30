@@ -68,21 +68,10 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def returnColumns: List[LogicalVariable] = clauses.last.returnColumns
 
-  def semanticCheckAbstract(cls: Seq[Clause]): SemanticCheck =
-    checkCorrelatedSubQueriesFeature chain
-    checkStandaloneCall chain
-    checkOrder chain
-    checkClauses chain
-    checkIndexHints chain
-    checkInputDataStream
-
-  override def semanticCheck: SemanticCheck =
-    semanticCheckAbstract(clauses)
-
-  private def checkCorrelatedSubQueriesFeature: SemanticCheck =
-    when(importWith.isDefined)(
-      requireFeatureSupport(s"Importing variables into subqueries", SemanticFeature.CorrelatedSubQueries, importWith.get.position)
-    )
+  def importColumns: Seq[String] = importWith match {
+    case Some(w) => w.returnItems.items.map(_.name)
+    case _       => Seq.empty
+  }
 
   def importWith: Option[With] = {
     def hasImportFormat(w: With) = w match {
@@ -99,10 +88,16 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   def clausesExceptImportWith: Seq[Clause] =
     clauses.filterNot(importWith.contains)
 
-  def importColumns: Seq[String] = importWith match {
-    case Some(w) => w.returnItems.items.map(_.name)
-    case _       => Seq.empty
-  }
+  def semanticCheckAbstract(clauses: Seq[Clause]): SemanticCheck =
+    checkCorrelatedSubQueriesFeature chain
+    checkStandaloneCall(clauses) chain
+    checkOrder(clauses) chain
+    checkClauses(clauses) chain
+    checkIndexHints(clauses) chain
+    checkInputDataStream(clauses)
+
+  override def semanticCheck: SemanticCheck =
+    semanticCheckAbstract(clauses)
 
   override def semanticCheckWithImports(outer: SemanticState): SemanticCheck = {
     def importVariables: SemanticCheck =
@@ -116,10 +111,14 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
     importVariables chain
       semanticCheckAbstract(clausesExceptImportWith)
-
   }
 
-  private def checkIndexHints: SemanticCheck = s => {
+  private def checkCorrelatedSubQueriesFeature: SemanticCheck =
+    when(importWith.isDefined)(
+      requireFeatureSupport(s"Importing variables into subqueries", SemanticFeature.CorrelatedSubQueries, importWith.get.position)
+    )
+
+  private def checkIndexHints(clauses: Seq[Clause]): SemanticCheck = s => {
     val hints = clauses.collect { case m: Match => m.hints }.flatten
     val hasStartClause = clauses.exists(_.isInstanceOf[Start])
     if (hints.nonEmpty && hasStartClause) {
@@ -129,7 +128,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  private def checkStandaloneCall: SemanticCheck = s => {
+  private def checkStandaloneCall(clauses: Seq[Clause]): SemanticCheck = s => {
     clauses match {
       case Seq(call: UnresolvedCall, where: With) =>
         SemanticCheckResult.error(s, SemanticError("Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)", where.position))
@@ -138,7 +137,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  private def checkOrder: SemanticCheck = s => {
+  private def checkOrder(clauses: Seq[Clause]): SemanticCheck = s => {
     val (lastPair, errors) = clauses.sliding(2).foldLeft(Seq.empty[Clause] -> Vector.empty[SemanticError]) {
       case ((_, semanticErrors), pair) =>
         val optError = pair match {
@@ -177,7 +176,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     semantics.SemanticCheckResult(s, errors ++ lastError)
   }
 
-  private def checkClauses: SemanticCheck = s => {
+  private def checkClauses(clauses: Seq[Clause]): SemanticCheck = s => {
     val lastIndex = clauses.size - 1
     val result = clauses.zipWithIndex.foldLeft(SemanticCheckResult.success(s.newChildScope)) {
       case (lastResult, (clause, idx)) =>
@@ -210,7 +209,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     semantics.SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
   }
 
-  private def checkInputDataStream: SemanticCheck = (state: SemanticState) => {
+  private def checkInputDataStream(clauses: Seq[Clause]): SemanticCheck = (state: SemanticState) => {
     val idsClauses = clauses.filter(_.isInstanceOf[InputDataStream])
 
     idsClauses.size match {

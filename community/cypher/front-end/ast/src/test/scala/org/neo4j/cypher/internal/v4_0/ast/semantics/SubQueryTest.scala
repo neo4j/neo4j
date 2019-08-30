@@ -22,8 +22,25 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
+  private val clean =
+    SemanticState.clean
+      .withFeature(SemanticFeature.CorrelatedSubQueries)
 
-  private val clean = SemanticState.clean
+  test("correlated subqueries require semantic feature") {
+
+    val q =
+      query(
+        with_(literal(1).as("a")),
+        subQuery(
+          with_(varFor("a").aliased),
+          return_(literal(1).as("b"))
+        ),
+        return_(varFor("a").as("a"))
+      )
+        .semanticCheck(SemanticState.clean)
+        .tap(_.errors.size.shouldEqual(1))
+        .tap(_.errors.head.msg.should(include("Importing") and include("correlated subqueries")))
+  }
 
   test("returned variables are added to scope after sub-query") {
 
@@ -37,6 +54,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
         varFor("a").as("a"), varFor("b").as("b"), varFor("c").as("c"))
     )
       .semanticCheck(clean)
+      .tap(_.errors.foreach(println))
       .errors.size.shouldEqual(0)
 
   }
