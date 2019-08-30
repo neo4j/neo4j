@@ -22,6 +22,7 @@ package org.neo4j.procedure.builtin;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
@@ -29,6 +30,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -40,11 +43,14 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 
+import static java.lang.String.format;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( "unused" )
 public class BuiltInDbmsProcedures
 {
+    private static final int HARD_CHAR_LIMIT = 2048;
+
     @Context
     public Log log;
 
@@ -71,6 +77,35 @@ public class BuiltInDbmsProcedures
             }
         } );
         return results.stream().sorted( Comparator.comparing( c -> c.name ) );
+    }
+
+    @Description( "Attaches a map of data to the transaction. The data will be printed when listing queries, and " +
+            "inserted into the query log." )
+    @Procedure( name = "dbms.setTXMetaData", mode = DBMS )
+    public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
+    {
+        securityContext.assertCredentialsNotExpired();
+        int totalCharSize = data.entrySet()
+                .stream()
+                .mapToInt( e -> e.getKey().length() + ((e.getValue() != null) ? e.getValue().toString().length() : 0) )
+                .sum();
+
+        if ( totalCharSize >= HARD_CHAR_LIMIT )
+        {
+            throw new IllegalArgumentException(
+                    format( "Invalid transaction meta-data, expected the total number of chars for " +
+                            "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
+        }
+
+        getCurrentTx().setMetaData( data );
+    }
+
+    @Description( "Provides attached transaction metadata." )
+    @Procedure( name = "dbms.getTXMetaData", mode = DBMS )
+    public Stream<MetadataResult> getTXMetaData()
+    {
+        securityContext.assertCredentialsNotExpired();
+        return Stream.of( getCurrentTx().getMetaData() ).map( MetadataResult::new );
     }
 
     @Description( "List all procedures in the DBMS." )
@@ -123,6 +158,12 @@ public class BuiltInDbmsProcedures
         return Stream.of( new StringResult( result ) );
     }
 
+    private KernelTransaction getCurrentTx()
+    {
+        return graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true, graph.databaseId() );
+    }
+
     public static class FunctionResult
     {
         public final String name;
@@ -170,6 +211,16 @@ public class BuiltInDbmsProcedures
         StringResult( String value )
         {
             this.value = value;
+        }
+    }
+
+    public static class MetadataResult
+    {
+        public final Map<String,Object> metadata;
+
+        MetadataResult( Map<String,Object> metadata )
+        {
+            this.metadata = metadata;
         }
     }
 }
