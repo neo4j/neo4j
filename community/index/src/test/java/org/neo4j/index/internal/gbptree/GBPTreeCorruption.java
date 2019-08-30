@@ -205,10 +205,12 @@ public final class GBPTreeCorruption
 
             // Remove key and value, may need to defragment node to make sure we have room for insert later
             node.removeKeyValueAt( cursor, keyPos, keyCount );
+            TreeNode.setKeyCount( cursor, keyCount - 1 );
             node.defragmentLeaf( cursor );
 
             // Insert new key and value
             node.insertKeyValueAt( cursor, key, value, keyPos, keyCount - 1 );
+            TreeNode.setKeyCount( cursor, keyCount );
         };
     }
 
@@ -216,14 +218,16 @@ public final class GBPTreeCorruption
     {
         return ( cursor, layout, node, treeState ) -> {
             // Record rightChild so that we can reinsert it together with key later
-            long rightChild = node.childAt( cursor, keyPos, treeState.stableGeneration(), treeState.unstableGeneration() );
+            long rightChild = node.childAt( cursor, keyPos + 1, treeState.stableGeneration(), treeState.unstableGeneration() );
 
             // Remove key and right child, may need to defragment node to make sure we have room for insert later
             node.removeKeyAndRightChildAt( cursor, keyPos, keyCount );
-            node.defragmentLeaf( cursor );
+            TreeNode.setKeyCount( cursor, keyCount - 1 );
+            node.defragmentInternal( cursor );
 
             // Insert key and right child
             node.insertKeyAndRightChildAt( cursor, key, rightChild, keyPos, keyCount - 1, treeState.stableGeneration(), treeState.unstableGeneration() );
+            TreeNode.setKeyCount( cursor, keyCount );
         };
     }
 
