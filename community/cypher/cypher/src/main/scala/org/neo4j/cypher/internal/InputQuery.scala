@@ -93,7 +93,7 @@ case class QueryOptions(offset: InputPosition,
                         expressionEngine: CypherExpressionEngineOption,
                         debugOptions: Set[String],
                         recompilationLimitReached: Boolean = false,
-                        noDatabaseAccess: Boolean = false) {
+                        materializedEntitiesMode: Boolean = false) {
 
   def compileWhenHot: Boolean = expressionEngine == CypherExpressionEngineOption.onlyWhenHot || expressionEngine == CypherExpressionEngineOption.default
 

@@ -122,7 +122,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  MasterCompiler.CLOCK,
                                  Set.empty,
                                  compileExpressions = false, 
-                                 noDatabaseAccess = false)
+                                 materializedEntitiesMode = false)
   }
 
   private def newQueryContext(txContext: TransactionalContext, maybeCursorFactory: Option[CursorFactory] = None): QueryContext = {

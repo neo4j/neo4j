@@ -108,7 +108,7 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
              clock: Clock,
              debugOptions: Set[String],
              compileExpressions: Boolean,
-             noDatabaseAccess: Boolean
+             materializedEntitiesMode: Boolean
             ): CONTEXT
 
   /**

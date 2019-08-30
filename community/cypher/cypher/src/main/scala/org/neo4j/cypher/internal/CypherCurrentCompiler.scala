@@ -122,7 +122,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
                                                query.options.useCompiledExpressions,
-                                               query.options.noDatabaseAccess)
+                                               query.options.materializedEntitiesMode)
 
     val logicalQuery = LogicalQuery(logicalPlan,
                                     planState.queryText,
