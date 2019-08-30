@@ -45,13 +45,14 @@ case object PushdownPropertyReads {
     case class Acc(variableOptima: Map[String, CardinalityOptimum],
                    propertyReadOptima: Seq[(CardinalityOptimum, Property)],
                    availableProperties: Set[Property],
+                   availableWholeEntities: Set[String],
                    incomingCardinality: Cardinality)
 
-    val Acc(_, propertyReadOptima, _, _) =
-      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Cardinality.SINGLE))(
+    val Acc(_, propertyReadOptima, _, _, _) =
+      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, Cardinality.SINGLE))(
         logicalPlan,
         (acc, plan) => {
-          val propertiesForPlan =
+          val newPropertyExpressions =
             plan.treeFold(List.empty[Property]) {
               case lp: LogicalPlan if lp.id != plan.id =>
                 acc2 => (acc2, None) // do not traverse further
@@ -60,11 +61,13 @@ case object PushdownPropertyReads {
             }
 
           val newPropertyReadOptima =
-            propertiesForPlan.flatMap {
+            newPropertyExpressions.flatMap {
               case p @ Property(v: LogicalVariable, _) =>
                 acc.variableOptima.get(v.name) match {
                   case Some(optimum: CardinalityOptimum) =>
-                    if (optimum.cardinality < acc.incomingCardinality && !acc.availableProperties.contains(p))
+                    if (optimum.cardinality < acc.incomingCardinality &&
+                        !acc.availableProperties.contains(p) &&
+                        !acc.availableWholeEntities.contains(v.name))
                       Some((optimum, p))
                     else
                       None
@@ -84,7 +87,7 @@ case object PushdownPropertyReads {
               val newVariables = plan.availableSymbols
               val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
 
-              Acc(outgoingVariableOptima, outgoingReadOptima, Set.empty, outgoingCardinality)
+              Acc(outgoingVariableOptima, outgoingReadOptima, Set.empty, Set.empty, outgoingCardinality)
 
             case p: ProjectingPlan => // except for aggregations which were already matched
               val renamings: Map[String, String] =
@@ -108,7 +111,7 @@ case object PushdownPropertyReads {
                     }
                   })
 
-              Acc(renamedVariableOptima, outgoingReadOptima, renamedAvailableProperties, outgoingCardinality)
+              Acc(renamedVariableOptima, outgoingReadOptima, renamedAvailableProperties, acc.availableWholeEntities, outgoingCardinality)
 
             case _ =>
               val newLowestCardinalities =
@@ -125,7 +128,7 @@ case object PushdownPropertyReads {
               val newVariableCardinalities = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v)))
               val outgoingVariableOptima = newLowestCardinalities ++ newVariableCardinalities
 
-              val propertiesFromIndex: Seq[Property] =
+              val propertiesFromPlan: Seq[Property] =
                 plan match {
                   case indexPlan: IndexLeafPlan =>
                     indexPlan.properties
@@ -133,11 +136,35 @@ case object PushdownPropertyReads {
                                                                   //       the getValue behaviour will still be CanGetValue
                                                                   //       instead of GetValue
                       .map(asProperty(indexPlan.idName))
+
+                  case set: SetProperty =>
+                    Seq(Property(set.entity, set.propertyKey)(InputPosition.NONE))
+
+                  case set: SetNodeProperty =>
+                    Seq(Property(Variable(set.idName)(InputPosition.NONE), set.propertyKey)(InputPosition.NONE))
+
+                  case set: SetRelationshipProperty =>
+                    Seq(Property(Variable(set.idName)(InputPosition.NONE), set.propertyKey)(InputPosition.NONE))
+
+                  case set: SetNodePropertiesFromMap if !set.removeOtherProps =>
+                    propertiesFromMap(set.idName, set.expression)
+
+                  case set: SetRelationshipPropertiesFromMap if !set.removeOtherProps =>
+                    propertiesFromMap(set.idName, set.expression)
+
                   case _ => Seq.empty
                 }
-              val outgoingAvailableProperties = acc.availableProperties ++ propertiesForPlan ++ propertiesFromIndex
 
-              Acc(outgoingVariableOptima, outgoingReadOptima, outgoingAvailableProperties, outgoingCardinality)
+              val maybeEntityFromPlan =
+                plan match {
+                  case set: SetNodePropertiesFromMap if set.removeOtherProps => Some(set.idName)
+                  case set: SetRelationshipPropertiesFromMap if set.removeOtherProps => Some(set.idName)
+                  case _ => None
+                }
+
+              val outgoingAvailableProperties = acc.availableProperties ++ newPropertyExpressions ++ propertiesFromPlan
+
+              Acc(outgoingVariableOptima, outgoingReadOptima, outgoingAvailableProperties, acc.availableWholeEntities ++ maybeEntityFromPlan, outgoingCardinality)
           }
         },
         (lhsAcc, rhsAcc, plan) => {
@@ -147,7 +174,7 @@ case object PushdownPropertyReads {
               val newVariables = plan.availableSymbols
               val outgoingCardinality = cardinalities(plan.id)
               val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
-              Acc(outgoingVariableOptima, lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima, Set.empty, outgoingCardinality)
+              Acc(outgoingVariableOptima, lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima, Set.empty, Set.empty, outgoingCardinality)
 
             case _ =>
               val mergedVariableOptima =
@@ -164,6 +191,7 @@ case object PushdownPropertyReads {
               Acc(mergedVariableOptima,
                   lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
                   lhsAcc.availableProperties ++ rhsAcc.availableProperties,
+                  lhsAcc.availableWholeEntities ++ rhsAcc.availableWholeEntities,
                   cardinalities(plan.id))
           }
         }
@@ -195,4 +223,14 @@ case object PushdownPropertyReads {
           Property(Variable(idName)(InputPosition.NONE), propertyKey)(InputPosition.NONE)
       case _ => throw new InternalException(s"Unexpected property read of non-variable `${p.map}`")
     }
+
+  private def propertiesFromMap(idName: String, expression: Expression): Seq[Property] = {
+    expression match {
+      case MapExpression(data) =>
+        data.map {
+          case (prop, _) =>
+            Property(Variable(idName)(InputPosition.NONE),prop)(InputPosition.NONE)
+        }
+    }
+  }
 }

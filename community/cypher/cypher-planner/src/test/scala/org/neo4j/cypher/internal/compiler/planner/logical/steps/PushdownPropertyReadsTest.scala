@@ -644,4 +644,97 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
+
+  test("should not pushdown if setProperty") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .setProperty("n", "prop", "42").withCardinality(100)
+      .expand("(n)-->(m)").withCardinality(100)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown if setNodeProperty") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .setNodeProperty("n", "prop", "42").withCardinality(100)
+      .expand("(n)-->(m)").withCardinality(100)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown if setRelationshipProperty") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .setRelationshipProperty("n", "prop", "42").withCardinality(100)
+      .expand("(n)-->(m)").withCardinality(100)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown if setNodePropertiesFromMap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .setNodePropertiesFromMap("n", "{prop: 42}", removeOtherProps = false).withCardinality(100)
+      .expand("(n)-->(m)").withCardinality(100)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown if setRelationshipPropertiesFromMap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("r.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .setRelationshipPropertiesFromMap("r", "{prop: 42}", removeOtherProps = false).withCardinality(100)
+      .expand("(m)-->(k)").withCardinality(100)
+      .expand("(n)-[r]->(m)").withCardinality(20)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown if property removed by setNodePropertiesFromMap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .setNodePropertiesFromMap("n", "{otherProp: 42}", removeOtherProps = true).withCardinality(100)
+      .expand("(n)-->(m)").withCardinality(100)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown if property removed by setRelationshipPropertiesFromMap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .filter("r.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .setRelationshipPropertiesFromMap("r", "{otherProp: 42}", removeOtherProps = true).withCardinality(100)
+      .expand("(m)-->(k)").withCardinality(100)
+      .expand("(n)-[r]->(m)").withCardinality(20)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
 }

@@ -381,6 +381,26 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       properties.map(ExpressionParser.parseExpression(_).asInstanceOf[LogicalProperty]).toSet)(_)))
   }
 
+  def setProperty(entity: String, propertyKey: String, value: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => SetProperty(source, varFor(entity), PropertyKeyName(propertyKey)(pos), ExpressionParser.parseExpression(value))(_)))
+  }
+
+  def setNodeProperty(node: String, propertyKey: String, value: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), ExpressionParser.parseExpression(value))(_)))
+  }
+
+  def setRelationshipProperty(relationship: String, propertyKey: String, value: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), ExpressionParser.parseExpression(value))(_)))
+  }
+
+  def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => SetNodePropertiesFromMap(source, node, ExpressionParser.parseExpression(map), removeOtherProps)(_)))
+  }
+
+  def setRelationshipPropertiesFromMap(relationship: String, map: String, removeOtherProps: Boolean): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipPropertiesFromMap(source, relationship, ExpressionParser.parseExpression(map), removeOtherProps)(_)))
+  }
+
   def nodeHashJoin(nodes: String*): IMPL = {
     appendAtCurrentIndent(BinaryOperator((left, right) => NodeHashJoin(nodes.toSet, left, right)(_)))
   }
