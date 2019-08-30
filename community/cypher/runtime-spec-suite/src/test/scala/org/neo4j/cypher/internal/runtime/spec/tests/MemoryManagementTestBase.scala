@@ -159,24 +159,6 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
     GraphDatabaseSettings.query_max_memory -> Long.box(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] {
 
-  test("should kill top query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue)
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
   test("should kill sort query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -494,6 +476,31 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .top(Seq(Ascending("x")), Int.MaxValue + 1L)
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+}
+
+/**
+ * Tests for runtimes with Top support
+ */
+trait TopSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
+  self: MemoryManagementTestBase[CONTEXT] =>
+
+  test("should kill top query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(Seq(Ascending("x")), Int.MaxValue)
       .input(variables = Seq("x"))
       .build()
 
