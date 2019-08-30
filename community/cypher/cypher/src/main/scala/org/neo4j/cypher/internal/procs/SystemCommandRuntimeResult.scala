@@ -109,8 +109,6 @@ case class SystemCommandProfile(rowCount: Long) extends QueryProfile with Operat
 
   override def pageCacheMisses(): Long = OperatorProfile.NO_DATA
 
-  override def sanitize(): Unit = {}
-
   override def hashCode: Int = util.Arrays.hashCode(
     Array(this.time(), this.dbHits(), this.rows(), this.pageCacheHits(), this.pageCacheMisses()))
 

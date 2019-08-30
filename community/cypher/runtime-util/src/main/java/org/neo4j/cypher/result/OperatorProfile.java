@@ -54,11 +54,6 @@ public interface OperatorProfile
      */
     long pageCacheMisses();
 
-    /**
-     * Make sure that any invalid values are replaced with NO_DATA.
-     */
-    void sanitize();
-
     default double pageCacheHitRatio()
     {
         return ( pageCacheHits() == NO_DATA || pageCacheMisses() == NO_DATA) ?
@@ -73,11 +68,11 @@ public interface OperatorProfile
     class ConstOperatorProfile implements OperatorProfile
     {
 
-        private long time;
-        private long dbHits;
-        private long rows;
-        private long pageCacheHits;
-        private long pageCacheMisses;
+        private final long time;
+        private final long dbHits;
+        private final long rows;
+        private final long pageCacheHits;
+        private final long pageCacheMisses;
 
         ConstOperatorProfile( long value )
         {
@@ -121,11 +116,6 @@ public interface OperatorProfile
         public long pageCacheMisses()
         {
             return pageCacheMisses;
-        }
-
-        @Override
-        public void sanitize()
-        {
         }
 
         @Override

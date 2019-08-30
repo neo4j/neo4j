@@ -35,8 +35,6 @@ class InterpretedProfileInformation extends QueryProfile {
 
     override def time: Long = OperatorProfile.NO_DATA
 
-    override def sanitize(): Unit = throw new UnsupportedOperationException("Immutable OperatorData cannot be sanitized.")
-
     override def hashCode: Int = util.Arrays.hashCode(
       Array(this.time(), this.dbHits, this.rows, this.pageCacheHits, this.pageCacheMisses))
 

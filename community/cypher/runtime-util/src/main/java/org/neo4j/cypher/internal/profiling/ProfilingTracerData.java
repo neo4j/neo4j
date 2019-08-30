@@ -70,26 +70,25 @@ public class ProfilingTracerData implements OperatorProfile
         return pageCacheMisses;
     }
 
-    @Override
     public void sanitize()
     {
-        if ( time <= OperatorProfile.NO_DATA )
+        if ( time < OperatorProfile.NO_DATA )
         {
             time = OperatorProfile.NO_DATA;
         }
-        if ( dbHits <= OperatorProfile.NO_DATA )
+        if ( dbHits < OperatorProfile.NO_DATA )
         {
             dbHits = OperatorProfile.NO_DATA;
         }
-        if ( rows <= OperatorProfile.NO_DATA )
+        if ( rows < OperatorProfile.NO_DATA )
         {
             rows = OperatorProfile.NO_DATA;
         }
-        if ( pageCacheHits <= OperatorProfile.NO_DATA )
+        if ( pageCacheHits < OperatorProfile.NO_DATA )
         {
             pageCacheHits = OperatorProfile.NO_DATA;
         }
-        if ( pageCacheMisses <= OperatorProfile.NO_DATA )
+        if ( pageCacheMisses < OperatorProfile.NO_DATA )
         {
             pageCacheMisses = OperatorProfile.NO_DATA;
         }
