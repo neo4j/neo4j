@@ -36,7 +36,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * </li>
  * </ul>
  */
-class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
+public class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
 {
     /**
      * Name part of the {@link #identifier()} value.

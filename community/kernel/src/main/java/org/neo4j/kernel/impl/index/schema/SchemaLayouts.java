@@ -38,6 +38,7 @@ import org.neo4j.index.internal.gbptree.Meta;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.labelscan.LabelScanLayout;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
@@ -66,7 +67,8 @@ public class SchemaLayouts implements LayoutBootstrapper
                 ( indexFile, pageCache, meta, targetLayout ) -> new StringLayout(),
                 ( indexFile, pageCache, meta, targetLayout ) -> new NumberLayoutUnique(),
                 ( indexFile, pageCache, meta, targetLayout ) -> new NumberLayoutNonUnique(),
-                genericLayout() ) );
+                genericLayout(),
+                ( indexFile, pageCache, meta, targetLayout ) -> new LabelScanLayout() ) );
     }
 
     @Override

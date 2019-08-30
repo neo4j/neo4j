@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -32,7 +33,7 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  * Stores label-->nodes mappings. It receives updates in the form of condensed label->node transaction data
  * and can iterate through all nodes for any given label.
  */
-public interface LabelScanStore extends Lifecycle
+public interface LabelScanStore extends Lifecycle, ConsistencyCheckable
 {
     interface Monitor
     {
