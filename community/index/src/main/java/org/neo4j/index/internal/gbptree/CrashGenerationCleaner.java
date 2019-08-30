@@ -74,12 +74,7 @@ class CrashGenerationCleaner
     private static long batchSize( long pagesToClean, int threads )
     {
         // Batch size at most maxBatchSize, at least minBatchSize and trying to give each thread 100 batches each
-        try {
-            int result = Math.multiplyExact(100 * threads);
-            return min(MAX_BATCH_SIZE, max(MIN_BATCH_SIZE, pagesToClean / result));
-        } catch (ArithmeticException e) {
-            return MIN_BATCH_SIZE;
-        }
+        return min(MAX_BATCH_SIZE, max(MIN_BATCH_SIZE, pagesToClean / (100L * threads)));
     }
 
     // === Methods about the execution and threading ===
