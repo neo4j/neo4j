@@ -45,6 +45,7 @@ trait IfExistsDo
 final case class IfExistsReplace() extends IfExistsDo
 final case class IfExistsDoNothing() extends IfExistsDo
 final case class IfExistsThrowError() extends IfExistsDo
+final case class IfExistsInvalidSyntax() extends IfExistsDo
 
 final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
@@ -69,9 +70,12 @@ final case class CreateUser(userName: String,
     case _ => "CREATE USER"
   }
 
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
+  override def semanticCheck: SemanticCheck = ifExistsDo match {
+    case _: IfExistsInvalidSyntax => SemanticError(s"Failed to create the specified user '$userName': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
+    case _ =>
+      super.semanticCheck chain
+        SemanticState.recordCurrentScope(this)
+  }
 }
 
 final case class DropUser(userName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
@@ -130,9 +134,12 @@ final case class CreateRole(roleName: String, from: Option[String], ifExistsDo: 
     case _ => "CREATE ROLE"
   }
 
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
+  override def semanticCheck: SemanticCheck = ifExistsDo match {
+    case _: IfExistsInvalidSyntax => SemanticError(s"Failed to create the specified role '$roleName': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
+    case _ =>
+      super.semanticCheck chain
+        SemanticState.recordCurrentScope(this)
+  }
 }
 
 final case class DropRole(roleName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
@@ -377,9 +384,12 @@ final case class CreateDatabase(dbName: String, ifExistsDo: IfExistsDo)(val posi
     case _ => "CREATE DATABASE"
   }
 
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
+  override def semanticCheck: SemanticCheck = ifExistsDo match {
+    case _: IfExistsInvalidSyntax => SemanticError(s"Failed to create the specified database '$dbName': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
+    case _ =>
+      super.semanticCheck chain
+        SemanticState.recordCurrentScope(this)
+  }
 }
 
 final case class DropDatabase(dbName: String, ifExists: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {

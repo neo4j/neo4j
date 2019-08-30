@@ -142,6 +142,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.CreateUser("foo", None, Some(Param("password", CTAny)(_)), requirePasswordChange = true, suspended = Some(true), ast.IfExistsReplace()))
   }
 
+  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
+    yields(ast.CreateUser("foo", Some("password"), None, requirePasswordChange = true, suspended = None, ast.IfExistsInvalidSyntax()))
+  }
+
   test("CREATE USER foo") {
     failsToParse
   }
@@ -211,10 +215,6 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD") {
-    failsToParse
-  }
-
-  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
     failsToParse
   }
 
