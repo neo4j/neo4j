@@ -44,6 +44,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -135,7 +136,7 @@ class NonUniqueIndexTest
 
     private static CentralJobScheduler newSlowJobScheduler()
     {
-        return new CentralJobScheduler()
+        return new CentralJobScheduler( Clocks.nanoClock() )
         {
             @Override
             public JobHandle schedule( Group group, Runnable job )

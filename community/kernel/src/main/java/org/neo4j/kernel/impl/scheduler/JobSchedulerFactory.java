@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.scheduler;
 
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 public final class JobSchedulerFactory
 {
@@ -29,18 +31,23 @@ public final class JobSchedulerFactory
 
     public static JobScheduler createScheduler()
     {
-        return createCentralScheduler();
+        return createCentralScheduler( Clocks.nanoClock() );
     }
 
     public static JobScheduler createInitialisedScheduler()
     {
-        CentralJobScheduler scheduler = createCentralScheduler();
+        return createInitialisedScheduler( Clocks.nanoClock() );
+    }
+
+    public static JobScheduler createInitialisedScheduler( SystemNanoClock clock )
+    {
+        CentralJobScheduler scheduler = createCentralScheduler( clock );
         scheduler.init();
         return scheduler;
     }
 
-    private static CentralJobScheduler createCentralScheduler()
+    private static CentralJobScheduler createCentralScheduler( SystemNanoClock clock )
     {
-        return new CentralJobScheduler();
+        return new CentralJobScheduler( clock );
     }
 }

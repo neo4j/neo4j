@@ -44,6 +44,7 @@ import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.SchedulerThreadFactory;
+import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.lang.Thread.sleep;
@@ -69,7 +70,7 @@ class CentralJobSchedulerTest
 {
     private final AtomicInteger invocations = new AtomicInteger();
     private final LifeSupport life = new LifeSupport();
-    private final CentralJobScheduler scheduler = life.add( new CentralJobScheduler() );
+    private final CentralJobScheduler scheduler = life.add( new CentralJobScheduler( Clocks.nanoClock() ) );
 
     private final Runnable countInvocationsJob = invocations::incrementAndGet;
 

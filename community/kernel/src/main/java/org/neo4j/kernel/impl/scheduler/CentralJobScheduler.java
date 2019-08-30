@@ -39,7 +39,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
-import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 public class CentralJobScheduler extends LifecycleAdapter implements JobScheduler, AutoCloseable
 {
@@ -68,11 +68,11 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         }
     }
 
-    protected CentralJobScheduler()
+    protected CentralJobScheduler( SystemNanoClock clock )
     {
         topLevelGroup = new TopLevelGroup();
         pools = new ThreadPoolManager( topLevelGroup );
-        scheduler = new TimeBasedTaskScheduler( Clocks.nanoClock(), pools );
+        scheduler = new TimeBasedTaskScheduler( clock, pools );
         extraParameters = new ConcurrentHashMap<>();
 
         // The scheduler thread runs at slightly elevated priority for timeliness, and is started in init().

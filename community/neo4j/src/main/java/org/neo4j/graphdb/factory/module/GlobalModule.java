@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
@@ -371,7 +370,7 @@ public class GlobalModule
 
     protected JobScheduler createJobScheduler()
     {
-        return JobSchedulerFactory.createInitialisedScheduler();
+        return JobSchedulerFactory.createInitialisedScheduler( globalClock );
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging,
