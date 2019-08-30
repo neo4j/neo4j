@@ -78,6 +78,26 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     nodeGetProperty(n, "x") should equal(THREADS * UPDATES)
   }
 
+  test("Should work around read isolation limitations using explicit lock for cached node properties with map +=") {
+    // Given
+    val n = createLabeledNode(Map("x" -> 0L), "L")
+    graph.createIndex("L", "x")
+
+    val query =
+      """MATCH (n:L) WHERE exists(n.x)
+        |SET n += {_LOCK_: true}
+        |WITH n, n.x AS x
+        |SET n.x = x + 1
+        |REMOVE n._LOCK_""".stripMargin
+
+
+    // When
+    race(query)
+
+    // Then
+    nodeGetProperty(n, "x") should equal(THREADS * UPDATES)
+  }
+
   private def race(query: String): Unit = {
     val executor = Executors.newFixedThreadPool(THREADS)
 

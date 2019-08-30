@@ -737,6 +737,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(SetRelationshipPropertiesFromMap(inner, patternToPlan.idName, patternToPlan.expression, patternToPlan.removeOtherProps), solved, providedOrders.get(inner.id), context)
   }
 
+  def planSetPropertiesFromMap(inner: LogicalPlan, patternToPlan: SetPropertiesFromMapPattern, solvedPattern: SetPropertiesFromMapPattern, context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(solvedPattern))
+
+    annotate(SetPropertiesFromMap(inner, patternToPlan.entityExpression, patternToPlan.expression, patternToPlan.removeOtherProps), solved, providedOrders.get(inner.id), context)
+  }
+
   def planSetProperty(inner: LogicalPlan, patternToPlan: SetPropertyPattern, solvedPattern: SetPropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(solvedPattern))
 

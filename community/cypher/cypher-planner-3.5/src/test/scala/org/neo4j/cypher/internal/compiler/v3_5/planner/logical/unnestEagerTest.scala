@@ -75,6 +75,24 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(input) should equal(SetNodeProperty(Apply(lhs, rhs), "a", PropertyKeyName("prop")(pos), null))
   }
 
+  test("should unnest set rel property from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val set = SetRelationshipProperty(rhs, "a", PropertyKeyName("prop")(pos), null)
+    val input = Apply(lhs, set)
+
+    rewrite(input) should equal(SetRelationshipProperty(Apply(lhs, rhs), "a", PropertyKeyName("prop")(pos), null))
+  }
+
+  test("should unnest set generic property from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val set = SetProperty(rhs, varFor("a"), PropertyKeyName("prop")(pos), null)
+    val input = Apply(lhs, set)
+
+    rewrite(input) should equal(SetProperty(Apply(lhs, rhs), varFor("a"), PropertyKeyName("prop")(pos), null))
+  }
+
   test("should unnest set node property from map from rhs of apply") {
     val lhs = newMockedLogicalPlan()
     val rhs = newMockedLogicalPlan()
@@ -82,6 +100,24 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val input = Apply(lhs, set)
 
     rewrite(input) should equal(SetNodePropertiesFromMap(Apply(lhs, rhs), "a", null, removeOtherProps = false))
+  }
+
+  test("should unnest set relationship property from map from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val set = SetRelationshipPropertiesFromMap(rhs, "a", null, removeOtherProps = false)
+    val input = Apply(lhs, set)
+
+    rewrite(input) should equal(SetRelationshipPropertiesFromMap(Apply(lhs, rhs), "a", null, removeOtherProps = false))
+  }
+
+  test("should unnest set generic property from map from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val set = SetPropertiesFromMap(rhs, varFor("a"), null, removeOtherProps = false)
+    val input = Apply(lhs, set)
+
+    rewrite(input) should equal(SetPropertiesFromMap(Apply(lhs, rhs), varFor("a"), null, removeOtherProps = false))
   }
 
   test("should unnest set labels from rhs of apply") {
