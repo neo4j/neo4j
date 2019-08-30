@@ -36,6 +36,7 @@ import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
@@ -43,6 +44,8 @@ import org.neo4j.test.FakeCpuClock;
 import org.neo4j.test.FakeMemoryTracker;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -52,8 +55,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomDatabaseId;
+import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
+import static org.neo4j.values.virtual.VirtualValues.map;
 
 class ExecutingQueryTest
 {
@@ -94,7 +100,7 @@ class ExecutingQueryTest
         assertEquals( "running", query.snapshot().status() );
 
         // when
-        try ( LockWaitEvent event = lock( "NODE", 17 ) )
+        try ( LockWaitEvent ignored = lock( "NODE", 17 ) )
         {
             // then
             assertEquals( "waiting", query.snapshot().status() );
@@ -148,7 +154,7 @@ class ExecutingQueryTest
 
         // when
         clock.forward( 10, TimeUnit.SECONDS );
-        try ( LockWaitEvent event = lock( "NODE", 17 ) )
+        try ( LockWaitEvent ignored = lock( "NODE", 17 ) )
         {
             clock.forward( 5, TimeUnit.SECONDS );
 
@@ -169,7 +175,7 @@ class ExecutingQueryTest
 
         // when
         clock.forward( 2, TimeUnit.SECONDS );
-        try ( LockWaitEvent event = lock( "RELATIONSHIP", 612 ) )
+        try ( LockWaitEvent ignored = lock( "RELATIONSHIP", 612 ) )
         {
             clock.forward( 1, TimeUnit.SECONDS );
 
@@ -322,6 +328,58 @@ class ExecutingQueryTest
         assertTrue( queryDescription.contains( "threadExecutingTheQueryName=" + Thread.currentThread().getName() ) );
     }
 
+    @Test
+    void shouldObfuscateCreateUser()
+    {
+        var queryPart = "create USER foo SET PaSsWoRd ";
+        var exeQuery1 = createExecutingquery( 1, queryPart + "'bar'", page, clock, cpuClock, SYSTEM_DATABASE_ID, EMPTY_MAP );
+        assertThat( exeQuery1.queryText(), equalTo( queryPart + "'******'" ) );
+        assertThat( exeQuery1.queryParameters().size(), equalTo( 0 ) );
+
+        MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
+        MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
+        var exeQuery2 = createExecutingquery( 1, queryPart + "$password", page, clock, cpuClock, SYSTEM_DATABASE_ID, params );
+        assertThat( exeQuery2.queryText(), equalTo( queryPart + "$password" ) );
+        assertThat( exeQuery2.queryParameters(), equalTo( obfuscatedParams ) );
+    }
+
+    @Test
+    void shouldObfuscateAlterUser()
+    {
+        var queryPart = "alter USER foo SET PaSsWoRd ";
+        var exeQuery = createExecutingquery( 1, queryPart + "'bar'", page, clock, cpuClock, SYSTEM_DATABASE_ID, EMPTY_MAP );
+        assertThat( exeQuery.queryText(), equalTo( queryPart + "'******'" ) );
+        assertThat( exeQuery.queryParameters().size(), equalTo( 0 ) );
+
+        MapValue params = map( new String[]{"password"}, new AnyValue[]{stringValue( "bar" )} );
+        MapValue obfuscatedParams = map( new String[]{"password"}, new AnyValue[]{stringValue( "******" )} );
+        var exeQuery2 = createExecutingquery( 1, queryPart + "$password", page, clock, cpuClock, SYSTEM_DATABASE_ID, params );
+        assertThat( exeQuery2.queryText(), equalTo( queryPart + "$password" ) );
+        assertThat( exeQuery2.queryParameters(), equalTo( obfuscatedParams ) );
+    }
+
+    @Test
+    void shouldObfuscateAlterCurrentUser()
+    {
+        var queryPart = "alter CuRRenT USER foo SET PaSsWoRd FROM ";
+        var exeQuery = createExecutingquery( 1, queryPart + "'bar' TO 'baz'", page, clock, cpuClock, SYSTEM_DATABASE_ID, EMPTY_MAP );
+        assertThat( exeQuery.queryText(), equalTo( queryPart + "'******' TO '******'" ) );
+        assertThat( exeQuery.queryParameters().size(), equalTo( 0 ) );
+
+        MapValue params2 = map( new String[]{"old", "new"}, new AnyValue[]{stringValue( "bar" ), stringValue( "baz" )} );
+        MapValue obfuscatedParams2 = map( new String[]{"old", "new"}, new AnyValue[]{stringValue( "******" ), stringValue( "******" )} );
+        var exeQuery2 = createExecutingquery( 1, queryPart + "$old TO $new", page, clock, cpuClock, SYSTEM_DATABASE_ID, params2 );
+        assertThat( exeQuery2.queryText(), equalTo( queryPart + "$old TO $new" ) );
+        assertThat( exeQuery2.queryParameters(), equalTo( obfuscatedParams2 ) );
+
+        MapValue params3 = map( new String[]{"old"}, new AnyValue[]{stringValue( "bar" )} );
+        MapValue obfuscatedParams3 = map( new String[]{"old"}, new AnyValue[]{stringValue( "******" )} );
+        var exeQuery3 = createExecutingquery( 1, queryPart + "$old TO 'baz'", page, clock, cpuClock, SYSTEM_DATABASE_ID, params3 );
+        assertThat( exeQuery3.queryText(), equalTo( queryPart + "$old TO '******'" ) );
+        assertThat( exeQuery3.queryParameters(), equalTo( obfuscatedParams3 ) );
+
+    }
+
     private LockWaitEvent lock( String resourceType, long resourceId )
     {
         return query.lockTracer().waitForLock( false, resourceType( resourceType ), resourceId );
@@ -376,6 +434,7 @@ class ExecutingQueryTest
         };
     }
 
+    @SuppressWarnings( "SameParameterValue" )
     private static long randomLong( long bound )
     {
         return ThreadLocalRandom.current().nextLong( bound );
@@ -384,8 +443,14 @@ class ExecutingQueryTest
     private ExecutingQuery createExecutingquery( int queryId, String hello_world, PageCursorCountersStub page,
             FakeClock clock, FakeCpuClock cpuClock )
     {
-        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, randomDatabaseId(), "neo4j", hello_world,
-                EMPTY_MAP, Collections.emptyMap(), () -> lockCount, page, Thread.currentThread().getId(),
+        return createExecutingquery( queryId, hello_world, page, clock, cpuClock, randomDatabaseId(), EMPTY_MAP );
+    }
+
+    private ExecutingQuery createExecutingquery( int queryId, String hello_world, PageCursorCountersStub page,
+            FakeClock clock, FakeCpuClock cpuClock, DatabaseId dbID, MapValue params )
+    {
+        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, dbID, "neo4j", hello_world,
+                params, Collections.emptyMap(), () -> lockCount, page, Thread.currentThread().getId(),
                 Thread.currentThread().getName(), clock, cpuClock );
     }
 

@@ -338,7 +338,7 @@ public class ExecutingQuery
             Set<String> passwordParams = new HashSet<>();
             if ( databaseId.equals( SYSTEM_DATABASE_ID ) )
             {
-                this.obfuscatedQueryText = QueryObfuscation.obfuscateDDL( rawQueryText, passwordParams );
+                this.obfuscatedQueryText = QueryObfuscation.obfuscateSystemCommand( rawQueryText, passwordParams );
             }
             else
             {

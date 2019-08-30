@@ -26,9 +26,10 @@ import java.util.regex.Pattern;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class QueryObfuscation
+class QueryObfuscation
 {
     private static final Pattern PASSWORD_PATTERN = Pattern.compile(
             // call signature
@@ -38,10 +39,10 @@ public class QueryObfuscation
             // password parameter, in single, double quotes, or parametrized
             "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*})" );
 
-    static final TextValue OBFUSCATED = stringValue( "******" );
-    static final String OBFUSCATED_LITERAL = "'******'";
+    private static final TextValue OBFUSCATED = stringValue( "******" );
+    private static final String OBFUSCATED_LITERAL = "'******'";
 
-    public static String obfuscateText( String queryText, Set<String> passwordParams )
+    static String obfuscateText( String queryText, Set<String> passwordParams )
     {
         Matcher matcher = PASSWORD_PATTERN.matcher( queryText );
 
@@ -61,19 +62,20 @@ public class QueryObfuscation
         return queryText;
     }
 
-    private static final Pattern DDL_PASSWORD_PATTERN = Pattern.compile(
+    private static final Pattern SYSTEM_PASSWORD_PATTERN = Pattern.compile(
             // CREATE USER user SET PASSWORD
             // ALTER USER user SET PASSWORD
             // ALTER CURRENT USER SET PASSWORD
-            "^(?:(?:ALTER|CREATE)\\s+(?:CURRENT\\s+)?USER\\s+(?:(?:`)?\\w+(?:`)? )?SET\\s+PASSWORD\\s+)" +
+            "^(?:(?:ALTER|CREATE)\\s+(?:CURRENT\\s+)?USER\\s+(?:(?:`)?\\w+(?:`)?\\s+)?SET\\s+PASSWORD\\s+)" +
             // password can be in single, double quotes, or parametrized
             // FROM password TO password
-            "(?:FROM\\s+)?(['\"$]\\w+['\"]?)(?:\\s+TO\\s+)?(['\"$]\\w+['\"]?)?"
+            "(?:FROM\\s+)?((?:\\$\\w+)|(?:\"[^\"]*\")|(?:'[^']*'))(?:\\s+TO\\s+)?((?:\\$\\w+)|(?:\"[^\"]*\")|(?:'[^']*'))?",
+            CASE_INSENSITIVE
         );
 
-    static String obfuscateDDL( String queryText, Set<String> passwordParams )
+    static String obfuscateSystemCommand( String queryText, Set<String> passwordParams )
     {
-        Matcher matcher = DDL_PASSWORD_PATTERN.matcher( queryText );
+        Matcher matcher = SYSTEM_PASSWORD_PATTERN.matcher( queryText );
 
         while ( matcher.find() )
         {
@@ -102,7 +104,7 @@ public class QueryObfuscation
         return queryText;
     }
 
-    public static MapValue obfuscateParams( MapValue queryParameters, Set<String> passwordParams )
+    static MapValue obfuscateParams( MapValue queryParameters, Set<String> passwordParams )
     {
         for ( String passwordKey : passwordParams )
         {
