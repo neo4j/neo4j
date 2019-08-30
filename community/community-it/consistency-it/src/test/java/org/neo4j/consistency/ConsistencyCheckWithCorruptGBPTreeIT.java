@@ -388,6 +388,23 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
+    public void exception() throws Exception
+    {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        corruptIndexes( ( tree, inspection ) -> {
+            final long rootNode = inspection.getRootNode();
+            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( rootNode, GBPTreeCorruption.setHighestReasonableKeyCount() ) );
+        } );
+
+        ConsistencyCheckService.Result result = runConsistencyCheck();
+
+        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertResultContainsMessage( result,
+                "Caught exception during consistency check: org.neo4j.index.internal.gbptree.TreeInconsistencyException: Some internal problem causing out of" +
+                        " bounds: pageId:" );
+    }
+
+    @Test
     public void shouldIncludeIndexFileInConsistencyReport() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
