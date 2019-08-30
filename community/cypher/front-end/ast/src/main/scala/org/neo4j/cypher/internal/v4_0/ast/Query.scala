@@ -264,6 +264,19 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   }
 }
 
+/**
+ * UnmappedUnion classes are directly produced by the parser.
+ * When we do namespacing, we need to convert them the [[ProjectingUnion]].
+ * ProjectingUnion is never produced by the parser.
+ *
+ * This has two reasons:
+ * a) We capture how variables are projected from the two final scopes of the parts of the union to the scope
+ *    after the union, before the Namespacer changes the names so that the Variable inside and outside of the union have different names
+ *    and we would not find them any longer. The namespacer will still change the name, but since we captured the Variable and not the
+ *    name, we still have the correct projecting information.
+ * b) We need to disable `checkColumnNamesAgree` for ProjectingUnion, because the names will actually not agree any more after the namespacing.
+ *    This is not a problem though, since we would have failed earlier if the names did not agree originally.
+ */
 trait UnmappedUnion extends Union {
 
   override def unionMappings: List[UnionMapping] = {
