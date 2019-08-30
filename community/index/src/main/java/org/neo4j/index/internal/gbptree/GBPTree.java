@@ -36,6 +36,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -1306,17 +1307,20 @@ public class GBPTree<KEY,VALUE> implements Closeable
     // Utility method
     public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
     {
+        CleanTrackingConsistencyCheckVisitor<KEY> cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor<>( visitor );
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            CleanTrackingConsistencyCheckVisitor<KEY> cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor<>( visitor );
             long unstableGeneration = unstableGeneration( generation );
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout, freeList,
                     stableGeneration( generation ), unstableGeneration );
 
             consistencyChecker.check( indexFile, cursor, root, cleanTrackingVisitor );
-
-            return cleanTrackingVisitor.clean();
         }
+        catch ( TreeInconsistencyException | MetadataMismatchException | CursorException e )
+        {
+            cleanTrackingVisitor.exception( e );
+        }
+        return cleanTrackingVisitor.clean();
     }
 
     @VisibleForTesting

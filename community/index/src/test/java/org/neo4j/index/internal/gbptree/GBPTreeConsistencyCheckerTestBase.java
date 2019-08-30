@@ -740,6 +740,24 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
+    public void shouldDetectExceptionDuringConsistencyCheck() throws IOException
+    {
+        assumeTrue( "This trick to make GBPTreeConsistencyChecker throw exception only work for dynamic layout", isDynamic );
+        try ( GBPTree<KEY,VALUE> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
+            final long leaf = randomAmong( inspection.getLeafNodes() );
+
+            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setHighestReasonableKeyCount();
+            index.unsafe( page( leaf, corruption ) );
+
+            assertReportException( index );
+        }
+    }
+
+    @Test
     public void shouldDetectSiblingPointerPointingToLowerLevel() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
@@ -1262,6 +1280,20 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static <KEY,VALUE> void assertReportException( GBPTree<KEY,VALUE> index ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
+        {
+            @Override
+            public void exception( Exception e )
+            {
+                called.setTrue();
             }
         } );
         assertCalled( called );

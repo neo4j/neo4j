@@ -155,4 +155,11 @@ class CleanTrackingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyChe
         clean.setFalse();
         delegate.childNodeFoundAmongParentNodes( superRange, level, pageId, file );
     }
+
+    @Override
+    public void exception( Exception e )
+    {
+        clean.setFalse();
+        delegate.exception( e );
+    }
 }

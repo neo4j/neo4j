@@ -125,6 +125,10 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
             indexInconsistent )
     void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId, File file );
 
+    @Documented( "Index inconsistency: " +
+            "Caught exception during consistency check: %s" )
+    void exception( Exception e );
+
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
     {
         @Override
@@ -208,6 +212,11 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
         @Override
         public void childNodeFoundAmongParentNodes( KeyRange<KEY> superRange, int level, long pageId, File file )
+        {
+        }
+
+        @Override
+        public void exception( Exception e )
         {
         }
     }

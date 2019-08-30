@@ -329,6 +329,18 @@ public final class GBPTreeCorruption
         };
     }
 
+    public static <KEY, VALUE> PageCorruption<KEY,VALUE> setHighestReasonableKeyCount()
+    {
+        return ( cursor, layout, node, treeState ) -> {
+            int keyCount = 0;
+            while ( node.reasonableKeyCount( keyCount + 1 ) )
+            {
+                keyCount++;
+            }
+            cursor.putInt( BYTE_POS_KEYCOUNT, keyCount );
+        };
+    }
+
     public static <KEY, VALUE> IndexCorruption<KEY,VALUE> pageSpecificCorruption( long targetPage, PageCorruption<KEY,VALUE> corruption )
     {
         return ( pagedFile, layout, node, treeState ) -> {
