@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
@@ -30,6 +30,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
 import org.neo4j.index.internal.gbptree.Meta;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
+import org.neo4j.internal.index.label.LabelScanLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
@@ -40,8 +41,9 @@ public class SchemaLayouts implements LayoutBootstrapper
     public SchemaLayouts()
     {
         allSchemaLayout = new ArrayList<>();
-        allSchemaLayout.addAll( Collections.singletonList(
-                genericLayout() ) );
+        allSchemaLayout.addAll( Arrays.asList(
+                genericLayout(),
+                ( indexFile, pageCache, meta, targetLayout ) -> new LabelScanLayout() ) );
     }
 
     @Override

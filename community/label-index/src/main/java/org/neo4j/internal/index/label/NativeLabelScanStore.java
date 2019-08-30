@@ -28,9 +28,11 @@ import java.nio.file.NoSuchFileException;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
@@ -499,6 +501,24 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     public boolean isDirty()
     {
         return index == null || index.wasDirtyOnStartup();
+    }
+
+    @Override
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    {
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
+    }
+
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<LabelScanKey> visitor )
+    {
+        try
+        {
+            return index.consistencyCheck( visitor );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     private class LabelIndexTreeMonitor extends GBPTree.Monitor.Adaptor

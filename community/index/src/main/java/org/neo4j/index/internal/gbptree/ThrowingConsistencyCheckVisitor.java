@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.File;
 
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.helpers.Exceptions;
 
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
