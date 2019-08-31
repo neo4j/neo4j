@@ -268,9 +268,10 @@ public class FulltextProcedures
     private void awaitOnline( IndexDescriptor index )
     {
         // We do the isAdded check on the transaction state first, because indexGetState will grab a schema read-lock, which can deadlock on the write-lock
-        // held by the index populator. Also, if we index was created in this transaction, then we will never see it come online in this transaction anyway.
+        // held by the index populator. Also, if the index was created in this transaction, then we will never see it come online in this transaction anyway.
         // Indexes don't come online until the transaction that creates them has committed.
-        if ( !((KernelTransactionImplementation)tx).txState().indexDiffSetsBySchema( index.schema() ).isAdded( index ) )
+        KernelTransactionImplementation txImpl = (KernelTransactionImplementation) this.tx;
+        if ( !txImpl.hasTxStateWithChanges() || !txImpl.txState().indexDiffSetsBySchema( index.schema() ).isAdded( index ) )
         {
             // If the index was not created in this transaction, then wait for it to come online before querying.
             Schema schema = db.schema();
