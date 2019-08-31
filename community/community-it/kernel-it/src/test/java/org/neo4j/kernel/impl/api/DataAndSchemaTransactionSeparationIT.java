@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
 
@@ -29,18 +28,20 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class DataAndSchemaTransactionSeparationIT
+@ImpermanentDbmsExtension
+class DataAndSchemaTransactionSeparationIT
 {
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     private Function<Transaction, Void> expectFailureAfterSchemaOperation(
             final Function<Transaction, ?> function )
@@ -51,18 +52,8 @@ public class DataAndSchemaTransactionSeparationIT
             db.getGraphDatabaseAPI().schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
             // when
-            try
-            {
-                function.apply( graphDb );
-
-                fail( "expected exception" );
-            }
-            // then
-            catch ( Exception e )
-            {
-                assertEquals( "Cannot perform data updates in a transaction that has performed schema updates.",
-                        e.getMessage() );
-            }
+            var exception = assertThrows( Exception.class, () -> function.apply( graphDb ) );
+            assertEquals( "Cannot perform data updates in a transaction that has performed schema updates.", exception.getMessage() );
             return null;
         };
     }
@@ -82,27 +73,49 @@ public class DataAndSchemaTransactionSeparationIT
     }
 
     @Test
-    public void shouldNotAllowNodeCreationInSchemaTransaction()
+    void shouldNotAllowNodeCreationInSchemaTransaction()
     {
-        db.executeAndRollback( expectFailureAfterSchemaOperation( createNode() ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            expectFailureAfterSchemaOperation( createNode() ).apply( db );
+            transaction.commit();
+        }
     }
 
     @Test
-    public void shouldNotAllowRelationshipCreationInSchemaTransaction()
+    void shouldNotAllowRelationshipCreationInSchemaTransaction()
     {
         // given
-        final Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
+        Pair<Node,Node> nodes;
+        try ( var transaction = db.beginTx() )
+        {
+            nodes = aPairOfNodes().apply( db );
+            transaction.commit();
+        }
         // then
-        db.executeAndRollback( expectFailureAfterSchemaOperation( relate( nodes ) ) );
+        try ( var transaction = db.beginTx() )
+        {
+            expectFailureAfterSchemaOperation( relate( nodes ) ).apply( db );
+        }
     }
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldNotAllowPropertyWritesInSchemaTransaction()
+    void shouldNotAllowPropertyWritesInSchemaTransaction()
     {
         // given
-        Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
-        Relationship relationship = db.executeAndCommit( relate( nodes ) );
+        Pair<Node,Node> nodes;
+        try ( var transaction = db.beginTx() )
+        {
+            nodes = aPairOfNodes().apply( db );
+            transaction.commit();
+        }
+        Relationship relationship;
+        try ( var tx = db.beginTx() )
+        {
+            relationship = relate( nodes ).apply( db );
+            tx.commit();
+        }
         // when
         for ( Function<Transaction, ?> operation : new Function[]{
                 propertyWrite( Node.class, nodes.first(), "key1", "value1" ),
@@ -110,19 +123,40 @@ public class DataAndSchemaTransactionSeparationIT
         } )
         {
             // then
-            db.executeAndRollback( expectFailureAfterSchemaOperation( operation ) );
+            try ( var transaction = db.beginTx() )
+            {
+                expectFailureAfterSchemaOperation( operation ).apply( db );
+            }
         }
     }
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldAllowPropertyReadsInSchemaTransaction()
+    void shouldAllowPropertyReadsInSchemaTransaction()
     {
         // given
-        Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
-        Relationship relationship = db.executeAndCommit( relate( nodes ) );
-        db.executeAndCommit( propertyWrite( Node.class, nodes.first(), "key1", "value1" ) );
-        db.executeAndCommit( propertyWrite( Relationship.class, relationship, "key1", "value1" ) );
+        Pair<Node,Node> nodes;
+        try ( var transaction = db.beginTx() )
+        {
+            nodes = aPairOfNodes().apply( db );
+            transaction.commit();
+        }
+        Relationship relationship;
+        try ( var tx = db.beginTx() )
+        {
+            relationship = relate( nodes ).apply( db );
+            tx.commit();
+        }
+        try ( var tx = db.beginTx() )
+        {
+            propertyWrite( Node.class, nodes.first(), "key1", "value1" ).apply( db );
+            tx.commit();
+        }
+        try ( var tx = db.beginTx() )
+        {
+            propertyWrite( Relationship.class, relationship, "key1", "value1" ).apply( db );
+            tx.commit();
+        }
 
         // when
         for ( Function<Transaction, ?> operation : new Function[]{
@@ -131,7 +165,10 @@ public class DataAndSchemaTransactionSeparationIT
         } )
         {
             // then
-            db.executeAndRollback( succeedAfterSchemaOperation( operation ) );
+            try ( var transaction = db.beginTx() )
+            {
+                succeedAfterSchemaOperation( operation ).apply( db );
+            }
         }
     }
 
