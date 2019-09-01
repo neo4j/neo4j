@@ -28,7 +28,6 @@ import java.io.File;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -50,15 +49,14 @@ public class ClusterStateCleanerTest
         when( clusterStateDirectory.get() ).thenReturn( stateDir );
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
 
-        Lifecycle clusterStateCleaner1 = ClusteringModule.clusterStateCleaner( db, clusterStateDirectory, fs );
-        Lifecycle clusterStateCleaner2 = ClusteringModule.clusterStateCleaner( db, clusterStateDirectory, fs );
+        ClusterStateCleaner clusterStateCleaner1 = new ClusterStateCleaner( db, clusterStateDirectory, fs );
+        ClusterStateCleaner clusterStateCleaner2 = new ClusterStateCleaner( db, clusterStateDirectory, fs );
 
         // when
-        clusterStateCleaner1.start();
-        clusterStateCleaner2.start();
+        clusterStateCleaner1.init();
+        clusterStateCleaner2.init();
 
         // then
-        verify( fs, times( 1 ) ).deleteRecursively( stateDir );
-        verify( clusterStateDirectory, times( 1 ) ).initialize( fs );
+        verify( clusterStateDirectory, times( 1 ) ).clear( fs );
     }
 }

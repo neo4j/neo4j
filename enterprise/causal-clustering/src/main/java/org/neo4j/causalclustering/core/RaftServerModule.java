@@ -67,7 +67,7 @@ public class RaftServerModule
 
     private final PlatformModule platformModule;
     private final ConsensusModule consensusModule;
-    private final IdentityModule identityModule;
+    private final MemberIdRepository memberIdRepository;
     private final ApplicationSupportedProtocols supportedApplicationProtocol;
     private final LocalDatabase localDatabase;
     private final MessageLogger<MemberId> messageLogger;
@@ -76,15 +76,15 @@ public class RaftServerModule
     private CatchupAddressProvider.PrioritisingUpstreamStrategyBasedAddressProvider catchupAddressProvider;
     private final Collection<ModifierSupportedProtocols> supportedModifierProtocols;
 
-    private RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
-            LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger,
-            CatchupAddressProvider.PrioritisingUpstreamStrategyBasedAddressProvider catchupAddressProvider,
+    private RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, MemberIdRepository memberIdRepository,
+            CoreServerModule coreServerModule, LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory,
+            MessageLogger<MemberId> messageLogger, CatchupAddressProvider.PrioritisingUpstreamStrategyBasedAddressProvider catchupAddressProvider,
             ApplicationSupportedProtocols supportedApplicationProtocol,
             Collection<ModifierSupportedProtocols> supportedModifierProtocols, ChannelInboundHandler installedProtocolsHandler )
     {
         this.platformModule = platformModule;
         this.consensusModule = consensusModule;
-        this.identityModule = identityModule;
+        this.memberIdRepository = memberIdRepository;
         this.supportedApplicationProtocol = supportedApplicationProtocol;
         this.localDatabase = localDatabase;
         this.messageLogger = messageLogger;
@@ -98,13 +98,13 @@ public class RaftServerModule
         createRaftServer( coreServerModule, messageHandlerChain, installedProtocolsHandler );
     }
 
-    static void createAndStart( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule,
+    static void createAndStart( PlatformModule platformModule, ConsensusModule consensusModule, MemberIdRepository memberIdRepository,
             CoreServerModule coreServerModule, LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory,
             MessageLogger<MemberId> messageLogger, CatchupAddressProvider.PrioritisingUpstreamStrategyBasedAddressProvider addressProvider,
             ApplicationSupportedProtocols supportedApplicationProtocol,
             Collection<ModifierSupportedProtocols> supportedModifierProtocols, ChannelInboundHandler installedProtocolsHandler )
     {
-        new RaftServerModule( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, pipelineBuilderFactory, messageLogger,
+        new RaftServerModule( platformModule, consensusModule, memberIdRepository, coreServerModule, localDatabase, pipelineBuilderFactory, messageLogger,
                         addressProvider, supportedApplicationProtocol, supportedModifierProtocols, installedProtocolsHandler );
     }
 
@@ -131,7 +131,7 @@ public class RaftServerModule
         platformModule.dependencies.satisfyDependency( raftServer ); // resolved in tests
 
         LoggingInbound<ReceivedInstantClusterIdAwareMessage<?>> loggingRaftInbound =
-                new LoggingInbound<>( nettyHandler, messageLogger, identityModule.myself() );
+                new LoggingInbound<>( nettyHandler, messageLogger, memberIdRepository.myself() );
         loggingRaftInbound.registerHandler( messageHandlerChain );
 
         platformModule.life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary

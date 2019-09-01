@@ -22,50 +22,53 @@
  */
 package org.neo4j.causalclustering.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.state.ClusterStateCleaner;
+import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class IdentityModule
+public class MemberIdRepository extends LifecycleAdapter
 {
     public static final String CORE_MEMBER_ID_NAME = "core-member-id";
 
-    private MemberId myself;
+    private final MemberId myself;
+    private final SimpleStorage<MemberId> memberIdStorage;
+    private final boolean replaceExistingState;
 
-    IdentityModule( PlatformModule platformModule, File clusterStateDirectory )
+    public MemberIdRepository( PlatformModule platformModule, ClusterStateDirectory clusterStateDirectory, ClusterStateCleaner clusterStateCleaner )
     {
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
         Log log = logProvider.getLog( getClass() );
 
-        SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fileSystem, clusterStateDirectory,
-                CORE_MEMBER_ID_NAME, new MemberId.Marshal(), logProvider );
+        memberIdStorage = new SimpleFileStorage<>( fileSystem, clusterStateDirectory.get(), CORE_MEMBER_ID_NAME, new MemberId.Marshal(), logProvider );
 
         try
         {
-            if ( memberIdStorage.exists() )
+            if ( memberIdStorage.exists() && !clusterStateCleaner.stateUnclean() )
             {
                 myself = memberIdStorage.readState();
+                replaceExistingState = false;
                 if ( myself == null )
                 {
-                    throw new RuntimeException( "I was null" );
+                    throw new RuntimeException( "MemberId stored on disk was null" );
                 }
             }
             else
             {
                 UUID uuid = UUID.randomUUID();
                 myself = new MemberId( uuid );
-                memberIdStorage.writeState( myself );
-
+                replaceExistingState = true;
                 log.info( String.format( "Generated new id: %s (%s)", myself, uuid ) );
             }
         }
@@ -80,5 +83,14 @@ public class IdentityModule
     public MemberId myself()
     {
         return myself;
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+        if ( replaceExistingState )
+        {
+            memberIdStorage.writeState( myself );
+        }
     }
 }

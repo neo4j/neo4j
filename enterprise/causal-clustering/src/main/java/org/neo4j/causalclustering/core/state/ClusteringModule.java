@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.MemberIdRepository;
 import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
@@ -37,14 +38,11 @@ import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.DatabaseName;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
@@ -57,9 +55,11 @@ public class ClusteringModule
 {
     private final CoreTopologyService topologyService;
     private final ClusterBinder clusterBinder;
+    private final ClusterStateCleaner clusterStateCleaner;
+    private final MemberIdRepository memberIdRepository;
 
-    public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself, PlatformModule platformModule,
-            ClusterStateDirectory clusterStateDirectory, LocalDatabase localDatabase )
+    public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, PlatformModule platformModule, ClusterStateDirectory clusterStateDirectory,
+            LocalDatabase localDatabase )
     {
         LifeSupport life = platformModule.life;
         Config config = platformModule.config;
@@ -69,12 +69,16 @@ public class ClusteringModule
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
+        clusterStateCleaner = new ClusterStateCleaner( localDatabase, clusterStateDirectory, fileSystem, logProvider );
+        memberIdRepository = new MemberIdRepository( platformModule, clusterStateDirectory, clusterStateCleaner );
         topologyService = discoveryServiceFactory
-                .coreTopologyService( config, myself, platformModule.jobScheduler, logProvider,
+                .coreTopologyService( config, memberIdRepository.myself(), platformModule.jobScheduler, logProvider,
                         userLogProvider, hostnameResolver, resolveStrategy( config, logProvider ) );
 
+        //Order matters!
+        life.add( clusterStateCleaner );
+        life.add( memberIdRepository );
         life.add( topologyService );
-        life.add( clusterStateCleaner( localDatabase, clusterStateDirectory, fileSystem ) );
 
         dependencies.satisfyDependency( topologyService ); // for tests
 
@@ -92,26 +96,6 @@ public class ClusteringModule
 
         clusterBinder = new ClusterBinder( clusterIdStorage, dbNameStorage, topologyService, Clocks.systemClock(), () -> sleep( 100 ), 300_000,
                 coreBootstrapper, dbName, minimumCoreHosts, logProvider );
-    }
-
-    /**
-     * Cluster state existing without a corresponding database is an illegal state. It likely indicates a previously failed store copy.
-     * In this event we remove and re-initialize the cluster state (equivalent to manually executing an unbind command).
-     */
-    static Lifecycle clusterStateCleaner( LocalDatabase localDatabase, ClusterStateDirectory clusterStateDirectory, FileSystemAbstraction fs )
-    {
-        return new LifecycleAdapter()
-        {
-            @Override
-            public void start() throws Throwable
-            {
-                if ( localDatabase.isEmpty() && !clusterStateDirectory.isEmpty() )
-                {
-                    fs.deleteRecursively( clusterStateDirectory.get() );
-                    clusterStateDirectory.initialize( fs );
-                }
-            }
-        };
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )
@@ -136,5 +120,10 @@ public class ClusteringModule
     public ClusterBinder clusterBinder()
     {
         return clusterBinder;
+    }
+
+    public MemberIdRepository memberIdRepository()
+    {
+        return memberIdRepository;
     }
 }
