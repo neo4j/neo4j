@@ -70,6 +70,14 @@ import org.neo4j.annotations.api.PublicApi;
 @PublicApi
 public interface Transaction extends AutoCloseable
 {
+
+    /**
+     * Creates a new node.
+     *
+     * @return the created node.
+     */
+    Node createNode();
+
     /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter

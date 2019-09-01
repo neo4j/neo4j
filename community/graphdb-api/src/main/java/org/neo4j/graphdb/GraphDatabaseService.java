@@ -41,13 +41,6 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 public interface GraphDatabaseService
 {
     /**
-     * Creates a new node.
-     *
-     * @return the created node.
-     */
-    Node createNode();
-
-    /**
      * Creates a new node and adds the provided labels to it.
      *
      * @param labels {@link Label labels} to add to the created node.

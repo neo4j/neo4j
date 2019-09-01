@@ -154,8 +154,8 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node startNode = database.getDatabase().createNode();
-            Node endNode = database.getDatabase().createNode();
+            Node startNode = tx.createNode();
+            Node endNode = tx.createNode();
             Relationship relationship = startNode.createRelationshipTo( endNode,
                     RelationshipType.withName( type ) );
             tx.commit();
@@ -211,7 +211,8 @@ public class GraphDbHelper
             }
             catch ( NotFoundException e )
             {
-                Node newNode = database.getDatabase().createNode();
+                database.getDatabase();
+                Node newNode = tx.createNode();
                 tx.commit();
                 return newNode.getId();
             }

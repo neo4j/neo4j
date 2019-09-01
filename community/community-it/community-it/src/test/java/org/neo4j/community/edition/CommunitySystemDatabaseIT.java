@@ -132,8 +132,8 @@ class CommunitySystemDatabaseIT
         {
             try ( Transaction transaction = systemDb.beginTx() )
             {
-                Node nodeA = systemDb.createNode();
-                Node nodeB = systemDb.createNode();
+                Node nodeA = transaction.createNode();
+                Node nodeB = transaction.createNode();
                 nodeA.createRelationshipTo( nodeB, RelationshipType.withName( valueOf( i ) ) );
                 transaction.commit();
             }
@@ -172,8 +172,8 @@ class CommunitySystemDatabaseIT
         {
             try ( Transaction transaction = systemDb.beginTx() )
             {
-                Node nodeA = systemDb.createNode();
-                Node nodeB = systemDb.createNode();
+                Node nodeA = transaction.createNode();
+                Node nodeB = transaction.createNode();
                 nodeA.createRelationshipTo( nodeB, RelationshipType.withName( valueOf( i ) ) );
                 transaction.commit();
             }

@@ -65,7 +65,6 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
@@ -132,7 +131,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final DatabaseInfo databaseInfo;
     private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
-    private static final ThreadLocal<TopLevelTransaction> TEMP_TOP_LEVEL_TRANSACTION = new ThreadLocal<>();
+    static final ThreadLocal<TopLevelTransaction> TEMP_TOP_LEVEL_TRANSACTION = new ThreadLocal<>();
 
     public GraphDatabaseFacade( GraphDatabaseFacade facade, Function<LoginContext,LoginContext> loginContextTransformer )
     {
@@ -154,20 +153,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ),
                 new FacadeKernelTransactionFactory( config, this ),
                 txBridge );
-    }
-
-    @Override
-    public Node createNode()
-    {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        try ( Statement ignore = transaction.acquireStatement() )
-        {
-            return newNodeProxy( transaction.dataWrite().nodeCreate() );
-        }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
     }
 
     @Override
@@ -600,7 +585,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             throw new org.neo4j.graphdb.TransactionFailureException( "Fail to start new transaction. Already have transaction in the context." );
         }
         final KernelTransaction kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
-        TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction, TEMP_TOP_LEVEL_TRANSACTION );
+        TopLevelTransaction transaction = new TopLevelTransaction( this, kernelTransaction, TEMP_TOP_LEVEL_TRANSACTION );
         TEMP_TOP_LEVEL_TRANSACTION.set( transaction );
         return transaction;
     }

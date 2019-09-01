@@ -498,12 +498,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
-    public Node createNode()
-    {
-        return database.createNode();
-    }
-
-    @Override
     public Relationship getRelationshipById( long id )
     {
         return database.getRelationshipById( id );

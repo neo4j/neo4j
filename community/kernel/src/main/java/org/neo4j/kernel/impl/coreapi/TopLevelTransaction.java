@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -33,11 +34,14 @@ import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 
@@ -45,11 +49,13 @@ public class TopLevelTransaction implements InternalTransaction
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private boolean commitCalled;
+    private final GraphDatabaseFacade facade;
     private KernelTransaction transaction;
     private final ThreadLocal<TopLevelTransaction> tempTopLevelTransaction;
 
-    public TopLevelTransaction( KernelTransaction transaction, ThreadLocal<TopLevelTransaction> tempTopLevelTransaction )
+    public TopLevelTransaction( GraphDatabaseFacade facade, KernelTransaction transaction, ThreadLocal<TopLevelTransaction> tempTopLevelTransaction )
     {
+        this.facade = facade;
         this.transaction = transaction;
         this.tempTopLevelTransaction = tempTopLevelTransaction;
     }
@@ -64,6 +70,19 @@ public class TopLevelTransaction implements InternalTransaction
     public void rollback()
     {
         safeTransactionOperation( Transaction::rollback );
+    }
+
+    @Override
+    public Node createNode()
+    {
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            return facade.newNodeProxy( transaction.dataWrite().nodeCreate() );
+        }
+        catch ( InvalidTransactionTypeKernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
     }
 
     @Override
@@ -182,4 +201,5 @@ public class TopLevelTransaction implements InternalTransaction
     {
         transaction.setMetaData( txMeta );
     }
+
 }

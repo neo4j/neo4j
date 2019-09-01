@@ -31,6 +31,7 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -189,6 +190,6 @@ class ExecutionResultTest
         ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
         KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
-        return kernelTransaction == null ? null : new TopLevelTransaction( kernelTransaction, new ThreadLocal<>() );
+        return kernelTransaction == null ? null : new TopLevelTransaction( (GraphDatabaseFacade) db, kernelTransaction, new ThreadLocal<>() );
     }
 }

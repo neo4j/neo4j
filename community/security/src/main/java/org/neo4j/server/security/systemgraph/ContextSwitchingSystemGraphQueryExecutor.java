@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.cypher.internal.javacompat.SystemDatabaseInnerAccessor;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
@@ -127,6 +128,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 
         return new Transaction()
         {
+            @Override
+            public Node createNode()
+            {
+                return transaction.createNode();
+            }
+
             @Override
             public void terminate()
             {
