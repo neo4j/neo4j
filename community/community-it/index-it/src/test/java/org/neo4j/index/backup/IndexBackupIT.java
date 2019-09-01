@@ -231,7 +231,7 @@ public class IndexBackupIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( label );
+            Node node = transaction.createNode( label );
             node.setProperty( "property" + i, i );
             transaction.commit();
         }

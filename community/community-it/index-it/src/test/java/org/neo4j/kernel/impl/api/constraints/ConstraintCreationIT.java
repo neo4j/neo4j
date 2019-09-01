@@ -91,7 +91,7 @@ class ConstraintCreationIT
         {
             for ( int i = 0; i < 2; i++ )
             {
-                Node node1 = db.createNode( LABEL );
+                Node node1 = tx.createNode( LABEL );
                 node1.setProperty( "prop", true );
             }
 

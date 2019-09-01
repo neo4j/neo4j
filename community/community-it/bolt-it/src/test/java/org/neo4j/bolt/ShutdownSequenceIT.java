@@ -297,7 +297,7 @@ public class ShutdownSequenceIT
                 for ( int i = 0; i < limit; i++ )
                 {
                     var id = String.format( "%s:%d", PREFIX, counter.getAndAdd( 2 ) );
-                    var node = db.createNode( Label.label( "StreamedNode" ) );
+                    var node = txc.createNode( Label.label( "StreamedNode" ) );
                     node.setProperty( "id", id );
                     props[i] = new Output( id );
 

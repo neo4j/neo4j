@@ -800,7 +800,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         {
             for ( int numNodes = 0; numNodes < nodes.length; numNodes += 1 )
             {
-                nodes[numNodes] = graphDB.createNode();
+                nodes[numNodes] = transaction.createNode();
             }
             transaction.commit();
         }
@@ -915,7 +915,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         {
             for ( int i = 0; i < 100; i++ )
             {
-                createdRelationships.add( node.createRelationshipTo( getGraphDb().createNode(), TEST ) );
+                createdRelationships.add( node.createRelationshipTo( transaction.createNode(), TEST ) );
             }
             transaction.commit();
         }
@@ -943,7 +943,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.createRelationshipTo( getGraphDb().createNode(), TEST );
+            node.createRelationshipTo( transaction.createNode(), TEST );
             assertEquals( 1, Iterables.count( node.getRelationships() ) );
             transaction.commit();
         }
@@ -968,7 +968,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.createRelationshipTo( getGraphDb().createNode(), withName( "FOO" ) );
+            node.createRelationshipTo( transaction.createNode(), withName( "FOO" ) );
 
             // when
             long relationships = Iterables.count( node.getRelationships( withName( "FOO" ), withName( "FOO" ) ) );
@@ -987,11 +987,11 @@ class TestRelationship extends AbstractNeo4jTestCase
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             for ( int i = 0; i < 112; i++ )
             {
-                node.createRelationshipTo( db.createNode(), TEST );
-                db.createNode().createRelationshipTo( node, TEST );
+                node.createRelationshipTo( tx.createNode(), TEST );
+                tx.createNode().createRelationshipTo( node, TEST );
             }
             tx.commit();
         }

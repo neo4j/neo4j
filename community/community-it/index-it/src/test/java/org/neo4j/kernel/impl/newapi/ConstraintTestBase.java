@@ -156,16 +156,16 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         addConstraints( "FOO", "prop" );
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node conflict = graphDb.createNode();
+            Node conflict = tx.createNode();
             conflict.setProperty( "prop", 1337 );
             nodeConflicting = conflict.getId();
 
-            Node ok = graphDb.createNode();
+            Node ok = tx.createNode();
             ok.setProperty( "prop", 42 );
             nodeNotConflicting = ok.getId();
 
             //Existing node
-            Node existing = graphDb.createNode();
+            Node existing = tx.createNode();
             existing.addLabel( Label.label( "FOO" ) );
             existing.setProperty( "prop", 1337 );
             tx.commit();
@@ -214,16 +214,16 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         addConstraints( "FOO", "prop" );
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node conflict = graphDb.createNode();
+            Node conflict = tx.createNode();
             conflict.addLabel( Label.label( "FOO" ) );
             nodeConflicting = conflict.getId();
 
-            Node ok = graphDb.createNode();
+            Node ok = tx.createNode();
             ok.addLabel( Label.label( "BAR" ) );
             nodeNotConflicting = ok.getId();
 
             //Existing node
-            Node existing = graphDb.createNode();
+            Node existing = tx.createNode();
             existing.addLabel( Label.label( "FOO" ) );
             existing.setProperty( "prop", 1337 );
             tx.commit();

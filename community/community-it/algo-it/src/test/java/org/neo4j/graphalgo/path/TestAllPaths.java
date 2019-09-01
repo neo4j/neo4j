@@ -44,16 +44,16 @@ class TestAllPaths extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b" );
-            graph.makeEdge( "b", "c" );
-            graph.makeEdge( "b", "c" );
-            graph.makeEdge( "b", "d" );
-            graph.makeEdge( "c", "d" );
-            graph.makeEdge( "c", "e" );
+            graph.makeEdge( transaction, "a", "b" );
+            graph.makeEdge( transaction, "b", "c" );
+            graph.makeEdge( transaction, "b", "c" );
+            graph.makeEdge( transaction, "b", "d" );
+            graph.makeEdge( transaction, "c", "d" );
+            graph.makeEdge( transaction, "c", "e" );
             var context = new BasicEvaluationContext( transaction, graphDb );
 
             PathFinder<Path> finder = instantiatePathFinder( context, 10 );
-            Iterable<Path> paths = finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) );
+            Iterable<Path> paths = finder.findAllPaths( graph.getNode( transaction, "a" ), graph.getNode( transaction, "e" ) );
             assertPaths( paths, "a,b,c,e", "a,b,c,e", "a,b,d,c,e", "a,b,c,d,b,c,e", "a,b,c,d,b,c,e", "a,b,c,b,d,c,e", "a,b,c,b,d,c,e", "a,b,d,c,b,c,e",
                     "a,b,d,c,b,c,e" );
             transaction.commit();
@@ -69,15 +69,15 @@ class TestAllPaths extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b" );
-            graph.makeEdge( "b", "c" );
-            graph.makeEdge( "b", "c" );
-            graph.makeEdge( "b", "c" );
-            graph.makeEdge( "c", "d" );
+            graph.makeEdge( transaction, "a", "b" );
+            graph.makeEdge( transaction, "b", "c" );
+            graph.makeEdge( transaction, "b", "c" );
+            graph.makeEdge( transaction, "b", "c" );
+            graph.makeEdge( transaction, "c", "d" );
             var context = new BasicEvaluationContext( transaction, graphDb );
 
             PathFinder<Path> finder = instantiatePathFinder( context, 10 );
-            Iterable<Path> paths = finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) );
+            Iterable<Path> paths = finder.findAllPaths( graph.getNode( transaction, "a" ), graph.getNode( transaction, "d" ) );
             assertPaths( paths, "a,b,c,d", "a,b,c,d", "a,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d", "a,b,c,b,c,d" );
             transaction.commit();
         }

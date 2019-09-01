@@ -26,7 +26,6 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.DbmsRule;
@@ -53,10 +52,10 @@ public class UniquenessConstraintValidationConcurrencyIT
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.executeAndCommit( db ->
+        Future<Boolean> created = database.executeAndCommit( tx ->
         {
-            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-            return otherThread.execute( createNode( db, "Label1", "key1", "value2" ) );
+            tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            return otherThread.execute( createNode( tx, "Label1", "key1", "value2" ) );
         } );
 
         // then
@@ -70,12 +69,12 @@ public class UniquenessConstraintValidationConcurrencyIT
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.executeAndCommit( db ->
+        Future<Boolean> created = database.executeAndCommit( tx ->
         {
-            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
             try
             {
-                return otherThread.execute( createNode( db, "Label1", "key1", "value1" ) );
+                return otherThread.execute( createNode( tx, "Label1", "key1", "value1" ) );
             }
             finally
             {
@@ -94,12 +93,12 @@ public class UniquenessConstraintValidationConcurrencyIT
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.executeAndRollback( db ->
+        Future<Boolean> created = database.executeAndRollback( tx ->
         {
-            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
             try
             {
-                return otherThread.execute( createNode( db, "Label1", "key1", "value1" ) );
+                return otherThread.execute( createNode( tx, "Label1", "key1", "value1" ) );
             }
             finally
             {
@@ -111,24 +110,24 @@ public class UniquenessConstraintValidationConcurrencyIT
         assertTrue( "Node creation should succeed", created.get() );
     }
 
-    private static Function<GraphDatabaseService, Void> createUniquenessConstraint(
+    private Function<Transaction, Void> createUniquenessConstraint(
             final String label, final String propertyKey )
     {
         return db ->
         {
-            db.schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
+            database.getGraphDatabaseAPI().schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
             return null;
         };
     }
 
-    public static OtherThreadExecutor.WorkerCommand<Void, Boolean> createNode(
-            final GraphDatabaseService db, final String label, final String propertyKey, final Object propertyValue )
+    public OtherThreadExecutor.WorkerCommand<Void, Boolean> createNode(
+            final Transaction transaction, final String label, final String propertyKey, final Object propertyValue )
     {
         return nothing ->
         {
-            try ( Transaction tx = db.beginTx() )
+            try ( Transaction tx = database.beginTx() )
             {
-                db.createNode( label( label ) ).setProperty( propertyKey, propertyValue );
+                tx.createNode( label( label ) ).setProperty( propertyKey, propertyValue );
 
                 tx.commit();
                 return true;

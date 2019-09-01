@@ -336,10 +336,10 @@ class NeoStoreIndexStoreViewTest
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            alistair = graphDb.createNode( label );
+            alistair = tx.createNode( label );
             alistair.setProperty( "name", "Alistair" );
             alistair.setProperty( "country", "UK" );
-            stefan = graphDb.createNode( label );
+            stefan = tx.createNode( label );
             stefan.setProperty( "name", "Stefan" );
             stefan.setProperty( "country", "Deutschland" );
             aKnowsS = alistair.createRelationshipTo( stefan, relationshipType );

@@ -98,11 +98,11 @@ class TransactionEventsIT
         {
             for ( int i = 0; i < 100; i++ )
             {
-                Operation.createNode.perform( state, expected );
+                Operation.createNode.perform( tx, state, expected );
             }
             for ( int i = 0; i < 20; i++ )
             {
-                Operation.createRelationship.perform( state, expected );
+                Operation.createRelationship.perform( tx, state, expected );
             }
             tx.commit();
         }
@@ -119,7 +119,7 @@ class TransactionEventsIT
                 int transactionSize = random.intBetween( 1, 20 );
                 for ( int j = 0; j < transactionSize; j++ )
                 {
-                    random.among( operations ).perform( state, expected );
+                    random.among( operations ).perform( tx, state, expected );
                 }
                 tx.commit();
             }
@@ -232,7 +232,7 @@ class TransactionEventsIT
             long relNodeId;
             try ( Transaction tx = db.beginTx() )
             {
-                relNodeId = db.createNode().getId();
+                relNodeId = tx.createNode().getId();
                 tx.commit();
             }
             Future<?> nodeCreator = executor.submit( () ->
@@ -245,7 +245,7 @@ class TransactionEventsIT
                     {
                         try ( Transaction tx = db.beginTx() )
                         {
-                            db.createNode();
+                            tx.createNode();
                             if ( ThreadLocalRandom.current().nextBoolean() )
                             {
                                 tx.commit();
@@ -341,7 +341,7 @@ class TransactionEventsIT
                     db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
                             .getKernelTransactionBoundToThisThread( true, db.databaseId() );
             kernelTransaction.setMetaData( metaData );
-            db.createNode();
+            transaction.createNode();
             transaction.commit();
         }
     }
@@ -351,9 +351,9 @@ class TransactionEventsIT
         createNode
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
-                Node node = graph.createNode();
+                Node node = graph.createNode( tx );
                 expectations.createdNode( node );
                 debug( node );
             }
@@ -361,7 +361,7 @@ class TransactionEventsIT
         deleteNode
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
                 Node node = graph.randomNode();
                 if ( node != null )
@@ -381,7 +381,7 @@ class TransactionEventsIT
         assignLabel
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
                 Node node = graph.randomNode();
                 if ( node != null )
@@ -399,7 +399,7 @@ class TransactionEventsIT
         removeLabel
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
                 Node node = graph.randomNode();
                 if ( node != null )
@@ -417,7 +417,7 @@ class TransactionEventsIT
         setNodeProperty
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
                 Node node = graph.randomNode();
                 if ( node != null )
@@ -434,7 +434,7 @@ class TransactionEventsIT
         removeNodeProperty
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
                 Node node = graph.randomNode();
                 if ( node != null )
@@ -452,7 +452,7 @@ class TransactionEventsIT
         setRelationshipProperty
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
                 Relationship relationship = graph.randomRelationship();
                 if ( relationship != null )
@@ -469,7 +469,7 @@ class TransactionEventsIT
         removeRelationshipProperty
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
                 Relationship relationship = graph.randomRelationship();
                 if ( relationship != null )
@@ -487,11 +487,11 @@ class TransactionEventsIT
         createRelationship
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
                 while ( graph.nodeCount() < 2 )
                 {
-                    createNode.perform( graph, expectations );
+                    createNode.perform( tx, graph, expectations );
                 }
                 Node node1 = graph.randomNode();
                 Node node2 = graph.randomNode();
@@ -503,7 +503,7 @@ class TransactionEventsIT
         deleteRelationship
         {
             @Override
-            void perform( Graph graph, ExpectedTransactionData expectations )
+            void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations )
             {
                 Relationship relationship = graph.randomRelationship();
                 if ( relationship != null )
@@ -515,7 +515,7 @@ class TransactionEventsIT
             }
         };
 
-        abstract void perform( Graph graph, ExpectedTransactionData expectations );
+        abstract void perform( Transaction tx, Graph graph, ExpectedTransactionData expectations );
 
         void debug( Object value )
         {   // Add a system.out here if you need to debug this case a bit easier
@@ -552,9 +552,9 @@ class TransactionEventsIT
             return random( relationships );
         }
 
-        Node createNode()
+        Node createNode( Transaction tx )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             nodes.add( node );
             return node;
         }

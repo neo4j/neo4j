@@ -63,7 +63,7 @@ class PointPropertiesRecordFormatIT
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( pointNode );
+            Node node = transaction.createNode( pointNode );
             node.setProperty( propertyKey, pointValue );
             transaction.commit();
         }
@@ -90,7 +90,7 @@ class PointPropertiesRecordFormatIT
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( pointNode );
+            Node node = transaction.createNode( pointNode );
             node.setProperty( propertyKey, new PointValue[]{pointValue, pointValue} );
             transaction.commit();
         }

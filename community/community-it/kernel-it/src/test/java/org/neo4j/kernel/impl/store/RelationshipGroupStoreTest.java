@@ -110,9 +110,9 @@ class RelationshipGroupStoreTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
-            node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
+            node = tx.createNode();
+            node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+            node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
             assertEquals( 2, node.getDegree() );
             assertEquals( 1, node.getDegree( MyRelTypes.TEST ) );
             assertEquals( 1, node.getDegree( MyRelTypes.TEST2 ) );
@@ -121,7 +121,7 @@ class RelationshipGroupStoreTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+            node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
             tx.commit();
         }
 
@@ -179,9 +179,9 @@ class RelationshipGroupStoreTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            Node node0 = db.createNode();
-            Node node2 = db.createNode();
+            Node node = tx.createNode();
+            Node node0 = tx.createNode();
+            Node node2 = tx.createNode();
             node0.createRelationshipTo( node, MyRelTypes.TEST );
             node.createRelationshipTo( node2, MyRelTypes.TEST2 );
 
@@ -210,12 +210,12 @@ class RelationshipGroupStoreTest
         Relationship rel6;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
-            rel1 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            rel2 = db.createNode().createRelationshipTo( node, MyRelTypes.TEST );
+            node = tx.createNode();
+            rel1 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+            rel2 = tx.createNode().createRelationshipTo( node, MyRelTypes.TEST );
             rel3 = node.createRelationshipTo( node, MyRelTypes.TEST );
-            rel4 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            rel5 = db.createNode().createRelationshipTo( node, MyRelTypes.TEST );
+            rel4 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+            rel5 = tx.createNode().createRelationshipTo( node, MyRelTypes.TEST );
             rel6 = node.createRelationshipTo( node, MyRelTypes.TEST );
             tx.commit();
         }
@@ -247,13 +247,13 @@ class RelationshipGroupStoreTest
         Relationship rel6;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
-            rel1 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            rel2 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            rel3 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            rel4 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
-            rel5 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
-            rel6 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
+            node = tx.createNode();
+            rel1 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+            rel2 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+            rel3 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+            rel4 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
+            rel5 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
+            rel6 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
             tx.commit();
         }
 
@@ -282,13 +282,13 @@ class RelationshipGroupStoreTest
         newDb( 2 );
 
         Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        Relationship rel1 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-        Relationship rel2 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-        Relationship rel3 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-        Relationship rel4 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
-        Relationship rel5 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
-        Relationship rel6 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
+        Node node = tx.createNode();
+        Relationship rel1 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+        Relationship rel2 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+        Relationship rel3 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+        Relationship rel4 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
+        Relationship rel5 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
+        Relationship rel6 = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
         tx.commit();
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();

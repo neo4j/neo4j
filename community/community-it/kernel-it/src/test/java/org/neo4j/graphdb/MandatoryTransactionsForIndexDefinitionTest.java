@@ -38,9 +38,9 @@ public class MandatoryTransactionsForIndexDefinitionTest extends AbstractMandato
     }
 
     @Override
-    protected IndexDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected IndexDefinition obtainEntityInTransaction( Transaction transaction )
     {
-        return graphDatabaseService
+        return db
                .schema()
                .indexFor( Label.label( "Label" ) )
                .on( "property" )

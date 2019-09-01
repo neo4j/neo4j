@@ -24,10 +24,10 @@ import org.junit.Test;
 
 import java.util.function.Function;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
@@ -42,13 +42,13 @@ public class DataAndSchemaTransactionSeparationIT
     @Rule
     public final DbmsRule db = new ImpermanentDbmsRule();
 
-    private static Function<GraphDatabaseService, Void> expectFailureAfterSchemaOperation(
-            final Function<GraphDatabaseService, ?> function )
+    private Function<Transaction, Void> expectFailureAfterSchemaOperation(
+            final Function<Transaction, ?> function )
     {
         return graphDb ->
         {
             // given
-            graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+            db.getGraphDatabaseAPI().schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
             // when
             try
@@ -67,13 +67,13 @@ public class DataAndSchemaTransactionSeparationIT
         };
     }
 
-    private static Function<GraphDatabaseService, Void> succeedAfterSchemaOperation(
-            final Function<GraphDatabaseService, ?> function )
+    private Function<Transaction, Void> succeedAfterSchemaOperation(
+            final Function<Transaction, ?> function )
     {
         return graphDb ->
         {
             // given
-            graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+            db.getGraphDatabaseAPI().schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
             // when/then
             function.apply( graphDb );
@@ -104,7 +104,7 @@ public class DataAndSchemaTransactionSeparationIT
         Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
         Relationship relationship = db.executeAndCommit( relate( nodes ) );
         // when
-        for ( Function<GraphDatabaseService, ?> operation : new Function[]{
+        for ( Function<Transaction, ?> operation : new Function[]{
                 propertyWrite( Node.class, nodes.first(), "key1", "value1" ),
                 propertyWrite( Relationship.class, relationship, "key1", "value1" ),
         } )
@@ -125,7 +125,7 @@ public class DataAndSchemaTransactionSeparationIT
         db.executeAndCommit( propertyWrite( Relationship.class, relationship, "key1", "value1" ) );
 
         // when
-        for ( Function<GraphDatabaseService, ?> operation : new Function[]{
+        for ( Function<Transaction, ?> operation : new Function[]{
                 propertyRead( Node.class, nodes.first(), "key1" ),
                 propertyRead( Relationship.class, relationship, "key1" ),
         } )
@@ -135,31 +135,31 @@ public class DataAndSchemaTransactionSeparationIT
         }
     }
 
-    private static Function<GraphDatabaseService, Node> createNode()
+    private static Function<Transaction, Node> createNode()
     {
-        return GraphDatabaseService::createNode;
+        return Transaction::createNode;
     }
 
-    private static <T extends PropertyContainer> Function<GraphDatabaseService, Object> propertyRead(
+    private static <T extends PropertyContainer> Function<Transaction, Object> propertyRead(
             Class<T> type, final T entity, final String key )
     {
-        return new FailureRewrite<Object>( type.getSimpleName() + ".getProperty()" )
+        return new FailureRewrite<>( type.getSimpleName() + ".getProperty()" )
         {
             @Override
-            Object perform( GraphDatabaseService graphDb )
+            Object perform( Transaction transaction )
             {
                 return entity.getProperty( key );
             }
         };
     }
 
-    private static <T extends PropertyContainer> Function<GraphDatabaseService, Void> propertyWrite(
+    private static <T extends PropertyContainer> Function<Transaction, Void> propertyWrite(
             Class<T> type, final T entity, final String key, final Object value )
     {
         return new FailureRewrite<Void>( type.getSimpleName() + ".setProperty()" )
         {
             @Override
-            Void perform( GraphDatabaseService graphDb )
+            Void perform( Transaction transaction )
             {
                 entity.setProperty( key, value );
                 return null;
@@ -167,17 +167,17 @@ public class DataAndSchemaTransactionSeparationIT
         };
     }
 
-    private static Function<GraphDatabaseService, Pair<Node, Node>> aPairOfNodes()
+    private static Function<Transaction, Pair<Node, Node>> aPairOfNodes()
     {
-        return graphDb -> Pair.of( graphDb.createNode(), graphDb.createNode() );
+        return tx -> Pair.of( tx.createNode(), tx.createNode() );
     }
 
-    private static Function<GraphDatabaseService, Relationship> relate( final Pair<Node, Node> nodes )
+    private static Function<Transaction, Relationship> relate( final Pair<Node, Node> nodes )
     {
         return graphDb -> nodes.first().createRelationshipTo( nodes.other(), withName( "RELATED" ) );
     }
 
-    private abstract static class FailureRewrite<T> implements Function<GraphDatabaseService, T>
+    private abstract static class FailureRewrite<T> implements Function<Transaction, T>
     {
         private final String message;
 
@@ -187,11 +187,11 @@ public class DataAndSchemaTransactionSeparationIT
         }
 
         @Override
-        public T apply( GraphDatabaseService graphDb )
+        public T apply( Transaction transaction )
         {
             try
             {
-                return perform( graphDb );
+                return perform( transaction );
             }
             catch ( AssertionError e )
             {
@@ -199,6 +199,6 @@ public class DataAndSchemaTransactionSeparationIT
             }
         }
 
-        abstract T perform( GraphDatabaseService graphDb );
+        abstract T perform( Transaction transaction );
     }
 }

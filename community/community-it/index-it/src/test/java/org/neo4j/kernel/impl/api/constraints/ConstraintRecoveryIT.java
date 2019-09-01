@@ -98,7 +98,7 @@ class ConstraintRecoveryIT
         {
             for ( int i = 0; i < 2; i++ )
             {
-                db.createNode( LABEL ).setProperty( KEY, "true" );
+                tx.createNode( LABEL ).setProperty( KEY, "true" );
             }
 
             tx.commit();

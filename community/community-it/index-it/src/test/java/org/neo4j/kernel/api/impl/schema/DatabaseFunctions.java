@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 
 public final class DatabaseFunctions
 {
@@ -33,9 +34,9 @@ public final class DatabaseFunctions
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static Function<GraphDatabaseService,Node> createNode()
+    public static Function<Transaction,Node> createNode()
     {
-        return GraphDatabaseService::createNode;
+        return Transaction::createNode;
     }
 
     public static Function<Node,Node> addLabel( Label label )

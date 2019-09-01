@@ -268,7 +268,7 @@ class FileLockerTest
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode();
+                tx.createNode();
                 tx.commit();
             }
 

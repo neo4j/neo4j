@@ -198,7 +198,7 @@ class TestLogPruning
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.setProperty( "name", "a somewhat lengthy string of some sort, right?" );
             tx.commit();
         }

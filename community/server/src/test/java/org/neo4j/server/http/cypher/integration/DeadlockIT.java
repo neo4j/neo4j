@@ -53,8 +53,8 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         // Given
         try ( Transaction tx = graphdb().beginTx() )
         {
-            graphdb().createNode( Label.label( "First" ) );
-            graphdb().createNode( Label.label( "Second" ) );
+            tx.createNode( Label.label( "First" ) );
+            tx.createNode( Label.label( "Second" ) );
             tx.commit();
         }
 

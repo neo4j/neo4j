@@ -169,7 +169,7 @@ class CheckPointerConstraintCreationDeadlockIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( LABEL ).setProperty( KEY, name );
+            tx.createNode( LABEL ).setProperty( KEY, name );
             tx.commit();
         }
     }

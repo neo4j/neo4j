@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.cypher.internal.javacompat.SystemDatabaseInnerAccessor;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -132,6 +133,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             public Node createNode()
             {
                 return transaction.createNode();
+            }
+
+            @Override
+            public Node createNode( Label... labels )
+            {
+                return transaction.createNode( labels );
             }
 
             @Override

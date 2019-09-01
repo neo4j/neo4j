@@ -54,6 +54,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   private val runtimeContextManager = edition.newRuntimeContextManager(resolver, lifeSupport)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
+  var tx: InternalTransaction = _
 
   def start(): Unit = {
     lifeSupport.init()
@@ -80,7 +81,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                   subscriber: QuerySubscriber,
                   profile: Boolean): RESULT = {
-    val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     try {
       val txContext = beginTx(tx)
       val queryContext = newQueryContext(txContext)
@@ -99,7 +100,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   def compile(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
-    val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     val txContext = beginTx(tx)
     val runtimeContext = newRuntimeContext(txContext, newQueryContext(txContext))
     try {

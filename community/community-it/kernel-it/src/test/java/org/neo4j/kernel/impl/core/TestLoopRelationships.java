@@ -78,7 +78,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
             txCreateLoop( node );
-            txCreateRel( node );
+            txCreateRel( transaction, node );
             txCreateLoop( node );
 
             for ( Relationship rel : node.getRelationships() )
@@ -90,9 +90,9 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         }
     }
 
-    private void txCreateRel( Node node )
+    private void txCreateRel( Transaction transaction, Node node )
     {
-        node.createRelationshipTo( getGraphDb().createNode(), TEST );
+        node.createRelationshipTo( transaction.createNode(), TEST );
     }
 
     private void txCreateLoop( Node node )
@@ -152,7 +152,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
                     }
                     else
                     {
-                        relationships[i] = root.createRelationshipTo( getGraphDb().createNode(), TEST );
+                        relationships[i] = root.createRelationshipTo( transaction.createNode(), TEST );
                     }
                 }
                 transaction.commit();
@@ -219,7 +219,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             node.createRelationshipTo( node, RelationshipType.withName( "MAYOR_OF" ) );
             tx.commit();
         }
@@ -254,7 +254,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
             {
                 assertEquals( node, relationship.getOtherNode( node ) );
                 assertEquals( asList( node, node ), asList( relationship.getNodes() ) );
-                assertThrows( NotFoundException.class, () -> relationship.getOtherNode( getGraphDb().createNode() ) );
+                assertThrows( NotFoundException.class, () -> relationship.getOtherNode( transaction.createNode() ) );
                 transaction.commit();
             }
         }
@@ -266,7 +266,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.createRelationshipTo( getGraphDb().createNode(), TEST );
+            node.createRelationshipTo( transaction.createNode(), TEST );
             transaction.commit();
         }
         Relationship relationship;

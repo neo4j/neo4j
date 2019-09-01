@@ -54,14 +54,14 @@ class CompositeCountsTest
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            Node foo = db.createNode( label( "Foo" ) );
-            Node fooBar = db.createNode( label( "Foo" ), label( "Bar" ) );
-            Node bar = db.createNode( label( "Bar" ) );
-            foo.createRelationshipTo( db.createNode(), withName( "ALPHA" ) );
+            Node foo = tx.createNode( label( "Foo" ) );
+            Node fooBar = tx.createNode( label( "Foo" ), label( "Bar" ) );
+            Node bar = tx.createNode( label( "Bar" ) );
+            foo.createRelationshipTo( tx.createNode(), withName( "ALPHA" ) );
             foo.createRelationshipTo( fooBar, withName( "BETA" ) );
-            fooBar.createRelationshipTo( db.createNode( label( "Bar" ) ), withName( "BETA" ) );
-            fooBar.createRelationshipTo( db.createNode(), withName( "GAMMA" ) );
-            bar.createRelationshipTo( db.createNode( label( "Foo" ) ), withName( "GAMMA" ) );
+            fooBar.createRelationshipTo( tx.createNode( label( "Bar" ) ), withName( "BETA" ) );
+            fooBar.createRelationshipTo( tx.createNode(), withName( "GAMMA" ) );
+            bar.createRelationshipTo( tx.createNode( label( "Foo" ) ), withName( "GAMMA" ) );
             tx.commit();
         }
 
@@ -89,8 +89,8 @@ class CompositeCountsTest
         Node bar;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode( label( "Foo" ) );
-            bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode( label( "Foo" ) );
+            bar = tx.createNode( label( "Bar" ) );
 
             tx.commit();
         }
@@ -117,8 +117,8 @@ class CompositeCountsTest
         Relationship relationship;
         try ( Transaction tx = db.beginTx() )
         {
-            relationship = db.createNode( label( "Foo" ) ).createRelationshipTo(
-                    db.createNode( label( "Bar" ) ), withName( "KNOWS" ) );
+            relationship = tx.createNode( label( "Foo" ) ).createRelationshipTo(
+                    tx.createNode( label( "Bar" ) ), withName( "KNOWS" ) );
 
             tx.commit();
         }
@@ -146,8 +146,8 @@ class CompositeCountsTest
         Node bar;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode();
-            bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode();
+            bar = tx.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
 
             tx.commit();
@@ -176,8 +176,8 @@ class CompositeCountsTest
         Node bar;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode( label( "Foo" ) );
-            bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode( label( "Foo" ) );
+            bar = tx.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
 
             tx.commit();
@@ -206,8 +206,8 @@ class CompositeCountsTest
         Node bar;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode( label( "Foo" ) );
-            bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode( label( "Foo" ) );
+            bar = tx.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
 
             tx.commit();
@@ -217,7 +217,7 @@ class CompositeCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             foo.addLabel( label( "Bar" ) );
-            foo.createRelationshipTo( db.createNode( label( "Foo" ) ), withName( "KNOWS" ) );
+            foo.createRelationshipTo( tx.createNode( label( "Foo" ) ), withName( "KNOWS" ) );
 
             tx.commit();
         }
@@ -238,8 +238,8 @@ class CompositeCountsTest
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode( label( "Foo" ), label( "Bar" ) );
-            bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode( label( "Foo" ), label( "Bar" ) );
+            bar = tx.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
             rel = bar.createRelationshipTo( foo, withName( "KNOWS" ) );
 
@@ -271,8 +271,8 @@ class CompositeCountsTest
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode( label( "Foo" ) );
-            bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode( label( "Foo" ) );
+            bar = tx.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
             rel = bar.createRelationshipTo( foo, withName( "KNOWS" ) );
 
@@ -303,8 +303,8 @@ class CompositeCountsTest
         Node bar;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode( label( "Foo" ), label( "Bar" ) );
-            bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode( label( "Foo" ), label( "Bar" ) );
+            bar = tx.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
 
             tx.commit();
@@ -314,7 +314,7 @@ class CompositeCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             foo.removeLabel( label( "Bar" ) );
-            foo.createRelationshipTo( db.createNode( label( "Foo" ) ), withName( "KNOWS" ) );
+            foo.createRelationshipTo( tx.createNode( label( "Foo" ) ), withName( "KNOWS" ) );
 
             tx.commit();
         }
@@ -334,8 +334,8 @@ class CompositeCountsTest
         Node bar;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode( label( "Foo" ) );
-            bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode( label( "Foo" ) );
+            bar = tx.createNode( label( "Bar" ) );
 
             tx.commit();
         }

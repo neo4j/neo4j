@@ -75,7 +75,7 @@ class TestStoreAccess
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();

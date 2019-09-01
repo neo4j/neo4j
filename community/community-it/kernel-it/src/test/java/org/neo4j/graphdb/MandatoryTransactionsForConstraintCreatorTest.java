@@ -39,10 +39,8 @@ public class MandatoryTransactionsForConstraintCreatorTest
     }
 
     @Override
-    protected ConstraintCreator obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected ConstraintCreator obtainEntityInTransaction( Transaction transaction )
     {
-        return graphDatabaseService
-               .schema()
-               .constraintFor( Label.label( "Label" ) );
+        return db.schema().constraintFor( Label.label( "Label" ) );
     }
 }

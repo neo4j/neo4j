@@ -59,7 +59,7 @@ public class NestedIndexReadersIT
         {
             for ( int i = 0; i < NODE_PER_ID; i++ )
             {
-                createRoundOfNodes();
+                createRoundOfNodes( tx );
             }
             tx.commit();
         }
@@ -101,7 +101,7 @@ public class NestedIndexReadersIT
             {
                 for ( int i = 0; i < NODE_PER_ID; i++ )
                 {
-                    db.createNode( LABEL ).setProperty( KEY, id );
+                    tx.createNode( LABEL ).setProperty( KEY, id );
                 }
             }
             tx.commit();
@@ -141,11 +141,11 @@ public class NestedIndexReadersIT
         }
     }
 
-    private void createRoundOfNodes()
+    private void createRoundOfNodes( Transaction tx )
     {
         for ( int id = 0; id < IDS; id++ )
         {
-            db.createNode( LABEL ).setProperty( KEY, id );
+            tx.createNode( LABEL ).setProperty( KEY, id );
         }
     }
 
@@ -163,7 +163,7 @@ public class NestedIndexReadersIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                createRoundOfNodes();
+                createRoundOfNodes( tx );
                 tx.commit();
             }
             return null;

@@ -267,7 +267,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode().addLabel( label( "A" ) );
+                tx.createNode().addLabel( label( "A" ) );
                 tx.commit();
             }
         }
@@ -283,7 +283,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode().addLabel( label( "A" ) );
+                tx.createNode().addLabel( label( "A" ) );
                 tx.commit();
             }
         }
@@ -297,7 +297,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().addLabel( label( "A" ) );
+            tx.createNode().addLabel( label( "A" ) );
             tx.commit();
         }
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
@@ -347,7 +347,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
             db.executeTransactionally( "Call db.awaitIndexes()" );
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode().addLabel( label( "Foo" ) );
+                tx.createNode().addLabel( label( "Foo" ) );
                 tx.commit();
             }
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Foo) WHERE n['key-' + n.name] = 'value' RETURN n" );
@@ -464,7 +464,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().addLabel( label( "Person" ) );
+            tx.createNode().addLabel( label( "Person" ) );
             tx.commit();
         }
 
@@ -517,7 +517,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().addLabel( label( "Person" ) );
+            tx.createNode().addLabel( label( "Person" ) );
             tx.commit();
         }
 

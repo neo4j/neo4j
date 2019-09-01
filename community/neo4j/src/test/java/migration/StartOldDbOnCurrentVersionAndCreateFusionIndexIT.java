@@ -139,7 +139,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
-                Node node = db.createNode( Label.label( "Fts1" ), Label.label( "Fts2" ), Label.label( "Fts3" ), Label.label( "Fts4" ) );
+                Node node = tx.createNode( Label.label( "Fts1" ), Label.label( "Fts2" ), Label.label( "Fts3" ), Label.label( "Fts4" ) );
                 node.setProperty( "prop1", "abc" );
                 node.setProperty( "prop2", "abc" );
                 node.createRelationshipTo( node, RelationshipType.withName( "FtsRel1" ) ).setProperty( "prop1", "abc" );
@@ -432,7 +432,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         {
             for ( int i = 0; i < 100; i++ )
             {
-                Node node = db.createNode( label );
+                Node node = tx.createNode( label );
                 Object value = i % 2 == 0 ? i : String.valueOf( i );
                 node.setProperty( KEY1, value );
                 if ( i % 3 == 0 )
@@ -450,7 +450,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         {
             for ( int i = 0; i < 100; i++ )
             {
-                Node node = db.createNode( label );
+                Node node = tx.createNode( label );
                 Object value = i % 2 == 0 ?
                                Values.pointValue( CoordinateReferenceSystem.Cartesian, i, i ) :
                                DurationValue.duration( 0, 0, i, 0 );

@@ -59,7 +59,7 @@ class KernelIT extends KernelIntegrationTest
 
         // 3: Now you can interact through both the statement context and the kernel API to manipulate the
         //    same transaction.
-        Node node = db.createNode();
+        Node node = transaction.createNode();
 
         int labelId = ktx.tokenWrite().labelGetOrCreateForName( "labello" );
         ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
@@ -190,7 +190,7 @@ class KernelIT extends KernelIntegrationTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode();
+                tx.createNode();
                 tx.commit();
             }
         }

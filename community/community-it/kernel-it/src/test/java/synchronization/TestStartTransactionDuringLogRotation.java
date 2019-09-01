@@ -115,7 +115,7 @@ public class TestStartTransactionDuringLogRotation
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode( label ).setProperty( "a", 1 );
+                tx.createNode( label ).setProperty( "a", 1 );
                 tx.commit();
             }
 
@@ -148,7 +148,7 @@ public class TestStartTransactionDuringLogRotation
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             completeLogRotationLatch.countDown();
             tx.commit();
         }

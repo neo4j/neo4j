@@ -166,7 +166,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         Node n;
         try ( Transaction tx = db.beginTx() )
         {
-            n = db.createNode( label );
+            n = tx.createNode( label );
             n.setProperty( property, "n" );
             tx.commit();
         }
@@ -188,10 +188,10 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         Node m;
         try ( Transaction tx = db.beginTx() )
         {
-            n = db.createNode( label );
+            n = tx.createNode( label );
             n.setProperty( property, "n" );
 
-            m = db.createNode( label );
+            m = tx.createNode( label );
             m.setProperty( property, "m" );
             tx.commit();
         }
@@ -211,7 +211,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         Node m;
         try ( Transaction tx = db.beginTx() )
         {
-            n = db.createNode( label );
+            n = tx.createNode( label );
             n.setProperty( property, COLLISION_X );
             tx.commit();
         }
@@ -219,7 +219,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            m = db.createNode( label );
+            m = tx.createNode( label );
             m.setProperty( property, COLLISION_Y );
             tx.commit();
         }
@@ -726,12 +726,12 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         createUniqueConstraint();
         try ( Transaction tx = db.beginTx() )
         {
-            a = db.createNode( label );
+            a = tx.createNode( label );
             a.setProperty( property, "a" );
-            b = db.createNode( label );
-            c = db.createNode();
+            b = tx.createNode( label );
+            c = tx.createNode();
             c.setProperty( property, "a" );
-            d = db.createNode();
+            d = tx.createNode();
             d.setProperty( property, "d" );
             tx.commit();
         }
@@ -752,13 +752,13 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         try ( Transaction tx = db.beginTx() )
         {
-            a = db.createNode( label );
+            a = tx.createNode( label );
             a.setProperty( property, "a" );
-            b = db.createNode( label );
+            b = tx.createNode( label );
             b.setProperty( property, "b" );
-            c = db.createNode( label );
+            c = tx.createNode( label );
             c.setProperty( property, "c" );
-            d = db.createNode( label );
+            d = tx.createNode( label );
             d.setProperty( property, "d" );
             tx.commit();
         }
@@ -865,13 +865,13 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private Action createNode( final Object propertyValue )
     {
-        return new Action( "Node node = db.createNode( label ); " +
+        return new Action( "Node node = tx.createNode( label ); " +
                 "node.setProperty( property, " + reprValue( propertyValue ) + " );" )
         {
             @Override
             public void accept( Transaction transaction )
             {
-                Node node = db.createNode( label );
+                Node node = transaction.createNode( label );
                 node.setProperty( property, propertyValue );
             }
         };

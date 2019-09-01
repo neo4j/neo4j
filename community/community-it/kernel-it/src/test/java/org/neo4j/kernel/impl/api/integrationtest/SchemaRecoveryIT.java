@@ -78,7 +78,7 @@ class SchemaRecoveryIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label ).setProperty( property, "neo4j@neo4j.com" );
+            tx.createNode( label ).setProperty( property, "neo4j@neo4j.com" );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )

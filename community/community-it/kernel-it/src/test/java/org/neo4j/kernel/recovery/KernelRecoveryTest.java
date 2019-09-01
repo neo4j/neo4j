@@ -130,7 +130,7 @@ class KernelRecoveryTest
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.setProperty( key, value );
             nodeId = node.getId();
             tx.commit();

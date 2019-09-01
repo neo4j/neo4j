@@ -87,7 +87,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
 
             for ( int i = 0; i < N_NODES; i++ )
             {
-                Node node = graphDb.createNode( label( "Node" ) );
+                Node node = tx.createNode( label( "Node" ) );
                 Value propValue = randomValues.nextValueOfTypes( allExceptNonSortable );
                 node.setProperty( "prop", propValue.asObject() );
                 Value pripValue = randomValues.nextValue();

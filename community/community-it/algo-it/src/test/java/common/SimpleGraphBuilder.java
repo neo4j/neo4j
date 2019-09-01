@@ -91,14 +91,14 @@ public class SimpleGraphBuilder
         this.currentRelType = currentRelType;
     }
 
-    public Node makeNode( String id )
+    public Node makeNode( Transaction tx, String id )
     {
-        return makeNode( id, Collections.emptyMap() );
+        return makeNode( tx, id, Collections.emptyMap() );
     }
 
-    public Node makeNode( String id, Object... keyValuePairs )
+    public Node makeNode( Transaction tx, String id, Object... keyValuePairs )
     {
-        return makeNode( id, toMap( keyValuePairs ) );
+        return makeNode( tx, id, toMap( keyValuePairs ) );
     }
 
     private Map<String, Object> toMap( Object[] keyValuePairs )
@@ -111,9 +111,9 @@ public class SimpleGraphBuilder
         return map;
     }
 
-    public Node makeNode( String id, Map<String, Object> properties )
+    public Node makeNode( Transaction tx, String id, Map<String, Object> properties )
     {
-        Node node = graphDb.createNode();
+        Node node = tx.createNode();
         nodes.put( id, node );
         nodeNames.put( node, id );
         node.setProperty( KEY_ID, id );
@@ -128,17 +128,17 @@ public class SimpleGraphBuilder
         return node;
     }
 
-    public Node getNode( String id )
+    public Node getNode( Transaction tx, String id )
     {
-        return getNode( id, false );
+        return getNode( tx, id, false );
     }
 
-    public Node getNode( String id, boolean force )
+    public Node getNode( Transaction tx, String id, boolean force )
     {
         Node node = nodes.get( id );
         if ( node == null && force )
         {
-            node = makeNode( id );
+            node = makeNode( tx, id );
         }
         return node;
     }
@@ -148,15 +148,15 @@ public class SimpleGraphBuilder
         return nodeNames.get( node );
     }
 
-    public Relationship makeEdge( String node1, String node2 )
+    public Relationship makeEdge( Transaction tx, String node1, String node2 )
     {
-        return makeEdge( node1, node2, Collections.emptyMap() );
+        return makeEdge( tx, node1, node2, Collections.emptyMap() );
     }
 
-    public Relationship makeEdge( String node1, String node2, Map<String, Object> edgeProperties )
+    public Relationship makeEdge( Transaction tx, String node1, String node2, Map<String, Object> edgeProperties )
     {
-        Node n1 = getNode( node1, true );
-        Node n2 = getNode( node2, true );
+        Node n1 = getNode( tx, node1, true );
+        Node n2 = getNode( tx, node2, true );
         Relationship relationship = n1
             .createRelationshipTo( n2, currentRelType );
         for ( Map.Entry<String, Object> property : edgeProperties.entrySet() )
@@ -167,40 +167,40 @@ public class SimpleGraphBuilder
         return relationship;
     }
 
-    public Relationship makeEdge( String node1, String node2, Object... keyValuePairs )
+    public Relationship makeEdge( Transaction transaction, String node1, String node2, Object... keyValuePairs )
     {
-        return makeEdge( node1, node2, toMap( keyValuePairs ) );
+        return makeEdge( transaction, node1, node2, toMap( keyValuePairs ) );
     }
 
     /**
      * This creates a chain by adding a number of edges. Example: The input
      * string "a,b,c,d,e" makes the chain a->b->c->d->e
+     * @param transaction
      * @param commaSeparatedNodeNames
-     *            A string with the node names separated by commas.
      */
-    public void makeEdgeChain( String commaSeparatedNodeNames )
+    public void makeEdgeChain( Transaction transaction, String commaSeparatedNodeNames )
     {
         String[] nodeNames = commaSeparatedNodeNames.split( "," );
         for ( int i = 0; i < nodeNames.length - 1; ++i )
         {
-            makeEdge( nodeNames[i], nodeNames[i + 1] );
+            makeEdge( transaction, nodeNames[i], nodeNames[i + 1] );
         }
     }
 
     /**
      * Same as makeEdgeChain, but with some property set on all edges.
+     * @param transaction
      * @param commaSeparatedNodeNames
      *            A string with the node names separated by commas.
      * @param propertyName
      * @param propertyValue
      */
-    public void makeEdgeChain( String commaSeparatedNodeNames,
-        String propertyName, Object propertyValue )
+    public void makeEdgeChain( Transaction transaction, String commaSeparatedNodeNames, String propertyName, Object propertyValue )
     {
         String[] nodeNames = commaSeparatedNodeNames.split( "," );
         for ( int i = 0; i < nodeNames.length - 1; ++i )
         {
-            makeEdge( nodeNames[i], nodeNames[i + 1], propertyName,
+            makeEdge( transaction, nodeNames[i], nodeNames[i + 1], propertyName,
                 propertyValue );
         }
     }
@@ -208,14 +208,15 @@ public class SimpleGraphBuilder
     /**
      * This creates a number of edges from a number of node names, pairwise.
      * Example: Input "a,b,c,d" gives a->b and c->d
+     * @param transaction
      * @param commaSeparatedNodeNames
      */
-    public void makeEdges( String commaSeparatedNodeNames )
+    public void makeEdges( Transaction transaction, String commaSeparatedNodeNames )
     {
         String[] nodeNames = commaSeparatedNodeNames.split( "," );
         for ( int i = 0; i < nodeNames.length / 2; ++i )
         {
-            makeEdge( nodeNames[i * 2], nodeNames[i * 2 + 1] );
+            makeEdge( transaction, nodeNames[i * 2], nodeNames[i * 2 + 1] );
         }
     }
 
@@ -225,10 +226,10 @@ public class SimpleGraphBuilder
      * @return One relationship between two given nodes, if there exists one,
      *         otherwise null.
      */
-    public Relationship getRelationship( String node1Id, String node2Id )
+    public Relationship getRelationship( Transaction tx, String node1Id, String node2Id )
     {
-        Node node1 = getNode( node1Id );
-        Node node2 = getNode( node2Id );
+        Node node1 = getNode( tx, node1Id );
+        Node node2 = getNode( tx, node2Id );
         if ( node1 == null || node2 == null )
         {
             return null;
@@ -249,10 +250,10 @@ public class SimpleGraphBuilder
     }
 
     // Syntax: makePathWithRelProperty( "weight", "a-4-b-2.3-c-3-d" )
-    public Path makePathWithRelProperty( String relPropertyName, String dashSeparatedNodeNamesAndRelationshipProperty )
+    public Path makePathWithRelProperty( Transaction tx, String relPropertyName, String dashSeparatedNodeNamesAndRelationshipProperty )
     {
         String[] nodeNamesAndRelationshipProperties = dashSeparatedNodeNamesAndRelationshipProperty.split( "-" );
-        Node startNode = getNode( nodeNamesAndRelationshipProperties[0], true);
+        Node startNode = getNode( tx, nodeNamesAndRelationshipProperties[0], true);
         PathImpl.Builder builder = new PathImpl.Builder( startNode );
 
         if ( nodeNamesAndRelationshipProperties.length < 1 )
@@ -265,7 +266,7 @@ public class SimpleGraphBuilder
             String from = nodeNamesAndRelationshipProperties[i];
             String to = nodeNamesAndRelationshipProperties[i + 2];
             String prop = nodeNamesAndRelationshipProperties[i + 1];
-            Relationship relationship = makeEdge( from, to, relPropertyName, prop );
+            Relationship relationship = makeEdge( tx, from, to, relPropertyName, prop );
             builder = builder.push( relationship );
         }
         return builder.build();

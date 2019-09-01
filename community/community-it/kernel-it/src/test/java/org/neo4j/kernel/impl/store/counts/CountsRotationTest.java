@@ -210,7 +210,7 @@ public class CountsRotationTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode( B );
+                tx.createNode( B );
                 tx.commit();
             }
             checkPoint( db );
@@ -246,7 +246,7 @@ public class CountsRotationTest
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( A );
+            tx.createNode( A );
             tx.commit();
         }
 
@@ -279,7 +279,7 @@ public class CountsRotationTest
         // WHEN doing a transaction (actually two, the label-mini-tx also counts)
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( B );
+            tx.createNode( B );
             tx.commit();
         }
         // and rotating the log (which implies flushing)
@@ -287,7 +287,7 @@ public class CountsRotationTest
         // and creating another node after it
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( C );
+            tx.createNode( C );
             tx.commit();
         }
 
@@ -345,7 +345,7 @@ public class CountsRotationTest
             try ( Transaction tx = db.beginTx() )
             {
                 txStartLatch.countDown();
-                db.createNode();
+                tx.createNode();
                 await( txCommitLatch );
                 tx.commit();
             }

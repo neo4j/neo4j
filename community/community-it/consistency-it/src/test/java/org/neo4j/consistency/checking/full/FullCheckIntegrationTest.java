@@ -251,16 +251,16 @@ public class FullCheckIntegrationTest
 
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
-                Node node1 = set( db.createNode( label( "label1" ) ) );
-                Node node2 = set( db.createNode( label( "label2" ) ), property( PROP1, VALUE1 ) );
+                Node node1 = set( tx.createNode( label( "label1" ) ) );
+                Node node2 = set( tx.createNode( label( "label2" ) ), property( PROP1, VALUE1 ) );
                 node1.createRelationshipTo( node2, withName( "C" ) );
                 // Just to create one more rel type
-                db.createNode().createRelationshipTo( db.createNode(), withName( "T" ) );
-                indexedNodes.add( set( db.createNode( label( "label3" ) ), property( PROP1, VALUE1 ) ).getId() );
-                indexedNodes.add( set( db.createNode( label( "label3" ) ),
+                tx.createNode().createRelationshipTo( tx.createNode(), withName( "T" ) );
+                indexedNodes.add( set( tx.createNode( label( "label3" ) ), property( PROP1, VALUE1 ) ).getId() );
+                indexedNodes.add( set( tx.createNode( label( "label3" ) ),
                         property( PROP1, VALUE1 ), property( PROP2, VALUE2 ) ).getId() );
 
-                set( db.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
+                set( tx.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
 
                 KernelTransaction ktx = transactionOn( db );
                 try ( Statement ignore = ktx.acquireStatement() )

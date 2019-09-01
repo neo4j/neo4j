@@ -79,13 +79,13 @@ public class GraphDatabaseShutdownTest
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             tx.acquireWriteLock( node );
             assertThat( lockCount( locks ), greaterThanOrEqualTo( 1 ) );
 
             managementService.shutdown();
 
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
         catch ( Exception e )
@@ -94,7 +94,7 @@ public class GraphDatabaseShutdownTest
         }
 
         // THEN
-        assertThat( exceptionThrownByTxClose, instanceOf( DatabaseShutdownException.class ) );
+        assertThat( exceptionThrownByTxClose, instanceOf( TransactionTerminatedException.class ) );
         assertFalse( db.isAvailable( 1 ) );
         assertEquals( 0, lockCount( locks ) );
     }
@@ -106,7 +106,7 @@ public class GraphDatabaseShutdownTest
         final Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             tx.commit();
         }
 

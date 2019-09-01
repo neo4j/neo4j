@@ -58,7 +58,7 @@ class LargePropertiesIT
             long nodeId;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
+                Node node = tx.createNode();
                 nodeId = node.getId();
                 node.setProperty( "string", stringValue );
                 node.setProperty( "array", arrayValue );

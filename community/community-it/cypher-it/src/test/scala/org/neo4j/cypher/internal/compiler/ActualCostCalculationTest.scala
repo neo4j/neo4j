@@ -264,10 +264,10 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   private def setUpDb(graph: GraphDatabaseQueryService, chunkSize: Int) {
-    graph.withTx { _ =>
+    graph.withTx { tx =>
       for (_ <- 1 to chunkSize) {
-        val node = graph.createNode(LABEL)
-        node.createRelationshipTo(graph.createNode(),
+        val node = tx.createNode(LABEL)
+        node.createRelationshipTo(tx.createNode(),
           RelationshipType.withName(RELATIONSHIP))
         node.setProperty(PROPERTY, 42)
       }
@@ -281,12 +281,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
     //e.g. [100, 200, 300,...] with 100 + 200 + 300 ~ N
     val factor = 2 * N / (nLabels * (nLabels + 1))
     val sizes =  for (i <- 1 to nLabels) yield i * factor
-    graph.withTx { _ =>
+    graph.withTx { tx =>
       for (i <- labels.indices) {
         val label = labels(i)
         val size = sizes(i)
         for (_ <- 1 to size) {
-          graph.createNode(Label.label(label))
+          tx.createNode(Label.label(label))
         }
       }
     }
@@ -360,10 +360,6 @@ class ActualCostCalculationTest extends CypherFunSuite {
         tx.close()
       }
     }
-
-    def createNode(): Node = gds.createNode()
-
-    def createNode(label: Label): Node = gds.createNode(label)
 
     def createIndex(label: Label, propertyName: String): Unit = {
       graph.withTx { _ =>

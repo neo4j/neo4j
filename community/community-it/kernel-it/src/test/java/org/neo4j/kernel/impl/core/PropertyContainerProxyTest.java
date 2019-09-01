@@ -47,7 +47,7 @@ public abstract class PropertyContainerProxyTest
     @Inject
     GraphDatabaseService db;
 
-    protected abstract long createPropertyContainer();
+    protected abstract long createPropertyContainer( Transaction tx );
 
     protected abstract PropertyContainer lookupPropertyContainer( long id );
 
@@ -70,7 +70,7 @@ public abstract class PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            containerId = createPropertyContainer();
+            containerId = createPropertyContainer( tx );
             PropertyContainer container = lookupPropertyContainer( containerId );
 
             for ( Map.Entry<String,Object> entry : properties.entrySet() )

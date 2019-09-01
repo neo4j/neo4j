@@ -63,9 +63,9 @@ class KernelAPIParallelIndexScanStressIT
         // Given
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            createLabeledNodes( N_NODES, "LABEL1", "prop" );
-            createLabeledNodes( N_NODES, "LABEL2", "prop" );
-            createLabeledNodes( N_NODES, "LABEL3", "prop" );
+            createLabeledNodes( tx, N_NODES, "LABEL1", "prop" );
+            createLabeledNodes( tx, N_NODES, "LABEL2", "prop" );
+            createLabeledNodes( tx, N_NODES, "LABEL3", "prop" );
             tx.commit();
         }
 
@@ -112,11 +112,11 @@ class KernelAPIParallelIndexScanStressIT
         return tx.dataRead().indexReadSession( index );
     }
 
-    private void createLabeledNodes( int nNodes, String labelName, String propKey )
+    private void createLabeledNodes( org.neo4j.graphdb.Transaction tx, int nNodes, String labelName, String propKey )
     {
         for ( int i = 0; i < nNodes; i++ )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.addLabel( Label.label( labelName ) );
             node.setProperty( propKey, i );
         }

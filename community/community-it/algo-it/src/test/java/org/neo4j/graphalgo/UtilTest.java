@@ -41,14 +41,14 @@ class UtilTest extends Neo4jAlgoTestCase
     void testPathCounter()
     {
         // Nodes
-        try ( Transaction transaction = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            Node a = graphDb.createNode();
-            Node b = graphDb.createNode();
-            Node c = graphDb.createNode();
-            Node d = graphDb.createNode();
-            Node e = graphDb.createNode();
-            Node f = graphDb.createNode();
+            Node a = tx.createNode();
+            Node b = tx.createNode();
+            Node c = tx.createNode();
+            Node d = tx.createNode();
+            Node e = tx.createNode();
+            Node f = tx.createNode();
             // Predecessor lists
             List<Relationship> ap = new LinkedList<>();
             List<Relationship> bp = new LinkedList<>();
@@ -88,7 +88,7 @@ class UtilTest extends Neo4jAlgoTestCase
             assertEquals( 1, counter.getNumberOfPathsToNode( d ) );
             assertEquals( 1, counter.getNumberOfPathsToNode( e ) );
             assertEquals( 1, counter.getNumberOfPathsToNode( f ) );
-            transaction.commit();
+            tx.commit();
         }
     }
 }

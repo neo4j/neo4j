@@ -48,12 +48,12 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
         Node deleted;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            foo = graphDb.createNode( label( "Foo" ) ).getId();
-            bar = graphDb.createNode( label( "Bar" ) ).getId();
-            baz = graphDb.createNode( label( "Baz" ) ).getId();
-            barbaz = graphDb.createNode( label( "Bar" ), label( "Baz" ) ).getId();
-            gone = (deleted = graphDb.createNode()).getId();
-            bare = graphDb.createNode().getId();
+            foo = tx.createNode( label( "Foo" ) ).getId();
+            bar = tx.createNode( label( "Bar" ) ).getId();
+            baz = tx.createNode( label( "Baz" ) ).getId();
+            barbaz = tx.createNode( label( "Bar" ), label( "Baz" ) ).getId();
+            gone = (deleted = tx.createNode()).getId();
+            bare = tx.createNode().getId();
 
             tx.commit();
         }

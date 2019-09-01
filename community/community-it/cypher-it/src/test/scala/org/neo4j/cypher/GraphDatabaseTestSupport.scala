@@ -174,8 +174,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def createNode(name: String): Node = createNode(Map[String, Any]("name" -> name))
 
   def createNode(props: Map[String, Any]): Node = {
-    graph.inTx {
-      val node = graphOps.createNode()
+    graph.inTx { tx =>
+      val node = tx.createNode()
 
       props.foreach((kv) => node.setProperty(kv._1, kv._2))
       node

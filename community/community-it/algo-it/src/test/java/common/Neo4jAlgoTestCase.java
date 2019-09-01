@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -91,14 +92,14 @@ public abstract class Neo4jAlgoTestCase
         assertEquals( names.length, i );
     }
 
-    protected static void assertPath( Path path, String commaSeparatedNodePath )
+    protected static void assertPath( Transaction tx, Path path, String commaSeparatedNodePath )
     {
         String[] nodeIds = commaSeparatedNodePath.split( "," );
         Node[] nodes = new Node[nodeIds.length];
         int i = 0;
         for ( String id : nodeIds )
         {
-            nodes[i] = graph.getNode( id );
+            nodes[i] = graph.getNode( tx, id );
             i++;
         }
         assertPath( path, nodes );

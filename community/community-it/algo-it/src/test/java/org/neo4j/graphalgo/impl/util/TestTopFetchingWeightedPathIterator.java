@@ -62,7 +62,7 @@ class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Path a = graph.makePathWithRelProperty( length, "a1-1-a2" );
+            Path a = graph.makePathWithRelProperty( transaction, length, "a1-1-a2" );
             List<Path> list = new ArrayList<>();
             list.add( a );
 
@@ -81,8 +81,8 @@ class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Path a = graph.makePathWithRelProperty( length, "a1-1-a2" );
-            Path b = graph.makePathWithRelProperty( length, "b1-0-b2-1-b3-0-b4" );
+            Path a = graph.makePathWithRelProperty( transaction, length, "a1-1-a2" );
+            Path b = graph.makePathWithRelProperty( transaction, length, "b1-0-b2-1-b3-0-b4" );
             List<Path> list = new ArrayList<>();
             list.add( a );
             list.add( b );
@@ -104,11 +104,11 @@ class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Path a = graph.makePathWithRelProperty( length, "a1-1-a2-2-a3" );             // 3
-            Path b = graph.makePathWithRelProperty( length, "b1-3-b2-3-b3" );             // 6
-            Path c = graph.makePathWithRelProperty( length, "c1-0-c2-1-c3" );             // 1
-            Path d = graph.makePathWithRelProperty( length, "d1-3-d2-0-d3" );             // 3
-            Path e = graph.makePathWithRelProperty( length, "e1-0-e2-0-e3-0-e4-1-e5" );   // 1
+            Path a = graph.makePathWithRelProperty( transaction, length, "a1-1-a2-2-a3" );             // 3
+            Path b = graph.makePathWithRelProperty( transaction, length, "b1-3-b2-3-b3" );             // 6
+            Path c = graph.makePathWithRelProperty( transaction, length, "c1-0-c2-1-c3" );             // 1
+            Path d = graph.makePathWithRelProperty( transaction, length, "d1-3-d2-0-d3" );             // 3
+            Path e = graph.makePathWithRelProperty( transaction, length, "e1-0-e2-0-e3-0-e4-1-e5" );   // 1
 
             List<Path> list = Arrays.asList( a, b, c, d, e );
             topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );

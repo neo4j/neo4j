@@ -49,34 +49,34 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            Node root = graphDb.createNode();
+            Node root = tx.createNode();
             three_root = root.getId();
 
             Node[] leafs = new Node[32];
             for ( int i = 0; i < leafs.length; i++ )
             {
-                leafs[i] = graphDb.createNode();
+                leafs[i] = tx.createNode();
             }
             int offset = 0, duplicate = 12;
 
-            Node interdup = graphDb.createNode();
+            Node interdup = tx.createNode();
             interdup.createRelationshipTo( root, PARENT );
             offset = relate( duplicate, leafs, offset, interdup );
             for ( int i = 0; i < 5; i++ )
             {
-                Node inter = graphDb.createNode();
+                Node inter = tx.createNode();
                 inter.createRelationshipTo( root, PARENT );
                 offset = relate( 3 + i, leafs, offset, inter );
             }
             interdup.createRelationshipTo( root, PARENT );
             for ( int i = 0; i < 4; i++ )
             {
-                Node inter = graphDb.createNode();
+                Node inter = tx.createNode();
                 inter.createRelationshipTo( root, PARENT );
                 offset = relate( 2 + i, leafs, offset, inter );
             }
 
-            Node inter = graphDb.createNode();
+            Node inter = tx.createNode();
             inter.createRelationshipTo( root, PARENT );
             offset = relate( 1, leafs, offset, inter );
 

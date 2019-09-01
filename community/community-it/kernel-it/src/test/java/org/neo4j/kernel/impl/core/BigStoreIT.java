@@ -135,11 +135,11 @@ class BigStoreIT
         int count = 10000;
         for ( int i = 0; i < count; i++ )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             setProperties( node, properties );
             Relationship rel1 = refNode.createRelationshipTo( node, BIG_TYPE );
             setProperties( rel1, properties );
-            Node highNode = db.createNode();
+            Node highNode = tx.createNode();
             Relationship rel2 = node.createRelationshipTo( highNode, OTHER_TYPE );
             setProperties( rel2, properties );
             setProperties( highNode, properties );
@@ -180,7 +180,7 @@ class BigStoreIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( REFERENCE );
+            Node node = tx.createNode( REFERENCE );
             tx.commit();
             return node;
         }
@@ -244,10 +244,10 @@ class BigStoreIT
         long[] arrayPropertyValue = {1021L, 321L, 343212L};
 
         Transaction tx = db.beginTx();
-        Node nodeBelowTheLine = db.createNode();
+        Node nodeBelowTheLine = tx.createNode();
         nodeBelowTheLine.setProperty( propertyKey, intPropertyValue );
         assertEquals( idBelow, nodeBelowTheLine.getId() );
-        Node nodeAboveTheLine = db.createNode();
+        Node nodeAboveTheLine = tx.createNode();
         nodeAboveTheLine.setProperty( propertyKey, stringPropertyValue );
         Relationship relBelowTheLine = nodeBelowTheLine.createRelationshipTo( nodeAboveTheLine, BIG_TYPE );
         relBelowTheLine.setProperty( propertyKey, arrayPropertyValue );

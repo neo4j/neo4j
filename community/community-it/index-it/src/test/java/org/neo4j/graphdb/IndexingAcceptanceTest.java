@@ -95,7 +95,7 @@ public class IndexingAcceptanceTest
         Node myNode;
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            myNode = beansAPI.createNode( LABEL1 );
+            myNode = tx.createNode( LABEL1 );
             myNode.setProperty( "pad0", true );
             myNode.setProperty( "pad1", true );
             myNode.setProperty( "pad2", true );
@@ -133,7 +133,7 @@ public class IndexingAcceptanceTest
         long id;
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            Node myNode = beansAPI.createNode();
+            Node myNode = tx.createNode();
             id = myNode.getId();
             myNode.setProperty( "key0", true );
             myNode.setProperty( "key1", true );
@@ -445,10 +445,10 @@ public class IndexingAcceptanceTest
         Node node2;
         try ( Transaction tx = graph.beginTx() )
         {
-            node1 = graph.createNode( LABEL1 );
+            node1 = tx.createNode( LABEL1 );
             node1.setProperty( "name", "Stefan" );
 
-            node2 = graph.createNode( LABEL1 );
+            node2 = tx.createNode( LABEL1 );
             node2.setProperty( "name", "Stefan" );
             tx.commit();
         }
@@ -473,10 +473,10 @@ public class IndexingAcceptanceTest
         Node node2;
         try ( Transaction tx = graph.beginTx() )
         {
-            node1 = graph.createNode( LABEL1 );
+            node1 = tx.createNode( LABEL1 );
             node1.setProperty( "name", "Stefan" );
 
-            node2 = graph.createNode( LABEL1 );
+            node2 = tx.createNode( LABEL1 );
             node2.setProperty( "name", "Stefan" );
             tx.commit();
         }
@@ -514,7 +514,7 @@ public class IndexingAcceptanceTest
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
-            nodeId = db.createNode().getId();
+            nodeId = tx.createNode().getId();
             tx.commit();
         }
 
@@ -562,7 +562,7 @@ public class IndexingAcceptanceTest
     {
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            Node node = beansAPI.createNode( labels );
+            Node node = tx.createNode( labels );
             for ( Map.Entry<String,Object> property : properties.entrySet() )
             {
                 node.setProperty( property.getKey(), property.getValue() );

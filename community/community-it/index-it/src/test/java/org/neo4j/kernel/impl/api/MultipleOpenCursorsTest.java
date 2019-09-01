@@ -743,7 +743,7 @@ public class MultipleOpenCursorsTest
             {
                 for ( int i = 0; i < numberOfNodes; i++ )
                 {
-                    Node node = db.createNode( indexLabel );
+                    Node node = tx.createNode( indexLabel );
                     node.setProperty( numberProp1, numberProp1Values[i] );
                     node.setProperty( numberProp2, numberProp2Values[i] );
                     node.setProperty( stringProp1, stringProp1Values[i] );

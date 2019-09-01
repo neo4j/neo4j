@@ -163,7 +163,7 @@ class IndexStatisticsIT
         {
             for ( int i = 0; i < 32; i++ )
             {
-                Node alien = db.createNode( ALIEN );
+                Node alien = tx.createNode( ALIEN );
                 alien.setProperty( SPECIMEN, i / 2 );
             }
             tx.commit();

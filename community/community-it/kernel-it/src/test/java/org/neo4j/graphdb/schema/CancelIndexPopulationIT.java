@@ -114,7 +114,7 @@ class CancelIndexPopulationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( LABEL ).setProperty( KEY, "value" );
+            tx.createNode( LABEL ).setProperty( KEY, "value" );
             tx.commit();
         }
     }

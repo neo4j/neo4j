@@ -459,8 +459,8 @@ class SchemaAcceptanceTest
         // GIVEN
         try ( Transaction transaction = db.beginTx() )
         {
-            db.createNode( label ).setProperty( propertyKey, "value1" );
-            db.createNode( label ).setProperty( propertyKey, "value1" );
+            transaction.createNode( label ).setProperty( propertyKey, "value1" );
+            transaction.createNode( label ).setProperty( propertyKey, "value1" );
             transaction.commit();
         }
 
@@ -1009,7 +1009,7 @@ class SchemaAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label );
+            Node node = tx.createNode( label );
             node.setProperty( key, value );
             tx.commit();
             return node;

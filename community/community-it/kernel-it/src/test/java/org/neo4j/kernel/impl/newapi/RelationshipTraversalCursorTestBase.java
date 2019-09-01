@@ -64,9 +64,9 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            bare = graphDb.createNode().getId();
+            bare = tx.createNode().getId();
 
-            Node x = graphDb.createNode(), y = graphDb.createNode();
+            Node x = tx.createNode(), y = tx.createNode();
             start = x.getId();
             end = y.getId();
             x.createRelationshipTo( y, withName( "GEN" ) );

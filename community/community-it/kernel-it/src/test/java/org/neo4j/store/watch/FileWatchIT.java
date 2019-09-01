@@ -326,7 +326,7 @@ class FileWatchIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( testLabel );
+            Node node = transaction.createNode( testLabel );
             node.setProperty( propertyName, "value" );
             transaction.commit();
         }
@@ -353,7 +353,7 @@ class FileWatchIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            database.createNode();
+            transaction.createNode();
             transaction.commit();
         }
     }

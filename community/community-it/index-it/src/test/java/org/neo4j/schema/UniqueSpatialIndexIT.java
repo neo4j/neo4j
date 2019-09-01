@@ -144,9 +144,9 @@ class UniqueSpatialIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node originNode = db.createNode( LABEL );
+            Node originNode = tx.createNode( LABEL );
             originNode.setProperty( KEY, point1 );
-            Node centerNode = db.createNode( LABEL );
+            Node centerNode = tx.createNode( LABEL );
             centerNode.setProperty( KEY, point1 );
             tx.commit();
         }
@@ -157,9 +157,9 @@ class UniqueSpatialIndexIT
         Pair<Long,Long> nodeIds;
         try ( Transaction tx = db.beginTx() )
         {
-            Node originNode = db.createNode( LABEL );
+            Node originNode = tx.createNode( LABEL );
             originNode.setProperty( KEY, point1 );
-            Node centerNode = db.createNode( LABEL );
+            Node centerNode = tx.createNode( LABEL );
             centerNode.setProperty( KEY, point2 );
 
             nodeIds = Pair.of( originNode.getId(), centerNode.getId() );

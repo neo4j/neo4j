@@ -62,10 +62,10 @@ class ReadTransactionLogWritingTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode( label );
+            node = tx.createNode( label );
             node.setProperty( "short", 123 );
             node.setProperty( "long", longString( 300 ) );
-            relationship = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+            relationship = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
             relationship.setProperty( "short", 123 );
             relationship.setProperty( "long", longString( 300 ) );
             tx.commit();

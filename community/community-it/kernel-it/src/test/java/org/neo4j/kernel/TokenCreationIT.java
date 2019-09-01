@@ -101,7 +101,7 @@ class TokenCreationIT
                     try ( Transaction transaction = database.beginTx() )
                     {
                         Label[] createdLabels = getLabels();
-                        Node node = database.createNode( createdLabels );
+                        Node node = transaction.createNode( createdLabels );
                         Iterable<Label> nodeLabels = node.getLabels();
                         assertEquals( asSet( asList( createdLabels ) ), asSet( nodeLabels ) );
                         transaction.commit();

@@ -96,7 +96,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( LABEL_ONE );
+            tx.createNode( LABEL_ONE );
             tx.commit();
         }
 
@@ -137,7 +137,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( LABEL_ONE );
+            tx.createNode( LABEL_ONE );
             tx.commit();
         }
 
@@ -291,21 +291,20 @@ public class AllNodesInStoreExistInLabelIndexTest
         existingNodes = new ArrayList<>();
         try ( Transaction tx = db.beginTx() )
         {
-            randomModifications( existingNodes, numberOfModifications );
+            randomModifications( tx, existingNodes, numberOfModifications );
             tx.commit();
         }
         return existingNodes;
     }
 
-    private void randomModifications( List<Pair<Long,Label[]>> existingNodes,
-            int numberOfModifications )
+    private void randomModifications( Transaction tx, List<Pair<Long,Label[]>> existingNodes, int numberOfModifications )
     {
         for ( int i = 0; i < numberOfModifications; i++ )
         {
             double selectModification = random.nextDouble();
             if ( existingNodes.size() < NODE_COUNT_BASELINE || selectModification >= DELETE_RATIO + UPDATE_RATIO )
             {
-                createNewNode( existingNodes );
+                createNewNode( tx, existingNodes );
             }
             else if ( selectModification < DELETE_RATIO )
             {
@@ -318,10 +317,10 @@ public class AllNodesInStoreExistInLabelIndexTest
         }
     }
 
-    private void createNewNode( List<Pair<Long,Label[]>> existingNodes )
+    private void createNewNode( Transaction tx, List<Pair<Long,Label[]>> existingNodes )
     {
         Label[] labels = randomLabels();
-        Node node = db.createNode( labels );
+        Node node = tx.createNode( labels );
         existingNodes.add( Pair.of( node.getId(), labels ) );
     }
 

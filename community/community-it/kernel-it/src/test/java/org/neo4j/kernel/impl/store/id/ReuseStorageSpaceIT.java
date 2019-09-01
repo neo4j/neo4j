@@ -240,7 +240,7 @@ class ReuseStorageSpaceIT
                     Node[] nodes = new Node[dataSizePerTransaction];
                     for ( int n = 0; n < nodes.length; n++ )
                     {
-                        Node node = nodes[n] = db.createNode( labels( random.selection( TOKENS, 0, TOKENS.length, false ) ) );
+                        Node node = nodes[n] = tx.createNode( labels( random.selection( TOKENS, 0, TOKENS.length, false ) ) );
                         setProperties( random, node );
                         nodeCount++;
                     }

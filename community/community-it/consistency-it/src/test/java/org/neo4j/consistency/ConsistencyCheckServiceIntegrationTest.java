@@ -89,8 +89,8 @@ public class ConsistencyCheckServiceIntegrationTest
         {
             try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
             {
-                Node node1 = set( graphDb.createNode() );
-                Node node2 = set( graphDb.createNode(), property( "key", "exampleValue" ) );
+                Node node1 = set( tx.createNode() );
+                Node node2 = set( tx.createNode(), property( "key", "exampleValue" ) );
                 node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
                 tx.commit();
             }
@@ -218,8 +218,8 @@ public class ConsistencyCheckServiceIntegrationTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            set( db.createNode( label ), property( propertyKey, 973305894188596880L ) );
-            set( db.createNode( label ), property( propertyKey, 973305894188596864L ) );
+            set( tx.createNode( label ), property( propertyKey, 973305894188596880L ) );
+            set( tx.createNode( label ), property( propertyKey, 973305894188596864L ) );
             tx.commit();
         }
         managementService.shutdown();
@@ -277,8 +277,8 @@ public class ConsistencyCheckServiceIntegrationTest
         createIndex( db, label, propKey );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label ).setProperty( propKey, 1 );
-            db.createNode( label ).setProperty( propKey, "string" );
+            tx.createNode( label ).setProperty( propKey, 1 );
+            tx.createNode( label ).setProperty( propKey, "string" );
             tx.commit();
         }
         managementService.shutdown();
@@ -350,8 +350,8 @@ public class ConsistencyCheckServiceIntegrationTest
             RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );
             try ( Transaction tx = db.beginTx() )
             {
-                Node node1 = set( db.createNode() );
-                Node node2 = set( db.createNode(), property( "key", "value" ) );
+                Node node1 = set( tx.createNode() );
+                Node node2 = set( tx.createNode(), property( "key", "value" ) );
                 node1.createRelationshipTo( node2, relationshipType );
                 node1.createRelationshipTo( node2, relationshipType );
                 node1.createRelationshipTo( node2, relationshipType );
@@ -388,8 +388,8 @@ public class ConsistencyCheckServiceIntegrationTest
         RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node1 = set( db.createNode() );
-            Node node2 = set( db.createNode(), property( "key", "value" ) );
+            Node node1 = set( tx.createNode() );
+            Node node2 = set( tx.createNode(), property( "key", "value" ) );
             node1.createRelationshipTo( node2, relationshipType );
             tx.commit();
         }

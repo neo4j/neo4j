@@ -62,19 +62,19 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node s = graph.makeNode( "s" );
-            Node a = graph.makeNode( "a" );
-            Node b = graph.makeNode( "b" );
-            Node c = graph.makeNode( "c" );
-            Node d = graph.makeNode( "d" );
-            Node t = graph.makeNode( "t" );
+            Node s = graph.makeNode( transaction, "s" );
+            Node a = graph.makeNode( transaction, "a" );
+            Node b = graph.makeNode( transaction, "b" );
+            Node c = graph.makeNode( transaction, "c" );
+            Node d = graph.makeNode( transaction, "d" );
+            Node t = graph.makeNode( transaction, "t" );
 
-            graph.makeEdge( "s", "a", "length", 1 );
-            graph.makeEdge( "a", "c", "length", 1 );
-            graph.makeEdge( "s", "b", "length", 1 );
-            graph.makeEdge( "b", "a", "length", 1 );
-            graph.makeEdge( "c", "d", "length", 10 );
-            graph.makeEdge( "d", "t", "length", 10 );
+            graph.makeEdge( transaction, "s", "a", "length", 1 );
+            graph.makeEdge( transaction, "a", "c", "length", 1 );
+            graph.makeEdge( transaction, "s", "b", "length", 1 );
+            graph.makeEdge( transaction, "b", "a", "length", 1 );
+            graph.makeEdge( transaction, "c", "d", "length", 10 );
+            graph.makeEdge( transaction, "d", "t", "length", 10 );
 
             PathExpander expander = PathExpanders.allTypesAndDirections();
             Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ), PathInterestFactory.all( NoneStrictMath.EPSILON ) );
@@ -108,19 +108,19 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node s = graph.makeNode( "s" );
-            Node t = graph.makeNode( "t" );
+            Node s = graph.makeNode( transaction, "s" );
+            Node t = graph.makeNode( transaction, "t" );
 
-            graph.makeEdgeChain( "s,e,f", "length", 1.0 );
-            graph.makeEdge( "f", "t", "length", 2 );
-            graph.makeEdge( "s", "a", "length", 2 );
-            graph.makeEdge( "a", "t", "length", 0 );
-            graph.makeEdge( "s", "c", "length", 1 );
-            graph.makeEdge( "c", "d", "length", 1 );
-            graph.makeEdge( "s", "b", "length", 1 );
-            graph.makeEdge( "b", "d", "length", 1 );
-            graph.makeEdge( "d", "a", "length", 0 );
-            graph.makeEdge( "d", "t", "length", 1 );
+            graph.makeEdgeChain( transaction, "s,e,f", "length", 1.0 );
+            graph.makeEdge( transaction, "f", "t", "length", 2 );
+            graph.makeEdge( transaction, "s", "a", "length", 2 );
+            graph.makeEdge( transaction, "a", "t", "length", 0 );
+            graph.makeEdge( transaction, "s", "c", "length", 1 );
+            graph.makeEdge( transaction, "c", "d", "length", 1 );
+            graph.makeEdge( transaction, "s", "b", "length", 1 );
+            graph.makeEdge( transaction, "b", "d", "length", 1 );
+            graph.makeEdge( transaction, "d", "a", "length", 0 );
+            graph.makeEdge( transaction, "d", "t", "length", 1 );
 
             PathExpander expander = PathExpanders.allTypesAndDirections();
             Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ), PathInterestFactory.all( NoneStrictMath.EPSILON ) );
@@ -159,27 +159,27 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
          *                                     - 0 - (c2) - 0 -
          *
          */
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node s = graph.makeNode( "s" );
-            Node t = graph.makeNode( "t" );
+            Node s = graph.makeNode( transaction, "s" );
+            Node t = graph.makeNode( transaction, "t" );
 
             // Blob loop
-            graph.makeEdge( "s", "a1", "length", 1 );
-            graph.makeEdge( "a1", "b", "length", 0 );
-            graph.makeEdge( "b", "a1", "length", 0 );
+            graph.makeEdge( transaction, "s", "a1", "length", 1 );
+            graph.makeEdge( transaction, "a1", "b", "length", 0 );
+            graph.makeEdge( transaction, "b", "a1", "length", 0 );
 
             // Self loop
-            graph.makeEdge( "a1", "a2", "length", 1 );
-            graph.makeEdge( "a2", "a2", "length", 0 );
+            graph.makeEdge( transaction, "a1", "a2", "length", 1 );
+            graph.makeEdge( transaction, "a2", "a2", "length", 0 );
 
             // Diamond loop
-            graph.makeEdge( "a2", "a3", "length", 1 );
-            graph.makeEdge( "a3", "c1", "length", 0 );
-            graph.makeEdge( "a3", "c2", "length", 0 );
-            graph.makeEdge( "c1", "a4", "length", 0 );
-            graph.makeEdge( "c1", "a4", "length", 0 );
-            graph.makeEdge( "a4", "t", "length", 1 );
+            graph.makeEdge( transaction, "a2", "a3", "length", 1 );
+            graph.makeEdge( transaction, "a3", "c1", "length", 0 );
+            graph.makeEdge( transaction, "a3", "c2", "length", 0 );
+            graph.makeEdge( transaction, "c1", "a4", "length", 0 );
+            graph.makeEdge( transaction, "c1", "a4", "length", 0 );
+            graph.makeEdge( transaction, "a4", "t", "length", 1 );
 
             PathExpander expander = PathExpanders.allTypesAndDirections();
             Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ),
@@ -193,7 +193,7 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             assertEquals( 6, paths.next().length(), "Expected second path of length 6" );
             assertFalse( paths.hasNext(), "Expected exactly two paths" );
 
-            tx.commit();
+            transaction.commit();
         }
     }
 
@@ -214,20 +214,20 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node s = graph.makeNode( "s" );
-            Node t = graph.makeNode( "t" );
+            Node s = graph.makeNode( transaction, "s" );
+            Node t = graph.makeNode( transaction, "t" );
 
-            graph.makeEdge( "s", "a", "length", 2 );
-            graph.makeEdge( "s", "b", "length", 1 );
-            graph.makeEdge( "s", "c", "length", 1 );
-            graph.makeEdge( "s", "e", "length", 3 );
-            graph.makeEdge( "a", "t", "length", 0 );
-            graph.makeEdge( "b", "d", "length", 1 );
-            graph.makeEdge( "c", "d", "length", 1 );
-            graph.makeEdge( "d", "a", "length", 0 );
-            graph.makeEdge( "d", "t", "length", 1 );
-            graph.makeEdge( "e", "f", "length", 3 );
-            graph.makeEdge( "f", "t", "length", 3 );
+            graph.makeEdge( transaction, "s", "a", "length", 2 );
+            graph.makeEdge( transaction, "s", "b", "length", 1 );
+            graph.makeEdge( transaction, "s", "c", "length", 1 );
+            graph.makeEdge( transaction, "s", "e", "length", 3 );
+            graph.makeEdge( transaction, "a", "t", "length", 0 );
+            graph.makeEdge( transaction, "b", "d", "length", 1 );
+            graph.makeEdge( transaction, "c", "d", "length", 1 );
+            graph.makeEdge( transaction, "d", "a", "length", 0 );
+            graph.makeEdge( transaction, "d", "t", "length", 1 );
+            graph.makeEdge( transaction, "e", "f", "length", 3 );
+            graph.makeEdge( transaction, "f", "t", "length", 3 );
 
             PathExpander expander = PathExpanders.allTypesAndDirections();
             PathFinder<WeightedPath> algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ),
@@ -266,10 +266,10 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdgeChain( "a,b,c,d" );
-            setWeight( "a", "b", 1 );
-            setWeight( "b", "c", 2 );
-            setWeight( "c", "d", 5 );
+            graph.makeEdgeChain( transaction, "a,b,c,d" );
+            setWeight( transaction, "a", "b", 1 );
+            setWeight( transaction, "b", "c", 2 );
+            setWeight( transaction, "c", "d", 5 );
 
             InitialBranchState<Integer> state = new InitialBranchState.State<>( 0, 0 );
             final Map<Node,Integer> encounteredState = new HashMap<>();
@@ -295,18 +295,18 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             };
 
             PathFinder<WeightedPath> finder = new Dijkstra( expander, state, CommonEvaluators.doubleCostEvaluator( "weight" ) );
-            assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ), "a,b,c,d" );
-            assertEquals( 1, encounteredState.get( graph.getNode( "b" ) ).intValue() );
-            assertEquals( 3, encounteredState.get( graph.getNode( "c" ) ).intValue() );
-            assertEquals( 8, encounteredState.get( graph.getNode( "d" ) ).intValue() );
+            assertPaths( finder.findAllPaths( graph.getNode( transaction, "a" ), graph.getNode( transaction, "d" ) ), "a,b,c,d" );
+            assertEquals( 1, encounteredState.get( graph.getNode( transaction, "b" ) ).intValue() );
+            assertEquals( 3, encounteredState.get( graph.getNode( transaction, "c" ) ).intValue() );
+            assertEquals( 8, encounteredState.get( graph.getNode( transaction, "d" ) ).intValue() );
             transaction.commit();
         }
     }
 
-    private static void setWeight( String start, String end, double weight )
+    private static void setWeight( Transaction transaction, String start, String end, double weight )
     {
-        Node startNode = graph.getNode( start );
-        Node endNode = graph.getNode( end );
+        Node startNode = graph.getNode( transaction, start );
+        Node endNode = graph.getNode( transaction, end );
         ResourceIterable<Relationship> relationships = Iterables.asResourceIterable( startNode.getRelationships() );
         try ( ResourceIterator<Relationship> resourceIterator = relationships.iterator() )
         {

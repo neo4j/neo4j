@@ -168,7 +168,7 @@ class QueryRestartIT
         Label label = Label.label( "toRetry" );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( label );
+            Node node = transaction.createNode( label );
             node.setProperty( "c", "d" );
             transaction.commit();
         }

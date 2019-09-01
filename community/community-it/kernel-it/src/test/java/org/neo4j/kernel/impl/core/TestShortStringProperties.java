@@ -49,7 +49,7 @@ class TestShortStringProperties
         Node node;
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            node = graphdb.createNode();
+            node = transaction.createNode();
             node.setProperty( "key", "value" );
             node.setProperty( "reverse", "esrever" );
             transaction.commit();
@@ -64,7 +64,7 @@ class TestShortStringProperties
         Relationship rel;
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            rel = graphdb.createNode().createRelationshipTo( graphdb.createNode(), withName( "REL_TYPE" ) );
+            rel = transaction.createNode().createRelationshipTo( transaction.createNode(), withName( "REL_TYPE" ) );
             rel.setProperty( "type", "dimsedut" );
             transaction.commit();
         }
@@ -77,7 +77,7 @@ class TestShortStringProperties
         Node node;
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            node = graphdb.createNode();
+            node = transaction.createNode();
             node.setProperty( "key", "value" );
             transaction.commit();
         }
@@ -98,7 +98,7 @@ class TestShortStringProperties
         Node node;
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            node = graphdb.createNode();
+            node = transaction.createNode();
             node.setProperty( "key", LONG_STRING );
             transaction.commit();
         }
@@ -119,7 +119,7 @@ class TestShortStringProperties
         Node node;
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            node = graphdb.createNode();
+            node = transaction.createNode();
             node.setProperty( "key", "value" );
             transaction.commit();
         }
@@ -140,7 +140,7 @@ class TestShortStringProperties
         Node node;
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            node = graphdb.createNode();
+            node = transaction.createNode();
             node.setProperty( "key", "value" );
             transaction.commit();
         }

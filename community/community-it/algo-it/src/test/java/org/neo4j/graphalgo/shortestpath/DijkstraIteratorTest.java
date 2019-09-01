@@ -43,7 +43,7 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            new TestDijkstra().runTest();
+            new TestDijkstra().runTest( transaction );
             transaction.commit();
         }
     }
@@ -70,44 +70,44 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase
             }
         }
 
-        void runTest()
+        void runTest( Transaction transaction )
         {
-            graph.makeEdge( "start", "a", "cost", (double) 1 );
-            graph.makeEdge( "a", "x", "cost", (double) 9 );
-            graph.makeEdge( "a", "b", "cost", (float) 1 );
-            graph.makeEdge( "b", "x", "cost", (double) 7 );
-            graph.makeEdge( "b", "c", "cost", (long) 1 );
-            graph.makeEdge( "c", "x", "cost", 5 );
-            graph.makeEdge( "c", "d", "cost", (byte) 1 );
-            graph.makeEdge( "d", "x", "cost", (short) 3 );
-            graph.makeEdge( "d", "e", "cost", (double) 1 );
-            graph.makeEdge( "e", "x", "cost", (double) 1 );
+            graph.makeEdge( transaction, "start", "a", "cost", (double) 1 );
+            graph.makeEdge( transaction, "a", "x", "cost", (double) 9 );
+            graph.makeEdge( transaction, "a", "b", "cost", (float) 1 );
+            graph.makeEdge( transaction, "b", "x", "cost", (double) 7 );
+            graph.makeEdge( transaction, "b", "c", "cost", (long) 1 );
+            graph.makeEdge( transaction, "c", "x", "cost", 5 );
+            graph.makeEdge( transaction, "c", "d", "cost", (byte) 1 );
+            graph.makeEdge( transaction, "d", "x", "cost", (short) 3 );
+            graph.makeEdge( transaction, "d", "e", "cost", (double) 1 );
+            graph.makeEdge( transaction, "e", "x", "cost", (double) 1 );
             HashMap<Node,Double> seen1 = new HashMap<>();
             HashMap<Node,Double> seen2 = new HashMap<>();
             HashMap<Node,Double> dists1 = new HashMap<>();
             HashMap<Node,Double> dists2 = new HashMap<>();
-            DijkstraIterator iter1 = new TestIterator( graph.getNode( "start" ),
+            DijkstraIterator iter1 = new TestIterator( graph.getNode( transaction, "start" ),
                 predecessors1, seen1, seen2, dists1, dists2, false );
             // while ( iter1.hasNext() && !limitReached() && !iter1.isDone() )
-            assertEquals( iter1.next(), graph.getNode( "start" ) );
-            assertEquals( iter1.next(), graph.getNode( "a" ) );
-            assertEquals( 10.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
-            assertEquals( iter1.next(), graph.getNode( "b" ) );
-            assertEquals( 9.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
-            assertEquals( iter1.next(), graph.getNode( "c" ) );
-            assertEquals( 8.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
-            assertEquals( iter1.next(), graph.getNode( "d" ) );
-            assertEquals( 7.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
-            assertEquals( iter1.next(), graph.getNode( "e" ) );
-            assertEquals( 6.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
-            assertEquals( iter1.next(), graph.getNode( "x" ) );
-            assertEquals( 6.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( transaction, "start" ) );
+            assertEquals( iter1.next(), graph.getNode( transaction, "a" ) );
+            assertEquals( 10.0, seen1.get( graph.getNode( transaction, "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( transaction, "b" ) );
+            assertEquals( 9.0, seen1.get( graph.getNode( transaction, "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( transaction, "c" ) );
+            assertEquals( 8.0, seen1.get( graph.getNode( transaction, "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( transaction, "d" ) );
+            assertEquals( 7.0, seen1.get( graph.getNode( transaction, "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( transaction, "e" ) );
+            assertEquals( 6.0, seen1.get( graph.getNode( transaction, "x" ) ), 0.0 );
+            assertEquals( iter1.next(), graph.getNode( transaction, "x" ) );
+            assertEquals( 6.0, seen1.get( graph.getNode( transaction, "x" ) ), 0.0 );
             assertFalse( iter1.hasNext() );
             seen1 = new HashMap<>();
             seen2 = new HashMap<>();
             dists1 = new HashMap<>();
             dists2 = new HashMap<>();
-            iter1 = new TestIterator( graph.getNode( "start" ), predecessors1,
+            iter1 = new TestIterator( graph.getNode( transaction, "start" ), predecessors1,
                 seen1, seen2, dists1, dists2, false );
             this.numberOfNodesTraversed = 0;
             this.limitMaxNodesToTraverse( 3 );

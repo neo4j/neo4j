@@ -292,7 +292,7 @@ class LuceneIndexRecoveryIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label );
+            Node node = tx.createNode( label );
             node.setProperty( NUM_BANANAS_KEY, number );
             tx.commit();
             return node.getId();

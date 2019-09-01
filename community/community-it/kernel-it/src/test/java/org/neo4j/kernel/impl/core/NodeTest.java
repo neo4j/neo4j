@@ -55,8 +55,8 @@ class NodeTest
 
         try ( Transaction transaction = db.beginTx() )
         {
-            node = db.createNode();
-            Node node2 = db.createNode();
+            node = transaction.createNode();
+            Node node2 = transaction.createNode();
             node.createRelationshipTo( node2, RelationshipType.withName( "MAYOR_OF" ) );
             transaction.commit();
         }
@@ -81,7 +81,7 @@ class NodeTest
         long nodeId;
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = transaction.createNode();
             nodeId = node.getId();
             db.getNodeById( nodeId );
             node.delete();
@@ -101,7 +101,7 @@ class NodeTest
         // do some evil stuff
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = transaction.createNode();
             node.delete();
             assertThrows( Exception.class, () -> node.setProperty( "key1", 1 ) );
         }
@@ -112,7 +112,7 @@ class NodeTest
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node1 = db.createNode();
+            Node node1 = transaction.createNode();
             assertThrows( IllegalArgumentException.class, () -> node1.setProperty( null, "bar" ) );
         }
     }
@@ -122,7 +122,7 @@ class NodeTest
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node1 = db.createNode();
+            Node node1 = transaction.createNode();
             assertThrows( IllegalArgumentException.class, () -> node1.setProperty( "foo", null ) );
         }
     }
@@ -132,8 +132,8 @@ class NodeTest
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node1 = db.createNode();
-            Node node2 = db.createNode();
+            Node node1 = transaction.createNode();
+            Node node2 = transaction.createNode();
 
             String key1 = "key1";
             String key2 = "key2";
@@ -173,8 +173,8 @@ class NodeTest
             String string1 = "1";
             String string2 = "2";
 
-            Node node1 = db.createNode();
-            Node node2 = db.createNode();
+            Node node1 = transaction.createNode();
+            Node node2 = transaction.createNode();
 
             if ( node1.removeProperty( key1 ) != null )
             {
@@ -215,8 +215,8 @@ class NodeTest
             Boolean bool1 = Boolean.TRUE;
             Boolean bool2 = Boolean.FALSE;
 
-            Node node1 = db.createNode();
-            Node node2 = db.createNode();
+            Node node1 = transaction.createNode();
+            Node node2 = transaction.createNode();
             node1.setProperty( key1, int1 );
             node2.setProperty( key1, string1 );
             node1.setProperty( key2, string2 );
@@ -248,7 +248,7 @@ class NodeTest
             String string2 = "2";
             Boolean bool1 = Boolean.TRUE;
             Boolean bool2 = Boolean.FALSE;
-            Node node1 = db.createNode();
+            Node node1 = transaction.createNode();
             node1.setProperty( key1, int1 );
             node1.setProperty( key1, int2 );
             assertEquals( int2, node1.getProperty( key1 ) );
@@ -277,7 +277,7 @@ class NodeTest
             Integer int2 = 2;
             String string = "3";
 
-            Node node1 = db.createNode();
+            Node node1 = transaction.createNode();
             assertThrows( NotFoundException.class, () -> node1.getProperty( key1 ) );
             assertThrows( IllegalArgumentException.class, () -> node1.getProperty( null ) );
             assertFalse( node1.hasProperty( key1 ) );
@@ -327,7 +327,7 @@ class NodeTest
         Node node;
         try ( Transaction transaction = db.beginTx() )
         {
-            node = db.createNode();
+            node = transaction.createNode();
             node.setProperty( "test", "test" );
             transaction.commit();
         }
@@ -345,7 +345,7 @@ class NodeTest
         Node node;
         try ( Transaction transaction = db.beginTx() )
         {
-            node = db.createNode();
+            node = transaction.createNode();
             node.setProperty( "test", "test1" );
             transaction.commit();
         }
@@ -371,7 +371,7 @@ class NodeTest
         Node node;
         try ( Transaction transaction = db.beginTx() )
         {
-            node = db.createNode();
+            node = transaction.createNode();
             node.setProperty( "test", "test1" );
             transaction.commit();
         }

@@ -64,7 +64,7 @@ class StreamingJsonFormatTest
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction transaction = db.beginTx() )
         {
-            final Node n = db.createNode();
+            final Node n = transaction.createNode();
             json.assemble( new NodeRepresentation( n, db ) );
         }
         finally

@@ -102,33 +102,33 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            bare = graphDb.createNode().getId();
+            bare = tx.createNode().getId();
 
-            byteProp = createNodeWithProperty( graphDb, "byteProp", (byte) 13 );
-            shortProp = createNodeWithProperty( graphDb, "shortProp", (short) 13 );
-            intProp = createNodeWithProperty( graphDb, "intProp", 13 );
-            inlineLongProp = createNodeWithProperty( graphDb, "inlineLongProp", 13L );
-            longProp = createNodeWithProperty( graphDb, "longProp", Long.MAX_VALUE );
+            byteProp = createNodeWithProperty( tx, "byteProp", (byte) 13 );
+            shortProp = createNodeWithProperty( tx, "shortProp", (short) 13 );
+            intProp = createNodeWithProperty( tx, "intProp", 13 );
+            inlineLongProp = createNodeWithProperty( tx, "inlineLongProp", 13L );
+            longProp = createNodeWithProperty( tx, "longProp", Long.MAX_VALUE );
 
-            floatProp = createNodeWithProperty( graphDb, "floatProp", 13.0f );
-            doubleProp = createNodeWithProperty( graphDb, "doubleProp", 13.0 );
+            floatProp = createNodeWithProperty( tx, "floatProp", 13.0f );
+            doubleProp = createNodeWithProperty( tx, "doubleProp", 13.0 );
 
-            trueProp = createNodeWithProperty( graphDb, "trueProp", true );
-            falseProp = createNodeWithProperty( graphDb, "falseProp", false );
+            trueProp = createNodeWithProperty( tx, "trueProp", true );
+            falseProp = createNodeWithProperty( tx, "falseProp", false );
 
-            charProp = createNodeWithProperty( graphDb, "charProp", 'x' );
-            emptyStringProp = createNodeWithProperty( graphDb, "emptyStringProp", "" );
-            shortStringProp = createNodeWithProperty( graphDb, "shortStringProp", "hello" );
-            longStringProp = createNodeWithProperty( graphDb, "longStringProp", LONG_STRING );
-            utf8Prop = createNodeWithProperty( graphDb, "utf8Prop", chinese );
+            charProp = createNodeWithProperty( tx, "charProp", 'x' );
+            emptyStringProp = createNodeWithProperty( tx, "emptyStringProp", "" );
+            shortStringProp = createNodeWithProperty( tx, "shortStringProp", "hello" );
+            longStringProp = createNodeWithProperty( tx, "longStringProp", LONG_STRING );
+            utf8Prop = createNodeWithProperty( tx, "utf8Prop", chinese );
 
-            smallArray = createNodeWithProperty( graphDb, "smallArray", new int[]{1, 2, 3, 4} );
-            bigArray = createNodeWithProperty( graphDb, "bigArray", new String[]{LONG_STRING} );
+            smallArray = createNodeWithProperty( tx, "smallArray", new int[]{1, 2, 3, 4} );
+            bigArray = createNodeWithProperty( tx, "bigArray", new String[]{LONG_STRING} );
 
-            pointProp = createNodeWithProperty( graphDb, "pointProp", pointValue );
-            dateProp = createNodeWithProperty( graphDb, "dateProp", dateValue );
+            pointProp = createNodeWithProperty( tx, "pointProp", pointValue );
+            dateProp = createNodeWithProperty( tx, "dateProp", dateValue );
 
-            Node all = graphDb.createNode();
+            Node all = tx.createNode();
             // first property record
             all.setProperty( "byteProp", (byte) 13 );
             all.setProperty( "shortProp", (short) 13 );
@@ -167,9 +167,9 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         }
     }
 
-    private long createNodeWithProperty( GraphDatabaseService graphDb, String propertyKey, Object value )
+    private long createNodeWithProperty( Transaction tx, String propertyKey, Object value )
     {
-        Node p = graphDb.createNode();
+        Node p = tx.createNode();
         p.setProperty( propertyKey, value );
         return p.getId();
     }

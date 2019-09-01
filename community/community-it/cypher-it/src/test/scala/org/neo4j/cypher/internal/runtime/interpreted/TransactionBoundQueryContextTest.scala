@@ -201,9 +201,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("provide access to kernel statement page cache tracer") {
     val creator = graphOps.beginTx()
-    graphOps.createNode()
-    graphOps.createNode()
-    graphOps.createNode()
+    creator.createNode()
+    creator.createNode()
+    creator.createNode()
     creator.commit()
 
     val tx = graph.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
@@ -312,9 +312,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val relType = RelationshipType.withName(relTypeName)
     val tx = graph.beginTransaction(Type.explicit, AnonymousContext.writeToken())
     try {
-      val node = graphOps.createNode()
-      val other1 = graphOps.createNode()
-      val other2 = graphOps.createNode()
+      val node = tx.createNode()
+      val other1 = tx.createNode()
+      val other2 = tx.createNode()
 
       node.createRelationshipTo(other1, relType)
       other2.createRelationshipTo(node, relType)

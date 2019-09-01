@@ -60,9 +60,9 @@ class LabelCountsTest
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label( "Foo" ) );
-            db.createNode( label( "Bar" ) );
-            db.createNode( label( "Bar" ) );
+            tx.createNode( label( "Foo" ) );
+            tx.createNode( label( "Bar" ) );
+            tx.createNode( label( "Bar" ) );
 
             tx.commit();
         }
@@ -83,8 +83,8 @@ class LabelCountsTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode( label( "Foo" ) );
-            db.createNode( label( "Foo" ) );
+            node = tx.createNode( label( "Foo" ) );
+            tx.createNode( label( "Foo" ) );
 
             tx.commit();
         }
@@ -109,9 +109,9 @@ class LabelCountsTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode( label( "Foo" ), label( "Bar" ) );
-            db.createNode( label( "Foo" ) );
-            db.createNode( label( "Bar" ) );
+            node = tx.createNode( label( "Foo" ), label( "Bar" ) );
+            tx.createNode( label( "Foo" ) );
+            tx.createNode( label( "Bar" ) );
 
             tx.commit();
         }
@@ -140,9 +140,9 @@ class LabelCountsTest
         Node n3;
         try ( Transaction tx = db.beginTx() )
         {
-            n1 = db.createNode( label( "Foo" ) );
-            n2 = db.createNode();
-            n3 = db.createNode();
+            n1 = tx.createNode( label( "Foo" ) );
+            n2 = tx.createNode();
+            n3 = tx.createNode();
 
             tx.commit();
         }
@@ -173,9 +173,9 @@ class LabelCountsTest
         Node n3;
         try ( Transaction tx = db.beginTx() )
         {
-            n1 = db.createNode( label( "Foo" ), label( "Bar" ) );
-            n2 = db.createNode( label( "Bar" ) );
-            n3 = db.createNode( label( "Foo" ) );
+            n1 = tx.createNode( label( "Foo" ), label( "Bar" ) );
+            n2 = tx.createNode( label( "Bar" ) );
+            n3 = tx.createNode( label( "Foo" ) );
 
             tx.commit();
         }

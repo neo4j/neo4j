@@ -162,8 +162,8 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
-    inTx(
-      graphDb.createNode(Label.label("NotThereYet")).createRelationshipTo(graphDb.createNode(),
+    inTx( tx =>
+      tx.createNode(Label.label("NotThereYet")).createRelationshipTo(tx.createNode(),
                                                                           RelationshipType.withName("RelType"))
       )
 
@@ -183,8 +183,8 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
-    inTx(
-      graphDb.createNode().createRelationshipTo(graphDb.createNode(Label.label("NotThereYet")),
+    inTx( tx =>
+      tx.createNode().createRelationshipTo(tx.createNode(Label.label("NotThereYet")),
                                                                           RelationshipType.withName("RelType"))
       )
 
@@ -204,8 +204,8 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
-    inTx(
-      graphDb.createNode().createRelationshipTo(graphDb.createNode(),
+    inTx( tx =>
+      tx.createNode().createRelationshipTo(tx.createNode(),
                                                 RelationshipType.withName("NotThereYet"))
       )
 

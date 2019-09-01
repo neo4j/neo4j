@@ -110,7 +110,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         {
             for ( int i = 0; i < N_NODES; i++ )
             {
-                Node node = graphDb.createNode( label( "Node" ) );
+                Node node = tx.createNode( label( "Node" ) );
                 Value propValue;
                 Value pripValue;
                 NodeValueTuple singleValue;

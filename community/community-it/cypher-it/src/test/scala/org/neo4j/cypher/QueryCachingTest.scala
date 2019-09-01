@@ -28,6 +28,7 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.{Label, QueryExecutionException}
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -41,7 +42,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
   test("re-uses cached plan across different execution modes") {
     // ensure label exists
-    graph.inTx { graph.createNode(Label.label("Person")) }
+    graph.inTx { tx:InternalTransaction => tx.createNode(Label.label("Person")) }
 
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)

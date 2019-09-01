@@ -71,7 +71,7 @@ class DefaultValueMapperTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             tx.commit();
         }
 
@@ -101,8 +101,8 @@ class DefaultValueMapperTest
         Relationship relationship;
         try ( Transaction tx = db.beginTx() )
         {
-            start = db.createNode();
-            end = db.createNode();
+            start = tx.createNode();
+            end = tx.createNode();
             relationship = start.createRelationshipTo( end, RelationshipType.withName( "R" ) );
             tx.commit();
         }
@@ -133,11 +133,11 @@ class DefaultValueMapperTest
         Relationship r1, r2, r3, r4;
         try ( Transaction tx = db.beginTx() )
         {
-            a = db.createNode();
-            b = db.createNode();
-            c = db.createNode();
-            d = db.createNode();
-            e = db.createNode();
+            a = tx.createNode();
+            b = tx.createNode();
+            c = tx.createNode();
+            d = tx.createNode();
+            e = tx.createNode();
             r1 = a.createRelationshipTo( b, RelationshipType.withName( "R" ) );
             r2 = b.createRelationshipTo( c, RelationshipType.withName( "R" ) );
             r3 = c.createRelationshipTo( d, RelationshipType.withName( "R" ) );
@@ -172,8 +172,8 @@ class DefaultValueMapperTest
         Relationship relationship;
         try ( Transaction tx = db.beginTx() )
         {
-            start = db.createNode();
-            end = db.createNode();
+            start = tx.createNode();
+            end = tx.createNode();
             relationship = start.createRelationshipTo( end, RelationshipType.withName( "R" ) );
             tx.commit();
         }

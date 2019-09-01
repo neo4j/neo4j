@@ -77,7 +77,7 @@ class TestReferenceDangling
         long nId;
         try ( Transaction tx = slave.beginTx() )
         {
-            Node n = slave.createNode();
+            Node n = tx.createNode();
             nId = n.getId();
             n.setProperty( key, new long[]{-1, 2, 2, 3, 4, 5, 5} );
             tx.commit();

@@ -59,9 +59,9 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     private final String PROPERTY_KEY = "PROPERTY_KEY";
 
     @Override
-    protected long createPropertyContainer()
+    protected long createPropertyContainer( Transaction tx )
     {
-        return db.createNode().getId();
+        return tx.createNode().getId();
     }
 
     @Override
@@ -79,9 +79,9 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         // When trying to get property from node without it
         NotFoundException exception = assertThrows( NotFoundException.class, () ->
         {
-            try ( Transaction ignored = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
+                Node node = tx.createNode();
                 node.getProperty( PROPERTY_KEY );
             }
         } );
@@ -97,7 +97,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( markerLabel );
+            Node node = tx.createNode( markerLabel );
             node.setProperty( testPropertyKey, propertyValue );
             tx.commit();
         }
@@ -133,7 +133,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( markerLabel );
+            Node node = tx.createNode( markerLabel );
             node.setProperty( testPropertyKey, propertyValue );
             tx.commit();
         }
@@ -166,9 +166,9 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         // Given a database without PROPERTY_KEY in it
 
         // When
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.getProperty( PROPERTY_KEY );
         }
         // Then
@@ -185,7 +185,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             tx.commit();
         }
 
@@ -226,7 +226,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -258,7 +258,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             final long nodeId;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
+                Node node = tx.createNode();
                 nodeId = node.getId();
                 for ( int i = 0; i < propertiesCount; i++ )
                 {
@@ -338,7 +338,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             node.setProperty( "prop", 1337 );
             tx.commit();
         }
@@ -364,10 +364,10 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
-            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
-            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
-            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
+            node = tx.createNode();
+            node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "R" ) );
+            node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "R" ) );
+            node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "R" ) );
             tx.commit();
         }
 
@@ -416,7 +416,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.setProperty( key, 1 );
             tx.commit();
         }

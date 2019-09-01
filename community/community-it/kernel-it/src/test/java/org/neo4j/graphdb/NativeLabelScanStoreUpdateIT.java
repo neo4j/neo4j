@@ -179,7 +179,7 @@ class NativeLabelScanStoreUpdateIT
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
 
             // I create a lot of labels, enough to push the store to use two dynamic records
             for ( int l = 0; l < labelsToAdd; l++ )
@@ -257,7 +257,7 @@ class NativeLabelScanStoreUpdateIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( labels );
+            Node node = tx.createNode( labels );
             tx.commit();
             return node;
         }

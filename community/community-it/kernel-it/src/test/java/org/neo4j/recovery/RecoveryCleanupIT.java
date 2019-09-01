@@ -262,10 +262,10 @@ class RecoveryCleanupIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label ).setProperty( propKey, 1 );
-            db.createNode( label ).setProperty( propKey, "string" );
-            db.createNode( label ).setProperty( propKey, Values.pointValue( Cartesian, 0.5, 0.5 ) );
-            db.createNode( label ).setProperty( propKey, LocalTime.of( 0, 0 ) );
+            tx.createNode( label ).setProperty( propKey, 1 );
+            tx.createNode( label ).setProperty( propKey, "string" );
+            tx.createNode( label ).setProperty( propKey, Values.pointValue( Cartesian, 0.5, 0.5 ) );
+            tx.createNode( label ).setProperty( propKey, LocalTime.of( 0, 0 ) );
             tx.commit();
         }
     }

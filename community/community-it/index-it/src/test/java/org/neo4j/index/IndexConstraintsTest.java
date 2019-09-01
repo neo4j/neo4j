@@ -88,7 +88,7 @@ class IndexConstraintsTest
         {
             for ( int i = 0; i < 2000; i++ )
             {
-                Node node = graphDb.createNode( LABEL );
+                Node node = tx.createNode( LABEL );
                 node.setProperty( PROPERTY_KEY, i );
             }
             tx.commit();

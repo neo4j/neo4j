@@ -71,8 +71,8 @@ class TestTxEntries
         Node node1;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = db.createNode();
-            Node node2 = db.createNode();
+            node1 = tx.createNode();
+            Node node2 = tx.createNode();
             node1.createRelationshipTo( node2, RelationshipType.withName( "relType1" ) );
             tx.commit();
         }

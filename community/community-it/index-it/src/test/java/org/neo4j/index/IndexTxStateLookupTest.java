@@ -222,7 +222,7 @@ public class IndexTxStateLookupTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            db.createNode( label( "Node" ) ).setProperty( "prop", store );
+            tx.createNode( label( "Node" ) ).setProperty( "prop", store );
 
             // then
             assertEquals( 1, count( db.findNodes( label( "Node" ), "prop", lookup ) ) );
@@ -237,7 +237,7 @@ public class IndexTxStateLookupTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            db.createNode( label( "Node" ) ).setProperty( "prop", store );
+            tx.createNode( label( "Node" ) ).setProperty( "prop", store );
 
             // then
             assertEquals( 1, count( db.findNodes( label( "Node" ), "prop", lookup ) ) );
@@ -253,7 +253,7 @@ public class IndexTxStateLookupTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            (node = db.createNode( label( "Node" ) )).setProperty( "prop", store );
+            (node = tx.createNode( label( "Node" ) )).setProperty( "prop", store );
             tx.commit();
         }
         // then
@@ -281,7 +281,7 @@ public class IndexTxStateLookupTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            (node = db.createNode( label( "Node" ) )).setProperty( "prop", store );
+            (node = tx.createNode( label( "Node" ) )).setProperty( "prop", store );
             tx.commit();
         }
         // then

@@ -38,10 +38,8 @@ public class MandatoryTransactionsForRelationshipTest extends AbstractMandatoryT
     }
 
     @Override
-    protected Relationship obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected Relationship obtainEntityInTransaction( Transaction transaction )
     {
-        return graphDatabaseService
-                .createNode()
-                .createRelationshipTo( graphDatabaseService.createNode(), withName( "foo" ) );
+        return transaction.createNode().createRelationshipTo( transaction.createNode(), withName( "foo" ) );
     }
 }

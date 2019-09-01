@@ -29,8 +29,6 @@ import static org.neo4j.graphdb.Label.label;
  */
 public enum GraphDatabaseServiceFacadeMethods implements Consumer<GraphDatabaseService>
 {
-    CREATE_NODE( new FacadeMethod<>( "Node createNode()", GraphDatabaseService::createNode ) ),
-    CREATE_NODE_WITH_LABELS( new FacadeMethod<>( "Node createNode( Label... labels )", gds -> gds.createNode( label( "FOO" ) ) ) ),
     GET_NODE_BY_ID( new FacadeMethod<>( "Node getNodeById( long id )", gds -> gds.getNodeById( 42 ) ) ),
     GET_RELATIONSHIP_BY_ID( new FacadeMethod<>( "Relationship getRelationshipById( long id )", gds -> gds.getRelationshipById( 42 ) ) ),
     GET_ALL_NODES( new FacadeMethod<>( "Iterable<Node> getAllNodes()", gds -> consume( gds.getAllNodes() ) ) ),

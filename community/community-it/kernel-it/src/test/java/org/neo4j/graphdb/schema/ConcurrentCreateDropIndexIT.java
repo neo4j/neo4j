@@ -64,7 +64,7 @@ class ConcurrentCreateDropIndexIT
         {
             for ( int i = 0; i < threads; i++ )
             {
-                db.createNode( label( i ) ).setProperty( KEY, i );
+                tx.createNode( label( i ) ).setProperty( KEY, i );
             }
             tx.commit();
         }
@@ -210,7 +210,7 @@ class ConcurrentCreateDropIndexIT
         {
             for ( int i = 0; i < 2; i++ )
             {
-                db.createNode( label ).setProperty( KEY, "A" );
+                tx.createNode( label ).setProperty( KEY, "A" );
             }
             tx.commit();
         }

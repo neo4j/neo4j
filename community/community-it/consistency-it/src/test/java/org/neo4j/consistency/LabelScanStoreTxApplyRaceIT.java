@@ -124,7 +124,7 @@ class LabelScanStoreTxApplyRaceIT
                             // Nodes are created with properties here. Whereas the properties don't have a functional
                             // impact on this test they do affect timings so that the issue is (was) triggered more often
                             // and therefore have a positive effect on this test.
-                            db.createNode( randomLabels() ).setProperty( "name", randomUUID().toString() );
+                            tx.createNode( randomLabels() ).setProperty( "name", randomUUID().toString() );
                         }
                         tx.commit();
                     }
@@ -135,7 +135,7 @@ class LabelScanStoreTxApplyRaceIT
                     Node node;
                     try ( Transaction tx = db.beginTx() )
                     {
-                        node = db.createNode( randomLabels() );
+                        node = tx.createNode( randomLabels() );
                         nodeHeads.set( guy, node );
                         tx.commit();
                     }

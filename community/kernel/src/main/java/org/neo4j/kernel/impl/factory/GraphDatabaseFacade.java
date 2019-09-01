@@ -31,7 +31,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
@@ -61,13 +60,9 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -153,39 +148,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ),
                 new FacadeKernelTransactionFactory( config, this ),
                 txBridge );
-    }
-
-    @Override
-    public Node createNode( Label... labels )
-    {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        try ( Statement ignore = transaction.acquireStatement() )
-        {
-            TokenWrite tokenWrite = transaction.tokenWrite();
-            int[] labelIds = new int[labels.length];
-            String[] labelNames = new String[labels.length];
-            for ( int i = 0; i < labelNames.length; i++ )
-            {
-                labelNames[i] = labels[i].name();
-            }
-            tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
-
-            Write write = transaction.dataWrite();
-            long nodeId = write.nodeCreateWithLabels( labelIds );
-            return newNodeProxy( nodeId );
-        }
-        catch ( ConstraintValidationException e )
-        {
-            throw new ConstraintViolationException( "Unable to add label.", e );
-        }
-        catch ( SchemaKernelException e )
-        {
-            throw new IllegalArgumentException( e );
-        }
-        catch ( KernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
     }
 
     @Override

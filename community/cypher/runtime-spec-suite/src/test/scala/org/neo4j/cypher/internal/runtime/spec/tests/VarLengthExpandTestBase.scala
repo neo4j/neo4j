@@ -299,7 +299,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // given
     val (Seq(n1, n2, n3), _) = lollipopGraph()
     val r4 =
-      inTx {
+      inTx { _ =>
         n1.createRelationshipTo(n3, RelationshipType.withName("R"))
       }
 
@@ -322,7 +322,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // given
     val (Seq(n1, n2, n3), Seq(r1, r2, r3)) = lollipopGraph()
     val r4 =
-      inTx {
+      inTx { _ =>
         n1.createRelationshipTo(n3, RelationshipType.withName("R"))
       }
 

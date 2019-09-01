@@ -59,7 +59,7 @@ class ShutdownOnIndexUpdateIT
 
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node = db.createNode( CONSTRAINT_INDEX_LABEL );
+            Node node = transaction.createNode( CONSTRAINT_INDEX_LABEL );
             node.setProperty( UNIQUE_PROPERTY_NAME, indexProvider.getAndIncrement() );
 
             DependencyResolver dependencyResolver = db.getDependencyResolver();

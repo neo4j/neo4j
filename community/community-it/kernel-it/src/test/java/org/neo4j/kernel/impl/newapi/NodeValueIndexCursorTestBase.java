@@ -117,65 +117,65 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            strOne = nodeWithProp( graphDb, "one" );
-            strTwo1 = nodeWithProp( graphDb, "two" );
-            strTwo2 = nodeWithProp( graphDb, "two" );
-            strThree1 = nodeWithProp( graphDb, "three" );
-            strThree2 = nodeWithProp( graphDb, "three" );
-            strThree3 = nodeWithProp( graphDb, "three" );
-            nodeWithProp( graphDb, false );
-            boolTrue = nodeWithProp( graphDb, true );
-            nodeWithProp( graphDb, 3 ); // Purposely mix ordering
-            nodeWithProp( graphDb, 3 );
-            nodeWithProp( graphDb, 3 );
-            nodeWithProp( graphDb, 2 );
-            nodeWithProp( graphDb, 2 );
-            nodeWithProp( graphDb, 1 );
-            nodeWithProp( graphDb, 4 );
-            num5 = nodeWithProp( graphDb, 5 );
-            num6 = nodeWithProp( graphDb, 6 );
-            num12a = nodeWithProp( graphDb, 12.0 );
-            num12b = nodeWithProp( graphDb, 12.0 );
-            nodeWithProp( graphDb, 18 );
-            nodeWithProp( graphDb, 24 );
-            nodeWithProp( graphDb, 30 );
-            nodeWithProp( graphDb, 36 );
-            nodeWithProp( graphDb, 42 );
-            strOneNoLabel = nodeWithNoLabel( graphDb, "one" );
-            joeDalton = person( graphDb, "Joe", "Dalton" );
-            williamDalton = person( graphDb, "William", "Dalton" );
-            jackDalton = person( graphDb, "Jack", "Dalton" );
-            averellDalton = person( graphDb, "Averell", "Dalton" );
-            nodeWithProp( graphDb, Values.pointValue( Cartesian, 1, 0 ) ); // Purposely mix order
-            nodeWithProp( graphDb, Values.pointValue( Cartesian, 0, 0 ) );
-            nodeWithProp( graphDb, Values.pointValue( Cartesian, 0, 0 ) );
-            nodeWithProp( graphDb, Values.pointValue( Cartesian, 0, 0 ) );
-            nodeWithProp( graphDb, Values.pointValue( Cartesian, 0, 1 ) );
-            nodeWithProp( graphDb, Values.pointValue( Cartesian_3D, 0, 0, 0 ) );
-            nodeWithProp( graphDb, Values.pointValue( WGS84, 0, 0 ) );
-            nodeWithProp( graphDb, Values.pointValue( WGS84_3D, 0, 0, 0 ) );
-            date891 = nodeWithProp( graphDb, DateValue.date( 1989, 3, 24 ) ); // Purposely mix order
-            date86 = nodeWithProp( graphDb, DateValue.date( 1986, 11, 18 ) );
-            date892 = nodeWithProp( graphDb, DateValue.date( 1989, 3, 24 ) );
-            nodeWithProp( graphDb, new String[]{"first", "second", "third"} );
-            nodeWithProp( graphDb, new String[]{"fourth", "fifth", "sixth", "seventh"} );
+            strOne = nodeWithProp( tx, "one" );
+            strTwo1 = nodeWithProp( tx, "two" );
+            strTwo2 = nodeWithProp( tx, "two" );
+            strThree1 = nodeWithProp( tx, "three" );
+            strThree2 = nodeWithProp( tx, "three" );
+            strThree3 = nodeWithProp( tx, "three" );
+            nodeWithProp( tx, false );
+            boolTrue = nodeWithProp( tx, true );
+            nodeWithProp( tx, 3 ); // Purposely mix ordering
+            nodeWithProp( tx, 3 );
+            nodeWithProp( tx, 3 );
+            nodeWithProp( tx, 2 );
+            nodeWithProp( tx, 2 );
+            nodeWithProp( tx, 1 );
+            nodeWithProp( tx, 4 );
+            num5 = nodeWithProp( tx, 5 );
+            num6 = nodeWithProp( tx, 6 );
+            num12a = nodeWithProp( tx, 12.0 );
+            num12b = nodeWithProp( tx, 12.0 );
+            nodeWithProp( tx, 18 );
+            nodeWithProp( tx, 24 );
+            nodeWithProp( tx, 30 );
+            nodeWithProp( tx, 36 );
+            nodeWithProp( tx, 42 );
+            strOneNoLabel = nodeWithNoLabel( tx, "one" );
+            joeDalton = person( tx, "Joe", "Dalton" );
+            williamDalton = person( tx, "William", "Dalton" );
+            jackDalton = person( tx, "Jack", "Dalton" );
+            averellDalton = person( tx, "Averell", "Dalton" );
+            nodeWithProp( tx, Values.pointValue( Cartesian, 1, 0 ) ); // Purposely mix order
+            nodeWithProp( tx, Values.pointValue( Cartesian, 0, 0 ) );
+            nodeWithProp( tx, Values.pointValue( Cartesian, 0, 0 ) );
+            nodeWithProp( tx, Values.pointValue( Cartesian, 0, 0 ) );
+            nodeWithProp( tx, Values.pointValue( Cartesian, 0, 1 ) );
+            nodeWithProp( tx, Values.pointValue( Cartesian_3D, 0, 0, 0 ) );
+            nodeWithProp( tx, Values.pointValue( WGS84, 0, 0 ) );
+            nodeWithProp( tx, Values.pointValue( WGS84_3D, 0, 0, 0 ) );
+            date891 = nodeWithProp( tx, DateValue.date( 1989, 3, 24 ) ); // Purposely mix order
+            date86 = nodeWithProp( tx, DateValue.date( 1986, 11, 18 ) );
+            date892 = nodeWithProp( tx, DateValue.date( 1989, 3, 24 ) );
+            nodeWithProp( tx, new String[]{"first", "second", "third"} );
+            nodeWithProp( tx, new String[]{"fourth", "fifth", "sixth", "seventh"} );
 
             MutableLongList listOfIds = LongLists.mutable.empty();
-            listOfIds.add(nodeWithWhatever( graphDb, "string" ));
-            listOfIds.add(nodeWithWhatever( graphDb, false ));
-            listOfIds.add(nodeWithWhatever( graphDb, 3 ));
-            listOfIds.add(nodeWithWhatever( graphDb, 13.0 ));
-            whateverPoint = nodeWithWhatever( graphDb, Values.pointValue( Cartesian, 1, 0 ) );
+            listOfIds.add(nodeWithWhatever( tx, "string" ));
+            listOfIds.add(nodeWithWhatever( tx, false ));
+            listOfIds.add(nodeWithWhatever( tx, 3 ));
+            listOfIds.add(nodeWithWhatever( tx, 13.0 ));
+            whateverPoint = nodeWithWhatever( tx, Values.pointValue( Cartesian, 1, 0 ) );
             listOfIds.add( whateverPoint );
-            listOfIds.add(nodeWithWhatever( graphDb, DateValue.date( 1989, 3, 24 ) ));
-            listOfIds.add(nodeWithWhatever( graphDb, new String[]{"first", "second", "third"} ));
+            listOfIds.add(nodeWithWhatever( tx, DateValue.date( 1989, 3, 24 ) ));
+            listOfIds.add(nodeWithWhatever( tx, new String[]{"first", "second", "third"} ));
 
             nodesOfAllPropertyTypes = listOfIds.toArray();
 
             assertSameDerivedValue( POINT_1, POINT_2 );
-            nodeWithProp( graphDb, "prop3", POINT_1.asObjectCopy() );
-            nodeWithProp( graphDb, "prop3", POINT_2.asObjectCopy() );
-            nodeWithProp( graphDb, "prop3", POINT_2.asObjectCopy() );
+            nodeWithProp( tx, "prop3", POINT_1.asObjectCopy() );
+            nodeWithProp( tx, "prop3", POINT_2.asObjectCopy() );
+            nodeWithProp( tx, "prop3", POINT_2.asObjectCopy() );
 
             tx.commit();
         }
@@ -1547,35 +1547,35 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
-    private long nodeWithProp( GraphDatabaseService graphDb, Object value )
+    private long nodeWithProp( Transaction tx, Object value )
     {
-        return nodeWithProp( graphDb, "prop", value );
+        return nodeWithProp( tx, "prop", value );
     }
 
-    private long nodeWithProp( GraphDatabaseService graphDb, String key, Object value )
+    private long nodeWithProp( Transaction tx, String key, Object value )
     {
-        Node node = graphDb.createNode( label( "Node" ) );
+        Node node = tx.createNode( label( "Node" ) );
         node.setProperty( key, value );
         return node.getId();
     }
 
-    private long nodeWithWhatever( GraphDatabaseService graphDb, Object value )
+    private long nodeWithWhatever( Transaction tx, Object value )
     {
-        Node node = graphDb.createNode( label( "What" ) );
+        Node node = tx.createNode( label( "What" ) );
         node.setProperty( "ever", value );
         return node.getId();
     }
 
-    private long nodeWithNoLabel( GraphDatabaseService graphDb, Object value )
+    private long nodeWithNoLabel( Transaction tx, Object value )
     {
-        Node node = graphDb.createNode();
+        Node node = tx.createNode();
         node.setProperty( "prop", value );
         return node.getId();
     }
 
-    private long person( GraphDatabaseService graphDb, String firstName, String surname )
+    private long person( Transaction tx, String firstName, String surname )
     {
-        Node node = graphDb.createNode( label( "Person" ) );
+        Node node = tx.createNode( label( "Person" ) );
         node.setProperty( "firstname", firstName );
         node.setProperty( "surname", surname );
         return node.getId();

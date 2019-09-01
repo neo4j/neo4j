@@ -136,11 +136,11 @@ public class RelationshipChainExplorerTest
 
         try ( Transaction transaction = database.beginTx() )
         {
-            Node denseNode = database.createNode();
+            Node denseNode = transaction.createNode();
             for ( int i = 0; i < nDegreeTwoNodes; i++ )
             {
-                Node degreeTwoNode = database.createNode();
-                Node leafNode = database.createNode();
+                Node degreeTwoNode = transaction.createNode();
+                Node leafNode = transaction.createNode();
                 if ( i % 2 == 0 )
                 {
                     denseNode.createRelationshipTo( degreeTwoNode, TestRelationshipType.CONNECTED );

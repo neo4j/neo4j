@@ -865,9 +865,9 @@ class RecoveryCorruptedTransactionLogIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Node startNode = database.createNode( Label.label( "startNode" ) );
+            Node startNode = transaction.createNode( Label.label( "startNode" ) );
             startNode.setProperty( "key", "value" );
-            Node endNode = database.createNode( Label.label( "endNode" ) );
+            Node endNode = transaction.createNode( Label.label( "endNode" ) );
             endNode.setProperty( "key", "value" );
             startNode.createRelationshipTo( endNode, RelationshipType.withName( "connects" ) );
             transaction.commit();

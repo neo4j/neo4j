@@ -250,7 +250,7 @@ class StoreMigratorTest
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Node node = database.createNode();
+                Node node = transaction.createNode();
                 transaction.commit();
             }
         }

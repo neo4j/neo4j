@@ -71,7 +71,7 @@ class RecordFormatMigrationIT
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode();
+            Node node = transaction.createNode();
             node.setProperty( "a", "b" );
             transaction.commit();
         }
@@ -97,7 +97,7 @@ class RecordFormatMigrationIT
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode();
+            Node node = transaction.createNode();
             node.setProperty( "a", "b" );
             transaction.commit();
         }
@@ -124,7 +124,7 @@ class RecordFormatMigrationIT
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode();
+            Node node = transaction.createNode();
             node.setProperty( "a", "b" );
             transaction.commit();
         }
@@ -144,7 +144,7 @@ class RecordFormatMigrationIT
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode();
+            Node node = transaction.createNode();
             node.setProperty( "a", "b" );
             transaction.commit();
         }
@@ -169,7 +169,7 @@ class RecordFormatMigrationIT
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode();
+            Node node = transaction.createNode();
             node.setProperty( "a", "b" );
             transaction.commit();
         }

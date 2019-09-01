@@ -90,7 +90,7 @@ public abstract class AbstractNeo4jTestCase
         Node node;
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            node = graphDb.createNode();
+            node = transaction.createNode();
             transaction.commit();
         }
         return node;

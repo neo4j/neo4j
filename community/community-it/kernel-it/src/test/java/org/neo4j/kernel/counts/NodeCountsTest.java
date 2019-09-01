@@ -69,8 +69,8 @@ class NodeCountsTest
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
-            db.createNode();
+            tx.createNode();
+            tx.createNode();
             tx.commit();
         }
 
@@ -88,8 +88,8 @@ class NodeCountsTest
         Node one;
         try ( Transaction tx = db.beginTx() )
         {
-            one = db.createNode();
-            db.createNode();
+            one = tx.createNode();
+            tx.createNode();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -111,8 +111,8 @@ class NodeCountsTest
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
-            db.createNode();
+            tx.createNode();
+            tx.createNode();
             tx.commit();
         }
         long before = numberOfNodes();
@@ -120,7 +120,7 @@ class NodeCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            db.createNode();
+            tx.createNode();
             long nodeCount = countsForNode();
 
             // then
@@ -136,8 +136,8 @@ class NodeCountsTest
         Node one;
         try ( Transaction tx = db.beginTx() )
         {
-            one = db.createNode();
-            db.createNode();
+            one = tx.createNode();
+            tx.createNode();
             tx.commit();
         }
         long before = numberOfNodes();
@@ -170,8 +170,8 @@ class NodeCountsTest
             {
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    graphDb.createNode();
-                    graphDb.createNode();
+                    tx.createNode();
+                    tx.createNode();
                     barrier.reached();
                     long whatThisThreadSees = countsForNode();
                     tx.commit();

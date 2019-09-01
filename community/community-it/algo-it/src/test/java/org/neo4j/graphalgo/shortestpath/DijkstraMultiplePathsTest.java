@@ -39,10 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
 {
-    private static Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph, Double startCost, String startNode, String endNode )
+    private static Dijkstra<Double> getDijkstra( Transaction transaction, SimpleGraphBuilder graph, Double startCost, String startNode, String endNode )
     {
-        return new Dijkstra<>( startCost, graph.getNode( startNode ), graph.getNode( endNode ), CommonEvaluators.doubleCostEvaluator( "cost" ),
-                new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
+        return new Dijkstra<>( startCost, graph.getNode( transaction, startNode ), graph.getNode( transaction, endNode ),
+                CommonEvaluators.doubleCostEvaluator( "cost" ), new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
                 Direction.BOTH, MyRelTypes.R1 );
     }
 
@@ -55,16 +55,16 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b", "cost", (double) 0 );
-            graph.makeEdge( "b", "c", "cost", (double) 0 );
-            graph.makeEdge( "c", "a", "cost", (double) 0 );
+            graph.makeEdge( transaction, "a", "b", "cost", (double) 0 );
+            graph.makeEdge( transaction, "b", "c", "cost", (double) 0 );
+            graph.makeEdge( transaction, "c", "a", "cost", (double) 0 );
             Dijkstra<Double> dijkstra;
             String[] nodes = {"a", "b", "c"};
             for ( String node1 : nodes )
             {
                 for ( String node2 : nodes )
                 {
-                    dijkstra = getDijkstra( graph, 0.0, node1, node2 );
+                    dijkstra = getDijkstra( transaction, graph, 0.0, node1, node2 );
                     int nrPaths = dijkstra.getPathsAsNodes().size();
                     if ( !node1.equals( node2 ) )
                     {
@@ -85,16 +85,16 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b", "cost", (double) 1 );
-            graph.makeEdge( "b", "d", "cost", (float) 1 );
-            graph.makeEdge( "a", "c", "cost", 1 );
-            graph.makeEdge( "c", "d", "cost", (long) 1 );
-            graph.makeEdge( "d", "e", "cost", (short) 1 );
-            graph.makeEdge( "e", "f", "cost", (byte) 1 );
-            graph.makeEdge( "f", "h", "cost", (float) 1 );
-            graph.makeEdge( "e", "g", "cost", (double) 1 );
-            graph.makeEdge( "g", "h", "cost", (double) 1 );
-            Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "h" );
+            graph.makeEdge( transaction, "a", "b", "cost", (double) 1 );
+            graph.makeEdge( transaction, "b", "d", "cost", (float) 1 );
+            graph.makeEdge( transaction, "a", "c", "cost", 1 );
+            graph.makeEdge( transaction, "c", "d", "cost", (long) 1 );
+            graph.makeEdge( transaction, "d", "e", "cost", (short) 1 );
+            graph.makeEdge( transaction, "e", "f", "cost", (byte) 1 );
+            graph.makeEdge( transaction, "f", "h", "cost", (float) 1 );
+            graph.makeEdge( transaction, "e", "g", "cost", (double) 1 );
+            graph.makeEdge( transaction, "g", "h", "cost", (double) 1 );
+            Dijkstra<Double> dijkstra = getDijkstra( transaction, graph, 0.0, "a", "h" );
             assertEquals( 4, dijkstra.getPaths().size() );
             assertEquals( 4, dijkstra.getPathsAsNodes().size() );
             assertEquals( 4, dijkstra.getPathsAsRelationships().size() );
@@ -112,15 +112,15 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b", "cost", (double) 1 );
-            graph.makeEdge( "a", "f", "cost", (float) 1 );
-            graph.makeEdge( "b", "c", "cost", (long) 1 );
-            graph.makeEdge( "f", "g", "cost", 1 );
-            graph.makeEdge( "c", "d", "cost", (short) 1 );
-            graph.makeEdge( "g", "h", "cost", (byte) 1 );
-            graph.makeEdge( "d", "e", "cost", (float) 1 );
-            graph.makeEdge( "h", "e", "cost", (double) 1 );
-            Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "e" );
+            graph.makeEdge( transaction, "a", "b", "cost", (double) 1 );
+            graph.makeEdge( transaction, "a", "f", "cost", (float) 1 );
+            graph.makeEdge( transaction, "b", "c", "cost", (long) 1 );
+            graph.makeEdge( transaction, "f", "g", "cost", 1 );
+            graph.makeEdge( transaction, "c", "d", "cost", (short) 1 );
+            graph.makeEdge( transaction, "g", "h", "cost", (byte) 1 );
+            graph.makeEdge( transaction, "d", "e", "cost", (float) 1 );
+            graph.makeEdge( transaction, "h", "e", "cost", (double) 1 );
+            Dijkstra<Double> dijkstra = getDijkstra( transaction, graph, 0.0, "a", "e" );
             assertEquals( 2, dijkstra.getPaths().size() );
             assertEquals( 2, dijkstra.getPathsAsNodes().size() );
             assertEquals( 2, dijkstra.getPathsAsRelationships().size() );
@@ -139,26 +139,26 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         // "zero" side
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b", "cost", (double) 0 );
-            graph.makeEdge( "b", "c", "cost", (float) 0 );
-            graph.makeEdge( "c", "d", "cost", (long) 0 );
-            graph.makeEdge( "d", "e", "cost", 0 );
-            graph.makeEdge( "e", "f", "cost", (byte) 0 );
-            graph.makeEdge( "f", "g", "cost", (float) 0 );
-            graph.makeEdge( "g", "h", "cost", (short) 0 );
-            graph.makeEdge( "h", "i", "cost", (double) 0 );
-            graph.makeEdge( "i", "j", "cost", (double) 0 );
-            graph.makeEdge( "j", "k", "cost", (double) 0 );
+            graph.makeEdge( transaction, "a", "b", "cost", (double) 0 );
+            graph.makeEdge( transaction, "b", "c", "cost", (float) 0 );
+            graph.makeEdge( transaction, "c", "d", "cost", (long) 0 );
+            graph.makeEdge( transaction, "d", "e", "cost", 0 );
+            graph.makeEdge( transaction, "e", "f", "cost", (byte) 0 );
+            graph.makeEdge( transaction, "f", "g", "cost", (float) 0 );
+            graph.makeEdge( transaction, "g", "h", "cost", (short) 0 );
+            graph.makeEdge( transaction, "h", "i", "cost", (double) 0 );
+            graph.makeEdge( transaction, "i", "j", "cost", (double) 0 );
+            graph.makeEdge( transaction, "j", "k", "cost", (double) 0 );
             // "discovering" side
-            graph.makeEdge( "z", "y", "cost", (double) 0 );
-            graph.makeEdge( "y", "x", "cost", (double) 0 );
-            graph.makeEdge( "x", "w", "cost", (double) 0 );
-            graph.makeEdge( "w", "b", "cost", (double) 1 );
-            graph.makeEdge( "x", "b", "cost", (float) 2 );
-            graph.makeEdge( "y", "b", "cost", (long) 1 );
-            graph.makeEdge( "z", "b", "cost", 1 );
-            graph.makeEdge( "zz", "z", "cost", (double) 0 );
-            Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "zz" );
+            graph.makeEdge( transaction, "z", "y", "cost", (double) 0 );
+            graph.makeEdge( transaction, "y", "x", "cost", (double) 0 );
+            graph.makeEdge( transaction, "x", "w", "cost", (double) 0 );
+            graph.makeEdge( transaction, "w", "b", "cost", (double) 1 );
+            graph.makeEdge( transaction, "x", "b", "cost", (float) 2 );
+            graph.makeEdge( transaction, "y", "b", "cost", (long) 1 );
+            graph.makeEdge( transaction, "z", "b", "cost", 1 );
+            graph.makeEdge( transaction, "zz", "z", "cost", (double) 0 );
+            Dijkstra<Double> dijkstra = getDijkstra( transaction, graph, 0.0, "a", "zz" );
             assertEquals( 3, dijkstra.getPathsAsNodes().size() );
             assertEquals( 1.0, dijkstra.getCost(), 0.0 );
             transaction.commit();
@@ -174,25 +174,25 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         // "zero" side
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b", "cost", (double) 0 );
-            graph.makeEdge( "b", "c", "cost", (double) 0 );
-            graph.makeEdge( "c", "d", "cost", (double) 0 );
-            graph.makeEdge( "d", "e", "cost", (double) 0 );
-            graph.makeEdge( "e", "f", "cost", (double) 0 );
-            graph.makeEdge( "f", "g", "cost", (double) 0 );
-            graph.makeEdge( "g", "h", "cost", (double) 0 );
-            graph.makeEdge( "h", "i", "cost", (double) 0 );
-            graph.makeEdge( "i", "j", "cost", (double) 0 );
-            graph.makeEdge( "j", "k", "cost", (double) 0 );
+            graph.makeEdge( transaction, "a", "b", "cost", (double) 0 );
+            graph.makeEdge( transaction, "b", "c", "cost", (double) 0 );
+            graph.makeEdge( transaction, "c", "d", "cost", (double) 0 );
+            graph.makeEdge( transaction, "d", "e", "cost", (double) 0 );
+            graph.makeEdge( transaction, "e", "f", "cost", (double) 0 );
+            graph.makeEdge( transaction, "f", "g", "cost", (double) 0 );
+            graph.makeEdge( transaction, "g", "h", "cost", (double) 0 );
+            graph.makeEdge( transaction, "h", "i", "cost", (double) 0 );
+            graph.makeEdge( transaction, "i", "j", "cost", (double) 0 );
+            graph.makeEdge( transaction, "j", "k", "cost", (double) 0 );
             // "discovering" side
-            graph.makeEdge( "z", "y", "cost", (double) 0 );
-            graph.makeEdge( "y", "x", "cost", (double) 0 );
-            graph.makeEdge( "x", "w", "cost", (double) 0 );
-            graph.makeEdge( "w", "b", "cost", (double) 1 );
-            graph.makeEdge( "x", "b", "cost", (float) 2 );
-            graph.makeEdge( "y", "b", "cost", (long) 1 );
-            graph.makeEdge( "z", "b", "cost", 1 );
-            Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "z" );
+            graph.makeEdge( transaction, "z", "y", "cost", (double) 0 );
+            graph.makeEdge( transaction, "y", "x", "cost", (double) 0 );
+            graph.makeEdge( transaction, "x", "w", "cost", (double) 0 );
+            graph.makeEdge( transaction, "w", "b", "cost", (double) 1 );
+            graph.makeEdge( transaction, "x", "b", "cost", (float) 2 );
+            graph.makeEdge( transaction, "y", "b", "cost", (long) 1 );
+            graph.makeEdge( transaction, "z", "b", "cost", 1 );
+            Dijkstra<Double> dijkstra = getDijkstra( transaction, graph, 0.0, "a", "z" );
             assertEquals( 3, dijkstra.getPathsAsNodes().size() );
             assertEquals( 1.0, dijkstra.getCost(), 0.0 );
             transaction.commit();
@@ -207,12 +207,12 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b", "cost", (double) 0 );
-            graph.makeEdge( "z", "y", "cost", (float) 0 );
-            graph.makeEdge( "y", "b", "cost", (long) 1 );
-            graph.makeEdge( "z", "b", "cost", 1 );
-            graph.makeEdge( "y", "a", "cost", (byte) 1 );
-            Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "z" );
+            graph.makeEdge( transaction, "a", "b", "cost", (double) 0 );
+            graph.makeEdge( transaction, "z", "y", "cost", (float) 0 );
+            graph.makeEdge( transaction, "y", "b", "cost", (long) 1 );
+            graph.makeEdge( transaction, "z", "b", "cost", 1 );
+            graph.makeEdge( transaction, "y", "a", "cost", (byte) 1 );
+            Dijkstra<Double> dijkstra = getDijkstra( transaction, graph, 0.0, "a", "z" );
             List<List<Node>> paths = dijkstra.getPathsAsNodes();
             assertEquals( 3, paths.size() );
             assertEquals( 1.0, dijkstra.getCost(), 0.0 );
@@ -225,12 +225,13 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdgeChain( "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,z", "cost", (double) 1 );
-            graph.makeEdge( "a", "b2", "cost", (double) 4 );
-            graph.makeEdge( "b2", "c", "cost", -2 );
+            graph.makeEdgeChain( transaction, "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,z", "cost", (double) 1 );
+            graph.makeEdge( transaction, "a", "b2", "cost", (double) 4 );
+            graph.makeEdge( transaction, "b2", "c", "cost", -2 );
             Dijkstra<Double> dijkstra =
-                    new Dijkstra<>( 0.0, graph.getNode( "a" ), graph.getNode( "z" ), CommonEvaluators.doubleCostEvaluator( "cost" ), new DoubleAdder(),
-                            Double::compareTo, Direction.OUTGOING, MyRelTypes.R1 );
+                    new Dijkstra<>( 0.0, graph.getNode( transaction, "a" ), graph.getNode( transaction, "z" ),
+                            CommonEvaluators.doubleCostEvaluator( "cost" ),
+                            new DoubleAdder(), Double::compareTo, Direction.OUTGOING, MyRelTypes.R1 );
             List<List<Node>> paths = dijkstra.getPathsAsNodes();
             assertEquals( 2, paths.size() );
             transaction.commit();
@@ -242,16 +243,17 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Relationship edgeAB = graph.makeEdge( "a", "b" );
-            Relationship edgeBC = graph.makeEdge( "b", "c" );
-            Relationship edgeCD = graph.makeEdge( "c", "d" );
-            Relationship edgeDE = graph.makeEdge( "d", "e" );
-            Relationship edgeAB2 = graph.makeEdge( "a", "b2" );
-            Relationship edgeB2C = graph.makeEdge( "b2", "c" );
-            Relationship edgeCD2 = graph.makeEdge( "c", "d2" );
-            Relationship edgeD2E = graph.makeEdge( "d2", "e" );
+            Relationship edgeAB = graph.makeEdge( transaction, "a", "b" );
+            Relationship edgeBC = graph.makeEdge( transaction, "b", "c" );
+            Relationship edgeCD = graph.makeEdge( transaction, "c", "d" );
+            Relationship edgeDE = graph.makeEdge( transaction, "d", "e" );
+            Relationship edgeAB2 = graph.makeEdge( transaction, "a", "b2" );
+            Relationship edgeB2C = graph.makeEdge( transaction, "b2", "c" );
+            Relationship edgeCD2 = graph.makeEdge( transaction, "c", "d2" );
+            Relationship edgeD2E = graph.makeEdge( transaction, "d2", "e" );
             Dijkstra<Double> dijkstra =
-                    new Dijkstra<>( 0.0, graph.getNode( "a" ), graph.getNode( "e" ), ( relationship, direction ) -> 1.0, new DoubleAdder(), Double::compareTo,
+                    new Dijkstra<>( 0.0, graph.getNode( transaction, "a" ), graph.getNode( transaction, "e" ),
+                            ( relationship, direction ) -> 1.0, new DoubleAdder(), Double::compareTo,
                             Direction.OUTGOING, MyRelTypes.R1 );
             // path discovery flags
             boolean pathBD = false;
@@ -263,11 +265,11 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
             for ( List<PropertyContainer> path : paths )
             {
                 assertEquals( 9, path.size() );
-                assertEquals( path.get( 0 ), graph.getNode( "a" ) );
-                assertEquals( path.get( 4 ), graph.getNode( "c" ) );
-                assertEquals( path.get( 8 ), graph.getNode( "e" ) );
+                assertEquals( path.get( 0 ), graph.getNode( transaction, "a" ) );
+                assertEquals( path.get( 4 ), graph.getNode( transaction, "c" ) );
+                assertEquals( path.get( 8 ), graph.getNode( transaction, "e" ) );
                 // first choice
-                if ( path.get( 2 ).equals( graph.getNode( "b" ) ) )
+                if ( path.get( 2 ).equals( graph.getNode( transaction, "b" ) ) )
                 {
                     assertEquals( path.get( 1 ), edgeAB );
                     assertEquals( path.get( 3 ), edgeBC );
@@ -275,11 +277,11 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
                 else
                 {
                     assertEquals( path.get( 1 ), edgeAB2 );
-                    assertEquals( path.get( 2 ), graph.getNode( "b2" ) );
+                    assertEquals( path.get( 2 ), graph.getNode( transaction, "b2" ) );
                     assertEquals( path.get( 3 ), edgeB2C );
                 }
                 // second choice
-                if ( path.get( 6 ).equals( graph.getNode( "d" ) ) )
+                if ( path.get( 6 ).equals( graph.getNode( transaction, "d" ) ) )
                 {
                     assertEquals( path.get( 5 ), edgeCD );
                     assertEquals( path.get( 7 ), edgeDE );
@@ -287,28 +289,28 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
                 else
                 {
                     assertEquals( path.get( 5 ), edgeCD2 );
-                    assertEquals( path.get( 6 ), graph.getNode( "d2" ) );
+                    assertEquals( path.get( 6 ), graph.getNode( transaction, "d2" ) );
                     assertEquals( path.get( 7 ), edgeD2E );
                 }
                 // combinations
-                if ( path.get( 2 ).equals( graph.getNode( "b" ) ) )
+                if ( path.get( 2 ).equals( graph.getNode( transaction, "b" ) ) )
                 {
-                    if ( path.get( 6 ).equals( graph.getNode( "d" ) ) )
+                    if ( path.get( 6 ).equals( graph.getNode( transaction, "d" ) ) )
                     {
                         pathBD = true;
                     }
-                    else if ( path.get( 6 ).equals( graph.getNode( "d2" ) ) )
+                    else if ( path.get( 6 ).equals( graph.getNode( transaction, "d2" ) ) )
                     {
                         pathBD2 = true;
                     }
                 }
                 else
                 {
-                    if ( path.get( 6 ).equals( graph.getNode( "d" ) ) )
+                    if ( path.get( 6 ).equals( graph.getNode( transaction, "d" ) ) )
                     {
                         pathB2D = true;
                     }
-                    else if ( path.get( 6 ).equals( graph.getNode( "d2" ) ) )
+                    else if ( path.get( 6 ).equals( graph.getNode( transaction, "d2" ) ) )
                     {
                         pathB2D2 = true;
                     }
@@ -327,16 +329,17 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Relationship edgeAB = graph.makeEdge( "a", "b" );
-            Relationship edgeBC = graph.makeEdge( "b", "c" );
-            Relationship edgeCD = graph.makeEdge( "c", "d" );
-            Relationship edgeDE = graph.makeEdge( "d", "e" );
-            Relationship edgeAB2 = graph.makeEdge( "a", "b2" );
-            Relationship edgeB2C = graph.makeEdge( "b2", "c" );
-            Relationship edgeCD2 = graph.makeEdge( "c", "d2" );
-            Relationship edgeD2E = graph.makeEdge( "d2", "e" );
+            Relationship edgeAB = graph.makeEdge( transaction, "a", "b" );
+            Relationship edgeBC = graph.makeEdge( transaction, "b", "c" );
+            Relationship edgeCD = graph.makeEdge( transaction, "c", "d" );
+            Relationship edgeDE = graph.makeEdge( transaction, "d", "e" );
+            Relationship edgeAB2 = graph.makeEdge( transaction, "a", "b2" );
+            Relationship edgeB2C = graph.makeEdge( transaction, "b2", "c" );
+            Relationship edgeCD2 = graph.makeEdge( transaction, "c", "d2" );
+            Relationship edgeD2E = graph.makeEdge( transaction, "d2", "e" );
             Dijkstra<Double> dijkstra =
-                    new Dijkstra<>( 0.0, graph.getNode( "a" ), graph.getNode( "e" ), ( relationship, direction ) -> 1.0, new DoubleAdder(), Double::compareTo,
+                    new Dijkstra<>( 0.0, graph.getNode( transaction, "a" ), graph.getNode( transaction, "e" ),
+                            ( relationship, direction ) -> 1.0, new DoubleAdder(), Double::compareTo,
                             Direction.OUTGOING, MyRelTypes.R1 );
             // path discovery flags
             boolean pathBD = false;

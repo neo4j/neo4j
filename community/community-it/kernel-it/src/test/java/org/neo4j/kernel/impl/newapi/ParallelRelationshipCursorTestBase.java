@@ -66,8 +66,8 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
             MutableLongList list = new LongArrayList( NUMBER_OF_RELATIONSHIPS );
             for ( int i = 0; i < NUMBER_OF_RELATIONSHIPS; i++ )
             {
-                list.add( graphDb.createNode()
-                        .createRelationshipTo( graphDb.createNode(), RelationshipType.withName( "R" ) ).getId() );
+                list.add( tx.createNode()
+                        .createRelationshipTo( tx.createNode(), RelationshipType.withName( "R" ) ).getId() );
             }
             RELATIONSHIPS = list;
             tx.commit();

@@ -145,10 +145,10 @@ public class FusionIndexIT
         createIndex();
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label ).setProperty( propKey, numberValue );
-            db.createNode( label ).setProperty( propKey, stringValue );
-            db.createNode( label ).setProperty( propKey, spatialValue );
-            db.createNode( label ).setProperty( propKey, temporalValue );
+            tx.createNode( label ).setProperty( propKey, numberValue );
+            tx.createNode( label ).setProperty( propKey, stringValue );
+            tx.createNode( label ).setProperty( propKey, spatialValue );
+            tx.createNode( label ).setProperty( propKey, temporalValue );
             tx.commit();
         }
         db.shutdown();

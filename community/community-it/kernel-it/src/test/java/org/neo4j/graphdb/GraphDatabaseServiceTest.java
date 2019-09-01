@@ -108,7 +108,7 @@ public class GraphDatabaseServiceTest
             try ( Transaction tx = db.beginTx() )
             {
                 barrier.reached();
-                db.createNode();
+                tx.createNode();
                 tx.commit();
             }
             return null;
@@ -147,7 +147,7 @@ public class GraphDatabaseServiceTest
             tx.terminate();
             try
             {
-                db.createNode();
+                tx.createNode();
                 fail( "Failed to throw TransactionTerminateException" );
             }
             catch ( TransactionTerminatedException ignored )
@@ -252,14 +252,14 @@ public class GraphDatabaseServiceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
 
         Transaction transaction = db.beginTx();
         try ( Transaction tx = transaction )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
         transaction.terminate();
@@ -309,7 +309,7 @@ public class GraphDatabaseServiceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             tx.commit();
             return node;
         }

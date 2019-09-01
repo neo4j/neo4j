@@ -50,8 +50,8 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
         Relationship deleted;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            Node a = graphDb.createNode(), b = graphDb.createNode(), c = graphDb.createNode(),
-                    d = graphDb.createNode(), e = graphDb.createNode(), f = graphDb.createNode();
+            Node a = tx.createNode(), b = tx.createNode(), c = tx.createNode(),
+                    d = tx.createNode(), e = tx.createNode(), f = tx.createNode();
 
             a.createRelationshipTo( b, withName( "CIRCLE" ) );
             b.createRelationshipTo( c, withName( "CIRCLE" ) );

@@ -430,28 +430,28 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         Label car = Label.label( CAR_LABEL );
         try ( Transaction transaction = embeddedDatabase.beginTx() )
         {
-            country1 = createNamedLabeledNode( countryLabel, "Sweden" );
-            country2 = createNamedLabeledNode( countryLabel, "USA" );
+            country1 = createNamedLabeledNode( transaction, countryLabel, "Sweden" );
+            country2 = createNamedLabeledNode( transaction, countryLabel, "USA" );
 
-            color1 = createNamedLabeledNode( color, "red" );
-            color2 = createNamedLabeledNode( color, "green" );
+            color1 = createNamedLabeledNode( transaction, color, "red" );
+            color2 = createNamedLabeledNode( transaction, color, "green" );
 
-            car1 = createNamedLabeledNode( car, "Volvo" );
-            car2 = createNamedLabeledNode( car, "Ford" );
+            car1 = createNamedLabeledNode( transaction, car, "Volvo" );
+            car2 = createNamedLabeledNode( transaction, car, "Ford" );
 
             otherNodes = new Node[250];
             for ( int i = 0; i < 250; i++ )
             {
-                otherNodes[i] = embeddedDatabase.createNode();
+                otherNodes[i] = transaction.createNode();
             }
 
             transaction.commit();
         }
     }
 
-    private Node createNamedLabeledNode( Label label, String name )
+    private Node createNamedLabeledNode( Transaction tx, Label label, String name )
     {
-        Node node = embeddedDatabase.createNode( label );
+        Node node = tx.createNode( label );
         node.setProperty( NAME_PROPERTY, name );
         return node;
     }

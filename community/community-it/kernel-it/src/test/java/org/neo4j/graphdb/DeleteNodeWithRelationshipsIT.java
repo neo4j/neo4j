@@ -40,8 +40,8 @@ class DeleteNodeWithRelationshipsIT
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
-            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "MAYOR_OF" ) );
+            node = tx.createNode();
+            node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "MAYOR_OF" ) );
             tx.commit();
         }
 

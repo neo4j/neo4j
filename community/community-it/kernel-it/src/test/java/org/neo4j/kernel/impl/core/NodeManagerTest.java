@@ -63,8 +63,8 @@ class NodeManagerTest
         // GIVEN
         {
             Transaction tx = db.beginTx();
-            db.createNode();
-            db.createNode();
+            tx.createNode();
+            tx.createNode();
             tx.commit();
         }
 
@@ -77,7 +77,7 @@ class NodeManagerTest
         Thread thread = new Thread( () ->
         {
             Transaction newTx = db.beginTx();
-            db.createNode();
+            newTx.createNode();
             newTx.commit();
         } );
         thread.start();
@@ -93,8 +93,8 @@ class NodeManagerTest
     {
         // GIVEN
         Transaction tx = db.beginTx();
-        createRelationshipAssumingTxWith( "key", 1 );
-        createRelationshipAssumingTxWith( "key", 2 );
+        createRelationshipAssumingTxWith( tx, "key", 1 );
+        createRelationshipAssumingTxWith( tx, "key", 2 );
         tx.commit();
 
         // WHEN
@@ -104,7 +104,7 @@ class NodeManagerTest
         Thread thread = new Thread( () ->
         {
             Transaction newTx = db.beginTx();
-            createRelationshipAssumingTxWith( "key", 3 );
+            createRelationshipAssumingTxWith( newTx, "key", 3 );
             newTx.commit();
         } );
         thread.start();
@@ -115,10 +115,10 @@ class NodeManagerTest
         tx.commit();
     }
 
-    private void createRelationshipAssumingTxWith( String key, Object value )
+    private void createRelationshipAssumingTxWith( Transaction transaction, String key, Object value )
     {
-        Node a = db.createNode();
-        Node b = db.createNode();
+        Node a = transaction.createNode();
+        Node b = transaction.createNode();
         Relationship relationship = a.createRelationshipTo( b, RelationshipType.withName( "FOO" ) );
         relationship.setProperty( key, value );
     }

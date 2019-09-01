@@ -95,7 +95,7 @@ class IndexConsistencyIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            createNewNode( new Label[]{LABEL_ONE} );
+            createNewNode( tx, new Label[]{LABEL_ONE} );
             tx.commit();
         }
 
@@ -148,7 +148,7 @@ class IndexConsistencyIT
         existingNodes = new ArrayList<>();
         try ( Transaction tx = db.beginTx() )
         {
-            randomModifications( existingNodes, numberOfModifications );
+            randomModifications( tx, existingNodes, numberOfModifications );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -163,7 +163,7 @@ class IndexConsistencyIT
         }
     }
 
-    private void randomModifications( List<Pair<Long,Label[]>> existingNodes,
+    private void randomModifications( Transaction tx, List<Pair<Long,Label[]>> existingNodes,
             int numberOfModifications )
     {
         for ( int i = 0; i < numberOfModifications; i++ )
@@ -171,7 +171,7 @@ class IndexConsistencyIT
             double selectModification = random.nextDouble();
             if ( existingNodes.size() < NODE_COUNT_BASELINE || selectModification >= DELETE_RATIO + UPDATE_RATIO )
             {
-                createNewNode( existingNodes );
+                createNewNode( tx, existingNodes );
             }
             else if ( selectModification < DELETE_RATIO )
             {
@@ -184,16 +184,16 @@ class IndexConsistencyIT
         }
     }
 
-    private void createNewNode( List<Pair<Long,Label[]>> existingNodes )
+    private void createNewNode( Transaction transaction, List<Pair<Long,Label[]>> existingNodes )
     {
         Label[] labels = randomLabels();
-        Node node = createNewNode( labels );
+        Node node = createNewNode( transaction, labels );
         existingNodes.add( Pair.of( node.getId(), labels ) );
     }
 
-    private Node createNewNode( Label[] labels )
+    private Node createNewNode( Transaction tx, Label[] labels )
     {
-        Node node = db.createNode( labels );
+        Node node = tx.createNode( labels );
         node.setProperty( PROPERTY_KEY, random.nextInt() );
         return node;
     }

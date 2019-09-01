@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -31,10 +32,14 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -80,6 +85,38 @@ public class TopLevelTransaction implements InternalTransaction
             return facade.newNodeProxy( transaction.dataWrite().nodeCreate() );
         }
         catch ( InvalidTransactionTypeKernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
+    }
+
+    @Override
+    public Node createNode( Label... labels )
+    {
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            TokenWrite tokenWrite = transaction.tokenWrite();
+            int[] labelIds = new int[labels.length];
+            String[] labelNames = new String[labels.length];
+            for ( int i = 0; i < labelNames.length; i++ )
+            {
+                labelNames[i] = labels[i].name();
+            }
+            tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
+
+            Write write = transaction.dataWrite();
+            long nodeId = write.nodeCreateWithLabels( labelIds );
+            return facade.newNodeProxy( nodeId );
+        }
+        catch ( ConstraintValidationException e )
+        {
+            throw new ConstraintViolationException( "Unable to add label.", e );
+        }
+        catch ( SchemaKernelException e )
+        {
+            throw new IllegalArgumentException( e );
+        }
+        catch ( KernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }

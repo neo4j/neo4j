@@ -95,10 +95,10 @@ class PartialTransactionFailureIT
         Node d;
         try ( Transaction tx = db.beginTx() )
         {
-            a = db.createNode();
-            b = db.createNode();
-            c = db.createNode();
-            d = db.createNode();
+            a = tx.createNode();
+            b = tx.createNode();
+            c = tx.createNode();
+            d = tx.createNode();
             tx.commit();
         }
 

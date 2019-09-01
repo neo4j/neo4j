@@ -92,7 +92,7 @@ public class DetectAllRelationshipInconsistenciesIT
             {
                 for ( int i = 0; i < nodes.length; i++ )
                 {
-                    nodes[i] = db.createNode( label( "Foo" ) );
+                    nodes[i] = tx.createNode( label( "Foo" ) );
                 }
                 for ( int i = 0; i < 10_000; i++ )
                 {

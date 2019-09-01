@@ -129,8 +129,8 @@ class LogVersionUpgradeCheckerIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label( "FOO" ) );
-            db.createNode( label( "BAR" ) );
+            tx.createNode( label( "FOO" ) );
+            tx.createNode( label( "BAR" ) );
             tx.commit();
         }
 

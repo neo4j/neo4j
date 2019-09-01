@@ -81,7 +81,7 @@ class TestReadOnlyNeo4j
         {
             try ( Transaction tx = readGraphDb.beginTx() )
             {
-                readGraphDb.createNode();
+                tx.createNode();
 
                 tx.commit();
             }
@@ -98,15 +98,14 @@ class TestReadOnlyNeo4j
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         Transaction tx = db.beginTx();
-        Node node1 = db.createNode();
-        Node node2 = db.createNode();
+        Node node1 = tx.createNode();
+        Node node2 = tx.createNode();
         Relationship rel = node1.createRelationshipTo( node2, withName( "TEST" ) );
         node1.setProperty( "key1", "value1" );
         rel.setProperty( "key1", "value1" );
         tx.commit();
 
         // make sure write operations still throw exception
-        assertThrows( NotInTransactionException.class, db::createNode );
         assertThrows( NotInTransactionException.class, () -> node1.createRelationshipTo( node2, withName( "TEST2" ) ) );
         assertThrows( NotInTransactionException.class, () -> node1.setProperty( "key1", "value2" ) );
         assertThrows( NotInTransactionException.class, () -> rel.removeProperty( "key1" ) );
@@ -134,10 +133,10 @@ class TestReadOnlyNeo4j
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            Node prevNode = db.createNode();
+            Node prevNode = tx.createNode();
             for ( int i = 0; i < 100; i++ )
             {
-                Node node = db.createNode();
+                Node node = tx.createNode();
                 Relationship rel = prevNode.createRelationshipTo( node, type );
                 node.setProperty( "someKey" + i % 10, i % 15 );
                 rel.setProperty( "since", System.currentTimeMillis() );

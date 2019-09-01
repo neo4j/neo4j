@@ -79,7 +79,7 @@ class ExportTest
     @Test
     void testNodeWithProperties()
     {
-        gdb.createNode().setProperty( "name", "Andres" );
+        tx.createNode().setProperty( "name", "Andres" );
         assertEquals( "create (_0 {`name`:\"Andres\"})" + lineSeparator() + ";" + lineSeparator(), doExportGraph( gdb ) );
     }
 
@@ -88,7 +88,7 @@ class ExportTest
     {
         final float floatValue = 10.1f;
         final String expected = "10.100000";
-        gdb.createNode().setProperty( "float", floatValue );
+        tx.createNode().setProperty( "float", floatValue );
         assertEquals( "create (_0 {`float`:" + expected + "})" + lineSeparator() + ";" + lineSeparator(), doExportGraph( gdb ) );
     }
 
@@ -97,7 +97,7 @@ class ExportTest
     {
         final double doubleValue = 123456.123456;
         final String expected = "123456.123456";
-        gdb.createNode().setProperty( "double", doubleValue );
+        tx.createNode().setProperty( "double", doubleValue );
         assertEquals( "create (_0 {`double`:" + expected + "})" + lineSeparator() + ";" + lineSeparator(), doExportGraph( gdb ) );
     }
 
@@ -117,7 +117,7 @@ class ExportTest
     @Test
     void testFromSimpleCypherResult()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + ")" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
@@ -126,7 +126,7 @@ class ExportTest
     @Test
     void testSingleNode()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + ")" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
@@ -135,7 +135,7 @@ class ExportTest
     @Test
     void testSingleNodeWithProperties()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         n.setProperty( "name", "Node1" );
         n.setProperty( "age", 42 );
         final Result result = result( "node", n );
@@ -147,7 +147,7 @@ class ExportTest
     @Test
     void testEscapingOfNodeStringPropertyValue()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         n.setProperty( "name", "Brutus \"Brutal\" Howell" );
         final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
@@ -159,7 +159,7 @@ class ExportTest
     @Test
     void testEscapingOfNodeStringArrayPropertyValue()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         n.setProperty( "name", new String[]{"Brutus \"Brutal\" Howell", "Dr."} );
         final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
@@ -171,7 +171,7 @@ class ExportTest
     @Test
     void testEscapingOfRelationshipStringPropertyValue()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
         rel.setProperty( "name", "Brutus \"Brutal\" Howell" );
         final Result result = result( "rel", rel );
@@ -184,7 +184,7 @@ class ExportTest
     @Test
     void testEscapingOfRelationshipStringArrayPropertyValue()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
         rel.setProperty( "name", new String[]{"Brutus \"Brutal\" Howell", "Dr."} );
         final Result result = result( "rel", rel );
@@ -198,7 +198,7 @@ class ExportTest
     @Test
     void testEscapingStringPropertyWithBackslash()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         n.setProperty( "name", "Some\\thing" );
         final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
@@ -210,7 +210,7 @@ class ExportTest
     @Test
     void testEscapingStringPropertyWithBackslashAndDoubleQuote()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         n.setProperty( "name", "Some\\\"thing" );
         final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
@@ -222,7 +222,7 @@ class ExportTest
     @Test
     void testSingleNodeWithArrayProperties()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         n.setProperty( "name", new String[]{"a", "b"} );
         n.setProperty( "age", new int[]{1, 2} );
         final Result result = result( "node", n );
@@ -234,7 +234,7 @@ class ExportTest
     @Test
     void testSingleNodeLabels()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         n.addLabel( Label.label( "Foo" ) );
         n.addLabel( Label.label( "Bar" ) );
         final Result result = result( "node", n );
@@ -265,7 +265,7 @@ class ExportTest
         gdb.schema().indexFor( label ).on( "bar" ).create();
         gdb.schema().indexFor( label ).on( "bar2" ).create();
         commitAndStartNewTransactionAfterSchemaChanges();
-        Node n = gdb.createNode( label );
+        Node n = tx.createNode( label );
         final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create index on :`Foo`(`bar2`);" + lineSeparator() +
@@ -280,7 +280,7 @@ class ExportTest
         gdb.schema().constraintFor( label ).assertPropertyIsUnique( "bar" ).create();
         gdb.schema().constraintFor( label ).assertPropertyIsUnique( "bar2" ).create();
         commitAndStartNewTransactionAfterSchemaChanges();
-        Node n = gdb.createNode( label );
+        Node n = tx.createNode( label );
         final Result result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create constraint on (n:`Foo`) assert n.`bar2` is unique;" + lineSeparator() +
@@ -297,7 +297,7 @@ class ExportTest
     @Test
     void testFromRelCypherResult()
     {
-        Node n = gdb.createNode();
+        Node n = tx.createNode();
         final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
         final Result result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
@@ -308,8 +308,8 @@ class ExportTest
     @Test
     void testFromPathCypherResult()
     {
-        Node n1 = gdb.createNode();
-        Node n2 = gdb.createNode();
+        Node n1 = tx.createNode();
+        Node n2 = tx.createNode();
         final Relationship rel = n1.createRelationshipTo( n2, RelationshipType.withName( "REL" ) );
         final Path path = new PathImpl.Builder( n1 ).push( rel ).build();
         final Result result = result( "path", path );
@@ -359,9 +359,9 @@ class ExportTest
     @Test
     void testFromSimpleGraph()
     {
-        final Node n0 = gdb.createNode();
+        final Node n0 = tx.createNode();
 
-        final Node n1 = gdb.createNode();
+        final Node n1 = tx.createNode();
         n1.setProperty( "name", "Node1" );
         final Relationship relationship = n0.createRelationshipTo( n1, RelationshipType.withName( "REL" ) );
         relationship.setProperty( "related", true );

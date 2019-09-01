@@ -108,7 +108,7 @@ class LabelsAcceptanceTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             node.addLabel( Labels.MY_LABEL );
 
             tx.commit();
@@ -161,7 +161,7 @@ class LabelsAcceptanceTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            myNode = db.createNode();
+            myNode = tx.createNode();
             myNode.addLabel( Labels.MY_LABEL );
 
             tx.commit();
@@ -176,9 +176,9 @@ class LabelsAcceptanceTest
     void addingALabelUsingAnInvalidIdentifierShouldFail()
     {
         // When I set an empty label
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().addLabel( label( "" ) );
+            tx.createNode().addLabel( label( "" ) );
             fail( "Should have thrown exception" );
         }
         catch ( ConstraintViolationException ex )
@@ -186,9 +186,9 @@ class LabelsAcceptanceTest
         }
 
         // And When I set a null label
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().addLabel( () -> null );
+            tx.createNode().addLabel( () -> null );
             fail( "Should have thrown exception" );
         }
         catch ( ConstraintViolationException ex )
@@ -205,7 +205,7 @@ class LabelsAcceptanceTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            myNode = db.createNode();
+            myNode = tx.createNode();
             myNode.addLabel( Labels.MY_LABEL );
             myNode.addLabel( Labels.MY_LABEL );
 
@@ -239,9 +239,9 @@ class LabelsAcceptanceTest
             GraphDatabaseService graphDatabase = managementService.database( DEFAULT_DATABASE_NAME );
 
             // When
-            try ( Transaction ignored = graphDatabase.beginTx() )
+            try ( Transaction tx = graphDatabase.beginTx() )
             {
-                graphDatabase.createNode().addLabel( Labels.MY_LABEL );
+                tx.createNode().addLabel( Labels.MY_LABEL );
                 fail( "Should have thrown exception" );
             }
             catch ( ConstraintViolationException ex )
@@ -277,7 +277,7 @@ class LabelsAcceptanceTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode( Labels.values() );
+            node = tx.createNode( Labels.values() );
             tx.commit();
         }
 
@@ -297,7 +297,7 @@ class LabelsAcceptanceTest
         Node myNode;
         try ( Transaction tx = db.beginTx() )
         {
-            myNode = db.createNode();
+            myNode = tx.createNode();
             myNode.removeLabel( label );
             tx.commit();
         }
@@ -335,7 +335,7 @@ class LabelsAcceptanceTest
         Node myNode;
         try ( Transaction tx = db.beginTx() )
         {
-            myNode = db.createNode();
+            myNode = tx.createNode();
             myNode.addLabel( label );
             myNode.removeLabel( label );
 
@@ -354,7 +354,7 @@ class LabelsAcceptanceTest
         Set<String> expected = asSet( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() );
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             for ( String label : expected )
             {
                 node.addLabel( label( label ) );
@@ -382,7 +382,7 @@ class LabelsAcceptanceTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             node.addLabel( Labels.MY_LABEL );
             tx.commit();
         }
@@ -405,7 +405,7 @@ class LabelsAcceptanceTest
         Set<Node> nodesWithMyOtherLabel;
         try ( Transaction tx = db.beginTx() )
         {
-            node3 = db.createNode( Labels.MY_LABEL );
+            node3 = tx.createNode( Labels.MY_LABEL );
             node2.removeLabel( Labels.MY_LABEL );
             // extracted here to be asserted below
             nodesWithMyLabel = asSet( db.findNodes( Labels.MY_LABEL ) );
@@ -555,7 +555,7 @@ class LabelsAcceptanceTest
         final Label label = label( "A" );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.addLabel( label );
             node.setProperty( "name", "bla" );
             tx.commit();
@@ -588,7 +588,7 @@ class LabelsAcceptanceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label1, label2 );
+            Node node = tx.createNode( label1, label2 );
 
             for ( Label next : node.getLabels() )
             {
@@ -604,7 +604,7 @@ class LabelsAcceptanceTest
         // GIVEN
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.setProperty( "name", "Horst" );
             node.setProperty( "age", "72" );
 
@@ -625,7 +625,7 @@ class LabelsAcceptanceTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             for ( int i = 0; i < TOTAL_NUMBER_OF_LABELS; i++ )
             {
                 node.addLabel( label( "label:" + i ) );
@@ -666,7 +666,7 @@ class LabelsAcceptanceTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             for ( int i = 0; i < propertyCount; i++ )
             {
                 node.setProperty( "foo" + i, "bar" );
@@ -792,7 +792,7 @@ class LabelsAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( labels );
+            Node node = tx.createNode( labels );
             tx.commit();
             return node;
         }

@@ -84,7 +84,7 @@ class LabelRecoveryTest
                 label( "k" ) };
         try ( Transaction tx = database.beginTx() )
         {
-            node = database.createNode( labels );
+            node = tx.createNode( labels );
             tx.commit();
         }
 

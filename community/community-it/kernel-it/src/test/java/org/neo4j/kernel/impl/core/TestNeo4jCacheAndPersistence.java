@@ -74,7 +74,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node node1 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Node node2 = getGraphDb().createNode();
+            Node node2 = transaction.createNode();
             Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
             node1Id = node1.getId();
             node2Id = node2.getId();
@@ -245,8 +245,8 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Node node1 = getGraphDb().createNode();
-            Node node2 = getGraphDb().createNode();
+            Node node1 = transaction.createNode();
+            Node node2 = transaction.createNode();
             Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
             assertEquals( 1, getRelationshipArray( node1.getRelationships() ).length );
             assertEquals( 1, getRelationshipArray( node2.getRelationships() ).length );
@@ -276,8 +276,8 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Node nodeA = getGraphDb().createNode();
-            Node nodeB = getGraphDb().createNode();
+            Node nodeA = transaction.createNode();
+            Node nodeB = transaction.createNode();
             Relationship relA = nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
             nodeA.setProperty( arrayKey, array );
             relA.setProperty( arrayKey, array );
@@ -415,8 +415,8 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node node2;
         try ( Transaction tx = getGraphDb().beginTx() )
         {
-            node1 = getGraphDb().createNode();
-            node2 = getGraphDb().createNode();
+            node1 = tx.createNode();
+            node2 = tx.createNode();
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
             node2.createRelationshipTo( node1, MyRelTypes.TEST2 );
             node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );

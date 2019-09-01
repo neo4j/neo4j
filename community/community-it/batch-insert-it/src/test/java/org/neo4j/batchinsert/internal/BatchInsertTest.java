@@ -1223,14 +1223,14 @@ class BatchInsertTest
                 assertEquals( label.name(), constraint.getLabel().name() );
                 assertEquals( propertyKey, single( constraint.getPropertyKeys() ) );
 
-                db.createNode( label ).setProperty( propertyKey, duplicatedValue );
+                tx.createNode( label ).setProperty( propertyKey, duplicatedValue );
 
                 tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode( label ).setProperty( propertyKey, duplicatedValue );
+                tx.createNode( label ).setProperty( propertyKey, duplicatedValue );
                 tx.commit();
             }
             fail( "Uniqueness property constraint was violated, exception expected" );

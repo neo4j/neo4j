@@ -94,7 +94,7 @@ public class KernelTransactionTimeoutMonitorIT
         long nodeId;
         try ( Transaction tx = database.beginTx() )
         {
-            nodeId = database.createNode().getId();
+            nodeId = tx.createNode().getId();
             tx.commit();
         }
         Future<?> locker = executor.submit( () ->
@@ -138,7 +138,7 @@ public class KernelTransactionTimeoutMonitorIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            database.createNode();
+            transaction.createNode();
             transaction.commit();
         }
 

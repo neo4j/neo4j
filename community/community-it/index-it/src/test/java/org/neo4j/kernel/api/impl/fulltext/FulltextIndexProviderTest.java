@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.EntityType;
@@ -114,12 +113,12 @@ public class FulltextIndexProviderTest
         Label he = label( "he" );
         try ( Transaction transaction = db.beginTx() )
         {
-            node1 = db.createNode( hej, ha, he );
+            node1 = transaction.createNode( hej, ha, he );
             node1.setProperty( "hej", "value" );
             node1.setProperty( "ha", "value1" );
             node1.setProperty( "he", "value2" );
             node1.setProperty( "ho", "value3" );
-            node2 = db.createNode();
+            node2 = transaction.createNode();
             Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "hej" ) );
             rel.setProperty( "hej", "valuuu" );
             rel.setProperty( "ha", "value1" );
@@ -335,21 +334,21 @@ public class FulltextIndexProviderTest
         {
             for ( int i = 0; i < 100; i++ )
             {
-                Node node1 = db.createNode( label1 );
+                Node node1 = tx.createNode( label1 );
                 node1.setProperty( prop1, val1 );
                 nodes1.add( node1.getId() );
                 Relationship rel1 = node1.createRelationshipTo( node1, relType1 );
                 rel1.setProperty( prop1, val1 );
                 rels1.add( rel1.getId() );
 
-                Node node2 = db.createNode( label2 );
+                Node node2 = tx.createNode( label2 );
                 node2.setProperty( prop2, val2 );
                 nodes2.add( node2.getId() );
                 Relationship rel2 = node1.createRelationshipTo( node2, relType2 );
                 rel2.setProperty( prop2, val2 );
                 rels2.add( rel2.getId() );
 
-                Node node3 = db.createNode( label3 );
+                Node node3 = tx.createNode( label3 );
                 node3.setProperty( prop3, val3 );
                 nodes3.add( node3.getId() );
                 Relationship rel3 = node1.createRelationshipTo( node3, relType3 );
@@ -506,7 +505,7 @@ public class FulltextIndexProviderTest
         long nodeId;
         try ( Transaction transaction = db.beginTx() )
         {
-            Node hej = db.createNode( label( "hej" ) );
+            Node hej = transaction.createNode( label( "hej" ) );
             nodeId = hej.getId();
             hej.setProperty( "hej", "villa" );
             hej.setProperty( "ho", "value3" );

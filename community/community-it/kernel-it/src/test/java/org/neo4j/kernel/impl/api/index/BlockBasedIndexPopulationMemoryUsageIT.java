@@ -142,7 +142,7 @@ class BlockBasedIndexPopulationMemoryUsageIT
                     {
                         for ( int n = 0; n < 100; n++ )
                         {
-                            Node node = db.createNode( LABELS );
+                            Node node = tx.createNode( LABELS );
                             for ( String key : KEYS )
                             {
                                 node.setProperty( key, format( "some value %d", n ) );

@@ -51,9 +51,9 @@ class TestNeo4j extends AbstractNeo4jTestCase
             Node secondNode;
             Relationship rel;
             // Create nodes and a relationship between them
-            firstNode = getGraphDb().createNode();
+            firstNode = transaction.createNode();
             assertNotNull( firstNode, "Failure creating first node" );
-            secondNode = getGraphDb().createNode();
+            secondNode = transaction.createNode();
             assertNotNull( secondNode, "Failure creating second node" );
             rel = firstNode.createRelationshipTo( secondNode, MyRelTypes.TEST );
             assertNotNull( rel, "Relationship is null" );
@@ -134,7 +134,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Node node1 = getGraphDb().createNode();
+            Node node1 = transaction.createNode();
             String key = "random_" + new Random( System.currentTimeMillis() ).nextLong();
             node1.setProperty( key, "value" );
             assertEquals( "value", node1.getProperty( key ) );
@@ -149,7 +149,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
         Node node;
         try ( Transaction tx = getGraphDb().beginTx() )
         {
-            node = getGraphDb().createNode();
+            node = tx.createNode();
             tx.commit();
         }
 
@@ -186,7 +186,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
             try ( Transaction transaction = getGraphDb().beginTx() )
             {
                 count = Iterables.count( getGraphDb().getAllNodes() );
-                newNode = getGraphDb().createNode();
+                newNode = transaction.createNode();
                 transaction.commit();
             }
             long oldCount = count;

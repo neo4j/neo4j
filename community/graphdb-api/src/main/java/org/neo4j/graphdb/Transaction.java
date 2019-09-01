@@ -79,6 +79,14 @@ public interface Transaction extends AutoCloseable
     Node createNode();
 
     /**
+     * Creates a new node and adds the provided labels to it.
+     *
+     * @param labels {@link Label labels} to add to the created node.
+     * @return the created node.
+     */
+    Node createNode( Label... labels );
+
+    /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter
      * if {@link #commit()} ()} is invoked afterwards -- the transaction will still be rolled back.

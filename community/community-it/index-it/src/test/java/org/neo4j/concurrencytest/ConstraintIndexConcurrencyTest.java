@@ -93,7 +93,7 @@ public class ConstraintIndexConcurrencyTest
             {
                 try ( Transaction transaction = db.beginTx() )
                 {
-                    db.createNode( label ).setProperty( propertyKey, conflictingValue );
+                    transaction.createNode( label ).setProperty( propertyKey, conflictingValue );
                     transaction.commit();
                 }
                 return null;

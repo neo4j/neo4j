@@ -49,8 +49,8 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
         Relationship r1;
         try ( Transaction tx = getGraphDb().beginTx() )
         {
-            n1 = getGraphDb().createNode();
-            n2 = getGraphDb().createNode();
+            n1 = tx.createNode();
+            n2 = tx.createNode();
             r1 = n1.createRelationshipTo( n2,
                     RelationshipType.withName( "TEST" ) );
             tx.commit();

@@ -57,7 +57,7 @@ class ConsistentPropertyReadsIT
         {
             for ( int i = 0; i < nodes.length; i++ )
             {
-                nodes[i] = db.createNode();
+                nodes[i] = tx.createNode();
                 for ( String key : keys )
                 {
                     nodes[i].setProperty( key, values[0] );

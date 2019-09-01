@@ -45,15 +45,15 @@ class DenseNodeIT
         Node root;
         try ( Transaction tx = db.beginTx() )
         {
-            root = db.createNode();
-            createRelationshipsOnNode( db, root, 40 );
+            root = tx.createNode();
+            createRelationshipsOnNode( tx, root, 40 );
             tx.commit();
         }
 
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
-            createRelationshipsOnNode( db, root, 60 );
+            createRelationshipsOnNode( tx, root, 60 );
 
             // THEN
             assertEquals( 100, root.getDegree() );
@@ -86,8 +86,8 @@ class DenseNodeIT
         Node root;
         try ( Transaction tx = db.beginTx() )
         {
-            root = db.createNode();
-            createRelationshipsOnNode( db, root, 100 );
+            root = tx.createNode();
+            createRelationshipsOnNode( tx, root, 100 );
             tx.commit();
         }
 
@@ -118,8 +118,8 @@ class DenseNodeIT
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
-            root = db.createNode();
-            createRelationshipsOnNode( db, root, 100 );
+            root = tx.createNode();
+            createRelationshipsOnNode( tx, root, 100 );
             deleteRelationshipsFromNode( root, 80 );
 
             assertEquals( 20, root.getDegree() );
@@ -147,8 +147,8 @@ class DenseNodeIT
         Node sink;
         try ( Transaction tx = db.beginTx() )
         {
-            source = db.createNode();
-            sink = db.createNode();
+            source = tx.createNode();
+            sink = tx.createNode();
             createRelationshipsBetweenNodes( source, sink, 40 );
             tx.commit();
         }
@@ -205,8 +205,8 @@ class DenseNodeIT
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
-            createRelationshipsBetweenNodes( node, db.createNode(), denseNodeThreshold( db ) + 1 );
+            node = tx.createNode();
+            createRelationshipsBetweenNodes( node, tx.createNode(), denseNodeThreshold( db ) + 1 );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -219,7 +219,7 @@ class DenseNodeIT
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
-            rel = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+            rel = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
             tx.commit();
         }
 
@@ -255,11 +255,11 @@ class DenseNodeIT
         }
     }
 
-    private void createRelationshipsOnNode( GraphDatabaseService db, Node root, int numberOfRelationships )
+    private void createRelationshipsOnNode( Transaction tx, Node root, int numberOfRelationships )
     {
         for ( int i = 0; i < numberOfRelationships; i++ )
         {
-            root.createRelationshipTo( db.createNode(), RelationshipType.withName( "Type" + (i % 4) ) )
+            root.createRelationshipTo( tx.createNode(), RelationshipType.withName( "Type" + (i % 4) ) )
                     .setProperty( "" + i, i );
 
         }

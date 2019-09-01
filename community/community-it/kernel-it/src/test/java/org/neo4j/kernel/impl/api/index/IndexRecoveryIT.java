@@ -416,7 +416,7 @@ class IndexRecoveryIT
             LabelSchemaDescriptor schemaDescriptor = SchemaDescriptor.forLabel( labelId, propertyKeyId );
             for ( int number : new int[]{4, 10} )
             {
-                Node node = db.createNode( label );
+                Node node = tx.createNode( label );
                 node.setProperty( key, number );
                 updates.add( IndexEntryUpdate.add( node.getId(), schemaDescriptor, Values.of( number ) ) );
             }

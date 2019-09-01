@@ -83,7 +83,7 @@ public class ConstraintIndexFailureIT
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
             fail( "expected exception" );
         }
         // then

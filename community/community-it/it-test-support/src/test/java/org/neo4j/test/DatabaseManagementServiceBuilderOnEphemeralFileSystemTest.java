@@ -111,9 +111,9 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
         {
             RelationshipType relationshipType = RelationshipType.withName( "R" );
 
-            Node n1 = db.createNode();
-            Node n2 = db.createNode();
-            Node n3 = db.createNode();
+            Node n1 = tx.createNode();
+            Node n2 = tx.createNode();
+            Node n3 = tx.createNode();
 
             n1.createRelationshipTo(n2, relationshipType);
             n2.createRelationshipTo(n1, relationshipType);
@@ -149,7 +149,7 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
     }

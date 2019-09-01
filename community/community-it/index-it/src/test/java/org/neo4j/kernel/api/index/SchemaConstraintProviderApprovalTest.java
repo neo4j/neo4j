@@ -187,7 +187,7 @@ public abstract class SchemaConstraintProviderApprovalTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( LABEL ) );
+            Node node = tx.createNode( label( LABEL ) );
             node.setProperty( propertyKey, value );
             tx.commit();
             return node;

@@ -74,7 +74,7 @@ public class JUnitRuleTestIT
             {
                 try ( Transaction tx = graphDatabaseService.beginTx() )
                 {
-                    graphDatabaseService.createNode( Label.label( "User" ) );
+                    tx.createNode( Label.label( "User" ) );
                     tx.commit();
                 }
                 return null;

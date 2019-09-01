@@ -166,8 +166,8 @@ public class IndexingCompositeQueryAcceptanceTest
         MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
-            expected.add( createNode( db, propertyMap( keys, values ), LABEL ).getId() );
-            createNode( db, propertyMap( keys, nonMatching[2] ), LABEL );
+            expected.add( createNode( tx, propertyMap( keys, values ), LABEL ).getId() );
+            createNode( tx, propertyMap( keys, nonMatching[2] ), LABEL );
 
             collectNodes( found, indexSeek.findNodes( keys, values, db ) );
         }
@@ -240,7 +240,7 @@ public class IndexingCompositeQueryAcceptanceTest
         {
             for ( Object[] valueTuple : propertyValueTuples )
             {
-                expected.add( createNode( db, propertyMap( keys, valueTuple ), label ).getId() );
+                expected.add( createNode( tx, propertyMap( keys, valueTuple ), label ).getId() );
             }
             tx.commit();
         }
@@ -265,9 +265,9 @@ public class IndexingCompositeQueryAcceptanceTest
         }
     }
 
-    public Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )
+    public Node createNode( Transaction transaction, Map<String, Object> properties, Label... labels )
     {
-        Node node = beansAPI.createNode( labels );
+        Node node = transaction.createNode( labels );
         for ( Map.Entry<String,Object> property : properties.entrySet() )
         {
             node.setProperty( property.getKey(), property.getValue() );

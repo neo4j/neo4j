@@ -367,7 +367,7 @@ class MemoryRecommendationsCommandTest
                     RandomValues randomValues = RandomValues.create();
                     for ( int i = 0; i < 10_000; i++ )
                     {
-                        db.createNode( labelOne ).setProperty( key, randomValues.nextValue().asObject() );
+                        tx.createNode( labelOne ).setProperty( key, randomValues.nextValue().asObject() );
                     }
                     tx.commit();
                 }

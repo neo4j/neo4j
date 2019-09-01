@@ -184,7 +184,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Node node = getGraphDb().createNode();
+            Node node = transaction.createNode();
 
             node.setProperty( "anchor", "hi" );
             for ( int i = 0; i < 255; i++ )
@@ -696,7 +696,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         long valueRecordsInUseAtStart;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            rel = getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(), RelationshipType.withName( "INVALIDATES" ) );
+            rel = transaction.createNode().createRelationshipTo( transaction.createNode(), RelationshipType.withName( "INVALIDATES" ) );
 
             recordsInUseAtStart = propertyRecordsInUse();
             valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
@@ -746,7 +746,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         Relationship rel;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            rel = getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(), RelationshipType.withName( "LOCKS" ) );
+            rel = transaction.createNode().createRelationshipTo( transaction.createNode(), RelationshipType.withName( "LOCKS" ) );
             transaction.commit();
         }
 
@@ -796,7 +796,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         Relationship rel;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            rel = getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(), RelationshipType.withName( "LOCKS" ) );
+            rel = transaction.createNode().createRelationshipTo( transaction.createNode(), RelationshipType.withName( "LOCKS" ) );
 
             recordsInUseAtStart = propertyRecordsInUse();
 

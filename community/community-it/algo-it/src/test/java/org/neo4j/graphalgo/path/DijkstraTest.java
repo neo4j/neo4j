@@ -66,7 +66,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
         // GIVEN
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node start = graph.makeNode( "A" );
+            Node start = graph.makeNode( transaction, "A" );
 
             // WHEN
             var context = new BasicEvaluationContext( transaction, graphDb );
@@ -88,7 +88,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
         // GIVEN
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node start = graph.makeNode( "A" );
+            Node start = graph.makeNode( transaction, "A" );
 
             // WHEN
             var context = new BasicEvaluationContext( transaction, graphDb );
@@ -120,8 +120,8 @@ class DijkstraTest extends Neo4jAlgoTestCase
 
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A" );
-            graph.makeEdge( "A", "A", "length", 1d );
+            Node nodeA = graph.makeNode( transaction, "A" );
+            graph.makeEdge( transaction, "A", "A", "length", 1d );
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             assertPaths( finder.findAllPaths( nodeA, nodeA ), "A" );
@@ -138,9 +138,9 @@ class DijkstraTest extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A" );
-            Node nodeB = graph.makeNode( "B" );
-            graph.makeEdge( "A", "B", "length", 1 );
+            Node nodeA = graph.makeNode( transaction, "A" );
+            Node nodeB = graph.makeNode( transaction, "B" );
+            graph.makeEdge( transaction, "A", "B", "length", 1 );
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
             assertPaths( finder.findAllPaths( nodeA, nodeB ), "A,B" );
@@ -159,10 +159,10 @@ class DijkstraTest extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A" );
-            Node nodeB = graph.makeNode( "B" );
-            graph.makeEdge( "A", "B", "length", 1.0 );
-            graph.makeEdge( "A", "B", "length", 1 );
+            Node nodeA = graph.makeNode( transaction, "A" );
+            Node nodeB = graph.makeNode( transaction, "B" );
+            graph.makeEdge( transaction, "A", "B", "length", 1.0 );
+            graph.makeEdge( transaction, "A", "B", "length", 1 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
@@ -182,10 +182,10 @@ class DijkstraTest extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A" );
-            Node nodeB = graph.makeNode( "B" );
-            graph.makeEdge( "A", "B", "length", 2.0 );
-            graph.makeEdge( "A", "B", "length", 1 );
+            Node nodeA = graph.makeNode( transaction, "A" );
+            Node nodeB = graph.makeNode( transaction, "B" );
+            graph.makeEdge( transaction, "A", "B", "length", 2.0 );
+            graph.makeEdge( transaction, "A", "B", "length", 1 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
@@ -213,19 +213,19 @@ class DijkstraTest extends Neo4jAlgoTestCase
 
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node a = graph.makeNode( "A" );
-            Node b = graph.makeNode( "B" );
-            Node c = graph.makeNode( "C" );
-            Node d = graph.makeNode( "D" );
-            Node e = graph.makeNode( "E" );
-            Node f = graph.makeNode( "F" );
-            Node g = graph.makeNode( "G" );
-            Node h = graph.makeNode( "H" );
+            Node a = graph.makeNode( transaction, "A" );
+            Node b = graph.makeNode( transaction, "B" );
+            Node c = graph.makeNode( transaction, "C" );
+            Node d = graph.makeNode( transaction, "D" );
+            Node e = graph.makeNode( transaction, "E" );
+            Node f = graph.makeNode( transaction, "F" );
+            Node g = graph.makeNode( transaction, "G" );
+            Node h = graph.makeNode( transaction, "H" );
 
-            graph.makeEdgeChain( "A,B,C,D,E,F", "length", 1 );
-            graph.makeEdge( "A", "G", "length", 1 );
-            graph.makeEdge( "G", "H", "length", 2 );
-            graph.makeEdge( "H", "F", "length", 1 );
+            graph.makeEdgeChain( transaction, "A,B,C,D,E,F", "length", 1 );
+            graph.makeEdge( transaction, "A", "G", "length", 1 );
+            graph.makeEdge( transaction, "G", "H", "length", 2 );
+            graph.makeEdge( transaction, "H", "F", "length", 1 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
@@ -252,12 +252,12 @@ class DijkstraTest extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A" );
-            Node nodeB = graph.makeNode( "B" );
-            Node nodeC = graph.makeNode( "C" );
-            graph.makeEdge( "A", "B", "length", 2d );
-            graph.makeEdge( "B", "C", "length", 3L );
-            graph.makeEdge( "A", "C", "length", (byte) 10 );
+            Node nodeA = graph.makeNode( transaction, "A" );
+            Node nodeB = graph.makeNode( transaction, "B" );
+            Node nodeC = graph.makeNode( transaction, "C" );
+            graph.makeEdge( transaction, "A", "B", "length", 2d );
+            graph.makeEdge( transaction, "B", "C", "length", 3L );
+            graph.makeEdge( transaction, "A", "C", "length", (byte) 10 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
@@ -287,21 +287,21 @@ class DijkstraTest extends Neo4jAlgoTestCase
 
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A" );
-            graph.makeNode( "B" );
-            graph.makeNode( "C" );
-            Node nodeD = graph.makeNode( "D" );
+            Node nodeA = graph.makeNode( transaction, "A" );
+            graph.makeNode( transaction, "B" );
+            graph.makeNode( transaction, "C" );
+            Node nodeD = graph.makeNode( transaction, "D" );
 
             // Path "1"
-            graph.makeEdge( "A", "B", "length", 2d );
-            graph.makeEdge( "B", "C", "length", 3L );
-            graph.makeEdge( "C", "D", "length", (byte) 1 ); // = 6
+            graph.makeEdge( transaction, "A", "B", "length", 2d );
+            graph.makeEdge( transaction, "B", "C", "length", 3L );
+            graph.makeEdge( transaction, "C", "D", "length", (byte) 1 ); // = 6
 
             // Path "2"
-            graph.makeEdge( "B", "D", "length", (short) 5 ); // = 7
+            graph.makeEdge( transaction, "B", "D", "length", (short) 5 ); // = 7
 
             // Path "3"
-            graph.makeEdge( "A", "D", "length", (float) 6 ); // = 6
+            graph.makeEdge( transaction, "A", "D", "length", (float) 6 ); // = 6
 
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
@@ -323,14 +323,14 @@ class DijkstraTest extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A" );
-            Node nodeB = graph.makeNode( "B" );
-            Node nodeC = graph.makeNode( "C" );
+            Node nodeA = graph.makeNode( transaction, "A" );
+            Node nodeB = graph.makeNode( transaction, "B" );
+            Node nodeC = graph.makeNode( transaction, "C" );
             Set<Relationship> expectedFirsts = new HashSet<>();
-            expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
-            expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1 ) );
-            Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2L );
-            graph.makeEdge( "A", "C", "length", 5d );
+            expectedFirsts.add( graph.makeEdge( transaction, "A", "B", "length", 1d ) );
+            expectedFirsts.add( graph.makeEdge( transaction, "A", "B", "length", 1 ) );
+            Relationship expectedSecond = graph.makeEdge( transaction, "B", "C", "length", 2L );
+            graph.makeEdge( transaction, "A", "C", "length", 5d );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
@@ -372,21 +372,21 @@ class DijkstraTest extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A" );
-            Node nodeB = graph.makeNode( "B" );
-            Node nodeC = graph.makeNode( "C" );
-            Node nodeD = graph.makeNode( "D" );
-            Node nodeE = graph.makeNode( "E" );
-            Node nodeF = graph.makeNode( "F" );
-            graph.makeEdge( "A", "B", "length", 2d );
-            graph.makeEdge( "A", "C", "length", 2.5f );
-            graph.makeEdge( "C", "D", "length", 7.3d );
-            graph.makeEdge( "B", "D", "length", 2.5f );
-            graph.makeEdge( "D", "E", "length", 3L );
-            graph.makeEdge( "C", "E", "length", 5 );
-            graph.makeEdge( "E", "F", "length", (byte) 5 );
-            graph.makeEdge( "C", "F", "length", (short) 12 );
-            graph.makeEdge( "A", "F", "length", (long) 25 );
+            Node nodeA = graph.makeNode( transaction, "A" );
+            Node nodeB = graph.makeNode( transaction, "B" );
+            Node nodeC = graph.makeNode( transaction, "C" );
+            Node nodeD = graph.makeNode( transaction, "D" );
+            Node nodeE = graph.makeNode( transaction, "E" );
+            Node nodeF = graph.makeNode( transaction, "F" );
+            graph.makeEdge( transaction, "A", "B", "length", 2d );
+            graph.makeEdge( transaction, "A", "C", "length", 2.5f );
+            graph.makeEdge( transaction, "C", "D", "length", 7.3d );
+            graph.makeEdge( transaction, "B", "D", "length", 2.5f );
+            graph.makeEdge( transaction, "D", "E", "length", 3L );
+            graph.makeEdge( transaction, "C", "E", "length", 5 );
+            graph.makeEdge( transaction, "E", "F", "length", (byte) 5 );
+            graph.makeEdge( transaction, "C", "F", "length", (short) 12 );
+            graph.makeEdge( transaction, "A", "F", "length", (long) 25 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
@@ -439,22 +439,22 @@ class DijkstraTest extends Neo4jAlgoTestCase
 
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node s = graph.makeNode( "s" );
-            Node t = graph.makeNode( "t" );
-            Node a = graph.makeNode( "a" );
-            Node b = graph.makeNode( "b" );
-            Node c = graph.makeNode( "c" );
+            Node s = graph.makeNode( transaction, "s" );
+            Node t = graph.makeNode( transaction, "t" );
+            Node a = graph.makeNode( transaction, "a" );
+            Node b = graph.makeNode( transaction, "b" );
+            Node c = graph.makeNode( transaction, "c" );
 
-            graph.makeEdgeChain( "s,e,f", "length", 1.0 );
-            graph.makeEdge( "f", "t", "length", 2 );
-            graph.makeEdge( "s", "a", "length", 2 );
-            graph.makeEdge( "a", "t", "length", 0 );
-            graph.makeEdge( "s", "c", "length", 1 );
-            graph.makeEdge( "c", "d", "length", 1 );
-            graph.makeEdge( "s", "b", "length", 1 );
-            graph.makeEdge( "b", "d", "length", 1 );
-            graph.makeEdge( "d", "a", "length", 0 );
-            graph.makeEdge( "d", "t", "length", 1 );
+            graph.makeEdgeChain( transaction, "s,e,f", "length", 1.0 );
+            graph.makeEdge( transaction, "f", "t", "length", 2 );
+            graph.makeEdge( transaction, "s", "a", "length", 2 );
+            graph.makeEdge( transaction, "a", "t", "length", 0 );
+            graph.makeEdge( transaction, "s", "c", "length", 1 );
+            graph.makeEdge( transaction, "c", "d", "length", 1 );
+            graph.makeEdge( transaction, "s", "b", "length", 1 );
+            graph.makeEdge( transaction, "b", "d", "length", 1 );
+            graph.makeEdge( transaction, "d", "a", "length", 0 );
+            graph.makeEdge( transaction, "d", "t", "length", 1 );
 
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder finder = factory.dijkstra( context, PathExpanders.allTypesAndDirections() );
@@ -470,7 +470,7 @@ class DijkstraTest extends Neo4jAlgoTestCase
         }
     }
 
-    private Relationship createGraph( boolean includeOnes )
+    private Relationship createGraph( Transaction transaction, boolean includeOnes )
     {
         /* Layout:
          *                       (y)
@@ -486,19 +486,19 @@ class DijkstraTest extends Neo4jAlgoTestCase
 
         Map<String, Object> propertiesForOnes = includeOnes ? map( "cost", (double) 1 ) : map();
 
-        graph.makeEdge( "start", "a", "cost", (double) 1 );
-        graph.makeEdge( "a", "x", "cost", (short) 9 );
-        graph.makeEdge( "a", "b", propertiesForOnes );
-        graph.makeEdge( "b", "x", "cost", (double) 7 );
-        graph.makeEdge( "b", "c", propertiesForOnes );
-        graph.makeEdge( "c", "x", "cost", 5 );
-        Relationship shortCTOXRelationship = graph.makeEdge( "c", "x", "cost", (float) 3 );
-        graph.makeEdge( "c", "d", propertiesForOnes );
-        graph.makeEdge( "d", "x", "cost", (double) 3 );
-        graph.makeEdge( "d", "e", propertiesForOnes );
-        graph.makeEdge( "e", "x", propertiesForOnes );
-        graph.makeEdge( "e", "f", "cost", (byte) 2 );
-        graph.makeEdge( "x", "y", "cost", (double) 2 );
+        graph.makeEdge( transaction, "start", "a", "cost", (double) 1 );
+        graph.makeEdge( transaction, "a", "x", "cost", (short) 9 );
+        graph.makeEdge( transaction, "a", "b", propertiesForOnes );
+        graph.makeEdge( transaction, "b", "x", "cost", (double) 7 );
+        graph.makeEdge( transaction, "b", "c", propertiesForOnes );
+        graph.makeEdge( transaction, "c", "x", "cost", 5 );
+        Relationship shortCTOXRelationship = graph.makeEdge( transaction, "c", "x", "cost", (float) 3 );
+        graph.makeEdge( transaction, "c", "d", propertiesForOnes );
+        graph.makeEdge( transaction, "d", "x", "cost", (double) 3 );
+        graph.makeEdge( transaction, "d", "e", propertiesForOnes );
+        graph.makeEdge( transaction, "e", "x", propertiesForOnes );
+        graph.makeEdge( transaction, "e", "f", "cost", (byte) 2 );
+        graph.makeEdge( transaction, "x", "y", "cost", (double) 2 );
         return shortCTOXRelationship;
     }
 
@@ -508,14 +508,14 @@ class DijkstraTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Relationship shortCTOXRelationship = createGraph( true );
+            Relationship shortCTOXRelationship = createGraph( transaction, true );
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING ),
                     CommonEvaluators.doubleCostEvaluator( "cost" ) );
 
             // Assert that there are two matching paths
-            Node startNode = graph.getNode( "start" );
-            Node endNode = graph.getNode( "x" );
+            Node startNode = graph.getNode( transaction, "start" );
+            Node endNode = graph.getNode( transaction, "x" );
             assertPaths( finder.findAllPaths( startNode, endNode ), "start,a,b,c,x", "start,a,b,c,d,e,x" );
 
             // Assert that for the shorter one it picked the correct relationship
@@ -537,14 +537,14 @@ class DijkstraTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Relationship shortCTOXRelationship = createGraph( true );
+            Relationship shortCTOXRelationship = createGraph( transaction, true );
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder<WeightedPath> finder = factory.dijkstra( context, PathExpanders.forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING ),
                     CommonEvaluators.doubleCostEvaluator( "cost", 1.0d ) );
 
             // Assert that there are two matching paths
-            Node startNode = graph.getNode( "start" );
-            Node endNode = graph.getNode( "x" );
+            Node startNode = graph.getNode( transaction, "start" );
+            Node endNode = graph.getNode( transaction, "x" );
             assertPaths( finder.findAllPaths( startNode, endNode ), "start,a,b,c,x", "start,a,b,c,d,e,x" );
 
             // Assert that for the shorter one it picked the correct relationship

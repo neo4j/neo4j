@@ -57,7 +57,7 @@ class PropertyTransactionStateTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             node.setProperty( "foo", new double[] { 0, 0, 0, 0 } );
             tx.commit();
         }
@@ -82,7 +82,7 @@ class PropertyTransactionStateTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             node.setProperty( key, "one" );
             tx.commit();
         }
@@ -98,9 +98,9 @@ class PropertyTransactionStateTest
     @Test
     void testSetDoubleArrayProperty()
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             for ( int i = 0; i < 100; i++ )
             {
                 node.setProperty( "foo", new double[] { 0, 0, i, i } );

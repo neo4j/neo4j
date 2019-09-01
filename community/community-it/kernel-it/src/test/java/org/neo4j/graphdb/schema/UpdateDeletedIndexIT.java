@@ -112,7 +112,7 @@ class UpdateDeletedIndexIT
         {
             for ( int i = 0; i < NODES; i++ )
             {
-                Node node = db.createNode( LABEL );
+                Node node = tx.createNode( LABEL );
                 node.setProperty( KEY, i );
                 nodes[i] = node.getId();
             }
@@ -127,7 +127,7 @@ class UpdateDeletedIndexIT
         {
             for ( int i = 0; i < NODES; i++ )
             {
-                db.createNode( LABEL ).setProperty( KEY, i );
+                tx.createNode( LABEL ).setProperty( KEY, i );
             }
             tx.commit();
         }

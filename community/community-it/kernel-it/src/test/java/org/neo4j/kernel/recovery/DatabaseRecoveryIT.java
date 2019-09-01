@@ -164,7 +164,7 @@ class DatabaseRecoveryIT
         {
             for ( int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++ )
             {
-                database.createNode();
+                transaction.createNode();
             }
             transaction.commit();
         }
@@ -177,7 +177,7 @@ class DatabaseRecoveryIT
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
 
             // Make sure id generator has been rebuilt so this doesn't throw null pointer exception
-            recoveredDatabase.createNode();
+            tx.createNode();
         }
     }
 
@@ -189,7 +189,7 @@ class DatabaseRecoveryIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                database.createNode();
+                transaction.createNode();
                 transaction.commit();
             }
         }
@@ -217,7 +217,7 @@ class DatabaseRecoveryIT
 
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode();
+            Node node = transaction.createNode();
             node.addLabel( testLabel );
             transaction.commit();
         }
@@ -282,7 +282,7 @@ class DatabaseRecoveryIT
                 TransactionFailureException txFailure = null;
                 try ( Transaction tx = db.beginTx() )
                 {
-                    Node node = db.createNode( label );
+                    Node node = tx.createNode( label );
                     node.setProperty( property, "B" );
                     db.getRelationshipById( relationshipId ).delete(); // this should fail because of the adversary
                     adversary.enable();
@@ -551,7 +551,7 @@ class DatabaseRecoveryIT
                     {   // create
                         if ( operation < 0.5 )
                         {   // create node (w/ random label, prop)
-                            Node node = db.createNode( random.nextBoolean() ? new Label[] { randomLabel() } : new Label[0] );
+                            Node node = tx.createNode( random.nextBoolean() ? new Label[] { randomLabel() } : new Label[0] );
                             if ( random.nextBoolean() )
                             {
                                 node.setProperty( randomKey(), random.nextValueAsObject() );
@@ -706,7 +706,7 @@ class DatabaseRecoveryIT
                     }
                     else if ( operation < 0.3 )
                     {   // Create node
-                        Node node = db.createNode( random.nextBoolean() ? new Label[] { label } : new Label[0] );
+                        Node node = tx.createNode( random.nextBoolean() ? new Label[] { label } : new Label[0] );
                         for ( String key : keys )
                         {
                             if ( random.nextBoolean() )
@@ -759,8 +759,8 @@ class DatabaseRecoveryIT
         long relationshipId;
         try ( Transaction tx = db.beginTx() )
         {
-            Node start = db.createNode( Label.label( System.currentTimeMillis() + "" ) );
-            Node end = db.createNode( Label.label( System.currentTimeMillis() + "" ) );
+            Node start = tx.createNode( Label.label( System.currentTimeMillis() + "" ) );
+            Node end = tx.createNode( Label.label( System.currentTimeMillis() + "" ) );
             relationshipId = start.createRelationshipTo( end, withName( "KNOWS" ) ).getId();
             tx.commit();
         }

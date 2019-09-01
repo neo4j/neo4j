@@ -344,7 +344,7 @@ class IndexConfigMigrationIT
         {
             for ( CoordinateReferenceSystem crs : all() )
             {
-                Node node = db.createNode( labels );
+                Node node = tx.createNode( labels );
                 int dim = crs.getDimension();
                 double[] coords = new double[dim];
                 node.setProperty( propKey, Values.pointValue( crs, coords ) );

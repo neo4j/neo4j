@@ -134,7 +134,7 @@ class TestTransactionEvents
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().delete();
+            tx.createNode().delete();
             tx.commit();
         }
 
@@ -154,7 +154,7 @@ class TestTransactionEvents
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().delete();
+            tx.createNode().delete();
             tx.commit();
         }
         assertEquals( Integer.valueOf( 0 ), listener.beforeCommit );
@@ -180,10 +180,10 @@ class TestTransactionEvents
         {
             try ( Transaction tx = db.beginTx() )
             {
-                node1 = db.createNode();
+                node1 = tx.createNode();
                 expectedData.expectedCreatedNodes.add( node1 );
 
-                node2 = db.createNode();
+                node2 = tx.createNode();
                 expectedData.expectedCreatedNodes.add( node2 );
 
                 rel1 = node1.createRelationshipTo( node2, RelTypes.TXEVENT );
@@ -205,7 +205,7 @@ class TestTransactionEvents
                 rel1.setProperty( "number", 4.5D );
                 expectedData.assignedProperty( rel1, "number", 4.5D, null );
 
-                node3 = db.createNode();
+                node3 = tx.createNode();
                 expectedData.expectedCreatedNodes.add( node3 );
                 rel2 = node3.createRelationshipTo( node2, RelTypes.TXEVENT );
                 expectedData.expectedCreatedRelationships.add( rel2 );
@@ -235,10 +235,10 @@ class TestTransactionEvents
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node newNode = db.createNode();
+                Node newNode = tx.createNode();
                 expectedData.expectedCreatedNodes.add( newNode );
 
-                Node tempNode = db.createNode();
+                Node tempNode = tx.createNode();
                 Relationship tempRel = tempNode.createRelationshipTo( node1,
                         RelTypes.TXEVENT );
                 tempNode.setProperty( "something", "Some value" );
@@ -311,7 +311,7 @@ class TestTransactionEvents
             Transaction tx = db.beginTx();
             try
             {
-                db.createNode().delete();
+                tx.createNode().delete();
                 tx.commit();
                 fail( "Should fail commit" );
             }
@@ -327,7 +327,7 @@ class TestTransactionEvents
             }
             try ( Transaction transaction = db.beginTx() )
             {
-                db.createNode().delete();
+                tx.createNode().delete();
                 transaction.commit();
             }
             verifyListenerCalls( listeners, true );
@@ -357,7 +357,7 @@ class TestTransactionEvents
             Transaction tx = db.beginTx();
             try
             {
-                db.createNode().delete();
+                tx.createNode().delete();
                 tx.commit();
                 fail( "Should fail commit" );
             }
@@ -390,8 +390,8 @@ class TestTransactionEvents
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = db.createNode();
-            node2 = db.createNode();
+            node1 = tx.createNode();
+            node2 = tx.createNode();
             rel = node1.createRelationshipTo( node2, RelTypes.TXEVENT );
             node1.setProperty( "test1", "stringvalue" );
             node1.setProperty( "test2", 1L );
@@ -427,9 +427,9 @@ class TestTransactionEvents
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try
         {
-            try ( Transaction ignore = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                db.createNode().delete();
+                tx.createNode().delete();
             }
             assertNull( listener.beforeCommit );
             assertNull( listener.afterCommit );
@@ -452,7 +452,7 @@ class TestTransactionEvents
         final Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             node.setProperty( key, "initial value" );
             tx.commit();
         }
@@ -512,7 +512,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( AWAIT_INDEX_DURATION, AWAIT_INDEX_UNIT );
-            Node node = db.createNode( label );
+            Node node = tx.createNode( label );
             node.setProperty( "random", 42 );
             tx.commit();
         }
@@ -556,7 +556,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( AWAIT_INDEX_DURATION, AWAIT_INDEX_UNIT );
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.setProperty( "indexed", "value" );
             node.setProperty( "random", 42 );
             tx.commit();
@@ -581,9 +581,9 @@ class TestTransactionEvents
             // when
             try ( Transaction tx = db.beginTx() )
             {
-                Node node1 = db.createNode();
-                Node node2 = db.createNode();
-                Node node3 = db.createNode();
+                Node node1 = tx.createNode();
+                Node node2 = tx.createNode();
+                Node node3 = tx.createNode();
 
                 labels.add( node1, "Foo" );
                 labels.add( node2, "Bar" );
@@ -616,9 +616,9 @@ class TestTransactionEvents
             Node node3;
             try ( Transaction tx = db.beginTx() )
             {
-                node1 = db.createNode();
-                node2 = db.createNode();
-                node3 = db.createNode();
+                node1 = tx.createNode();
+                node2 = tx.createNode();
+                node3 = tx.createNode();
 
                 labels.add( node1, "Foo" );
                 labels.add( node2, "Bar" );
@@ -697,7 +697,7 @@ class TestTransactionEvents
             Relationship relationship;
             try ( Transaction tx = db.beginTx() )
             {
-                relationship = db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+                relationship = tx.createNode().createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
                 expectedRelationshipData.put( relationship.getId(), new RelationshipData( relationship ) );
                 tx.commit();
             }
@@ -709,7 +709,7 @@ class TestTransactionEvents
             {
                 relationship.setProperty( "name", "Smith" );
                 Relationship otherRelationship =
-                        db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
+                        tx.createNode().createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
                 expectedRelationshipData.put( otherRelationship.getId(), new RelationshipData( otherRelationship ) );
                 tx.commit();
             }
@@ -737,7 +737,7 @@ class TestTransactionEvents
         // create a rel type so the next type id is non zero
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().createRelationshipTo( db.createNode(), withName( "TYPE" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "TYPE" ) );
         }
 
         RelationshipType livesIn = withName( "LIVES_IN" );
@@ -745,9 +745,9 @@ class TestTransactionEvents
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node person = db.createNode( label( "Person" ) );
+            Node person = tx.createNode( label( "Person" ) );
 
-            Node city = db.createNode( label( "City" ) );
+            Node city = tx.createNode( label( "City" ) );
 
             Relationship rel = person.createRelationshipTo( city, livesIn );
             rel.setProperty( "since", 2009 );
@@ -821,21 +821,21 @@ class TestTransactionEvents
         // WHEN creating a label token
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label );
+            tx.createNode( label );
             tx.commit();
         }
         assertEquals( 1, counter.get() );
         // ... a property key token
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().setProperty( key, "value" );
+            tx.createNode().setProperty( key, "value" );
             tx.commit();
         }
         assertEquals( 2, counter.get() );
         // ... and a relationship type
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().createRelationshipTo( db.createNode(), withName( "A_TYPE" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "A_TYPE" ) );
             tx.commit();
         }
         assertEquals( 3, counter.get() );
@@ -880,7 +880,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             // WHEN/THEN
-            db.createNode();
+            tx.createNode();
             node.setProperty( "five", "Six" );
             tx.commit();
         }
@@ -896,8 +896,8 @@ class TestTransactionEvents
         RelationshipType type = MyRelTypes.TEST;
         try ( Transaction tx = db.beginTx() )
         {
-            startNode = db.createNode();
-            endNode = db.createNode();
+            startNode = tx.createNode();
+            endNode = tx.createNode();
             relationship = startNode.createRelationshipTo( endNode, type );
             tx.commit();
         }
@@ -947,7 +947,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
         catch ( Exception e )
@@ -1050,7 +1050,7 @@ class TestTransactionEvents
         var db = managementService.database( databaseName );
         try ( var tx = db.beginTx() )
         {
-            var node = db.createNode( TestLabels.values() );
+            var node = tx.createNode( TestLabels.values() );
             node.createRelationshipTo( node, TestRelType.LOOP );
             tx.commit();
         }
@@ -1291,7 +1291,7 @@ class TestTransactionEvents
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             for ( int i = 0; i < properties.length; i++ )
             {
                 node.setProperty( properties[i++], properties[i] );
@@ -1305,14 +1305,14 @@ class TestTransactionEvents
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node root = db.createNode( TestLabels.LABEL_ONE );
-            createTree( root, depth, width, 0 );
+            Node root = tx.createNode( TestLabels.LABEL_ONE );
+            createTree( tx, root, depth, width, 0 );
             tx.commit();
             return root;
         }
     }
 
-    private void createTree( Node parent, int maxDepth, int width, int currentDepth )
+    private void createTree( Transaction tx, Node parent, int maxDepth, int width, int currentDepth )
     {
         if ( currentDepth > maxDepth )
         {
@@ -1320,9 +1320,9 @@ class TestTransactionEvents
         }
         for ( int i = 0; i < width; i++ )
         {
-            Node child = db.createNode( TestLabels.LABEL_TWO );
+            Node child = tx.createNode( TestLabels.LABEL_TWO );
             parent.createRelationshipTo( child, MyRelTypes.TEST );
-            createTree( child, maxDepth, width, currentDepth + 1 );
+            createTree( tx, child, maxDepth, width, currentDepth + 1 );
         }
     }
 

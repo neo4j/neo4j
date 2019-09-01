@@ -103,11 +103,11 @@ public class NeoServerJAXRSIT extends ExclusiveServerTestBase
     private static int createSimpleDatabase( final GraphDatabaseAPI graph )
     {
         final var numberOfNodes = 10;
-        new Transactor( graph, () ->
+        new Transactor( graph, tx ->
         {
             for ( var i = 0; i < numberOfNodes; i++ )
             {
-                graph.createNode();
+                tx.createNode();
             }
 
             for ( var node1 : graph.getAllNodes() )

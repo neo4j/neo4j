@@ -201,7 +201,7 @@ public class UniqueIndexRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( LABEL );
+            Node node = tx.createNode( LABEL );
             tx.commit();
             return node;
         }
@@ -211,7 +211,7 @@ public class UniqueIndexRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.setProperty( PROPERTY_KEY, PROPERTY_VALUE );
             tx.commit();
             return node;

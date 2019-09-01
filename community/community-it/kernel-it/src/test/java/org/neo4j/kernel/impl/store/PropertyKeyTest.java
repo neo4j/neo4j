@@ -66,7 +66,7 @@ class PropertyKeyTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             Node node = db.getNodeById( nodeId );
 
             // Then

@@ -75,7 +75,7 @@ class RunOutOfDiskSpaceIT
     {
         try ( Transaction tx = database.beginTx() )
         {
-            database.createNode();
+            tx.createNode();
             tx.commit();
         }
 
@@ -89,7 +89,7 @@ class RunOutOfDiskSpaceIT
         {
             try ( Transaction tx = database.beginTx() )
             {
-                database.createNode();
+                tx.createNode();
                 tx.commit();
             }
         } );
@@ -108,7 +108,7 @@ class RunOutOfDiskSpaceIT
     {
         try ( Transaction tx = database.beginTx() )
         {
-            database.createNode();
+            tx.createNode();
             tx.commit();
         }
 
@@ -121,7 +121,7 @@ class RunOutOfDiskSpaceIT
         {
             try ( Transaction tx = database.beginTx() )
             {
-                database.createNode();
+                tx.createNode();
                 tx.commit();
             }
         } );

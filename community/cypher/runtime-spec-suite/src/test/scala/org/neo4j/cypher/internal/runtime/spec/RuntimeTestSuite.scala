@@ -324,7 +324,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def bipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relType: String): (Seq[Node], Seq[Node]) = {
     val aNodes = nodeGraph(nNodes, aLabel)
     val bNodes = nodeGraph(nNodes, bLabel)
-    inTx {
+    inTx { _ =>
       val relationshipType = RelationshipType.withName(relType)
       for {a <- aNodes; b <- bNodes} {
         a.createRelationshipTo(b, relationshipType)
@@ -334,9 +334,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   def nodeGraph(nNodes: Int, labels: String*): Seq[Node] = {
-    inTx {
+    inTx { tx =>
       for (_ <- 0 until nNodes) yield {
-        graphDb.createNode(labels.map(Label.label): _*)
+        tx.createNode(labels.map(Label.label): _*)
       }
     }
   }
@@ -349,20 +349,20 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     * creation of chains with varying relationship direction.
     */
   def chainGraphs(nChains: Int, relTypeNames: String*): IndexedSeq[TestPath] = {
-    inTx {
+    inTx { tx =>
       val relTypes = relTypeNames.map(RelationshipType.withName)
       val startLabel = Label.label("START")
       val endLabel = Label.label("END")
       for (_ <- 0 until nChains) yield {
-        val head = graphDb.createNode(startLabel)
+        val head = tx.createNode(startLabel)
         var previous: Node = head
         val relationships =
           for (relType <- relTypes) yield {
             val n =
               if (relType == relTypes.last)
-                graphDb.createNode(endLabel)
+                tx.createNode(endLabel)
               else
-                graphDb.createNode()
+                tx.createNode()
 
             val r =
               if (relType.name().startsWith("FRO")) {
@@ -386,10 +386,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     *             -[r2:R]->
     */
   def lollipopGraph(): (Seq[Node], Seq[Relationship]) = {
-    inTx {
-      val n1 = graphDb.createNode(Label.label("START"))
-      val n2 = graphDb.createNode()
-      val n3 = graphDb.createNode()
+    inTx { tx =>
+      val n1 = tx.createNode(Label.label("START"))
+      val n2 = tx.createNode()
+      val n3 = tx.createNode()
       val relType = RelationshipType.withName("R")
       val r1 = n1.createRelationshipTo(n2, relType)
       val r2 = n1.createRelationshipTo(n2, relType)
@@ -417,10 +417,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     *   +> has type :B
     */
   def sineGraph(): SineGraph = {
-    inTx {
-      val start = graphDb.createNode(Label.label("START"))
-      val middle = graphDb.createNode(Label.label("MIDDLE"))
-      val end = graphDb.createNode(Label.label("END"))
+    inTx { tx =>
+      val start = tx.createNode(Label.label("START"))
+      val middle = tx.createNode(Label.label("MIDDLE"))
+      val end = tx.createNode(Label.label("END"))
 
       val A = RelationshipType.withName("A")
       val B = RelationshipType.withName("B")
@@ -434,23 +434,23 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       val startMiddle = start.createRelationshipTo(middle, A)
       val endMiddle = end.createRelationshipTo(middle, A)
 
-      val sa1 = graphDb.createNode()
-      val sb1 = graphDb.createNode()
-      val sb2 = graphDb.createNode()
-      val sc1 = graphDb.createNode()
-      val sc2 = graphDb.createNode()
-      val sc3 = graphDb.createNode()
+      val sa1 = tx.createNode()
+      val sb1 = tx.createNode()
+      val sb2 = tx.createNode()
+      val sc1 = tx.createNode()
+      val sc2 = tx.createNode()
+      val sc3 = tx.createNode()
 
       chain(A, start, sa1, middle)
       chain(B, start, sb1, sb2, middle)
       chain(A, middle, sc3, sc2, sc1, start)
 
-      val ea1 = graphDb.createNode()
-      val eb1 = graphDb.createNode()
-      val eb2 = graphDb.createNode()
-      val ec1 = graphDb.createNode()
-      val ec2 = graphDb.createNode()
-      val ec3 = graphDb.createNode()
+      val ea1 = tx.createNode()
+      val eb1 = tx.createNode()
+      val eb2 = tx.createNode()
+      val ec1 = tx.createNode()
+      val ec2 = tx.createNode()
+      val ec3 = tx.createNode()
 
       chain(A, middle, ea1, end)
       chain(B, middle, eb1, eb2, end)
@@ -461,14 +461,14 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   def circleGraph(nNodes: Int, labels: String*): (Seq[Node], Seq[Relationship]) = {
-    val nodes = inTx {
+    val nodes = inTx { tx =>
       for (_ <- 0 until nNodes) yield {
-        graphDb.createNode(labels.map(Label.label): _*)
+        tx.createNode(labels.map(Label.label): _*)
       }
     }
 
     val rels = new ArrayBuffer[Relationship]
-    inTx {
+    inTx { _ =>
       val rType = RelationshipType.withName("R")
       for (i <- 0 until nNodes) {
         val a = nodes(i)
@@ -496,7 +496,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     */
   def randomlyConnect(nodes: Seq[Node], connectivities: Connectivity*): Seq[NodeConnections] = {
     val random = new Random(12345)
-    inTx {
+    inTx { _ =>
       for (from <- nodes) yield {
 
         val relationshipsByType =
@@ -521,10 +521,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
-  def inTx[T](f: => T): T = {
+  def inTx[T](f:Transaction => T): T = {
     val tx = graphDb.beginTx()
     try {
-      val result = f
+      val result = f(tx)
       tx.commit()
       result
     }
@@ -536,7 +536,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     try {
       val labelArray = labels.map(Label.label)
       val result = for (i <- 0 until nNodes) yield {
-        val node = graphDb.createNode(labelArray: _*)
+        val node = tx.createNode(labelArray: _*)
         properties.runWith(_.foreach(kv => node.setProperty(kv._1, kv._2)))(i)
         node
       }
@@ -717,7 +717,7 @@ case class SineGraph(start: Node,
 case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {
   def awaitAll(): IndexedSeq[Array[AnyValue]] = {
     runtimeResult.consumeAll()
-    runtimeResult.close();
+    runtimeResult.close()
     recordingQuerySubscriber.getOrThrow().asScala.toIndexedSeq
   }
 

@@ -193,7 +193,7 @@ class PageCacheCountersIT
                     {
                         pageCursorCounters = kernelStatement.getPageCursorTracer();
                     }
-                    Node node = db.createNode();
+                    Node node = transaction.createNode();
                     node.setProperty( "name", RandomStringUtils.random( localRandom.nextInt( 100 ) ) );
                     node.setProperty( "surname", RandomStringUtils.random( localRandom.nextInt( 100 ) ) );
                     node.setProperty( "age", localRandom.nextInt( 100 ) );

@@ -39,10 +39,8 @@ public class MandatoryTransactionsForIndexCreatorTest
     }
 
     @Override
-    protected IndexCreator obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected IndexCreator obtainEntityInTransaction( Transaction transaction )
     {
-        return graphDatabaseService
-               .schema()
-               .indexFor( Label.label( "Label" ) );
+        return db.schema().indexFor( Label.label( "Label" ) );
     }
 }

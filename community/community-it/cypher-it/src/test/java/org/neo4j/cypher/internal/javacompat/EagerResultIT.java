@@ -271,14 +271,14 @@ class EagerResultIT
         Label label = Label.label( "label" );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( label );
+            Node node = transaction.createNode( label );
             node.setProperty( "c", "d" );
             node.setProperty( "d", "a" );
             transaction.commit();
         }
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( label );
+            Node node = transaction.createNode( label );
             node.setProperty( "c", "y" );
             node.setProperty( "d", "k" );
             transaction.commit();

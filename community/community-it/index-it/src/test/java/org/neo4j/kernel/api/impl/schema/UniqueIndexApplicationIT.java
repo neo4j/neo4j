@@ -70,21 +70,25 @@ public class UniqueIndexApplicationIT
     public void then()
     {
         assertThat( "Matching nodes from index lookup",
-                db.when( db.tx( listNodeIdsFromIndexLookup( label( "Label1" ), "key1", "value1" ) ) ),
+                db.when( tx -> listNodeIdsFromIndexLookup( label( "Label1" ), "key1", "value1" ).apply( db ) ),
                 hasSize( 1 ) );
     }
 
     @Before
     public void given()
     {
-        db.executeAndCommit( createIndex );
-        db.executeAndCommit( awaitIndexesOnline( 5, SECONDS ) );
+        db.executeAndCommit( tx -> createIndex.apply( db ) );
+        db.executeAndCommit( transaction ->
+        {
+            awaitIndexesOnline( 5, SECONDS ).apply( db );
+            return null;
+        } );
     }
 
     @Test
     public void tx_createNode_addLabel_setProperty()
     {
-        db.when( db.tx(
+        db.when( db.tx( tx ->
                 createNode().andThen( addLabel( label( "Label1" ) ).andThen( setProperty( "key1", "value1" ) ) )
         ) );
     }
@@ -92,11 +96,13 @@ public class UniqueIndexApplicationIT
     @Test
     public void tx_createNode_tx_addLabel_setProperty()
     {
-        db.when( db.tx(
-                createNode()
-        ).andThen( db.tx(
-                addLabel( label( "Label1" ) ).andThen( setProperty( "key1", "value1" ) )
-        ) ) );
+        try ( var transaction = db.beginTx() )
+        {
+            var node = transaction.createNode();
+            node.addLabel( label( "Label1" ) );
+            node.setProperty( "key1", "value1" );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -134,13 +140,13 @@ public class UniqueIndexApplicationIT
     @Test
     public void tx_createNode_tx_setProperty_tx_addLabel()
     {
-        db.when( db.tx(
-                createNode()
-        ).andThen( db.tx(
-                setProperty( "key1", "value1" )
-        ).andThen( db.tx(
-                addLabel( label( "Label1" ) )
-        ) ) ) );
+        try ( var transaction = db.beginTx() )
+        {
+            var node = transaction.createNode();
+            node.setProperty( "key1", "value1" );
+            node.addLabel( label( "Label1" ) );
+            transaction.commit();
+        }
     }
 
     private static Matcher<List<?>> hasSize( final int size )

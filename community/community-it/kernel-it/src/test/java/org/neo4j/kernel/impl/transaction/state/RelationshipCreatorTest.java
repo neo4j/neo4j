@@ -116,10 +116,10 @@ class RelationshipCreatorTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             for ( int i = 0; i < count; i++ )
             {
-                node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+                node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
             }
             tx.commit();
             return node.getId();

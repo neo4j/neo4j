@@ -39,9 +39,9 @@ public class MandatoryTransactionsForUniquenessConstraintDefinitionTest
     }
 
     @Override
-    protected ConstraintDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected ConstraintDefinition obtainEntityInTransaction( Transaction transaction )
     {
-        return graphDatabaseService
+        return db
                 .schema()
                 .constraintFor( Label.label( "Label" ) )
                 .assertPropertyIsUnique( "property" )

@@ -150,8 +150,8 @@ class RecoveryIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Node start = database.createNode();
-                Node stop = database.createNode();
+                Node start = transaction.createNode();
+                Node stop = transaction.createNode();
                 start.createRelationshipTo( stop, withName( valueOf( i ) ) );
                 transaction.commit();
             }
@@ -185,8 +185,8 @@ class RecoveryIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Node start = database.createNode();
-                Node stop = database.createNode();
+                Node start = transaction.createNode();
+                Node stop = transaction.createNode();
                 start.setProperty( "start" + i, i );
                 stop.setProperty( "stop" + i, i );
                 start.createRelationshipTo( stop, withName( valueOf( i ) ) );
@@ -240,8 +240,8 @@ class RecoveryIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Node start = database.createNode( startMarker );
-                Node stop = database.createNode( stopMarker );
+                Node start = transaction.createNode( startMarker );
+                Node stop = transaction.createNode( stopMarker );
 
                 start.setProperty( startProperty, i );
                 stop.setProperty( stopProperty, i );
@@ -513,7 +513,7 @@ class RecoveryIT
     {
         try ( Transaction transaction = service.beginTx() )
         {
-            service.createNode();
+            transaction.createNode();
             transaction.commit();
         }
     }
@@ -627,8 +627,8 @@ class RecoveryIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Node node1 = database.createNode();
-                Node node2 = database.createNode();
+                Node node1 = transaction.createNode();
+                Node node2 = transaction.createNode();
                 node1.createRelationshipTo( node2, withName( "Type" + i ) );
                 node2.setProperty( "a", randomAlphanumeric( TEN_KB ) );
                 transaction.commit();

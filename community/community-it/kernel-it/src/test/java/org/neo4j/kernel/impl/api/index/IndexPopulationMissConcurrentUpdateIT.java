@@ -132,7 +132,7 @@ public class IndexPopulationMissConcurrentUpdateIT
             Node node;
             do
             {
-                node = db.createNode( LABEL_ONE );
+                node = tx.createNode( LABEL_ONE );
                 node.setProperty( NAME_PROPERTY, "Node " + nextId++ );
                 nodes.add( node );
             }
@@ -161,7 +161,7 @@ public class IndexPopulationMissConcurrentUpdateIT
             Node node;
             do
             {
-                node = db.createNode( LABEL_ONE );
+                node = tx.createNode( LABEL_ONE );
                 node.setProperty( NAME_PROPERTY, nextId++ );
                 nodes.add( node );
             }

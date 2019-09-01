@@ -70,8 +70,8 @@ class RecoveryLogIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node1 = db.createNode();
-            Node node2 = db.createNode();
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
             node1.createRelationshipTo( node2, RelationshipType.withName( "likes" ) );
             tx.commit();
         }

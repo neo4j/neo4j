@@ -155,8 +155,8 @@ class MissingStoreFilesRecoveryIT
         {
             try ( Transaction transaction = databaseApi.beginTx() )
             {
-                Node nodeA = databaseApi.createNode( testNodes );
-                Node nodeB = databaseApi.createNode( testNodes );
+                Node nodeA = transaction.createNode( testNodes );
+                Node nodeB = transaction.createNode( testNodes );
                 nodeA.createRelationshipTo( nodeB, withName( valueOf( i ) ) );
                 transaction.commit();
             }

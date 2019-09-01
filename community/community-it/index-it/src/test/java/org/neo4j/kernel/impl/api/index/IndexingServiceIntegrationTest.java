@@ -240,7 +240,7 @@ public class IndexingServiceIntegrationTest
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Node node = database.createNode( Label.label( FOOD_LABEL ), Label.label( CLOTHES_LABEL ),
+                Node node = transaction.createNode( Label.label( FOOD_LABEL ), Label.label( CLOTHES_LABEL ),
                         Label.label( WEATHER_LABEL ) );
                 node.setProperty( PROPERTY_NAME, "Node" + i );
                 Relationship relationship = node.createRelationshipTo( node, RelationshipType.withName( FOOD_LABEL ) );

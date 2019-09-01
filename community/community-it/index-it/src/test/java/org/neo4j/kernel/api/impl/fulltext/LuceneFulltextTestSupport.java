@@ -116,14 +116,14 @@ public class LuceneFulltextTestSupport
         return (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( FulltextIndexProviderFactory.DESCRIPTOR );
     }
 
-    long createNodeIndexableByPropertyValue( Label label, Object propertyValue )
+    long createNodeIndexableByPropertyValue( Transaction tx, Label label, Object propertyValue )
     {
-        return createNodeWithProperty( label, PROP, propertyValue );
+        return createNodeWithProperty( tx, label, PROP, propertyValue );
     }
 
-    long createNodeWithProperty( Label label, String propertyKey, Object propertyValue )
+    long createNodeWithProperty( Transaction tx, Label label, String propertyKey, Object propertyValue )
     {
-        Node node = db.createNode( label );
+        Node node = tx.createNode( label );
         node.setProperty( propertyKey, propertyValue );
         return node.getId();
     }

@@ -103,7 +103,7 @@ class KernelDiagnosticsIT
             {
                 for ( int i = 0; i < 100; i++ )
                 {
-                    db.createNode( label ).setProperty( key, i );
+                    tx.createNode( label ).setProperty( key, i );
                 }
                 tx.commit();
             }

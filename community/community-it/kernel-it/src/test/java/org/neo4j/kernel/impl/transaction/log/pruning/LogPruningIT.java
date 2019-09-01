@@ -88,24 +88,24 @@ class LogPruningIT
         // Apparently we always keep an extra log file what even though the threshold is reached... produce two then
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
         logRotation.rotateLogFile( LogAppendEvent.NULL );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
         logRotation.rotateLogFile( LogAppendEvent.NULL );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
     }

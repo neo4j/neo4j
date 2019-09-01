@@ -193,7 +193,7 @@ public class TransactionIT
     {
         try ( Transaction tx = env.graph().beginTx() )
         {
-            Node node = env.graph().createNode( Label.label( "A" ) );
+            Node node = tx.createNode( Label.label( "A" ) );
             node.setProperty( "prop", "one" );
             tx.commit();
         }

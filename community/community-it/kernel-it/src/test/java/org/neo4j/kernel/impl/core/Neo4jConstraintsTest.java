@@ -151,7 +151,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         GraphDatabaseService database = getGraphDb();
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode();
+            Node node = transaction.createNode();
             node.setProperty( key, 1 );
             node.delete();
             assertThrows( Exception.class, () ->
@@ -281,7 +281,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node1;
         try ( Transaction tx = getGraphDb().beginTx() )
         {
-            node1 = getGraphDb().createNode();
+            node1 = tx.createNode();
             assertThrows( Exception.class, () -> node1.setProperty( key, new Object() ) );
         }
         Node node3 = createNode();

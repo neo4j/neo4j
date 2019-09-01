@@ -65,9 +65,9 @@ class AccidentalUniquenessConstraintViolationIT
         Node fourtyOne;
         try ( Transaction tx = db.beginTx() )
         {
-            fourtyTwo = db.createNode( Foo );
+            fourtyTwo = tx.createNode( Foo );
             fourtyTwo.setProperty( BAR, value1 );
-            fourtyOne = db.createNode( Foo );
+            fourtyOne = tx.createNode( Foo );
             fourtyOne.setProperty( BAR, value2 );
             tx.commit();
         }

@@ -345,7 +345,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     val nodes = (0 to POPULATION) map { _ =>
       checkAndSwitch()
-      graph.createNode()
+      tx.createNode()
     }
 
     for {

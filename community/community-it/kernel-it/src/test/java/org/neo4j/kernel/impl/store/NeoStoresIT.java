@@ -85,7 +85,7 @@ class NeoStoresIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
+                Node node = tx.createNode();
                 latestNodeId[0] = node.getId();
                 node.setProperty( "largeProperty", LONG_STRING_VALUE );
                 tx.commit();
@@ -127,7 +127,7 @@ class NeoStoresIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
+                Node node = tx.createNode();
                 latestNodeId[0] = node.getId();
                 node.setProperty( "largeProperty", LONG_STRING_VALUE );
                 tx.commit();
@@ -166,10 +166,10 @@ class NeoStoresIT
         final long node2Id;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node1 = db.createNode();
+            Node node1 = tx.createNode();
             node1Id = node1.getId();
 
-            Node node2 = db.createNode();
+            Node node2 = tx.createNode();
             node2Id = node2.getId();
 
             tx.commit();

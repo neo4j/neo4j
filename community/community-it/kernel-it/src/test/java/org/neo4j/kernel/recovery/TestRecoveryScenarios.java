@@ -149,7 +149,7 @@ class TestRecoveryScenarios
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode( labels );
+            node = tx.createNode( labels );
             node.addLabel( label );
             tx.commit();
         }
@@ -228,7 +228,7 @@ class TestRecoveryScenarios
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( labels );
+            Node node = tx.createNode( labels );
             tx.commit();
             return node;
         }
@@ -238,7 +238,7 @@ class TestRecoveryScenarios
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( labels );
+            Node node = tx.createNode( labels );
             node.setProperty( key, value );
             tx.commit();
             return node;

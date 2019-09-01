@@ -83,7 +83,7 @@ class RollbackIdLeakIT
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
-                        Node node = db.createNode();
+                        Node node = tx.createNode();
                         Relationship relationship = node.createRelationshipTo( node, TEST );
                         rolledBackNodeIds.add( node.getId() );
                         rolledBackRelationshipIds.add( relationship.getId() );
@@ -96,7 +96,7 @@ class RollbackIdLeakIT
                     flowControl.await();
                     try ( Transaction tx = db.beginTx() )
                     {
-                        Node node = db.createNode();
+                        Node node = tx.createNode();
                         Relationship relationship = node.createRelationshipTo( node, TEST );
                         committedNodeIds.add( node.getId() );
                         committedRelationshipIds.add( relationship.getId() );
@@ -150,10 +150,10 @@ class RollbackIdLeakIT
             Relationship relationship2;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node1 = db.createNode();
+                Node node1 = tx.createNode();
                 Relationship relationship1 = node1.createRelationshipTo( node1, TEST );
 
-                node2 = db.createNode();
+                node2 = tx.createNode();
                 relationship2 = node2.createRelationshipTo( node2, TEST );
                 nodeIds.add( node2.getId() );
                 relationshipIds.add( relationship2.getId() );
@@ -186,12 +186,12 @@ class RollbackIdLeakIT
             int relationships = relationshipIds.size();
             for ( int i = 0; i < nodes; i++ )
             {
-                Node node = db.createNode();
+                Node node = tx.createNode();
                 assertTrue( nodeIds.remove( node.getId() ) );
             }
             for ( int i = 0; i < relationships; i++ )
             {
-                Relationship relationship = db.createNode().createRelationshipTo( db.createNode(), TEST );
+                Relationship relationship = tx.createNode().createRelationshipTo( tx.createNode(), TEST );
                 assertTrue( relationshipIds.remove( relationship.getId() ) );
             }
             tx.commit();

@@ -54,7 +54,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
         {
             for ( int i = 0; i < N_NODES; i++ )
             {
-                NODE_IDS.add( graphDb.createNode( Label.label( "LABEL" + i ) ).getId() );
+                NODE_IDS.add( tx.createNode( Label.label( "LABEL" + i ) ).getId() );
             }
             tx.commit();
         }

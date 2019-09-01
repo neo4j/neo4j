@@ -45,10 +45,10 @@ class CreateAndDeleteNodesIT
         // When
         try ( Transaction bobTransaction = db.beginTx() )
         {
-            myNode = db.createNode();
+            myNode = bobTransaction.createNode();
             myNode.setProperty( "Name", "Bob" );
 
-            myNode.createRelationshipTo( db.createNode(), RelTypes.ASD );
+            myNode.createRelationshipTo( bobTransaction.createNode(), RelTypes.ASD );
             bobTransaction.commit();
         }
 

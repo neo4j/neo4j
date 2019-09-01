@@ -83,17 +83,17 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         return this;
     }
 
-    public <T> T when( Function<GraphDatabaseService, T> function )
+    public <T> T when( Function<Transaction, T> function )
     {
-        return function.apply( getGraphDatabaseAPI() );
+        return function.apply( getGraphDatabaseAPI().beginTx() );
     }
 
-    public <T> T executeAndCommit( Function<? super GraphDatabaseService, T> function )
+    public <T> T executeAndCommit( Function<Transaction, T> function )
     {
         return transaction( function, true );
     }
 
-    public <T> T executeAndRollback( Function<? super GraphDatabaseService, T> function )
+    public <T> T executeAndRollback( Function<Transaction, T> function )
     {
         return transaction( function, false );
     }
@@ -102,12 +102,12 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     {
         return from ->
         {
-            Function<GraphDatabaseService,TO> inner = graphDb -> function.apply( from );
+            Function<Transaction,TO> inner = graphDb -> function.apply( from );
             return executeAndCommit( inner );
         };
     }
 
-    private <T> T transaction( Function<? super GraphDatabaseService, T> function, boolean commit )
+    private <T> T transaction( Function<Transaction, T> function, boolean commit )
     {
         return tx( getGraphDatabaseAPI(), commit, function );
     }
@@ -118,11 +118,11 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
      * @param db {@link GraphDatabaseService} to apply the transaction on.
      * @param transaction {@link Consumer} containing the transaction logic.
      */
-    public static void tx( GraphDatabaseService db, Consumer<? super GraphDatabaseService> transaction )
+    public static void tx( GraphDatabaseService db, Consumer<Transaction> transaction )
     {
-        Function<? super GraphDatabaseService,Void> voidFunction = _db ->
+        Function<Transaction,Void> voidFunction = tx ->
         {
-            transaction.accept( _db );
+            transaction.accept( tx );
             return null;
         };
         tx( db, true, voidFunction );
@@ -137,11 +137,11 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
      * @param transaction {@link Function} containing the transaction logic and returning a result.
      * @return result from transaction {@link Function}.
      */
-    public static <T> T tx( GraphDatabaseService db, boolean commit, Function<? super GraphDatabaseService,T> transaction )
+    public static <T> T tx( GraphDatabaseService db, boolean commit, Function<Transaction,T> transaction )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            T result = transaction.apply( db );
+            T result = transaction.apply( tx );
             if ( commit )
             {
                 tx.commit();
@@ -223,12 +223,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public Transaction beginTx( long timeout, TimeUnit timeUnit )
     {
         return getGraphDatabaseAPI().beginTx( timeout, timeUnit );
-    }
-
-    @Override
-    public Node createNode( Label... labels )
-    {
-        return getGraphDatabaseAPI().createNode( labels );
     }
 
     @Override

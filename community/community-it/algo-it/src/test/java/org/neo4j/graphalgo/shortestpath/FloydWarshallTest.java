@@ -43,20 +43,20 @@ class FloydWarshallTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b", "cost", (double) 1 );
-            graph.makeEdge( "a", "c", "cost", (float) 1 );
-            graph.makeEdge( "a", "d", "cost", (long) 1 );
-            graph.makeEdge( "a", "e", "cost", 1 );
-            graph.makeEdge( "b", "c", "cost", (double) 1 );
-            graph.makeEdge( "c", "d", "cost", (byte) 1 );
-            graph.makeEdge( "d", "e", "cost", (short) 1 );
-            graph.makeEdge( "e", "b", "cost", (byte) 1 );
+            graph.makeEdge( transaction, "a", "b", "cost", (double) 1 );
+            graph.makeEdge( transaction, "a", "c", "cost", (float) 1 );
+            graph.makeEdge( transaction, "a", "d", "cost", (long) 1 );
+            graph.makeEdge( transaction, "a", "e", "cost", 1 );
+            graph.makeEdge( transaction, "b", "c", "cost", (double) 1 );
+            graph.makeEdge( transaction, "c", "d", "cost", (byte) 1 );
+            graph.makeEdge( transaction, "d", "e", "cost", (short) 1 );
+            graph.makeEdge( transaction, "e", "b", "cost", (byte) 1 );
             FloydWarshall<Double> floydWarshall =
                     new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING, CommonEvaluators.doubleCostEvaluator( "cost" ), new DoubleAdder(),
                             Double::compareTo, graph.getAllNodes(), graph.getAllEdges() );
-            assertEquals( 0.0, floydWarshall.getCost( graph.getNode( "a" ), graph.getNode( "a" ) ), 0.0 );
-            assertEquals( 1.0, floydWarshall.getCost( graph.getNode( "a" ), graph.getNode( "b" ) ), 0.0 );
-            assertEquals( floydWarshall.getCost( graph.getNode( "b" ), graph.getNode( "a" ) ), Double.MAX_VALUE, 0.0 );
+            assertEquals( 0.0, floydWarshall.getCost( graph.getNode( transaction, "a" ), graph.getNode( transaction, "a" ) ), 0.0 );
+            assertEquals( 1.0, floydWarshall.getCost( graph.getNode( transaction, "a" ), graph.getNode( transaction, "b" ) ), 0.0 );
+            assertEquals( floydWarshall.getCost( graph.getNode( transaction, "b" ), graph.getNode( transaction, "a" ) ), Double.MAX_VALUE, 0.0 );
             transaction.commit();
         }
     }
@@ -69,22 +69,22 @@ class FloydWarshallTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b", "cost", (double) 1 );
-            graph.makeEdge( "b", "c", "cost", (float) 1 );
-            graph.makeEdge( "c", "d", "cost", 1 );
-            graph.makeEdge( "d", "e", "cost", (long) 1 );
-            graph.makeEdge( "e", "f", "cost", (byte) 1 );
+            graph.makeEdge( transaction, "a", "b", "cost", (double) 1 );
+            graph.makeEdge( transaction, "b", "c", "cost", (float) 1 );
+            graph.makeEdge( transaction, "c", "d", "cost", 1 );
+            graph.makeEdge( transaction, "d", "e", "cost", (long) 1 );
+            graph.makeEdge( transaction, "e", "f", "cost", (byte) 1 );
             FloydWarshall<Double> floydWarshall =
                     new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING, CommonEvaluators.doubleCostEvaluator( "cost" ), new DoubleAdder(),
                             Double::compareTo, graph.getAllNodes(), graph.getAllEdges() );
-            List<Node> path = floydWarshall.getPath( graph.getNode( "a" ), graph.getNode( "f" ) );
+            List<Node> path = floydWarshall.getPath( graph.getNode( transaction, "a" ), graph.getNode( transaction, "f" ) );
             assertEquals( 6, path.size() );
-            assertEquals( path.get( 0 ), graph.getNode( "a" ) );
-            assertEquals( path.get( 1 ), graph.getNode( "b" ) );
-            assertEquals( path.get( 2 ), graph.getNode( "c" ) );
-            assertEquals( path.get( 3 ), graph.getNode( "d" ) );
-            assertEquals( path.get( 4 ), graph.getNode( "e" ) );
-            assertEquals( path.get( 5 ), graph.getNode( "f" ) );
+            assertEquals( path.get( 0 ), graph.getNode( transaction, "a" ) );
+            assertEquals( path.get( 1 ), graph.getNode( transaction, "b" ) );
+            assertEquals( path.get( 2 ), graph.getNode( transaction, "c" ) );
+            assertEquals( path.get( 3 ), graph.getNode( transaction, "d" ) );
+            assertEquals( path.get( 4 ), graph.getNode( transaction, "e" ) );
+            assertEquals( path.get( 5 ), graph.getNode( transaction, "f" ) );
             transaction.commit();
         }
     }
@@ -94,14 +94,14 @@ class FloydWarshallTest extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makeEdge( "a", "b" );
-            graph.makeEdge( "b", "c" );
-            graph.makeEdge( "c", "d" );
-            graph.makeEdge( "d", "a" );
-            graph.makeEdge( "s", "a" );
-            graph.makeEdge( "b", "s" );
-            graph.makeEdge( "e", "c" );
-            graph.makeEdge( "d", "e" );
+            graph.makeEdge( transaction, "a", "b" );
+            graph.makeEdge( transaction, "b", "c" );
+            graph.makeEdge( transaction, "c", "d" );
+            graph.makeEdge( transaction, "d", "a" );
+            graph.makeEdge( transaction, "s", "a" );
+            graph.makeEdge( transaction, "b", "s" );
+            graph.makeEdge( transaction, "e", "c" );
+            graph.makeEdge( transaction, "d", "e" );
             new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING, ( relationship, direction ) ->
             {
                 assertEquals( Direction.OUTGOING, direction );

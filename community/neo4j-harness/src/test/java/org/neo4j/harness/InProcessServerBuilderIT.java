@@ -210,7 +210,7 @@ class InProcessServerBuilderIT
                 GraphDatabaseService service = neo4j.defaultDatabaseService();
                 try ( Transaction transaction = service.beginTx() )
                 {
-                    service.createNode();
+                    transaction.createNode();
                     transaction.commit();
                 }
             } );
@@ -264,7 +264,7 @@ class InProcessServerBuilderIT
                 assertTrue( Iterables.count( allNodes ) > 0 );
 
                 // When: create another node
-                graphDatabaseService.createNode();
+                tx.createNode();
                 tx.commit();
             }
         }
@@ -392,7 +392,7 @@ class InProcessServerBuilderIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label ).setProperty( propertyKey, propertyValue );
+            tx.createNode( label ).setProperty( propertyKey, propertyValue );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )

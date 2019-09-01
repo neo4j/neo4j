@@ -21,8 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.junit.Test;
 
-import java.util.Optional;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -56,8 +54,8 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         long id;
         try ( Transaction tx = db.beginTx() )
         {
-            createNodeIndexableByPropertyValue( LABEL, "Hello and hello again, in the end." );
-            id = createNodeIndexableByPropertyValue( LABEL, "En apa och en tomte bodde i ett hus." );
+            createNodeIndexableByPropertyValue( tx, LABEL, "Hello and hello again, in the end." );
+            id = createNodeIndexableByPropertyValue( tx, LABEL, "En apa och en tomte bodde i ett hus." );
 
             tx.commit();
         }
@@ -91,8 +89,8 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         long id;
         try ( Transaction tx = db.beginTx() )
         {
-            id = createNodeIndexableByPropertyValue( LABEL, "Hello and hello again, in the end." );
-            createNodeIndexableByPropertyValue( LABEL, "En apa och en tomte bodde i ett hus." );
+            id = createNodeIndexableByPropertyValue( tx, LABEL, "Hello and hello again, in the end." );
+            createNodeIndexableByPropertyValue( tx, LABEL, "En apa och en tomte bodde i ett hus." );
 
             tx.commit();
         }
@@ -126,8 +124,8 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            createNodeIndexableByPropertyValue( LABEL, "Hello and hello again, in the end." );
-            secondID = createNodeIndexableByPropertyValue( LABEL, "En apa och en tomte bodde i ett hus." );
+            createNodeIndexableByPropertyValue( tx, LABEL, "Hello and hello again, in the end." );
+            secondID = createNodeIndexableByPropertyValue( tx, LABEL, "En apa och en tomte bodde i ett hus." );
 
             tx.commit();
         }

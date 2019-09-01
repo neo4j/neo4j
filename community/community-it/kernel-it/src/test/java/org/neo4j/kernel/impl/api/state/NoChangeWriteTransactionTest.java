@@ -62,7 +62,7 @@ class NoChangeWriteTransactionTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             tx.commit();
             return node;
         }

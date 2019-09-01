@@ -96,7 +96,7 @@ class CheckPointerIntegrationTest
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
         Thread.sleep( 10 );
@@ -117,7 +117,7 @@ class CheckPointerIntegrationTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
 
@@ -171,7 +171,7 @@ class CheckPointerIntegrationTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode();
+            tx.createNode();
             tx.commit();
         }
 

@@ -36,7 +36,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         try ( Transaction tx = db.beginTx() )
         {
-            T result = obtainEntityInTransaction( db );
+            T result = obtainEntityInTransaction( tx );
             tx.commit();
 
             return result;
@@ -47,14 +47,14 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         try ( Transaction tx = db.beginTx() )
         {
-            T result = obtainEntityInTransaction( db );
+            T result = obtainEntityInTransaction( tx );
             tx.terminate();
 
             f.accept(result);
         }
     }
 
-    protected abstract T obtainEntityInTransaction( GraphDatabaseService graphDatabaseService );
+    protected abstract T obtainEntityInTransaction( Transaction transaction );
 
     public static <T> void assertFacadeMethodsThrowNotInTransaction( T entity, Consumer<T>[] methods )
     {

@@ -88,7 +88,7 @@ public class IndexPopulationIT
         Label nodeLabel = Label.label( "nodeLabel" );
         try ( Transaction transaction = database.beginTx() )
         {
-            database.createNode(nodeLabel);
+            transaction.createNode(nodeLabel);
             transaction.commit();
         }
 
@@ -177,7 +177,7 @@ public class IndexPopulationIT
         String value = "hej";
         try ( Transaction transaction = database.beginTx() )
         {
-            database.createNode( nodeLabel ).setProperty( key, value );
+            transaction.createNode( nodeLabel ).setProperty( key, value );
             transaction.commit();
         }
 
@@ -209,7 +209,7 @@ public class IndexPopulationIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Node node = database.createNode( testLabel );
+                Node node = transaction.createNode( testLabel );
                 Object property = randomValues.nextValue().asObject();
                 node.setProperty( propertyName, property );
                 transaction.commit();
@@ -223,7 +223,7 @@ public class IndexPopulationIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                database.createNode( label );
+                transaction.createNode( label );
                 transaction.commit();
             }
         };

@@ -100,7 +100,7 @@ public class TestRelationshipCount
     @Test
     public void convertNodeToDense()
     {
-        Node node = getGraphDb().createNode();
+        Node node = tx.createNode();
         EnumMap<MyRelTypes,Set<Relationship>> rels = new EnumMap<>( MyRelTypes.class );
         for ( MyRelTypes type : MyRelTypes.values() )
         {
@@ -110,13 +110,13 @@ public class TestRelationshipCount
         for ( int i = 0; i < 6; i++, expectedRelCount++ )
         {
             MyRelTypes type = MyRelTypes.values()[i % MyRelTypes.values().length];
-            Relationship rel = node.createRelationshipTo( getGraphDb().createNode(), type );
+            Relationship rel = node.createRelationshipTo( tx.createNode(), type );
             rels.get( type ).add( rel );
         }
         newTransaction();
         for ( int i = 0; i < 1000; i++, expectedRelCount++ )
         {
-            node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
+            node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
         }
 
         assertEquals( expectedRelCount, node.getDegree() );
@@ -139,14 +139,14 @@ public class TestRelationshipCount
     @Test
     public void testGetRelationshipTypesOnDiscreteNode()
     {
-        testGetRelationshipTypes( getGraphDb().createNode(), new HashSet<>() );
+        testGetRelationshipTypes( tx.createNode(), new HashSet<>() );
     }
 
     @Test
     public void testGetRelationshipTypesOnDenseNode()
     {
-        Node node = getGraphDb().createNode();
-        Node otherNode = getGraphDb().createNode();
+        Node node = tx.createNode();
+        Node otherNode = tx.createNode();
         for ( int i = 0; i < 300; i++ )
         {
             node.createRelationshipTo( otherNode, RelType.INITIAL );
@@ -157,23 +157,23 @@ public class TestRelationshipCount
     private void testGetRelationshipTypes( Node node, Set<String> expectedTypes )
     {
         assertExpectedRelationshipTypes( expectedTypes, node, false );
-        node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE1 );
+        node.createRelationshipTo( tx.createNode(), RelType.TYPE1 );
         expectedTypes.add( RelType.TYPE1.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, false );
-        node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE1 );
+        node.createRelationshipTo( tx.createNode(), RelType.TYPE1 );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
 
-        Relationship rel = node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE2 );
+        Relationship rel = node.createRelationshipTo( tx.createNode(), RelType.TYPE2 );
         expectedTypes.add( RelType.TYPE2.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, false );
         rel.delete();
         expectedTypes.remove( RelType.TYPE2.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
 
-        node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE2 );
-        node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE2 );
+        node.createRelationshipTo( tx.createNode(), RelType.TYPE2 );
+        node.createRelationshipTo( tx.createNode(), RelType.TYPE2 );
         expectedTypes.add( RelType.TYPE2.name() );
-        node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
+        node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
         expectedTypes.add( MyRelTypes.TEST.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
 
@@ -212,14 +212,14 @@ public class TestRelationshipCount
     @Test
     public void withoutLoops()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
+        Node node1 = tx.createNode();
+        Node node2 = tx.createNode();
         assertEquals( 0, node1.getDegree() );
         assertEquals( 0, node2.getDegree() );
         node1.createRelationshipTo( node2, MyRelTypes.TEST );
         assertEquals( 1, node1.getDegree() );
         assertEquals( 1, node2.getDegree() );
-        node1.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST2 );
+        node1.createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
         assertEquals( 2, node1.getDegree() );
         assertEquals( 1, node2.getDegree() );
         newTransaction();
@@ -280,14 +280,14 @@ public class TestRelationshipCount
         // Just to make sure it doesn't work by accident what with ids aligning with count
         for ( int i = 0; i < 10; i++ )
         {
-            getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
+            tx.createNode().createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
         }
 
-        Node node = getGraphDb().createNode();
+        Node node = tx.createNode();
         assertEquals( 0, node.getDegree() );
         node.createRelationshipTo( node, MyRelTypes.TEST );
         assertEquals( 1, node.getDegree() );
-        Node otherNode = getGraphDb().createNode();
+        Node otherNode = tx.createNode();
         Relationship rel2 = node.createRelationshipTo( otherNode, MyRelTypes.TEST2 );
         assertEquals( 2, node.getDegree() );
         assertEquals( 1, otherNode.getDegree() );
@@ -353,10 +353,10 @@ public class TestRelationshipCount
         {
             expectedCounts.put( type, new int[3] );
         }
-        Node me = getGraphDb().createNode();
+        Node me = tx.createNode();
         for ( int i = 0; i < initialSize; i++ )
         {
-            me.createRelationshipTo( getGraphDb().createNode(), RelType.INITIAL );
+            me.createRelationshipTo( tx.createNode(), RelType.INITIAL );
         }
         newTransaction();
         expectedCounts.get( RelType.INITIAL )[0] = initialSize;
@@ -370,12 +370,12 @@ public class TestRelationshipCount
                 Node otherNode = null;
                 if ( spec.dir == Direction.OUTGOING )
                 {
-                    otherNode = getGraphDb().createNode();
+                    otherNode = tx.createNode();
                     me.createRelationshipTo( otherNode, spec.type );
                 }
                 else if ( spec.dir == Direction.INCOMING )
                 {
-                    otherNode = getGraphDb().createNode();
+                    otherNode = tx.createNode();
                     otherNode.createRelationshipTo( me, spec.type );
                 }
                 else

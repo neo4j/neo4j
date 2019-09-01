@@ -48,9 +48,9 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 public class RelationshipProxyTest extends PropertyContainerProxyTest
 {
     @Override
-    protected long createPropertyContainer()
+    protected long createPropertyContainer( Transaction tx )
     {
-        return db.createNode().createRelationshipTo( db.createNode(), withName( "FOO" ) ).getId();
+        return tx.createNode().createRelationshipTo( tx.createNode(), withName( "FOO" ) ).getId();
     }
 
     @Override
@@ -111,8 +111,8 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         try ( Transaction tx = db.beginTx() )
         {
             // GIVEN
-            start = db.createNode();
-            end = db.createNode();
+            start = tx.createNode();
+            end = tx.createNode();
             relationship = start.createRelationshipTo( end, type );
             tx.commit();
 
@@ -133,8 +133,8 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node start = db.createNode( markerLabel );
-            Node end = db.createNode( markerLabel );
+            Node start = tx.createNode( markerLabel );
+            Node end = tx.createNode( markerLabel );
             Relationship relationship = start.createRelationshipTo( end, withName( "type" ) );
             relationship.setProperty( testPropertyKey, propertyValue );
             tx.commit();
@@ -171,8 +171,8 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node start = db.createNode( markerLabel );
-            Node end = db.createNode( markerLabel );
+            Node start = tx.createNode( markerLabel );
+            Node end = tx.createNode( markerLabel );
             Relationship relationship = start.createRelationshipTo( end, withName( "type" ) );
             relationship.setProperty( testPropertyKey, propertyValue );
             tx.commit();
@@ -207,7 +207,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         Relationship relationship;
         try ( Transaction tx = db.beginTx() )
         {
-            relationship = db.createNode().createRelationshipTo( db.createNode(), withName( "R" ) );
+            relationship = tx.createNode().createRelationshipTo( tx.createNode(), withName( "R" ) );
             relationship.setProperty( "prop", 1337 );
             tx.commit();
         }

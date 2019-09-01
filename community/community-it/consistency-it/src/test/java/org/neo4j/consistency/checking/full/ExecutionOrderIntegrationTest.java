@@ -93,11 +93,10 @@ public class ExecutionOrderIntegrationTest
         @Override
         protected void generateInitialData( GraphDatabaseService graphDb )
         {
-            // TODO: create bigger sample graph here
             try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
             {
-                Node node1 = set( graphDb.createNode( label( "Foo" ) ) );
-                Node node2 = set( graphDb.createNode( label( "Foo" ) ), property( "key", "value" ) );
+                Node node1 = set( tx.createNode( label( "Foo" ) ) );
+                Node node2 = set( tx.createNode( label( "Foo" ) ), property( "key", "value" ) );
                 node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
                 tx.commit();
             }

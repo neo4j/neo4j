@@ -56,8 +56,8 @@ class DenseNodeRelChainPositionTest
         Node node1;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = db.createNode();
-            Node node2 = db.createNode();
+            node1 = tx.createNode();
+            Node node2 = tx.createNode();
 
             for ( int i = 0; i < denseNodeThreshold; i++ )
             {

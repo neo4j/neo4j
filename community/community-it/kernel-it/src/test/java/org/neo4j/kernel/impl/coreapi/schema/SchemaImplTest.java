@@ -89,7 +89,7 @@ class SchemaImplTest
             // Create a huge bunch of users so the index takes a while to build
             for ( int id = 0; id < 100000; id++ )
             {
-                Node userNode = db.createNode( label );
+                Node userNode = tx.createNode( label );
                 userNode.setProperty( "username", "user" + id + "@neo4j.org" );
             }
             tx.commit();

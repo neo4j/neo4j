@@ -581,7 +581,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "date", new ZonedDateTime[]{date} );
             tx.commit();
         }
@@ -607,7 +607,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         Duration duration = Duration.ofSeconds( 73 );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "duration", new Duration[]{duration} );
             tx.commit();
         }
@@ -634,7 +634,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "date", date );
             tx.commit();
         }
@@ -660,7 +660,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "duration", duration );
             tx.commit();
         }
@@ -686,7 +686,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "dates", new ZonedDateTime[]{date} );
             tx.commit();
         }
@@ -712,7 +712,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "durations", new Duration[]{duration} );
             tx.commit();
         }
@@ -738,7 +738,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "date", date );
             tx.commit();
         }
@@ -763,7 +763,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "duration", duration );
             tx.commit();
         }
@@ -789,7 +789,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "dates", new ZonedDateTime[]{date} );
             tx.commit();
         }
@@ -815,7 +815,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "durations", new Duration[]{duration} );
             tx.commit();
         }

@@ -70,9 +70,10 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         long secondID;
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = createNodeIndexableByPropertyValue( LABEL, "Hello. Hello again." );
-            secondID = createNodeIndexableByPropertyValue( LABEL, "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
-                    "cross between a zebra and any other equine: essentially, a zebra hybrid." );
+            firstID = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
+            secondID = createNodeIndexableByPropertyValue( tx, LABEL,
+                    "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                            "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
             tx.commit();
         }
@@ -103,9 +104,10 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         long secondID;
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = createNodeIndexableByPropertyValue( LABEL, "Hello. Hello again." );
-            secondID = createNodeIndexableByPropertyValue( LABEL, "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
-                    "cross between a zebra and any other equine: essentially, a zebra hybrid." );
+            firstID = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
+            secondID = createNodeIndexableByPropertyValue( tx, LABEL,
+                    "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                            "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
             tx.commit();
         }
@@ -146,9 +148,10 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         long secondID;
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = createNodeIndexableByPropertyValue( LABEL, "Hello. Hello again." );
-            secondID = createNodeIndexableByPropertyValue( LABEL, "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
-                    "cross between a zebra and any other equine: essentially, a zebra hybrid." );
+            firstID = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
+            secondID = createNodeIndexableByPropertyValue( tx, LABEL,
+                    "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                            "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
             tx.commit();
         }
@@ -187,10 +190,11 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         long thirdID;
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = createNodeIndexableByPropertyValue( LABEL, "Hello. Hello again." );
-            secondID = createNodeIndexableByPropertyValue( LABEL, "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
-                    "cross between a zebra and any other equine: essentially, a zebra hybrid." );
-            thirdID = createNodeIndexableByPropertyValue( LABEL, "Hello. Hello again." );
+            firstID = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
+            secondID = createNodeIndexableByPropertyValue( tx, LABEL,
+                    "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                            "cross between a zebra and any other equine: essentially, a zebra hybrid." );
+            thirdID = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
 
             setNodeProp( firstID, "zebra" );
             setNodeProp( secondID, "Hello. Hello again." );
@@ -240,10 +244,10 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         long firstID;
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = createNodeIndexableByPropertyValue( LABEL, "Hello. Hello again." );
+            firstID = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
             setNodeProp( firstID, "prop2", "zebra" );
 
-            Node node2 = db.createNode( LABEL );
+            Node node2 = tx.createNode( LABEL );
             node2.setProperty( "prop2", "zebra" );
             node2.setProperty( "prop3", "hello" );
 
@@ -275,11 +279,11 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         long thirdID;
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = createNodeIndexableByPropertyValue( LABEL, "Tomtar tomtar oftsat i tomteutstyrsel." );
-            secondID = createNodeIndexableByPropertyValue( LABEL, "Olof och Hans" );
+            firstID = createNodeIndexableByPropertyValue( tx, LABEL, "Tomtar tomtar oftsat i tomteutstyrsel." );
+            secondID = createNodeIndexableByPropertyValue( tx, LABEL, "Olof och Hans" );
             setNodeProp( secondID, "prop2", "och karl" );
 
-            Node node3 = db.createNode( LABEL );
+            Node node3 = tx.createNode( LABEL );
             thirdID = node3.getId();
             node3.setProperty( "prop2", "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
 
@@ -310,10 +314,10 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         long fourthID;
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = db.createNode( LABEL ).getId();
-            secondID = db.createNode( LABEL ).getId();
-            thirdID = db.createNode( LABEL ).getId();
-            fourthID = db.createNode( LABEL ).getId();
+            firstID = tx.createNode( LABEL ).getId();
+            secondID = tx.createNode( LABEL ).getId();
+            thirdID = tx.createNode( LABEL ).getId();
+            fourthID = tx.createNode( LABEL ).getId();
             setNodeProp( firstID, "first", "Full" );
             setNodeProp( firstID, "last", "Hanks" );
             setNodeProp( secondID, "first", "Tom" );
@@ -354,8 +358,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         long secondRelID;
         try ( Transaction tx = db.beginTx() )
         {
-            firstNodeID = createNodeIndexableByPropertyValue( LABEL, "Hello. Hello again." );
-            secondNodeID = createNodeIndexableByPropertyValue( LABEL,
+            firstNodeID = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
+            secondNodeID = createNodeIndexableByPropertyValue( tx, LABEL,
                     "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                             "cross between a zebra and any other equine: essentially, a zebra hybrid." );
             firstRelID = createRelationshipIndexableByPropertyValue( firstNodeID, secondNodeID, "Hello. Hello again." );
@@ -394,8 +398,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         await( relsIndex );
         try ( Transaction tx = db.beginTx() )
         {
-            long firstNode = createNodeIndexableByPropertyValue( LABEL, "Hello. Hello again." );
-            long secondNode = createNodeWithProperty( LABEL, "prop2",
+            long firstNode = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
+            long secondNode = createNodeWithProperty( tx, LABEL, "prop2",
                     "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                             "cross between a zebra and any other equine: essentially, a zebra hybrid." );
             createRelationshipIndexableByPropertyValue( firstNode, secondNode, "Hello. Hello again." );
@@ -423,13 +427,13 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             // skip a few rel ids, so the ones we work with are different from the node ids, just in case.
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.createRelationshipTo( node, RELTYPE );
             node.createRelationshipTo( node, RELTYPE );
             node.createRelationshipTo( node, RELTYPE );
 
-            firstNodeID = createNodeIndexableByPropertyValue( LABEL, "Hello. Hello again." );
-            secondNodeID = createNodeIndexableByPropertyValue( LABEL, "This string is slightly shorter than the zebra one" );
+            firstNodeID = createNodeIndexableByPropertyValue( tx, LABEL, "Hello. Hello again." );
+            secondNodeID = createNodeIndexableByPropertyValue( tx, LABEL, "This string is slightly shorter than the zebra one" );
             firstRelID = createRelationshipIndexableByPropertyValue( firstNodeID, secondNodeID, "Goodbye" );
             secondRelID = createRelationshipIndexableByPropertyValue( secondNodeID, firstNodeID, "And now, something completely different" );
 
@@ -481,12 +485,12 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         long fourthID;
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = createNodeIndexableByPropertyValue( LABEL, "thing" );
+            firstID = createNodeIndexableByPropertyValue( tx, LABEL, "thing" );
 
-            secondID = db.createNode( LABEL ).getId();
+            secondID = tx.createNode( LABEL ).getId();
             setNodeProp( secondID, "prop2", "zebra" );
 
-            thirdID = createNodeIndexableByPropertyValue( LABEL, "zebra" );
+            thirdID = createNodeIndexableByPropertyValue( tx, LABEL, "zebra" );
             tx.commit();
         }
 
@@ -509,7 +513,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         {
             setNodeProp( firstID, "prop2", "thing" );
 
-            fourthID = db.createNode( LABEL ).getId();
+            fourthID = tx.createNode( LABEL ).getId();
             setNodeProp( fourthID, "prop2", "zebra" );
             tx.commit();
         }
@@ -538,9 +542,9 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = createNodeIndexableByPropertyValue( LABEL, "thing" );
+            firstID = createNodeIndexableByPropertyValue( tx, LABEL, "thing" );
 
-            secondID = createNodeIndexableByPropertyValue( LABEL, "zebra" );
+            secondID = createNodeIndexableByPropertyValue( tx, LABEL, "zebra" );
             tx.commit();
         }
 
@@ -570,7 +574,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         int propertyKey;
         try ( Transaction tx = db.beginTx() )
         {
-            createNodeIndexableByPropertyValue( LABEL, "bla" );
+            createNodeIndexableByPropertyValue( tx, LABEL, "bla" );
             tx.commit();
         }
         try ( KernelTransactionImplementation tx = getKernelTransaction() )

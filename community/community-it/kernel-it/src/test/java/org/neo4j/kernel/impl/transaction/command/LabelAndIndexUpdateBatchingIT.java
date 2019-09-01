@@ -81,17 +81,17 @@ public class LabelAndIndexUpdateBatchingIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode( LABEL ).setProperty( PROPERTY_KEY, otherNode );
+                tx.createNode( LABEL ).setProperty( PROPERTY_KEY, otherNode );
                 for ( int i = 0; i < 10_000; i++ )
                 {
-                    db.createNode();
+                    tx.createNode();
                 }
                 tx.commit();
             }
             // node N
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode( LABEL ).setProperty( PROPERTY_KEY, nodeN );
+                tx.createNode( LABEL ).setProperty( PROPERTY_KEY, nodeN );
                 tx.commit();
             }
             // uniqueness constraint affecting N

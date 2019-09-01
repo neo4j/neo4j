@@ -112,13 +112,13 @@ public class IndexFailureOnStartupTest
         db.withSetting( GraphDatabaseSettings.archive_failed_index, true );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( PERSON );
+            Node node = tx.createNode( PERSON );
             node.setProperty( "name", "Fry" );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( PERSON );
+            Node node = tx.createNode( PERSON );
             node.setProperty( "name", Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2 ) );
             tx.commit();
         }
@@ -185,7 +185,7 @@ public class IndexFailureOnStartupTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label ).setProperty( "name", name );
+            tx.createNode( label ).setProperty( "name", name );
             tx.commit();
         }
     }

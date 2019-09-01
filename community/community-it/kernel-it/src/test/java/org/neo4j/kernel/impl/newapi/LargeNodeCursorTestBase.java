@@ -50,7 +50,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
         {
             for ( int i = 0; i < N_NODES; i++ )
             {
-                Node node = graphDb.createNode();
+                Node node = tx.createNode();
                 if ( RANDOM.nextBoolean() )
                 {
                     NODE_IDS.add( node.getId() );

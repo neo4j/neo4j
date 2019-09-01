@@ -106,7 +106,7 @@ class CommunitySystemDatabaseIT
         Label systemLabel = label( "systemLabel" );
         try ( Transaction transaction = systemDb.beginTx() )
         {
-            Node node = systemDb.createNode( systemLabel );
+            Node node = transaction.createNode( systemLabel );
             node.setProperty( "a", "b" );
             transaction.commit();
         }
@@ -143,7 +143,7 @@ class CommunitySystemDatabaseIT
         {
             try ( Transaction transaction = defaultDb.beginTx() )
             {
-                defaultDb.createNode( label( valueOf( i ) ) );
+                transaction.createNode( label( valueOf( i ) ) );
                 transaction.commit();
             }
         }
@@ -183,7 +183,7 @@ class CommunitySystemDatabaseIT
         {
             try ( Transaction transaction = defaultDb.beginTx() )
             {
-                defaultDb.createNode( label( valueOf( i ) ) );
+                transaction.createNode( label( valueOf( i ) ) );
                 transaction.commit();
             }
         }

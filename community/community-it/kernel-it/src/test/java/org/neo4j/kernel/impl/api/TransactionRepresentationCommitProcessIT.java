@@ -80,7 +80,7 @@ class TransactionRepresentationCommitProcessIT
                         {
                             try ( Transaction tx = db.beginTx() )
                             {
-                                db.createNode();
+                                tx.createNode();
                                 tx.commit();
                             }
                             randomSleep();

@@ -90,7 +90,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
 
-    inTx(graphDb.createNode(Label.label("NotThereYet")))
+    inTx( tx => tx.createNode(Label.label("NotThereYet")))
 
     // then
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))

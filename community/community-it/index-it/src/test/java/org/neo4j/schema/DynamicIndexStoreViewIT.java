@@ -71,7 +71,7 @@ public class DynamicIndexStoreViewIT
                 {
                     for ( int i = 0; i < 5; i++ )
                     {
-                        Node node = database.createNode( Label.label( "label" + counter ) );
+                        Node node = transaction.createNode( Label.label( "label" + counter ) );
                         node.setProperty( "property", randomValues.nextValue().asObject() );
                     }
                     transaction.commit();
@@ -164,7 +164,7 @@ public class DynamicIndexStoreViewIT
                             }
                             break;
                         case 2:
-                            Node nodeToUpdate = databaseService.createNode( Label.label( "label10" ) );
+                            Node nodeToUpdate = transaction.createNode( Label.label( "label10" ) );
                             nodeToUpdate.setProperty( "property", randomValues.nextValue().asObject()  );
                             break;
                         default:

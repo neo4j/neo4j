@@ -22,10 +22,10 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.function.ThrowingAction;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -124,7 +124,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         }
     }
 
-    private Runnable work( int iterations, ThrowingAction<Exception> work )
+    private Runnable work( int iterations, ThrowingConsumer<Transaction, Exception> work )
     {
         return () ->
         {
@@ -136,7 +136,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
                     try ( Transaction tx = db.beginTx() )
                     {
                         Thread.yield();
-                        work.apply();
+                        work.accept( tx );
                         Thread.yield();
                         tx.commit();
                     }
@@ -173,17 +173,17 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
         IndexDescriptor initialIndex = createInitialIndex( descriptor );
 
-        Runnable aliceWork = work( nodesCreatedPerThread, () ->
+        Runnable aliceWork = work( nodesCreatedPerThread, tx ->
         {
-            db.getNodeById( createNodeIndexableByPropertyValue( LABEL, "alice" ) );
+            db.getNodeById( createNodeIndexableByPropertyValue( tx, LABEL, "alice" ) );
             aliceLatch.countDown();
         } );
-        Runnable bobWork = work( nodesCreatedPerThread, () ->
+        Runnable bobWork = work( nodesCreatedPerThread, tx ->
         {
-            db.getNodeById( createNodeWithProperty( LABEL, "otherProp", "bob" ) );
+            db.getNodeById( createNodeWithProperty( tx, LABEL, "otherProp", "bob" ) );
             bobLatch.countDown();
         } );
-        Runnable changeConfig = work( 1, dropAndReCreateIndex( initialIndex, newDescriptor ) );
+        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newDescriptor ).apply() );
         raceContestantsAndVerifyResults( newDescriptor, aliceWork, changeConfig, bobWork );
     }
 
@@ -195,17 +195,17 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
         IndexDescriptor initialIndex = createInitialIndex( descriptor );
 
-        Runnable aliceWork = work( nodesCreatedPerThread, () ->
+        Runnable aliceWork = work( nodesCreatedPerThread, tx ->
         {
             db.execute( "create (:LABEL {" + PROP + ": \"alice\"})" ).close();
             aliceLatch.countDown();
         } );
-        Runnable bobWork = work( nodesCreatedPerThread, () ->
+        Runnable bobWork = work( nodesCreatedPerThread, tx ->
         {
             db.execute( "create (:LABEL {otherProp: \"bob\"})" ).close();
             bobLatch.countDown();
         } );
-        Runnable changeConfig = work( 1, dropAndReCreateIndex( initialIndex, newDescriptor ) );
+        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newDescriptor ).apply() );
         raceContestantsAndVerifyResults( newDescriptor, aliceWork, changeConfig, bobWork );
     }
 }

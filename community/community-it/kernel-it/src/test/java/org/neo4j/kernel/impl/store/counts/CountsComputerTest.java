@@ -126,10 +126,10 @@ class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( Label.label( "A" ) );
-            db.createNode( Label.label( "C" ) );
-            db.createNode( Label.label( "D" ) );
-            db.createNode();
+            tx.createNode( Label.label( "A" ) );
+            tx.createNode( Label.label( "C" ) );
+            tx.createNode( Label.label( "D" ) );
+            tx.createNode();
             tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
@@ -157,10 +157,10 @@ class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( Label.label( "A" ) );
-            db.createNode( Label.label( "C" ) );
-            Node node = db.createNode( Label.label( "D" ) );
-            db.createNode();
+            tx.createNode( Label.label( "A" ) );
+            tx.createNode( Label.label( "C" ) );
+            Node node = tx.createNode( Label.label( "D" ) );
+            tx.createNode();
             node.delete();
             tx.commit();
         }
@@ -189,8 +189,8 @@ class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = db.createNode( Label.label( "A" ) );
-            Node nodeC = db.createNode( Label.label( "C" ) );
+            Node nodeA = tx.createNode( Label.label( "A" ) );
+            Node nodeC = tx.createNode( Label.label( "C" ) );
             Relationship rel = nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE1" ) );
             nodeC.createRelationshipTo( nodeA, RelationshipType.withName( "TYPE2" ) );
             rel.delete();
@@ -223,10 +223,10 @@ class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = db.createNode( Label.label( "A" ) );
-            Node nodeC = db.createNode( Label.label( "C" ) );
-            Node nodeD = db.createNode( Label.label( "D" ) );
-            Node node = db.createNode();
+            Node nodeA = tx.createNode( Label.label( "A" ) );
+            Node nodeC = tx.createNode( Label.label( "C" ) );
+            Node nodeD = tx.createNode( Label.label( "D" ) );
+            Node node = tx.createNode();
             nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE" ) );
             node.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
             tx.commit();
@@ -263,9 +263,9 @@ class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = db.createNode( Label.label( "A" ) );
-            Node nodeC = db.createNode( Label.label( "C" ) );
-            Node nodeD = db.createNode( Label.label( "D" ) );
+            Node nodeA = tx.createNode( Label.label( "A" ) );
+            Node nodeC = tx.createNode( Label.label( "C" ) );
+            Node nodeD = tx.createNode( Label.label( "D" ) );
             nodeA.createRelationshipTo( nodeA, RelationshipType.withName( "TYPE1" ) );
             nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
             nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE3" ) );

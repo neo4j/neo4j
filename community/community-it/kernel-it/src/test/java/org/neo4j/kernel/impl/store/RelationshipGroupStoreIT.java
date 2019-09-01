@@ -57,10 +57,10 @@ class RelationshipGroupStoreIT
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
             {
-                node.createRelationshipTo( db.createNode(), type( i ) );
+                node.createRelationshipTo( tx.createNode(), type( i ) );
             }
             tx.commit();
         }

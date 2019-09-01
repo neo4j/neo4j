@@ -73,10 +73,10 @@ class RelationshipChainPointerChasingTest
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             for ( int i = 0; i < numberOfRelationships; i++ )
             {
-                node.createRelationshipTo( db.createNode(), TEST );
+                node.createRelationshipTo( tx.createNode(), TEST );
             }
             tx.commit();
         }
@@ -117,13 +117,13 @@ class RelationshipChainPointerChasingTest
         Relationship relationshipInTheEnd;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             for ( int i = 0; i < THRESHOLD; i++ )
             {
-                node.createRelationshipTo( db.createNode(), TEST );
+                node.createRelationshipTo( tx.createNode(), TEST );
             }
-            relationshipInTheMiddle = node.createRelationshipTo( db.createNode(), TEST2 );
-            relationshipInTheEnd = node.createRelationshipTo( db.createNode(), TEST_TRAVERSAL );
+            relationshipInTheMiddle = node.createRelationshipTo( tx.createNode(), TEST2 );
+            relationshipInTheEnd = node.createRelationshipTo( tx.createNode(), TEST_TRAVERSAL );
             tx.commit();
         }
 

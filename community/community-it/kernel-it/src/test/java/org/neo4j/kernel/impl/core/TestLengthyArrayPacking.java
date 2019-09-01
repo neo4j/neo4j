@@ -52,7 +52,7 @@ class TestLengthyArrayPacking extends AbstractNeo4jTestCase
             {
                 arrayWhichUnpackedWouldFillTwoDynamicRecords[i] = i * i;
             }
-            node = getGraphDb().createNode();
+            node = transaction.createNode();
             node.setProperty( key, arrayWhichUnpackedWouldFillTwoDynamicRecords );
 
             // Make sure it only requires one dynamic record
@@ -112,7 +112,7 @@ class TestLengthyArrayPacking extends AbstractNeo4jTestCase
         long stringRecordsBefore = recordCounter.count();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Node node = getGraphDb().createNode();
+            Node node = transaction.createNode();
             node.setProperty( "name", value );
             transaction.commit();
         }

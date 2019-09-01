@@ -283,7 +283,7 @@ public class UniquenessRecoveryTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode( label( "Person" ) ).setProperty( "name", "Sneaky Steve" );
+                tx.createNode( label( "Person" ) ).setProperty( "name", "Sneaky Steve" );
 
                 tx.commit();
             }

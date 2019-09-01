@@ -125,7 +125,7 @@ class ConcurrentChangesOnEntitiesTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node theNode = db.createNode();
+            Node theNode = tx.createNode();
             long id = theNode.getId();
             tx.commit();
             return id;
@@ -137,9 +137,9 @@ class ConcurrentChangesOnEntitiesTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.setProperty( "a", "prop" );
-            Relationship rel = node.createRelationshipTo( db.createNode(), RelationshipType.withName( "T" ) );
+            Relationship rel = node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "T" ) );
             long id = rel.getId();
             tx.commit();
             return id;

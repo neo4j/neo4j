@@ -65,8 +65,8 @@ class TestBestFirstSelectorFactory extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            graph.makePathWithRelProperty( LENGTH, "a-1-b-2-d" );
-            graph.makePathWithRelProperty( LENGTH, "a-2-c-4-b" );
+            graph.makePathWithRelProperty( transaction, LENGTH, "a-1-b-2-d" );
+            graph.makePathWithRelProperty( transaction, LENGTH, "a-2-c-4-b" );
             transaction.commit();
         }
     }
@@ -99,7 +99,7 @@ class TestBestFirstSelectorFactory extends Neo4jAlgoTestCase
                     return next.length() == 0 ? 0 : evaluator.getCost( next.lastRelationship(), Direction.BOTH );
                 }
             };
-            Node a = graph.getNode( "a" );
+            Node a = graph.getNode( transaction, "a" );
 
             Traverser traverser = new MonoDirectionalTraversalDescription().expand( expander ).order( factory ).uniqueness( uniqueness ).traverse( a );
 
@@ -108,7 +108,7 @@ class TestBestFirstSelectorFactory extends Neo4jAlgoTestCase
             int i = 0;
             while ( iterator.hasNext() )
             {
-                assertPath( iterator.next(), expectedResult[i] );
+                assertPath( transaction, iterator.next(), expectedResult[i] );
                 i++;
             }
             assertEquals( expectedResult.length, i, String.format( "Not all expected paths where traversed. Missing paths are %s\n",

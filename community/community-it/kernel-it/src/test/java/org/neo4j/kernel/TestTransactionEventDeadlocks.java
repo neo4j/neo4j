@@ -51,7 +51,7 @@ class TestTransactionEventDeadlocks
         Node node;
         try ( Transaction tx = graphdb.beginTx() )
         {
-            node = graphdb.createNode();
+            node = tx.createNode();
             node.setProperty( "counter", 0L );
             tx.commit();
         }
@@ -61,7 +61,7 @@ class TestTransactionEventDeadlocks
         try ( Transaction tx = graphdb.beginTx() )
         {
             node.setProperty( "state", "not broken yet" );
-            node.createRelationshipTo( graphdb.createNode(), RelationshipType.withName( "TEST" ) );
+            node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "TEST" ) );
             node.removeProperty( "state" );
             tx.commit();
         }

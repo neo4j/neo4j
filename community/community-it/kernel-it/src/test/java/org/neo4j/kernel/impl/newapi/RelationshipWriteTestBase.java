@@ -48,8 +48,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         long n1, n2;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            n1 = graphDb.createNode().getId();
-            n2 = graphDb.createNode().getId();
+            n1 = tx.createNode().getId();
+            n2 = tx.createNode().getId();
             tx.commit();
         }
 
@@ -96,8 +96,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         long n1, n2;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            n1 = graphDb.createNode().getId();
-            n2 = graphDb.createNode().getId();
+            n1 = tx.createNode().getId();
+            n2 = tx.createNode().getId();
             tx.commit();
         }
 
@@ -120,8 +120,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         long n1, r;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node node1 = graphDb.createNode();
-            Node node2 = graphDb.createNode();
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
 
             n1 = node1.getId();
             r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
@@ -165,8 +165,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         long n1, n2;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            n1 = graphDb.createNode().getId();
-            n2 = graphDb.createNode().getId();
+            n1 = tx.createNode().getId();
+            n2 = tx.createNode().getId();
             tx.commit();
         }
 
@@ -193,8 +193,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         String propertyKey = "prop";
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node node1 = graphDb.createNode();
-            Node node2 = graphDb.createNode();
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
 
             relationshipId = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
 
@@ -224,8 +224,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         String propertyKey = "prop";
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node node1 = graphDb.createNode();
-            Node node2 = graphDb.createNode();
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
 
             Relationship r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
             r.setProperty( propertyKey, 42  );
@@ -258,8 +258,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         String propertyKey = "prop";
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node node1 = graphDb.createNode();
-            Node node2 = graphDb.createNode();
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
 
             Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
             relationshipId = proxy.getId();
@@ -291,8 +291,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         String propertyKey = "prop";
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node node1 = graphDb.createNode();
-            Node node2 = graphDb.createNode();
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
 
             Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
             relationshipId = proxy.getId();
@@ -322,8 +322,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         String propertyKey = "prop";
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node node1 = graphDb.createNode();
-            Node node2 = graphDb.createNode();
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
 
             Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
             relationshipId = proxy.getId();
@@ -357,8 +357,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         String propertyKey = "prop";
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node node1 = graphDb.createNode();
-            Node node2 = graphDb.createNode();
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
 
             relationshipId = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
 
@@ -392,8 +392,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            Node node1 = graphDb.createNode();
-            Node node2 = graphDb.createNode();
+            Node node1 = ctx.createNode();
+            Node node2 = ctx.createNode();
 
             Relationship r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
 

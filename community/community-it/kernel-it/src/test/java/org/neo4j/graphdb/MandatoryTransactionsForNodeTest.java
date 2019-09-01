@@ -36,9 +36,9 @@ public class MandatoryTransactionsForNodeTest extends AbstractMandatoryTransacti
     }
 
     @Override
-    protected Node obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected Node obtainEntityInTransaction( Transaction transaction )
     {
-        return graphDatabaseService.createNode();
+        return transaction.createNode();
     }
 }
 

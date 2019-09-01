@@ -62,7 +62,7 @@ class TemporalPropertiesRecordFormatIT
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( label );
+            Node node = transaction.createNode( label );
             node.setProperty( propertyKey, date );
             transaction.commit();
         }
@@ -89,7 +89,7 @@ class TemporalPropertiesRecordFormatIT
         GraphDatabaseService database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( label );
+            Node node = transaction.createNode( label );
             node.setProperty( propertyKey, new LocalDate[]{date, date} );
             transaction.commit();
         }

@@ -92,7 +92,7 @@ public class NativeLabelScanStoreChaosIT
     {
         try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            Node node = dbRule.getGraphDatabaseAPI().createNode( labels );
+            Node node = tx.createNode( labels );
             tx.commit();
             return node;
         }

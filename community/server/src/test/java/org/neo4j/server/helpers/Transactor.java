@@ -48,7 +48,7 @@ public class Transactor
         {
             try ( Transaction tx = graphDb.beginTx() )
             {
-                unitOfWork.doWork();
+                unitOfWork.doWork( tx );
                 tx.commit();
             }
             catch ( RuntimeException e )

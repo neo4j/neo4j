@@ -159,7 +159,7 @@ class IndexCRUDIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( labels );
+            Node node = tx.createNode( labels );
             for ( Map.Entry<String, Object> prop : properties.entrySet() )
             {
                 node.setProperty( prop.getKey(), prop.getValue() );

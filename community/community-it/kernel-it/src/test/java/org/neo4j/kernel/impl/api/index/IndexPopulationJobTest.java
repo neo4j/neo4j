@@ -805,7 +805,7 @@ class IndexPopulationJobTest
     {
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( labels );
+            Node node = tx.createNode( labels );
             for ( Map.Entry<String,Object> property : properties.entrySet() )
             {
                 node.setProperty( property.getKey(), property.getValue() );

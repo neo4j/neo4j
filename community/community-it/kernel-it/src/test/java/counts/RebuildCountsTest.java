@@ -149,11 +149,11 @@ class RebuildCountsTest
         {
             for ( int i = 0; i < ALIENS; i++ )
             {
-                db.createNode( ALIEN );
+                tx.createNode( ALIEN );
             }
             for ( int i = 0; i < HUMANS; i++ )
             {
-                db.createNode( HUMAN );
+                tx.createNode( HUMAN );
             }
             tx.commit();
         }

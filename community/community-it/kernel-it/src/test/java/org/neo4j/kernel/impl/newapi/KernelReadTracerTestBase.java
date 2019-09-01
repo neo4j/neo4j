@@ -70,12 +70,12 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         Node deleted;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            Node foo = graphDb.createNode( label( "Foo" ) );
-            Node bar = graphDb.createNode( label( "Bar" ) );
-            graphDb.createNode( label( "Baz" ) );
-            graphDb.createNode( label( "Bar" ), label( "Baz" ) );
-            deleted = graphDb.createNode();
-            Node bare = graphDb.createNode();
+            Node foo = tx.createNode( label( "Foo" ) );
+            Node bar = tx.createNode( label( "Bar" ) );
+            tx.createNode( label( "Baz" ) );
+            tx.createNode( label( "Bar" ), label( "Baz" ) );
+            deleted = tx.createNode();
+            Node bare = tx.createNode();
 
             has = foo.createRelationshipTo( bar, RelationshipType.withName( "HAS" ) ).getId();
             foo.createRelationshipTo( bar, RelationshipType.withName( "HAS" ) );

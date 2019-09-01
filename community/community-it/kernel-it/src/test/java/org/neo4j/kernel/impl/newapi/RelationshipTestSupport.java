@@ -50,31 +50,31 @@ class RelationshipTestSupport
         Relationship dead;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            Node a = graphDb.createNode(),
-                    b = graphDb.createNode(),
-                    c = graphDb.createNode(),
-                    d = graphDb.createNode();
+            Node a = tx.createNode(),
+                    b = tx.createNode(),
+                    c = tx.createNode(),
+                    d = tx.createNode();
 
             a.createRelationshipTo( a, withName( "ALPHA" ) );
             a.createRelationshipTo( b, withName( "BETA" ) );
             a.createRelationshipTo( c, withName( "GAMMA" ) );
             a.createRelationshipTo( d, withName( "DELTA" ) );
 
-            graphDb.createNode().createRelationshipTo( a, withName( "BETA" ) );
-            a.createRelationshipTo( graphDb.createNode(), withName( "BETA" ) );
-            dead = a.createRelationshipTo( graphDb.createNode(), withName( "BETA" ) );
-            a.createRelationshipTo( graphDb.createNode(), withName( "BETA" ) );
+            tx.createNode().createRelationshipTo( a, withName( "BETA" ) );
+            a.createRelationshipTo( tx.createNode(), withName( "BETA" ) );
+            dead = a.createRelationshipTo( tx.createNode(), withName( "BETA" ) );
+            a.createRelationshipTo( tx.createNode(), withName( "BETA" ) );
 
-            Node clump = graphDb.createNode();
+            Node clump = tx.createNode();
             clump.createRelationshipTo( clump, withName( "REL" ) );
             clump.createRelationshipTo( clump, withName( "REL" ) );
             clump.createRelationshipTo( clump, withName( "REL" ) );
-            clump.createRelationshipTo( graphDb.createNode(), withName( "REL" ) );
-            clump.createRelationshipTo( graphDb.createNode(), withName( "REL" ) );
-            clump.createRelationshipTo( graphDb.createNode(), withName( "REL" ) );
-            graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
-            graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
-            graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
+            clump.createRelationshipTo( tx.createNode(), withName( "REL" ) );
+            clump.createRelationshipTo( tx.createNode(), withName( "REL" ) );
+            clump.createRelationshipTo( tx.createNode(), withName( "REL" ) );
+            tx.createNode().createRelationshipTo( clump, withName( "REL" ) );
+            tx.createNode().createRelationshipTo( clump, withName( "REL" ) );
+            tx.createNode().createRelationshipTo( clump, withName( "REL" ) );
 
             tx.commit();
         }
@@ -95,8 +95,8 @@ class RelationshipTestSupport
         Map<String,List<StartRelationship>> relationshipMap;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            node = graphDb.createNode();
-            relationshipMap = buildSparseDenseRels( graphDb, node );
+            node = tx.createNode();
+            relationshipMap = buildSparseDenseRels( tx, node );
             tx.commit();
         }
         return new StartNode( node.getId(), relationshipMap );
@@ -108,15 +108,15 @@ class RelationshipTestSupport
         Map<String,List<StartRelationship>> relationshipMap;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            node = graphDb.createNode();
-            relationshipMap = buildSparseDenseRels( graphDb, node );
+            node = tx.createNode();
+            relationshipMap = buildSparseDenseRels( tx, node );
 
             List<StartRelationship> bulk = new ArrayList<>();
             RelationshipType bulkType = withName( "BULK" );
 
             for ( int i = 0; i < 200; i++ )
             {
-                Relationship r = node.createRelationshipTo( graphDb.createNode(), bulkType );
+                Relationship r = node.createRelationshipTo( tx.createNode(), bulkType );
                 bulk.add( new StartRelationship( r.getId(), Direction.OUTGOING, bulkType ) );
             }
 
@@ -208,12 +208,12 @@ class RelationshipTestSupport
         }
     }
 
-    private static Map<String,List<StartRelationship>> buildSparseDenseRels( GraphDatabaseService databaseService, Node node )
+    private static Map<String,List<StartRelationship>> buildSparseDenseRels( Transaction transaction, Node node )
     {
         Map<String,List<StartRelationship>> relationshipMap = new HashMap<>();
-        for ( BiFunction<GraphDatabaseService,Node,StartRelationship> rel : SPARSE_DENSE_RELS )
+        for ( BiFunction<Transaction,Node,StartRelationship> rel : SPARSE_DENSE_RELS )
         {
-            StartRelationship r = rel.apply( databaseService, node );
+            StartRelationship r = rel.apply( transaction, node );
             List<StartRelationship> relsOfType = relationshipMap.computeIfAbsent( computeKey( r ), key -> new ArrayList<>() );
             relsOfType.add( r );
         }
@@ -249,7 +249,7 @@ class RelationshipTestSupport
         return type + "-" + direction;
     }
 
-    private static final BiFunction<GraphDatabaseService,Node,StartRelationship>[] SPARSE_DENSE_RELS = Iterators.array(
+    private static final BiFunction<Transaction,Node,StartRelationship>[] SPARSE_DENSE_RELS = Iterators.array(
             loop( "FOO" ), // loops are the hardest, let's have two to try to interfere with outgoing/incoming code
             outgoing( "FOO" ),
             outgoing( "BAR" ),
@@ -262,31 +262,31 @@ class RelationshipTestSupport
             loop( "FOO" )
     );
 
-    private static BiFunction<GraphDatabaseService,Node,StartRelationship> outgoing( String type )
+    private static BiFunction<Transaction,Node,StartRelationship> outgoing( String type )
     {
-        return ( db, node ) ->
+        return ( tx, node ) ->
         {
             RelationshipType relType = withName( type );
             return new StartRelationship(
-                    node.createRelationshipTo( db.createNode(), relType ).getId(),
+                    node.createRelationshipTo( tx.createNode(), relType ).getId(),
                     Direction.OUTGOING,
                     relType );
         };
     }
 
-    private static BiFunction<GraphDatabaseService,Node,StartRelationship> incoming( String type )
+    private static BiFunction<Transaction,Node,StartRelationship> incoming( String type )
     {
-        return ( db, node ) ->
+        return ( tx, node ) ->
         {
             RelationshipType relType = withName( type );
             return new StartRelationship(
-                    db.createNode().createRelationshipTo( node, relType ).getId(),
+                    tx.createNode().createRelationshipTo( node, relType ).getId(),
                     Direction.INCOMING,
                     relType );
         };
     }
 
-    private static BiFunction<GraphDatabaseService,Node,StartRelationship> loop( String type )
+    private static BiFunction<Transaction,Node,StartRelationship> loop( String type )
     {
         return ( db, node ) ->
         {

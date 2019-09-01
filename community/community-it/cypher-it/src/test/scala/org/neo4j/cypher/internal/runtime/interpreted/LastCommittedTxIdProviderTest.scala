@@ -69,7 +69,7 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   private def createNode(): Unit = {
     val tx = db.beginTransaction( Transaction.Type.explicit, AnonymousContext.write() )
     try {
-      graph.createNode()
+      tx.createNode()
       tx.commit()
     }
     finally {

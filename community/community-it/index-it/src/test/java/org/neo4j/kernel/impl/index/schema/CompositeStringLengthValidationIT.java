@@ -100,7 +100,7 @@ class CompositeStringLengthValidationIT
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode( LABEL );
+            node = tx.createNode( LABEL );
             node.setProperty( KEY, firstSlot );
             node.setProperty( KEY2, secondSlot );
             tx.commit();
@@ -142,7 +142,7 @@ class CompositeStringLengthValidationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
+                Node node = tx.createNode( LABEL );
                 node.setProperty( KEY, firstSlot );
                 node.setProperty( KEY2, secondSlot );
                 tx.commit();

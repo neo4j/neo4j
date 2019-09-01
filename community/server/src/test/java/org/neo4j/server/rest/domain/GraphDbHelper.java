@@ -108,7 +108,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node node = database.getDatabase().createNode( labels );
+            Node node = tx.createNode( labels );
             tx.commit();
             return node.getId();
         }
@@ -118,7 +118,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node node = database.getDatabase().createNode( labels );
+            Node node = tx.createNode( labels );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 node.setProperty( entry.getKey(), entry.getValue() );

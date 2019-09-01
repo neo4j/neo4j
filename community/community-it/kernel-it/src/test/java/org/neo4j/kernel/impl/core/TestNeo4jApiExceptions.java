@@ -65,14 +65,13 @@ class TestNeo4jApiExceptions
     @Test
     void testNotInTransactionException()
     {
-        Node node1 = graph.createNode();
+        Node node1 = tx.createNode();
         node1.setProperty( "test", 1 );
-        Node node2 = graph.createNode();
-        Node node3 = graph.createNode();
+        Node node2 = tx.createNode();
+        Node node3 = tx.createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( "test", 11 );
         commit();
-        assertThrows( NotInTransactionException.class, () -> graph.createNode() );
         assertThrows( NotInTransactionException.class, () -> node1.createRelationshipTo( node2, MyRelTypes.TEST ) );
         assertThrows( NotInTransactionException.class, () -> node1.setProperty( "test", 2 ) );
         assertThrows( NotInTransactionException.class, () -> rel.setProperty( "test", 22 ) );
@@ -95,8 +94,8 @@ class TestNeo4jApiExceptions
     @Test
     void testNotFoundException()
     {
-        Node node1 = graph.createNode();
-        Node node2 = graph.createNode();
+        Node node1 = tx.createNode();
+        Node node2 = tx.createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         long nodeId = node1.getId();
         long relId = rel.getId();
@@ -115,7 +114,7 @@ class TestNeo4jApiExceptions
     void shouldGiveNiceErrorWhenShutdownKernelApi()
     {
         GraphDatabaseService graphDb = graph;
-        Node node = graphDb.createNode();
+        Node node = tx.createNode();
         commit();
         managementService.shutdown();
 
@@ -126,12 +125,11 @@ class TestNeo4jApiExceptions
     void shouldGiveNiceErrorWhenShutdownLegacy()
     {
         GraphDatabaseService graphDb = graph;
-        Node node = graphDb.createNode();
+        Node node = tx.createNode();
         commit();
         managementService.shutdown();
 
         assertThrows( NotInTransactionException.class, node::getRelationships );
-        assertThrows( NotInTransactionException.class, graphDb::createNode );
     }
 
     private void newTransaction()

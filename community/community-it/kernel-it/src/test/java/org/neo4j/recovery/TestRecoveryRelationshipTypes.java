@@ -88,7 +88,7 @@ class TestRecoveryRelationshipTypes
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+            tx.createNode().createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
             tx.commit();
         }
 

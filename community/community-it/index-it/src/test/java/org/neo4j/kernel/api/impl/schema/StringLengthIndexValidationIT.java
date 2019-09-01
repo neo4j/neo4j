@@ -103,7 +103,7 @@ public abstract class StringLengthIndexValidationIT
         try ( Transaction tx = db.beginTx() )
         {
             String propValue = getString( singleKeySizeLimit + 1 );
-            db.createNode( LABEL_ONE ).setProperty( propKey, propValue );
+            tx.createNode( LABEL_ONE ).setProperty( propKey, propValue );
             tx.commit();
         }
         catch ( IllegalArgumentException e )
@@ -175,7 +175,7 @@ public abstract class StringLengthIndexValidationIT
                 }
                 while ( strings.containsKey( string ) );
 
-                Node node = db.createNode( LABEL_ONE );
+                Node node = tx.createNode( LABEL_ONE );
                 node.setProperty( propKey, string );
                 strings.put( string, node.getId() );
             }
@@ -224,7 +224,7 @@ public abstract class StringLengthIndexValidationIT
         long expectedNodeId;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( LABEL_ONE );
+            Node node = tx.createNode( LABEL_ONE );
             node.setProperty( propKey, propValue );
             expectedNodeId = node.getId();
             tx.commit();

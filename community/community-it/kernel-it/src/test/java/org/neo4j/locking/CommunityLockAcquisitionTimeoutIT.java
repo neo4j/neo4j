@@ -199,7 +199,7 @@ public class CommunityLockAcquisitionTimeoutIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            database.createNode( marker );
+            transaction.createNode( marker );
             transaction.commit();
         }
     }

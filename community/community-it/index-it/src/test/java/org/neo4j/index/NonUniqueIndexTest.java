@@ -78,7 +78,7 @@ class NonUniqueIndexTest
             Node node;
             try ( Transaction tx = db.beginTx() )
             {
-                node = db.createNode( label( LABEL ) );
+                node = tx.createNode( label( LABEL ) );
                 node.setProperty( KEY, VALUE );
                 tx.commit();
             }

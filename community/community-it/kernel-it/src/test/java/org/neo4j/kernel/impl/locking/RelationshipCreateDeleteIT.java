@@ -59,7 +59,7 @@ class RelationshipCreateDeleteIT
         final Node b;
         try ( Transaction tx = db.beginTx() )
         {
-            (a = db.createNode()).createRelationshipTo( b = db.createNode(), MyRelTypes.TEST );
+            (a = tx.createNode()).createRelationshipTo( b = tx.createNode(), MyRelTypes.TEST );
             tx.commit();
         }
 

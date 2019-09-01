@@ -82,7 +82,7 @@ class TestAStar extends Neo4jAlgoTestCase
         // GIVEN
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
+            Node start = graph.makeNode( transaction, "start", "x", 0d, "y", 0d );
 
             // WHEN
             var context = new BasicEvaluationContext( transaction, graphDb );
@@ -103,7 +103,7 @@ class TestAStar extends Neo4jAlgoTestCase
         try ( Transaction transaction = graphDb.beginTx() )
         {
             // GIVEN
-            Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
+            Node start = graph.makeNode( transaction, "start", "x", 0d, "y", 0d );
 
             // WHEN
             var context = new BasicEvaluationContext( transaction, graphDb );
@@ -142,20 +142,20 @@ class TestAStar extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
-            graph.makeNode( "a", "x", 0.3d, "y", 1d );
-            graph.makeNode( "b", "x", 2d, "y", 2d );
-            graph.makeNode( "c", "x", 0d, "y", 3d );
-            graph.makeNode( "d", "x", 2d, "y", 0d );
-            graph.makeNode( "e", "x", 3d, "y", 1.5d );
-            Node end = graph.makeNode( "end", "x", 3.3d, "y", 2.8d );
-            graph.makeEdge( "start", "a", "length", 1.5d );
-            graph.makeEdge( "a", "b", "length", 2f );
-            graph.makeEdge( "b", "c", "length", 3 );
-            graph.makeEdge( "c", "end", "length", 4L );
-            graph.makeEdge( "start", "d", "length", (short) 2 );
-            graph.makeEdge( "d", "e", "length", (byte) 3 );
-            graph.makeEdge( "e", "end", "length", 2 );
+            Node start = graph.makeNode( transaction, "start", "x", 0d, "y", 0d );
+            graph.makeNode( transaction, "a", "x", 0.3d, "y", 1d );
+            graph.makeNode( transaction, "b", "x", 2d, "y", 2d );
+            graph.makeNode( transaction, "c", "x", 0d, "y", 3d );
+            graph.makeNode( transaction, "d", "x", 2d, "y", 0d );
+            graph.makeNode( transaction, "e", "x", 3d, "y", 1.5d );
+            Node end = graph.makeNode( transaction, "end", "x", 3.3d, "y", 2.8d );
+            graph.makeEdge( transaction, "start", "a", "length", 1.5d );
+            graph.makeEdge( transaction, "a", "b", "length", 2f );
+            graph.makeEdge( transaction, "b", "c", "length", 3 );
+            graph.makeEdge( transaction, "c", "end", "length", 4L );
+            graph.makeEdge( transaction, "start", "d", "length", (short) 2 );
+            graph.makeEdge( transaction, "d", "e", "length", (byte) 3 );
+            graph.makeEdge( transaction, "e", "end", "length", 2 );
 
             // WHEN
             var context = new BasicEvaluationContext( transaction, graphDb );
@@ -182,13 +182,13 @@ class TestAStar extends Neo4jAlgoTestCase
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A", "x", 0d, "y", 0d );
-            Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
-            Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );
-            Relationship relAB = graph.makeEdge( "A", "B", "length", 2d );
-            Relationship relAB2 = graph.makeEdge( "A", "B", "length", 2 );
-            Relationship relBC = graph.makeEdge( "B", "C", "length", 3f );
-            Relationship relAC = graph.makeEdge( "A", "C", "length", (short) 10 );
+            Node nodeA = graph.makeNode( transaction, "A", "x", 0d, "y", 0d );
+            Node nodeB = graph.makeNode( transaction, "B", "x", 2d, "y", 1d );
+            Node nodeC = graph.makeNode( transaction, "C", "x", 7d, "y", 0d );
+            Relationship relAB = graph.makeEdge( transaction, "A", "B", "length", 2d );
+            Relationship relAB2 = graph.makeEdge( transaction, "A", "B", "length", 2 );
+            Relationship relBC = graph.makeEdge( transaction, "B", "C", "length", 3f );
+            Relationship relAC = graph.makeEdge( transaction, "A", "C", "length", (short) 10 );
 
             int counter = 0;
             var context = new BasicEvaluationContext( transaction, graphDb );
@@ -230,13 +230,13 @@ class TestAStar extends Neo4jAlgoTestCase
          */
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            Node nodeA = graph.makeNode( "A", "x", 0d, "y", 0d );
-            Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
-            Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );
-            graph.makeEdge( "A", "B", "length", 2d );
-            graph.makeEdge( "A", "B", "length", 2d );
-            graph.makeEdge( "B", "C", "length", 3d );
-            graph.makeEdge( "A", "C", "length", 10d );
+            Node nodeA = graph.makeNode( transaction, "A", "x", 0d, "y", 0d );
+            Node nodeB = graph.makeNode( transaction, "B", "x", 2d, "y", 1d );
+            Node nodeC = graph.makeNode( transaction, "C", "x", 7d, "y", 0d );
+            graph.makeEdge( transaction, "A", "B", "length", 2d );
+            graph.makeEdge( transaction, "A", "B", "length", 2d );
+            graph.makeEdge( transaction, "B", "C", "length", 3d );
+            graph.makeEdge( transaction, "A", "C", "length", 10d );
 
             final Map<Node,Double> seenBranchStates = new HashMap<>();
             PathExpander<Double> expander = new PathExpander<Double>()
@@ -286,17 +286,17 @@ class TestAStar extends Neo4jAlgoTestCase
             var context = new BasicEvaluationContext( transaction, graphDb );
             PathFinder<WeightedPath> finder = aStar( context, allTypesAndDirections(), doubleCostEvaluator( "weight", 0d ), estimator );
 
-            final Node node1 = graph.makeNode( "1", "estimate", 0.003d );
-            final Node node2 = graph.makeNode( "2", "estimate", 0.002d );
-            final Node node3 = graph.makeNode( "3", "estimate", 0.001d );
-            final Node node4 = graph.makeNode( "4", "estimate", 0d );
-            graph.makeEdge( "1", "3", "weight", 0.253d );
-            graph.makeEdge( "1", "2", "weight", 0.018d );
-            graph.makeEdge( "2", "4", "weight", 0.210d );
-            graph.makeEdge( "2", "3", "weight", 0.180d );
-            graph.makeEdge( "2", "3", "weight", 0.024d );
-            graph.makeEdge( "3", "4", "weight", 0.135d );
-            graph.makeEdge( "3", "4", "weight", 0.013d );
+            final Node node1 = graph.makeNode( transaction, "1", "estimate", 0.003d );
+            final Node node2 = graph.makeNode( transaction, "2", "estimate", 0.002d );
+            final Node node3 = graph.makeNode( transaction, "3", "estimate", 0.001d );
+            final Node node4 = graph.makeNode( transaction, "4", "estimate", 0d );
+            graph.makeEdge( transaction, "1", "3", "weight", 0.253d );
+            graph.makeEdge( transaction, "1", "2", "weight", 0.018d );
+            graph.makeEdge( transaction, "2", "4", "weight", 0.210d );
+            graph.makeEdge( transaction, "2", "3", "weight", 0.180d );
+            graph.makeEdge( transaction, "2", "3", "weight", 0.024d );
+            graph.makeEdge( transaction, "3", "4", "weight", 0.135d );
+            graph.makeEdge( transaction, "3", "4", "weight", 0.013d );
 
             // WHEN
             WeightedPath best14 = finder.findSinglePath( node1, node4 );

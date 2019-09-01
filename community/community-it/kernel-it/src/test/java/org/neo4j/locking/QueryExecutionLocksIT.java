@@ -117,7 +117,7 @@ class QueryExecutionLocksIT
 
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node = db.createNode( human );
+            Node node = transaction.createNode( human );
             node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
             transaction.commit();
         }
@@ -144,7 +144,7 @@ class QueryExecutionLocksIT
 
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node = db.createNode( robot );
+            Node node = transaction.createNode( robot );
             node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
             transaction.commit();
         }

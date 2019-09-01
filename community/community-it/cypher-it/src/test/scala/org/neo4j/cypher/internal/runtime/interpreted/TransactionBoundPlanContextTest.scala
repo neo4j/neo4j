@@ -60,7 +60,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
   test("statistics should default to minimum cardinality on empty db") {
 
-    inTx(planContext => {
+    inTx((planContext,_) => {
       val statistics = planContext.statistics
 
       // all nodes
@@ -82,16 +82,16 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   test("statistics should default to minimum cardinality for unknown counts on nonempty db") {
 
     // given
-    inTx(_ => {
+    inTx( (_, tx) => {
       for ( i <- 0 until 100 ) {
-        val n1 = database.createNode(Label.label("L1"))
-        val n2 = database.createNode()
+        val n1 = tx.createNode(Label.label("L1"))
+        val n2 = tx.createNode()
         n1.createRelationshipTo(n2, RelationshipType.withName("T"))
       }
     })
 
     // then
-    inTx(planContext => {
+    inTx( (planContext, _) => {
       val statistics = planContext.statistics
 
       // label stats
@@ -116,11 +116,11 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   test("indexPropertyExistsSelectivity of empty label index should be 0") {
-    inTx(_ => {
+    inTx( (_, _) => {
       database.schema().indexFor(Label.label("L1")).on("prop").create()
     })
 
-    inTx(planContext => {
+    inTx( ( planContext, _) => {
       database.schema().awaitIndexesOnline(10, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
@@ -130,15 +130,15 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   test("uniqueValueSelectivity of empty index should be 0") {
-    inTx(_ => {
-      database.createNode(Label.label("L1"))
+    inTx(( planContext, tx) => {
+      tx.createNode(Label.label("L1"))
     })
 
-    inTx(_ => {
+    inTx((planContext, tx) => {
       database.schema().indexFor(Label.label("L1")).on("prop").create()
     })
 
-    inTx(planContext => {
+    inTx((planContext, tx) => {
       database.schema().awaitIndexesOnline(10, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
@@ -148,14 +148,14 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   test("indexesGetForLabel should return both regular and unique indexes") {
-    inTx(_ => {
+    inTx((planContext, tx) => {
       database.schema().indexFor(Label.label("L1")).on("prop").create()
       database.schema().indexFor(Label.label("L2")).on("prop").create()
       database.schema().constraintFor(Label.label("L1")).assertPropertyIsUnique("prop2").create()
       database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
     })
 
-    inTx(planContext => {
+    inTx((planContext, tx) => {
       database.schema().awaitIndexesOnline(10, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
@@ -168,14 +168,14 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   test("uniqueIndexesGetForLabel should return only unique indexes") {
-    inTx(_ => {
+    inTx((planContext, tx) => {
       database.schema().indexFor(Label.label("L1")).on("prop").create()
       database.schema().indexFor(Label.label("L2")).on("prop").create()
       database.schema().constraintFor(Label.label("L1")).assertPropertyIsUnique("prop2").create()
       database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
     })
 
-    inTx(planContext => {
+    inTx((planContext, tx) => {
       database.schema().awaitIndexesOnline(10, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop2id = planContext.getPropertyKeyId("prop2")
@@ -186,16 +186,16 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   test("indexExistsForLabel should return true for both regular and unique indexes") {
-    inTx(_ => {
+    inTx((planContext, tx) => {
       database.schema().indexFor(Label.label("L1")).on("prop").create()
       database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
     })
 
-    inTx(_ => {
-      database.createNode(Label.label("L3"))
+    inTx((planContext, tx) => {
+      tx.createNode(Label.label("L3"))
     })
 
-    inTx(planContext => {
+    inTx((planContext, tx) => {
       database.schema().awaitIndexesOnline(10, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val l2id = planContext.getLabelId("L2")
@@ -207,16 +207,16 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   test("indexExistsForLabelAndProperties should return true for both regular and unique indexes") {
-    inTx(_ => {
+    inTx((planContext, tx) => {
       database.schema().indexFor(Label.label("L1")).on("prop").create()
       database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
     })
 
-    inTx(_ => {
-      database.createNode(Label.label("L3"))
+    inTx((planContext, tx) => {
+      tx.createNode(Label.label("L3"))
     })
 
-    inTx(planContext => {
+    inTx((planContext, tx) => {
       database.schema().awaitIndexesOnline(10, SECONDS)
       planContext.indexExistsForLabelAndProperties("L1", Seq("prop")) should be(true)
       planContext.indexExistsForLabelAndProperties("L1", Seq("prop2")) should be(false)
@@ -227,13 +227,13 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
-  def inTx(f: TransactionBoundPlanContext => Unit) = {
+  def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit) = {
     val tx = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
 
     try {
-      f(planContext)
+      f(planContext, tx)
       transactionalContext.close()
       tx.commit()
     } catch {

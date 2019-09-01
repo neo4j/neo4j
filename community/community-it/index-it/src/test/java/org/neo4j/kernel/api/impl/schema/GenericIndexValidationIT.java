@@ -112,7 +112,7 @@ public class GenericIndexValidationIT
                 boolean wasAbleToWrite = true;
                 try ( Transaction tx = db.beginTx() )
                 {
-                    Node node = db.createNode( LABEL_ONE );
+                    Node node = tx.createNode( LABEL_ONE );
                     node.setProperty( propKey, propValue );
                     expectedNodeId = node.getId();
                     tx.commit();
@@ -217,7 +217,7 @@ public class GenericIndexValidationIT
                 boolean ableToWrite = true;
                 try ( Transaction tx = db.beginTx() )
                 {
-                    Node node = db.createNode( LABEL_ONE );
+                    Node node = tx.createNode( LABEL_ONE );
                     setProperties( propKeys, propValues, node );
                     expectedNodeId = node.getId();
                     tx.commit();

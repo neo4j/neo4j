@@ -60,7 +60,7 @@ class Neo4jExtensionRegisterIT
                         {
                             try ( Transaction tx = graphDatabaseService.beginTx() )
                             {
-                                graphDatabaseService.createNode( Label.label( "User" ) );
+                                tx.createNode( Label.label( "User" ) );
                                 tx.commit();
                             }
                             return null;
@@ -83,7 +83,7 @@ class Neo4jExtensionRegisterIT
         {
             try ( Transaction transaction = databaseService.beginTx() )
             {
-                databaseService.createNode();
+                transaction.createNode();
                 transaction.commit();
             }
         } );

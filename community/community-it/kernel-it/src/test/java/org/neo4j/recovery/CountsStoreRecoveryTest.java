@@ -129,7 +129,7 @@ class CountsStoreRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label( label ) );
+            tx.createNode( label( label ) );
 
             tx.commit();
         }

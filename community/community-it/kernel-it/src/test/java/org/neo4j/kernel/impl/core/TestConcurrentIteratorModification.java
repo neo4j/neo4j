@@ -52,8 +52,8 @@ class TestConcurrentIteratorModification
         Node node3;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = db.createNode( label );
-            node2 = db.createNode( label );
+            node1 = tx.createNode( label );
+            node2 = tx.createNode( label );
             tx.commit();
         }
 
@@ -61,10 +61,10 @@ class TestConcurrentIteratorModification
         Set<Node> result = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
-            node3 = db.createNode( label );
+            node3 = tx.createNode( label );
             ResourceIterator<Node> iterator = db.findNodes( label );
             node3.removeLabel( label );
-            db.createNode( label );
+            tx.createNode( label );
             while ( iterator.hasNext() )
             {
                 result.add( iterator.next() );

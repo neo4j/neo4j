@@ -123,9 +123,9 @@ public class IndexPopulationFlipRaceIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node nodeA = db.createNode( labelA( i ) );
+                Node nodeA = tx.createNode( labelA( i ) );
                 nodeA.setProperty( keyA( i ), dataA[t] = nodeA.getId() );
-                Node nodeB = db.createNode( labelB( i ) );
+                Node nodeB = tx.createNode( labelB( i ) );
                 nodeB.setProperty( keyB( i ), dataB[t] = nodeB.getId() );
                 tx.commit();
             }

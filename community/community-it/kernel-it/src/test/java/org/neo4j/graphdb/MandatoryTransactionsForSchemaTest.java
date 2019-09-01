@@ -38,8 +38,8 @@ public class MandatoryTransactionsForSchemaTest extends AbstractMandatoryTransac
     }
 
     @Override
-    protected Schema obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected Schema obtainEntityInTransaction( Transaction transaction )
     {
-        return graphDatabaseService.schema();
+        return db.schema();
     }
 }

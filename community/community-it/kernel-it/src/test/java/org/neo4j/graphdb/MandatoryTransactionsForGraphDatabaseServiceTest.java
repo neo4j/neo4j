@@ -37,8 +37,8 @@ public class MandatoryTransactionsForGraphDatabaseServiceTest extends
     }
 
     @Override
-    protected GraphDatabaseService obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected GraphDatabaseService obtainEntityInTransaction( Transaction transaction )
     {
-        return graphDatabaseService;
+        return db;
     }
 }

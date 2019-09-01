@@ -82,9 +82,9 @@ public class SchemaIndexAcceptanceTest
         Node node3;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = createNode( label, "name", "One" );
-            node2 = createNode( label, "name", "Two" );
-            node3 = createNode( label, "name", "Three" );
+            node1 = createNode( tx, label, "name", "One" );
+            node2 = createNode( tx, label, "name", "Two" );
+            node3 = createNode( tx, label, "name", "Three" );
             tx.commit();
         }
 
@@ -108,7 +108,7 @@ public class SchemaIndexAcceptanceTest
         Node node1;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = createNode( label, propertyKey, arrayPropertyValue );
+            node1 = createNode( tx, label, propertyKey, arrayPropertyValue );
             tx.commit();
         }
 
@@ -132,7 +132,7 @@ public class SchemaIndexAcceptanceTest
         Node node1;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = createNode( label, propertyKey, arrayPropertyValue );
+            node1 = createNode( tx, label, propertyKey, arrayPropertyValue );
             tx.commit();
         }
 
@@ -155,7 +155,7 @@ public class SchemaIndexAcceptanceTest
         Node node1;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = createNode( label, propertyKey, arrayPropertyValue );
+            node1 = createNode( tx, label, propertyKey, arrayPropertyValue );
             tx.commit();
         }
 
@@ -211,9 +211,9 @@ public class SchemaIndexAcceptanceTest
         db = newDb();
     }
 
-    private Node createNode( Label label, Object... properties )
+    private Node createNode( Transaction tx, Label label, Object... properties )
     {
-        Node node = db.createNode( label );
+        Node node = tx.createNode( label );
         for ( Map.Entry<String, Object> property : map( properties ).entrySet() )
         {
             node.setProperty( property.getKey(), property.getValue() );
@@ -245,7 +245,7 @@ public class SchemaIndexAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label );
+            Node node = tx.createNode( label );
             node.setProperty( propertyKey, "yeah" );
             tx.commit();
         }

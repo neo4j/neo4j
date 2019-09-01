@@ -104,7 +104,7 @@ class CommitContentionTest
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            db.createNode();
+            transaction.createNode();
             transaction.commit();
         }
     }

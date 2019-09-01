@@ -91,7 +91,7 @@ class IndexSamplingIntegrationTest
             {
                 for ( int i = 0; i < nodes; i++ )
                 {
-                    db.createNode( label ).setProperty( property, names[i % names.length] );
+                    tx.createNode( label ).setProperty( property, names[i % names.length] );
                 }
                 tx.commit();
             }
@@ -154,7 +154,7 @@ class IndexSamplingIntegrationTest
             {
                 for ( int i = 0; i < nodes; i++ )
                 {
-                    db.createNode( label ).setProperty( property, "" + i );
+                    tx.createNode( label ).setProperty( property, "" + i );
                 }
                 tx.commit();
             }

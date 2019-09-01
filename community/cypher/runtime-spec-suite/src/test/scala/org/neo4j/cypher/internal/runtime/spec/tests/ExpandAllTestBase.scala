@@ -211,9 +211,9 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle existing types") {
     // given
-    val (r1, r2, r3) = inTx {
-      val node = graphDb.createNode(Label.label("L"))
-      val other = graphDb.createNode(Label.label("L"))
+    val (r1, r2, r3) = inTx { tx =>
+      val node = tx.createNode(Label.label("L"))
+      val other = tx.createNode(Label.label("L"))
       (node.createRelationshipTo(other, RelationshipType.withName("R")),
         node.createRelationshipTo(other, RelationshipType.withName("S")),
         node.createRelationshipTo(other, RelationshipType.withName("T")))
@@ -240,9 +240,9 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle types missing on compile") {
     // given
-    inTx(
+    inTx( tx =>
       1 to sizeHint foreach { _ =>
-        graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("BASE"))
+        tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       })
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -254,29 +254,29 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(List.empty)
 
     //CREATE S
-    inTx(
-      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("S"))
+    inTx( tx =>
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S"))
       )
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
 
     //CREATE R
-    inTx(
-      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("R"))
-      )
+    inTx( tx =>
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
+    )
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(2))
 
     //CREATE T
-    inTx(
-      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("T"))
-      )
+    inTx( tx =>
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T"))
+    )
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(3))
   }
 
   test("cached plan should adapt to new relationship types") {
     // given
-    inTx(
+    inTx( tx =>
       1 to sizeHint foreach { _ =>
-        graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("BASE"))
+        tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       })
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -290,20 +290,20 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x", "y").withRows(List.empty)
 
     //CREATE S
-    inTx(
-      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("S"))
-      )
+    inTx( tx =>
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S"))
+    )
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
 
     //CREATE R
-    inTx(
-      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("R"))
+    inTx( tx =>
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
       )
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(2))
 
     //CREATE T
-    inTx(
-      graphDb.createNode().createRelationshipTo(graphDb.createNode(), RelationshipType.withName("T"))
+    inTx( tx =>
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T"))
       )
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
@@ -337,13 +337,13 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   }
 
   protected def smallTestGraph: (Node, Node, Node, Node, Node, Node) = {
-    inTx {
-      val a1 = graphDb.createNode(Label.label("A"))
-      val a2 = graphDb.createNode(Label.label("A"))
-      val b1 = graphDb.createNode(Label.label("B"))
-      val b2 = graphDb.createNode(Label.label("B"))
-      val b3 = graphDb.createNode(Label.label("B"))
-      val c = graphDb.createNode(Label.label("C"))
+    inTx { tx =>
+      val a1 = tx.createNode(Label.label("A"))
+      val a2 = tx.createNode(Label.label("A"))
+      val b1 = tx.createNode(Label.label("B"))
+      val b2 = tx.createNode(Label.label("B"))
+      val b3 = tx.createNode(Label.label("B"))
+      val c = tx.createNode(Label.label("C"))
 
       a1.createRelationshipTo(b1, RelationshipType.withName("R"))
       a1.createRelationshipTo(b2, RelationshipType.withName("R"))

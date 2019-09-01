@@ -155,7 +155,7 @@ class ManyPropertyKeysIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = tx.createNode();
             node.setProperty( key, value );
             tx.commit();
         }
@@ -203,7 +203,7 @@ class ManyPropertyKeysIT
         @Override
         public Void doWork( WorkerState state )
         {
-            Node node = state.db.createNode();
+            Node node = state.tx.createNode();
             node.setProperty( key, true );
             return null;
         }

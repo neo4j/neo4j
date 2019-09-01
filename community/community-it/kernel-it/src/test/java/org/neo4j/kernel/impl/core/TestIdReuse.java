@@ -103,7 +103,7 @@ class TestIdReuse
         Node commonNode;
         try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
-            commonNode = graphDatabaseService.createNode();
+            commonNode = transaction.createNode();
             for ( int i = 0; i < 10; i++ )
             {
                 commonNode.setProperty( "key" + i, value );

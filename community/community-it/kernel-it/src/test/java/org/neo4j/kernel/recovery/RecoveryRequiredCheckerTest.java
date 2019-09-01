@@ -310,7 +310,7 @@ class RecoveryRequiredCheckerTest
 
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode();
+                tx.createNode();
                 tx.commit();
             }
 
@@ -341,7 +341,7 @@ class RecoveryRequiredCheckerTest
             GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction transaction = database.beginTx() )
             {
-                database.createNode();
+                transaction.createNode();
                 transaction.commit();
             }
         }

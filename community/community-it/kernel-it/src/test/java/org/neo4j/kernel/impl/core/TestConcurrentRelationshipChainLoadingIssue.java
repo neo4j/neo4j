@@ -110,7 +110,7 @@ class TestConcurrentRelationshipChainLoadingIssue
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.createNode();
+            node = tx.createNode();
             for ( int i = 0; i < relCount / 2; i++ )
             {
                 node.createRelationshipTo( node, MyRelTypes.TEST );

@@ -174,7 +174,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
     {
         try ( Transaction tx = system.beginTx() )
         {
-            Node node = system.createNode( DATABASE_LABEL );
+            Node node = tx.createNode( DATABASE_LABEL );
             node.setProperty( DATABASE_NAME_PROPERTY, databaseName.name() );
             node.setProperty( DATABASE_UUID_PROPERTY, uuid.toString() );
             node.setProperty( DATABASE_STATUS_PROPERTY, "online" );

@@ -84,7 +84,7 @@ class TruncateDatabaseIT
         assertEquals( 0, countNodes() );
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
-            assertEquals( 0, databaseAPI.createNode().getId() );
+            assertEquals( 0, transaction.createNode().getId() );
         }
     }
 
@@ -96,8 +96,8 @@ class TruncateDatabaseIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                Node nodeA = databaseAPI.createNode();
-                Node nodeB = databaseAPI.createNode();
+                Node nodeA = transaction.createNode();
+                Node nodeB = transaction.createNode();
                 nodeA.createRelationshipTo( nodeB, withName( "any" ) );
             }
             transaction.commit();
@@ -108,8 +108,8 @@ class TruncateDatabaseIT
         assertEquals( 0, countRelationships() );
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
-            Node newA = databaseAPI.createNode();
-            Node newB = databaseAPI.createNode();
+            Node newA = transaction.createNode();
+            Node newB = transaction.createNode();
             assertEquals( 0, newA.createRelationshipTo( newB, withName( "new" ) ).getId() );
         }
     }
@@ -122,8 +122,8 @@ class TruncateDatabaseIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                Node nodeA = databaseAPI.createNode();
-                Node nodeB = databaseAPI.createNode();
+                Node nodeA = transaction.createNode();
+                Node nodeB = transaction.createNode();
                 nodeA.createRelationshipTo( nodeB, withName( "any" + i ) );
             }
             transaction.commit();
@@ -142,8 +142,8 @@ class TruncateDatabaseIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                databaseAPI.createNode( label( "start" + i ));
-                databaseAPI.createNode( label( "finish" + i ) );
+                transaction.createNode( label( "start" + i ));
+                transaction.createNode( label( "finish" + i ) );
             }
             transaction.commit();
         }
@@ -161,7 +161,7 @@ class TruncateDatabaseIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                Node node = databaseAPI.createNode();
+                Node node = transaction.createNode();
                 node.setProperty( "a" + i, random( 10 ) );
                 node.setProperty( "b" + i, random( 10 ) );
             }
@@ -195,7 +195,7 @@ class TruncateDatabaseIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                Node node = databaseAPI.createNode( indexLabel );
+                Node node = transaction.createNode( indexLabel );
                 node.setProperty( indexedProperty, random( 10 ) );
             }
             transaction.commit();
@@ -219,7 +219,7 @@ class TruncateDatabaseIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                Node node = databaseAPI.createNode();
+                Node node = transaction.createNode();
                 node.setProperty( "a" + i, random( 10 ) );
                 node.setProperty( "b" + i, random( 10 ) );
             }
@@ -247,8 +247,8 @@ class TruncateDatabaseIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                Node nodeA = databaseAPI.createNode( human );
-                Node nodeB = databaseAPI.createNode( human );
+                Node nodeA = transaction.createNode( human );
+                Node nodeB = transaction.createNode( human );
                 nodeA.setProperty( "a" + i, random( 10 ) );
                 nodeB.setProperty( "b" + i, random( 10 ) );
                 nodeA.createRelationshipTo( nodeB, relationshipType );
@@ -338,7 +338,7 @@ class TruncateDatabaseIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                databaseAPI.createNode();
+                transaction.createNode();
             }
             transaction.commit();
         }

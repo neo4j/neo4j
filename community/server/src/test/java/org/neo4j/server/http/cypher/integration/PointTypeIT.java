@@ -109,7 +109,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )} );
             node.setProperty( "location", "Shanghai" );
             node.setProperty( "type", "gps" );
@@ -137,7 +137,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 104.081602 ) );
             node.setProperty( "location", "Shanghai" );
             node.setProperty( "type", "gps" );
@@ -165,7 +165,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 104.081602 ) );
             tx.commit();
         }
@@ -191,7 +191,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )});
             tx.commit();
         }
@@ -217,7 +217,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label( "N" ) );
+            Node node = tx.createNode( label( "N" ) );
             node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )});
             tx.commit();
         }

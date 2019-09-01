@@ -146,7 +146,7 @@ class ManualAcquireLockTest
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node = getGraphDb().createNode();
+            Node node = transaction.createNode();
             transaction.commit();
             return node;
         }

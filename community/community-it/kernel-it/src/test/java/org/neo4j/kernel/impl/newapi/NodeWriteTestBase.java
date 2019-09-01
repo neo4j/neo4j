@@ -440,7 +440,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node;
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            node = graphDb.createNode().getId();
+            node = ctx.createNode().getId();
             ctx.commit();
         }
         return node;
@@ -460,7 +460,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node;
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            node = graphDb.createNode( label( labelName ) ).getId();
+            node = ctx.createNode( label( labelName ) ).getId();
             ctx.commit();
         }
         return node;
@@ -471,7 +471,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         Node node;
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            node = graphDb.createNode();
+            node = ctx.createNode();
             node.setProperty( propertyKey, value );
             ctx.commit();
         }

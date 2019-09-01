@@ -87,10 +87,10 @@ class RelationshipCountsTest
         long during;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
-            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
-            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+            Node node = tx.createNode();
+            node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
+            node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
+            node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
             during = countsForRelationship( null, null, null );
             tx.commit();
         }
@@ -111,10 +111,10 @@ class RelationshipCountsTest
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
-            rel = node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
-            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+            Node node = tx.createNode();
+            node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
+            rel = node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
+            node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
             tx.commit();
         }
         long before = numberOfRelationships();
@@ -145,9 +145,9 @@ class RelationshipCountsTest
         {
             try ( Transaction txn = db.beginTx() )
             {
-                Node node = db.createNode();
-                node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
-                node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+                Node node = txn.createNode();
+                node.createRelationshipTo( txn.createNode(), withName( "KNOWS" ) );
+                node.createRelationshipTo( txn.createNode(), withName( "KNOWS" ) );
                 long whatThisThreadSees = countsForRelationship( null, null, null );
                 barrier.reached();
                 txn.commit();
@@ -176,10 +176,10 @@ class RelationshipCountsTest
         final Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
-            rel = node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
-            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+            Node node = tx.createNode();
+            node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
+            rel = node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
+            node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
             tx.commit();
         }
         final Barrier.Control barrier = new Barrier.Control();
@@ -216,12 +216,12 @@ class RelationshipCountsTest
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode().createRelationshipTo( db.createNode(), withName( "FOO" ) );
-            db.createNode().createRelationshipTo( db.createNode(), withName( "FOO" ) );
-            db.createNode().createRelationshipTo( db.createNode(), withName( "BAR" ) );
-            db.createNode().createRelationshipTo( db.createNode(), withName( "BAR" ) );
-            db.createNode().createRelationshipTo( db.createNode(), withName( "BAR" ) );
-            db.createNode().createRelationshipTo( db.createNode(), withName( "BAZ" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "FOO" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "FOO" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "BAR" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "BAR" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "BAR" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "BAZ" ) );
             tx.commit();
         }
 
@@ -247,8 +247,8 @@ class RelationshipCountsTest
         Node foo;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode( label( "Foo" ) );
-            Node bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode( label( "Foo" ) );
+            Node bar = tx.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "BAZ" ) );
 
             tx.commit();
@@ -282,9 +282,9 @@ class RelationshipCountsTest
         {
             for ( int i = 0; i < numberOfNodes; i++ )
             {
-                Node foo = db.createNode( label( "Foo" + i ) );
+                Node foo = tx.createNode( label( "Foo" + i ) );
                 foo.addLabel( Label.label( "Common" ) );
-                Node bar = db.createNode( label( "Bar" + i ) );
+                Node bar = tx.createNode( label( "Bar" + i ) );
                 foo.createRelationshipTo( bar, withName( "BAZ" + i ) );
                 nodes[i] = foo;
             }
@@ -337,8 +337,8 @@ class RelationshipCountsTest
         Node foo;
         try ( Transaction tx = db.beginTx() )
         {
-            foo = db.createNode( label( "Foo" ) );
-            Node bar = db.createNode( label( "Bar" ) );
+            foo = tx.createNode( label( "Foo" ) );
+            Node bar = tx.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "BAZ" ) );
 
             tx.commit();

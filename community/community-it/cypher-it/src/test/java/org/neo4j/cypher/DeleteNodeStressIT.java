@@ -54,7 +54,7 @@ class DeleteNodeStressIT
 
                 for ( int j = 0; j < 100; j++ )
                 {
-                    Node node = db.createNode( label( "L" ) );
+                    Node node = tx.createNode( label( "L" ) );
                     node.setProperty( "prop", i + j );
                 }
                 tx.commit();

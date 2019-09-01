@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -111,7 +112,7 @@ public class ServerHelper
         }
 
         @Override
-        public void doWork()
+        public void doWork( Transaction transaction )
         {
             deleteAllNodesAndRelationships();
         }
@@ -141,7 +142,7 @@ public class ServerHelper
         }
 
         @Override
-        public void doWork()
+        public void doWork( Transaction transaction )
         {
             deleteAllIndexRules();
             deleteAllConstraints();
