@@ -165,7 +165,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         "MATCH (d:Database {default: true}) RETURN d.name as name", VirtualValues.EMPTY_MAP)
 
     // SUPPORT PROCEDURES (need to be cleared before here)
-    case SystemProcedureCall(queryString, params) => (_, _, _) =>
+    case SystemProcedureCall(_, queryString, params) => (_, _, _) =>
       SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, params)
 
     // Ignore the log command in community
