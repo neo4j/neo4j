@@ -46,7 +46,6 @@ import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -88,7 +87,6 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StoreId;
@@ -769,12 +767,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
         return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
-    }
-
-    @Override
-    public TraversalDescription traversalDescription()
-    {
-        return new MonoDirectionalTraversalDescription( () -> statementContext.get( databaseId() ) );
     }
 
     @Override

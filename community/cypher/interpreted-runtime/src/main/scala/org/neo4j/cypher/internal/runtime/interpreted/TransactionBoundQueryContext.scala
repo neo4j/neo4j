@@ -801,7 +801,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     // The RULE compiler makes use of older kernel API capabilities for variable length expanding
     // TODO: Consider re-writing this using similar code to the COST var-length expand
-    val baseTraversalDescription: TraversalDescription = getDatabaseService
+    val baseTraversalDescription: TraversalDescription = transactionalContext.tc.transaction()
       .traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)

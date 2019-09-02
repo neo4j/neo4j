@@ -71,11 +71,11 @@ class TestEvaluators extends TraversalTestBase
     void lastRelationshipTypeEvaluator()
     {
         Node a = getNodeWithName( "a" );
-        expectPaths( getGraphDb().traversalDescription().evaluator( lastRelationshipTypeIs(
+        expectPaths( tx.traversalDescription().evaluator( lastRelationshipTypeIs(
                 INCLUDE_AND_PRUNE, EXCLUDE_AND_CONTINUE, Types.C ) ).traverse( a ),
                 "a,b,c,d,e", "a,f,g", "a,b,h" );
 
-        expectPaths( getGraphDb().traversalDescription().evaluator( lastRelationshipTypeIs(
+        expectPaths( tx.traversalDescription().evaluator( lastRelationshipTypeIs(
                 INCLUDE_AND_CONTINUE, EXCLUDE_AND_CONTINUE, Types.C ) ).traverse( a ),
                 "a,b,c,d,e", "a,f,g", "a,b,h", "a,b,h,i,k" );
     }
@@ -88,19 +88,19 @@ class TestEvaluators extends TraversalTestBase
         Node h = getNodeWithName( "h" );
         Node g = getNodeWithName( "g" );
 
-        expectPaths( getGraphDb().traversalDescription().evaluator( includeWhereEndNodeIs( c, h, g ) ).traverse( a ),
+        expectPaths( tx.traversalDescription().evaluator( includeWhereEndNodeIs( c, h, g ) ).traverse( a ),
                 "a,b,c", "a,b,h", "a,f,g" );
-        expectPaths( getGraphDb().traversalDescription().evaluator( includeWhereEndNodeIs( g ) ).traverse( a ), "a,f,g" );
+        expectPaths( tx.traversalDescription().evaluator( includeWhereEndNodeIs( g ) ).traverse( a ), "a,f,g" );
     }
 
     @Test
     void depths()
     {
         Node a = getNodeWithName( "a" );
-        expectPaths( getGraphDb().traversalDescription().evaluator( Evaluators.atDepth( 1 ) ).traverse( a ), "a,b", "a,f" );
-        expectPaths( getGraphDb().traversalDescription().evaluator( Evaluators.fromDepth( 2 ) ).traverse( a ), "a,f,g",
+        expectPaths( tx.traversalDescription().evaluator( Evaluators.atDepth( 1 ) ).traverse( a ), "a,b", "a,f" );
+        expectPaths( tx.traversalDescription().evaluator( Evaluators.fromDepth( 2 ) ).traverse( a ), "a,f,g",
                 "a,b,h", "a,b,h,i", "a,b,h,i,k", "a,b,c", "a,b,c,d", "a,b,c,d,e", "a,b,c,d,e,j" );
-        expectPaths( getGraphDb().traversalDescription().evaluator( Evaluators.toDepth( 2 ) ).traverse( a ), "a", "a,b", "a,b,c",
+        expectPaths( tx.traversalDescription().evaluator( Evaluators.toDepth( 2 ) ).traverse( a ), "a", "a,b", "a,b,c",
                 "a,b,h", "a,f", "a,f,g" );
     }
 }

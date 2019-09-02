@@ -56,7 +56,7 @@ class CircularGraphTest extends TraversalTestBase
         try ( Transaction tx2 = beginTx() )
         {
             final RelationshipType type = RelationshipType.withName( "TO" );
-            Iterator<Node> nodes = getGraphDb().traversalDescription()
+            Iterator<Node> nodes = tx2.traversalDescription()
                     .depthFirst()
                     .relationships( type, Direction.OUTGOING )
                     .evaluator( path ->

@@ -20,7 +20,6 @@
 package org.neo4j.graphalgo.impl.path;
 
 import org.neo4j.graphalgo.EvaluationContext;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -52,8 +51,7 @@ public class AllPaths extends TraversalPathFinder
     {
         // Bidirectional traversal
         var transaction = context.transaction();
-        GraphDatabaseService db = context.databaseService();
-        TraversalDescription base = db.traversalDescription().depthFirst().uniqueness( uniqueness() );
+        TraversalDescription base = transaction.traversalDescription().depthFirst().uniqueness( uniqueness() );
         return transaction.bidirectionalTraversalDescription()
                 .startSide( base.expand( expander ).evaluator( toDepth( maxDepth / 2 ) ) )
                 .endSide( base.expand( expander.reverse() ).evaluator( toDepth( maxDepth - maxDepth / 2 ) ) )

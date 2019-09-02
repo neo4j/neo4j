@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.traversal.TraversalDescription;
 
 /**
  * <p>
@@ -438,13 +437,6 @@ public interface GraphDatabaseService
      * @return the {@link Schema schema manager} for this database.
      */
     Schema schema();
-
-    /**
-     * Factory method for unidirectional traversal descriptions.
-     *
-     * @return a new {@link TraversalDescription}
-     */
-    TraversalDescription traversalDescription();
 
     /**
      * Return name of underlying database

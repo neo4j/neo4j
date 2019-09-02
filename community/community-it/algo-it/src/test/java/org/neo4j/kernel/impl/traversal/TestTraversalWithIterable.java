@@ -47,7 +47,7 @@ class TestTraversalWithIterable extends TraversalTestBase
 
         try ( Transaction tx = beginTx() )
         {
-            TraversalDescription basicTraverser = getGraphDb().traversalDescription().evaluator( Evaluators.atDepth(2) );
+            TraversalDescription basicTraverser = tx.traversalDescription().evaluator( Evaluators.atDepth(2) );
 
             Collection<Node> startNodes = new ArrayList<>(  );
             startNodes.add( getNodeWithName( "a" ) );
@@ -75,7 +75,7 @@ class TestTraversalWithIterable extends TraversalTestBase
 
         try ( Transaction tx = beginTx() )
         {
-            TraversalDescription firstTraverser = getGraphDb().traversalDescription()
+            TraversalDescription firstTraverser = tx.traversalDescription()
                     .relationships( RelationshipType.withName( "FIRST" ) )
                     .evaluator( Evaluators.toDepth( 1 ) );
             final Iterable<Path> firstResult = firstTraverser.traverse( getNodeWithName( "a" ) );
@@ -89,7 +89,7 @@ class TestTraversalWithIterable extends TraversalTestBase
                 }
             };
 
-            TraversalDescription nestedTraversal = getGraphDb().traversalDescription().evaluator( Evaluators.atDepth( 2 ) );
+            TraversalDescription nestedTraversal = tx.traversalDescription().evaluator( Evaluators.atDepth( 2 ) );
             expectPaths( nestedTraversal.traverse( startNodesForNestedTraversal ), "a,b,c", "d,e,f");
             tx.commit();
         }

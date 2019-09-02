@@ -21,7 +21,6 @@ package org.neo4j.graphalgo.impl.path;
 
 import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.impl.util.LiteDepthFirstSelector;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -64,9 +63,8 @@ public class ExactDepthPathFinder extends TraversalPathFinder
     protected Traverser instantiateTraverser( Node start, Node end )
     {
         var transaction = context.transaction();
-        GraphDatabaseService db = context.databaseService();
         TraversalDescription side =
-                db.traversalDescription().breadthFirst().uniqueness( uniqueness ).order(
+                transaction.traversalDescription().breadthFirst().uniqueness( uniqueness ).order(
                         ( startSource, expander ) -> new LiteDepthFirstSelector( startSource, startThreshold, expander ) );
         return transaction.bidirectionalTraversalDescription().startSide( side.expand( expander ).evaluator( toDepth( onDepth / 2 ) ) )
                 .endSide( side.expand( expander.reverse() ).evaluator( toDepth( onDepth - onDepth / 2 ) ) )

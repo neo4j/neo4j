@@ -48,7 +48,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     void shouldGetStartNodeOnDepthZero()
     {
-        TraversalDescription description = getGraphDb().traversalDescription().evaluator(
+        TraversalDescription description = tx.traversalDescription().evaluator(
                 Evaluators.atDepth( 0 ) );
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "6" );
     }
@@ -56,7 +56,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     void shouldGetCorrectNodesFromToDepthOne()
     {
-        TraversalDescription description = getGraphDb().traversalDescription().evaluator(
+        TraversalDescription description = tx.traversalDescription().evaluator(
                 Evaluators.fromDepth( 1 ) ).evaluator( Evaluators.toDepth( 1 ) );
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "5" );
     }
@@ -64,7 +64,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     void shouldGetCorrectNodeAtDepthOne()
     {
-        TraversalDescription description = getGraphDb().traversalDescription().evaluator(
+        TraversalDescription description = tx.traversalDescription().evaluator(
                 Evaluators.atDepth( 1 ) );
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "5" );
     }
@@ -72,7 +72,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     void shouldGetCorrectNodesAtDepthZero()
     {
-        TraversalDescription description = getGraphDb().traversalDescription().evaluator(
+        TraversalDescription description = tx.traversalDescription().evaluator(
                 Evaluators.fromDepth( 0 ) ).evaluator( Evaluators.toDepth( 0 ) );
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "6" );
     }
@@ -80,7 +80,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     void shouldGetStartNodeWhenFromToIsZeroBreadthFirst()
     {
-        TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
+        TraversalDescription description = tx.traversalDescription().breadthFirst()
                 .evaluator(Evaluators.fromDepth(0)).evaluator(Evaluators.toDepth(0));
 
         expectNodes( description.traverse( getNodeWithName( "0" ) ), "0" );
@@ -89,7 +89,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     void shouldGetStartNodeWhenAtIsZeroBreadthFirst()
     {
-        TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
+        TraversalDescription description = tx.traversalDescription().breadthFirst()
                 .evaluator(Evaluators.atDepth(0));
 
         expectNodes( description.traverse( getNodeWithName( "2" ) ), "2" );
@@ -98,7 +98,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     void shouldGetSecondNodeWhenFromToIsTwoBreadthFirst()
     {
-        TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
+        TraversalDescription description = tx.traversalDescription().breadthFirst()
                 .evaluator(Evaluators.fromDepth(2)).evaluator(Evaluators.toDepth(2));
 
         expectNodes( description.traverse( getNodeWithName( "5" ) ), "2" );
@@ -107,7 +107,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     void shouldGetSecondNodeWhenAtIsTwoBreadthFirst()
     {
-        TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
+        TraversalDescription description = tx.traversalDescription().breadthFirst()
                 .evaluator( Evaluators.atDepth( 2 ) );
 
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "4" );

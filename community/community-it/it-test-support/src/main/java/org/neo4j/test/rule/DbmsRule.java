@@ -45,7 +45,6 @@ import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -80,11 +79,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     {
         startEagerly = false;
         return this;
-    }
-
-    public <T> T when( Function<Transaction, T> function )
-    {
-        return function.apply( getGraphDatabaseAPI().beginTx() );
     }
 
     public <T> T executeAndCommit( Function<Transaction, T> function )
@@ -585,12 +579,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public boolean isAvailable( long timeout )
     {
         return database.isAvailable( timeout );
-    }
-
-    @Override
-    public TraversalDescription traversalDescription()
-    {
-        return database.traversalDescription();
     }
 
     @Override

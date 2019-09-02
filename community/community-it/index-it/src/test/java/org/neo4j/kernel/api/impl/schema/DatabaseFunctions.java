@@ -24,37 +24,12 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
 
 public final class DatabaseFunctions
 {
     private DatabaseFunctions()
     {
         throw new AssertionError( "Not for instantiation!" );
-    }
-
-    public static Function<Transaction,Node> createNode()
-    {
-        return Transaction::createNode;
-    }
-
-    public static Function<Node,Node> addLabel( Label label )
-    {
-        return node ->
-        {
-            node.addLabel( label );
-            return node;
-        };
-    }
-
-    public static Function<Node,Node> setProperty( String propertyKey, Object value )
-    {
-        return node ->
-        {
-            node.setProperty( propertyKey, value );
-            return node;
-        };
     }
 
     public static Function<GraphDatabaseService,Void> index( Label label, String propertyKey )

@@ -55,12 +55,12 @@ class DepthOneTraversalTest extends TraversalTestBase
     @Test
     void shouldGetBothNodesOnDepthOneForDepthFirst()
     {
-        shouldGetBothNodesOnDepthOne( getGraphDb().traversalDescription().depthFirst() );
+        shouldGetBothNodesOnDepthOne( tx.traversalDescription().depthFirst() );
     }
 
     @Test
     void shouldGetBothNodesOnDepthOneForBreadthFirst()
     {
-        shouldGetBothNodesOnDepthOne( getGraphDb().traversalDescription().breadthFirst() );
+        shouldGetBothNodesOnDepthOne( tx.traversalDescription().breadthFirst() );
     }
 }

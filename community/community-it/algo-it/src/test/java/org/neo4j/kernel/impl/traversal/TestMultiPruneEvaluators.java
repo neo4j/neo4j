@@ -58,11 +58,11 @@ class TestMultiPruneEvaluators extends TraversalTestBase
                 path -> count( path.endNode().getRelationships( Direction.OUTGOING ).iterator() ) < 3 ?
                         Evaluation.INCLUDE_AND_PRUNE : Evaluation.INCLUDE_AND_CONTINUE;
 
-        TraversalDescription description = getGraphDb().traversalDescription().evaluator( Evaluators.all() )
-                .evaluator( toDepth( 1 ) ).evaluator( lessThanThreeRels );
         Set<String> expectedNodes = new HashSet<>( asList( "a", "b", "c", "d", "e" ) );
         try ( Transaction tx = beginTx() )
         {
+            TraversalDescription description = tx.traversalDescription().evaluator( Evaluators.all() )
+                    .evaluator( toDepth( 1 ) ).evaluator( lessThanThreeRels );
             for ( Path position : description.traverse( node( "a" ) ) )
             {
                 String name = (String) position.endNode().getProperty( "name" );

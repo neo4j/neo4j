@@ -793,7 +793,7 @@ class TestTransactionEvents
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
-            count( db.traversalDescription().traverse( root ) );
+            count( tx.traversalDescription().traverse( root ) );
             tx.commit();
         }
     }

@@ -44,11 +44,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
-import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.addLabel;
 import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.awaitIndexesOnline;
-import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.createNode;
 import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.index;
-import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.setProperty;
 import static org.neo4j.kernel.api.impl.schema.DatabaseFunctions.uniquenessConstraint;
 
 @RunWith( Parameterized.class )
@@ -69,9 +66,12 @@ public class UniqueIndexApplicationIT
     @After
     public void then()
     {
-        assertThat( "Matching nodes from index lookup",
-                db.when( tx -> listNodeIdsFromIndexLookup( label( "Label1" ), "key1", "value1" ).apply( db ) ),
-                hasSize( 1 ) );
+        try ( var transaction = db.beginTx() )
+        {
+            assertThat( "Matching nodes from index lookup",
+                    listNodeIdsFromIndexLookup( label( "Label1" ), "key1", "value1" ).apply( db ),
+                    hasSize( 1 ) );
+        }
     }
 
     @Before
@@ -88,9 +88,13 @@ public class UniqueIndexApplicationIT
     @Test
     public void tx_createNode_addLabel_setProperty()
     {
-        db.when( db.tx( tx ->
-                createNode().andThen( addLabel( label( "Label1" ) ).andThen( setProperty( "key1", "value1" ) ) )
-        ) );
+        try ( var transaction = db.beginTx() )
+        {
+            var node = transaction.createNode();
+            node.addLabel( label( "Label1" ) );
+            node.setProperty( "key1", "value1" );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -108,33 +112,57 @@ public class UniqueIndexApplicationIT
     @Test
     public void tx_createNode_addLabel_tx_setProperty()
     {
-        db.when( db.tx(
-                createNode().andThen( addLabel( label( "Label1" ) ) )
-        ).andThen( db.tx(
-                setProperty( "key1", "value1" )
-        ) ) );
+        Node node;
+        try ( var transaction = db.beginTx() )
+        {
+            node = transaction.createNode();
+            node.addLabel( label( "Label1" ) );
+            transaction.commit();
+        }
+        try ( var transaction = db.beginTx() )
+        {
+            node.setProperty( "key1", "value1" );
+            transaction.commit();
+        }
     }
 
     @Test
     public void tx_createNode_setProperty_tx_addLabel()
     {
-        db.when( db.tx(
-                createNode().andThen( setProperty( "key1", "value1" ) )
-        ).andThen( db.tx(
-                addLabel( label( "Label1" ) )
-        ) ) );
+        Node node;
+        try ( var transaction = db.beginTx() )
+        {
+            node = transaction.createNode();
+            node.addLabel( label( "Label1" ) );
+            node.setProperty( "key1", "value1" );
+            transaction.commit();
+        }
+        try ( var transaction = db.beginTx() )
+        {
+            node.addLabel( label( "Label1" ) );
+            transaction.commit();
+        }
     }
 
     @Test
     public void tx_createNode_tx_addLabel_tx_setProperty()
     {
-        db.when( db.tx(
-                createNode()
-        ).andThen( db.tx(
-                addLabel( label( "Label1" ) )
-        ).andThen( db.tx(
-                setProperty( "key1", "value1" ) )
-        ) ) );
+        Node node;
+        try ( var transaction = db.beginTx() )
+        {
+            node = transaction.createNode();
+            transaction.commit();
+        }
+        try ( var transaction = db.beginTx() )
+        {
+            node.addLabel( label( "Label1" ) );
+            transaction.commit();
+        }
+        try ( var transaction = db.beginTx() )
+        {
+            node.setProperty( "key1", "value1" );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -151,7 +179,7 @@ public class UniqueIndexApplicationIT
 
     private static Matcher<List<?>> hasSize( final int size )
     {
-        return new TypeSafeMatcher<List<?>>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( List<?> item )

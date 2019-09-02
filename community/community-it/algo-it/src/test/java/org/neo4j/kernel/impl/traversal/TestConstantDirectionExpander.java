@@ -57,19 +57,19 @@ class TestConstantDirectionExpander extends TraversalTestBase
     void pathWithConstantDirection()
     {
         Node l = getNodeWithName( "l" );
-        expectPaths( getGraphDb().traversalDescription()
+        expectPaths( tx.traversalDescription()
                 .expand(
                         PathExpanders.forConstantDirectionWithTypes( Types.A ) )
                 .traverse( l ), "l", "l,m", "l,m,n" );
 
         Node n = getNodeWithName( "n" );
-        expectPaths( getGraphDb().traversalDescription()
+        expectPaths( tx.traversalDescription()
                 .expand(
                         PathExpanders.forConstantDirectionWithTypes( Types.A ) )
                 .traverse( n ), "n", "n,m", "n,m,l", "n,o" );
 
         Node q = getNodeWithName( "q" );
-        expectPaths( getGraphDb().traversalDescription()
+        expectPaths( tx.traversalDescription()
                 .expand(
                         PathExpanders.forConstantDirectionWithTypes( Types.B ) )
                 .traverse( q ), "q", "q,p", "q,p,o" );

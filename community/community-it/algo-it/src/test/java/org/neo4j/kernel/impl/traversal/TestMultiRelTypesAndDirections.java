@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.function.Function;
+
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
@@ -45,20 +47,20 @@ class TestMultiRelTypesAndDirections extends TraversalTestBase
     @Test
     void testCIsReturnedOnDepthTwoDepthFirst()
     {
-        testCIsReturnedOnDepthTwo( getGraphDb().traversalDescription().depthFirst() );
+        testCIsReturnedOnDepthTwo( transaction -> transaction.traversalDescription().depthFirst() );
     }
 
     @Test
     void testCIsReturnedOnDepthTwoBreadthFirst()
     {
-        testCIsReturnedOnDepthTwo( getGraphDb().traversalDescription().breadthFirst() );
+        testCIsReturnedOnDepthTwo( transaction -> transaction.traversalDescription().breadthFirst() );
     }
 
-    private void testCIsReturnedOnDepthTwo( TraversalDescription description )
+    private void testCIsReturnedOnDepthTwo( Function<Transaction,TraversalDescription> traversalFactory )
     {
         try ( Transaction transaction = beginTx() )
         {
-            description = description.expand( PathExpanders.forTypeAndDirection( ONE, OUTGOING ) );
+            final TraversalDescription description = traversalFactory.apply( transaction ).expand( PathExpanders.forTypeAndDirection( ONE, OUTGOING ) );
             int i = 0;
             for ( Path position : description.traverse( node( "A" ) ) )
             {

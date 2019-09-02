@@ -55,12 +55,12 @@ class TestMultipleStartNodes extends TraversalTestBase
             Node me = getNodeWithName( "me" );
 
             String[] levelOneFriends = {"f1", "f2", "f3", "f4", "f7"};
-            TraversalDescription levelOneTraversal = getGraphDb().traversalDescription().relationships( knowRelType ).evaluator( atDepth( 1 ) );
+            TraversalDescription levelOneTraversal = tx.traversalDescription().relationships( knowRelType ).evaluator( atDepth( 1 ) );
             expectNodes( levelOneTraversal.depthFirst().traverse( you, me ), levelOneFriends );
             expectNodes( levelOneTraversal.breadthFirst().traverse( you, me ), levelOneFriends );
 
             String[] levelTwoFriends = {"f5", "f6", "f8"};
-            TraversalDescription levelTwoTraversal = getGraphDb().traversalDescription().relationships( knowRelType ).evaluator( atDepth( 2 ) );
+            TraversalDescription levelTwoTraversal = tx.traversalDescription().relationships( knowRelType ).evaluator( atDepth( 2 ) );
             expectNodes( levelTwoTraversal.depthFirst().traverse( you, me ), levelTwoFriends );
             expectNodes( levelTwoTraversal.breadthFirst().traverse( you, me ), levelTwoFriends );
         }

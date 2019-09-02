@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
@@ -98,10 +99,10 @@ class DepthPitfallGraphTest extends TraversalTestBase
     @Test
     void testSmallestPossibleInit()
     {
-        Traverser traversal = getGraphDb().traversalDescription().traverse( node( "1" ) );
         int count = 0;
         try ( Transaction transaction = beginTx() )
         {
+            Traverser traversal = transaction.traversalDescription().traverse( node( "1" ) );
             for ( Path position : traversal )
             {
                 count++;
@@ -120,20 +121,20 @@ class DepthPitfallGraphTest extends TraversalTestBase
     @Test
     void testAllNodesAreReturnedOnceDepthFirst()
     {
-        testAllNodesAreReturnedOnce( getGraphDb().traversalDescription().depthFirst() );
+        testAllNodesAreReturnedOnce( transaction -> transaction.traversalDescription().depthFirst() );
     }
 
     @Test
     void testAllNodesAreReturnedOnceBreadthFirst()
     {
-        testAllNodesAreReturnedOnce( getGraphDb().traversalDescription().breadthFirst() );
+        testAllNodesAreReturnedOnce( transaction -> transaction.traversalDescription().breadthFirst() );
     }
 
-    private void testAllNodesAreReturnedOnce( TraversalDescription traversal )
+    private void testAllNodesAreReturnedOnce( Function<Transaction,TraversalDescription> traversalFactory )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverser = traversal.uniqueness( Uniqueness.NODE_GLOBAL ).traverse( node( "1" ) );
+            Traverser traverser = traversalFactory.apply( transaction ).uniqueness( Uniqueness.NODE_GLOBAL ).traverse( node( "1" ) );
 
             expectNodes( traverser, "1", "2", "3", "4", "5", "6" );
             transaction.commit();
@@ -144,22 +145,21 @@ class DepthPitfallGraphTest extends TraversalTestBase
     void testNodesAreReturnedOnceWhenSufficientRecentlyUniqueDepthFirst()
     {
         testNodesAreReturnedOnceWhenSufficientRecentlyUnique(
-                getGraphDb().traversalDescription().depthFirst() );
+                transaction -> transaction.traversalDescription().depthFirst() );
     }
 
     @Test
     void testNodesAreReturnedOnceWhenSufficientRecentlyUniqueBreadthFirst()
     {
         testNodesAreReturnedOnceWhenSufficientRecentlyUnique(
-                getGraphDb().traversalDescription().breadthFirst() );
+                transaction -> transaction.traversalDescription().breadthFirst() );
     }
 
-    private void testNodesAreReturnedOnceWhenSufficientRecentlyUnique(
-            TraversalDescription description )
+    private void testNodesAreReturnedOnceWhenSufficientRecentlyUnique( Function<Transaction,TraversalDescription> traversalFactory )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverser = description.uniqueness( Uniqueness.NODE_RECENT, 6 ).traverse( node( "1" ) );
+            Traverser traverser = traversalFactory.apply( transaction ).uniqueness( Uniqueness.NODE_RECENT, 6 ).traverse( node( "1" ) );
 
             expectNodes( traverser, "1", "2", "3", "4", "5", "6" );
             transaction.commit();
@@ -169,21 +169,20 @@ class DepthPitfallGraphTest extends TraversalTestBase
     @Test
     void testAllRelationshipsAreReturnedOnceDepthFirst()
     {
-        testAllRelationshipsAreReturnedOnce( getGraphDb().traversalDescription().depthFirst() );
+        testAllRelationshipsAreReturnedOnce( transaction -> transaction.traversalDescription().depthFirst() );
     }
 
     @Test
     void testAllRelationshipsAreReturnedOnceBreadthFirst()
     {
-        testAllRelationshipsAreReturnedOnce( getGraphDb().traversalDescription().breadthFirst() );
+        testAllRelationshipsAreReturnedOnce( transaction -> transaction.traversalDescription().breadthFirst() );
     }
 
-    private void testAllRelationshipsAreReturnedOnce(
-            TraversalDescription description )
+    private void testAllRelationshipsAreReturnedOnce( Function<Transaction,TraversalDescription> traversalFactory )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverser = getGraphDb().traversalDescription().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ).traverse( node( "1" ) );
+            Traverser traverser = traversalFactory.apply( transaction ).uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ).traverse( node( "1" ) );
 
             expectRelationships( traverser, THE_WORLD_AS_WE_KNOW_IT );
             transaction.commit();
@@ -194,22 +193,23 @@ class DepthPitfallGraphTest extends TraversalTestBase
     void testRelationshipsAreReturnedOnceWhenSufficientRecentlyUniqueDepthFirst()
     {
         testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
-                getGraphDb().traversalDescription().depthFirst() );
+                transaction -> transaction.traversalDescription().depthFirst() );
     }
 
     @Test
     void testRelationshipsAreReturnedOnceWhenSufficientRecentlyUniqueBreadthFirst()
     {
         testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
-                getGraphDb().traversalDescription().breadthFirst() );
+                transaction -> transaction.traversalDescription().breadthFirst() );
     }
 
     private void testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
-            TraversalDescription description )
+            Function<Transaction,TraversalDescription> traversalFactory )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverser = description.uniqueness( Uniqueness.RELATIONSHIP_RECENT, THE_WORLD_AS_WE_KNOW_IT.length ).traverse( node( "1" ) );
+            Traverser traverser = traversalFactory.apply( transaction )
+                    .uniqueness( Uniqueness.RELATIONSHIP_RECENT, THE_WORLD_AS_WE_KNOW_IT.length ).traverse( node( "1" ) );
 
             expectRelationships( traverser, THE_WORLD_AS_WE_KNOW_IT );
             transaction.commit();
@@ -219,20 +219,20 @@ class DepthPitfallGraphTest extends TraversalTestBase
     @Test
     void testAllUniqueNodePathsAreReturnedDepthFirst()
     {
-        testAllUniqueNodePathsAreReturned( getGraphDb().traversalDescription().depthFirst() );
+        testAllUniqueNodePathsAreReturned( transaction -> transaction.traversalDescription().depthFirst() );
     }
 
     @Test
     void testAllUniqueNodePathsAreReturnedBreadthFirst()
     {
-        testAllUniqueNodePathsAreReturned( getGraphDb().traversalDescription().breadthFirst() );
+        testAllUniqueNodePathsAreReturned( transaction -> transaction.traversalDescription().breadthFirst() );
     }
 
-    private void testAllUniqueNodePathsAreReturned( TraversalDescription description )
+    private void testAllUniqueNodePathsAreReturned( Function<Transaction,TraversalDescription> traversalFactory )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverser = description.uniqueness( Uniqueness.NODE_PATH ).traverse( node( "1" ) );
+            Traverser traverser = traversalFactory.apply( transaction ).uniqueness( Uniqueness.NODE_PATH ).traverse( node( "1" ) );
 
             expectPaths( traverser, NODE_UNIQUE_PATHS );
             transaction.commit();
@@ -242,23 +242,23 @@ class DepthPitfallGraphTest extends TraversalTestBase
     @Test
     void testAllUniqueRelationshipPathsAreReturnedDepthFirst()
     {
-        testAllUniqueRelationshipPathsAreReturned( getGraphDb().traversalDescription().depthFirst() );
+        testAllUniqueRelationshipPathsAreReturned( transaction -> transaction.traversalDescription().depthFirst() );
     }
 
     @Test
     void testAllUniqueRelationshipPathsAreReturnedBreadthFirst()
     {
-        testAllUniqueRelationshipPathsAreReturned( getGraphDb().traversalDescription().breadthFirst() );
+        testAllUniqueRelationshipPathsAreReturned( transaction -> transaction.traversalDescription().breadthFirst() );
     }
 
-    private void testAllUniqueRelationshipPathsAreReturned( TraversalDescription description )
+    private void testAllUniqueRelationshipPathsAreReturned( Function<Transaction,TraversalDescription> traversalFactory )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
             Set<String> expected = new HashSet<>( Arrays.asList( NODE_UNIQUE_PATHS ) );
             expected.addAll( Arrays.asList( RELATIONSHIP_UNIQUE_EXTRA_PATHS ) );
 
-            Traverser traverser = description.uniqueness( Uniqueness.RELATIONSHIP_PATH ).traverse( node( "1" ) );
+            Traverser traverser = traversalFactory.apply( transaction ).uniqueness( Uniqueness.RELATIONSHIP_PATH ).traverse( node( "1" ) );
 
             expectPaths( traverser, expected );
             transaction.commit();
@@ -268,20 +268,20 @@ class DepthPitfallGraphTest extends TraversalTestBase
     @Test
     void canPruneTraversalAtSpecificDepthDepthFirst()
     {
-        canPruneTraversalAtSpecificDepth( getGraphDb().traversalDescription().depthFirst() );
+        canPruneTraversalAtSpecificDepth( transaction -> transaction.traversalDescription().depthFirst() );
     }
 
     @Test
     void canPruneTraversalAtSpecificDepthBreadthFirst()
     {
-        canPruneTraversalAtSpecificDepth( getGraphDb().traversalDescription().breadthFirst() );
+        canPruneTraversalAtSpecificDepth( transaction -> transaction.traversalDescription().breadthFirst() );
     }
 
-    private void canPruneTraversalAtSpecificDepth( TraversalDescription description )
+    private void canPruneTraversalAtSpecificDepth( Function<Transaction,TraversalDescription> traversalFactory )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverser = description.uniqueness( Uniqueness.NONE ).evaluator( toDepth( 1 ) ).traverse( node( "1" ) );
+            Traverser traverser = traversalFactory.apply( transaction ).uniqueness( Uniqueness.NONE ).evaluator( toDepth( 1 ) ).traverse( node( "1" ) );
 
             expectNodes( traverser, "1", "2", "3", "4", "5" );
             transaction.commit();
@@ -291,20 +291,20 @@ class DepthPitfallGraphTest extends TraversalTestBase
     @Test
     void canPreFilterNodesDepthFirst()
     {
-        canPreFilterNodes( getGraphDb().traversalDescription().depthFirst() );
+        canPreFilterNodes( transaction -> transaction.traversalDescription().depthFirst() );
     }
 
     @Test
     void canPreFilterNodesBreadthFirst()
     {
-        canPreFilterNodes( getGraphDb().traversalDescription().breadthFirst() );
+        canPreFilterNodes( transaction -> transaction.traversalDescription().breadthFirst() );
     }
 
-    private void canPreFilterNodes( TraversalDescription description )
+    private void canPreFilterNodes( Function<Transaction,TraversalDescription> traversalFactory )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverser = description.uniqueness( Uniqueness.NONE ).evaluator( atDepth( 2 ) ).traverse( node( "1" ) );
+            Traverser traverser = traversalFactory.apply( transaction ).uniqueness( Uniqueness.NONE ).evaluator( atDepth( 2 ) ).traverse( node( "1" ) );
 
             expectPaths( traverser, "1,2,6", "1,3,5", "1,4,5", "1,5,3", "1,5,4", "1,5,6" );
             transaction.commit();

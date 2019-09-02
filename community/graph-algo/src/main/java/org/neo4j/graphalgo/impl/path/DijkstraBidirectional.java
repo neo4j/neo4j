@@ -30,7 +30,6 @@ import org.neo4j.graphalgo.impl.util.DijkstraSelectorFactory;
 import org.neo4j.graphalgo.impl.util.PathInterest;
 import org.neo4j.graphalgo.impl.util.PathInterestFactory;
 import org.neo4j.graphalgo.impl.util.TopFetchingWeightedPathIterator;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
@@ -112,10 +111,8 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         PathExpander dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
                 startSideShortest, endSideShortest, epsilon );
 
-        GraphDatabaseService db = context.databaseService();
         var transaction = context.transaction();
-
-        TraversalDescription side = db.traversalDescription().expand( dijkstraExpander, stateFactory )
+        TraversalDescription side = transaction.traversalDescription().expand( dijkstraExpander, stateFactory )
                 .order( new DijkstraSelectorFactory( interest, costEvaluator ) )
                 .evaluator( new DijkstraBidirectionalEvaluator( costEvaluator ) )
                 .uniqueness( Uniqueness.NODE_PATH );

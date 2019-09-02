@@ -29,7 +29,6 @@ import org.neo4j.graphalgo.impl.util.PathInterest;
 import org.neo4j.graphalgo.impl.util.PathInterestFactory;
 import org.neo4j.graphalgo.impl.util.WeightedPathIterator;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.ResourceIterable;
@@ -117,8 +116,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
             interest = PathInterestFactory.single();
         }
 
-        GraphDatabaseService db = context.databaseService();
-        TraversalDescription traversalDescription = db.traversalDescription().uniqueness( Uniqueness.NONE )
+        TraversalDescription traversalDescription = context.transaction().traversalDescription().uniqueness( Uniqueness.NONE )
                 .expand( expander, initialState );
 
         lastTraverser = traversalDescription.order(

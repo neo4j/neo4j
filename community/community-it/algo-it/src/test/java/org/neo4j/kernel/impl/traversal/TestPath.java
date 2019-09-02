@@ -68,7 +68,7 @@ class TestPath extends TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverse = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( node( "A" ) );
+            Traverser traverse = transaction.traversalDescription().evaluator( atDepth( 4 ) ).traverse( node( "A" ) );
             try ( ResourceIterator<Path> resourceIterator = traverse.iterator() )
             {
                 Path path = resourceIterator.next();
@@ -82,11 +82,11 @@ class TestPath extends TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverse = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
+            Traverser traverse = transaction.traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
             Path path = getFirstPath( traverse );
             assertContains( path.reverseNodes(), a );
 
-            Traverser traverse2 = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
+            Traverser traverse2 = transaction.traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
             Path path2 = getFirstPath( traverse2 );
             assertContainsInOrder( path2.reverseNodes(), e, d, c, b, a );
         }
@@ -97,11 +97,11 @@ class TestPath extends TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverser = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
+            Traverser traverser = transaction.traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
             Path path = getFirstPath( traverser );
             assertFalse( path.reverseRelationships().iterator().hasNext() );
 
-            Traverser traverser2 = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
+            Traverser traverser2 = transaction.traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
             Path path2 = getFirstPath( traverser2 );
             Node[] expectedNodes = {e, d, c, b, a};
             int index = 0;
@@ -123,7 +123,7 @@ class TestPath extends TraversalTestBase
         BidirectionalTraversalDescription bidirectional;
         try ( var transaction = graphDb.beginTx() )
         {
-            TraversalDescription side = graphDb.traversalDescription().uniqueness( Uniqueness.NODE_PATH );
+            TraversalDescription side = transaction.traversalDescription().uniqueness( Uniqueness.NODE_PATH );
             bidirectional = transaction.bidirectionalTraversalDescription().mirroredSides( side );
             Path bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
             assertPathIsCorrect( bidirectionalPath );
