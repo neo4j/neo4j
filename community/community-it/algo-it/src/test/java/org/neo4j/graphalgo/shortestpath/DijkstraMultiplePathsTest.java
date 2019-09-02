@@ -365,4 +365,57 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         assertTrue( pathBD2 );
         assertTrue( pathB2D2 );
     }
+
+    /**
+     * Should generate three paths. The three paths must have the prefix: a, b, and c. The three paths must have the sufix: f and g.
+     * All the edges have cost 0.
+     */
+    @Test
+    public void test9()
+    {
+        graph.makeEdge( "a", "b", "cost", (double) 0 );
+        graph.makeEdge( "b", "c", "cost", (double) 0 );
+        graph.makeEdge( "c", "d", "cost", (double) 0 );
+        graph.makeEdge( "d", "e", "cost", (double) 0 );
+        graph.makeEdge( "e", "f", "cost", (double) 0 );
+        graph.makeEdge( "f", "g", "cost", (double) 0 );
+
+        graph.makeEdge( "d", "j", "cost", (double) 0 );
+        graph.makeEdge( "j", "k", "cost", (double) 0 );
+        graph.makeEdge( "k", "f", "cost", (double) 0 );
+
+        graph.makeEdge( "c", "h", "cost", (double) 0 );
+        graph.makeEdge( "h", "i", "cost", (double) 0 );
+        graph.makeEdge( "i", "e", "cost", (double) 0 );
+
+        Dijkstra<Double> dijkstra =
+                new Dijkstra<>( 0.0, graph.getNode( "a" ), graph.getNode( "g" ), ( relationship, direction ) -> .0,
+                                new DoubleAdder(), Double::compareTo, Direction.OUTGOING, MyRelTypes.R1 );
+
+        List<List<Node>> paths = dijkstra.getPathsAsNodes();
+
+        assertEquals( paths.size(), 3 );
+        String[] commonPrefix = {"a", "b", "c"};
+        String[] commonSuffix = {"f", "g"};
+        for ( List<Node> path : paths )
+        {
+            /**
+             * Check if the prefixes are all correct.
+             */
+            for ( int j = 0; j < commonPrefix.length; j++ )
+            {
+                assertEquals( path.get( j ), graph.getNode( commonPrefix[j] ) );
+            }
+
+            int pathSize = path.size();
+
+            /**
+             * Check if the suffixes are all correct.
+             */
+            for ( int j = 0; j < commonSuffix.length; j++ )
+            {
+                assertEquals( path.get( pathSize - j - 1 ), graph.getNode( commonSuffix[commonSuffix.length - j - 1] ) );
+            }
+        }
+    }
 }
