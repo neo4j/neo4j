@@ -29,7 +29,11 @@ trait Query extends Parser
     )
 
   def RegularQuery: Rule1[ast.Query] = rule {
-    SingleQuery ~ zeroOrMore(WS ~ Union) ~~>> (ast.Query(None, _))
+    QueryPart ~~>> (ast.Query(None, _))
+  }
+
+  def QueryPart: Rule1[ast.QueryPart] = rule {
+    SingleQuery ~ zeroOrMore(WS ~ Union)
   }
 
   def SingleQuery: Rule1[ast.SingleQuery] = rule {

@@ -38,7 +38,6 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
         varFor("a").as("a"), varFor("b").as("b"), varFor("c").as("c"))
     )
       .semanticCheck(clean)
-      .tap(_.errors.foreach(println))
       .errors.size.shouldEqual(0)
 
   }

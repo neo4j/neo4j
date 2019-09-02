@@ -36,6 +36,13 @@ class SubQueriesTest
     gives(subQuery(subQuery(return_(literalInt(1).as("a")))))
   }
 
+  test("CALL { RETURN 1 AS a UNION RETURN 2 AS a }") {
+    gives(subQuery(unionDistinct(
+      singleQuery(return_(literalInt(1).as("a"))),
+      singleQuery(return_(literalInt(2).as("a")))
+    )))
+  }
+
   test("CALL { }") {
     failsToParse
   }

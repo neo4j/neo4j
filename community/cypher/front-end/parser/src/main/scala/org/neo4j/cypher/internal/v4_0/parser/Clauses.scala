@@ -200,7 +200,7 @@ trait Clauses extends Parser
   }
 
   def SubQuery: Rule1[ast.SubQuery] = rule("CALL") {
-    group(keyword("CALL") ~~ group("{" ~~ RegularQuery ~~ "}")) ~~>> (q => ast.SubQuery(q.part))
+    group(keyword("CALL") ~~ group("{" ~~ QueryPart ~~ "}")) ~~>> (part => ast.SubQuery(part))
   }
 }
 
