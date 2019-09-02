@@ -166,6 +166,12 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
+    public ResourceIterable<String> getAllPropertyKeys()
+    {
+        return all( TokenAccess.PROPERTY_KEYS );
+    }
+
+    @Override
     public final void terminate()
     {
         transaction.markForTermination( Terminated );

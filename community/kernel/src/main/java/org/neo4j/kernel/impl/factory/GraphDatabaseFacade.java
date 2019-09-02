@@ -75,7 +75,6 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -122,7 +121,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final DatabaseInfo databaseInfo;
     private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
-    static final ThreadLocal<TopLevelTransaction> TEMP_TOP_LEVEL_TRANSACTION = new ThreadLocal<>();
+    public static final ThreadLocal<TopLevelTransaction> TEMP_TOP_LEVEL_TRANSACTION = new ThreadLocal<>();
 
     public GraphDatabaseFacade( GraphDatabaseFacade facade, Function<LoginContext,LoginContext> loginContextTransformer )
     {
@@ -381,29 +380,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     statement.close();
                 }
             };
-        };
-    }
-
-    private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
-    {
-        assertTransactionOpen();
-        return () -> tokens.inUse( statementContext.getKernelTransactionBoundToThisThread( true, databaseId() ) );
-    }
-
-    @Override
-    public ResourceIterable<String> getAllPropertyKeys()
-    {
-        return all( TokenAccess.PROPERTY_KEYS );
-    }
-
-    private <T> ResourceIterable<T> all( final TokenAccess<T> tokens )
-    {
-        assertTransactionOpen();
-        return () ->
-        {
-            KernelTransaction transaction =
-                    statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-            return tokens.all( transaction );
         };
     }
 

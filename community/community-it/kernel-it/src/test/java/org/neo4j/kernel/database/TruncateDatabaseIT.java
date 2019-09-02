@@ -326,9 +326,9 @@ class TruncateDatabaseIT
 
     private long countPropertyKeys()
     {
-        try ( Transaction ignored = databaseAPI.beginTx() )
+        try ( Transaction transaction = databaseAPI.beginTx() )
         {
-            return count( databaseAPI.getAllPropertyKeys() );
+            return count( transaction.getAllPropertyKeys() );
         }
     }
 

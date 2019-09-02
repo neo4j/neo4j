@@ -502,12 +502,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
-    public ResourceIterable<String> getAllPropertyKeys()
-    {
-        return database.getAllPropertyKeys();
-    }
-
-    @Override
     public ResourceIterator<Node> findNodes( Label label, String key, Object value )
     {
         return database.findNodes( label, key, value );

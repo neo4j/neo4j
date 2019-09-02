@@ -182,6 +182,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
 
             @Override
+            public ResourceIterable<String> getAllPropertyKeys()
+            {
+                return transaction.getAllPropertyKeys();
+            }
+
+            @Override
             public void terminate()
             {
                 transaction.terminate();

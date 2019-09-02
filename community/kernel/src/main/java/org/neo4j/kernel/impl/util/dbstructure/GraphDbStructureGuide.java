@@ -87,7 +87,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     private void showTokens( DbStructureVisitor visitor, InternalTransaction transaction )
     {
         showLabels( transaction, visitor );
-        showPropertyKeys( (KernelTransaction) transaction.kernelTransaction(), visitor );
+        showPropertyKeys( transaction, visitor );
         showRelTypes( transaction, visitor );
     }
 
@@ -100,11 +100,11 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showPropertyKeys( KernelTransaction ktx, DbStructureVisitor visitor )
+    private void showPropertyKeys( InternalTransaction transaction, DbStructureVisitor visitor )
     {
-        for ( String propertyKeyName : db.getAllPropertyKeys() )
+        for ( String propertyKeyName : transaction.getAllPropertyKeys() )
         {
-            int propertyKeyId = ktx.tokenRead().propertyKey( propertyKeyName );
+            int propertyKeyId = transaction.kernelTransaction().tokenRead().propertyKey( propertyKeyName );
             visitor.visitPropertyKey( propertyKeyId, propertyKeyName );
         }
     }

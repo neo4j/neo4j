@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Admin;
@@ -268,8 +269,8 @@ public class BuiltInProcedures
     @Procedure( name = "db.schema.visualization", mode = READ )
     public Stream<SchemaProcedure.GraphResult> schemaVisualization()
     {
-        //TODO: misha transaction to insert
-        return Stream.of( new SchemaProcedure( graphDatabaseAPI, null ).buildSchemaGraph() );
+        return Stream.of(
+                new SchemaProcedure( graphDatabaseAPI, ((GraphDatabaseFacade) graphDatabaseAPI).TEMP_TOP_LEVEL_TRANSACTION.get() ).buildSchemaGraph() );
     }
 
     @Description( "List all constraints in the database." )

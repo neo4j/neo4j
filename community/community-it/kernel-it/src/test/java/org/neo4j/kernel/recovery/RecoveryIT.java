@@ -204,7 +204,7 @@ class RecoveryIT
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
-            assertEquals( numberOfNodes, count( recoveredDatabase.getAllPropertyKeys() ) );
+            assertEquals( numberOfNodes, count( transaction.getAllPropertyKeys() ) );
         }
         finally
         {
@@ -250,9 +250,9 @@ class RecoveryIT
             }
         }
         long numberOfPropertyKeys;
-        try ( Transaction ignore = database.beginTx() )
+        try ( Transaction transaction = database.beginTx() )
         {
-            numberOfPropertyKeys = count( database.getAllPropertyKeys() );
+            numberOfPropertyKeys = count( transaction.getAllPropertyKeys() );
         }
         managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
@@ -265,7 +265,7 @@ class RecoveryIT
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
-            assertEquals( numberOfPropertyKeys, count( recoveredDatabase.getAllPropertyKeys() ) );
+            assertEquals( numberOfPropertyKeys, count( transaction.getAllPropertyKeys() ) );
         }
         finally
         {

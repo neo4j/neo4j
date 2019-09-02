@@ -247,18 +247,6 @@ public interface GraphDatabaseService
     ResourceIterator<Node> findNodes( Label label );
 
     /**
-     * Returns all property keys currently in the underlying store. This method guarantees that it will return all
-     * property keys currently in use. However, it may also return <i>more</i> than that (e.g. it can return "historic"
-     * labels that are no longer used).
-     *
-     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
-     * inside your transaction to avoid potential blocking of write operations.
-     *
-     * @return all property keys in the underlying store.
-     */
-    ResourceIterable<String> getAllPropertyKeys();
-
-    /**
      * Use this method to check if the database is currently in a usable state.
      *
      * @param timeout timeout (in milliseconds) to wait for the database to become available.
