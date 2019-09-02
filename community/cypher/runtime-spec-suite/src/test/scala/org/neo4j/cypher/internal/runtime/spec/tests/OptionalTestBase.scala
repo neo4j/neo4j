@@ -183,7 +183,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
   }
 
   // This test failed because of expand+limit
-  ignore("should support optional with limit") {
+  test("should support optional with limit") {
     // given
     val n = sizeHint
     val nodes = nodeGraph(n, "Honey")

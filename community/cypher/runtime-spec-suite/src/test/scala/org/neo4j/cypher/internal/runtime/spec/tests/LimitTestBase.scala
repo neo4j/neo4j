@@ -253,12 +253,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("a1").withRows(rowCount(12))
   }
 
-  // TODO: Bug (already tracked)
-  // If Limit filters out a cancelled argument row, but the task working on it is in the middle of working on that row (e.g. expanded half of the relationships),
-  // then re-pointing the current row to the next puts the task in an inconsistent state.
-  // In this example, the ExpandTask will still have the old cursor, but the input row points to a different node.
-  // When advancing to the next row, you will the lose results.
-  ignore("should support limit with expand") {
+  test("should support limit with expand") {
     val nodes = nodeGraph(sizeHint)
     val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
       case NodeConnections(node, connections) => (node.getId, connections)
