@@ -28,6 +28,11 @@ A PipeDecorator is used to instrument calls between Pipes, and between a Pipe an
 trait PipeDecorator {
   def decorate(pipe: Pipe, state: QueryState): QueryState
 
+  /**
+   * This method should be called after createResults, with the decorated QueryState
+   */
+  def afterCreateResults(pipe: Pipe, state: QueryState): Unit
+
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
 
   // These two are used for linenumber only
@@ -48,6 +53,8 @@ object NullPipeDecorator extends PipeDecorator {
   def decorate(pipe: Pipe, state: QueryState): QueryState = state
 
   def innerDecorator(pipe: Pipe): PipeDecorator = NullPipeDecorator
+
+  override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = {}
 }
 
 class LinenumberPipeDecorator() extends PipeDecorator {
@@ -120,4 +127,6 @@ class LinenumberPipeDecorator() extends PipeDecorator {
       }
     }
   }
+
+  override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = {}
 }

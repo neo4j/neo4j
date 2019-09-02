@@ -34,7 +34,7 @@ class InterpretedProfileInformation extends QueryProfile {
     override def time: Long = OperatorProfile.NO_DATA
   }
 
-  val pageCacheMap: mutable.Map[Id, PageCacheStats] = mutable.Map.empty
+  val pageCacheMap: mutable.Map[Id, PageCacheStats] = mutable.Map.empty.withDefault(_ => PageCacheStats(0,0))
   val dbHitsMap: mutable.Map[Id, ProfilingPipeQueryContext] = mutable.Map.empty
   val rowMap: mutable.Map[Id, ProfilingIterator] = mutable.Map.empty
 
@@ -42,12 +42,20 @@ class InterpretedProfileInformation extends QueryProfile {
     val id = Id(operatorId)
     val rows = rowMap.get(id).map(_.count).getOrElse(0L)
     val dbHits = dbHitsMap.get(id).map(_.count).getOrElse(0L)
-    val pageCacheStats = pageCacheMap.getOrElse(id, PageCacheStats(0L, 0L))
+    val pageCacheStats = pageCacheMap(id)
 
     OperatorData(dbHits, rows, pageCacheStats.hits, pageCacheStats.misses)
   }
 }
 
-case class PageCacheStats(hits: Long, misses: Long)
+case class PageCacheStats(hits: Long, misses: Long) {
+  def -(other: PageCacheStats): PageCacheStats = {
+    PageCacheStats(this.hits - other.hits, this.misses - other.misses)
+  }
+
+  def +(other: PageCacheStats): PageCacheStats = {
+    PageCacheStats(this.hits + other.hits, this.misses + other.misses)
+  }
+}
 
 

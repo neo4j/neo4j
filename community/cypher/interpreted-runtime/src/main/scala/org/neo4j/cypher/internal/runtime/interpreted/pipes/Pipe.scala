@@ -40,6 +40,7 @@ trait Pipe {
     val decoratedState = state.decorator.decorate(self, state)
     decoratedState.setExecutionContextFactory(executionContextFactory)
     val innerResult = internalCreateResults(decoratedState)
+    state.decorator.afterCreateResults(self, decoratedState)
     state.decorator.decorate(self, innerResult, () => state.initialContext)
   }
 
@@ -67,6 +68,7 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     val decoratedState = state.decorator.decorate(this, state)
     decoratedState.setExecutionContextFactory(executionContextFactory)
     val result = internalCreateResults(sourceResult, decoratedState)
+    state.decorator.afterCreateResults(this, decoratedState)
     state.decorator.decorate(this, result, sourceResult)
   }
 

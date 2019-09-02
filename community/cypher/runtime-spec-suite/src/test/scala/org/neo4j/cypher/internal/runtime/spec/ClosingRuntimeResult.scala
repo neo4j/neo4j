@@ -36,9 +36,11 @@ class ClosingRuntimeResult(inner: RuntimeResult,
                            txContext: TransactionalContext,
                            resourceManager: ResourceManager,
                            subscriber: QuerySubscriber,
-                           assertAllReleased: () => Unit) extends RuntimeResult{
+                           assertAllReleased: () => Unit) extends RuntimeResult {
 
   private var error: Throwable = _
+  private var _pageCacheHits: Long = -1L
+  private var _pageCacheMisses: Long = -1L
 
   override def fieldNames(): Array[String] = inner.fieldNames()
 
@@ -87,9 +89,18 @@ class ClosingRuntimeResult(inner: RuntimeResult,
   }
 
   private def closeResources(): Unit = {
+    // Capture page cache statistics before closing
+    if (_pageCacheHits == -1L)
+      _pageCacheHits = txContext.kernelStatisticProvider().getPageCacheHits
+    if (_pageCacheMisses == -1L)
+    _pageCacheMisses = txContext.kernelStatisticProvider().getPageCacheMisses
+
     resourceManager.close()
     assertAllReleased()
     txContext.close()
     tx.close()
   }
+
+  def pageCacheHits: Long = _pageCacheHits
+  def pageCacheMisses: Long = _pageCacheMisses
 }

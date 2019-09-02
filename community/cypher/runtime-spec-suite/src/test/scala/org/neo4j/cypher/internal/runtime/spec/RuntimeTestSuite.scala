@@ -721,5 +721,8 @@ case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySu
     recordingQuerySubscriber.getOrThrow().asScala.toIndexedSeq
   }
 
+  def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheHits
+  def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheMisses
+
 }
 case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)
