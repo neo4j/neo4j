@@ -267,6 +267,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case LogSystemCommand(_, _) =>
         PlanDescriptionImpl(id, "LogSystemCommand", NoChildren, Seq.empty, variables)
 
+      case SystemProcedureCall(queryString, _) =>
+        PlanDescriptionImpl(id, queryString, NoChildren, Seq.empty, variables)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
