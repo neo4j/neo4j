@@ -92,7 +92,17 @@ final case class FromGraph(expression: Expression)(val position: InputPosition) 
       checkGraphReference
 
   private def checkGraphReference: SemanticCheck =
-    unless(graphReference.isDefined)(error("Invalid graph reference", position))
+    graphReference match {
+      case Some(ViewRef(_, arguments))        => checkExpressions(arguments)
+      case Some(GraphRefParameter(parameter)) => checkExpressions(Seq(parameter))
+      case Some(_)                            => success
+      case _                                  => error("Invalid graph reference", position)
+    }
+
+  private def checkExpressions(expressions: Seq[Expression]): SemanticCheck =
+    expressions.foldSemanticCheck(expr =>
+      SemanticExpressionCheck.check(Expression.SemanticContext.Results, expr)
+    )
 
   def graphReference: Option[GraphReference] = {
 

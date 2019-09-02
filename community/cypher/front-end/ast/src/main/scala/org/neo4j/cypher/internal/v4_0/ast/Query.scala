@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult.{error, success}
 import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{Scope, SemanticAnalysisTooling, SemanticCheckResult, SemanticCheckable, SemanticState, _}
 import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, Variable}
@@ -82,11 +83,20 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
 
     clauses
+      .filterNot(leadingFrom.contains)
       .headOption.collect { case w: With if hasImportFormat(w) => w }
   }
 
+  def leadingFrom: Option[FromGraph] =
+    clauses.headOption.collect { case f: FromGraph => f }
+
   def clausesExceptImportWith: Seq[Clause] =
     clauses.filterNot(importWith.contains)
+
+  def clausesExceptLeadingFromAndImportWith: Seq[Clause] =
+    clauses
+      .filterNot(importWith.contains)
+      .filterNot(leadingFrom.contains)
 
   def semanticCheckAbstract(clauses: Seq[Clause]): SemanticCheck =
     checkCorrelatedSubQueriesFeature chain
@@ -109,14 +119,22 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           SemanticCheckResult.success
       }
 
+    checkLeadingFrom(outer) chain
     importVariables chain
-      semanticCheckAbstract(clausesExceptImportWith)
+    semanticCheckAbstract(clausesExceptLeadingFromAndImportWith)
   }
 
   private def checkCorrelatedSubQueriesFeature: SemanticCheck =
-    when(importWith.isDefined)(
-      requireFeatureSupport(s"Importing variables into subqueries", SemanticFeature.CorrelatedSubQueries, importWith.get.position)
-    )
+    importWith match {
+      case Some(wth) => requireFeatureSupport(s"Importing variables into subqueries", SemanticFeature.CorrelatedSubQueries, wth.position)
+      case None      => success
+    }
+
+  private def checkLeadingFrom(outer: SemanticState): SemanticCheck =
+    leadingFrom match {
+      case Some(from) => withState(outer)(from.semanticCheck)
+      case None       => success
+    }
 
   private def checkIndexHints(clauses: Seq[Clause]): SemanticCheck = s => {
     val hints = clauses.collect { case m: Match => m.hints }.flatten
