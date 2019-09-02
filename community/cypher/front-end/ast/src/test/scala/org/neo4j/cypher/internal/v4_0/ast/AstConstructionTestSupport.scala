@@ -245,15 +245,15 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def nodePat(name: String, labels: String*): NodePattern =
     NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None)(pos)
 
-  def query(part: QueryPart): Query =
-    Query(None, part)(pos)
-
   def patternExpression(nodeVar1: Variable, nodeVar2: Variable) =
     PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(nodeVar1), Seq.empty, None)(pos),
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
       NodePattern(Some(nodeVar2), Seq.empty, None)(pos)
     )(pos))(pos))
+
+  def query(part: QueryPart): Query =
+    Query(None, part)(pos)
 
   def query(cs: Clause*): Query =
     Query(None, SingleQuery(cs)(pos))(pos)

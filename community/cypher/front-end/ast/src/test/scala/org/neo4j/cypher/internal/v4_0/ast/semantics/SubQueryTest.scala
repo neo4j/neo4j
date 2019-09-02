@@ -26,23 +26,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     SemanticState.clean
       .withFeature(SemanticFeature.CorrelatedSubQueries)
 
-  test("correlated subqueries require semantic feature") {
-
-    val q =
-      query(
-        with_(literal(1).as("a")),
-        subQuery(
-          with_(varFor("a").aliased),
-          return_(literal(1).as("b"))
-        ),
-        return_(varFor("a").as("a"))
-      )
-        .semanticCheck(SemanticState.clean)
-        .tap(_.errors.size.shouldEqual(1))
-        .tap(_.errors.head.msg.should(include("Importing") and include("correlated subqueries")))
-  }
-
-  test("returned variables are added to scope after sub-query") {
+  test("returned variables are added to scope after subquery") {
 
     query(
       with_(literal(1).as("a")),
@@ -59,7 +43,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   }
 
-  test("outer scope is not seen in uncorrelated sub-query") {
+  test("outer scope is not seen in uncorrelated subquery") {
 
     query(
       with_(literal(1).as("a")),
@@ -108,7 +92,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("subquery allows union with valid return statements at the end") {
 
-    val sq = singleQuery(
+    singleQuery(
       subQuery(
         union(
           singleQuery(return_(literal(2).as("x"))),
@@ -117,15 +101,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").as("x"))
     )
-
-    val result = sq.semanticCheck(SemanticState.clean)
-
-    result.errors.size shouldEqual 0
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
   }
 
   test("subquery allows union with valid return columns in different order at the end") {
 
-    val sq = singleQuery(
+    singleQuery(
       subQuery(
         union(
           singleQuery(return_(literal(2).as("x"), literal(2).as("y"))),
@@ -134,15 +116,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").as("x"), varFor("y").as("y"))
     )
-
-    val result = sq.semanticCheck(SemanticState.clean)
-
-    result.errors.size shouldEqual 0
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
   }
 
   test("subquery allows union without return statement at the end") {
 
-    val sq = singleQuery(
+    singleQuery(
       subQuery(
         union(
           singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos))),
@@ -151,15 +131,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(countStar().as("count"))
     )
-
-    val result = sq.semanticCheck(SemanticState.clean)
-
-    result.errors.size shouldEqual 0
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
   }
 
   test("subquery disallows union with different return columns at the end") {
 
-    val sq = singleQuery(
+    singleQuery(
       subQuery(
         union(
           singleQuery(return_(literal(2).as("x"), literal(2).as("y"), literal(2).as("z"))),
@@ -167,45 +145,6 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
         )
       ),
       return_(varFor("x").as("x"), varFor("y").as("y"))
-    )
-
-    val result = sq.semanticCheck(SemanticState.clean)
-
-    result.errors.size shouldEqual 1
-    result.errors.head.msg should include ("All sub queries in an UNION must have the same column names")
-  }
-
-  test("subquery with union") {
-
-    query(
-      with_(literal(1).as("a")),
-      subQuery(unionDistinct(
-        singleQuery(
-          return_(literal(2).as("b"))
-        ),
-        singleQuery(
-          return_(literal(3).as("b"))
-        )
-      )),
-      return_(varFor("a").aliased, varFor("b").aliased)
-    )
-      .semanticCheck(clean)
-      .errors.size.shouldEqual(0)
-  }
-
-  test("subquery with invalid union") {
-
-    query(
-      with_(literal(1).as("a")),
-      subQuery(unionDistinct(
-        singleQuery(
-          return_(literal(2).as("b"))
-        ),
-        singleQuery(
-          return_(literal(3).as("c"))
-        )
-      )),
-      return_(varFor("a").aliased)
     )
       .semanticCheck(clean)
       .tap(_.errors.size.shouldEqual(1))
@@ -224,6 +163,21 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     )
       .semanticCheck(clean)
       .errors.size.shouldEqual(0)
+  }
+
+  test("correlated subqueries require semantic feature") {
+
+      query(
+        with_(literal(1).as("a")),
+        subQuery(
+          with_(varFor("a").aliased),
+          return_(literal(1).as("b"))
+        ),
+        return_(varFor("a").as("a"))
+      )
+        .semanticCheck(SemanticState.clean)
+        .tap(_.errors.size.shouldEqual(1))
+        .tap(_.errors.head.msg.should(include("Importing") and include("correlated subqueries")))
   }
 
   test("correlated subquery with union") {
@@ -444,6 +398,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .shouldEqual(Seq())
   }
 
+  /** https://github.com/scala/scala/blob/v2.13.0/src/library/scala/util/ChainingOps.scala#L37 */
   implicit class AnyOps[A](a: A) {
     def tap[X](e: A => X): A = {
       e(a)

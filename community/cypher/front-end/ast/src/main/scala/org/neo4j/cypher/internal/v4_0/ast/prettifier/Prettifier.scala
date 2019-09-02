@@ -242,7 +242,7 @@ case class Prettifier(expr: ExpressionStringifier) {
   }
 
   def asString(c: SubQuery): String = {
-    val q = asString(c.query)
+    val q = queryPart(c.part)
     val qWithIndent = q.split(NL).map(indentedLine).mkString(NL)
     s"""CALL {
        |$qWithIndent
