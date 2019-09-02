@@ -19,16 +19,19 @@
  */
 package org.neo4j.server.security.auth;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.security.User;
 
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 
 public class BasicLoginContext implements LoginContext
 {
@@ -108,6 +111,10 @@ public class BasicLoginContext implements LoginContext
     @Override
     public SecurityContext authorize( IdLookup idLookup, String dbName )
     {
+        if ( authSubject.authenticationResult.equals( FAILURE ) || authSubject.authenticationResult.equals( TOO_MANY_ATTEMPTS ) )
+        {
+            throw new AuthorizationViolationException( AuthorizationViolationException.PERMISSION_DENIED, Status.Security.Unauthorized );
+        }
         return new SecurityContext( authSubject, accessMode );
     }
 }
