@@ -103,6 +103,17 @@ public interface Transaction extends AutoCloseable
     TraversalDescription traversalDescription();
 
     /**
+     * Returns all labels currently in the underlying store. Labels are added to the store the first time
+     * they are used. This method guarantees that it will return all labels currently in use.
+     *
+     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @return all labels in the underlying store.
+     */
+    ResourceIterable<Label> getAllLabelsInUse();
+
+    /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter
      * if {@link #commit()} ()} is invoked afterwards -- the transaction will still be rolled back.

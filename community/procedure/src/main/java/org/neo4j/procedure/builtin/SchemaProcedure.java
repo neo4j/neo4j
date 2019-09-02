@@ -45,6 +45,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -52,19 +53,19 @@ public class SchemaProcedure
 {
 
     private final GraphDatabaseAPI graphDatabaseAPI;
-    private final KernelTransaction kernelTransaction;
+    private final InternalTransaction internalTransaction;
 
-    public SchemaProcedure( final GraphDatabaseAPI graphDatabaseAPI, final KernelTransaction kernelTransaction )
+    public SchemaProcedure( final GraphDatabaseAPI graphDatabaseAPI, final InternalTransaction internalTransaction )
     {
         this.graphDatabaseAPI = graphDatabaseAPI;
-        this.kernelTransaction = kernelTransaction;
+        this.internalTransaction = internalTransaction;
     }
 
     public GraphResult buildSchemaGraph()
     {
         final Map<String,VirtualNodeHack> nodes = new HashMap<>();
         final Map<String,Set<VirtualRelationshipHack>> relationships = new HashMap<>();
-
+        final KernelTransaction kernelTransaction = (KernelTransaction) internalTransaction.kernelTransaction();
         try ( Statement statement = kernelTransaction.acquireStatement() )
         {
             Read dataRead = kernelTransaction.dataRead();
@@ -72,7 +73,7 @@ public class SchemaProcedure
             TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( tokenRead );
             SchemaRead schemaRead = kernelTransaction.schemaRead();
             // add all labelsInDatabase
-            try ( ResourceIterator<Label> labelsInDatabase = graphDatabaseAPI.getAllLabelsInUse().iterator() )
+            try ( ResourceIterator<Label> labelsInDatabase = internalTransaction.getAllLabelsInUse().iterator() )
             {
                 while ( labelsInDatabase.hasNext() )
                 {
@@ -117,7 +118,7 @@ public class SchemaProcedure
                         RelationshipType relationshipType = relationshipTypeIterator.next();
                         String relationshipTypeGetName = relationshipType.name();
                         int relId = tokenRead.relationshipType( relationshipTypeGetName );
-                        try ( ResourceIterator<Label> labelsInUse = graphDatabaseAPI.getAllLabelsInUse().iterator() )
+                        try ( ResourceIterator<Label> labelsInUse = internalTransaction.getAllLabelsInUse().iterator() )
                         {
                             List<VirtualNodeHack> startNodes = new LinkedList<>();
                             List<VirtualNodeHack> endNodes = new LinkedList<>();

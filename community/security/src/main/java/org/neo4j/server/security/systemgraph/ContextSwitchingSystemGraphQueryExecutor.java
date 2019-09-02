@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -153,6 +154,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             public TraversalDescription traversalDescription()
             {
                 return transaction.traversalDescription();
+            }
+
+            @Override
+            public ResourceIterable<Label> getAllLabelsInUse()
+            {
+                return transaction.getAllLabelsInUse();
             }
 
             @Override

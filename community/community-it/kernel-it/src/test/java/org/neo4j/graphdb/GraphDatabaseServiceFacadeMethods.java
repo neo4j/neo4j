@@ -37,7 +37,6 @@ public enum GraphDatabaseServiceFacadeMethods implements Consumer<GraphDatabaseS
                     gds -> consume( gds.findNodes( label( "bar" ), "baz", 23 ) ) ) ),
     FIND_NODES_BY_LABEL( new FacadeMethod<>( "ResourceIterator<Node> findNodes( Label label )", gds -> consume( gds.findNodes( label( "bar" ) ) ) ) ),
     GET_ALL_LABELS( new FacadeMethod<>( "Iterable<Label> getAllLabels()", GraphDatabaseService::getAllLabels ) ),
-    GET_ALL_LABELS_IN_USE( new FacadeMethod<>( "Iterable<Label> getAllLabelsInUse()", GraphDatabaseService::getAllLabelsInUse ) ),
     GET_ALL_RELATIONSHIP_TYPES( new FacadeMethod<>( "Iterable<RelationshipType> getAllRelationshipTypes()", GraphDatabaseService::getAllRelationshipTypes ) ),
     GET_ALL_RELATIONSHIP_TYPES_IN_USE(
             new FacadeMethod<>( "Iterable<RelationshipType> getAllRelationshipTypesInUse()", GraphDatabaseService::getAllRelationshipTypesInUse ) ),

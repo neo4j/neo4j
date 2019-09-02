@@ -450,9 +450,9 @@ class LabelsAcceptanceTest
 
         // When
         List<Label> labels;
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            labels = asList( db.getAllLabelsInUse() );
+            labels = asList( tx.getAllLabelsInUse() );
         }
 
         // Then
@@ -491,9 +491,9 @@ class LabelsAcceptanceTest
             // When
             indexCreateStarted.await();
             List<Label> labels;
-            try ( Transaction ignored = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                labels = asList( db.getAllLabelsInUse() );
+                labels = asList( tx.getAllLabelsInUse() );
             }
             indexCreateAllowToFinish.release();
             indexCreator.join();

@@ -503,12 +503,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
-    public ResourceIterable<Label> getAllLabelsInUse()
-    {
-        return database.getAllLabelsInUse();
-    }
-
-    @Override
     public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
     {
         return database.getAllRelationshipTypesInUse();

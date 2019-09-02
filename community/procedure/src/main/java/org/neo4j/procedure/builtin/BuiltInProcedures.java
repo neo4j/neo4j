@@ -268,7 +268,8 @@ public class BuiltInProcedures
     @Procedure( name = "db.schema.visualization", mode = READ )
     public Stream<SchemaProcedure.GraphResult> schemaVisualization()
     {
-        return Stream.of( new SchemaProcedure( graphDatabaseAPI, tx ).buildSchemaGraph() );
+        //TODO: misha transaction to insert
+        return Stream.of( new SchemaProcedure( graphDatabaseAPI, null ).buildSchemaGraph() );
     }
 
     @Description( "List all constraints in the database." )

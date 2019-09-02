@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
+import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
@@ -136,6 +138,12 @@ public class TopLevelTransaction implements InternalTransaction
     public TraversalDescription traversalDescription()
     {
         return new MonoDirectionalTraversalDescription( () -> ((KernelTransaction) kernelTransaction()).acquireStatement() );
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabelsInUse()
+    {
+        return allInUse( TokenAccess.LABELS );
     }
 
     @Override
@@ -255,4 +263,8 @@ public class TopLevelTransaction implements InternalTransaction
         transaction.setMetaData( txMeta );
     }
 
+    private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
+    {
+        return () -> tokens.inUse( (KernelTransaction) kernelTransaction() );
+    }
 }

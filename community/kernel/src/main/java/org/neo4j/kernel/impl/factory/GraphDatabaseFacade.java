@@ -385,12 +385,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public ResourceIterable<Label> getAllLabelsInUse()
-    {
-        return allInUse( TokenAccess.LABELS );
-    }
-
-    @Override
     public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
     {
         return allInUse( TokenAccess.RELATIONSHIP_TYPES );
