@@ -78,7 +78,7 @@
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
       -Dorg.org.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
       -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java.exports} ${test.runner.jvm.settings.additional}
-      -Djdk.serialFilter=java.**;org.neo4j.**;com.neo4j.**;com.hazelcast.**;net.sf.ehcache.Element;com.sun.proxy.*;org.openjdk.jmh.runner.**;!*
+      -Djdk.serialFilter=java.**;org.neo4j.**;com.neo4j.**;com.hazelcast.**;net.sf.ehcache.Element;com.sun.proxy.*;org.openjdk.jmh.**;!*
     </test.runner.jvm.settings>
     <jetty.version>9.4.17.v20190418</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
