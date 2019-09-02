@@ -43,15 +43,10 @@ abstract class CommunityAdministrationCommandAcceptanceTestBase extends Executio
   }
 
   def assertFailure(command: String, errorMsg: String): Unit = {
-    try {
+    the[Exception] thrownBy {
       // WHEN
       execute(command)
-
-      fail("Expected error " + errorMsg)
-    } catch {
       // THEN
-      case e: Exception => e.getMessage should be(errorMsg)
-    }
+    } should have message errorMsg
   }
-
 }

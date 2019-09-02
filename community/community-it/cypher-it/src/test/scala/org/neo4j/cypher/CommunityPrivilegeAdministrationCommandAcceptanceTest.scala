@@ -124,7 +124,8 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE GRANT MATCH {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT MATCH {*} ON GRAPH * NODES * (*) FROM custom")
+    assertFailureWithPartialMessage("REVOKE GRANT MATCH {*} ON GRAPH * NODES * (*) FROM custom",
+      "REVOKE GRANT MATCH is not a valid command, use REVOKE GRANT READ and REVOKE GRANT TRAVERSE instead.")
   }
   
   // Tests for revoking deny privileges
@@ -149,7 +150,8 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE DENY MATCH {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY MATCH {*} ON GRAPH * NODES * (*) FROM custom")
+    assertFailureWithPartialMessage("REVOKE DENY MATCH {*} ON GRAPH * NODES * (*) FROM custom",
+      "REVOKE DENY MATCH is not a valid command, use REVOKE DENY READ and REVOKE DENY TRAVERSE instead.")
   }
 
   // Tests for revoking privileges
@@ -174,7 +176,18 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE MATCH {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE MATCH {*} ON GRAPH * NODES * (*) FROM custom")
+    assertFailureWithPartialMessage("REVOKE MATCH {*} ON GRAPH * NODES * (*) FROM custom",
+      "REVOKE MATCH is not a valid command, use REVOKE READ and REVOKE TRAVERSE instead.")
+  }
+
+  def assertFailureWithPartialMessage(command: String, errorMsg: String): Unit = {
+    // WHEN
+    val exception = the[Exception] thrownBy {
+      execute(command)
+    }
+
+    // THEN
+    exception.getMessage should include(errorMsg)
   }
 
 }
