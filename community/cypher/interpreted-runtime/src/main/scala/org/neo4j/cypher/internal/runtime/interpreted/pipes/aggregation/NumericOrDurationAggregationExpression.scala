@@ -38,7 +38,7 @@ trait NumericOrDurationAggregationExpression {
 
   def value: Expression
 
-  protected def actOnNumberOrDuration(vl: AnyValue, aggNumber: NumberValue => Unit, aggDuration: DurationValue => Unit) = {
+  protected def actOnNumberOrDuration(vl: AnyValue, aggNumber: NumberValue => Unit, aggDuration: DurationValue => Unit): Unit = {
     vl match {
       case IsNoValue() =>
       case number: NumberValue =>
@@ -46,7 +46,7 @@ trait NumericOrDurationAggregationExpression {
           case None =>
             aggregatingType = Some(AggregatingNumbers)
           case Some(AggregatingDurations) =>
-            throw new CypherTypeException("%s(%s) cannot mix number and durations".format(name, value))
+            throw new CypherTypeException("%s(%s) cannot mix number and duration".format(name, value))
           case _ =>
         }
         aggNumber(number)
@@ -55,7 +55,7 @@ trait NumericOrDurationAggregationExpression {
           case None =>
             aggregatingType = Some(AggregatingDurations)
           case Some(AggregatingNumbers) =>
-            throw new CypherTypeException("%s(%s) cannot mix number and durations".format(name, value))
+            throw new CypherTypeException("%s(%s) cannot mix number and duration".format(name, value))
           case _ =>
         }
         aggDuration(dur)
