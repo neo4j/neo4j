@@ -410,49 +410,53 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     @Test
     public void test9()
     {
-        graph.makeEdge( "a", "b", "cost", (double) 0 );
-        graph.makeEdge( "b", "c", "cost", (double) 0 );
-        graph.makeEdge( "c", "d", "cost", (double) 0 );
-        graph.makeEdge( "d", "e", "cost", (double) 0 );
-        graph.makeEdge( "e", "f", "cost", (double) 0 );
-        graph.makeEdge( "f", "g", "cost", (double) 0 );
-
-        graph.makeEdge( "d", "j", "cost", (double) 0 );
-        graph.makeEdge( "j", "k", "cost", (double) 0 );
-        graph.makeEdge( "k", "f", "cost", (double) 0 );
-
-        graph.makeEdge( "c", "h", "cost", (double) 0 );
-        graph.makeEdge( "h", "i", "cost", (double) 0 );
-        graph.makeEdge( "i", "e", "cost", (double) 0 );
-
-        Dijkstra<Double> dijkstra =
-                new Dijkstra<>( 0.0, graph.getNode( "a" ), graph.getNode( "g" ), ( relationship, direction ) -> .0,
-                                new DoubleAdder(), Double::compareTo, Direction.OUTGOING, MyRelTypes.R1 );
-
-        List<List<Node>> paths = dijkstra.getPathsAsNodes();
-
-        assertEquals( paths.size(), 3 );
-        String[] commonPrefix = {"a", "b", "c"};
-        String[] commonSuffix = {"f", "g"};
-        for ( List<Node> path : paths )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            /**
-             * Check if the prefixes are all correct.
-             */
-            for ( int j = 0; j < commonPrefix.length; j++ )
-            {
-                assertEquals( path.get( j ), graph.getNode( commonPrefix[j] ) );
-            }
+            graph.makeEdge( transaction, "a", "b", "cost", (double) 0 );
+            graph.makeEdge( transaction, "b", "c", "cost", (double) 0 );
+            graph.makeEdge( transaction, "c", "d", "cost", (double) 0 );
+            graph.makeEdge( transaction, "d", "e", "cost", (double) 0 );
+            graph.makeEdge( transaction, "e", "f", "cost", (double) 0 );
+            graph.makeEdge( transaction, "f", "g", "cost", (double) 0 );
 
-            int pathSize = path.size();
+            graph.makeEdge( transaction, "d", "j", "cost", (double) 0 );
+            graph.makeEdge( transaction, "j", "k", "cost", (double) 0 );
+            graph.makeEdge( transaction, "k", "f", "cost", (double) 0 );
 
-            /**
-             * Check if the suffixes are all correct.
-             */
-            for ( int j = 0; j < commonSuffix.length; j++ )
+            graph.makeEdge( transaction, "c", "h", "cost", (double) 0 );
+            graph.makeEdge( transaction, "h", "i", "cost", (double) 0 );
+            graph.makeEdge( transaction, "i", "e", "cost", (double) 0 );
+
+            Dijkstra<Double> dijkstra =
+                    new Dijkstra<>( 0.0, graph.getNode( transaction, "a" ), graph.getNode( transaction, "g" ), ( relationship, direction ) -> .0,
+                                    new DoubleAdder(), Double::compareTo, Direction.OUTGOING, MyRelTypes.R1 );
+
+            List<List<Node>> paths = dijkstra.getPathsAsNodes();
+
+            assertEquals( paths.size(), 3 );
+            String[] commonPrefix = {"a", "b", "c"};
+            String[] commonSuffix = {"f", "g"};
+            for ( List<Node> path : paths )
             {
-                assertEquals( path.get( pathSize - j - 1 ), graph.getNode( commonSuffix[commonSuffix.length - j - 1] ) );
+                /**
+                 * Check if the prefixes are all correct.
+                 */
+                for ( int j = 0; j < commonPrefix.length; j++ )
+                {
+                    assertEquals( path.get( j ), graph.getNode( transaction, commonPrefix[j] ) );
+                }
+
+                int pathSize = path.size();
+
+                /**
+                 * Check if the suffixes are all correct.
+                 */
+                for ( int j = 0; j < commonSuffix.length; j++ )
+                {
+                    assertEquals( path.get( pathSize - j - 1 ), graph.getNode( transaction, commonSuffix[commonSuffix.length - j - 1] ) );
+                }
             }
+            transaction.commit();
         }
     }
 }
