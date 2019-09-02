@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -62,9 +63,9 @@ public class AuthProcedures
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws ProcedureException
     {
-        var query = String.format( "CREATE USER `%s` SET PASSWORD '%s' %s", username, password,
+        var query = String.format( "CREATE USER %s SET PASSWORD '%s' %s", escapeParameter( username ), password == null ? "" : password,
                 requirePasswordChange ? "CHANGE REQUIRED" : "CHANGE NOT REQUIRED" );
-        runDDL( query, "dbms.security.createUser" );
+        runSystemCommand( query, "dbms.security.createUser" );
     }
 
     @SystemProcedure
@@ -72,8 +73,8 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws ProcedureException
     {
-        var query = String.format( "DROP USER `%s`", username );
-        runDDL( query, "dbms.security.deleteUser" );
+        var query = String.format( "DROP USER %s", escapeParameter( username ) );
+        runSystemCommand( query, "dbms.security.deleteUser" );
     }
 
     @SystemProcedure
@@ -104,7 +105,7 @@ public class AuthProcedures
 
         try
         {
-            Result execute = graph.execute( query );
+            Result execute = ((GraphDatabaseFacade) graph).TEMP_TOP_LEVEL_TRANSACTION.get().execute( query );
             execute.accept( row ->
             {
                 var username = row.getString( "user" );
@@ -141,11 +142,11 @@ public class AuthProcedures
         }
     }
 
-    private void runDDL( String query, String procedureName ) throws ProcedureException
+    private void runSystemCommand( String query, String procedureName ) throws ProcedureException
     {
         try
         {
-            Result execute = graph.execute( query );
+            Result execute = ((GraphDatabaseFacade) graph).TEMP_TOP_LEVEL_TRANSACTION.get().execute( query );
             execute.accept( row -> true );
         }
         catch ( Exception e )
@@ -163,5 +164,10 @@ public class AuthProcedures
                     String.format( "This is an administration command and it should be executed against the system database: %s", procedureName ) );
         }
         throw new ProcedureException( ProcedureCallFailed, e, e.getMessage() );
+    }
+
+    private String escapeParameter( String input )
+    {
+        return String.format("`%s`", input == null ? "" : input );
     }
 }
