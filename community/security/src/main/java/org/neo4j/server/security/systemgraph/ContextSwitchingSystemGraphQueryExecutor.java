@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -139,6 +140,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             public Node createNode( Label... labels )
             {
                 return transaction.createNode( labels );
+            }
+
+            @Override
+            public BidirectionalTraversalDescription bidirectionalTraversalDescription()
+            {
+                return transaction.bidirectionalTraversalDescription();
             }
 
             @Override

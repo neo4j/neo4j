@@ -45,7 +45,6 @@ import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -592,12 +591,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public TraversalDescription traversalDescription()
     {
         return database.traversalDescription();
-    }
-
-    @Override
-    public BidirectionalTraversalDescription bidirectionalTraversalDescription()
-    {
-        return database.bidirectionalTraversalDescription();
     }
 
     @Override

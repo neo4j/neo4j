@@ -119,37 +119,41 @@ class TestPath extends TraversalTestBase
     @Disabled
     public void testBidirectionalPath()
     {
-        TraversalDescription side = getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_PATH );
-        BidirectionalTraversalDescription bidirectional =
-                getGraphDb().bidirectionalTraversalDescription().mirroredSides( side );
-        Path bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
-        assertPathIsCorrect( bidirectionalPath );
+        var graphDb = getGraphDb();
+        BidirectionalTraversalDescription bidirectional;
+        try ( var transaction = graphDb.beginTx() )
+        {
+            TraversalDescription side = graphDb.traversalDescription().uniqueness( Uniqueness.NODE_PATH );
+            bidirectional = transaction.bidirectionalTraversalDescription().mirroredSides( side );
+            Path bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
+            assertPathIsCorrect( bidirectionalPath );
 
-        Path path = getFirstPath( bidirectional.traverse( a, e ) );
-        Node node = path.startNode();
-        assertEquals( a, node );
+            Path path = getFirstPath( bidirectional.traverse( a, e ) );
+            Node node = path.startNode();
+            assertEquals( a, node );
 
-        // White box testing below: relationships(), nodes(), reverseRelationships(), reverseNodes()
-        // does cache the start node if not already cached, so just make sure they to it properly.
-        bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
-        bidirectionalPath.relationships();
-        assertEquals( a, bidirectionalPath.startNode() );
+            // White box testing below: relationships(), nodes(), reverseRelationships(), reverseNodes()
+            // does cache the start node if not already cached, so just make sure they to it properly.
+            bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
+            bidirectionalPath.relationships();
+            assertEquals( a, bidirectionalPath.startNode() );
 
-        bidirectionalPath = getFirstPath(bidirectional.traverse(a,e ) );
-        bidirectionalPath.nodes();
-        assertEquals( a, bidirectionalPath.startNode() );
+            bidirectionalPath = getFirstPath(bidirectional.traverse(a,e ) );
+            bidirectionalPath.nodes();
+            assertEquals( a, bidirectionalPath.startNode() );
 
-        bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
-        bidirectionalPath.reverseRelationships();
-        assertEquals( a, bidirectionalPath.startNode() );
+            bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
+            bidirectionalPath.reverseRelationships();
+            assertEquals( a, bidirectionalPath.startNode() );
 
-        bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
-        bidirectionalPath.reverseNodes();
-        assertEquals( a, bidirectionalPath.startNode() );
+            bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
+            bidirectionalPath.reverseNodes();
+            assertEquals( a, bidirectionalPath.startNode() );
 
-        bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
-        bidirectionalPath.iterator();
-        assertEquals( a, bidirectionalPath.startNode() );
+            bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
+            bidirectionalPath.iterator();
+            assertEquals( a, bidirectionalPath.startNode() );
+        }
     }
 
     private static Path getFirstPath( Traverser traverse )

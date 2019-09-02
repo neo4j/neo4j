@@ -51,9 +51,10 @@ public class AllPaths extends TraversalPathFinder
     protected Traverser instantiateTraverser( Node start, Node end )
     {
         // Bidirectional traversal
+        var transaction = context.transaction();
         GraphDatabaseService db = context.databaseService();
         TraversalDescription base = db.traversalDescription().depthFirst().uniqueness( uniqueness() );
-        return db.bidirectionalTraversalDescription()
+        return transaction.bidirectionalTraversalDescription()
                 .startSide( base.expand( expander ).evaluator( toDepth( maxDepth / 2 ) ) )
                 .endSide( base.expand( expander.reverse() ).evaluator( toDepth( maxDepth - maxDepth / 2 ) ) )
                 .traverse( start, end );

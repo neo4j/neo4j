@@ -63,11 +63,12 @@ public class ExactDepthPathFinder extends TraversalPathFinder
     @Override
     protected Traverser instantiateTraverser( Node start, Node end )
     {
+        var transaction = context.transaction();
         GraphDatabaseService db = context.databaseService();
         TraversalDescription side =
                 db.traversalDescription().breadthFirst().uniqueness( uniqueness ).order(
                         ( startSource, expander ) -> new LiteDepthFirstSelector( startSource, startThreshold, expander ) );
-        return db.bidirectionalTraversalDescription().startSide( side.expand( expander ).evaluator( toDepth( onDepth / 2 ) ) )
+        return transaction.bidirectionalTraversalDescription().startSide( side.expand( expander ).evaluator( toDepth( onDepth / 2 ) ) )
                 .endSide( side.expand( expander.reverse() ).evaluator( toDepth( onDepth - onDepth / 2 ) ) )
                 .collisionEvaluator( atDepth( onDepth ) )
                 // TODO Level side selector will make the traversal return wrong result, why?

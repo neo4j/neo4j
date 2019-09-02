@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 /**
@@ -446,13 +445,6 @@ public interface GraphDatabaseService
      * @return a new {@link TraversalDescription}
      */
     TraversalDescription traversalDescription();
-
-    /**
-     * Factory method for bidirectional traversal descriptions.
-     *
-     * @return a new {@link BidirectionalTraversalDescription}
-     */
-    BidirectionalTraversalDescription bidirectionalTraversalDescription();
 
     /**
      * Return name of underlying database

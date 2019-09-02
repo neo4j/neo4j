@@ -113,6 +113,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
                 startSideShortest, endSideShortest, epsilon );
 
         GraphDatabaseService db = context.databaseService();
+        var transaction = context.transaction();
 
         TraversalDescription side = db.traversalDescription().expand( dijkstraExpander, stateFactory )
                 .order( new DijkstraSelectorFactory( interest, costEvaluator ) )
@@ -122,7 +123,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         TraversalDescription startSide = side;
         TraversalDescription endSide = side.reverse();
 
-        BidirectionalTraversalDescription traversal = db.bidirectionalTraversalDescription()
+        BidirectionalTraversalDescription traversal = transaction.bidirectionalTraversalDescription()
                 .startSide( startSide )
                 .endSide( endSide )
                 .collisionEvaluator( Evaluators.all() )

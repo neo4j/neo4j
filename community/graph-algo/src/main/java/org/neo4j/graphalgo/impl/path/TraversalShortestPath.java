@@ -60,9 +60,10 @@ public class TraversalShortestPath extends TraversalPathFinder
     @Override
     protected Traverser instantiateTraverser( Node start, Node end )
     {
+        var transaction = context.transaction();
         GraphDatabaseService db = context.databaseService();
         TraversalDescription sideBase = db.traversalDescription().breadthFirst().uniqueness( NODE_PATH );
-        return db.bidirectionalTraversalDescription().mirroredSides( sideBase.expand( expander ) )
+        return transaction.bidirectionalTraversalDescription().mirroredSides( sideBase.expand( expander ) )
             .sideSelector( LEVEL_STOP_DESCENT_ON_RESULT, maxDepth )
             .collisionEvaluator( toDepth( maxDepth ) )
             .traverse( start, end );

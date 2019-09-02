@@ -32,6 +32,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 
@@ -120,6 +122,12 @@ public class TopLevelTransaction implements InternalTransaction
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
+    }
+
+    @Override
+    public BidirectionalTraversalDescription bidirectionalTraversalDescription()
+    {
+        return new BidirectionalTraversalDescriptionImpl( () -> ((KernelTransaction) kernelTransaction()).acquireStatement() );
     }
 
     @Override

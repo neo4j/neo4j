@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 
 /**
  * A programmatically handled transaction.
@@ -85,6 +86,13 @@ public interface Transaction extends AutoCloseable
      * @return the created node.
      */
     Node createNode( Label... labels );
+
+    /**
+     * Factory method for bidirectional traversal descriptions.
+     *
+     * @return a new {@link BidirectionalTraversalDescription}
+     */
+    BidirectionalTraversalDescription bidirectionalTraversalDescription();
 
     /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
