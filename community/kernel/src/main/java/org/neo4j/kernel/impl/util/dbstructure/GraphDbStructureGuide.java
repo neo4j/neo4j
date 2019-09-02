@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.util.dbstructure;
 
 import java.util.Iterator;
 
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,10 +37,9 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.lang.String.format;
@@ -54,13 +52,10 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     private static final RelationshipType WILDCARD_REL_TYPE = () -> "";
 
     private final GraphDatabaseAPI db;
-    private final ThreadToStatementContextBridge bridge;
 
     public GraphDbStructureGuide( GraphDatabaseService graph )
     {
         this.db = (GraphDatabaseAPI) graph;
-        DependencyResolver dependencies = ((GraphDatabaseAPI) graph).getDependencyResolver();
-        this.bridge = dependencies.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     @Override
@@ -68,19 +63,19 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     {
         try ( Transaction tx = db.beginTx() )
         {
-            showStructure( bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() ) , visitor );
+            showStructure( (InternalTransaction) tx, visitor );
             tx.commit();
         }
     }
 
-    private void showStructure( KernelTransaction ktx, DbStructureVisitor visitor )
+    private void showStructure( InternalTransaction transaction, DbStructureVisitor visitor )
     {
 
         try
         {
-            showTokens( visitor, ktx );
-            showSchema( visitor, ktx );
-            showStatistics( visitor, ktx );
+            showTokens( visitor, transaction );
+            showSchema( visitor, (KernelTransaction) transaction.kernelTransaction() );
+            showStatistics( visitor, transaction );
         }
         catch ( KernelException e )
         {
@@ -89,18 +84,18 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showTokens( DbStructureVisitor visitor, KernelTransaction ktx )
+    private void showTokens( DbStructureVisitor visitor, InternalTransaction transaction )
     {
-        showLabels( ktx, visitor );
-        showPropertyKeys( ktx, visitor );
-        showRelTypes( ktx, visitor );
+        showLabels( transaction, visitor );
+        showPropertyKeys( (KernelTransaction) transaction.kernelTransaction(), visitor );
+        showRelTypes( (KernelTransaction) transaction.kernelTransaction(), visitor );
     }
 
-    private void showLabels( KernelTransaction ktx, DbStructureVisitor visitor )
+    private void showLabels( InternalTransaction transaction, DbStructureVisitor visitor )
     {
-        for ( Label label : db.getAllLabels() )
+        for ( Label label : transaction.getAllLabels() )
         {
-            int labelId = ktx.tokenRead().nodeLabel( label.name() );
+            int labelId = transaction.kernelTransaction().tokenRead().nodeLabel( label.name() );
             visitor.visitLabel( labelId, label.name() );
         }
     }
@@ -179,30 +174,32 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showStatistics( DbStructureVisitor visitor, KernelTransaction ktx )
+    private void showStatistics( DbStructureVisitor visitor, InternalTransaction transaction )
     {
-        showNodeCounts( ktx, visitor );
-        showRelCounts( ktx, visitor );
+        showNodeCounts( transaction, visitor );
+        showRelCounts( transaction, visitor );
     }
 
-    private void showNodeCounts( KernelTransaction ktx, DbStructureVisitor visitor )
+    private void showNodeCounts( InternalTransaction transaction, DbStructureVisitor visitor )
     {
-        Read read = ktx.dataRead();
+        var kernelTransaction = transaction.kernelTransaction();
+        Read read = kernelTransaction.dataRead();
         visitor.visitAllNodesCount( read.countsForNode( ANY_LABEL ) );
-        for ( Label label : db.getAllLabels() )
+        for ( Label label : transaction.getAllLabels() )
         {
-            int labelId = ktx.tokenRead().nodeLabel( label.name() );
+            int labelId = kernelTransaction.tokenRead().nodeLabel( label.name() );
             visitor.visitNodeCount( labelId, label.name(), read.countsForNode( labelId ) );
         }
     }
-    private void showRelCounts( KernelTransaction ktx, DbStructureVisitor visitor )
+    private void showRelCounts( InternalTransaction transaction, DbStructureVisitor visitor )
     {
         // all wildcards
+        KernelTransaction ktx = (KernelTransaction) transaction.kernelTransaction();
         noSide( ktx, visitor, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
 
         TokenRead tokenRead = ktx.tokenRead();
         // one label only
-        for ( Label label : db.getAllLabels() )
+        for ( Label label : transaction.getAllLabels() )
         {
             int labelId = tokenRead.nodeLabel( label.name() );
 
@@ -216,7 +213,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             int relTypeId = tokenRead.relationshipType( relType.name() );
             noSide( ktx, visitor, relType, relTypeId );
 
-            for ( Label label : db.getAllLabels() )
+            for ( Label label : transaction.getAllLabels() )
             {
                 int labelId = tokenRead.nodeLabel( label.name() );
 

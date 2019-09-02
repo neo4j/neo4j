@@ -170,6 +170,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
 
             @Override
+            public ResourceIterable<Label> getAllLabels()
+            {
+                return transaction.getAllLabels();
+            }
+
+            @Override
             public void terminate()
             {
                 transaction.terminate();

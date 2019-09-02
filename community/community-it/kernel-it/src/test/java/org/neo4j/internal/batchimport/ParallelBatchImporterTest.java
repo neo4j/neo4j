@@ -198,7 +198,7 @@ public class ParallelBatchImporterTest
             try ( Transaction tx = db.beginTx() )
             {
                 inputIdGenerator.reset();
-                verifyData( NODE_COUNT, RELATIONSHIP_COUNT, db, groupDistribution, nodeRandomSeed, relationshipRandomSeed );
+                verifyData( NODE_COUNT, RELATIONSHIP_COUNT, db, tx, groupDistribution, nodeRandomSeed, relationshipRandomSeed );
                 tx.commit();
             }
             finally
@@ -357,8 +357,8 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private void verifyData( int nodeCount, int relationshipCount, GraphDatabaseService db, IdGroupDistribution groups,
-        long nodeRandomSeed, long relationshipRandomSeed ) throws IOException
+    private void verifyData( int nodeCount, int relationshipCount, GraphDatabaseService db, Transaction tx, IdGroupDistribution groups, long nodeRandomSeed,
+            long relationshipRandomSeed ) throws IOException
     {
         // Read all nodes, relationships and properties ad verify against the input data.
         try ( InputIterator nodes = nodes( nodeRandomSeed, nodeCount, config.batchSize(), inputIdGenerator, groups ).iterator();
@@ -394,7 +394,7 @@ public class ParallelBatchImporterTest
             assertEquals( nodeCount, verifiedNodes );
 
             // Labels
-            long labelScanStoreEntryCount = db.getAllLabels().stream()
+            long labelScanStoreEntryCount = tx.getAllLabels().stream()
                 .flatMap( l -> db.findNodes( l ).stream() )
                 .count();
 

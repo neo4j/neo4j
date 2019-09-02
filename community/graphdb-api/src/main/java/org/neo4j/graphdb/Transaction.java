@@ -125,6 +125,18 @@ public interface Transaction extends AutoCloseable
     ResourceIterable<RelationshipType> getAllRelationshipTypesInUse();
 
     /**
+     * Returns all labels currently in the underlying store. Labels are added to the store the first time
+     * they are used. This method guarantees that it will return all labels currently in use. However,
+     * it may also return <i>more</i> than that (e.g. it can return "historic" labels that are no longer used).
+     *
+     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @return all labels in the underlying store.
+     */
+    ResourceIterable<Label> getAllLabels();
+
+    /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter
      * if {@link #commit()} ()} is invoked afterwards -- the transaction will still be rolled back.

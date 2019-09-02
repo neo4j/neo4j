@@ -110,15 +110,15 @@ class CommunitySystemDatabaseIT
             node.setProperty( "a", "b" );
             transaction.commit();
         }
-        try ( Transaction ignored = defaultDb.beginTx() )
+        try ( Transaction transaction = defaultDb.beginTx() )
         {
             assertEquals( 0, count( defaultDb.findNodes( systemLabel ) ) );
-            assertEquals( 0, count( defaultDb.getAllLabels() ) );
+            assertEquals( 0, count( transaction.getAllLabels() ) );
         }
-        try ( Transaction ignored = systemDb.beginTx() )
+        try ( Transaction transaction = systemDb.beginTx() )
         {
             assertEquals( 1, count( systemDb.findNodes( systemLabel ) ) );
-            assertEquals( 1, count( systemDb.getAllLabels() ) );
+            assertEquals( 1, count( transaction.getAllLabels() ) );
         }
     }
 

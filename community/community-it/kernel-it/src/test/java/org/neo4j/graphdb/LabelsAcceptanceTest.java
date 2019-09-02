@@ -426,9 +426,9 @@ class LabelsAcceptanceTest
         List<Label> labels;
 
         // When
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            labels = asList( db.getAllLabels() );
+            labels = asList( transaction.getAllLabels() );
         }
 
         // Then

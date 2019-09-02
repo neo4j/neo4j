@@ -154,6 +154,12 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
+    public ResourceIterable<Label> getAllLabels()
+    {
+        return all( TokenAccess.LABELS );
+    }
+
+    @Override
     public final void terminate()
     {
         transaction.markForTermination( Terminated );
@@ -273,5 +279,10 @@ public class TopLevelTransaction implements InternalTransaction
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
     {
         return () -> tokens.inUse( (KernelTransaction) kernelTransaction() );
+    }
+
+    private <T> ResourceIterable<T> all( final TokenAccess<T> tokens )
+    {
+        return () -> tokens.all( (KernelTransaction) kernelTransaction() );
     }
 }

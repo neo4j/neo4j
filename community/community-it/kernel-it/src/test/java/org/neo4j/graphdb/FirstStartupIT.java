@@ -48,12 +48,12 @@ class FirstStartupIT
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // Then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             assertEquals( 0, count( db.getAllNodes() ) );
             assertEquals( 0, count( db.getAllRelationships() ) );
             assertEquals( 0, count( db.getAllRelationshipTypes() ) );
-            assertEquals( 0, count( db.getAllLabels() ) );
+            assertEquals( 0, count( transaction.getAllLabels() ) );
             assertEquals( 0, count( db.getAllPropertyKeys() ) );
         }
         finally

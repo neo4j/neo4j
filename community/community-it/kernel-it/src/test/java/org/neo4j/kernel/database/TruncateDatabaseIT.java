@@ -318,9 +318,9 @@ class TruncateDatabaseIT
 
     private long countLabels()
     {
-        try ( Transaction ignored = databaseAPI.beginTx() )
+        try ( Transaction transaction = databaseAPI.beginTx() )
         {
-            return count( databaseAPI.getAllLabels() );
+            return count( transaction.getAllLabels() );
         }
     }
 
