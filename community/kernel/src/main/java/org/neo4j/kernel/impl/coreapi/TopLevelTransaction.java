@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -144,6 +145,12 @@ public class TopLevelTransaction implements InternalTransaction
     public ResourceIterable<Label> getAllLabelsInUse()
     {
         return allInUse( TokenAccess.LABELS );
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+    {
+        return allInUse( TokenAccess.RELATIONSHIP_TYPES );
     }
 
     @Override

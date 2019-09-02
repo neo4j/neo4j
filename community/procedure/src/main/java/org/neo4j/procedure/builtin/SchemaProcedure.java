@@ -111,7 +111,7 @@ public class SchemaProcedure
                 //add all relationships
 
                 try ( ResourceIterator<RelationshipType> relationshipTypeIterator =
-                        graphDatabaseAPI.getAllRelationshipTypesInUse().iterator() )
+                        internalTransaction.getAllRelationshipTypesInUse().iterator() )
                 {
                     while ( relationshipTypeIterator.hasNext() )
                     {

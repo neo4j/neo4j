@@ -247,17 +247,6 @@ public interface GraphDatabaseService
     ResourceIterator<Node> findNodes( Label label );
 
     /**
-     * Returns all relationship types currently in the underlying store.
-     * Relationship types are added to the underlying store the first time they
-     * are used in a successfully committed {@link Node#createRelationshipTo
-     * node.createRelationshipTo(...)}. This method guarantees that it will
-     * return all relationship types currently in use.
-     *
-     * @return all relationship types in the underlying store
-     */
-    ResourceIterable<RelationshipType> getAllRelationshipTypesInUse();
-
-    /**
      * Returns all labels currently in the underlying store. Labels are added to the store the first time
      * they are used. This method guarantees that it will return all labels currently in use. However,
      * it may also return <i>more</i> than that (e.g. it can return "historic" labels that are no longer used).

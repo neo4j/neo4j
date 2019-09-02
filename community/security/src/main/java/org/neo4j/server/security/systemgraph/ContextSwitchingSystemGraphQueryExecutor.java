@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
@@ -160,6 +161,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             public ResourceIterable<Label> getAllLabelsInUse()
             {
                 return transaction.getAllLabelsInUse();
+            }
+
+            @Override
+            public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+            {
+                return transaction.getAllRelationshipTypesInUse();
             }
 
             @Override

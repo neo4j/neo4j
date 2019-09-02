@@ -535,9 +535,9 @@ class LabelsAcceptanceTest
             // When
             indexCreateStarted.await();
             List<RelationshipType> relTypes;
-            try ( Transaction ignored = db.beginTx() )
+            try ( Transaction transaction = db.beginTx() )
             {
-                relTypes = asList( db.getAllRelationshipTypesInUse() );
+                relTypes = asList( transaction.getAllRelationshipTypesInUse() );
             }
             indexCreateAllowToFinish.release();
             indexCreator.join();
