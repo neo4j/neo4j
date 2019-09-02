@@ -336,13 +336,12 @@ public class ExecutingQuery
         if ( obfuscatedQueryText == null )
         {
             Set<String> passwordParams = new HashSet<>();
+            // security procedures can be run on both user and system database currently
+            this.obfuscatedQueryText = QueryObfuscation.obfuscateText( rawQueryText, passwordParams );
             if ( databaseId.equals( SYSTEM_DATABASE_ID ) )
             {
-                this.obfuscatedQueryText = QueryObfuscation.obfuscateSystemCommand( rawQueryText, passwordParams );
-            }
-            else
-            {
-                this.obfuscatedQueryText = QueryObfuscation.obfuscateText( rawQueryText, passwordParams );
+                // check for system commands
+                this.obfuscatedQueryText = QueryObfuscation.obfuscateSystemCommand( obfuscatedQueryText, passwordParams );
             }
             this.obfuscatedQueryParameters = QueryObfuscation.obfuscateParams( rawQueryParameters, passwordParams );
         }
