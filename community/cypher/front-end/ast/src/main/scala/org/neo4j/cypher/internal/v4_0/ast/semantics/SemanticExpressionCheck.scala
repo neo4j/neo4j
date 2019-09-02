@@ -232,10 +232,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         // ITERABLES
 
       case x:FilterExpression =>
-        SemanticError("Filter is no longer supported. You can achieve the same result using list comprehension", x.position)
+        SemanticError("Filter is no longer supported. Please use list comprehension instead", x.position)
 
       case x:ExtractExpression =>
-        SemanticError("Extract is no longer supported. You can achieve the same result using list comprehension", x.position)
+        SemanticError("Extract is no longer supported. Please use list comprehension instead", x.position)
 
       case x:ListComprehension =>
         FilteringExpressions.semanticCheck(ctx, x) chain

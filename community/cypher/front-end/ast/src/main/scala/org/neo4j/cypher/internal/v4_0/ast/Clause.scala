@@ -504,7 +504,7 @@ case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends U
   override def name = "CREATE UNIQUE"
 
   override def semanticCheck =
-    SemanticError("CREATE UNIQUE is no longer supported. You can achieve the same result using MERGE", position)
+    SemanticError("CREATE UNIQUE is no longer supported. Please use MERGE instead", position)
 
 }
 
