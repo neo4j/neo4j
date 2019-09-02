@@ -253,7 +253,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     nodes.find(_.getProperty("name") == name).get
   }
 
-  def relType(name: String): RelationshipType = graph.getAllRelationshipTypes.asScala.find(_.name() == name).get
+  def relType(name: String): RelationshipType = graph.withTx( tx => tx.getAllRelationshipTypes.asScala.find(_.name() == name).get )
 
   def createNodes(names: String*): List[Node] = {
     nodes = names.map(x => createNode(Map("name" -> x))).toList

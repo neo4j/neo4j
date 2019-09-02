@@ -137,6 +137,20 @@ public interface Transaction extends AutoCloseable
     ResourceIterable<Label> getAllLabels();
 
     /**
+     * Returns all relationship types currently in the underlying store.
+     * Relationship types are added to the underlying store the first time they
+     * are used in a successfully committed {@link Node#createRelationshipTo
+     * node.createRelationshipTo(...)}. Note that this method is guaranteed to
+     * return all known relationship types, but it does not guarantee that it
+     * won't return <i>more</i> than that (e.g. it can return "historic"
+     * relationship types that no longer have any relationships in the node
+     * space).
+     *
+     * @return all relationship types in the underlying store
+     */
+    ResourceIterable<RelationshipType> getAllRelationshipTypes();
+
+    /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter
      * if {@link #commit()} ()} is invoked afterwards -- the transaction will still be rolled back.

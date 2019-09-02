@@ -160,6 +160,12 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+    {
+        return all( TokenAccess.RELATIONSHIP_TYPES );
+    }
+
+    @Override
     public final void terminate()
     {
         transaction.markForTermination( Terminated );

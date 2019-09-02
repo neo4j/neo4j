@@ -65,8 +65,8 @@ class TestRecoveryRelationshipTypes
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // Then
-        try ( Transaction ignored = db.beginTx();
-              ResourceIterator<RelationshipType> typeResourceIterator = db.getAllRelationshipTypes().iterator() )
+        try ( Transaction transaction = db.beginTx();
+              ResourceIterator<RelationshipType> typeResourceIterator = transaction.getAllRelationshipTypes().iterator() )
         {
             assertEquals( MyRelTypes.TEST.name(), typeResourceIterator.next().name() );
         }

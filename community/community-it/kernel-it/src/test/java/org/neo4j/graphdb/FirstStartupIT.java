@@ -52,7 +52,7 @@ class FirstStartupIT
         {
             assertEquals( 0, count( db.getAllNodes() ) );
             assertEquals( 0, count( db.getAllRelationships() ) );
-            assertEquals( 0, count( db.getAllRelationshipTypes() ) );
+            assertEquals( 0, count( transaction.getAllRelationshipTypes() ) );
             assertEquals( 0, count( transaction.getAllLabels() ) );
             assertEquals( 0, count( db.getAllPropertyKeys() ) );
         }

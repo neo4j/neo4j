@@ -176,6 +176,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
 
             @Override
+            public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+            {
+                return transaction.getAllRelationshipTypes();
+            }
+
+            @Override
             public void terminate()
             {
                 transaction.terminate();

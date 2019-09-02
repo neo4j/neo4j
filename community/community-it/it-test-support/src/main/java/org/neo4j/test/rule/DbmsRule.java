@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -500,12 +499,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public ResourceIterable<Relationship> getAllRelationships()
     {
         return database.getAllRelationships();
-    }
-
-    @Override
-    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
-    {
-        return database.getAllRelationshipTypes();
     }
 
     @Override

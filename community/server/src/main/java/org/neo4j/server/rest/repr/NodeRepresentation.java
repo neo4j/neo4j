@@ -184,8 +184,10 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
             new PropertiesRepresentation( node ).serialize( properties );
             if ( writer.isInteractive() )
             {
-                serializer.putList( "relationship_types", ListRepresentation.relationshipTypes(
-                        databaseService.getAllRelationshipTypes() ) );
+                try ( var transaction = databaseService.beginTx() )
+                {
+                    serializer.putList( "relationship_types", ListRepresentation.relationshipTypes( transaction.getAllRelationshipTypes() ) );
+                }
             }
             properties.done();
         }

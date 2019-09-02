@@ -310,9 +310,9 @@ class TruncateDatabaseIT
 
     private long countRelationshipTypes()
     {
-        try ( Transaction ignored = databaseAPI.beginTx() )
+        try ( Transaction transaction = databaseAPI.beginTx() )
         {
-            return count( databaseAPI.getAllRelationshipTypes() );
+            return count( transaction.getAllRelationshipTypes() );
         }
     }
 

@@ -88,7 +88,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     {
         showLabels( transaction, visitor );
         showPropertyKeys( (KernelTransaction) transaction.kernelTransaction(), visitor );
-        showRelTypes( (KernelTransaction) transaction.kernelTransaction(), visitor );
+        showRelTypes( transaction, visitor );
     }
 
     private void showLabels( InternalTransaction transaction, DbStructureVisitor visitor )
@@ -109,11 +109,11 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showRelTypes( KernelTransaction ktx, DbStructureVisitor visitor )
+    private void showRelTypes( InternalTransaction transaction, DbStructureVisitor visitor )
     {
-        for ( RelationshipType relType : db.getAllRelationshipTypes() )
+        for ( RelationshipType relType : transaction.getAllRelationshipTypes() )
         {
-            int relTypeId = ktx.tokenRead().relationshipType( relType.name() );
+            int relTypeId = transaction.kernelTransaction().tokenRead().relationshipType( relType.name() );
             visitor.visitRelationshipType( relTypeId, relType.name() );
         }
     }
@@ -208,7 +208,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
 
         // fixed rel type
-        for ( RelationshipType relType : db.getAllRelationshipTypes() )
+        for ( RelationshipType relType : transaction.getAllRelationshipTypes() )
         {
             int relTypeId = tokenRead.relationshipType( relType.name() );
             noSide( ktx, visitor, relType, relTypeId );
