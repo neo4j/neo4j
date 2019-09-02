@@ -49,7 +49,7 @@ class DataAndSchemaTransactionSeparationIT
         return graphDb ->
         {
             // given
-            db.getGraphDatabaseAPI().schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+            db.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
             // when
             var exception = assertThrows( Exception.class, () -> function.apply( graphDb ) );
@@ -64,7 +64,7 @@ class DataAndSchemaTransactionSeparationIT
         return graphDb ->
         {
             // given
-            db.getGraphDatabaseAPI().schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+            db.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
             // when/then
             function.apply( graphDb );
@@ -77,7 +77,7 @@ class DataAndSchemaTransactionSeparationIT
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            expectFailureAfterSchemaOperation( createNode() ).apply( db );
+            expectFailureAfterSchemaOperation( createNode() ).apply( transaction );
             transaction.commit();
         }
     }
@@ -89,13 +89,13 @@ class DataAndSchemaTransactionSeparationIT
         Pair<Node,Node> nodes;
         try ( var transaction = db.beginTx() )
         {
-            nodes = aPairOfNodes().apply( db );
+            nodes = aPairOfNodes().apply( transaction );
             transaction.commit();
         }
         // then
         try ( var transaction = db.beginTx() )
         {
-            expectFailureAfterSchemaOperation( relate( nodes ) ).apply( db );
+            expectFailureAfterSchemaOperation( relate( nodes ) ).apply( transaction );
         }
     }
 
@@ -107,13 +107,13 @@ class DataAndSchemaTransactionSeparationIT
         Pair<Node,Node> nodes;
         try ( var transaction = db.beginTx() )
         {
-            nodes = aPairOfNodes().apply( db );
+            nodes = aPairOfNodes().apply( transaction );
             transaction.commit();
         }
         Relationship relationship;
         try ( var tx = db.beginTx() )
         {
-            relationship = relate( nodes ).apply( db );
+            relationship = relate( nodes ).apply( tx );
             tx.commit();
         }
         // when
@@ -125,7 +125,7 @@ class DataAndSchemaTransactionSeparationIT
             // then
             try ( var transaction = db.beginTx() )
             {
-                expectFailureAfterSchemaOperation( operation ).apply( db );
+                expectFailureAfterSchemaOperation( operation ).apply( transaction );
             }
         }
     }
@@ -138,23 +138,23 @@ class DataAndSchemaTransactionSeparationIT
         Pair<Node,Node> nodes;
         try ( var transaction = db.beginTx() )
         {
-            nodes = aPairOfNodes().apply( db );
+            nodes = aPairOfNodes().apply( transaction );
             transaction.commit();
         }
         Relationship relationship;
         try ( var tx = db.beginTx() )
         {
-            relationship = relate( nodes ).apply( db );
+            relationship = relate( nodes ).apply( tx );
             tx.commit();
         }
         try ( var tx = db.beginTx() )
         {
-            propertyWrite( Node.class, nodes.first(), "key1", "value1" ).apply( db );
+            propertyWrite( Node.class, nodes.first(), "key1", "value1" ).apply( tx );
             tx.commit();
         }
         try ( var tx = db.beginTx() )
         {
-            propertyWrite( Relationship.class, relationship, "key1", "value1" ).apply( db );
+            propertyWrite( Relationship.class, relationship, "key1", "value1" ).apply( tx );
             tx.commit();
         }
 
@@ -167,7 +167,7 @@ class DataAndSchemaTransactionSeparationIT
             // then
             try ( var transaction = db.beginTx() )
             {
-                succeedAfterSchemaOperation( operation ).apply( db );
+                succeedAfterSchemaOperation( operation ).apply( transaction );
             }
         }
     }
