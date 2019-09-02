@@ -30,11 +30,15 @@ public class ProcedureCallContext
 {
     private final String[] outputFieldNames;
     private final boolean calledFromCypher;
+    private String database;
+    private boolean isSystemDatabase;
 
-    public ProcedureCallContext( String[] outputFieldNames, boolean calledFromCypher )
+    public ProcedureCallContext( String[] outputFieldNames, boolean calledFromCypher, String database, boolean isSystemDatabase )
     {
         this.outputFieldNames = outputFieldNames;
         this.calledFromCypher = calledFromCypher;
+        this.database = database;
+        this.isSystemDatabase = isSystemDatabase;
     }
 
     /*
@@ -55,6 +59,16 @@ public class ProcedureCallContext
         return calledFromCypher;
     }
 
+    public String databaseName()
+    {
+        return database;
+    }
+
+    public boolean isSystemDatabase()
+    {
+        return isSystemDatabase;
+    }
+
     /* Can be used for testing purposes */
-    public static final ProcedureCallContext EMPTY = new ProcedureCallContext( new String[]{}, false );
+    public static final ProcedureCallContext EMPTY = new ProcedureCallContext( new String[]{}, false, "", false );
 }

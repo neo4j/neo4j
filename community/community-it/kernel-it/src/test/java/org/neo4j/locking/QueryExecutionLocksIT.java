@@ -316,6 +316,12 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public DatabaseId databaseId()
+        {
+            return delegate.databaseId();
+        }
+
+        @Override
         public Statement statement()
         {
             return delegate.statement();

@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.dbms.DbmsOperations
+import org.neo4j.kernel.database.DatabaseId
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
@@ -328,6 +329,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def kernelStatisticProvider: KernelStatisticProvider = inner.kernelStatisticProvider
 
   override def databaseInfo: DatabaseInfo = inner.databaseInfo
+
+  override def databaseId: DatabaseId = inner.databaseId
 
   override def transaction: Transaction = inner.transaction
 

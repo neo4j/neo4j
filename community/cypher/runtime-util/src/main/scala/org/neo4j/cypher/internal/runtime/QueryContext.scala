@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api._
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.dbms.DbmsOperations
+import org.neo4j.kernel.database.DatabaseId
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
@@ -325,6 +325,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def kernelStatisticProvider: KernelStatisticProvider
 
   def databaseInfo: DatabaseInfo
+
+  def databaseId: DatabaseId
 }
 
 trait KernelPredicate[T] {

@@ -55,9 +55,11 @@ case class ProcedureCallPipe(source: Pipe,
     case PassThroughRow => internalCreateResultsByPassingThrough _
   }
 
-  private def createProcedureCallContext(): ProcedureCallContext ={
+  private def createProcedureCallContext(qtx: QueryContext): ProcedureCallContext ={
     // getting the original name of the yielded variable
-    new ProcedureCallContext( resultIndices.map(_._2._2).toArray, true )
+    val originalVariables = resultIndices.map(_._2._2).toArray
+    val databaseId = qtx.transactionalContext.databaseId
+    new ProcedureCallContext( originalVariables, true, databaseId.name(), databaseId.isSystemDatabase )
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = rowProcessor(input, state)
@@ -68,7 +70,7 @@ case class ProcedureCallPipe(source: Pipe,
     builder.sizeHint(resultIndices.length)
     input.flatMap { input =>
       val argValues = argExprs.map(arg => arg(input, state))
-      val results: Iterator[Array[AnyValue]] = call(qtx, argValues, createProcedureCallContext()) // always returns all items from the procedure
+      val results: Iterator[Array[AnyValue]] = call(qtx, argValues, createProcedureCallContext(qtx)) // always returns all items from the procedure
       results map { resultValues =>
         resultIndices foreach { case (k, (v, _)) =>
           builder += v -> resultValues(k) // get the output from correct position and add store variable -> value
@@ -88,7 +90,7 @@ case class ProcedureCallPipe(source: Pipe,
     val qtx = state.query
     input map { input =>
       val argValues = argExprs.map(arg => arg(input, state))
-      val results = call(qtx, argValues, createProcedureCallContext())
+      val results = call(qtx, argValues, createProcedureCallContext(qtx))
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()
       input

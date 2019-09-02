@@ -243,6 +243,12 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
+    public DatabaseId databaseId()
+    {
+        return databaseId;
+    }
+
+    @Override
     public Statement statement()
     {
         return statement;
