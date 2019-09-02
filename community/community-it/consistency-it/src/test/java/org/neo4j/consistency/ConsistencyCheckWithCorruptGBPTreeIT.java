@@ -513,7 +513,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         for ( File file : files )
         {
             assertResultContainsMessage( result,
-                    "Index will be excluded from further consistency checks. Index file: " + file.getAbsolutePath() );
+                    "Index file: " + file.getAbsolutePath() );
         }
     }
 
