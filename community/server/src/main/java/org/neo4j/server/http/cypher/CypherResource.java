@@ -47,6 +47,7 @@ import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 import static java.util.Collections.emptyMap;
+import static java.util.Objects.requireNonNullElse;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 @Path( CypherResource.DB_TRANSACTION_PATH )
@@ -226,12 +227,7 @@ public class CypherResource
 
     private InputEventStream ensureNotNull( InputEventStream inputEventStream )
     {
-        if ( inputEventStream != null )
-        {
-            return inputEventStream;
-        }
-
-        return InputEventStream.EMPTY;
+        return requireNonNullElse( inputEventStream, InputEventStream.EMPTY );
     }
 
     private Response createNonExistentDatabaseResponse( Map<String,Object> parameters )

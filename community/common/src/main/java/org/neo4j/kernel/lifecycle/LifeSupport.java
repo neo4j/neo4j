@@ -357,10 +357,7 @@ public class LifeSupport implements Lifecycle
 
     private void toString( int indent, StringBuilder sb )
     {
-        for ( int i = 0; i < indent; i++ )
-        {
-            sb.append( ' ' );
-        }
+        sb.append( " ".repeat( Math.max( 0, indent ) ) );
         sb.append( "Lifecycle status:" + status.name() ).append( '\n' );
         for ( LifecycleInstance instance : instances )
         {
@@ -370,16 +367,11 @@ public class LifeSupport implements Lifecycle
             }
             else
             {
-                for ( int i = 0; i < indent + 3; i++ )
-                {
-                    sb.append( ' ' );
-                }
+                sb.append( " ".repeat( Math.max( 0, indent + 3 ) ) );
                 sb.append( instance.toString() ).append( '\n' );
 
             }
-
         }
-
     }
 
     private class LifecycleInstance

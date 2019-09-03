@@ -22,6 +22,8 @@ package org.neo4j.kernel.internal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.util.Objects.requireNonNullElse;
+
 public class Version
 {
     public static Version getKernel()
@@ -57,13 +59,9 @@ public class Version
                 result.append( " (" ).append( artifactId ).append( ')' );
             }
         }
-        else if ( artifactId != null )
-        {
-            result.append( artifactId );
-        }
         else
         {
-            result.append( "Unknown Component" );
+            result.append( requireNonNullElse( artifactId, "Unknown Component" ) );
         }
         result.append( ", " );
         if ( title == null )

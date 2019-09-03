@@ -22,6 +22,8 @@ package org.neo4j.server.web;
 import java.net.URI;
 import javax.ws.rs.core.UriBuilder;
 
+import static java.util.Objects.requireNonNullElse;
+
 public class XForwardUtil
 {
     public static final String X_FORWARD_HOST_HEADER_KEY = "X-Forwarded-Host";
@@ -129,14 +131,7 @@ public class XForwardUtil
 
         ForwardedProto( String headerValue )
         {
-            if ( headerValue != null )
-            {
-                this.headerValue = headerValue;
-            }
-            else
-            {
-                this.headerValue = "";
-            }
+            this.headerValue = requireNonNullElse( headerValue, "" );
         }
 
         boolean isValid()
