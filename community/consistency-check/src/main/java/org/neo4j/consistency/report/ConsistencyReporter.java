@@ -178,8 +178,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     {
         private final InconsistencyReport report;
         private final RecordType type;
-        private short errors;
-        private short warnings;
+        private int errors;
+        private int warnings;
 
         FormattingDocumentedHandler( InconsistencyReport report, RecordType type )
         {
