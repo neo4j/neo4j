@@ -52,6 +52,8 @@ import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP_TO;
 
 public class PushToCloudCommandTest
 {
+    private static final String SOME_EXAMPLE_BOLT_URI = "bolt+routing://database_id.databases.neo4j.io";
+
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
 
@@ -66,14 +68,14 @@ public class PushToCloudCommandTest
                 .withPromptResponse( username )
                 .withPasswordResponse( password );
         PushToCloudCommand command = command()
-                .targetCommunicator( targetCommunicator )
+                .copier( targetCommunicator )
                 .outsideWorld( outsideWorld )
                 .build();
 
         // when
         command.execute( array(
                 arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
-                arg( ARG_BOLT_URI, "some-target" ) ) );
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( username ), eq( password ), any() );
@@ -84,13 +86,13 @@ public class PushToCloudCommandTest
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
-        PushToCloudCommand command = command().targetCommunicator( targetCommunicator ).build();
+        PushToCloudCommand command = command().copier( targetCommunicator ).build();
 
         // when
         Path dump = createSimpleDatabaseDump();
         command.execute( array(
                 arg( ARG_DUMP, dump.toString() ),
-                arg( ARG_BOLT_URI, "some-target" ) ) );
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
         verify( targetCommunicator ).copy( anyBoolean(), any(), eq( dump ), any(), any(), any() );
@@ -103,7 +105,7 @@ public class PushToCloudCommandTest
         Copier targetCommunicator = mockedTargetCommunicator();
         DumpCreator dumpCreator = mock( DumpCreator.class );
         PushToCloudCommand command = command()
-                .targetCommunicator( targetCommunicator )
+                .copier( targetCommunicator )
                 .dumpCreator( dumpCreator )
                 .build();
 
@@ -111,7 +113,7 @@ public class PushToCloudCommandTest
         String databaseName = "neo4j";
         command.execute( array(
                 arg( ARG_DATABASE, databaseName ),
-                arg( ARG_BOLT_URI, "some-target" ) ) );
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
         verify( dumpCreator ).dumpDatabase( eq( databaseName ), any() );
@@ -125,7 +127,7 @@ public class PushToCloudCommandTest
         Copier targetCommunicator = mockedTargetCommunicator();
         DumpCreator dumpCreator = mock( DumpCreator.class );
         PushToCloudCommand command = command()
-                .targetCommunicator( targetCommunicator )
+                .copier( targetCommunicator )
                 .dumpCreator( dumpCreator )
                 .build();
 
@@ -135,7 +137,7 @@ public class PushToCloudCommandTest
         command.execute( array(
                 arg( ARG_DATABASE, databaseName ),
                 arg( ARG_DUMP_TO, dumpFile.toString() ),
-                arg( ARG_BOLT_URI, "some-target" ) ) );
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
         verify( dumpCreator ).dumpDatabase( databaseName, dumpFile );
@@ -149,7 +151,7 @@ public class PushToCloudCommandTest
         Copier targetCommunicator = mockedTargetCommunicator();
         DumpCreator dumpCreator = mock( DumpCreator.class );
         PushToCloudCommand command = command()
-                .targetCommunicator( targetCommunicator )
+                .copier( targetCommunicator )
                 .dumpCreator( dumpCreator )
                 .build();
 
@@ -162,7 +164,7 @@ public class PushToCloudCommandTest
             command.execute( array(
                     arg( ARG_DATABASE, databaseName ),
                     arg( ARG_DUMP_TO, dumpFile.toString() ),
-                    arg( ARG_BOLT_URI, "some-target" ) ) );
+                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
             fail( "Should have failed" );
         }
         catch ( CommandFailed commandFailed )
@@ -184,7 +186,7 @@ public class PushToCloudCommandTest
             command.execute( array(
                     arg( ARG_DUMP, directory.file( "some-dump-file" ).toPath().toString() ),
                     arg( ARG_DATABASE, "neo4j" ),
-                    arg( ARG_BOLT_URI, "some-target" ) ) );
+                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
             fail( "Should have failed" );
         }
         catch ( IncorrectUsage incorrectUsage )
@@ -202,7 +204,7 @@ public class PushToCloudCommandTest
         // when
         try
         {
-            command.execute( array( arg( ARG_BOLT_URI, "some-target" ) ) );
+            command.execute( array( arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
             fail( "Should have failed" );
         }
         catch ( IncorrectUsage incorrectUsage )
@@ -223,7 +225,7 @@ public class PushToCloudCommandTest
             File dumpFile = directory.file( "some-dump-file" );
             command.execute( array(
                     arg( ARG_DUMP, dumpFile.getAbsolutePath() ),
-                    arg( ARG_BOLT_URI, "some-target" ) ) );
+                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
             fail( "Should have failed" );
         }
         catch ( CommandFailed commandFailed )
@@ -233,6 +235,40 @@ public class PushToCloudCommandTest
     }
 
     // TODO: 2019-08-07 shouldFailOnDumpPointingToInvalidDumpFile
+
+    @Test
+    public void shouldRecognizeBothEnvironmentAndDatabaseIdFromBoltURI() throws IOException, CommandFailed, IncorrectUsage
+    {
+        // given
+        Copier copier = mock( Copier.class );
+        PushToCloudCommand command = command().copier( copier ).build();
+
+        // when
+        String boltURI = "bolt+routing://mydbid-testenvironment.databases.neo4j.io";
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_BOLT_URI, boltURI ) ) );
+
+        // then
+        verify( copier ).copy( anyBoolean(), eq( "https://console-testenvironment.neo4j.io/v1/databases/mydbid" ), any(), any(), any(), eq( boltURI ) );
+    }
+
+    @Test
+    public void shouldRecognizeDatabaseIdFromBoltURI() throws IOException, CommandFailed, IncorrectUsage
+    {
+        // given
+        Copier copier = mock( Copier.class );
+        PushToCloudCommand command = command().copier( copier ).build();
+
+        // when
+        String boltURI = "bolt+routing://mydbid.databases.neo4j.io";
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_BOLT_URI, boltURI ) ) );
+
+        // then
+        verify( copier ).copy( anyBoolean(), eq( "https://console.neo4j.io/v1/databases/mydbid" ), any(), any(), any(), eq( boltURI ) );
+    }
 
     private Copier mockedTargetCommunicator()
     {
@@ -272,7 +308,7 @@ public class PushToCloudCommandTest
             return this;
         }
 
-        Builder targetCommunicator( Copier targetCommunicator )
+        Builder copier( Copier targetCommunicator )
         {
             this.targetCommunicator = targetCommunicator;
             return this;

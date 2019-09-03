@@ -19,6 +19,8 @@ package org.neo4j.pushtocloud;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -38,7 +40,6 @@ public class PushToCloudCommand implements AdminCommand
     static final String ARG_BOLT_URI = "bolt-uri";
     static final String ARG_DUMP = "dump";
     static final String ARG_DUMP_TO = "dump-to";
-    static final String ARG_CONSOLE = "console";
     static final String ARG_VERBOSE = "v";
 
     static final Arguments arguments = new Arguments()
@@ -51,8 +52,6 @@ public class PushToCloudCommand implements AdminCommand
                     "Location to create the dump file if database is given. The database will be dumped to this file instead of a default location" ) )
             .withArgument( new MandatoryNamedArg( ARG_BOLT_URI, "bolt+routing://mydatabaseid.databases.neo4j.io",
                     "Bolt URI pointing out the target location to push the database to" ) )
-            .withArgument( new OptionalNamedArg( ARG_CONSOLE, "https://console.neo4j.io", null,
-                    "Console URL to target. This is a TEMPORARY option during development merely here for convenience" ) )
             .withArgument( new OptionalNamedArg( ARG_VERBOSE, "true/false", null,
                     "Whether or not to be verbose about internal details and errors." ) );
 
@@ -78,12 +77,12 @@ public class PushToCloudCommand implements AdminCommand
         boolean verbose = arguments.getBoolean( ARG_VERBOSE );
         try
         {
-            String consoleURL = arguments.get( ARG_CONSOLE, "https://console.neo4j.io" );
             Path source = initiateSource( arguments );
             String username = outsideWorld.promptLine( "Neo4j cloud database user name: " );
             char[] password = outsideWorld.promptPassword( "Neo4j cloud database password: " );
-            String targetURL = arguments.get( ARG_BOLT_URI );
-            copier.copy( verbose, consoleURL, source, username, password, targetURL );
+            String boltURI = arguments.get( ARG_BOLT_URI );
+            String consoleURL = buildConsoleURI( boltURI );
+            copier.copy( verbose, consoleURL, source, username, password, boltURI );
         }
         catch ( Exception e )
         {
@@ -93,6 +92,36 @@ public class PushToCloudCommand implements AdminCommand
             }
             throw e;
         }
+    }
+
+    private String buildConsoleURI( String boltURI ) throws IncorrectUsage
+    {
+        // A boltURI looks something like this:
+        //
+        //   bolt+routing://mydbid-myenvironment.databases.neo4j.io
+        //                  <─┬──><──────┬─────>
+        //                    │          └──────── environment
+        //                    └─────────────────── database id
+        //
+        // Constructing a console URI takes elements from the bolt URI and places them inside this URI:
+        //
+        //   https://console<environment>.neo4j.io/v1/databases/<database id>
+        //
+        // Examples:
+        //
+        //   bolt+routing://rogue.databases.neo4j.io  --> https://console.neo4j.io/v1/databases/rogue
+        //   bolt+routing://rogue-mattias.databases.neo4j.io  --> https://console-mattias.neo4j.io/v1/databases/rogue
+
+        Pattern pattern = Pattern.compile( "bolt\\+routing://([^-]+)(-(.+))?.databases.neo4j.io$" );
+        Matcher matcher = pattern.matcher( boltURI );
+        if ( !matcher.matches() )
+        {
+            throw new IncorrectUsage( "Invalid Bolt URI '" + boltURI + "'" );
+        }
+
+        String databaseId = matcher.group( 1 );
+        String environment = matcher.group( 2 );
+        return String.format( "https://console%s.neo4j.io/v1/databases/%s", environment == null ? "" : environment, databaseId );
     }
 
     private Path initiateSource( Args arguments ) throws IncorrectUsage, CommandFailed
