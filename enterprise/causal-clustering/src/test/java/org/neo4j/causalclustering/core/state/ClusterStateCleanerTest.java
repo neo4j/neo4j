@@ -28,6 +28,7 @@ import java.io.File;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -49,8 +50,8 @@ public class ClusterStateCleanerTest
         when( clusterStateDirectory.get() ).thenReturn( stateDir );
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
 
-        ClusterStateCleaner clusterStateCleaner1 = new ClusterStateCleaner( db, clusterStateDirectory, fs );
-        ClusterStateCleaner clusterStateCleaner2 = new ClusterStateCleaner( db, clusterStateDirectory, fs );
+        ClusterStateCleaner clusterStateCleaner1 = new ClusterStateCleaner( db, clusterStateDirectory, fs, NullLogProvider.getInstance() );
+        ClusterStateCleaner clusterStateCleaner2 = new ClusterStateCleaner( db, clusterStateDirectory, fs, NullLogProvider.getInstance() );
 
         // when
         clusterStateCleaner1.init();
