@@ -64,7 +64,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionMatchers.hasErrors;
@@ -99,10 +98,10 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Response begin = POST( txUri );
 
         assertThat( begin.status(), equalTo( 201 ) );
-        assertHasTxLocation( begin );
+        assertHasTxLocation( begin, txUri );
 
         String commitResource = begin.stringFromContent( "commit" );
-        assertThat( commitResource, matches( format( "http://localhost:\\d+/%s/\\d+/commit", TX_ENDPOINT ) ) );
+        assertThat( commitResource, matches( format( "http://localhost:\\d+/%s/\\d+/commit", txUri ) ) );
         assertThat( begin.get( "transaction" ).get( "expires" ).asText(), isValidRFCTimestamp() );
 
         // execute
@@ -127,7 +126,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Response begin = POST( txUri );
 
         assertThat( begin.status(), equalTo( 201 ) );
-        assertHasTxLocation( begin );
+        assertHasTxLocation( begin, txUri );
 
         // execute
         POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
@@ -148,7 +147,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Response begin = POST( txUri );
 
         assertThat( begin.status(), equalTo( 201 ) );
-        assertHasTxLocation( begin );
+        assertHasTxLocation( begin, txUri );
 
         String commitResource = begin.stringFromContent( "commit" );
         assertThat( commitResource, equalTo( begin.location() + "/commit" ) );
@@ -466,7 +465,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Response begin = POST( txUri );
 
         assertThat( begin.status(), equalTo( 201 ) );
-        assertHasTxLocation( begin );
+        assertHasTxLocation( begin, txUri );
         String commitResource = begin.stringFromContent( "commit" );
 
         // terminate
@@ -486,7 +485,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Response begin = POST( txUri );
 
         assertThat( begin.status(), equalTo( 201 ) );
-        assertHasTxLocation( begin );
+        assertHasTxLocation( begin, txUri );
 
         // terminate
         Response interrupt = DELETE( begin.location() );
@@ -505,7 +504,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // begin
         final Response begin = POST( txUri );
         assertThat( begin.status(), equalTo( 201 ) );
-        assertHasTxLocation( begin );
+        assertHasTxLocation( begin, txUri );
 
         Label sharedLockLabel = Label.label( "sharedLock" );
         POST( transactionCommitUri(),
@@ -568,7 +567,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // begin
         var begin = POST( txUri );
         assertThat( begin.status(), equalTo( 201 ) );
-        assertHasTxLocation( begin );
+        assertHasTxLocation( begin, txUri );
 
         // run
         var txId = extractTxId( begin );
@@ -576,20 +575,19 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
                 quotedJson( "{ 'statements': [ { 'statement': 'RETURN 1' } ] }" ) );
         System.out.println( response );
         assertThat( response.status(), equalTo( 200 ) );
-        assertThat( response.get( "commit" ).toString(), containsString( TX_ENDPOINT ) );
+        assertThat( response.get( "commit" ).toString(), containsString( txUri ) );
 
         // commit
         var commit = POST( String.format( "%s/%s/commit", txUri, txId ) );
         System.out.println( commit );
         assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( commit.get( "commit" ).toString(), containsString( TX_ENDPOINT ) );
+        assertThat( commit.get( "commit" ).toString(), containsString( txUri ) );
     }
 
     @Test( timeout = 30_000 )
     public void executing_single_statement_in_new_transaction_and_failing_to_read_the_output_should_interrupt()
             throws Exception
     {
-        assumeTrue( txUri.equals( TX_ENDPOINT ) );
         // given
         long initialNodes = countNodes();
         DatabaseTransactionStats txMonitor = ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency(
@@ -785,7 +783,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         assertPath( restNode.get( "incoming_relationships" ), "/node/\\d+/relationships/in", hostname );
         assertPath( restNode.get( "create_relationship" ), "/node/\\d+/relationships", hostname );
         assertPath( restNode.get( "paged_traverse" ), "/node/\\d+/paged/traverse/\\{returnType\\}\\{\\?pageSize," +
-                                                      "leaseTime\\}", "localhost" );
+                                                      "leaseTime\\}", hostname );
         assertPath( restNode.get( "all_relationships" ), "/node/\\d+/relationships/all", hostname );
         assertPath( restNode.get( "incoming_typed_relationships" ),
                 "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}", hostname );
@@ -794,8 +792,6 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
     @Test
     public void restFormattedNodesShouldHaveSensibleUrisWhenUsingXForwardHeader() throws Throwable
     {
-        assumeTrue( txUri.equals( TX_ENDPOINT ) );
-
         // given
         final String hostname = "dummy.example.org";
 
@@ -889,10 +885,16 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         return format( "%s/commit", txUri );
     }
 
+    private String databaseName()
+    {
+        return txUri.split( "/" )[1]; // either data or neo4j
+    }
+
     private void assertPath( JsonNode jsonURIString, String path, String hostname )
     {
-        var expected = String.format( "http://%s:\\d+/db/neo4j%s", hostname, path );
-        assertTrue( String.format( "Expected a uri matching '%s', " + "but got '%s'.", expected, jsonURIString.asText() ),
+        var databaseName = databaseName();
+        var expected = String.format( "http://%s:\\d+/db/%s%s", hostname, databaseName, path );
+        assertTrue( String.format( "Expected a uri matching '%s', but got '%s'.", expected, jsonURIString.asText() ),
                 jsonURIString.asText().matches( expected ) );
     }
 

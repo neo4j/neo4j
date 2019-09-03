@@ -20,73 +20,45 @@
 package org.neo4j.server.http.cypher;
 
 import java.net.URI;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.database.DatabaseService;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.logging.Log;
 
-import static org.neo4j.server.http.cypher.CypherResource.TRANSACTION;
-
-@Path( "/transaction" )
-public class LegacyTransactionRedirectService
+@Path( LegacyTransactionRedirectService.DB_TRANSACTION_PATH )
+public class LegacyTransactionRedirectService extends AbstractCypherResource
 {
-    private final Config config;
-    private final DatabaseService databaseService;
+    private static final String TRANSACTION = "transaction";
+    static final String DB_TRANSACTION_PATH = "/" + TRANSACTION;
 
-    public LegacyTransactionRedirectService( @Context DatabaseService databaseService, @Context Config config )
+    public LegacyTransactionRedirectService(
+            @Context Config config,
+            @Context HttpTransactionManager httpTransactionManager,
+            @Context UriInfo uriInfo,
+            @Context Log log,
+            @Context HttpHeaders headers,
+            @Context HttpServletRequest request )
     {
-        this.config = config;
-        this.databaseService = databaseService;
+        super( httpTransactionManager, uriInfo, log, headers, request, config.get( GraphDatabaseSettings.default_database ) );
     }
 
-    @POST
-    public Response redirect()
+    @Override
+    protected URI dbUri( UriInfo uriInfo, String databaseName )
     {
-        var newLocation = transactionPathForDefaultDatabase();
-        return Response.temporaryRedirect( URI.create( newLocation ) ).build();
+        UriBuilder builder = uriInfo.getBaseUriBuilder();
+        return builder.build();
     }
 
-    @POST
-    @Path( "/{id}" )
-    public Response redirectStatements( @PathParam( "id" ) long id )
+    @Override
+    protected URI cypherUri( UriInfo uriInfo, String databaseName )
     {
-        var newLocation = String.format( "%s/%s", transactionPathForDefaultDatabase(), id );
-        return Response.temporaryRedirect( URI.create( newLocation ) ).build();
-    }
-
-    @POST
-    @Path( "/{id}/commit" )
-    public Response redirectCommitTransaction( @PathParam( "id" ) long id )
-    {
-        var newLocation = String.format( "%s/%s/commit", transactionPathForDefaultDatabase(), id );
-        return Response.temporaryRedirect( URI.create( newLocation ) ).build();
-    }
-
-    @DELETE
-    @Path( "/{id}" )
-    public Response redirectRollbackTransaction( @PathParam( "id" ) long id )
-    {
-        var newLocation = String.format( "%s/%s", transactionPathForDefaultDatabase(), id );
-        return Response.temporaryRedirect( URI.create( newLocation ) ).build();
-    }
-
-    @POST
-    @Path( "/commit" )
-    public Response redirectCommitNewTransaction()
-    {
-        var newLocation = String.format( "%s/commit", transactionPathForDefaultDatabase() );
-        return Response.temporaryRedirect( URI.create( newLocation ) ).build();
-    }
-
-    private String transactionPathForDefaultDatabase()
-    {
-        var defaultDatabaseName = databaseService.getDatabase().databaseName();
-        return String.format( "%s/%s/%s", config.get( ServerSettings.db_api_path ).getPath(), defaultDatabaseName, TRANSACTION );
+        UriBuilder builder = uriInfo.getBaseUriBuilder();
+        return builder.path( TRANSACTION ).build();
     }
 }

@@ -251,14 +251,14 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // When malformed header
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" )
-                .request( method, server.baseUri().resolve( path ).toString(), payload, false );
+                .request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(400));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Request.InvalidFormat"));
         assertThat(response.get("errors").get(0).get( "message" ).asText(), equalTo("Invalid authentication header."));
 
         // When invalid credential
         response = HTTP.withBasicAuth( "neo4j", "incorrect" )
-                .request( method, server.baseUri().resolve( path ).toString(), payload, false );
+                .request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(401));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.Unauthorized"));
         assertThat(response.get("errors").get(0).get("message").asText(), equalTo("Invalid username or password."));
@@ -266,7 +266,7 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // When authorized
         response = HTTP.withBasicAuth( "neo4j", "secret" )
-                .request( method, server.baseUri().resolve( path ).toString(), payload, false );
+                .request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(expectedAuthorizedStatus));
     }
 

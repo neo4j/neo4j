@@ -77,7 +77,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return String.format( "http://localhost:%s/db/%s/", port, databaseName );
     }
 
-    protected String databaseUri()
+    protected String dbUri()
     {
         return "http://localhost:" + getLocalHttpPort() + "/db/";
     }
@@ -151,5 +151,10 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public static void assertHasTxLocation( HTTP.Response begin )
     {
         assertThat( begin.location(), matches( txUri() + "/\\d+" ) );
+    }
+
+    public static void assertHasTxLocation( HTTP.Response begin, String txUri )
+    {
+        assertThat( begin.location(), matches( format( "http://localhost:\\d+/%s/\\d+", txUri ) ) );
     }
 }

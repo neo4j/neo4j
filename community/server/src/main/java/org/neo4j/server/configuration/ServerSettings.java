@@ -145,9 +145,10 @@ public class ServerSettings implements SettingsDeclaration
     public static final Setting<List<String>> http_auth_whitelist =
             newBuilder( "dbms.security.http_auth_whitelist", listOf( STRING ), List.of( "/", "/browser.*" ) ).build();
 
+    @Internal
     @Description( "Defines a blacklist of http paths that should not be accessed." )
     public static final Setting<List<String>> http_paths_blacklist =
-            newBuilder( "dbms.security.http_paths_blacklist", listOf( STRING ), emptyList() ).build();
+            newBuilder( "unsupported.dbms.http_paths_blacklist", listOf( STRING ), emptyList() ).build();
 
     @Internal
     @Description( "Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this " +

@@ -32,7 +32,6 @@ import static java.util.Arrays.asList;
 public abstract class ParameterizedTransactionEndpointsTestBase extends AbstractRestFunctionalTestBase
 {
     protected final HTTP.Builder http = HTTP.withBaseUri( server().baseUri() );
-    private final boolean allowsRedirect = true;
     private static final String LEGACY_TX_ENDPOINT = "db/data/transaction";
     protected static final String TX_ENDPOINT = "db/neo4j/tx";
 
@@ -47,16 +46,16 @@ public abstract class ParameterizedTransactionEndpointsTestBase extends Abstract
 
     public HTTP.Response POST( String uri )
     {
-        return http.request( "POST", uri, allowsRedirect );
+        return http.request( "POST", uri );
     }
 
     public HTTP.Response POST( String uri, HTTP.RawPayload payload )
     {
-        return http.request( "POST", uri, payload, allowsRedirect );
+        return http.request( "POST", uri, payload );
     }
 
     public HTTP.Response DELETE( String uri )
     {
-        return http.request( "DELETE", uri, allowsRedirect );
+        return http.request( "DELETE", uri );
     }
 }
