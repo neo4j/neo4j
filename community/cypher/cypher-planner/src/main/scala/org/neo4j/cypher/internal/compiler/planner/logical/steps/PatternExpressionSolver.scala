@@ -193,7 +193,6 @@ object PatternExpressionSolver {
       extractQG = extractQG,
       createPlannerContext = createPlannerContext,
       projectionCreator = createPathExpression,
-      interestingOrder = interestingOrder,
       patternExpressionRewriter = patternExpressionRewriter(availableSymbols, interestingOrder, context))
   }
 
@@ -221,7 +220,6 @@ object PatternExpressionSolver {
       extractQG = extractQG,
       createPlannerContext = createPlannerContext,
       projectionCreator = createProjectionToCollect,
-      interestingOrder = interestingOrder,
       patternExpressionRewriter = patternExpressionRewriter(availableSymbols, interestingOrder, context))
   }
 
@@ -232,7 +230,6 @@ object PatternExpressionSolver {
                                                            createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
                                                            projectionCreator: T => Expression,
                                                            patternExpressionRewriter: Rewriter,
-                                                           interestingOrder: InterestingOrder,
                                                            pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)
                                                           (implicit m: ClassTag[T]) {
 
@@ -278,10 +275,15 @@ object PatternExpressionSolver {
       val qg = extractQG(source, namedExpr)
       val innerContext = createPlannerContext(context, namedMap)
 
-      val innerPlan = innerContext.strategy.plan(qg, interestingOrder, innerContext)
+      //We don't retain the interesting order because
+      //  i) There is no way of expressing order within a pattern comprehension
+      //  ii) It can lead to endless recursion in case the sort expression contains the subquery we are solving
+      //      e.g. `n{.name, Thing_Has_Thing2:[ (n)-[:Has]->(thing2:Thing2)| n.name ]} ORDER BY n.name`
+      val innerPlan = innerContext.strategy.plan(qg, InterestingOrder.empty, innerContext)
       val collectionName = FreshIdNameGenerator.name(expr.position)
       val projectedPath = projectionCreator(namedExpr)
-      val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), interestingOrder, innerContext)
+      val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath),
+                                      InterestingOrder.empty, innerContext)
       PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
     }
 
