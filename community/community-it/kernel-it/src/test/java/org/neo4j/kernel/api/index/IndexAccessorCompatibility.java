@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.annotations.ReporterFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactories;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -79,7 +79,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     {
         try
         {
-            accessor.consistencyCheck( ReporterFactory.throwingProxyFactory() );
+            accessor.consistencyCheck( ReporterFactories.throwingReporterFactory() );
         }
         finally
         {

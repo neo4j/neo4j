@@ -36,6 +36,8 @@ import java.lang.annotation.Target;
  * Note that for the JavaDoc to be possible to be extracted it must come before
  * any annotation on the documented element.
  *
+ * Use {@link DocumentedUtils} to extract message from method annotated with {@link Documented}.
+ *
  * @author Tobias Ivarsson
  */
 @Retention( RetentionPolicy.RUNTIME )

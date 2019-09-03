@@ -25,7 +25,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.annotations.ReporterFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactories;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
@@ -67,6 +67,6 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     @Override
     public void consistencyCheck( IndexPopulator populator )
     {
-        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactory.throwingProxyFactory() );
+        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory() );
     }
 }

@@ -19,24 +19,35 @@
  */
 package org.neo4j.kernel.impl.annotations;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
+import java.lang.reflect.Method;
 
 /**
- * Creates proxy instances that dispatch calls to provided {@link InvocationHandler}.
+ * Utility methods for {@link Documented} annotation.
  */
-public class ReporterFactory
+public final class DocumentedUtils
 {
-    private final InvocationHandler handler;
-
-    public ReporterFactory( InvocationHandler handler )
+    private DocumentedUtils()
     {
-        this.handler = handler;
+        throw new RuntimeException( "Should not be instantiated." );
     }
 
-    public <T> T getClass( Class<T> cls )
+    public static String extractMessage( Method method )
     {
-        ClassLoader classLoader = cls.getClassLoader();
-        return (T) Proxy.newProxyInstance( classLoader, new Class<?>[]{cls}, handler );
+        String message;
+        Documented annotation = method.getAnnotation( Documented.class );
+        if ( annotation != null && !"".equals( annotation.value() ) )
+        {
+            message = annotation.value();
+        }
+        else
+        {
+            message = method.getName();
+        }
+        return message;
+    }
+
+    public static String extractFormattedMessage( Method method, Object[] args )
+    {
+        return String.format( extractMessage( method ), args );
     }
 }

@@ -20,23 +20,29 @@
 package org.neo4j.kernel.impl.annotations;
 
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
+import java.lang.reflect.Method;
 
-/**
- * Creates proxy instances that dispatch calls to provided {@link InvocationHandler}.
- */
-public class ReporterFactory
+public class ReporterFactories
 {
-    private final InvocationHandler handler;
+    private static final InvocationHandler throwingHandler = new ThrowingInvocationHandler();
+    private static final InvocationHandler noopHandler = ( proxy, method, args ) -> null;
 
-    public ReporterFactory( InvocationHandler handler )
+    public static ReporterFactory throwingReporterFactory()
     {
-        this.handler = handler;
+        return new ReporterFactory( throwingHandler );
     }
 
-    public <T> T getClass( Class<T> cls )
+    public static ReporterFactory noopReporterFactory()
     {
-        ClassLoader classLoader = cls.getClassLoader();
-        return (T) Proxy.newProxyInstance( classLoader, new Class<?>[]{cls}, handler );
+        return new ReporterFactory( noopHandler );
+    }
+
+    private static class ThrowingInvocationHandler implements InvocationHandler
+    {
+        @Override
+        public Object invoke( Object proxy, Method method, Object[] args )
+        {
+            throw new RuntimeException( DocumentedUtils.extractFormattedMessage( method, args ) );
+        }
     }
 }

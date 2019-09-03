@@ -40,6 +40,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactories;
 import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexDropAction;
@@ -521,7 +522,7 @@ public class FusionIndexAccessorTest
         {
             when( accessor.consistencyCheck( any( ReporterFactory.class ) ) ).thenReturn( true );
         }
-        assertTrue( fusionIndexAccessor.consistencyCheck( ReporterFactory.throwingProxyFactory() ) );
+        assertTrue( fusionIndexAccessor.consistencyCheck( ReporterFactories.noopReporterFactory() ) );
         for ( IndexAccessor accessor : aliveAccessors )
         {
             verify( accessor, times( 1 ) ).consistencyCheck( any( ReporterFactory.class ) );
@@ -544,7 +545,7 @@ public class FusionIndexAccessorTest
                     when( failingAccessor.consistencyCheck( any( ReporterFactory.class ) ) ).thenReturn( true );
                 }
             }
-            assertFalse( fusionIndexAccessor.consistencyCheck( ReporterFactory.throwingProxyFactory() ) );
+            assertFalse( fusionIndexAccessor.consistencyCheck( ReporterFactories.noopReporterFactory() ) );
             resetMocks();
         }
     }
