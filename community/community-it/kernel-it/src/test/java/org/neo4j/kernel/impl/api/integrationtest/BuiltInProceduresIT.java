@@ -37,8 +37,8 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -54,14 +54,12 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
@@ -78,7 +76,6 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureNa
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
-import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -204,6 +201,10 @@ class BuiltInProceduresIT extends KernelIntegrationTest
                         "() :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, " +
                                 "entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?)",
                         "List all indexes in the database.", "READ" ),
+                proc( "db.indexDetails",
+                        "(indexId :: INTEGER?) :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, " +
+                                "type :: STRING?, entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: " +
+                                "STRING?, indexConfig :: MAP?, failureMessage :: STRING?)", "Detailed description of specific index.", "READ" ),
                 proc( "db.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\")).", "READ" ),
                 proc( "db.awaitIndexes", "(timeOutSeconds = 300 :: INTEGER?) :: VOID",
@@ -436,12 +437,6 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( personFooBarDescriptor );
         commit();
 
-        transaction = newTransaction();
-        IndexDescriptor personFooIndex = transaction.schemaRead().index( personFooDescriptor );
-        IndexDescriptor ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
-        IndexDescriptor personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
-        commit();
-
         //let indexes come online
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
@@ -456,7 +451,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             try ( Resource ignore = captureTransaction() )
             {
-                schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId1, propertyKeyId3 ), "person baz constraint" );
+                schemaWrite.uniquePropertyConstraintCreate( personBazDescriptor, "person baz constraint" );
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();
                 commitLatch.await();
@@ -469,6 +464,15 @@ class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         constraintLatch.await();
+
+        transaction = newTransaction();
+        final SchemaReadCore schemaRead = transaction.schemaRead().snapshot();
+        IndexDescriptor personFooIndex = schemaRead.index( personFooDescriptor );
+        IndexDescriptor ageFooIndex = schemaRead.index( ageFooDescriptor );
+        IndexDescriptor personFooBarIndex = schemaRead.index( personFooBarDescriptor );
+        IndexDescriptor personBazIndex = schemaRead.index( personBazDescriptor );
+        commit();
+
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0],
                         ProcedureCallContext.EMPTY );
@@ -485,33 +489,54 @@ class BuiltInProceduresIT extends KernelIntegrationTest
             IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
             IndexingService indexing = db.getDependencyResolver().resolveDependency( IndexingService.class );
             IndexProvider provider = indexProviderMap.getDefaultProvider();
-            MapValue pdm = ValueUtils.asMapValue( MapUtil.map( // Provider Descriptor Map.
-                    "key", provider.getProviderDescriptor().getKey(), "version",
-                    provider.getProviderDescriptor().getVersion() ) );
             assertThat( result, containsInAnyOrder(
-                    new AnyValue[]{stringValue( "INDEX ON :Age(foo)" ), stringValue( ageFooIndex.getName() ),
-                            VirtualValues.list( stringValue( "Age" ) ), VirtualValues.list( stringValue( "foo" ) ),
-                            stringValue( "ONLINE" ),
-                            stringValue( "node_unique_property" ), doubleValue( 100D ), pdm,
-                            longValue( indexing.getIndexId( ageFooDescriptor ) ), EMPTY_STRING},
-                    new AnyValue[]{stringValue( "INDEX ON :Person(foo)" ), stringValue( personFooIndex.getName() ),
-                            VirtualValues.list( stringValue( "Person" ) ),
-                            VirtualValues.list( stringValue( "foo" ) ),
-                            stringValue( "ONLINE" ),
-                            stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
-                            longValue( indexing.getIndexId( personFooDescriptor ) ), EMPTY_STRING},
-                    new AnyValue[]{stringValue( "INDEX ON :Person(foo, bar)" ), stringValue( personFooBarIndex.getName() ),
-                            VirtualValues.list( stringValue( "Person" ) ),
-                            VirtualValues.list( stringValue( "foo" ), stringValue( "bar" ) ),
-                            stringValue( "ONLINE" ),
-                            stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
-                            longValue( indexing.getIndexId( personFooBarDescriptor ) ), EMPTY_STRING},
-                    new AnyValue[]{stringValue( "INDEX ON :Person(baz)" ), stringValue( "person baz constraint" ),
-                            VirtualValues.list( stringValue( "Person" ) ),
-                            VirtualValues.list( stringValue( "baz" ) ),
-                            stringValue( "POPULATING" ),
-                            stringValue( "node_unique_property" ), doubleValue( 100D ), pdm,
-                            longValue( indexing.getIndexId( personBazDescriptor ) ), EMPTY_STRING}
+                    dbIndexesResult(
+                            ageFooIndex.getId(),
+                            ageFooIndex.getName(),
+                            "ONLINE",
+                            100D,
+                            "UNIQUE",
+                            "BTREE",
+                            "NODE",
+                            singletonList( "Age" ),
+                            singletonList( "foo" ),
+                            ageFooIndex.getIndexProvider().name() ),
+
+                    dbIndexesResult(
+                            personFooIndex.getId(),
+                            personFooIndex.getName(),
+                            "ONLINE",
+                            100D,
+                            "NONUNIQUE",
+                            "BTREE",
+                            "NODE",
+                            singletonList( "Person" ),
+                            singletonList( "foo" ),
+                            personFooIndex.getIndexProvider().name() ),
+
+                    dbIndexesResult(
+                            personFooBarIndex.getId(),
+                            personFooBarIndex.getName(),
+                            "ONLINE",
+                            100D,
+                            "NONUNIQUE",
+                            "BTREE",
+                            "NODE",
+                            singletonList( "Person" ),
+                            Arrays.asList( "foo", "bar" ),
+                            personFooBarIndex.getIndexProvider().name() ),
+
+                    dbIndexesResult(
+                            personBazIndex.getId(),
+                            personBazIndex.getName() /*???*/,
+                            "POPULATING",
+                            100D,
+                            "UNIQUE",
+                            "BTREE",
+                            "NODE",
+                            singletonList( "Person" ),
+                            singletonList( "baz" ),
+                            personBazIndex.getIndexProvider().name() )
             ) );
             commit();
         }

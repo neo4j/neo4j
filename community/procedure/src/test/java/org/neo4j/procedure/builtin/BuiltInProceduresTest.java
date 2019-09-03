@@ -53,9 +53,9 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -71,6 +71,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
@@ -174,7 +176,7 @@ class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                42L,
+                1000L,
                 "index_1000",
                 "ONLINE",
                 100D,
@@ -195,7 +197,7 @@ class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                42L,
+                1000L,
                 "constraint_1000",
                 "ONLINE",
                 100D,
@@ -209,16 +211,30 @@ class BuiltInProceduresTest
     }
 
     @Test
-    void listingIndexesShouldGiveMessageForConcurrentlyDeletedIndexes() throws Throwable
+    void indexDetailsShouldGiveDetailedIndexInfo() throws Throwable
     {
         // Given
         givenIndex( "User", "name" );
-        when( schemaReadCore.indexGetState( any( IndexDescriptor.class) ) ).thenThrow( new IndexNotFoundKernelException( "Not found." ) );
 
         // When/Then
-        assertThat( call( "db.indexes" ), contains( record(
-                "INDEX ON :User(name)", "index_1000", singletonList( "User" ), singletonList( "name" ), "NOT FOUND", "node_label_property", 0D,
-                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "Index not found. It might have been concurrently dropped." ) ) );
+        final Map<String,Object> configMap = MapUtil.genericMap( new HashMap<>(), "config1", "value1", "config2", 2, "config3", true );
+        assertThat( call( "db.indexDetails", 1000 ), contains( record(
+                1000L, "index_1000", "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE", singletonList( "User" ), singletonList( "name" ),
+                EMPTY.getProviderDescriptor().name(), configMap, "" ) ) );
+    }
+
+    @Test
+    void indexDetailsShouldGiveMessageForConcurrentlyDeletedIndexes() throws Throwable
+    {
+        // Given
+        givenIndex( "User", "name" );
+        when( schemaReadCore.indexGetState( any( IndexDescriptor.class ) ) ).thenThrow( new IndexNotFoundKernelException( "Not found." ) );
+
+        // When/Then
+        final Map<String,Object> configMap = MapUtil.genericMap( new HashMap<>(), "config1", "value1", "config2", 2, "config3", true );
+        assertThat( call( "db.indexDetails", 1000 ), contains( record(
+                1000L, "index_1000", "NOT FOUND", 0D, "NONUNIQUE", "BTREE", "NODE", singletonList( "User" ), singletonList( "name" ),
+                EMPTY.getProviderDescriptor().name(), configMap, "Index not found. It might have been concurrently dropped." ) ) );
     }
 
     @Test
@@ -369,11 +385,6 @@ class BuiltInProceduresTest
         verify( statement ).close();
     }
 
-    private static Map<String,String> getIndexProviderDescriptorMap( IndexProviderDescriptor providerDescriptor )
-    {
-        return MapUtil.stringMap( "key", providerDescriptor.getKey(), "version", providerDescriptor.getVersion() );
-    }
-
     private static Matcher<Object[]> record( Object... fields )
     {
         return equalTo( fields );
@@ -385,7 +396,13 @@ class BuiltInProceduresTest
         int propId = token( propKey, propKeys );
 
         int id = indexes.size() + 1000;
-        IndexDescriptor index = IndexPrototype.forSchema( forLabel( labelId, propId ), EMPTY.getProviderDescriptor() )
+        Map<String,Value> configMap = new HashMap<>();
+        configMap.put( "config1", Values.stringValue( "value1" ) );
+        configMap.put( "config2", Values.intValue( 2 ) );
+        configMap.put( "config3", Values.booleanValue( true ) );
+        LabelSchemaDescriptor schema = forLabel( labelId, propId )
+                .withIndexConfig( IndexConfig.with( configMap ) );
+        IndexDescriptor index = IndexPrototype.forSchema( schema, EMPTY.getProviderDescriptor() )
                 .withName( "index_" + id )
                 .materialise( id );
         indexes.add( index );

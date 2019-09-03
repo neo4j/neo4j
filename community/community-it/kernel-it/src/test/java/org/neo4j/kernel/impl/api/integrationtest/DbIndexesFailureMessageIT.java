@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.RawIterator;
@@ -33,11 +34,19 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
@@ -63,7 +72,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         failNextIndexPopulation.set( true );
         LabelSchemaDescriptor descriptor = forLabel( failedLabel, propertyKeyId1 );
-        transaction.schemaWrite().indexCreate( descriptor );
+        IndexDescriptor index = transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -72,19 +81,18 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         }
 
         // When
-        // todo Rewrite this test to use currently non-existing db.indexDetails( indexName ) procedure.
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(),
-                        new AnyValue[0],
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexDetails" ) ).id(),
+                        new LongValue[]{Values.longValue( index.getId() )},
                         ProcedureCallContext.EMPTY );
         assertTrue( stream.hasNext() );
         AnyValue[] result = stream.next();
         assertFalse( stream.hasNext() );
+        commit(); // Commit procedure transaction
 
         // Then
-        IndexDescriptor index = transaction.schemaRead().index( descriptor );
         assertEquals( longValue( index.getId() ), result[0] );
-        assertEquals( stringValue( "index_" + index.getId() ), result[1] );
+        assertEquals( stringValue( "Index on :Fail (foo)" ), result[1] );
         assertEquals( stringValue( "FAILED" ), result[2] );
         assertEquals( doubleValue( 0.0 ), result[3] );
         assertEquals( stringValue( "NONUNIQUE" ), result[4] );
@@ -93,10 +101,38 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         assertEquals( VirtualValues.list( stringValue( "Fail" ) ), result[7] );
         assertEquals( VirtualValues.list( stringValue( "foo" ) ), result[8] );
         assertEquals( stringValue( NATIVE_BTREE10.providerName() ), result[9] );
-//        assertThat( ((TextValue) result[10]).stringValue(),
-//                containsString( "java.lang.RuntimeException: Fail on update during population" ) );
+        assertMapsEqual( index.schema().getIndexConfig().asMap(), (MapValue)result[10] );
+        assertThat( ((TextValue) result[11]).stringValue(),
+                containsString( "java.lang.RuntimeException: Fail on update during population" ) );
+        assertEquals( 12, result.length );
+    }
 
-        commit();
+    @Test
+    void indexDetailsWithNonExistingIndex()
+    {
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> {
+            procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexDetails" ) ).id(),
+                    new LongValue[]{longValue( 1 )},
+                    ProcedureCallContext.EMPTY );
+        } );
+        assertEquals( exception.getMessage(), "Could not find index with id 1" );
+    }
+
+    private void assertMapsEqual( Map<String,Value> expected, MapValue actual )
+    {
+        assertEquals( expected.size(), actual.size() );
+        expected.forEach( ( k, v ) ->
+        {
+            final AnyValue value = actual.get( k );
+            assertNotNull( value );
+            assertEquals( v, value );
+        } );
+        actual.foreach( ( k, v ) ->
+        {
+            final Value value = expected.get( k );
+            assertNotNull( value );
+            assertEquals( v, value );
+        } );
     }
 
     @Override
