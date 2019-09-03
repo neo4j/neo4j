@@ -473,7 +473,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "r", "y").withSingleRow(null, null, null)
+    runtimeResult should beColumns("x", "r", "y").withNoRows()
   }
 
   test("should handle null from-node without overwriting to-node in expand into") {
@@ -491,7 +491,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "r", "y").withSingleRow(null, null, n1)
+    runtimeResult should beColumns("x", "r", "y").withNoRows()
   }
 
   // EXPANSION FILTERING, DIRECTION

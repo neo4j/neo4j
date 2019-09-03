@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, Relations
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.exceptions.InternalException
-import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
 
 import scala.collection.mutable
@@ -115,13 +114,7 @@ case class VarLengthExpandPipe(source: Pipe,
             val node = state.query.nodeOps.getById(nodeRef.id)
             expand(row, node)
 
-          case IsNoValue() =>
-            if (nodeInScope) {
-              row.set(relName, Values.NO_VALUE)
-            } else {
-              row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
-            }
-            Iterator(row)
+          case IsNoValue() => Iterator.empty
           case value => throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
         }
       }
