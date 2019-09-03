@@ -406,7 +406,7 @@ public class ParallelBatchImporterTest
             // Relationships
             chunk = relationships.newChunk();
             Map<String, Relationship> relationshipByName = new HashMap<>();
-            for ( Relationship relationship : db.getAllRelationships() )
+            for ( Relationship relationship : tx.getAllRelationships() )
             {
                 relationshipByName.put( (String) relationship.getProperty( "id" ), relationship );
             }

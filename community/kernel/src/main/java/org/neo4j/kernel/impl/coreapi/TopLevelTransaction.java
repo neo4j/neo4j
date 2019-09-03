@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -36,6 +37,8 @@ import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
@@ -169,6 +172,42 @@ public class TopLevelTransaction implements InternalTransaction
     public ResourceIterable<String> getAllPropertyKeys()
     {
         return all( TokenAccess.PROPERTY_KEYS );
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getAllRelationships()
+    {
+        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        return () ->
+        {
+            Statement statement = ktx.acquireStatement();
+            RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor();
+            ktx.dataRead().allRelationshipsScan( cursor );
+            return new PrefetchingResourceIterator<>()
+            {
+                @Override
+                protected Relationship fetchNextOrNull()
+                {
+                    if ( cursor.next() )
+                    {
+                        return facade.newRelationshipProxy( cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.type(),
+                                cursor.targetNodeReference() );
+                    }
+                    else
+                    {
+                        close();
+                        return null;
+                    }
+                }
+
+                @Override
+                public void close()
+                {
+                    cursor.close();
+                    statement.close();
+                }
+            };
+        };
     }
 
     @Override

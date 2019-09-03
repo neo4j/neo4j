@@ -75,6 +75,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -328,43 +329,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     if ( cursor.next() )
                     {
                         return newNodeProxy( cursor.nodeReference() );
-                    }
-                    else
-                    {
-                        close();
-                        return null;
-                    }
-                }
-
-                @Override
-                public void close()
-                {
-                    cursor.close();
-                    statement.close();
-                }
-            };
-        };
-    }
-
-    @Override
-    public ResourceIterable<Relationship> getAllRelationships()
-    {
-        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        assertTransactionOpen( ktx );
-        return () ->
-        {
-            Statement statement = ktx.acquireStatement();
-            RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor();
-            ktx.dataRead().allRelationshipsScan( cursor );
-            return new PrefetchingResourceIterator<>()
-            {
-                @Override
-                protected Relationship fetchNextOrNull()
-                {
-                    if ( cursor.next() )
-                    {
-                        return newRelationshipProxy( cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.type(),
-                                cursor.targetNodeReference() );
                     }
                     else
                     {

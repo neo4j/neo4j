@@ -165,7 +165,7 @@ class RecoveryIT
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
-            assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
+            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
         }
         finally
@@ -202,9 +202,15 @@ class RecoveryIT
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
+<<<<<<< HEAD
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
             assertEquals( numberOfNodes, count( transaction.getAllPropertyKeys() ) );
+=======
+            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
+            assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationshipTypesInUse() ) );
+            assertEquals( numberOfNodes, count( recoveredDatabase.getAllPropertyKeys() ) );
+>>>>>>> Move `getAllRelationships` to Transaction
         }
         finally
         {
@@ -263,9 +269,15 @@ class RecoveryIT
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
+<<<<<<< HEAD
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
             assertEquals( numberOfPropertyKeys, count( transaction.getAllPropertyKeys() ) );
+=======
+            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
+            assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationshipTypesInUse() ) );
+            assertEquals( numberOfPropertyKeys, count( recoveredDatabase.getAllPropertyKeys() ) );
+>>>>>>> Move `getAllRelationships` to Transaction
         }
         finally
         {

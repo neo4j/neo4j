@@ -335,7 +335,7 @@ class CsvInputBatchImportIT
             assertEquals( 0, expectedNodeNames.size() );
 
             // Verify relationships
-            for ( Relationship relationship : db.getAllRelationships() )
+            for ( Relationship relationship : tx.getAllRelationships() )
             {
                 String startNodeName = (String) relationship.getStartNode().getProperty( "name" );
                 Map<String, Map<String, AtomicInteger>> inner = expectedRelationships.get( startNodeName );

@@ -100,7 +100,7 @@ class TestImpermanentGraphDatabase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.getAllRelationships().forEach( Relationship::delete );
+            tx.getAllRelationships().forEach( Relationship::delete );
             db.getAllNodes().forEach( Node::delete );
             tx.commit();
         }

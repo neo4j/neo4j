@@ -60,7 +60,7 @@ public class GraphDatabaseServiceCleaner
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Relationship relationship : db.getAllRelationships() )
+            for ( Relationship relationship : tx.getAllRelationships() )
             {
                 relationship.delete();
             }

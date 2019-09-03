@@ -905,7 +905,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         Set<Relationship> existingRelationships = new HashSet<>();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            addAll( existingRelationships, getGraphDb().getAllRelationships() );
+            addAll( existingRelationships, transaction.getAllRelationships() );
             transaction.commit();
         }
 
@@ -927,7 +927,7 @@ class TestRelationship extends AbstractNeo4jTestCase
             allRelationships.addAll( createdRelationships );
 
             int count = 0;
-            for ( Relationship rel : getGraphDb().getAllRelationships() )
+            for ( Relationship rel : transaction.getAllRelationships() )
             {
                 assertTrue( allRelationships.contains( rel ), "Unexpected rel " + rel + ", expected one of " + allRelationships );
                 count++;

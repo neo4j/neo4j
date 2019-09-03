@@ -179,6 +179,13 @@ public interface Transaction extends AutoCloseable
     void terminate();
 
     /**
+     * Returns all relationships in the graph.
+     *
+     * @return all relationships in the graph.
+     */
+    ResourceIterable<Relationship> getAllRelationships();
+
+    /**
      * Commit and close current transaction.
      * <p>
      * When {@code commit()} is completed, all resources are released and no more changes are possible in this transaction.

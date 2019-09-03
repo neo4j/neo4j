@@ -99,7 +99,7 @@ class NodeManagerTest
 
         // WHEN
         tx = db.beginTx();
-        Iterator<Relationship> allRelationships = db.getAllRelationships().iterator();
+        Iterator<Relationship> allRelationships = tx.getAllRelationships().iterator();
 
         Thread thread = new Thread( () ->
         {

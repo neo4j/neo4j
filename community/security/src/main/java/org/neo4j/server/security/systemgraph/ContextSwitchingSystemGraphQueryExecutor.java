@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
@@ -191,6 +192,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             public void terminate()
             {
                 transaction.terminate();
+            }
+
+            @Override
+            public ResourceIterable<Relationship> getAllRelationships()
+            {
+                return transaction.getAllRelationships();
             }
 
             @Override

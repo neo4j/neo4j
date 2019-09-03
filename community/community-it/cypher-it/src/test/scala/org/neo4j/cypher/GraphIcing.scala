@@ -56,8 +56,6 @@ trait GraphIcing {
 
     def getAllNodes() = graph.getAllNodes
 
-    def getAllRelationships() = graph.getAllRelationships
-
     def schema() = graph.schema
 
     def execute(query: String) = graph.execute(query)

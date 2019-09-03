@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -266,12 +266,12 @@ class ReuseStorageSpaceIT
      */
     private static void deleteStuff( GraphDatabaseService db )
     {
-        batchedDelete( db, db::getAllRelationships, Relationship::delete );
-        batchedDelete( db, db::getAllNodes, Node::delete );
+        batchedDelete( db, Transaction::getAllRelationships, Relationship::delete );
+        batchedDelete( db, tx -> db.getAllNodes(), Node::delete );
     }
 
     private static <ENTITY extends PropertyContainer> void batchedDelete( GraphDatabaseService db,
-            Supplier<ResourceIterable<ENTITY>> stream, Consumer<ENTITY> deleter )
+            Function<Transaction,ResourceIterable<ENTITY>> provider, Consumer<ENTITY> deleter )
     {
         int deleted;
         do
@@ -279,7 +279,7 @@ class ReuseStorageSpaceIT
             deleted = 0;
             try ( Transaction tx = db.beginTx() )
             {
-                try ( ResourceIterator<ENTITY> iterator = stream.get().iterator() )
+                try ( ResourceIterator<ENTITY> iterator = provider.apply( tx ).iterator() )
                 {
                     for ( ; iterator.hasNext() && deleted < 10_000; deleted++ )
                     {

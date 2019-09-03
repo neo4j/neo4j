@@ -2120,7 +2120,7 @@ class ImportCommandTest
                 nodeCount++;
             }
             assertEquals( expectedNodeCount, nodeCount );
-            for ( Relationship relationship : db.getAllRelationships() )
+            for ( Relationship relationship : tx.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "created" ) );
                 relationshipAdditionalValidation.validate( relationship );

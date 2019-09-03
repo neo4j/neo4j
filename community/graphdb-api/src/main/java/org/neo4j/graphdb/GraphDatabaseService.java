@@ -68,13 +68,6 @@ public interface GraphDatabaseService
     ResourceIterable<Node> getAllNodes();
 
     /**
-     * Returns all relationships in the graph.
-     *
-     * @return all relationships in the graph.
-     */
-    ResourceIterable<Relationship> getAllRelationships();
-
-    /**
      * Returns all nodes having the label, and the wanted property value.
      * If an online index is found, it will be used to look up the requested
      * nodes.

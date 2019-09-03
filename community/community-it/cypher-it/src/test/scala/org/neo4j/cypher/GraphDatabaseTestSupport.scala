@@ -165,9 +165,9 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     graph.getAllNodes.asScala.size
   }
 
-  def countRelationships() = graph.inTx {
-    graph.getAllRelationships.asScala.size
-  }
+  def countRelationships() = graph.withTx( tx => {
+    tx.getAllRelationships.asScala.size
+  })
 
   def createNode(): Node = createNode(Map[String, Any]())
 
@@ -203,16 +203,18 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
   def deleteAllEntities() = {
-    val relIterator = graph.getAllRelationships.iterator()
+    graph.withTx( tx => {
+      val relIterator = tx.getAllRelationships.iterator()
 
-    while (relIterator.hasNext) {
-      relIterator.next().delete()
-    }
+      while (relIterator.hasNext) {
+        relIterator.next().delete()
+      }
+      val nodeIterator = graph.getAllNodes.iterator()
+      while (nodeIterator.hasNext) {
+        nodeIterator.next().delete()
+      }
+    })
 
-    val nodeIterator = graph.getAllNodes.iterator()
-    while (nodeIterator.hasNext) {
-      nodeIterator.next().delete()
-    }
   }
 
   def nodeIds = nodes.map(_.getId).toArray

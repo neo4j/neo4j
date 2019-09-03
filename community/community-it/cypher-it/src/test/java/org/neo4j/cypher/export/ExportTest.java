@@ -103,7 +103,7 @@ class ExportTest
 
     private String doExportGraph( GraphDatabaseService db )
     {
-        SubGraph graph = DatabaseSubGraph.from( db );
+        SubGraph graph = DatabaseSubGraph.from( db, tx );
         return doExportGraph( graph );
     }
 
@@ -365,7 +365,7 @@ class ExportTest
         n1.setProperty( "name", "Node1" );
         final Relationship relationship = n0.createRelationshipTo( n1, RelationshipType.withName( "REL" ) );
         relationship.setProperty( "related", true );
-        final SubGraph graph = DatabaseSubGraph.from( gdb );
+        final SubGraph graph = DatabaseSubGraph.from( gdb, tx );
         assertEquals( "create (_" + n0.getId() + ")" + lineSeparator() +
                 "create (_" + n1.getId() + " {`name`:\"Node1\"})" + lineSeparator() +
                 "create (_" + n0.getId() + ")-[:`REL` {`related`:true}]->(_" + n1.getId() + ")" +
