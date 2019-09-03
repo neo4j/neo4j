@@ -336,7 +336,7 @@ class CheckConsistencyCommandTest
                             "  --check-indexes=<true|false>             Perform checks on indexes.%n" +
                             "                                           [default:true]%n" +
                             "  --check-index-structure=<true|false>     Perform structure checks on indexes.%n" +
-                            "                                           [default:true]%n" +
+                            "                                           [default:false]%n" +
                             "  --check-label-scan-store=<true|false>    Perform checks on the label scan%n" +
                             "                                           store. [default:true]%n" +
                             "  --check-property-owners=<true|false>     Perform additional checks on property%n" +

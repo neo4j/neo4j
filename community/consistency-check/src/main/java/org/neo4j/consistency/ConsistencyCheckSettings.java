@@ -62,7 +62,7 @@ public class ConsistencyCheckSettings implements LoadableConfig
             "it may be useful to turn off this check for very large databases." )
     @Deprecated
     public static final Setting<Boolean> consistency_check_index_structure =
-            setting( "tools.consistency_checker.check_index_structure", BOOLEAN, TRUE );
+            setting( "tools.consistency_checker.check_index_structure", BOOLEAN, FALSE );
 
     @Description( "This setting is deprecated. See commandline arguments for neoj4-admin check-consistency " +
             "instead. Perform checks between nodes, relationships, properties, types and tokens." )

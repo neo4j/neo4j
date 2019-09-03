@@ -72,7 +72,7 @@ public class CheckConsistencyCommand implements AdminCommand
                     "Perform checks between nodes, relationships, properties, types and tokens." ) )
             .withArgument( new OptionalBooleanArg( CHECK_INDEXES, true,
                     "Perform checks on indexes." ) )
-            .withArgument( new OptionalBooleanArg( CHECK_INDEX_STRUCTURE, true,
+            .withArgument( new OptionalBooleanArg( CHECK_INDEX_STRUCTURE, false,
                     "Perform structure checks on indexes." ) )
             .withArgument( new OptionalBooleanArg( CHECK_LABEL_SCAN_STORE, true,
                     "Perform checks on the label scan store." ) )

@@ -109,9 +109,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ) );
         }, indexFiles );
 
-        final Config config = Config.defaults( MapUtil.stringMap(
-                ConsistencyCheckSettings.consistency_check_index_structure.name(), Settings.FALSE,
-                ConsistencyCheckSettings.consistency_check_indexes.name(), Settings.FALSE ) );
+        final Config config = config( Settings.FALSE, Settings.FALSE );
         ConsistencyCheckService.Result result = runConsistencyCheck( config );
 
         assertTrue( "Expected store to be consistent when not checking indexes.", result.isSuccessful() );
@@ -128,9 +126,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ) );
         }, indexFiles );
 
-        final Config config = Config.defaults( MapUtil.stringMap(
-                ConsistencyCheckSettings.consistency_check_index_structure.name(), Settings.TRUE,
-                ConsistencyCheckSettings.consistency_check_indexes.name(), Settings.FALSE ) );
+        final Config config = config( Settings.TRUE, Settings.FALSE );
         ConsistencyCheckService.Result result = runConsistencyCheck( config );
 
         assertFalse( "Expected store to be inconsistent when checking index structure.", result.isSuccessful() );
@@ -148,9 +144,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.addFreelistEntry( 5 ) );
         }, indexFiles );
 
-        final Config config = Config.defaults( MapUtil.stringMap(
-                ConsistencyCheckSettings.consistency_check_index_structure.name(), Settings.FALSE,
-                ConsistencyCheckSettings.consistency_check_indexes.name(), Settings.TRUE ) );
+        final Config config = config( Settings.FALSE, Settings.TRUE );
         ConsistencyCheckService.Result result = runConsistencyCheck( config );
 
         assertTrue( "Expected store to be consistent when not checking indexes.", result.isSuccessful() );
@@ -575,7 +569,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
     private ConsistencyCheckService.Result runConsistencyCheck() throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( Config.defaults() );
+        return runConsistencyCheck( config( Settings.TRUE, Settings.TRUE ) );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( Config config ) throws ConsistencyCheckIncompleteException
@@ -585,7 +579,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
     private ConsistencyCheckService.Result runConsistencyCheck( ProgressMonitorFactory progressFactory ) throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( progressFactory, Config.defaults() );
+        return runConsistencyCheck( progressFactory, config( Settings.TRUE, Settings.TRUE ) );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( ProgressMonitorFactory progressFactory, Config config )
@@ -595,6 +589,13 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.storeDir() );
         LogProvider logProvider = NullLogProvider.getInstance();
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false );
+    }
+
+    private static Config config( String checkStructure, String checkIndex )
+    {
+        return Config.defaults( MapUtil.stringMap(
+                ConsistencyCheckSettings.consistency_check_index_structure.name(), checkStructure,
+                ConsistencyCheckSettings.consistency_check_indexes.name(), checkIndex ) );
     }
 
     private void setup( GraphDatabaseSettings.SchemaIndex schemaIndex )
