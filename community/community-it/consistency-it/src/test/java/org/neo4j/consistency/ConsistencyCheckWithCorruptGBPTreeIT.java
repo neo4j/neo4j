@@ -118,6 +118,45 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
+    public void shouldCheckIndexStructureEvenIfNotCheckingIndexes() throws Exception
+    {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        MutableObject<Long> targetNode = new MutableObject<>();
+        File[] indexFiles = schemaIndexFiles();
+        corruptIndexes( true, ( tree, inspection ) -> {
+            targetNode.setValue( inspection.getRootNode() );
+            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ) );
+        }, indexFiles );
+
+        final Config config = Config.defaults( MapUtil.stringMap(
+                ConsistencyCheckSettings.consistency_check_index_structure.name(), Settings.TRUE,
+                ConsistencyCheckSettings.consistency_check_indexes.name(), Settings.FALSE ) );
+        ConsistencyCheckService.Result result = runConsistencyCheck( config );
+
+        assertFalse( "Expected store to be inconsistent when checking index structure.", result.isSuccessful() );
+        assertResultContainsMessage( result, "Page: " + targetNode.getValue() + " is not a tree node page" );
+    }
+
+    @Test
+    public void shouldNotCheckIndexStructureIfConfiguredNotToEvenIfCheckingIndexes() throws Exception
+    {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        MutableObject<Long> targetNode = new MutableObject<>();
+        File[] indexFiles = schemaIndexFiles();
+        corruptIndexes( true, ( tree, inspection ) -> {
+            targetNode.setValue( inspection.getRootNode() );
+            tree.unsafe( GBPTreeCorruption.addFreelistEntry( 5 ) );
+        }, indexFiles );
+
+        final Config config = Config.defaults( MapUtil.stringMap(
+                ConsistencyCheckSettings.consistency_check_index_structure.name(), Settings.FALSE,
+                ConsistencyCheckSettings.consistency_check_indexes.name(), Settings.TRUE ) );
+        ConsistencyCheckService.Result result = runConsistencyCheck( config );
+
+        assertTrue( "Expected store to be consistent when not checking indexes.", result.isSuccessful() );
+    }
+
+    @Test
     public void shouldReportProgress() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
