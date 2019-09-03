@@ -118,6 +118,41 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
+    public void shouldCheckIndexStructureEvenIfNotCheckingIndexes() throws Exception
+    {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        MutableObject<Long> targetNode = new MutableObject<>();
+        File[] indexFiles = schemaIndexFiles();
+        corruptIndexes( true, ( tree, inspection ) -> {
+            targetNode.setValue( inspection.getRootNode() );
+            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( targetNode.getValue(), GBPTreeCorruption.notATreeNode() ) );
+        }, indexFiles );
+
+        ConsistencyFlags flags = new ConsistencyFlags( true, false, true, true, true );
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
+
+        assertFalse( "Expected store to be inconsistent when checking index structure.", result.isSuccessful() );
+        assertResultContainsMessage( result, "Page: " + targetNode.getValue() + " is not a tree node page" );
+    }
+
+    @Test
+    public void shouldNotCheckIndexStructureIfConfiguredNotToEvenIfCheckingIndexes() throws Exception
+    {
+        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
+        MutableObject<Long> targetNode = new MutableObject<>();
+        File[] indexFiles = schemaIndexFiles();
+        corruptIndexes( true, ( tree, inspection ) -> {
+            targetNode.setValue( inspection.getRootNode() );
+            tree.unsafe( GBPTreeCorruption.addFreelistEntry( 5 ) );
+        }, indexFiles );
+
+        ConsistencyFlags flags = new ConsistencyFlags( true, true, false, true, true );
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
+
+        assertTrue( "Expected store to be consistent when not checking indexes.", result.isSuccessful() );
+    }
+
+    @Test
     public void shouldReportProgress() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
