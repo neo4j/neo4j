@@ -38,7 +38,6 @@ import org.neo4j.commandline.admin.OutsideWorld;
 
 import static java.lang.Long.min;
 import static java.lang.String.format;
-import static java.lang.Thread.sleep;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
@@ -52,26 +51,33 @@ import static org.apache.commons.compress.utils.IOUtils.toByteArray;
 
 public class HttpCopier implements PushToCloudCommand.Copier
 {
-    private static final int HTTP_RESUME_INCOMPLETE = 308;
+    static final int HTTP_RESUME_INCOMPLETE = 308;
     private static final long POSITION_UPLOAD_COMPLETED = -1;
     private static final long MAXIMUM_RETRY_BACKOFF = SECONDS.toMillis( 64 );
 
     private final OutsideWorld outsideWorld;
+    private final Sleeper sleeper;
 
     HttpCopier( OutsideWorld outsideWorld )
     {
+        this( outsideWorld, Thread::sleep );
+    }
+
+    HttpCopier( OutsideWorld outsideWorld, Sleeper sleeper )
+    {
         this.outsideWorld = outsideWorld;
+        this.sleeper = sleeper;
     }
 
     /**
      * Do the actual transfer of the source (a Neo4j database dump) to the target.
      */
     @Override
-    public void copy( boolean verbose, String consoleURL, Path source, String username, char[] password, String targetURL ) throws CommandFailed
+    public void copy( boolean verbose, String consoleURL, Path source, String username, char[] password ) throws CommandFailed
     {
         try
         {
-            String bearerToken = authenticate( verbose, consoleURL, username, password, targetURL );
+            String bearerToken = authenticate( verbose, consoleURL, username, password );
             copy( verbose, consoleURL, source, bearerToken );
         }
         catch ( IOException | InterruptedException e )
@@ -85,8 +91,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         String bearerTokenHeader = "Bearer " + bearerToken;
         long crc32Sum = calculateCrc32HashOfFile( source );
         MutableBoolean consentConfirmed = new MutableBoolean();
-        URL importURL = safeUrl( consoleURL + "/import" );
-        URL signedURL = initiateCopy( verbose, importURL, crc32Sum, bearerTokenHeader, consentConfirmed );
+        URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, bearerTokenHeader, consentConfirmed );
         URL uploadLocation = initiateResumableUpload( verbose, signedURL );
         long sourceLength = outsideWorld.fileSystem().getFileSize( source.toFile() );
 
@@ -110,21 +115,22 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw new CommandFailed( "Upload failed after numerous attempts. The upload can be resumed with this command: TODO" );
             }
             long backoffFromRetryCount = SECONDS.toMillis( 1 << retries++ ) + random.nextInt( 1_000 );
-            sleep( min( backoffFromRetryCount, MAXIMUM_RETRY_BACKOFF ) );
+            sleeper.sleep( min( backoffFromRetryCount, MAXIMUM_RETRY_BACKOFF ) );
         }
 
-        triggerImportProtocol( verbose, importURL, crc32Sum, bearerTokenHeader, consentConfirmed.booleanValue() );
+        triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), crc32Sum, bearerTokenHeader, consentConfirmed.booleanValue() );
 
         // TODO go into a loop and ping the cloud console about progress on the import/restore
     }
 
-    private String authenticate( boolean verbose, String consoleUrl, String username, char[] password, String targetUri ) throws IOException, CommandFailed
+    private String authenticate( boolean verbose, String consoleUrl, String username, char[] password ) throws IOException, CommandFailed
     {
-        HttpURLConnection connection = (HttpURLConnection) safeUrl( consoleUrl + "/import/auth" ).openConnection();
+        URL url = safeUrl( consoleUrl + "/import/auth" );
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         try
         {
             connection.setRequestMethod( "POST" );
-            connection.setRequestProperty( "Authorization", "Basic " + base64Encode( username, password, targetUri ) );
+            connection.setRequestProperty( "Authorization", "Basic " + base64Encode( username, password ) );
             connection.setRequestProperty( "Accept", "application/json" );
             int responseCode = connection.getResponseCode();
             switch ( responseCode )
@@ -320,6 +326,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         {
             connection.setRequestMethod( "PUT" );
             connection.setRequestProperty( "Content-Length", "0" );
+            connection.setFixedLengthStreamingMode( 0 );
             connection.setRequestProperty( "Content-Range", "bytes */" + sourceLength );
             connection.setDoOutput( true );
             int responseCode = connection.getResponseCode();
@@ -396,9 +403,9 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private static String base64Encode( String username, char[] password, String targetUri )
+    private static String base64Encode( String username, char[] password )
     {
-        String plainToken = new StringBuilder( username ).append( ":" ).append( password ).append( "@" ).append( targetUri ).toString();
+        String plainToken = new StringBuilder( username ).append( ":" ).append( password ).toString();
         return Base64.getEncoder().encodeToString( plainToken.getBytes() );
     }
 
@@ -498,5 +505,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
     private static class TokenBody
     {
         public String Token;
+    }
+
+    interface Sleeper
+    {
+        void sleep( long millis ) throws InterruptedException;
     }
 }

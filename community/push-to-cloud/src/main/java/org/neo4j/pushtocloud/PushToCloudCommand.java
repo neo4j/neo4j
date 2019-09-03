@@ -82,7 +82,7 @@ public class PushToCloudCommand implements AdminCommand
             char[] password = outsideWorld.promptPassword( "Neo4j cloud database password: " );
             String boltURI = arguments.get( ARG_BOLT_URI );
             String consoleURL = buildConsoleURI( boltURI );
-            copier.copy( verbose, consoleURL, source, username, password, boltURI );
+            copier.copy( verbose, consoleURL, source, username, password );
         }
         catch ( Exception e )
         {
@@ -161,7 +161,7 @@ public class PushToCloudCommand implements AdminCommand
 
     public interface Copier
     {
-        void copy( boolean verbose, String consoleURL, Path source, String username, char[] password, String targetURL ) throws CommandFailed;
+        void copy( boolean verbose, String consoleURL, Path source, String username, char[] password ) throws CommandFailed;
     }
 
     public interface DumpCreator

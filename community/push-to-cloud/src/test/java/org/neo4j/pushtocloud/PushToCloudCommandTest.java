@@ -78,7 +78,7 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( username ), eq( password ), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( username ), eq( password ) );
     }
 
     @Test
@@ -95,7 +95,7 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
-        verify( targetCommunicator ).copy( anyBoolean(), any(), eq( dump ), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), eq( dump ), any(), any() );
     }
 
     @Test
@@ -117,7 +117,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( eq( databaseName ), any() );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
     }
 
     @Test
@@ -141,7 +141,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( databaseName, dumpFile );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
     }
 
     @Test
@@ -244,13 +244,12 @@ public class PushToCloudCommandTest
         PushToCloudCommand command = command().copier( copier ).build();
 
         // when
-        String boltURI = "bolt+routing://mydbid-testenvironment.databases.neo4j.io";
         command.execute( array(
                 arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
-                arg( ARG_BOLT_URI, boltURI ) ) );
+                arg( ARG_BOLT_URI, "bolt+routing://mydbid-testenvironment.databases.neo4j.io" ) ) );
 
         // then
-        verify( copier ).copy( anyBoolean(), eq( "https://console-testenvironment.neo4j.io/v1/databases/mydbid" ), any(), any(), any(), eq( boltURI ) );
+        verify( copier ).copy( anyBoolean(), eq( "https://console-testenvironment.neo4j.io/v1/databases/mydbid" ), any(), any(), any() );
     }
 
     @Test
@@ -261,13 +260,12 @@ public class PushToCloudCommandTest
         PushToCloudCommand command = command().copier( copier ).build();
 
         // when
-        String boltURI = "bolt+routing://mydbid.databases.neo4j.io";
         command.execute( array(
                 arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
-                arg( ARG_BOLT_URI, boltURI ) ) );
+                arg( ARG_BOLT_URI, "bolt+routing://mydbid.databases.neo4j.io" ) ) );
 
         // then
-        verify( copier ).copy( anyBoolean(), eq( "https://console.neo4j.io/v1/databases/mydbid" ), any(), any(), any(), eq( boltURI ) );
+        verify( copier ).copy( anyBoolean(), eq( "https://console.neo4j.io/v1/databases/mydbid" ), any(), any(), any() );
     }
 
     private Copier mockedTargetCommunicator()
