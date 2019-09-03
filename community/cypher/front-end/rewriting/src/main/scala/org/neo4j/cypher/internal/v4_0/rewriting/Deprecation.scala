@@ -78,6 +78,56 @@ object Deprecations {
     override val find: PartialFunction[Any, Deprecation] = V1.find
   }
 
+  // This is functionality that have been removed in 4.0 but still should work (but be deprecated) when using CYPHER 3.5
+  case object removedFeatures extends Deprecations {
+    private val removedFunctionsRenames: Map[String, String] =
+      TreeMap(
+        "toInt" -> "toInteger",
+        "upper" -> "toUpper",
+        "lower" -> "toLower",
+        "rels" -> "relationships"
+      )
+
+    override def find: PartialFunction[Any, Deprecation] = {
+
+      case f@FunctionInvocation(_, FunctionName(name), _, _) if removedFunctionsRenames.contains(name) =>
+        Deprecation(
+          () => renameFunctionTo(removedFunctionsRenames(name))(f),
+          () => Some(DeprecatedFunctionNotification(f.position, name, removedFunctionsRenames(name)))
+        )
+
+      // extract => list comprehension
+      case e@ExtractExpression(scope, expression) =>
+        Deprecation(
+          () => ListComprehension(scope, expression)(e.position),
+          () => Some(DeprecatedFunctionNotification(e.position, "extract(...)", "[...]"))
+        )
+
+      // filter => list comprehension
+      case e@FilterExpression(scope, expression) =>
+        Deprecation(
+          () => ListComprehension(ExtractScope(scope.variable, scope.innerPredicate, None)(scope.position), expression)(e.position),
+          () => Some(DeprecatedFunctionNotification(e.position, "filter(...)", "[...]"))
+        )
+
+      // old parameter syntax
+      case p@ParameterWithOldSyntax(name, parameterType) =>
+        Deprecation(
+          () => Parameter(name, parameterType)(p.position),
+          () => Some(DeprecatedParameterSyntax(p.position))
+        )
+
+      // length of a string, collection or pattern expression
+      case f@FunctionInvocation(_, FunctionName(name), _, args)
+        if name.equals("length") && args.nonEmpty &&
+          (args.head.isInstanceOf[StringLiteral] || args.head.isInstanceOf[ListLiteral] || args.head.isInstanceOf[PatternExpression]) =>
+        Deprecation(
+          () => renameFunctionTo("size")(f),
+          () => Some(LengthOnNonPathNotification(f.position))
+        )
+    }
+  }
+
   object CaseInsensitiveOrdered extends Ordering[String] {
     def compare(x: String, y: String): Int =
       x.compareToIgnoreCase(y)

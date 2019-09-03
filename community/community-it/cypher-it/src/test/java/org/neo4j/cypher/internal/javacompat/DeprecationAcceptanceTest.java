@@ -115,6 +115,70 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                 deprecatedBindingWarning ) );
     }
 
+    // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
+
+    @Test
+    void deprecatedToInt()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN RETURN toInt('1') AS one", containsItem( deprecatedFeatureWarning ) );
+    }
+
+    @Test
+    void deprecatedUpper()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN RETURN upper('foo') AS one", containsItem( deprecatedFeatureWarning ) );
+    }
+
+    @Test
+    void deprecatedLower()
+    {
+       assertNotifications( "CYPHER 3.5 EXPLAIN RETURN lower('BAR') AS one", containsItem( deprecatedFeatureWarning ) );
+    }
+
+    @Test
+    void deprecatedRels()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r", containsItem( deprecatedFeatureWarning ) );
+    }
+
+    @Test
+    void deprecatedFilter()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds",
+                containsItem( deprecatedFeatureWarning ) );
+    }
+
+    @Test
+    void deprecatedExtract()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens",
+                containsItem( deprecatedFeatureWarning ) );
+    }
+
+    @Test
+    void deprecatedParameterSyntax()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN RETURN {param} AS parameter", containsItem( deprecatedParameterSyntax ) );
+    }
+
+    @Test
+    void deprecatedLengthOfString()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN RETURN length('a string')", containsItem( deprecatedLengthOnNonPath ) );
+    }
+
+    @Test
+    void deprecatedLengthOfList()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN RETURN length([1, 2, 3])", containsItem( deprecatedLengthOnNonPath ) );
+    }
+
+    @Test
+    void deprecatedLengthOfPatternExpression()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN MATCH (a) WHERE a.name='Alice' RETURN length((a)-->()-->())", containsItem( deprecatedLengthOnNonPath ) );
+    }
+
     // MATCHERS & HELPERS
 
     public static class ChangedResults
@@ -165,6 +229,12 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
             deprecation( "The semantics of using colon in the separation of alternative relationship " +
                          "types in conjunction with the use of variable binding, inlined property " +
                          "predicates, or variable length will change in a future version." );
+
+    private Matcher<Notification> deprecatedParameterSyntax =
+            deprecation( "The parameter syntax `{param}` is deprecated, please use `$param` instead" );
+
+    private Matcher<Notification> deprecatedLengthOnNonPath =
+            deprecation( "Using 'length' on anything that is not a path is deprecated, please use 'size' instead" );
 
     private static Matcher<Notification> deprecation( String message )
     {

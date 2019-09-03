@@ -38,13 +38,25 @@ object CompilationPhases {
   // Phase 1
   def parsing(sequencer: String => RewriterStepSequencer,
               innerVariableNamer: InnerVariableNamer,
+              compatibilityMode: Boolean = false,
               literalExtraction: LiteralExtraction = IfNoParameter
-             ): Transformer[BaseContext, BaseState, BaseState] =
-    Parsing.adds(BaseContains[Statement]) andThen
-      SyntaxDeprecationWarnings(Deprecations.V2) andThen
-      PreparatoryRewriting(Deprecations.V2) andThen
-      SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
-      AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
+             ): Transformer[BaseContext, BaseState, BaseState] = {
+    if (compatibilityMode) {
+      Parsing.adds(BaseContains[Statement]) andThen
+        SyntaxDeprecationWarnings(Deprecations.removedFeatures) andThen
+        PreparatoryRewriting(Deprecations.removedFeatures) andThen
+        SyntaxDeprecationWarnings(Deprecations.V2) andThen
+        PreparatoryRewriting(Deprecations.V2) andThen
+        SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
+        AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
+    } else {
+      Parsing.adds(BaseContains[Statement]) andThen
+        SyntaxDeprecationWarnings(Deprecations.V2) andThen
+        PreparatoryRewriting(Deprecations.V2) andThen
+        SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases).adds(BaseContains[SemanticState]) andThen
+        AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
+    }
+}
 
   // Phase 2
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =

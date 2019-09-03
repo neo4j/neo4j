@@ -61,7 +61,8 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer,
                  innerVariableNamer: InnerVariableNamer,
-                 params: MapValue): BaseState = {
+                 params: MapValue,
+                 compatibilityMode: Boolean): BaseState = {
 
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName)
@@ -82,7 +83,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                          evaluator = null,
                                          innerVariableNamer = innerVariableNamer,
                                          params )
-    CompilationPhases.parsing(sequencer, context.innerVariableNamer).transform(startState, context)
+    CompilationPhases.parsing(sequencer, context.innerVariableNamer, compatibilityMode).transform(startState, context)
   }
 
 }

@@ -223,6 +223,7 @@ private[v4_0] class Parser4_0(planner: compiler.CypherPlanner[PlannerContext],
                        Some(offset),
                        tracer,
                        innerVariableNamer,
-                       params)
+                       params,
+                       compatibilityMode = false)
   }
 }
