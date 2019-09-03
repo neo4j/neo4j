@@ -24,6 +24,4 @@ import org.neo4j.kernel.impl.annotations.ProxyFactory;
 public interface ConsistencyCheckable
 {
     boolean consistencyCheck( ProxyFactory proxyFactory );
-
-    boolean consistencyCheck();
 }

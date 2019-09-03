@@ -205,12 +205,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         return FusionIndexBase.consistencyCheck( this, proxyFactory );
     }
 
-    @Override
-    public boolean consistencyCheck()
-    {
-        return FusionIndexBase.consistencyCheck( this );
-    }
-
     static class PartAccessor extends NativeIndexAccessor<SpatialIndexKey,NativeIndexValue>
     {
         private final IndexLayout<SpatialIndexKey,NativeIndexValue> layout;

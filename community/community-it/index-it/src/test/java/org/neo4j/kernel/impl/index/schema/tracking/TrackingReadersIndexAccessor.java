@@ -127,10 +127,4 @@ public class TrackingReadersIndexAccessor implements IndexAccessor
     {
         return accessor.consistencyCheck( proxyFactory );
     }
-
-    @Override
-    public boolean consistencyCheck()
-    {
-        return accessor.consistencyCheck();
-    }
 }

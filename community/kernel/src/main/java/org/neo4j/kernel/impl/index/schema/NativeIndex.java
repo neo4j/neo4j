@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.index.internal.gbptree.ThrowingConsistencyCheckVisitor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -109,12 +108,6 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     public boolean consistencyCheck( ProxyFactory proxyFactory )
     {
         return consistencyCheck( proxyFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
-    }
-
-    @Override
-    public boolean consistencyCheck()
-    {
-        return consistencyCheck( new ThrowingConsistencyCheckVisitor<>() );
     }
 
     private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor )

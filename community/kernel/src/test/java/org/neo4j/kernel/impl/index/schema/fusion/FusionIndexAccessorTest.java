@@ -40,6 +40,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.impl.annotations.ProxyFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexDropAction;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
@@ -518,12 +519,12 @@ public class FusionIndexAccessorTest
     {
         for ( IndexAccessor accessor : aliveAccessors )
         {
-            when( accessor.consistencyCheck() ).thenReturn( true );
+            when( accessor.consistencyCheck( any( ProxyFactory.class ) ) ).thenReturn( true );
         }
-        assertTrue( fusionIndexAccessor.consistencyCheck() );
+        assertTrue( fusionIndexAccessor.consistencyCheck( ProxyFactory.throwingProxyFactory() ) );
         for ( IndexAccessor accessor : aliveAccessors )
         {
-            verify( accessor, times( 1 ) ).consistencyCheck();
+            verify( accessor, times( 1 ) ).consistencyCheck( any( ProxyFactory.class ) );
         }
     }
 
@@ -536,14 +537,14 @@ public class FusionIndexAccessorTest
             {
                 if ( accessor == failingAccessor )
                 {
-                    when( failingAccessor.consistencyCheck() ).thenReturn( false );
+                    when( failingAccessor.consistencyCheck( any( ProxyFactory.class ) ) ).thenReturn( false );
                 }
                 else
                 {
-                    when( failingAccessor.consistencyCheck() ).thenReturn( true );
+                    when( failingAccessor.consistencyCheck( any( ProxyFactory.class ) ) ).thenReturn( true );
                 }
             }
-            assertFalse( fusionIndexAccessor.consistencyCheck() );
+            assertFalse( fusionIndexAccessor.consistencyCheck( ProxyFactory.throwingProxyFactory() ) );
             resetMocks();
         }
     }

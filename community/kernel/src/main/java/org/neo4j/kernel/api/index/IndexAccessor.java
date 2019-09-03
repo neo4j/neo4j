@@ -213,12 +213,6 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         {
             return true;
         }
-
-        @Override
-        public boolean consistencyCheck()
-        {
-            return true;
-        }
     }
 
     class Delegator implements IndexAccessor
@@ -312,12 +306,6 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         public boolean consistencyCheck( ProxyFactory proxyFactory )
         {
             return delegate.consistencyCheck( proxyFactory );
-        }
-
-        @Override
-        public boolean consistencyCheck()
-        {
-            return delegate.consistencyCheck();
         }
     }
 }

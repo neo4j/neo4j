@@ -173,10 +173,4 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     {
         return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), proxyFactory );
     }
-
-    @Override
-    public boolean consistencyCheck()
-    {
-        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values() );
-    }
 }

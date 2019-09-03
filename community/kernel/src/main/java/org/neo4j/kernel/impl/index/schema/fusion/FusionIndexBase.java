@@ -106,14 +106,4 @@ public abstract class FusionIndexBase<T>
         }
         return result;
     }
-
-    public static <T extends ConsistencyCheckable> boolean consistencyCheck( Iterable<T> checkables )
-    {
-        boolean result = true;
-        for ( ConsistencyCheckable part : checkables )
-        {
-            result &= part.consistencyCheck();
-        }
-        return result;
-    }
 }

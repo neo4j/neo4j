@@ -142,12 +142,6 @@ class WorkSyncedNativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE exte
     }
 
     @Override
-    public boolean consistencyCheck()
-    {
-        return actual.consistencyCheck();
-    }
-
-    @Override
     public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
     {
         actual.scanCompleted( phaseTracker );

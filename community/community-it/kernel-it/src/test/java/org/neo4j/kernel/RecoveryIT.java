@@ -988,12 +988,6 @@ public class RecoveryIT
         {
             return actual.consistencyCheck( proxyFactory );
         }
-
-        @Override
-        public boolean consistencyCheck()
-        {
-            return actual.consistencyCheck();
-        }
     }
 
     public class UpdateCapturingIndexUpdater implements IndexUpdater

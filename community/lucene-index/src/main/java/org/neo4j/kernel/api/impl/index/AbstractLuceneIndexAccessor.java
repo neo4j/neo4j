@@ -170,12 +170,6 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
         return isConsistent;
     }
 
-    @Override
-    public boolean consistencyCheck()
-    {
-        return !isDirty();
-    }
-
     protected abstract class AbstractLuceneIndexUpdater implements IndexUpdater
     {
         private final boolean idempotent;

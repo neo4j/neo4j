@@ -174,12 +174,6 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         return FusionIndexBase.consistencyCheck( this, proxyFactory );
     }
 
-    @Override
-    public boolean consistencyCheck()
-    {
-        return FusionIndexBase.consistencyCheck( this );
-    }
-
     static class PartAccessor<KEY extends NativeIndexSingleValueKey<KEY>> extends NativeIndexAccessor<KEY,NativeIndexValue>
     {
         private final IndexLayout<KEY,NativeIndexValue> layout;

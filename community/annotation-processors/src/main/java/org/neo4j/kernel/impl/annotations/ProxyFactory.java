@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.annotations;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 /**
@@ -27,6 +28,8 @@ import java.lang.reflect.Proxy;
  */
 public class ProxyFactory
 {
+    private static final InvocationHandler throwingHandler = new ThrowingInvocationHandler();
+    private static final InvocationHandler noopHandler = ( proxy, method, args ) -> null;
     private final InvocationHandler handler;
 
     public ProxyFactory( InvocationHandler handler )
@@ -38,5 +41,35 @@ public class ProxyFactory
     {
         ClassLoader classLoader = cls.getClassLoader();
         return (T) Proxy.newProxyInstance( classLoader, new Class<?>[]{cls}, handler );
+    }
+
+    public static ProxyFactory throwingProxyFactory()
+    {
+        return new ProxyFactory( throwingHandler );
+    }
+
+    public static ProxyFactory noopProxyFactory()
+    {
+        return new ProxyFactory( noopHandler );
+    }
+
+    private static class ThrowingInvocationHandler implements InvocationHandler
+    {
+        @Override
+        public Object invoke( Object proxy, Method method, Object[] args )
+        {
+            String message;
+            Documented annotation = method.getAnnotation( Documented.class );
+            if ( annotation != null && !"".equals( annotation.value() ) )
+            {
+                message = annotation.value();
+            }
+            else
+            {
+                message = method.getName();
+            }
+            message = String.format( message, args );
+            throw new RuntimeException( message );
+        }
     }
 }

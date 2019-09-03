@@ -68,14 +68,14 @@ public class LuceneIndexAccessorTest
     public void indexIsNotConsistentWhenIndexIsNotValid()
     {
         when( schemaIndex.isValid() ).thenReturn( false );
-        assertFalse( accessor.consistencyCheck() );
+        assertFalse( accessor.consistencyCheck( ProxyFactory.noopProxyFactory() ) );
     }
 
     @Test
     public void indexIsConsistentWhenIndexIsValid()
     {
         when( schemaIndex.isValid() ).thenReturn( true );
-        assertTrue( accessor.consistencyCheck() );
+        assertTrue( accessor.consistencyCheck( ProxyFactory.noopProxyFactory() ) );
     }
 
     @Test
