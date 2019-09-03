@@ -61,7 +61,7 @@ public class GraphDatabaseServiceExecuteTest
         final long after;
         try ( Transaction tx = db.beginTx() )
         {
-            before = Iterables.count( db.getAllNodes() );
+            before = Iterables.count( tx.getAllNodes() );
             tx.commit();
         }
 
@@ -75,7 +75,7 @@ public class GraphDatabaseServiceExecuteTest
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            after = Iterables.count( db.getAllNodes() );
+            after = Iterables.count( tx.getAllNodes() );
             tx.commit();
         }
         assertEquals( before + 1, after );

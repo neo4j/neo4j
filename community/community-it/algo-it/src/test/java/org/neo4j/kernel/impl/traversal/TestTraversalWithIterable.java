@@ -50,8 +50,8 @@ class TestTraversalWithIterable extends TraversalTestBase
             TraversalDescription basicTraverser = tx.traversalDescription().evaluator( Evaluators.atDepth(2) );
 
             Collection<Node> startNodes = new ArrayList<>(  );
-            startNodes.add( getNodeWithName( "a" ) );
-            startNodes.add( getNodeWithName( "d" ) );
+            startNodes.add( getNodeWithName( tx, "a" ) );
+            startNodes.add( getNodeWithName( tx, "d" ) );
 
             Iterable<Node> iterableStartNodes = startNodes;
 
@@ -78,7 +78,7 @@ class TestTraversalWithIterable extends TraversalTestBase
             TraversalDescription firstTraverser = tx.traversalDescription()
                     .relationships( RelationshipType.withName( "FIRST" ) )
                     .evaluator( Evaluators.toDepth( 1 ) );
-            final Iterable<Path> firstResult = firstTraverser.traverse( getNodeWithName( "a" ) );
+            final Iterable<Path> firstResult = firstTraverser.traverse( getNodeWithName( tx, "a" ) );
 
             Iterable<Node> startNodesForNestedTraversal = new IterableWrapper<Node,Path>( firstResult )
             {

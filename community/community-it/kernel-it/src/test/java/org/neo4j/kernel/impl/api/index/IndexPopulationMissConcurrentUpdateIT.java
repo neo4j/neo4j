@@ -180,7 +180,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         assertEquals( nodes.size(), index.entitiesByScan.size() + index.entitiesByUpdater.size() );
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 assertTrue( index.entitiesByScan.contains( node.getId() ) || index.entitiesByUpdater.contains( node.getId() ) );
             }

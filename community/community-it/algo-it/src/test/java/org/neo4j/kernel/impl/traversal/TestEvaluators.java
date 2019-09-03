@@ -70,7 +70,7 @@ class TestEvaluators extends TraversalTestBase
     @Test
     void lastRelationshipTypeEvaluator()
     {
-        Node a = getNodeWithName( "a" );
+        Node a = getNodeWithName( tx, "a" );
         expectPaths( tx.traversalDescription().evaluator( lastRelationshipTypeIs(
                 INCLUDE_AND_PRUNE, EXCLUDE_AND_CONTINUE, Types.C ) ).traverse( a ),
                 "a,b,c,d,e", "a,f,g", "a,b,h" );
@@ -83,10 +83,10 @@ class TestEvaluators extends TraversalTestBase
     @Test
     void endNodeIs()
     {
-        Node a = getNodeWithName( "a" );
-        Node c = getNodeWithName( "c" );
-        Node h = getNodeWithName( "h" );
-        Node g = getNodeWithName( "g" );
+        Node a = getNodeWithName( tx, "a" );
+        Node c = getNodeWithName( tx, "c" );
+        Node h = getNodeWithName( tx, "h" );
+        Node g = getNodeWithName( tx, "g" );
 
         expectPaths( tx.traversalDescription().evaluator( includeWhereEndNodeIs( c, h, g ) ).traverse( a ),
                 "a,b,c", "a,b,h", "a,f,g" );
@@ -96,7 +96,7 @@ class TestEvaluators extends TraversalTestBase
     @Test
     void depths()
     {
-        Node a = getNodeWithName( "a" );
+        Node a = getNodeWithName( tx, "a" );
         expectPaths( tx.traversalDescription().evaluator( Evaluators.atDepth( 1 ) ).traverse( a ), "a,b", "a,f" );
         expectPaths( tx.traversalDescription().evaluator( Evaluators.fromDepth( 2 ) ).traverse( a ), "a,f,g",
                 "a,b,h", "a,b,h,i", "a,b,h,i,k", "a,b,c", "a,b,c,d", "a,b,c,d,e", "a,b,c,d,e,j" );

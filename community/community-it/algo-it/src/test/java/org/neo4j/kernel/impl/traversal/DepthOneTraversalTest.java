@@ -49,7 +49,7 @@ class DepthOneTraversalTest extends TraversalTestBase
     private void shouldGetBothNodesOnDepthOne( TraversalDescription description )
     {
         description = description.evaluator( atDepth( 1 ) );
-        expectNodes( description.traverse( getNodeWithName( "3" ) ), "1", "2" );
+        expectNodes( description.traverse( getNodeWithName( tx, "3" ) ), "1", "2" );
     }
 
     @Test

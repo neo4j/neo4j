@@ -46,7 +46,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            for ( Node node : getGraphDb().getAllNodes() )
+            for ( Node node : transaction.getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
                 {
@@ -58,7 +58,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
+            assertFalse( transaction.getAllNodes().iterator().hasNext() );
             transaction.commit();
         }
     }

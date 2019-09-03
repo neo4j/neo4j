@@ -110,9 +110,9 @@ public class NeoServerJAXRSIT extends ExclusiveServerTestBase
                 tx.createNode();
             }
 
-            for ( var node1 : graph.getAllNodes() )
+            for ( var node1 : tx.getAllNodes() )
             {
-                for ( var node2 : graph.getAllNodes() )
+                for ( var node2 : tx.getAllNodes() )
                 {
                     if ( node1.equals( node2 ) )
                     {

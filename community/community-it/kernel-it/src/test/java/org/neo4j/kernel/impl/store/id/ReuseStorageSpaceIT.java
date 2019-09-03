@@ -267,7 +267,7 @@ class ReuseStorageSpaceIT
     private static void deleteStuff( GraphDatabaseService db )
     {
         batchedDelete( db, Transaction::getAllRelationships, Relationship::delete );
-        batchedDelete( db, tx -> db.getAllNodes(), Node::delete );
+        batchedDelete( db, tx -> tx.getAllNodes(), Node::delete );
     }
 
     private static <ENTITY extends PropertyContainer> void batchedDelete( GraphDatabaseService db,

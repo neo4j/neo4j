@@ -55,11 +55,11 @@ class TestPath extends TraversalTestBase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            a = getNodeWithName( "A" );
-            b = getNodeWithName( "B" );
-            c = getNodeWithName( "C" );
-            d = getNodeWithName( "D" );
-            e = getNodeWithName( "E" );
+            a = getNodeWithName( transaction, "A" );
+            b = getNodeWithName( transaction, "B" );
+            c = getNodeWithName( transaction, "C" );
+            d = getNodeWithName( transaction, "D" );
+            e = getNodeWithName( transaction, "E" );
         }
     }
 

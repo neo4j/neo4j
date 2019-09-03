@@ -121,7 +121,7 @@ abstract class TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            for ( Node node : getGraphDb().getAllNodes() )
+            for ( Node node : transaction.getAllNodes() )
             {
                 node.getRelationships().forEach( Relationship::delete );
                 node.delete();
@@ -136,9 +136,9 @@ abstract class TraversalTestBase
         return graph.create( getGraphDb() );
     }
 
-    protected Node getNodeWithName( String name )
+    protected Node getNodeWithName( Transaction transaction, String name )
     {
-        ResourceIterable<Node> allNodes = getGraphDb().getAllNodes();
+        ResourceIterable<Node> allNodes = transaction.getAllNodes();
         try ( ResourceIterator<Node> nodeIterator = allNodes.iterator() )
         {
             while ( nodeIterator.hasNext() )

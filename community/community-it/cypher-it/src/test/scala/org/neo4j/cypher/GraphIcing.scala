@@ -54,8 +54,6 @@ trait GraphIcing {
 
     private val graph: GraphDatabaseFacade = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
-    def getAllNodes() = graph.getAllNodes
-
     def schema() = graph.schema
 
     def execute(query: String) = graph.execute(query)

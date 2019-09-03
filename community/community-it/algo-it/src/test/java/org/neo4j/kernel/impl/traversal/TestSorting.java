@@ -63,22 +63,21 @@ class TestSorting extends TraversalTestBase
 
         try ( Transaction tx = beginTx() )
         {
-            List<Node> nodes = asNodes( abraham, george, dan, zack, andreas, nicholas );
+            List<Node> nodes = asNodes( tx, abraham, george, dan, zack, andreas, nicholas );
             assertEquals( nodes, Iterables.asCollection( tx.traversalDescription().evaluator( excludeStartPosition() )
-                    .sort( endNodeProperty( "name" ) ).traverse( getNodeWithName( me ) ).nodes() ) );
+                    .sort( endNodeProperty( "name" ) ).traverse( getNodeWithName( tx, me ) ).nodes() ) );
             tx.commit();
         }
     }
 
-    private List<Node> asNodes( String abraham, String george, String dan, String zack, String andreas,
-            String nicholas )
+    private List<Node> asNodes( Transaction tx, String abraham, String george, String dan, String zack, String andreas, String nicholas )
     {
         List<String> allNames = new ArrayList<>( asList( abraham, george, dan, zack, andreas, nicholas ) );
         Collections.sort( allNames );
         List<Node> all = new ArrayList<>();
         for ( String name : allNames )
         {
-            all.add( getNodeWithName( name ) );
+            all.add( getNodeWithName( tx, name ) );
         }
         return all;
     }

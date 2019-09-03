@@ -185,7 +185,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
             Node newNode;
             try ( Transaction transaction = getGraphDb().beginTx() )
             {
-                count = Iterables.count( getGraphDb().getAllNodes() );
+                count = Iterables.count( transaction.getAllNodes() );
                 newNode = transaction.createNode();
                 transaction.commit();
             }
@@ -193,7 +193,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
             count = 0;
             try ( Transaction transaction = getGraphDb().beginTx() )
             {
-                for ( Node node : getGraphDb().getAllNodes() )
+                for ( Node node : transaction.getAllNodes() )
                 {
                     count++;
                     if ( node.equals( newNode ) )
@@ -205,7 +205,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
                 assertEquals( count, oldCount + 1 );
 
                 // Tests a bug in the "all nodes" iterator
-                ResourceIterator<Node> allNodesIterator = getGraphDb().getAllNodes().iterator();
+                ResourceIterator<Node> allNodesIterator = transaction.getAllNodes().iterator();
                 assertNotNull( allNodesIterator.next() );
                 allNodesIterator.close();
 
@@ -216,7 +216,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
             try ( Transaction transaction = getGraphDb().beginTx() )
             {
                 count = 0;
-                for ( Node node : getGraphDb().getAllNodes() )
+                for ( Node node : transaction.getAllNodes() )
                 {
                     count++;
                     if ( node.equals( newNode ) )

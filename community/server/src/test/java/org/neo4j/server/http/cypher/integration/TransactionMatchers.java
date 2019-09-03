@@ -564,10 +564,10 @@ public class TransactionMatchers
     @SuppressWarnings( "WhileLoopReplaceableByForEach" )
     public static long countNodes( GraphDatabaseService graphdb )
     {
-        try ( Transaction ignore = graphdb.beginTx() )
+        try ( Transaction transaction = graphdb.beginTx() )
         {
             long count = 0;
-            Iterator<Node> allNodes = graphdb.getAllNodes().iterator();
+            Iterator<Node> allNodes = transaction.getAllNodes().iterator();
             while ( allNodes.hasNext() )
             {
                 allNodes.next();

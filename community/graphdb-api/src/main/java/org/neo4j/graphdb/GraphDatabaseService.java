@@ -61,13 +61,6 @@ public interface GraphDatabaseService
     Relationship getRelationshipById( long id );
 
     /**
-     * Returns all nodes in the graph.
-     *
-     * @return all nodes in the graph.
-     */
-    ResourceIterable<Node> getAllNodes();
-
-    /**
      * Returns all nodes having the label, and the wanted property value.
      * If an online index is found, it will be used to look up the requested
      * nodes.

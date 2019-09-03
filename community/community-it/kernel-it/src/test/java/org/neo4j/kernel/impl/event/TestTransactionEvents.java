@@ -1060,7 +1060,7 @@ class TestTransactionEvents
     {
         var db = managementService.database( databaseName );
         try ( var tx = db.beginTx();
-              var nodesIterator = db.getAllNodes().iterator() )
+              var nodesIterator = tx.getAllNodes().iterator() )
         {
             // perform some read-only activity
             while ( nodesIterator.hasNext() )

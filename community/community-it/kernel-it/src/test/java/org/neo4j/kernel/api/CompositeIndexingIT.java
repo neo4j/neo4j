@@ -37,14 +37,12 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -133,7 +131,7 @@ class CompositeIndexingIT
 
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            for ( Node node : graphDatabaseAPI.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 node.delete();
             }

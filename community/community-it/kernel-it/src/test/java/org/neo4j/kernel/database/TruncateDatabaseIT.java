@@ -294,9 +294,9 @@ class TruncateDatabaseIT
 
     private long countNodes()
     {
-        try ( Transaction ignored = databaseAPI.beginTx() )
+        try ( Transaction tx = databaseAPI.beginTx() )
         {
-            return count( databaseAPI.getAllNodes() );
+            return count( tx.getAllNodes() );
         }
     }
 

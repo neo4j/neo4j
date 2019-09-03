@@ -68,7 +68,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
         try ( Transaction tx = graphDb.beginTx() )
         {
             NODE_IDS = new ArrayList<>();
-            for ( Node node : graphDb.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 NODE_IDS.add( node.getId() );
             }

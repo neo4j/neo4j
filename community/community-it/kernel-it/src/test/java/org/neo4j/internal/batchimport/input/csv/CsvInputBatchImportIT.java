@@ -313,7 +313,7 @@ class CsvInputBatchImportIT
         try ( Transaction tx = db.beginTx() )
         {
             // Verify nodes
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );

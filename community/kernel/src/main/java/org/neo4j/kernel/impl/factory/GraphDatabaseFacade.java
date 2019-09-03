@@ -47,7 +47,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -309,42 +308,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             throw e.asUserException();
         }
-    }
-
-    @Override
-    public ResourceIterable<Node> getAllNodes()
-    {
-        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        assertTransactionOpen( ktx );
-        return () ->
-        {
-            Statement statement = ktx.acquireStatement();
-            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
-            ktx.dataRead().allNodesScan( cursor );
-            return new PrefetchingResourceIterator<>()
-            {
-                @Override
-                protected Node fetchNextOrNull()
-                {
-                    if ( cursor.next() )
-                    {
-                        return newNodeProxy( cursor.nodeReference() );
-                    }
-                    else
-                    {
-                        close();
-                        return null;
-                    }
-                }
-
-                @Override
-                public void close()
-                {
-                    cursor.close();
-                    statement.close();
-                }
-            };
-        };
     }
 
     @Override

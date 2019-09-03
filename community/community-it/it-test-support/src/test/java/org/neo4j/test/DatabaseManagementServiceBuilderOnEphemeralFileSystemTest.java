@@ -132,16 +132,16 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.getAllRelationships().forEach( Relationship::delete );
-            db.getAllNodes().forEach( Node::delete );
+            tx.getAllNodes().forEach( Node::delete );
             tx.commit();
         }
     }
 
     private long nodeCount()
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            return Iterables.count( db.getAllNodes() );
+            return Iterables.count( transaction.getAllNodes() );
         }
     }
 

@@ -913,7 +913,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         try ( Transaction transaction = graphdb.beginTx() )
         {
             long count = 0;
-            for ( Node node : graphdb.getAllNodes() )
+            for ( Node node : transaction.getAllNodes() )
             {
                 Set<Label> nodeLabels = Iterables.asSet( node.getLabels() );
                 if ( nodeLabels.containsAll( givenLabels ) )

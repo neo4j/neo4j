@@ -195,6 +195,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
 
             @Override
+            public ResourceIterable<Node> getAllNodes()
+            {
+                return transaction.getAllNodes();
+            }
+
+            @Override
             public ResourceIterable<Relationship> getAllRelationships()
             {
                 return transaction.getAllRelationships();

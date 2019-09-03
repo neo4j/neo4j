@@ -51,8 +51,8 @@ class TestMultipleStartNodes extends TraversalTestBase
         try ( Transaction tx = beginTx() )
         {
             RelationshipType knowRelType = withName( "KNOW" );
-            Node you = getNodeWithName( "you" );
-            Node me = getNodeWithName( "me" );
+            Node you = getNodeWithName( tx, "you" );
+            Node me = getNodeWithName( tx, "me" );
 
             String[] levelOneFriends = {"f1", "f2", "f3", "f4", "f7"};
             TraversalDescription levelOneTraversal = tx.traversalDescription().relationships( knowRelType ).evaluator( atDepth( 1 ) );

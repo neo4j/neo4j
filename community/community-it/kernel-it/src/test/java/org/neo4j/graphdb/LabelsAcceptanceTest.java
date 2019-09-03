@@ -564,7 +564,7 @@ class LabelsAcceptanceTest
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
-            for ( final Node node : db.getAllNodes() )
+            for ( final Node node : tx.getAllNodes() )
             {
                 node.removeLabel( label ); // remove Label ...
                 node.delete(); // ... and afterwards the node
@@ -573,9 +573,9 @@ class LabelsAcceptanceTest
         } // tx.close(); - here comes the exception
 
         // THEN
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 0, Iterables.count( db.getAllNodes() ) );
+            assertEquals( 0, Iterables.count( tx.getAllNodes() ) );
         }
     }
 

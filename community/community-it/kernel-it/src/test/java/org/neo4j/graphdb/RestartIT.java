@@ -53,9 +53,9 @@ class RestartIT
         // Then should be able to access it
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
-        try ( var ignored = db.beginTx() )
+        try ( var tx = db.beginTx() )
         {
-            assertThat( db.getAllNodes(), emptyIterable() );
+            assertThat( tx.getAllNodes(), emptyIterable() );
         }
         finally
         {

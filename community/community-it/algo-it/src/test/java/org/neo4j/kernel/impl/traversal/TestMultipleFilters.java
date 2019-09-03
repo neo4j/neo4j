@@ -107,7 +107,7 @@ class TestMultipleFilters extends TraversalTestBase
     {
         try ( Transaction transaction = beginTx() )
         {
-            Evaluator mustBeConnectedToK = new MustBeConnectedToNodeFilter( getNodeWithName( "k" ) );
+            Evaluator mustBeConnectedToK = new MustBeConnectedToNodeFilter( getNodeWithName( transaction, "k" ) );
             Evaluator mustNotHaveMoreThanTwoOutRels =
                     path -> Evaluation.ofIncludes( Iterables
                             .count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
@@ -123,8 +123,8 @@ class TestMultipleFilters extends TraversalTestBase
     {
         try ( Transaction transaction = beginTx() )
         {
-            MustBeConnectedToNodeFilter mustBeConnectedToC = new MustBeConnectedToNodeFilter( getNodeWithName( "c" ) );
-            MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( "e" ) );
+            MustBeConnectedToNodeFilter mustBeConnectedToC = new MustBeConnectedToNodeFilter( getNodeWithName( transaction, "c" ) );
+            MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( transaction, "e" ) );
             // Nodes connected (OUTGOING) to c (which "a" is)
             expectNodes( transaction.traversalDescription().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
             // Nodes connected (OUTGOING) to c AND e (which none is)

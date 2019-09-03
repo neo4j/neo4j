@@ -66,7 +66,7 @@ public class DummyThirdPartyWebService
         GraphDatabaseService db = dbms.database( "neo4j" );
         try ( Transaction transaction = db.beginTx() )
         {
-            return Response.ok().entity( String.valueOf( countNodesIn( db ) ) ).build();
+            return Response.ok().entity( String.valueOf( countNodesIn( transaction ) ) ).build();
         }
     }
 
@@ -95,10 +95,10 @@ public class DummyThirdPartyWebService
         return Response.ok().entity( theEntity.toString() ).build();
     }
 
-    private int countNodesIn( GraphDatabaseService db )
+    private int countNodesIn( Transaction tx )
     {
         int count = 0;
-        for ( Node ignore : db.getAllNodes() )
+        for ( Node ignore : tx.getAllNodes() )
         {
             count++;
         }

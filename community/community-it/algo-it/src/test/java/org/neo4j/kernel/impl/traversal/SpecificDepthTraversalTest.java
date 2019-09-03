@@ -50,7 +50,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     {
         TraversalDescription description = tx.traversalDescription().evaluator(
                 Evaluators.atDepth( 0 ) );
-        expectNodes( description.traverse( getNodeWithName( "6" ) ), "6" );
+        expectNodes( description.traverse( getNodeWithName( tx, "6" ) ), "6" );
     }
 
     @Test
@@ -58,7 +58,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     {
         TraversalDescription description = tx.traversalDescription().evaluator(
                 Evaluators.fromDepth( 1 ) ).evaluator( Evaluators.toDepth( 1 ) );
-        expectNodes( description.traverse( getNodeWithName( "6" ) ), "5" );
+        expectNodes( description.traverse( getNodeWithName( tx, "6" ) ), "5" );
     }
 
     @Test
@@ -66,7 +66,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     {
         TraversalDescription description = tx.traversalDescription().evaluator(
                 Evaluators.atDepth( 1 ) );
-        expectNodes( description.traverse( getNodeWithName( "6" ) ), "5" );
+        expectNodes( description.traverse( getNodeWithName( tx, "6" ) ), "5" );
     }
 
     @Test
@@ -74,7 +74,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
     {
         TraversalDescription description = tx.traversalDescription().evaluator(
                 Evaluators.fromDepth( 0 ) ).evaluator( Evaluators.toDepth( 0 ) );
-        expectNodes( description.traverse( getNodeWithName( "6" ) ), "6" );
+        expectNodes( description.traverse( getNodeWithName( tx, "6" ) ), "6" );
     }
 
     @Test
@@ -83,7 +83,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
         TraversalDescription description = tx.traversalDescription().breadthFirst()
                 .evaluator(Evaluators.fromDepth(0)).evaluator(Evaluators.toDepth(0));
 
-        expectNodes( description.traverse( getNodeWithName( "0" ) ), "0" );
+        expectNodes( description.traverse( getNodeWithName( tx, "0" ) ), "0" );
     }
 
     @Test
@@ -92,7 +92,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
         TraversalDescription description = tx.traversalDescription().breadthFirst()
                 .evaluator(Evaluators.atDepth(0));
 
-        expectNodes( description.traverse( getNodeWithName( "2" ) ), "2" );
+        expectNodes( description.traverse( getNodeWithName( tx, "2" ) ), "2" );
     }
 
     @Test
@@ -101,7 +101,7 @@ class SpecificDepthTraversalTest extends TraversalTestBase
         TraversalDescription description = tx.traversalDescription().breadthFirst()
                 .evaluator(Evaluators.fromDepth(2)).evaluator(Evaluators.toDepth(2));
 
-        expectNodes( description.traverse( getNodeWithName( "5" ) ), "2" );
+        expectNodes( description.traverse( getNodeWithName( tx, "5" ) ), "2" );
     }
 
     @Test
@@ -110,6 +110,6 @@ class SpecificDepthTraversalTest extends TraversalTestBase
         TraversalDescription description = tx.traversalDescription().breadthFirst()
                 .evaluator( Evaluators.atDepth( 2 ) );
 
-        expectNodes( description.traverse( getNodeWithName( "6" ) ), "4" );
+        expectNodes( description.traverse( getNodeWithName( tx, "6" ) ), "4" );
     }
 }

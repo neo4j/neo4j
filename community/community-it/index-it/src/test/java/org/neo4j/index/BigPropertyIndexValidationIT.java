@@ -75,7 +75,7 @@ class BigPropertyIndexValidationIT
             //Check that the database is empty.
             try ( Transaction tx = db.beginTx() )
             {
-                ResourceIterator<Node> nodes = db.getAllNodes().iterator();
+                ResourceIterator<Node> nodes = tx.getAllNodes().iterator();
                 assertFalse( nodes.hasNext() );
             }
         } );
@@ -99,7 +99,7 @@ class BigPropertyIndexValidationIT
             //Check that the database is empty.
             try ( Transaction tx = db.beginTx() )
             {
-                ResourceIterator<Node> nodes = db.getAllNodes().iterator();
+                ResourceIterator<Node> nodes = tx.getAllNodes().iterator();
                 assertFalse( nodes.hasNext() );
             }
         } );
@@ -124,7 +124,7 @@ class BigPropertyIndexValidationIT
             //Check that the database is empty.
             try ( Transaction tx = db.beginTx() )
             {
-                ResourceIterator<Node> nodes = db.getAllNodes().iterator();
+                ResourceIterator<Node> nodes = tx.getAllNodes().iterator();
                 assertFalse( nodes.hasNext() );
             }
         } );

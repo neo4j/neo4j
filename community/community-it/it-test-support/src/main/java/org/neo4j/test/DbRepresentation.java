@@ -62,11 +62,11 @@ public class DbRepresentation
         int retryCount = 5;
         while ( true )
         {
-            try ( Transaction ignore = db.beginTx() )
+            try ( Transaction transaction = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 DbRepresentation result = new DbRepresentation();
-                for ( Node node : db.getAllNodes() )
+                for ( Node node : transaction.getAllNodes() )
                 {
                     NodeRep nodeRep = new NodeRep( node );
                     result.nodes.put( node.getId(), nodeRep );

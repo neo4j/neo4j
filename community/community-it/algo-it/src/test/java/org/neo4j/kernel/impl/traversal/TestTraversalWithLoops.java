@@ -43,8 +43,8 @@ class TestTraversalWithLoops extends TraversalTestBase
 
         try ( Transaction tx = beginTx() )
         {
-            Node a = getNodeWithName( "a" );
-            final Node e = getNodeWithName( "e" );
+            Node a = getNodeWithName( tx, "a" );
+            final Node e = getNodeWithName( tx, "e" );
             Evaluator onlyEndNode = path -> Evaluation.ofIncludes( path.endNode().equals( e ) );
             TraversalDescription basicTraverser = tx.traversalDescription().evaluator( onlyEndNode );
             expectPaths( basicTraverser.traverse( a ), "a,b,c,d,e" );

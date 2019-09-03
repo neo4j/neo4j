@@ -174,7 +174,7 @@ class DatabaseRecoveryIT
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getStoreLayout().storeDirectory() );
         try ( Transaction tx = recoveredDatabase.beginTx() )
         {
-            assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
+            assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
 
             // Make sure id generator has been rebuilt so this doesn't throw null pointer exception
             tx.createNode();
@@ -197,9 +197,9 @@ class DatabaseRecoveryIT
         var restoreDbLayout = copyStore();
         DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getStoreLayout().storeDirectory() );
         GraphDatabaseService recoveredDatabase = recoveredService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction ignore = recoveredDatabase.beginTx() )
+        try ( Transaction tx = recoveredDatabase.beginTx() )
         {
-            assertEquals( 10, count( recoveredDatabase.getAllNodes() ) );
+            assertEquals( 10, count( tx.getAllNodes() ) );
         }
         logProvider.rawMessageMatcher().assertContains( "10% completed" );
         logProvider.rawMessageMatcher().assertContains( "100% completed" );
@@ -528,7 +528,7 @@ class DatabaseRecoveryIT
         List<Node> nodes = new ArrayList<>();
         try ( Transaction tx = db.beginTx() )
         {
-            try ( ResourceIterator<Node> allNodes = db.getAllNodes().iterator() )
+            try ( ResourceIterator<Node> allNodes = tx.getAllNodes().iterator() )
             {
                 while ( allNodes.hasNext() )
                 {
@@ -679,7 +679,7 @@ class DatabaseRecoveryIT
         List<Node> nodes = new ArrayList<>();
         try ( Transaction tx = db.beginTx() )
         {
-            try ( ResourceIterator<Node> allNodes = db.getAllNodes().iterator() )
+            try ( ResourceIterator<Node> allNodes = tx.getAllNodes().iterator() )
             {
                 while ( allNodes.hasNext() )
                 {

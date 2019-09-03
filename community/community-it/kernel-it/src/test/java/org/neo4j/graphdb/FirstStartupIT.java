@@ -50,7 +50,7 @@ class FirstStartupIT
         // Then
         try ( Transaction transaction = db.beginTx() )
         {
-            assertEquals( 0, count( db.getAllNodes() ) );
+            assertEquals( 0, count( transaction.getAllNodes() ) );
             assertEquals( 0, count( transaction.getAllRelationships() ) );
             assertEquals( 0, count( transaction.getAllRelationshipTypes() ) );
             assertEquals( 0, count( transaction.getAllLabels() ) );

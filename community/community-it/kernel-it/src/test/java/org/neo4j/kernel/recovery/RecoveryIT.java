@@ -129,9 +129,9 @@ class RecoveryIT
         recoverDatabase();
 
         GraphDatabaseService recoveredDatabase = createDatabase();
-        try ( Transaction ignore = recoveredDatabase.beginTx() )
+        try ( Transaction tx = recoveredDatabase.beginTx() )
         {
-            assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
+            assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
         }
         finally
         {
@@ -164,7 +164,7 @@ class RecoveryIT
         GraphDatabaseService recoveredDatabase = createDatabase();
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
-            assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
+            assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
             assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
         }
@@ -201,16 +201,10 @@ class RecoveryIT
         GraphDatabaseService recoveredDatabase = createDatabase();
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
-            assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
-<<<<<<< HEAD
-            assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
+            assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
+            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
             assertEquals( numberOfNodes, count( transaction.getAllPropertyKeys() ) );
-=======
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
-            assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationshipTypesInUse() ) );
-            assertEquals( numberOfNodes, count( recoveredDatabase.getAllPropertyKeys() ) );
->>>>>>> Move `getAllRelationships` to Transaction
         }
         finally
         {
@@ -268,16 +262,10 @@ class RecoveryIT
         GraphDatabaseService recoveredDatabase = createDatabase();
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
-            assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
-<<<<<<< HEAD
-            assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
+            assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
+            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
             assertEquals( numberOfPropertyKeys, count( transaction.getAllPropertyKeys() ) );
-=======
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
-            assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationshipTypesInUse() ) );
-            assertEquals( numberOfPropertyKeys, count( recoveredDatabase.getAllPropertyKeys() ) );
->>>>>>> Move `getAllRelationships` to Transaction
         }
         finally
         {

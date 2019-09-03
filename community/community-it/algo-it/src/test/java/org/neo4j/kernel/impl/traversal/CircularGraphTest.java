@@ -48,8 +48,8 @@ class CircularGraphTest extends TraversalTestBase
         final long timestamp = 3;
         try ( Transaction tx = beginTx() )
         {
-            getNodeWithName( "2" ).setProperty( "timestamp", 1L );
-            getNodeWithName( "3" ).setProperty( "timestamp", 2L );
+            getNodeWithName( tx, "2" ).setProperty( "timestamp", 1L );
+            getNodeWithName( tx, "3" ).setProperty( "timestamp", 2L );
             tx.commit();
         }
 

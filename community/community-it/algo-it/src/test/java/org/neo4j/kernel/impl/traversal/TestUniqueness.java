@@ -59,8 +59,8 @@ class TestUniqueness extends TraversalTestBase
         RelationshipType to = withName( "TO" );
         try ( Transaction tx = beginTx() )
         {
-            Node a = getNodeWithName( "a" );
-            Node e = getNodeWithName( "e" );
+            Node a = getNodeWithName( tx, "a" );
+            Node e = getNodeWithName( tx, "e" );
             Path[] paths = splitPathsOnePerLevel( tx.traversalDescription().relationships( to, OUTGOING )
                     .uniqueness( NODE_LEVEL ).evaluator( includeWhereEndNodeIs( e ) ).traverse( a ) );
             NodePathRepresentation pathRepresentation = new NodePathRepresentation( NAME_PROPERTY_REPRESENTATION );
@@ -85,8 +85,8 @@ class TestUniqueness extends TraversalTestBase
 
         try ( Transaction tx = beginTx() )
         {
-            Node a = getNodeWithName( "a" );
-            Node c = getNodeWithName( "c" );
+            Node a = getNodeWithName( tx, "a" );
+            Node c = getNodeWithName( tx, "c" );
             Iterator<Path> path = tx.traversalDescription()
                                     .relationships( to, OUTGOING )
                                     .uniqueness( NODE_GLOBAL ).evaluator( includeWhereEndNodeIs( c ) ).traverse( a ).iterator();
@@ -111,8 +111,8 @@ class TestUniqueness extends TraversalTestBase
 
         try ( Transaction tx = beginTx() )
         {
-            Node a = getNodeWithName( "a" );
-            Node d = getNodeWithName( "d" );
+            Node a = getNodeWithName( tx, "a" );
+            Node d = getNodeWithName( tx, "d" );
 
             Iterator<Path> paths =
                     tx.traversalDescription().relationships( to, OUTGOING ).uniqueness( Uniqueness.NONE ).evaluator(

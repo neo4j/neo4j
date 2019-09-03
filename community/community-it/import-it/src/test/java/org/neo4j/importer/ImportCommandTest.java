@@ -223,7 +223,7 @@ class ImportCommandTest
         GraphDatabaseService databaseService = getDatabaseApi();
         try ( Transaction tx = databaseService.beginTx() )
         {
-            long nodeCount = Iterables.count( databaseService.getAllNodes() );
+            long nodeCount = Iterables.count( tx.getAllNodes() );
             assertEquals( 4097, nodeCount );
 
             ResourceIterator<Node> nodes = databaseService.findNodes( label( "FIRST 4096" ) );
@@ -274,7 +274,7 @@ class ImportCommandTest
         GraphDatabaseAPI databaseApi = getDatabaseApi();
         try ( Transaction tx = databaseApi.beginTx() )
         {
-            for ( Node node : databaseApi.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 nodeCount++;
                 String name = (String) node.getProperty( "name" );
@@ -344,7 +344,7 @@ class ImportCommandTest
         GraphDatabaseAPI databaseApi = getDatabaseApi();
         try ( Transaction tx = databaseApi.beginTx() )
         {
-            for ( Node node : databaseApi.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 nodeCount++;
                 String name = (String) node.getProperty( "name" );
@@ -403,7 +403,7 @@ class ImportCommandTest
         GraphDatabaseAPI databaseApi = getDatabaseApi();
         try ( Transaction tx = databaseApi.beginTx() )
         {
-            for ( Node node : databaseApi.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 if ( name.startsWith( "t" ) )
@@ -416,7 +416,7 @@ class ImportCommandTest
                 }
             }
 
-            long nodeCount = Iterables.count( databaseApi.getAllNodes() );
+            long nodeCount = Iterables.count( tx.getAllNodes() );
             assertEquals( 10, nodeCount );
             tx.commit();
         }
@@ -453,7 +453,7 @@ class ImportCommandTest
         GraphDatabaseAPI databaseApi = getDatabaseApi();
         try ( Transaction tx = databaseApi.beginTx() )
         {
-            for ( Node node : databaseApi.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 nodeCount++;
 
@@ -524,7 +524,7 @@ class ImportCommandTest
         GraphDatabaseAPI databaseApi = getDatabaseApi();
         try ( Transaction tx = databaseApi.beginTx() )
         {
-            for ( Node node : databaseApi.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 nodeCount++;
 
@@ -580,7 +580,7 @@ class ImportCommandTest
         GraphDatabaseAPI databaseApi = getDatabaseApi();
         try ( Transaction tx = databaseApi.beginTx() )
         {
-            for ( Node node : databaseApi.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 nodeCount++;
 
@@ -794,7 +794,7 @@ class ImportCommandTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
@@ -835,7 +835,7 @@ class ImportCommandTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
@@ -940,7 +940,7 @@ class ImportCommandTest
         try ( Transaction tx = db.beginTx() )
         {
             Set<String> foundNodesIds = new HashSet<>();
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 String id = (String) node.getProperty( "id" );
                 assertTrue( foundNodesIds.add( id ), id + ", " + foundNodesIds );
@@ -1196,7 +1196,7 @@ class ImportCommandTest
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
         {
-            Iterable<Node> allNodes = db.getAllNodes();
+            Iterable<Node> allNodes = tx.getAllNodes();
             int anonymousCount = 0;
             for ( final String id : nodeIds )
             {
@@ -1251,7 +1251,7 @@ class ImportCommandTest
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> allNodes = db.getAllNodes().iterator();
+            ResourceIterator<Node> allNodes = tx.getAllNodes().iterator();
             Node node = Iterators.single( allNodes );
             allNodes.close();
 
@@ -1282,7 +1282,7 @@ class ImportCommandTest
         // THEN
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx();
-              ResourceIterator<Node> allNodes = db.getAllNodes().iterator() )
+              ResourceIterator<Node> allNodes = tx.getAllNodes().iterator() )
         {
             Set<String> names = new HashSet<>();
             while ( allNodes.hasNext() )
@@ -1331,7 +1331,7 @@ class ImportCommandTest
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> allNodes = db.getAllNodes().iterator();
+            ResourceIterator<Node> allNodes = tx.getAllNodes().iterator();
             Node node = Iterators.single( allNodes );
             allNodes.close();
 
@@ -1358,7 +1358,7 @@ class ImportCommandTest
         GraphDatabaseService graphDatabaseService = getDatabaseApi();
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {
-            ResourceIterator<Node> allNodes = graphDatabaseService.getAllNodes().iterator();
+            ResourceIterator<Node> allNodes = tx.getAllNodes().iterator();
             assertFalse( allNodes.hasNext(), "Expected database to be empty" );
             tx.commit();
         }
@@ -1383,7 +1383,7 @@ class ImportCommandTest
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = single( db.getAllNodes() );
+            Node node = single( tx.getAllNodes() );
             assertFalse( node.hasProperty( "one" ) );
             assertFalse( node.hasProperty( "two" ) );
             assertEquals( "value", node.getProperty( "three" ) );
@@ -1439,7 +1439,7 @@ class ImportCommandTest
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 assertTrue( names.remove( name ), "Didn't expect node with name '" + name + "'" );
@@ -1539,7 +1539,7 @@ class ImportCommandTest
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 assertTrue( names.remove( name ), "Didn't expect node with name '" + name + "'" );
@@ -1597,7 +1597,7 @@ class ImportCommandTest
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 assertTrue( names.remove( name ), "Didn't expect node with name '" + name + "'" );
@@ -1679,7 +1679,7 @@ class ImportCommandTest
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 assertTrue( names.remove( name ), "Didn't expect node with name '" + name + "'" );
@@ -1951,7 +1951,7 @@ class ImportCommandTest
         try ( Transaction tx = db.beginTx() )
         {
             Map<String,Node> nodes = new HashMap<>();
-            db.getAllNodes().forEach( node -> nodes.put( node.getProperty( "id" ).toString(), node ) );
+            tx.getAllNodes().forEach( node -> nodes.put( node.getProperty( "id" ).toString(), node ) );
             Node node1 = nodes.get( "1" );
             assertEquals( 123L, node1.getProperty( "prop1" ) );
             assertEquals( 456.789D, node1.getProperty( "prop2" ) );
@@ -2113,7 +2113,7 @@ class ImportCommandTest
         {
             int nodeCount = 0;
             int relationshipCount = 0;
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeAdditionalValidation.validate( node );
@@ -2165,7 +2165,7 @@ class ImportCommandTest
         try ( Transaction tx = db.beginTx() )
         {
             Map<String,Node> nodes = new HashMap<>();
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 nodes.put( idOf( node ), node );
             }

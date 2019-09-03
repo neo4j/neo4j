@@ -259,7 +259,7 @@ class InProcessServerBuilderIT
             GraphDatabaseService graphDatabaseService = neo4j.defaultDatabaseService();
             try ( Transaction tx = graphDatabaseService.beginTx() )
             {
-                ResourceIterable<Node> allNodes = Iterables.asResourceIterable( graphDatabaseService.getAllNodes() );
+                ResourceIterable<Node> allNodes = Iterables.asResourceIterable( tx.getAllNodes() );
 
                 assertTrue( Iterables.count( allNodes ) > 0 );
 
@@ -277,7 +277,7 @@ class InProcessServerBuilderIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                assertEquals( 1, Iterables.count( db.getAllNodes() ) );
+                assertEquals( 1, Iterables.count( tx.getAllNodes() ) );
                 tx.commit();
             }
         }

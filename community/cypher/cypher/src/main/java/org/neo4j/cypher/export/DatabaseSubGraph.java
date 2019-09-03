@@ -49,7 +49,7 @@ public class DatabaseSubGraph implements SubGraph
     @Override
     public Iterable<Node> getNodes()
     {
-        return gdb.getAllNodes();
+        return transaction.getAllNodes();
     }
 
     @Override

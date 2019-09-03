@@ -69,23 +69,24 @@ class NodeManagerTest
         }
 
         // WHEN iterator is started
-        Transaction transaction = db.beginTx();
-        Iterator<Node> allNodes = db.getAllNodes().iterator();
-        allNodes.next();
-
-        // and WHEN another node is then added
-        Thread thread = new Thread( () ->
+        try ( Transaction transaction = db.beginTx() )
         {
-            Transaction newTx = db.beginTx();
-            newTx.createNode();
-            newTx.commit();
-        } );
-        thread.start();
-        thread.join();
+            Iterator<Node> allNodes = transaction.getAllNodes().iterator();
+            allNodes.next();
 
-        // THEN the new node is picked up by the iterator
-        assertThat( addToCollection( allNodes, new ArrayList<>() ).size(), is( 2 ) );
-        transaction.close();
+            // and WHEN another node is then added
+            Thread thread = new Thread( () ->
+            {
+                Transaction newTx = db.beginTx();
+                newTx.createNode();
+                newTx.commit();
+            } );
+            thread.start();
+            thread.join();
+
+            // THEN the new node is picked up by the iterator
+            assertThat( addToCollection( allNodes, new ArrayList<>() ).size(), is( 2 ) );
+        }
     }
 
     @Test

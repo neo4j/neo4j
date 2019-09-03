@@ -101,17 +101,17 @@ class TestImpermanentGraphDatabase
         try ( Transaction tx = db.beginTx() )
         {
             tx.getAllRelationships().forEach( Relationship::delete );
-            db.getAllNodes().forEach( Node::delete );
+            tx.getAllNodes().forEach( Node::delete );
             tx.commit();
         }
     }
 
     private long nodeCount()
     {
-        Transaction transaction = db.beginTx();
-        long count = Iterables.count( db.getAllNodes() );
-        transaction.close();
-        return count;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            return Iterables.count( transaction.getAllNodes() );
+        }
     }
 
     private void createNode()

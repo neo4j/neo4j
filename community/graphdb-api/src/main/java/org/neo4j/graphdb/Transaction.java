@@ -179,6 +179,13 @@ public interface Transaction extends AutoCloseable
     void terminate();
 
     /**
+     * Returns all nodes in the graph.
+     *
+     * @return all nodes in the graph.
+     */
+    ResourceIterable<Node> getAllNodes();
+
+    /**
      * Returns all relationships in the graph.
      *
      * @return all relationships in the graph.

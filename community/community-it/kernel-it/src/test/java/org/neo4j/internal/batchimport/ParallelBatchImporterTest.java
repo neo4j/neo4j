@@ -364,7 +364,7 @@ public class ParallelBatchImporterTest
         try ( InputIterator nodes = nodes( nodeRandomSeed, nodeCount, config.batchSize(), inputIdGenerator, groups ).iterator();
             InputIterator relationships = relationships( relationshipRandomSeed, relationshipCount,
                 config.batchSize(), inputIdGenerator, groups ).iterator();
-            ResourceIterator<Node> dbNodes = db.getAllNodes().iterator() )
+            ResourceIterator<Node> dbNodes = tx.getAllNodes().iterator() )
         {
             // Nodes
             Map<String, Node> nodeByInputId = new HashMap<>( nodeCount );

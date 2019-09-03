@@ -38,6 +38,7 @@ import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -172,6 +173,40 @@ public class TopLevelTransaction implements InternalTransaction
     public ResourceIterable<String> getAllPropertyKeys()
     {
         return all( TokenAccess.PROPERTY_KEYS );
+    }
+
+    public ResourceIterable<Node> getAllNodes()
+    {
+        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        return () ->
+        {
+            Statement statement = ktx.acquireStatement();
+            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
+            ktx.dataRead().allNodesScan( cursor );
+            return new PrefetchingResourceIterator<>()
+            {
+                @Override
+                protected Node fetchNextOrNull()
+                {
+                    if ( cursor.next() )
+                    {
+                        return facade.newNodeProxy( cursor.nodeReference() );
+                    }
+                    else
+                    {
+                        close();
+                        return null;
+                    }
+                }
+
+                @Override
+                public void close()
+                {
+                    cursor.close();
+                    statement.close();
+                }
+            };
+        };
     }
 
     @Override

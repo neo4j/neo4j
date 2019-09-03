@@ -394,7 +394,7 @@ public class IndexStatisticsTest
     {
         int nodesInStore = 0;
         Label label = Label.label( PERSON_LABEL );
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             KernelTransaction ktx = resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, db.databaseId() );
             List<String> mismatches = new ArrayList<>();
@@ -404,7 +404,7 @@ public class IndexStatisticsTest
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
                 // Node --> Index
-                for ( Node node : filter( n -> n.hasLabel( label ) && n.hasProperty( NAME_PROPERTY ), db.getAllNodes() ) )
+                for ( Node node : filter( n -> n.hasLabel( label ) && n.hasProperty( NAME_PROPERTY ), transaction.getAllNodes() ) )
                 {
                     nodesInStore++;
                     String name = (String) node.getProperty( NAME_PROPERTY );

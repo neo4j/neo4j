@@ -266,7 +266,7 @@ public class GraphDatabaseServiceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( db.getAllNodes(), is( iterableWithSize( 2 ) ) );
+            assertThat( tx.getAllNodes(), is( iterableWithSize( 2 ) ) );
             tx.commit();
         }
     }

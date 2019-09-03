@@ -75,7 +75,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         GraphDatabaseFacade db = server().getDatabaseService().getDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 if ( node.hasLabel( label( "Node" ) ) && node.hasProperty( "points" ) )
                 {

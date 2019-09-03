@@ -65,7 +65,7 @@ public class GraphDatabaseServiceCleaner
                 relationship.delete();
             }
 
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : tx.getAllNodes() )
             {
                 node.delete();
             }

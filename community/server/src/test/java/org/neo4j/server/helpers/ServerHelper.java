@@ -114,12 +114,12 @@ public class ServerHelper
         @Override
         public void doWork( Transaction transaction )
         {
-            deleteAllNodesAndRelationships();
+            deleteAllNodesAndRelationships( transaction );
         }
 
-        private void deleteAllNodesAndRelationships()
+        private void deleteAllNodesAndRelationships( Transaction tx )
         {
-            Iterable<Node> allNodes = db.getAllNodes();
+            Iterable<Node> allNodes = tx.getAllNodes();
             for ( Node n : allNodes )
             {
                 Iterable<Relationship> relationships = n.getRelationships();

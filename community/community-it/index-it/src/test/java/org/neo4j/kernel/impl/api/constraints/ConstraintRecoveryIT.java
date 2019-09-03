@@ -127,9 +127,9 @@ class ConstraintRecoveryIT
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
         }
 
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            assertEquals( 2, Iterables.count( db.getAllNodes() ) );
+            assertEquals( 2, Iterables.count( transaction.getAllNodes() ) );
         }
 
         try ( Transaction ignore = db.beginTx() )

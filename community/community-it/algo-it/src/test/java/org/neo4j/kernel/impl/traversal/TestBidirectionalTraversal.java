@@ -65,8 +65,8 @@ class TestBidirectionalTraversal extends TraversalTestBase
         {
             Traverser traverse = transaction.bidirectionalTraversalDescription().startSide(
                     transaction.traversalDescription().uniqueness( Uniqueness.NODE_GLOBAL ) ).endSide(
-                    transaction.traversalDescription().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ) ).traverse( getNodeWithName( "A" ),
-                    getNodeWithName( "B" ) );
+                    transaction.traversalDescription().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ) ).traverse( getNodeWithName( transaction, "A" ),
+                    getNodeWithName( transaction, "B" ) );
 
             assertThrows( IllegalArgumentException.class, () ->
             {
@@ -92,12 +92,13 @@ class TestBidirectionalTraversal extends TraversalTestBase
         {
             PathExpander<Void> expander = PathExpanders.forTypeAndDirection( to, OUTGOING );
             expectPaths( transaction.bidirectionalTraversalDescription().mirroredSides(
-                    transaction.traversalDescription().uniqueness( NODE_PATH ).expand( expander ) ).traverse( getNodeWithName( "a" ), getNodeWithName( "f" ) ),
+                    transaction.traversalDescription().uniqueness( NODE_PATH ).expand( expander ) ).traverse( getNodeWithName( transaction, "a" ),
+                    getNodeWithName( transaction, "f" ) ),
                     "a,b,c,d,e,f" );
 
             expectPaths( transaction.bidirectionalTraversalDescription().mirroredSides(
-                    transaction.traversalDescription().uniqueness( RELATIONSHIP_PATH ).expand( expander ) ).traverse( getNodeWithName( "a" ),
-                    getNodeWithName( "f" ) ), "a,b,c,d,e,f", "a,b,c,d,e,f" );
+                    transaction.traversalDescription().uniqueness( RELATIONSHIP_PATH ).expand( expander ) ).traverse( getNodeWithName( transaction, "a" ),
+                    getNodeWithName( transaction, "f" ) ), "a,b,c,d,e,f", "a,b,c,d,e,f" );
         }
     }
 
@@ -121,11 +122,13 @@ class TestBidirectionalTraversal extends TraversalTestBase
             BidirectionalTraversalDescription traversal = transaction.bidirectionalTraversalDescription().mirroredSides(
                     transaction.traversalDescription().uniqueness( NODE_PATH ).expand( expander ) );
             expectPaths(
-                    traversal.collisionEvaluator( includeIfContainsAll( getNodeWithName( "e" ) ) ).traverse( getNodeWithName( "a" ), getNodeWithName( "b" ) ),
+                    traversal.collisionEvaluator( includeIfContainsAll( getNodeWithName( transaction, "e" ) ) )
+                            .traverse( getNodeWithName( transaction, "a" ), getNodeWithName( transaction, "b" ) ),
                     "a,d,e,b", "a,d,e,f,b" );
             expectPaths(
-                    traversal.collisionEvaluator( includeIfContainsAll( getNodeWithName( "e" ), getNodeWithName( "f" ) ) ).traverse( getNodeWithName( "a" ),
-                            getNodeWithName( "b" ) ), "a,d,e,f,b" );
+                    traversal.collisionEvaluator( includeIfContainsAll( getNodeWithName( transaction, "e" ),
+                            getNodeWithName( transaction, "f" ) ) ).traverse( getNodeWithName( transaction, "a" ),
+                            getNodeWithName( transaction, "b" ) ), "a,d,e,f,b" );
         }
     }
 
@@ -147,7 +150,8 @@ class TestBidirectionalTraversal extends TraversalTestBase
         {
             expectPaths( transaction.bidirectionalTraversalDescription().mirroredSides(
                     transaction.traversalDescription().uniqueness( NODE_PATH ) ).collisionEvaluator( Evaluators.atDepth( 3 ) ).collisionEvaluator(
-                    includeIfContainsAll( getNodeWithName( "e" ) ) ).traverse( getNodeWithName( "a" ), getNodeWithName( "c" ) ), "a,d,e,c" );
+                    includeIfContainsAll( getNodeWithName( transaction, "e" ) ) )
+                    .traverse( getNodeWithName( transaction, "a" ), getNodeWithName( transaction, "c" ) ), "a,d,e,c" );
         }
     }
 
@@ -168,8 +172,9 @@ class TestBidirectionalTraversal extends TraversalTestBase
             PathExpander<Void> expander = PathExpanderBuilder.empty().add( to ).build();
             TraversalDescription side = transaction.traversalDescription().uniqueness( NODE_PATH ).expand( expander );
             expectPaths( transaction.bidirectionalTraversalDescription().mirroredSides( side ).traverse(
-                    asList( getNodeWithName( "a" ), getNodeWithName( "b" ), getNodeWithName( "c" ) ),
-                    asList( getNodeWithName( "f" ), getNodeWithName( "g" ) ) ), "a,d,e,f", "a,d,e,g", "b,d,e,f", "b,d,e,g", "c,d,e,f", "c,d,e,g" );
+                    asList( getNodeWithName( transaction, "a" ), getNodeWithName( transaction, "b" ), getNodeWithName( transaction, "c" ) ),
+                    asList( getNodeWithName( transaction, "f" ),
+                            getNodeWithName( transaction, "g" ) ) ), "a,d,e,f", "a,d,e,g", "b,d,e,f", "b,d,e,g", "c,d,e,f", "c,d,e,g" );
         }
     }
 
@@ -183,8 +188,8 @@ class TestBidirectionalTraversal extends TraversalTestBase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Node a = getNodeWithName( "a" );
-            Node b = getNodeWithName( "b" );
+            Node a = getNodeWithName( transaction, "a" );
+            Node b = getNodeWithName( transaction, "b" );
             Relationship r = a.getSingleRelationship( to, OUTGOING );
             Path path = Iterables.single( transaction.bidirectionalTraversalDescription().mirroredSides(
                     transaction.traversalDescription().relationships( to, OUTGOING ).uniqueness( NODE_PATH ) ).collisionEvaluator(
@@ -225,8 +230,8 @@ class TestBidirectionalTraversal extends TraversalTestBase
                     // Just make up a number bigger than the path length (in this case 10) so that we can assert it in
                     // the collision policy later
                     .mirroredSides( transaction.traversalDescription().uniqueness( NODE_PATH ).expand( PathExpanders.forType( to ),
-                            new InitialBranchState.State<>( 0, 10 ) ) ).collisionPolicy( collisionPolicy ).traverse( getNodeWithName( "a" ),
-                            getNodeWithName( "d" ) ) );
+                            new InitialBranchState.State<>( 0, 10 ) ) )
+                    .collisionPolicy( collisionPolicy ).traverse( getNodeWithName( transaction, "a" ), getNodeWithName( transaction, "d" ) ) );
         }
     }
 }

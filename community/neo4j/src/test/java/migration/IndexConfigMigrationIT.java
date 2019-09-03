@@ -232,7 +232,7 @@ class IndexConfigMigrationIT
             try ( Transaction tx = db.beginTx() )
             {
                 hasIndexCount( db, 7 );
-                for ( Node node : db.getAllNodes() )
+                for ( Node node : tx.getAllNodes() )
                 {
                     hasLabels( node, label1, label2, label3, label4 );
                     Object property = node.getProperty( propKey );
