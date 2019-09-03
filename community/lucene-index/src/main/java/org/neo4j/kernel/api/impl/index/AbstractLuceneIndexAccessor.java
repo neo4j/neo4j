@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.annotations.ProxyFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -159,9 +159,9 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     }
 
     @Override
-    public boolean consistencyCheck( ProxyFactory proxyFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
     {
-        final LuceneIndexConsistencyCheckVisitor visitor = proxyFactory.getClass( LuceneIndexConsistencyCheckVisitor.class );
+        final LuceneIndexConsistencyCheckVisitor visitor = reporterFactory.getClass( LuceneIndexConsistencyCheckVisitor.class );
         final boolean isConsistent = !isDirty();
         if ( !isConsistent )
         {

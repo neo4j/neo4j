@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.annotations.ProxyFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexDropAction;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -169,8 +169,8 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public boolean consistencyCheck( ProxyFactory proxyFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
     {
-        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), proxyFactory );
+        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), reporterFactory );
     }
 }

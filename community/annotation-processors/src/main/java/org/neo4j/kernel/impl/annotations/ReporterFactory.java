@@ -26,13 +26,13 @@ import java.lang.reflect.Proxy;
 /**
  * Creates proxy instances that dispatch calls to provided {@link InvocationHandler}.
  */
-public class ProxyFactory
+public class ReporterFactory
 {
     private static final InvocationHandler throwingHandler = new ThrowingInvocationHandler();
     private static final InvocationHandler noopHandler = ( proxy, method, args ) -> null;
     private final InvocationHandler handler;
 
-    public ProxyFactory( InvocationHandler handler )
+    public ReporterFactory( InvocationHandler handler )
     {
         this.handler = handler;
     }
@@ -43,14 +43,14 @@ public class ProxyFactory
         return (T) Proxy.newProxyInstance( classLoader, new Class<?>[]{cls}, handler );
     }
 
-    public static ProxyFactory throwingProxyFactory()
+    public static ReporterFactory throwingProxyFactory()
     {
-        return new ProxyFactory( throwingHandler );
+        return new ReporterFactory( throwingHandler );
     }
 
-    public static ProxyFactory noopProxyFactory()
+    public static ReporterFactory noopProxyFactory()
     {
-        return new ProxyFactory( noopHandler );
+        return new ReporterFactory( noopHandler );
     }
 
     private static class ThrowingInvocationHandler implements InvocationHandler

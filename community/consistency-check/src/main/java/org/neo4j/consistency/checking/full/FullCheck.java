@@ -42,7 +42,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.annotations.ProxyFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -196,9 +196,9 @@ public class FullCheck
         for ( StoreIndexDescriptor onlineRule : indexes.onlineRules() )
         {
             ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.INDEX );
-            ProxyFactory proxyFactory = new ProxyFactory( handler );
+            ReporterFactory reporterFactory = new ReporterFactory( handler );
             IndexAccessor accessor = indexes.accessorFor( onlineRule );
-            if ( !accessor.consistencyCheck( proxyFactory ) )
+            if ( !accessor.consistencyCheck( reporterFactory ) )
             {
                 rulesToRemove.add( onlineRule );
             }

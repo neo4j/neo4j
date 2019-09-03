@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.impl.annotations.ProxyFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 
 public interface ConsistencyCheckable
 {
-    boolean consistencyCheck( ProxyFactory proxyFactory );
+    boolean consistencyCheck( ReporterFactory reporterFactory );
 }

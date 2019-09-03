@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.annotations.ProxyFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -136,9 +136,9 @@ class WorkSyncedNativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE exte
     }
 
     @Override
-    public boolean consistencyCheck( ProxyFactory proxyFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
     {
-        return actual.consistencyCheck( proxyFactory );
+        return actual.consistencyCheck( reporterFactory );
     }
 
     @Override

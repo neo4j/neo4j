@@ -28,7 +28,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.reflect.InvocationHandler;
 
-import org.neo4j.kernel.impl.annotations.ProxyFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 import static org.junit.Assert.assertFalse;
@@ -68,14 +68,14 @@ public class LuceneIndexAccessorTest
     public void indexIsNotConsistentWhenIndexIsNotValid()
     {
         when( schemaIndex.isValid() ).thenReturn( false );
-        assertFalse( accessor.consistencyCheck( ProxyFactory.noopProxyFactory() ) );
+        assertFalse( accessor.consistencyCheck( ReporterFactory.noopProxyFactory() ) );
     }
 
     @Test
     public void indexIsConsistentWhenIndexIsValid()
     {
         when( schemaIndex.isValid() ).thenReturn( true );
-        assertTrue( accessor.consistencyCheck( ProxyFactory.noopProxyFactory() ) );
+        assertTrue( accessor.consistencyCheck( ReporterFactory.noopProxyFactory() ) );
     }
 
     @Test
@@ -87,7 +87,7 @@ public class LuceneIndexAccessorTest
             called.setTrue();
             return null;
         };
-        assertFalse( "Expected index to be inconsistent", accessor.consistencyCheck( new ProxyFactory( handler ) ) );
+        assertFalse( "Expected index to be inconsistent", accessor.consistencyCheck( new ReporterFactory( handler ) ) );
         assertTrue( "Expected visitor to be called", called.booleanValue() );
     }
 }
