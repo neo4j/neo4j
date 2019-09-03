@@ -37,7 +37,6 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.index.internal.gbptree.ThrowingConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -47,7 +46,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.impl.annotations.ProxyFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -494,15 +493,9 @@ public class NativeLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public boolean consistencyCheck( ProxyFactory proxyFactory )
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
     {
-        return consistencyCheck( proxyFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
-    }
-
-    @Override
-    public boolean consistencyCheck()
-    {
-        return consistencyCheck( new ThrowingConsistencyCheckVisitor<>() );
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
     }
 
     private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<LabelScanKey> visitor )

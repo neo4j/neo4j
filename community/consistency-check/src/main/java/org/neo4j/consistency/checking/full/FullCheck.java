@@ -217,7 +217,7 @@ public class FullCheck
     private static void consistencyCheckLabelScanStore( LabelScanStore labelScanStore, ConsistencyReporter report, ProgressListener listener )
     {
         ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.LABEL_SCAN_DOCUMENT );
-        ProxyFactory proxyFactory = new ProxyFactory( handler );
+        ReporterFactory proxyFactory = new ReporterFactory( handler );
         labelScanStore.consistencyCheck( proxyFactory );
         handler.updateSummary();
         listener.add( 1 );
