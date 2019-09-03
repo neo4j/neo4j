@@ -112,6 +112,10 @@ trait Literals extends Parser
     ((ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
   }
 
+  def OldParameter: Rule1[org.neo4j.cypher.internal.v4_0.expressions.ParameterWithOldSyntax] = rule("a parameter (old syntax)") {
+    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.ParameterWithOldSyntax(_, CTAny))
+  }
+
   def NumberLiteral: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Literal] = rule("a number") (
       DoubleLiteral
     | SignedIntegerLiteral

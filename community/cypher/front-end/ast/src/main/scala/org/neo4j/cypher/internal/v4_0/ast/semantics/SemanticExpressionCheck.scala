@@ -221,6 +221,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:Parameter =>
         specifyType(x.parameterType.covariant, x)
 
+      case x:ParameterWithOldSyntax =>
+        SemanticError("The old parameter syntax `{param}` is no longer supported. Please use `$param` instead", x.position)
+
       case x:ImplicitProcedureArgument =>
         specifyType(x.parameterType.covariant, x)
 
