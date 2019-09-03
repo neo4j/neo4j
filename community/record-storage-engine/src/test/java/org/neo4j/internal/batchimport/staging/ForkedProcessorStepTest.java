@@ -32,6 +32,7 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.StepStats;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -43,6 +44,8 @@ import static org.neo4j.io.IOUtils.closeAllSilently;
 
 class ForkedProcessorStepTest
 {
+    private static final int TIMEOUT_MINUTES = 2;
+
     @Test
     void shouldProcessAllSingleThreaded() throws Exception
     {
@@ -72,7 +75,7 @@ class ForkedProcessorStepTest
     }
 
     @Test
-    @Timeout( 10 )
+    @Timeout( value = TIMEOUT_MINUTES, unit = MINUTES )
     void shouldProcessAllBatchesOnSingleCoreSystems() throws Exception
     {
         // GIVEN
@@ -274,14 +277,14 @@ class ForkedProcessorStepTest
     }
 
     @Test
-    @Timeout( 60 )
+    @Timeout( value = TIMEOUT_MINUTES, unit = MINUTES )
     void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered() throws Exception
     {
         shouldBeAbleToProgressUnderStressfulProcessorChanges( Step.ORDER_SEND_DOWNSTREAM );
     }
 
     @Test
-    @Timeout( 60 )
+    @Timeout( value = TIMEOUT_MINUTES, unit = MINUTES )
     void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered() throws Exception
     {
         shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 );
