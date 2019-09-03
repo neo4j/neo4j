@@ -686,6 +686,10 @@ class RecoveryCorruptedTransactionLogIT
         if ( bytesToTrim > readableOffset )
         {
             fileSystem.deleteFile( highestLogFile );
+            if ( logFiles.logFiles().length > 0 )
+            {
+                truncateBytesFromLastLogFile( bytesToTrim ); //start truncating from next file
+            }
         }
         else
         {
