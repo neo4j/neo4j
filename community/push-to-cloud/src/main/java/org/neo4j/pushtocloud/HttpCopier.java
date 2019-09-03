@@ -214,10 +214,9 @@ public class HttpCopier implements PushToCloudCommand.Copier
             connection.setRequestProperty( "Content-Length", "0" );
             connection.setFixedLengthStreamingMode( 0 );
             connection.setRequestProperty( "x-goog-resumable", "start" );
-            // Content-Type/Encoding is optional and seems to be merely for setting the type on the resource in the google cloud storage
-            // since no user will download it herself there's no need to actually set it, I think
-            connection.setRequestProperty( "Content-Type", "application/x-tar" );
-            connection.setRequestProperty( "Content-Encoding", "x-gzip" );
+            // We don't want to have any Content-Type set really, but there's this issue with the standard HttpURLConnection
+            // implementation where it defaults Content-Type to application/x-www-form-urlencoded for POSTs for some reason
+            connection.setRequestProperty( "Content-Type", "" );
             connection.setDoOutput( true );
             int responseCode = connection.getResponseCode();
             if ( responseCode != HTTP_CREATED )
