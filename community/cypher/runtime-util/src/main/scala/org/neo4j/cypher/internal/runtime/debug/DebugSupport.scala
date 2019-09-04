@@ -19,7 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.debug
 
+import org.neo4j.exceptions.InternalException
+
 object DebugSupport {
+
+  final val FAIL_HARD = false
 
   /** COLORS AND FORMATTING **/
 
@@ -135,3 +139,5 @@ object DebugSupport {
       }
   }
 }
+
+class QueryFailHardException(message: String, cause: Throwable) extends InternalException(message, cause)
