@@ -127,20 +127,6 @@ public interface GraphDatabaseService
 
     /**
      * Executes a query and returns an iterable that contains the result set.
-     * If query will not gonna be able to complete within specified timeout time interval it will be terminated.
-     *
-     * This method is the same as {@link #execute(String, java.util.Map)} with an empty parameters-map.
-     *
-     * @param query The query to execute
-     * @param timeout The maximum time interval within which query should be completed.
-     * @param unit time unit of timeout argument
-     * @return A {@link org.neo4j.graphdb.Result} that contains the result set.
-     * @throws QueryExecutionException If the Query contains errors
-     */
-    Result execute( String query, long timeout, TimeUnit unit ) throws QueryExecutionException;
-
-    /**
-     * Executes a query and returns an iterable that contains the result set.
      *
      * @param query      The query to execute
      * @param parameters Parameters for the query

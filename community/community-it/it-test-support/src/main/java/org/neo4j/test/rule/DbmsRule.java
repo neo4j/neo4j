@@ -162,12 +162,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
-    public Result execute( String query, long timeout, TimeUnit unit ) throws QueryExecutionException
-    {
-        return getGraphDatabaseAPI().execute( query, timeout, unit );
-    }
-
-    @Override
     public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
     {
         return getGraphDatabaseAPI().execute( query, parameters );
