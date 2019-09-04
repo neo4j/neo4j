@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, NumericHelper, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper.asDouble
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
@@ -121,7 +122,7 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
   }
 }
 
-class PercentileContTest extends CypherFunSuite with PercentileTest with NumericHelper {
+class PercentileContTest extends CypherFunSuite with PercentileTest {
   def createAggregator(inner: Expression, perc:Expression) = new PercentileContFunction(inner, perc)
 
   test("singleOne") {

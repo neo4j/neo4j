@@ -27,8 +27,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 abstract class PercentileFunction(val value: Expression, val percentile: Expression) extends AggregationFunction
-  with NumericExpressionOnly
-  with NumericHelper {
+  with NumericExpressionOnly {
 
   protected var temp = Vector[AnyValue]()
   protected var count: Int = 0
@@ -37,7 +36,7 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
   override def apply(data: ExecutionContext, state: QueryState) {
     actOnNumber(value(data, state), number => {
       if (count < 1) {
-        perc = asDouble(percentile(data, state)).doubleValue()
+        perc = NumericHelper.asDouble(percentile(data, state)).doubleValue()
         if (perc < 0 || perc > 1.0)
           throw new InvalidArgumentException(
             s"Invalid input '$perc' is not a valid argument, must be a number in the range 0.0 to 1.0")
@@ -55,7 +54,7 @@ class PercentileContFunction(value: Expression, percentile: Expression)
   def name = "PERCENTILE_CONT"
 
   override def result(state: QueryState): AnyValue = {
-    temp = temp.sortBy((num: AnyValue) => asDouble(num).doubleValue())
+    temp = temp.sortBy((num: AnyValue) => NumericHelper.asDouble(num).doubleValue())
 
     if (perc == 1.0 || count == 1) {
       temp.last
@@ -64,8 +63,8 @@ class PercentileContFunction(value: Expression, percentile: Expression)
       val floor = floatIdx.toInt
       val ceil = math.ceil(floatIdx).toInt
       if (ceil == floor || floor == count - 1) temp(floor)
-      else Values.doubleValue(asDouble(temp(floor)).doubleValue() * (ceil - floatIdx) +
-                                      asDouble(temp(ceil)).doubleValue() * (floatIdx - floor))
+      else Values.doubleValue(NumericHelper.asDouble(temp(floor)).doubleValue() * (ceil - floatIdx) +
+                                      NumericHelper.asDouble(temp(ceil)).doubleValue() * (floatIdx - floor))
     } else {
       Values.NO_VALUE
     }
@@ -78,7 +77,7 @@ class PercentileDiscFunction(value: Expression, percentile: Expression)
   def name = "PERCENTILE_DISC"
 
   override def result(state: QueryState): AnyValue = {
-    temp = temp.sortBy((num: AnyValue) => asDouble(num).doubleValue())
+    temp = temp.sortBy((num: AnyValue) => NumericHelper.asDouble(num).doubleValue())
 
     if (perc == 1.0 || count == 1) {
       temp.last

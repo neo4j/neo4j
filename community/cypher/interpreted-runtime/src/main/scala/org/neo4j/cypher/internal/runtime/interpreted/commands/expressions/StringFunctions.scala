@@ -162,7 +162,7 @@ case class SplitFunction(orig: Expression, separator: Expression)
 }
 
 case class LeftFunction(orig: Expression, length: Expression)
-  extends NullInNullOutExpression(orig) with NumericHelper {
+  extends NullInNullOutExpression(orig) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.left(value, length(m, state))
@@ -176,7 +176,7 @@ case class LeftFunction(orig: Expression, length: Expression)
 }
 
 case class RightFunction(orig: Expression, length: Expression)
-  extends NullInNullOutExpression(orig) with NumericHelper {
+  extends NullInNullOutExpression(orig) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.right(value, length(m, state))

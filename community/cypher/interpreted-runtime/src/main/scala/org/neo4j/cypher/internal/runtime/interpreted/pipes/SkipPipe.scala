@@ -27,7 +27,7 @@ import org.neo4j.values.storable.FloatingPointValue
 
 case class SkipPipe(source: Pipe, exp: Expression)
                    (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) with NumericHelper {
+  extends PipeWithSource(source) {
 
   exp.registerOwningPipe(this)
 
@@ -35,7 +35,7 @@ case class SkipPipe(source: Pipe, exp: Expression)
     if(input.isEmpty)
       return Iterator.empty
 
-    val skipNumber = asNumber(exp(state.newExecutionContext(executionContextFactory), state))
+    val skipNumber = NumericHelper.asNumber(exp(state.newExecutionContext(executionContextFactory), state))
     if (skipNumber.isInstanceOf[FloatingPointValue]) {
       val skip = skipNumber.doubleValue()
       throw new InvalidArgumentException(s"SKIP: Invalid input. '$skip' is not a valid value. Must be a non-negative integer.")

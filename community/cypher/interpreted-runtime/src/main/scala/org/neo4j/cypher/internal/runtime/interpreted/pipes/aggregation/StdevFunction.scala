@@ -27,8 +27,7 @@ import org.neo4j.values.storable.Values
 
 class StdevFunction(val value: Expression, val population:Boolean)
   extends AggregationFunction
-  with NumericExpressionOnly
-  with NumericHelper {
+  with NumericExpressionOnly {
 
   def name = if (population) "STDEVP" else "STDEV"
 

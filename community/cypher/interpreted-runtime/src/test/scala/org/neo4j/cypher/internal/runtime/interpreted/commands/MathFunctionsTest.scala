@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper.asDouble
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values.{doubleValue, longValue}
-class MathFunctionsTest extends CypherFunSuite with NumericHelper {
+class MathFunctionsTest extends CypherFunSuite {
 
   test("absTests") {
     calc(AbsFunction(Literal(-1))) should equal(longValue(1))

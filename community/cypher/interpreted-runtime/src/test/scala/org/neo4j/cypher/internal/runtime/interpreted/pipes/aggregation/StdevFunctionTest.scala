@@ -82,7 +82,7 @@ class StdevSampleTest extends CypherFunSuite with StdevTest {
   }
 }
 
-class StdevPopulationTest extends CypherFunSuite with StdevTest with NumericHelper {
+class StdevPopulationTest extends CypherFunSuite with StdevTest {
   def createAggregator(inner: Expression) = new StdevFunction(inner, true)
 
   test("singleOne") {

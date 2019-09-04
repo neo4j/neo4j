@@ -29,7 +29,7 @@ import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
 
-abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
+abstract class MathFunction(arg: Expression) extends Expression {
 
   def innerExpectedType: NumberType = CTNumber
 
@@ -41,30 +41,40 @@ abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val value = arg(ctx, state)
-    if (NO_VALUE eq value) NO_VALUE else Values.doubleValue(apply(asDouble(value).doubleValue()))
+    if (NO_VALUE eq value) NO_VALUE else Values.doubleValue(apply(NumericHelper.asDouble(value).doubleValue()))
   }
 
   def apply(value: Double): Double
 }
 
-trait NumericHelper {
+// We need this to be able to call the static functions from compiled code.
+class NumericHelper
 
-  protected def asLongEntityId(a: AnyValue): Option[Long] = a match {
-    case a: IntegralValue => Some(a.longValue())
+object NumericHelper {
+
+  def asLongEntityId(a: AnyValue): Option[Long] = a match {
+    case i: IntegralValue => Some(i.longValue())
+    case f: FloatingPointValue => if (NumberValues.numbersEqual(f.doubleValue(), f.longValue())) Some(f.longValue()) else None
     case _ => None
   }
 
-  protected def asDouble(a: AnyValue): DoubleValue = Values.doubleValue(asNumber(a).doubleValue())
+  def asLongEntityIdPrimitive(a: AnyValue): Long = a match {
+    case d:IntegralValue => d.longValue()
+    case f: FloatingPointValue if NumberValues.numbersEqual(f.doubleValue(), f.longValue()) => f.longValue()
+    case _ => -1L
+  }
 
-  protected def asInt(a: AnyValue): IntValue = Values.intValue(asPrimitiveInt(a))
+  def asDouble(a: AnyValue): DoubleValue = Values.doubleValue(asNumber(a).doubleValue())
 
-  protected def asPrimitiveInt(a: AnyValue): Int = asNumber(a).longValue().toInt
+  def asInt(a: AnyValue): IntValue = Values.intValue(asPrimitiveInt(a))
 
-  protected def asLong(a: AnyValue): LongValue = Values.longValue(asPrimitiveLong(a))
+  def asPrimitiveInt(a: AnyValue): Int = asNumber(a).longValue().toInt
 
-  protected def asPrimitiveLong(a: AnyValue): Long = asNumber(a).longValue()
+  def asLong(a: AnyValue): LongValue = Values.longValue(asPrimitiveLong(a))
 
-  protected def asNumber(a: AnyValue): NumberValue = a match {
+  def asPrimitiveLong(a: AnyValue): Long = asNumber(a).longValue()
+
+  def asNumber(a: AnyValue): NumberValue = a match {
     case null => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
     case x if x eq NO_VALUE => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
     case n: NumberValue => n
@@ -123,7 +133,7 @@ case class AtanFunction(argument: Expression) extends MathFunction(argument) {
   override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
-case class Atan2Function(y: Expression, x: Expression) extends Expression with NumericHelper {
+case class Atan2Function(y: Expression, x: Expression) extends Expression {
 
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val yValue = y(ctx, state)
@@ -331,7 +341,7 @@ case class RandFunction() extends Expression {
   override def rewrite(f: Expression => Expression): Expression = f(RandFunction())
 }
 
-case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
+case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.range(start(ctx, state), end(ctx, state), step(ctx, state))
@@ -351,7 +361,7 @@ case class SignFunction(argument: Expression) extends MathFunction(argument) {
     val value = argument(ctx, state)
     if (NO_VALUE eq value) NO_VALUE
     else {
-      Values.longValue(Math.signum(asDouble(value).doubleValue()).toLong)
+      Values.longValue(Math.signum(NumericHelper.asDouble(value).doubleValue()).toLong)
     }
   }
 

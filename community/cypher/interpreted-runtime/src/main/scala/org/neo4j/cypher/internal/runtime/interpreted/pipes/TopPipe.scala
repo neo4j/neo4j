@@ -36,7 +36,7 @@ import scala.collection.mutable
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
 case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Comparator[ExecutionContext])
-                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with NumericHelper {
+                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   countExpression.registerOwningPipe(this)
 
@@ -47,7 +47,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
     else {
       val first = input.next()
 
-      val limitNumber = asNumber(countExpression(first, state))
+      val limitNumber = NumericHelper.asNumber(countExpression(first, state))
       if (limitNumber.isInstanceOf[FloatingPointValue]) {
         val limit = limitNumber.doubleValue()
         throw new InvalidArgumentException(s"LIMIT: Invalid input. '$limit' is not a valid value. Must be a non-negative integer.")

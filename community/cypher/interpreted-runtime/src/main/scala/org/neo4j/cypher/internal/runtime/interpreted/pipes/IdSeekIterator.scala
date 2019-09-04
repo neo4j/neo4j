@@ -27,7 +27,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 abstract class IdSeekIterator[T, CURSOR]
-  extends Iterator[ExecutionContext] with NumericHelper {
+  extends Iterator[ExecutionContext] {
 
   private var cachedEntity: T = computeNextEntity()
 
@@ -49,7 +49,7 @@ abstract class IdSeekIterator[T, CURSOR]
   private def computeNextEntity(): T = {
     while (entityIds.hasNext) {
       val maybeEntity = for {
-        id <- asLongEntityId(entityIds.next())
+        id <- NumericHelper.asLongEntityId(entityIds.next())
         entity <- operations.getByIdIfExists(id)
       } yield entity
 

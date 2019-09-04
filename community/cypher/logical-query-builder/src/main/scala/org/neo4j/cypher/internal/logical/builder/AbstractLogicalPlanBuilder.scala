@@ -265,10 +265,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(NodeByLabelScan(n, labelName(label), args.toSet)(_)))
   }
 
-  def nodeByIdSeek(node: String, ids: Long*): IMPL = {
+  def nodeByIdSeek(node: String, ids: AnyVal*): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
-    val idExpressions = ids.map(l => UnsignedDecimalIntegerLiteral(l.toString)(pos))
+    val idExpressions = ids.map {
+      case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
+      case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
+      case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
+    }
     val input =
       if (idExpressions.length == 1) {
         SingleSeekableArg(idExpressions.head)
@@ -279,9 +283,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, Set.empty)(_)))
   }
 
-  def directedRelationshipByIdSeek(relationship: String, from: String, to: String, ids: Long*): IMPL = {
+  def directedRelationshipByIdSeek(relationship: String, from: String, to: String, ids: AnyVal*): IMPL = {
     newRelationship(varFor(relationship))
-    val idExpressions = ids.map(l => UnsignedDecimalIntegerLiteral(l.toString)(pos))
+    val idExpressions = ids.map {
+      case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
+      case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
+      case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
+    }
     val input =
       if (idExpressions.length == 1) {
         SingleSeekableArg(idExpressions.head)
@@ -292,9 +300,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, Set.empty)(_)))
   }
 
-  def undirectedRelationshipByIdSeek(relationship: String, from: String, to: String, ids: Long*): IMPL = {
+  def undirectedRelationshipByIdSeek(relationship: String, from: String, to: String, ids: AnyVal*): IMPL = {
     newRelationship(varFor(relationship))
-    val idExpressions = ids.map(l => UnsignedDecimalIntegerLiteral(l.toString)(pos))
+    val idExpressions = ids.map {
+      case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
+      case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
+      case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
+    }
     val input =
       if (idExpressions.length == 1) {
         SingleSeekableArg(idExpressions.head)

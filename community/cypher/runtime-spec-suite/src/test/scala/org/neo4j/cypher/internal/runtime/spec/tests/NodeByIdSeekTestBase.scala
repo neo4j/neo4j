@@ -49,6 +49,22 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(Seq(toFind)))
   }
 
+  test("should find by floating point") {
+    // given
+    val Seq(node) = nodeGraph(1)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeByIdSeek("x", node.getId.toDouble)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(node)))
+  }
+
   test("should not find non-existing node") {
     // given
     val toNotFind = nodeGraph(sizeHint).map(_.getId).max + 1

@@ -49,6 +49,22 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r", "x", "y").withRows(singleRow(relToFind, relToFind.getStartNode, relToFind.getEndNode))
   }
 
+  test("should find by floating point") {
+    // given
+    val (_, Seq(rel, _)) = circleGraph(2)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .directedRelationshipByIdSeek("r", "x", "y", rel.getId.toDouble)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(rel)))
+  }
+
   test("should not find non-existing relationship") {
     // given
     val (_, relationships) = circleGraph(17)
