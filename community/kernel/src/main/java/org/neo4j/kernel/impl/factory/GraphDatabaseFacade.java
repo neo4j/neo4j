@@ -38,11 +38,9 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.ResultConsumer;
-import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.Schema;
@@ -55,7 +53,6 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -74,7 +71,6 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -95,7 +91,6 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -105,7 +100,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
  * Implementation of the GraphDatabaseService interfaces - the "Core API".
@@ -357,35 +351,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             queries[i++] = IndexQuery.exact( tokenRead.propertyKey( entry.getKey() ), Values.of( entry.getValue() ) );
         }
         return nodesByLabelAndProperties( transaction, labelId, queries );
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes(
-            final Label myLabel, final String key, final String value, final StringSearchMode searchMode )
-    {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        TokenRead tokenRead = transaction.tokenRead();
-        int labelId = tokenRead.nodeLabel( myLabel.name() );
-        int propertyId = tokenRead.propertyKey( key );
-        IndexQuery query;
-        switch ( searchMode )
-        {
-        case EXACT:
-            query = IndexQuery.exact( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
-            break;
-        case PREFIX:
-            query = IndexQuery.stringPrefix( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
-            break;
-        case SUFFIX:
-            query = IndexQuery.stringSuffix( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
-            break;
-        case CONTAINS:
-            query = IndexQuery.stringContains( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
-            break;
-        default:
-            throw new IllegalStateException( "Unknown string search mode: " + searchMode );
-        }
-        return nodesByLabelAndProperty( transaction, labelId, query );
     }
 
     @Override

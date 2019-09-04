@@ -28,9 +28,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
@@ -38,8 +40,15 @@ import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
@@ -49,17 +58,24 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
 import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.kernel.impl.coreapi.internal.NodeCursorResourceIterator;
+import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 public class TopLevelTransaction implements InternalTransaction
 {
@@ -175,6 +191,36 @@ public class TopLevelTransaction implements InternalTransaction
         return all( TokenAccess.PROPERTY_KEYS );
     }
 
+    @Override
+    public ResourceIterator<Node> findNodes(
+            final Label myLabel, final String key, final String value, final StringSearchMode searchMode )
+    {
+        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.nodeLabel( myLabel.name() );
+        int propertyId = tokenRead.propertyKey( key );
+        IndexQuery query;
+        switch ( searchMode )
+        {
+        case EXACT:
+            query = IndexQuery.exact( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
+            break;
+        case PREFIX:
+            query = IndexQuery.stringPrefix( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
+            break;
+        case SUFFIX:
+            query = IndexQuery.stringSuffix( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
+            break;
+        case CONTAINS:
+            query = IndexQuery.stringContains( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
+            break;
+        default:
+            throw new IllegalStateException( "Unknown string search mode: " + searchMode );
+        }
+        return nodesByLabelAndProperty( transaction, labelId, query );
+    }
+
+    @Override
     public ResourceIterable<Node> getAllNodes()
     {
         KernelTransaction ktx = (KernelTransaction) kernelTransaction();
@@ -360,6 +406,57 @@ public class TopLevelTransaction implements InternalTransaction
     public void setMetaData( Map<String,Object> txMeta )
     {
         transaction.setMetaData( txMeta );
+    }
+
+    private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )
+    {
+        Statement statement = transaction.acquireStatement();
+        Read read = transaction.dataRead();
+
+        if ( query.propertyKeyId() == TokenRead.NO_TOKEN || labelId == TokenRead.NO_TOKEN )
+        {
+            statement.close();
+            return emptyResourceIterator();
+        }
+        IndexDescriptor index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
+        if ( index != IndexDescriptor.NO_INDEX )
+        {
+            // Ha! We found an index - let's use it to find matching nodes
+            try
+            {
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
+                IndexReadSession indexSession = read.indexReadSession( index );
+                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
+
+                return new NodeCursorResourceIterator<>( cursor, statement, facade::newNodeProxy );
+            }
+            catch ( KernelException e )
+            {
+                // weird at this point but ignore and fallback to a label scan
+            }
+        }
+
+        return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, query );
+    }
+
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex(
+            Statement statement, int labelId, IndexQuery... queries )
+    {
+        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+
+        NodeLabelIndexCursor nodeLabelCursor = transaction.cursors().allocateNodeLabelIndexCursor();
+        NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor();
+        PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor();
+
+        transaction.dataRead().nodeLabelScan( labelId, nodeLabelCursor );
+
+        return new NodeLabelPropertyIterator( transaction.dataRead(),
+                nodeLabelCursor,
+                nodeCursor,
+                propertyCursor,
+                statement,
+                facade::newNodeProxy,
+                queries );
     }
 
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )

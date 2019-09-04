@@ -163,6 +163,35 @@ public interface Transaction extends AutoCloseable
     ResourceIterable<String> getAllPropertyKeys();
 
     /**
+     * Returns all nodes having a given label, and a property value of type String or Character matching the
+     * given value template and search mode.
+     * <p>
+     * If an online index is found, it will be used to look up the requested nodes.
+     * If no indexes exist for the label/property combination, the database will
+     * scan all labeled nodes looking for matching property values.
+     * <p>
+     * The search mode and value template are used to select nodes of interest. The search mode can
+     * be one of
+     * <ul>
+     *   <li>EXACT: The value has to match the template exactly. This is the same behavior as {@link GraphDatabaseService#findNode(Label, String, Object)}.</li>
+     *   <li>PREFIX: The value must have a prefix matching the template.</li>
+     *   <li>SUFFIX: The value must have a suffix matching the template.</li>
+     *   <li>CONTAINS: The value must contain the template. Only exact matches are supported.</li>
+     * </ul>
+     * Note that in Neo4j the Character 'A' will be treated the same way as the String 'A'.
+     * <p>
+     * Please ensure that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param label      consider nodes with this label
+     * @param key        required property key
+     * @param template   required property value template
+     * @param searchMode required property value template
+     * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
+     */
+    ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode );
+
+    /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter
      * if {@link #commit()} ()} is invoked afterwards -- the transaction will still be rolled back.

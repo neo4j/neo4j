@@ -27,9 +27,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -186,6 +188,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             public ResourceIterable<String> getAllPropertyKeys()
             {
                 return transaction.getAllPropertyKeys();
+            }
+
+            @Override
+            public ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
+            {
+                return transaction.findNodes( label, key, template, searchMode );
             }
 
             @Override

@@ -97,7 +97,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
-            collectNodes( found, db.findNodes( LABEL, KEY, template, searchMode ) );
+            collectNodes( found, tx.findNodes( LABEL, KEY, template, searchMode ) );
         }
 
         // THEN
@@ -117,7 +117,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
             expected.add( createNode( db, map( KEY, matching[2] ), LABEL ).getId() );
             createNode( db, map( KEY, nonMatching[2] ), LABEL );
 
-            collectNodes( found, db.findNodes( LABEL, KEY, template, searchMode ) );
+            collectNodes( found, tx.findNodes( LABEL, KEY, template, searchMode ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -142,7 +142,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
                 expected.remove( id );
             }
 
-            collectNodes( found, db.findNodes( LABEL, KEY, template, searchMode ) );
+            collectNodes( found, tx.findNodes( LABEL, KEY, template, searchMode ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -175,7 +175,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
                 expected.remove( id );
             }
 
-            collectNodes( found, db.findNodes( LABEL, KEY, template, searchMode ) );
+            collectNodes( found, tx.findNodes( LABEL, KEY, template, searchMode ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );

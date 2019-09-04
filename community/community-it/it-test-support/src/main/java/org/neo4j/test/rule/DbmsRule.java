@@ -36,11 +36,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.ResultConsumer;
-import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.Schema;
@@ -512,12 +510,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
     {
         return database.findNodes( label, propertyValues );
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
-    {
-        return database.findNodes( label, key, template, searchMode );
     }
 
     @Override
