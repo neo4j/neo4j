@@ -166,14 +166,14 @@ public class Neo4jMatchers
         };
     }
 
-    public static TypeSafeDiagnosingMatcher<GraphDatabaseService> hasNoNodes( final Label withLabel )
+    public static TypeSafeDiagnosingMatcher<Transaction> hasNoNodes( final Label withLabel )
     {
         return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
-            protected boolean matchesSafely( GraphDatabaseService db, Description mismatchDescription )
+            protected boolean matchesSafely( Transaction tx, Description mismatchDescription )
             {
-                Set<Node> found = asSet( db.findNodes( withLabel ) );
+                Set<Node> found = asSet( tx.findNodes( withLabel ) );
                 if ( !found.isEmpty() )
                 {
                     mismatchDescription.appendText( "found " + found.toString() );
@@ -190,15 +190,15 @@ public class Neo4jMatchers
         };
     }
 
-    public static TypeSafeDiagnosingMatcher<GraphDatabaseService> hasNodes( final Label withLabel, final Node... expectedNodes )
+    public static TypeSafeDiagnosingMatcher<Transaction> hasNodes( final Label withLabel, final Node... expectedNodes )
     {
         return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
-            protected boolean matchesSafely( GraphDatabaseService db, Description mismatchDescription )
+            protected boolean matchesSafely( Transaction tx, Description mismatchDescription )
             {
                 Set<Node> expected = asSet( expectedNodes );
-                Set<Node> found = asSet( db.findNodes( withLabel ) );
+                Set<Node> found = asSet( tx.findNodes( withLabel ) );
                 if ( !expected.equals( found ) )
                 {
                     mismatchDescription.appendText( "found " + found.toString() );
@@ -316,16 +316,15 @@ public class Neo4jMatchers
         return new PropertyMatcher( propertyName );
     }
 
-    public static Deferred<Node> findNodesByLabelAndProperty( final Label label, final String propertyName,
-                                                              final Object propertyValue,
-                                                              final GraphDatabaseService db )
+    public static Deferred<Node> findNodesByLabelAndProperty( final Label label, final String propertyName, final Object propertyValue,
+            final GraphDatabaseService db, Transaction transaction )
     {
         return new Deferred<>( db )
         {
             @Override
             protected Iterable<Node> manifest()
             {
-                return loop( db.findNodes( label, propertyName, propertyValue ) );
+                return loop( transaction.findNodes( label, propertyName, propertyValue ) );
             }
         };
     }

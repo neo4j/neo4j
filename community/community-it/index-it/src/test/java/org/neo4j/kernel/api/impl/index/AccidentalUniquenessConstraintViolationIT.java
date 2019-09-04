@@ -86,8 +86,8 @@ class AccidentalUniquenessConstraintViolationIT
             assertEquals( value2, fourtyTwo.getProperty( BAR ) );
             assertThrows( NotFoundException.class, () -> fourtyOne.getProperty( BAR ) );
 
-            assertEquals( fourtyTwo, db.findNode( Foo, BAR, value2 ) );
-            assertNull( db.findNode( Foo, BAR, value1 ) );
+            assertEquals( fourtyTwo, tx.findNode( Foo, BAR, value2 ) );
+            assertNull( tx.findNode( Foo, BAR, value1 ) );
             tx.commit();
         }
     }

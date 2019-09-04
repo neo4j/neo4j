@@ -80,8 +80,8 @@ class TestShortestPath extends Neo4jAlgoTestCase
             final Label F = Label.label( "F" );
             final RelationshipType relType = RelationshipType.withName( "TO" );
             recursiveSnowFlake( transaction, null, 0, 4, 5, new Label[]{A, B, C, D, E}, relType );
-            Node a = getNodeByLabel( A );
-            try ( ResourceIterator<Node> allE = graphDb.findNodes( E ) )
+            Node a = getNodeByLabel( transaction, A );
+            try ( ResourceIterator<Node> allE = transaction.findNodes( E ) )
             {
                 while ( allE.hasNext() )
                 {
@@ -93,7 +93,7 @@ class TestShortestPath extends Neo4jAlgoTestCase
             final CountingPathExpander countingPathExpander = new CountingPathExpander( forTypeAndDirection( relType, OUTGOING ) );
             var context = new BasicEvaluationContext( transaction, graphDb );
             final ShortestPath shortestPath = new ShortestPath( context, Integer.MAX_VALUE, countingPathExpander, Integer.MAX_VALUE );
-            try ( ResourceIterator<Node> allF = graphDb.findNodes( F ) )
+            try ( ResourceIterator<Node> allF = transaction.findNodes( F ) )
             {
                 while ( allF.hasNext() )
                 {
@@ -108,9 +108,9 @@ class TestShortestPath extends Neo4jAlgoTestCase
         }
     }
 
-    private static Node getNodeByLabel( Label label )
+    private static Node getNodeByLabel( Transaction transaction, Label label )
     {
-        try ( ResourceIterator<Node> iterator = graphDb.findNodes( label ) )
+        try ( ResourceIterator<Node> iterator = transaction.findNodes( label ) )
         {
             return iterator.next();
         }
@@ -158,7 +158,8 @@ class TestShortestPath extends Neo4jAlgoTestCase
             {
                 final Iterable<Path> paths = finder.findAllPaths( graph.getNode( transaction, "s" ), graph.getNode( transaction, "t" ) );
                 assertPaths( paths, "s,t", "s,t" );
-                assertPaths( asList( finder.findSinglePath( graph.getNode( transaction, "s" ), graph.getNode( transaction, "t" ) ) ), "s,t" );
+                assertPaths( asList( finder.findSinglePath( graph.getNode( transaction, "s" ),
+                        graph.getNode( transaction, "t" ) ) ), "s,t" );
             }, forTypeAndDirection( R1, BOTH ), 1 );
             transaction.commit();
         }

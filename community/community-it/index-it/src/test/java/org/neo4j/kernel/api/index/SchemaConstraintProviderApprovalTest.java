@@ -176,7 +176,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         {
             for ( TestValue value : TestValue.values() )
             {
-                addToResults( db, results, value );
+                addToResults( tx, results, value );
             }
             tx.commit();
         }
@@ -194,10 +194,9 @@ public abstract class SchemaConstraintProviderApprovalTest
         }
     }
 
-    private static void addToResults( GraphDatabaseService db, HashMap<TestValue, Set<Object>> results,
-                                      TestValue value )
+    private static void addToResults( Transaction transaction, HashMap<TestValue,Set<Object>> results, TestValue value )
     {
-        ResourceIterator<Node> foundNodes = db.findNodes( label( LABEL ), PROPERTY_KEY, value.value );
+        ResourceIterator<Node> foundNodes = transaction.findNodes( label( LABEL ), PROPERTY_KEY, value.value );
         Set<Object> propertyValues = asSet( Iterators.map( PROPERTY_EXTRACTOR, foundNodes ) );
         results.put( value, propertyValues );
     }

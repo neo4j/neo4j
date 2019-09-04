@@ -139,7 +139,7 @@ public class IndexPopulationIT
 
         try ( Transaction transaction = database.beginTx() )
         {
-            try ( ResourceIterator<Node> nodes = database.findNodes( nodesLabel ) )
+            try ( ResourceIterator<Node> nodes = transaction.findNodes( nodesLabel ) )
             {
                 assertEquals( 1, Iterators.count( nodes ) );
             }
@@ -192,7 +192,7 @@ public class IndexPopulationIT
         // then
         try ( Transaction tx = database.beginTx() )
         {
-            ResourceIterator<Node> nodes = database.findNodes( nodeLabel, key, value );
+            ResourceIterator<Node> nodes = tx.findNodes( nodeLabel, key, value );
             long nodeCount = Iterators.count( nodes );
             assertEquals( "expected exactly one hit in index but was ",1, nodeCount );
             nodes.close();

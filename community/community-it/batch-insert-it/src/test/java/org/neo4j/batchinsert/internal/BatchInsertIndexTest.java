@@ -126,8 +126,8 @@ class BatchInsertIndexTest
             awaitIndexesOnline( db );
             try ( Transaction tx = db.beginTx() )
             {
-                assertSingleCorrectHit( db, collidingPoints.first() );
-                assertSingleCorrectHit( db, collidingPoints.other() );
+                assertSingleCorrectHit( collidingPoints.first(), tx );
+                assertSingleCorrectHit( collidingPoints.other(), tx );
                 tx.commit();
             }
         }
@@ -168,9 +168,9 @@ class BatchInsertIndexTest
         }
     }
 
-    private static void assertSingleCorrectHit( GraphDatabaseService db, PointValue point )
+    private static void assertSingleCorrectHit( PointValue point, Transaction tx )
     {
-        ResourceIterator<Node> nodes = db.findNodes( TestLabels.LABEL_ONE, "prop", point );
+        ResourceIterator<Node> nodes = tx.findNodes( TestLabels.LABEL_ONE, "prop", point );
         assertTrue( nodes.hasNext() );
         Node node = nodes.next();
         Object prop = node.getProperty( "prop" );

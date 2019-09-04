@@ -313,7 +313,7 @@ class SchemaAcceptanceTest
         // THEN
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db, transaction ), containsOnly( node ) );
         }
     }
 
@@ -338,7 +338,7 @@ class SchemaAcceptanceTest
         {
             // THEN it should exist and be usable
             assertThat( getIndexes( db, label ), contains( index ) );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db, transaction ), containsOnly( node ) );
             transaction.commit();
         }
     }

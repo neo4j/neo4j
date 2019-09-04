@@ -518,9 +518,9 @@ class TestTransactionEvents
         }
 
         // Then we should be able to look it up through the index.
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.findNode( label, "indexed", "value" );
+            Node node = tx.findNode( label, "indexed", "value" );
             assertThat( node.getProperty( "random" ), is( 42 ) );
         }
     }
@@ -563,9 +563,9 @@ class TestTransactionEvents
         }
 
         // Then we should be able to look it up through the index.
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.findNode( label, "indexed", "value" );
+            Node node = tx.findNode( label, "indexed", "value" );
             assertThat( node.getProperty( "random" ), is( 42 ) );
         }
     }

@@ -123,9 +123,9 @@ public class LabelAndIndexUpdateBatchingIT
             try ( Transaction tx = db.beginTx() )
             {
                 assertNotNull( "Verification node not found",
-                        singleOrNull( db.findNodes( LABEL, PROPERTY_KEY, otherNode ) ) ); // just to verify
+                        singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, otherNode ) ) ); // just to verify
                 assertNotNull( "Node N not found",
-                        singleOrNull( db.findNodes( LABEL, PROPERTY_KEY, nodeN ) ) );
+                        singleOrNull( tx.findNodes( LABEL, PROPERTY_KEY, nodeN ) ) );
                 tx.commit();
             }
         }

@@ -130,7 +130,7 @@ class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( Collections.<Node>emptyList(),
-                Iterators.asList( db.findNodes( label, "key", "value" ) ), "Updates not propagated correctly during recovery" );
+                Iterators.asList( tx.findNodes( label, "key", "value" ) ), "Updates not propagated correctly during recovery" );
             tx.commit();
         }
     }
@@ -165,7 +165,7 @@ class TestRecoveryScenarios
         // -- really the problem was that recovery threw exception, so mostly assert that.
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( node, db.findNode( label, "key", "value" ) );
+            assertEquals( node, tx.findNode( label, "key", "value" ) );
             tx.commit();
         }
     }

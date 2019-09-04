@@ -62,7 +62,7 @@ class TestConcurrentIteratorModification
         try ( Transaction tx = db.beginTx() )
         {
             node3 = tx.createNode( label );
-            ResourceIterator<Node> iterator = db.findNodes( label );
+            ResourceIterator<Node> iterator = tx.findNodes( label );
             node3.removeLabel( label );
             tx.createNode( label );
             while ( iterator.hasNext() )

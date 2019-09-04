@@ -71,9 +71,9 @@ class PointPropertiesRecordFormatIT
 
         managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
         GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
-        try ( Transaction ignored = restartedDatabase.beginTx() )
+        try ( Transaction transaction = restartedDatabase.beginTx() )
         {
-            assertNotNull( restartedDatabase.findNode( pointNode, propertyKey, pointValue ) );
+            assertNotNull( transaction.findNode( pointNode, propertyKey, pointValue ) );
         }
         managementService.shutdown();
     }
@@ -98,9 +98,9 @@ class PointPropertiesRecordFormatIT
 
         managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
         GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
-        try ( Transaction ignored = restartedDatabase.beginTx() )
+        try ( Transaction tx = restartedDatabase.beginTx() )
         {
-            try ( ResourceIterator<Node> nodes = restartedDatabase.findNodes( pointNode ) )
+            try ( ResourceIterator<Node> nodes = tx.findNodes( pointNode ) )
             {
                 Node node = nodes.next();
                 PointValue[] points = (PointValue[]) node.getProperty( propertyKey );

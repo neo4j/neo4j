@@ -100,7 +100,7 @@ class IndexSamplingIntegrationTest
             {
                 for ( int i = 0; i < (nodes / 10) ; i++ )
                 {
-                    try ( ResourceIterator<Node> nodes = db.findNodes( label, property, names[i % names.length] ) )
+                    try ( ResourceIterator<Node> nodes = tx.findNodes( label, property, names[i % names.length] ) )
                     {
                         nodes.next().delete();
                     }
@@ -166,7 +166,7 @@ class IndexSamplingIntegrationTest
                     if ( i % 10 == 0 )
                     {
                         deletedNodes++;
-                        db.findNode( label, property, "" + i ).delete();
+                        tx.findNode( label, property, "" + i ).delete();
                     }
                 }
                 tx.commit();

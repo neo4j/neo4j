@@ -224,7 +224,7 @@ class DatabaseRecoveryIT
 
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = findNodeByLabel( database, testLabel );
+            Node node = findNodeByLabel( transaction, testLabel );
             node.setProperty( propertyToDelete, createLongString() );
             node.setProperty( validPropertyName, createLongString() );
             transaction.commit();
@@ -232,7 +232,7 @@ class DatabaseRecoveryIT
 
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = findNodeByLabel( database, testLabel );
+            Node node = findNodeByLabel( transaction, testLabel );
             node.removeProperty( propertyToDelete );
             transaction.commit();
         }
@@ -243,9 +243,9 @@ class DatabaseRecoveryIT
         // database should be restored and node should have expected properties
         DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getStoreLayout().storeDirectory() );
         GraphDatabaseService recoveredDatabase = recoveredService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction ignored = recoveredDatabase.beginTx() )
+        try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
-            Node node = findNodeByLabel( recoveredDatabase, testLabel );
+            Node node = findNodeByLabel( transaction, testLabel );
             assertFalse( node.hasProperty( propertyToDelete ) );
             assertTrue( node.hasProperty( validPropertyName ) );
         }
@@ -300,7 +300,7 @@ class DatabaseRecoveryIT
                 // now we can observe partially committed state: node is in the index and relationship still present
                 try ( Transaction tx = db.beginTx() )
                 {
-                    assertNotNull( findNode( db, label, property, "B" ) );
+                    assertNotNull( findNode( label, property, "B", tx ) );
                     assertNotNull( db.getRelationshipById( relationshipId ) );
                     tx.commit();
                 }
@@ -314,7 +314,7 @@ class DatabaseRecoveryIT
                 // now we observe correct state: node is in the index and relationship is removed
                 try ( Transaction tx = db.beginTx() )
                 {
-                    assertNotNull( findNode( db, label, property, "B" ) );
+                    assertNotNull( findNode( label, property, "B", tx ) );
                     assertRelationshipNotExist( db, relationshipId );
                     tx.commit();
                 }
@@ -738,17 +738,17 @@ class DatabaseRecoveryIT
         }
     }
 
-    private static Node findNodeByLabel( GraphDatabaseService database, Label testLabel )
+    private static Node findNodeByLabel( Transaction transaction, Label testLabel )
     {
-        try ( ResourceIterator<Node> nodes = database.findNodes( testLabel ) )
+        try ( ResourceIterator<Node> nodes = transaction.findNodes( testLabel ) )
         {
             return nodes.next();
         }
     }
 
-    private static Node findNode( GraphDatabaseService db, Label label, String property, String value )
+    private static Node findNode( Label label, String property, String value, Transaction transaction )
     {
-        try ( ResourceIterator<Node> nodes = db.findNodes( label, property, value ) )
+        try ( ResourceIterator<Node> nodes = transaction.findNodes( label, property, value ) )
         {
             return Iterators.single( nodes );
         }

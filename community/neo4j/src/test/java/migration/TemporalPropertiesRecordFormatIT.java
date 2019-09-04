@@ -70,9 +70,9 @@ class TemporalPropertiesRecordFormatIT
 
         managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
         GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
-        try ( Transaction ignored = restartedDatabase.beginTx() )
+        try ( Transaction transaction = restartedDatabase.beginTx() )
         {
-            assertNotNull( restartedDatabase.findNode( label, propertyKey, date ) );
+            assertNotNull( transaction.findNode( label, propertyKey, date ) );
         }
         managementService.shutdown();
     }
@@ -97,9 +97,9 @@ class TemporalPropertiesRecordFormatIT
 
         managementService = startDatabaseServiceWithUpgrade( storeDir, Standard.LATEST_NAME );
         GraphDatabaseService restartedDatabase = getDefaultDatabase( managementService );
-        try ( Transaction ignored = restartedDatabase.beginTx() )
+        try ( Transaction transaction = restartedDatabase.beginTx() )
         {
-            try ( ResourceIterator<Node> nodes = restartedDatabase.findNodes( label ) )
+            try ( ResourceIterator<Node> nodes = transaction.findNodes( label ) )
             {
                 Node node = nodes.next();
                 LocalDate[] points = (LocalDate[]) node.getProperty( propertyKey );

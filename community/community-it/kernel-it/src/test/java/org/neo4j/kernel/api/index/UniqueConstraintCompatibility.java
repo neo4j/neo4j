@@ -807,9 +807,9 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      *     return single( db.findNodesByLabelAndProperty( label, property, value ), null );
      * </code></pre>
      */
-    private Node lookUpNode( Object value )
+    private Node lookUpNode( Transaction tx, Object value )
     {
-        return db.findNode( label, property, value );
+        return tx.findNode( label, property, value );
     }
 
     // -- Set Up: Transaction handling
@@ -932,7 +932,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             @Override
             public void accept( Transaction transaction )
             {
-                assertThat( lookUpNode( propertyValue ), matcher );
+                assertThat( lookUpNode( transaction, propertyValue ), matcher );
             }
         };
     }

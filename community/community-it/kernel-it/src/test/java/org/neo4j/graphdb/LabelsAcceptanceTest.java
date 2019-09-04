@@ -388,8 +388,11 @@ class LabelsAcceptanceTest
         }
 
         // THEN
-        assertThat( db, inTx( db, hasNodes( Labels.MY_LABEL, node ) ) );
-        assertThat( db, inTx( db, hasNoNodes( Labels.MY_OTHER_LABEL ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( transaction, hasNodes( Labels.MY_LABEL, node ) );
+            assertThat( transaction, hasNoNodes( Labels.MY_OTHER_LABEL ) );
+        }
     }
 
     @Test
@@ -408,8 +411,8 @@ class LabelsAcceptanceTest
             node3 = tx.createNode( Labels.MY_LABEL );
             node2.removeLabel( Labels.MY_LABEL );
             // extracted here to be asserted below
-            nodesWithMyLabel = asSet( db.findNodes( Labels.MY_LABEL ) );
-            nodesWithMyOtherLabel = asSet( db.findNodes( Labels.MY_OTHER_LABEL ) );
+            nodesWithMyLabel = asSet( tx.findNodes( Labels.MY_LABEL ) );
+            nodesWithMyOtherLabel = asSet( tx.findNodes( Labels.MY_OTHER_LABEL ) );
             tx.commit();
         }
 

@@ -187,7 +187,7 @@ public abstract class StringLengthIndexValidationIT
         {
             for ( String string : strings.keySet() )
             {
-                Node node = db.findNode( LABEL_ONE, propKey, string );
+                Node node = tx.findNode( LABEL_ONE, propKey, string );
                 assertEquals( strings.get( string ).longValue(), node.getId() );
             }
             tx.commit();
@@ -236,7 +236,7 @@ public abstract class StringLengthIndexValidationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.findNode( LABEL_ONE, propKey, propValue );
+            Node node = tx.findNode( LABEL_ONE, propKey, propValue );
             assertNotNull( node );
             assertEquals( "node id", expectedNodeId, node.getId() );
             tx.commit();

@@ -215,6 +215,24 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
 
             @Override
+            public Node findNode( Label label, String key, Object value )
+            {
+                return transaction.findNode( label, key, value );
+            }
+
+            @Override
+            public ResourceIterator<Node> findNodes( Label label, String key, Object value )
+            {
+                return transaction.findNodes( label, key, value );
+            }
+
+            @Override
+            public ResourceIterator<Node> findNodes( Label label )
+            {
+                return transaction.findNodes( label );
+            }
+
+            @Override
             public void terminate()
             {
                 transaction.terminate();

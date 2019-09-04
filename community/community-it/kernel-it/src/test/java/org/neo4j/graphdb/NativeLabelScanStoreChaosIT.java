@@ -100,9 +100,9 @@ public class NativeLabelScanStoreChaosIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction ignored = dbRule.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            return asSet( dbRule.getGraphDatabaseAPI().findNodes( label ) );
+            return asSet( tx.findNodes( label ) );
         }
     }
 

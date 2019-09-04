@@ -74,7 +74,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
         var db = context.databaseFacade();
         try ( var tx = db.beginTx() )
         {
-            var node = db.findNode( DATABASE_LABEL, DATABASE_NAME_PROPERTY, databaseName );
+            var node = tx.findNode( DATABASE_LABEL, DATABASE_NAME_PROPERTY, databaseName );
 
             if ( node == null )
             {

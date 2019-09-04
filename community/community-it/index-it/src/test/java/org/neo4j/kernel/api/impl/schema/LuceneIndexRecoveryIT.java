@@ -281,7 +281,7 @@ class LuceneIndexRecoveryIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Iterator<Node> iter = db.findNodes( myLabel, NUM_BANANAS_KEY, value );
+            Iterator<Node> iter = tx.findNodes( myLabel, NUM_BANANAS_KEY, value );
             Set<Node> nodes = asUniqueSet( iter );
             tx.commit();
             return nodes;

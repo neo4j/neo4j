@@ -32,7 +32,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -87,7 +86,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenNotFoundException;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
@@ -302,42 +300,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             throw e.asUserException();
         }
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes( final Label myLabel, final String key, final Object value )
-    {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        TokenRead tokenRead = transaction.tokenRead();
-        int labelId = tokenRead.nodeLabel( myLabel.name() );
-        int propertyId = tokenRead.propertyKey( key );
-        return nodesByLabelAndProperty( transaction, labelId, IndexQuery.exact( propertyId, Values.of( value ) ) );
-    }
-
-    @Override
-    public Node findNode( final Label myLabel, final String key, final Object value )
-    {
-        try ( ResourceIterator<Node> iterator = findNodes( myLabel, key, value ) )
-        {
-            if ( !iterator.hasNext() )
-            {
-                return null;
-            }
-            Node node = iterator.next();
-            if ( iterator.hasNext() )
-            {
-                throw new MultipleFoundException(
-                        format( "Found multiple nodes with label: '%s', property name: '%s' and property " +
-                                "value: '%s' while only one was expected.", myLabel, key, value ) );
-            }
-            return node;
-        }
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes( final Label myLabel )
-    {
-        return allNodesWithLabel( myLabel );
     }
 
     private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,

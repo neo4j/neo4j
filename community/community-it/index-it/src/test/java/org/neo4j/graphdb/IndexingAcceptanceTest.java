@@ -118,8 +118,8 @@ public class IndexingAcceptanceTest
         try ( Transaction transaction = beansAPI.beginTx() )
         {
             // THEN
-            assertThat( findNodesByLabelAndProperty( LABEL1, "key", bigValue, beansAPI ), containsOnly( myNode ) );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "key", smallValue, beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key", bigValue, beansAPI, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key", smallValue, beansAPI, transaction ), isEmpty() );
         }
     }
 
@@ -158,7 +158,7 @@ public class IndexingAcceptanceTest
             // Then
             assertThat( myNode, hasProperty( "key2" ).withValue( LONG_STRING ) );
             assertThat( myNode, hasProperty( "key3" ).withValue( LONG_STRING ) );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "key2", LONG_STRING, beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key2", LONG_STRING, beansAPI, transaction ), containsOnly( myNode ) );
         }
     }
 
@@ -172,7 +172,7 @@ public class IndexingAcceptanceTest
         // When
         try ( Transaction transaction = beansAPI.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), containsOnly( myNode ) );
         }
     }
 
@@ -187,7 +187,7 @@ public class IndexingAcceptanceTest
         // When
         try ( Transaction transaction = beansAPI.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), containsOnly( myNode ) );
         }
     }
 
@@ -216,14 +216,14 @@ public class IndexingAcceptanceTest
             assertThat( myNode, hasProperty( "name" ).withValue( "Einstein" ) );
             assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
 
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI, transaction ), isEmpty() );
 
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI, transaction ), containsOnly( myNode ) );
 
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI, transaction ), containsOnly( myNode ) );
             transaction.commit();
         }
     }
@@ -254,17 +254,17 @@ public class IndexingAcceptanceTest
             assertThat( myNode, hasProperty( "name" ).withValue( "Feynman" ) );
             assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
 
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", beansAPI, transaction ), isEmpty() );
 
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", beansAPI, transaction ), containsOnly( myNode ) );
 
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", beansAPI, transaction ), containsOnly( myNode ) );
             transaction.commit();
         }
     }
@@ -278,7 +278,7 @@ public class IndexingAcceptanceTest
         // When/Then
         try ( Transaction transaction = beansAPI.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), isEmpty() );
         }
     }
 
@@ -293,12 +293,12 @@ public class IndexingAcceptanceTest
         // WHEN THEN
         try ( Transaction transaction = beansAPI.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Mattias", beansAPI ), containsOnly( firstNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Mattias", beansAPI, transaction ), containsOnly( firstNode ) );
         }
         Node secondNode = createNode( beansAPI, map( "name", "Taylor" ), LABEL1 );
         try ( Transaction transaction = beansAPI.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Taylor", beansAPI ), containsOnly( secondNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Taylor", beansAPI, transaction ), containsOnly( secondNode ) );
         }
     }
 
@@ -316,9 +316,9 @@ public class IndexingAcceptanceTest
         long sizeAfterDelete;
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            sizeBeforeDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
             firstNode.delete();
-            sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            sizeAfterDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
             tx.commit();
         }
 
@@ -340,9 +340,9 @@ public class IndexingAcceptanceTest
         long sizeAfterDelete;
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            sizeBeforeDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
             firstNode.delete();
-            sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            sizeAfterDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
             tx.commit();
         }
 
@@ -364,12 +364,12 @@ public class IndexingAcceptanceTest
         long sizeAfterDelete;
         try ( Transaction transaction = beansAPI.beginTx() )
         {
-            sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            sizeBeforeDelete = count( transaction.findNodes( LABEL1, "name", "Mattias" ) );
         }
         createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
         try ( Transaction transaction = beansAPI.beginTx() )
         {
-            sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            sizeAfterDelete = count( transaction.findNodes( LABEL1, "name", "Mattias" ) );
         }
 
         // THEN
@@ -455,7 +455,7 @@ public class IndexingAcceptanceTest
 
         try ( Transaction tx = graph.beginTx() )
         {
-            ResourceIterator<Node> result = graph.findNodes( LABEL1, "name", "Stefan" );
+            ResourceIterator<Node> result = tx.findNodes( LABEL1, "name", "Stefan" );
             assertEquals( asSet( node1, node2 ), asSet( result ) );
 
             tx.commit();
@@ -483,7 +483,7 @@ public class IndexingAcceptanceTest
 
         try ( Transaction tx = graph.beginTx() )
         {
-            graph.findNode( LABEL1, "name", "Stefan" );
+            tx.findNode( LABEL1, "name", "Stefan" );
             fail( "Expected MultipleFoundException but got none" );
         }
         catch ( MultipleFoundException e )
@@ -538,7 +538,7 @@ public class IndexingAcceptanceTest
                 String key = propertyKeyPrefix + i;
                 String value = propertyValuePrefix + i;
 
-                ResourceIterator<Node> nodes = db.findNodes( label, key, value );
+                ResourceIterator<Node> nodes = tx.findNodes( label, key, value );
                 assertEquals( 1, Iterators.count( nodes ) );
             }
             tx.commit();
@@ -551,7 +551,7 @@ public class IndexingAcceptanceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node found = db.findNode( label, propertyKey, value );
+            Node found = tx.findNode( label, propertyKey, value );
             assertThat( found, equalTo( created ) );
             found.delete();
             tx.commit();

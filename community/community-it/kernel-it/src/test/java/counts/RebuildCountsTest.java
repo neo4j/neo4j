@@ -163,7 +163,7 @@ class RebuildCountsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( ResourceIterator<Node> humans = db.findNodes( HUMAN ) )
+            try ( ResourceIterator<Node> humans = tx.findNodes( HUMAN ) )
             {
                 while ( humans.hasNext() )
                 {

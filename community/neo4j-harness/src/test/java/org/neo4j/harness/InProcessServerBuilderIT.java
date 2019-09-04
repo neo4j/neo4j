@@ -397,7 +397,7 @@ class InProcessServerBuilderIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = single( db.findNodes( label ) );
+            Node node = single( tx.findNodes( label ) );
             assertEquals( propertyValue, node.getProperty( propertyKey ) );
             tx.commit();
         }

@@ -274,6 +274,54 @@ public interface Transaction extends AutoCloseable
     ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 );
 
     /**
+     * Equivalent to {@link #findNodes(Label, String, Object)}, however it must find no more than one
+     * {@link Node node} or it will throw an exception.
+     *
+     * @param label consider nodes with this label
+     * @param key   required property key
+     * @param value required property value
+     * @return the matching node or <code>null</code> if none could be found
+     * @throws MultipleFoundException if more than one matching {@link Node node} is found
+     */
+    Node findNode( Label label, String key, Object value );
+
+    /**
+     * Returns all nodes having the label, and the wanted property value.
+     * If an online index is found, it will be used to look up the requested
+     * nodes.
+     * <p>
+     * If no indexes exist for the label/property combination, the database will
+     * scan all labeled nodes looking for the property value.
+     * <p>
+     * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
+     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
+     * <p>
+     * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
+     * <p>
+     * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
+     * <p>
+     * Please ensure that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param label consider nodes with this label
+     * @param key   required property key
+     * @param value required property value
+     * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
+     */
+    ResourceIterator<Node> findNodes( Label label, String key, Object value );
+
+    /**
+     * Returns all {@link Node nodes} with a specific {@link Label label}.
+     *
+     * Please take care that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param label the {@link Label} to return nodes for.
+     * @return an iterator containing all nodes matching the label. See {@link ResourceIterator} for responsibilities.
+     */
+    ResourceIterator<Node> findNodes( Label label );
+
+    /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter
      * if {@link #commit()} ()} is invoked afterwards -- the transaction will still be rolled back.

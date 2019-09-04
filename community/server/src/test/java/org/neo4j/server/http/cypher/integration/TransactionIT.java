@@ -929,8 +929,8 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
     private void lockNodeWithLabel( Label sharedLockLabel, CountDownLatch nodeLockLatch, CountDownLatch nodeReleaseLatch )
     {
         GraphDatabaseService db = graphdb();
-        try ( Transaction ignored = db.beginTx();
-              ResourceIterator<Node> nodes = db.findNodes( sharedLockLabel ) )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterator<Node> nodes = tx.findNodes( sharedLockLabel ) )
         {
             Node node = nodes.next();
             node.setProperty( "a", "b" );

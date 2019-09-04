@@ -236,7 +236,7 @@ public class UniquenessRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( ResourceIterator<Node> person = db.findNodes( label( "Person" ) ) )
+            try ( ResourceIterator<Node> person = tx.findNodes( label( "Person" ) ) )
             {
                 Set<Object> names = new HashSet<>();
                 while ( person.hasNext() )

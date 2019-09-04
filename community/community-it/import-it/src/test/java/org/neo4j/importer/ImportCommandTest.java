@@ -226,9 +226,9 @@ class ImportCommandTest
             long nodeCount = Iterables.count( tx.getAllNodes() );
             assertEquals( 4097, nodeCount );
 
-            ResourceIterator<Node> nodes = databaseService.findNodes( label( "FIRST 4096" ) );
+            ResourceIterator<Node> nodes = tx.findNodes( label( "FIRST 4096" ) );
             assertEquals( 1, Iterators.asList( nodes ).size() );
-            nodes = databaseService.findNodes( label( "SECOND 4096" ) );
+            nodes = tx.findNodes( label( "SECOND 4096" ) );
             assertEquals( 1, Iterators.asList( nodes ).size() );
             tx.commit();
         }
@@ -952,7 +952,7 @@ class ImportCommandTest
             for ( int i = 0; i < MAX_LABEL_ID; i++ )
             {
                 Label label = label( labelName( i ) );
-                try ( ResourceIterator<Node> nodesByLabel = db.findNodes( label ) )
+                try ( ResourceIterator<Node> nodesByLabel = tx.findNodes( label ) )
                 {
                     while ( nodesByLabel.hasNext() )
                     {
@@ -1738,7 +1738,7 @@ class ImportCommandTest
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
         {
-            assertNotNull( db.findNode( label( labelName ), "name", "abc\"def\\\"ghi" ) );
+            assertNotNull( tx.findNode( label( labelName ), "name", "abc\"def\\\"ghi" ) );
         }
     }
 

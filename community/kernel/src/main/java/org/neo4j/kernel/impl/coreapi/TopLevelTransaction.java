@@ -28,6 +28,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -194,6 +196,42 @@ public class TopLevelTransaction implements InternalTransaction
     public ResourceIterable<String> getAllPropertyKeys()
     {
         return all( TokenAccess.PROPERTY_KEYS );
+    }
+
+    @Override
+    public Node findNode( final Label myLabel, final String key, final Object value )
+    {
+        try ( ResourceIterator<Node> iterator = findNodes( myLabel, key, value ) )
+        {
+            if ( !iterator.hasNext() )
+            {
+                return null;
+            }
+            Node node = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                throw new MultipleFoundException(
+                        format( "Found multiple nodes with label: '%s', property name: '%s' and property " +
+                                "value: '%s' while only one was expected.", myLabel, key, value ) );
+            }
+            return node;
+        }
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( final Label myLabel )
+    {
+        return allNodesWithLabel( myLabel );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( final Label myLabel, final String key, final Object value )
+    {
+        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.nodeLabel( myLabel.name() );
+        int propertyId = tokenRead.propertyKey( key );
+        return nodesByLabelAndProperty( transaction, labelId, IndexQuery.exact( propertyId, Values.of( value ) ) );
     }
 
     @Override
@@ -551,6 +589,23 @@ public class TopLevelTransaction implements InternalTransaction
             }
         }
         return orderedQueries;
+    }
+
+    private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
+    {
+        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        Statement statement = ktx.acquireStatement();
+
+        int labelId = ktx.tokenRead().nodeLabel( myLabel.name() );
+        if ( labelId == TokenRead.NO_TOKEN )
+        {
+            statement.close();
+            return Iterators.emptyResourceIterator();
+        }
+
+        NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
+        ktx.dataRead().nodeLabelScan( labelId, cursor );
+        return new NodeCursorResourceIterator<>( cursor, statement, facade::newNodeProxy );
     }
 
     private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )

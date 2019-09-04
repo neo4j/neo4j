@@ -104,21 +104,21 @@ public class NodeProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = Iterators.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( tx.findNodes( markerLabel ) );
             assertEquals( propertyValue, node.getProperty( testPropertyKey ) );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = Iterators.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( tx.findNodes( markerLabel ) );
             node.removeProperty( testPropertyKey );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = Iterators.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( tx.findNodes( markerLabel ) );
             assertFalse( node.hasProperty( testPropertyKey ) );
             tx.commit();
         }
@@ -140,21 +140,21 @@ public class NodeProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = Iterators.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( tx.findNodes( markerLabel ) );
             assertArrayEquals( propertyValue, (byte[]) node.getProperty( testPropertyKey ) );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = Iterators.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( tx.findNodes( markerLabel ) );
             node.removeProperty( testPropertyKey );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = Iterators.single( db.findNodes( markerLabel ) );
+            Node node = Iterators.single( tx.findNodes( markerLabel ) );
             assertFalse( node.hasProperty( testPropertyKey ) );
             tx.commit();
         }

@@ -32,11 +32,9 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.ResultConsumer;
 import org.neo4j.graphdb.Transaction;
@@ -485,24 +483,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public Relationship getRelationshipById( long id )
     {
         return database.getRelationshipById( id );
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes( Label label, String key, Object value )
-    {
-        return database.findNodes( label, key, value );
-    }
-
-    @Override
-    public Node findNode( Label label, String key, Object value )
-    {
-        return database.findNode( label, key, value );
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes( Label label )
-    {
-        return database.findNodes( label );
     }
 
     @Override

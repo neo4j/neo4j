@@ -65,8 +65,8 @@ public class BatchInsertionIT
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( db.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1L) );
-            assertThat( count( db.findNodes( label( "Admin" ), "name", "Bob" ) ), equalTo(1L) );
+            assertThat( count( tx.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1L) );
+            assertThat( count( tx.findNodes( label( "Admin" ), "name", "Bob" ) ), equalTo(1L) );
         }
     }
 
@@ -87,7 +87,7 @@ public class BatchInsertionIT
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( db.findNodes( label( "Banana" ), "name", "Bob" ) ), equalTo( 0L ) );
+            assertThat( count( tx.findNodes( label( "Banana" ), "name", "Bob" ) ), equalTo( 0L ) );
         }
 
     }

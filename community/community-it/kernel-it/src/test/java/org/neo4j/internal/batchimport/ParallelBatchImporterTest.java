@@ -395,7 +395,7 @@ public class ParallelBatchImporterTest
 
             // Labels
             long labelScanStoreEntryCount = tx.getAllLabels().stream()
-                .flatMap( l -> db.findNodes( l ).stream() )
+                .flatMap( l -> tx.findNodes( l ).stream() )
                 .count();
 
             assertEquals(

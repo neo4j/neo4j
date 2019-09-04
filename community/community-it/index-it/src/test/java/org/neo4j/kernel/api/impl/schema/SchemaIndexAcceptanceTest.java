@@ -94,9 +94,9 @@ public class SchemaIndexAcceptanceTest
 
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, "name", "One", db ), containsOnly( node1 ) );
-            assertThat( findNodesByLabelAndProperty( label, "name", "Two", db ), containsOnly( node2 ) );
-            assertThat( findNodesByLabelAndProperty( label, "name", "Three", db ), containsOnly( node3 ) );
+            assertThat( findNodesByLabelAndProperty( label, "name", "One", db, transaction ), containsOnly( node1 ) );
+            assertThat( findNodesByLabelAndProperty( label, "name", "Two", db, transaction ), containsOnly( node2 ) );
+            assertThat( findNodesByLabelAndProperty( label, "name", "Three", db, transaction ), containsOnly( node3 ) );
         }
     }
 
@@ -117,9 +117,9 @@ public class SchemaIndexAcceptanceTest
         assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ));
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db, transaction ), containsOnly( node1 ) );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db, transaction ), isEmpty() );
             transaction.commit();
         }
     }
@@ -141,9 +141,9 @@ public class SchemaIndexAcceptanceTest
         assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ) );
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"}, db ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db, transaction ), containsOnly( node1 ) );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"}, db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db, transaction ), isEmpty() );
         }
 
     }
@@ -166,9 +166,9 @@ public class SchemaIndexAcceptanceTest
         assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ) );
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db, transaction ), containsOnly( node1 ) );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db, transaction ), isEmpty() );
         }
     }
 
@@ -234,7 +234,7 @@ public class SchemaIndexAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : loop( db.findNodes( label, propertyKey, 3323 ) ) )
+            for ( Node node : loop( tx.findNodes( label, propertyKey, 3323 ) ) )
             {
                 count( node.getLabels() );
             }

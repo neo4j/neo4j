@@ -71,7 +71,7 @@ public class NestedIndexReadersIT
             List<ResourceIterator<Node>> iterators = new ArrayList<>();
             for ( int id = 0; id < IDS; id++ )
             {
-                iterators.add( db.findNodes( LABEL, KEY, id ) );
+                iterators.add( tx.findNodes( LABEL, KEY, id ) );
             }
 
             // then iterating over them interleaved should yield all the expected results each
@@ -114,7 +114,7 @@ public class NestedIndexReadersIT
             List<ResourceIterator<Node>> iterators = new ArrayList<>();
             for ( int id = 0; id < IDS; id++ )
             {
-                iterators.add( db.findNodes( LABEL, KEY, id ) );
+                iterators.add( tx.findNodes( LABEL, KEY, id ) );
             }
 
             // then iterating over them interleaved should yield all the expected results each

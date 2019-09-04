@@ -36,6 +36,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
@@ -69,7 +70,7 @@ public class UniqueIndexApplicationIT
         try ( var transaction = db.beginTx() )
         {
             assertThat( "Matching nodes from index lookup",
-                    listNodeIdsFromIndexLookup( label( "Label1" ), "key1", "value1" ).apply( db ),
+                    listNodeIdsFromIndexLookup( transaction, label( "Label1" ), "key1", "value1" ).apply( db ),
                     hasSize( 1 ) );
         }
     }
@@ -195,13 +196,13 @@ public class UniqueIndexApplicationIT
         };
     }
 
-    private Function<GraphDatabaseService, List<Long>> listNodeIdsFromIndexLookup(
+    private Function<GraphDatabaseService, List<Long>> listNodeIdsFromIndexLookup( Transaction tx,
             final Label label, final String propertyKey, final Object value )
     {
         return graphDb ->
         {
             ArrayList<Long> ids = new ArrayList<>();
-            for ( Node node : loop( graphDb.findNodes( label, propertyKey, value ) ) )
+            for ( Node node : loop( tx.findNodes( label, propertyKey, value ) ) )
             {
                 ids.add( node.getId() );
             }

@@ -21,9 +21,6 @@ package org.neo4j.graphdb;
 
 import java.util.function.Consumer;
 
-import static org.neo4j.graphdb.FacadeMethod.consume;
-import static org.neo4j.graphdb.Label.label;
-
 /**
  * Test convenience: all the methods on GraphDatabaseService, callable using generic interface
  */
@@ -31,10 +28,6 @@ public enum GraphDatabaseServiceFacadeMethods implements Consumer<GraphDatabaseS
 {
     GET_NODE_BY_ID( new FacadeMethod<>( "Node getNodeById( long id )", gds -> gds.getNodeById( 42 ) ) ),
     GET_RELATIONSHIP_BY_ID( new FacadeMethod<>( "Relationship getRelationshipById( long id )", gds -> gds.getRelationshipById( 42 ) ) ),
-    FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED(
-            new FacadeMethod<>( "ResourceIterator<Node> findNodeByLabelAndProperty( Label label, String key, Object value )",
-                    gds -> consume( gds.findNodes( label( "bar" ), "baz", 23 ) ) ) ),
-    FIND_NODES_BY_LABEL( new FacadeMethod<>( "ResourceIterator<Node> findNodes( Label label )", gds -> consume( gds.findNodes( label( "bar" ) ) ) ) ),
     SCHEMA( new FacadeMethod<>( "Schema schema()", GraphDatabaseService::schema ) );
 
     private final FacadeMethod<GraphDatabaseService> facadeMethod;

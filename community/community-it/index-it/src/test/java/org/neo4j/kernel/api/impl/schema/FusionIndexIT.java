@@ -121,10 +121,10 @@ public class FusionIndexIT
         try ( Transaction tx = newDb.beginTx() )
         {
             assertEquals( 1L, Iterators.stream( newDb.schema().getIndexes( label ).iterator() ).count() );
-            assertNotNull( newDb.findNode( label, propKey, numberValue ) );
-            assertNotNull( newDb.findNode( label, propKey, stringValue ) );
-            assertNotNull( newDb.findNode( label, propKey, spatialValue ) );
-            assertNotNull( newDb.findNode( label, propKey, temporalValue ) );
+            assertNotNull( tx.findNode( label, propKey, numberValue ) );
+            assertNotNull( tx.findNode( label, propKey, stringValue ) );
+            assertNotNull( tx.findNode( label, propKey, spatialValue ) );
+            assertNotNull( tx.findNode( label, propKey, temporalValue ) );
             tx.commit();
         }
     }

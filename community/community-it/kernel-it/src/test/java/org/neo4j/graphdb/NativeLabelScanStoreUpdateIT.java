@@ -197,23 +197,23 @@ class NativeLabelScanStoreUpdateIT
         }
 
         // Then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             // All the labels remaining should be in the label scan store
             for ( int l = labelsToAdd - 1; l >= labelsToRemove; l-- )
             {
                 Label label = label( "Label-" + l );
                 assertThat( "Should have found node when looking for label " + label,
-                        single( db.findNodes( label ) ), equalTo( node ) );
+                        single( tx.findNodes( label ) ), equalTo( node ) );
             }
         }
     }
 
     private void verifyFoundNodes( Label label, String sizeMismatchMessage, long... expectedNodeIds )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> nodes = db.findNodes( label );
+            ResourceIterator<Node> nodes = tx.findNodes( label );
             List<Node> nodeList = Iterators.asList( nodes );
             assertThat( sizeMismatchMessage, nodeList, Matchers.hasSize( expectedNodeIds.length ) );
             int index = 0;
@@ -247,9 +247,9 @@ class NativeLabelScanStoreUpdateIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            return asSet( db.findNodes( label ) );
+            return asSet( tx.findNodes( label ) );
         }
     }
 

@@ -164,7 +164,7 @@ public class IndexFailureOnStartupTest
         try ( Transaction tx = db.beginTx() )
         {
             assertNotNull( "Must be able to find node created while index was offline",
-                    db.findNode( label, "name", name ) );
+                    tx.findNode( label, "name", name ) );
             tx.commit();
         }
     }

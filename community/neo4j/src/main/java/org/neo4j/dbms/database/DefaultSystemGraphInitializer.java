@@ -91,7 +91,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         boolean hasDatabaseNodes = false;
         try ( Transaction tx = system.beginTx() )
         {
-            ResourceIterator<Node> nodes = system.findNodes( DATABASE_LABEL, DATABASE_NAME_PROPERTY, SYSTEM_DATABASE_NAME );
+            ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL, DATABASE_NAME_PROPERTY, SYSTEM_DATABASE_NAME );
             if ( nodes.hasNext() )
             {
                 hasDatabaseNodes = true;
@@ -144,15 +144,15 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
                 return correctDefaultFound;
             };
             // First find current default, and if it does not have the name defined as default, unset it
-            defaultFound = unsetOldNode.apply( system.findNodes( DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) );
+            defaultFound = unsetOldNode.apply( tx.findNodes( DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) );
 
             // If the current default is deleted, unset it, but do not record that we found a valid default
-            unsetOldNode.apply( system.findNodes( DELETED_DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) );
+            unsetOldNode.apply( tx.findNodes( DELETED_DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) );
 
             // If the old default was not the correct one, find the correct one and set the default flag
             if ( !defaultFound )
             {
-                Node defaultDb = system.findNode( DATABASE_LABEL, DATABASE_NAME_PROPERTY, defaultDbName.name() );
+                Node defaultDb = tx.findNode( DATABASE_LABEL, DATABASE_NAME_PROPERTY, defaultDbName.name() );
                 if ( defaultDb != null )
                 {
                     defaultDb.setProperty( DATABASE_DEFAULT_PROPERTY, true );

@@ -104,9 +104,9 @@ public class CommunityLockAcquisitionTimeoutIT
     {
         var e = assertThrows( Exception.class, () ->
         {
-            try ( Transaction ignored = database.beginTx() )
+            try ( Transaction tx = database.beginTx() )
             {
-                ResourceIterator<Node> nodes = database.findNodes( marker );
+                ResourceIterator<Node> nodes = tx.findNodes( marker );
                 Node node = nodes.next();
                 node.setProperty( TEST_PROPERTY_NAME, "b" );
 
@@ -151,7 +151,7 @@ public class CommunityLockAcquisitionTimeoutIT
                 {
                     try ( Transaction nestedTransaction = database.beginTx() )
                     {
-                        ResourceIterator<Node> nodes = database.findNodes( marker );
+                        ResourceIterator<Node> nodes = nestedTransaction.findNodes( marker );
                         Node node = nodes.next();
                         node.addLabel( Label.label( "anotherLabel" ) );
                         nestedTransaction.commit();

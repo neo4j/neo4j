@@ -72,7 +72,7 @@ class TransactionalQueryExecutionIT
 
         try ( var transaction = db.beginTx() )
         {
-            assertNotNull( db.findNode( Label.label( "NODE" ), "key", "value" ) );
+            assertNotNull( transaction.findNode( Label.label( "NODE" ), "key", "value" ) );
         }
     }
 
@@ -80,7 +80,7 @@ class TransactionalQueryExecutionIT
     {
         try ( var transaction = db.beginTx() )
         {
-            return Iterators.count( db.findNodes( marker ) );
+            return Iterators.count( transaction.findNodes( marker ) );
         }
     }
 
