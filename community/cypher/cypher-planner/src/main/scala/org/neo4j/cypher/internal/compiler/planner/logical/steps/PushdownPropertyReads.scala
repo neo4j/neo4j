@@ -137,14 +137,14 @@ case object PushdownPropertyReads {
                                                                   //       instead of GetValue
                       .map(asProperty(indexPlan.idName))
 
-                  case set: SetProperty =>
-                    Seq(Property(set.entity, set.propertyKey)(InputPosition.NONE))
+                  case SetProperty(_, variable: LogicalVariable, propertyKey, _) =>
+                    Seq(Property(variable, propertyKey)(InputPosition.NONE))
 
-                  case set: SetNodeProperty =>
-                    Seq(Property(Variable(set.idName)(InputPosition.NONE), set.propertyKey)(InputPosition.NONE))
+                  case SetNodeProperty(_, idName, propertyKey, _) =>
+                    Seq(Property(Variable(idName)(InputPosition.NONE), propertyKey)(InputPosition.NONE))
 
-                  case set: SetRelationshipProperty =>
-                    Seq(Property(Variable(set.idName)(InputPosition.NONE), set.propertyKey)(InputPosition.NONE))
+                  case SetRelationshipProperty(_, idName, propertyKey, _) =>
+                    Seq(Property(Variable(idName)(InputPosition.NONE), propertyKey)(InputPosition.NONE))
 
                   case SetNodePropertiesFromMap(_, idName, map: MapExpression, false) =>
                     propertiesFromMap(idName, map)

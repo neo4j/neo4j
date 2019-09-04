@@ -382,7 +382,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def setProperty(entity: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetProperty(source, varFor(entity), PropertyKeyName(propertyKey)(pos), ExpressionParser.parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetProperty(source, ExpressionParser.parseExpression(entity), PropertyKeyName(propertyKey)(pos), ExpressionParser.parseExpression(value))(_)))
   }
 
   def setNodeProperty(node: String, propertyKey: String, value: String): IMPL = {

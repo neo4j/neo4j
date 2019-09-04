@@ -764,4 +764,17 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
+
+  test("should ignore setProperty of non-variable when projecting") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("aProp", "bProp")
+      .projection("a.prop AS aProp", "b.prop AS bProp").withCardinality(10)
+      .setProperty("CASE WHEN n.age>m.age THEN n ELSE m END", "prop", "42").withCardinality(10)
+      .expand("(n)-->(m)").withCardinality(10)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
 }
