@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrac
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.lock.ResourceLocker;
@@ -754,6 +756,18 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         assertEquals( 2, statistics.totalTransactionPageCacheFaults() );
         assertEquals( 6, statistics.totalTransactionPageCacheHits() );
         assertEquals( 0, statistics.getWaitingTimeNanos( 0 ) );
+    }
+
+    @Test
+    void includeEpochInToString()
+    {
+        int epochTokenId = 11;
+        Epoch epoch = mock( Epoch.class );
+        when( epoch.tokenId() ).thenReturn( epochTokenId );
+        KernelTransactionImplementation transaction = newNotInitializedTransaction( () -> epoch );
+        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), Transaction.Type.implicit,
+                mock( SecurityContext.class ), 0, 1L, EMBEDDED_CONNECTION );
+        assertEquals( "KernelTransaction[epoch:" + epochTokenId + "]", transaction.toString() );
     }
 
     private LoginContext loginContext( boolean isWriteTx )

@@ -1139,7 +1139,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String toString()
     {
-        return String.format( "KernelTransaction[epoch:%d]", epoch );
+        return String.format( "KernelTransaction[epoch:%d]", epoch.tokenId() );
     }
 
     public void dispose()

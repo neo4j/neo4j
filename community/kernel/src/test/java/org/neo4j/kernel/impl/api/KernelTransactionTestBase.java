@@ -176,6 +176,11 @@ class KernelTransactionTestBase
 
     KernelTransactionImplementation newNotInitializedTransaction()
     {
+        return newNotInitializedTransaction( EpochSupplier.NO_EPOCHS );
+    }
+
+    KernelTransactionImplementation newNotInitializedTransaction( EpochSupplier epochSupplier )
+    {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
@@ -185,7 +190,7 @@ class KernelTransactionTestBase
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                 mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies, availabilityGuard,
-                new TestDatabaseIdRepository().defaultDatabase(), EpochSupplier.NO_EPOCHS );
+                new TestDatabaseIdRepository().defaultDatabase(), epochSupplier );
     }
 
     public static class CapturingCommitProcess implements TransactionCommitProcess
