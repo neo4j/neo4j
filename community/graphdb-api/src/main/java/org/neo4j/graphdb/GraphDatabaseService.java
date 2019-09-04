@@ -86,36 +86,6 @@ public interface GraphDatabaseService
     ResourceIterator<Node> findNodes( Label label, String key, Object value );
 
     /**
-     * Returns all nodes having the label, and the wanted property values.
-     * If an online index is found, it will be used to look up the requested
-     * nodes.
-     * <p>
-     * If no indexes exist for the label with all provided properties, the database will
-     * scan all labeled nodes looking for matching nodes.
-     * <p>
-     * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
-     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
-     * <p>
-     * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
-     * <p>
-     * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
-     * <p>
-     * Please ensure that the returned {@link ResourceIterator} is closed correctly and as soon as possible
-     * inside your transaction to avoid potential blocking of write operations.
-     *
-     * @param label  consider nodes with this label
-     * @param key1   required property key1
-     * @param value1 required property value of key1
-     * @param key2   required property key2
-     * @param value2 required property value of key2
-     * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
-     */
-    default ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
-    {
-        throw new UnsupportedOperationException( "findNodes by multiple property names and values is not supported." );
-    }
-
-    /**
      * Equivalent to {@link #findNodes(Label, String, Object)}, however it must find no more than one
      * {@link Node node} or it will throw an exception.
      *

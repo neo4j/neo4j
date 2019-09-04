@@ -311,7 +311,7 @@ public class IndexingCompositeQueryAcceptanceTest
             {
                 assert keys.length == 2;
                 assert values.length == 2;
-                return db.findNodes( LABEL, keys[0], values[0], keys[1], values[1] );
+                return tx.findNodes( LABEL, keys[0], values[0], keys[1], values[1] );
             };
 
     private static final IndexSeek triIndexSeek =

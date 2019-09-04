@@ -239,6 +239,17 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
+    {
+        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.nodeLabel( label.name() );
+        return nodesByLabelAndProperties( transaction, labelId,
+                IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1 ) ),
+                IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2 ) ) );
+    }
+
+    @Override
     public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
     {
         KernelTransaction transaction = (KernelTransaction) kernelTransaction();

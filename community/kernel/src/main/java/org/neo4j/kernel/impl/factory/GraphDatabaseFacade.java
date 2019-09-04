@@ -315,17 +315,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
-    {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        TokenRead tokenRead = transaction.tokenRead();
-        int labelId = tokenRead.nodeLabel( label.name() );
-        return nodesByLabelAndProperties( transaction, labelId,
-                                          IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1 ) ),
-                                          IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2 ) ) );
-    }
-
-    @Override
     public Node findNode( final Label myLabel, final String key, final Object value )
     {
         try ( ResourceIterator<Node> iterator = findNodes( myLabel, key, value ) )
