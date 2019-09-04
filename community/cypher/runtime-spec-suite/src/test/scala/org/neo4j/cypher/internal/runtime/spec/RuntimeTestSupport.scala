@@ -54,7 +54,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   private val runtimeContextManager = edition.newRuntimeContextManager(resolver, lifeSupport)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
-  var tx: InternalTransaction = _
+  var txHolder = new ThreadLocal[InternalTransaction]
 
   def start(): Unit = {
     lifeSupport.init()
@@ -81,33 +81,34 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                   subscriber: QuerySubscriber,
                   profile: Boolean): RESULT = {
-    tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    val transaction = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    txHolder.set(transaction)
     try {
-      val txContext = beginTx(tx)
+      val txContext = beginTx(transaction)
       val queryContext = newQueryContext(txContext)
       val runtimeContext = newRuntimeContext(txContext, queryContext)
 
       val result = executableQuery.run(queryContext, doProfile = profile, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
       val assertAllReleased =
         if (!workloadMode) runtimeContextManager.assertAllReleased _ else () => ()
-      resultMapper(runtimeContext, new ClosingRuntimeResult(result, tx, txContext, queryContext.resources, subscriber, assertAllReleased))
+      resultMapper(runtimeContext, new ClosingRuntimeResult(result, transaction, txContext, queryContext.resources, subscriber, assertAllReleased))
     } catch {
       case t : Throwable =>
-        Try(tx.close())
+        Try(transaction.close())
         throw t
     }
   }
 
   def compile(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
-    tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
-    val txContext = beginTx(tx)
+    var transaction = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    val txContext = beginTx(transaction)
     val runtimeContext = newRuntimeContext(txContext, newQueryContext(txContext))
     try {
       runtime.compileToExecutable(logicalQuery, runtimeContext)
     } finally {
       txContext.close()
-      tx.close()
+      transaction.close()
     }
   }
 
