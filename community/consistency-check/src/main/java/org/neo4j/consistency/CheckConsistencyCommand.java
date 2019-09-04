@@ -26,12 +26,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.ZoneId;
 import java.util.Optional;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.commandline.Util;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.DatabaseLockChecker;
 import org.neo4j.configuration.Config;
@@ -46,7 +46,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -124,7 +124,6 @@ public class CheckConsistencyCommand extends AbstractCommand
             try ( Closeable lock = DatabaseLockChecker.check( databaseLayout ) )
             {
                 checkDbState( databaseLayout, config );
-                ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
                 // Only output progress indicator if a console receives the output
                 ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
                 if ( System.console() != null )
@@ -132,9 +131,9 @@ public class CheckConsistencyCommand extends AbstractCommand
                     progressMonitorFactory = ProgressMonitorFactory.textual( System.out );
                 }
 
+                LogProvider logProvider = Util.logProviderRespectingConfig( config, System.out );
                 ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
-                        .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory,
-                                FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.out ), fileSystem,
+                        .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory, logProvider, fileSystem,
                             verbose, options.getReportDir().toFile().getCanonicalFile(),
                                 new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckLabelScanStore(),
                                         options.isCheckPropertyOwners() ) );

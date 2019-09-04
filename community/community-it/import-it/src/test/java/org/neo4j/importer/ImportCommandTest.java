@@ -2543,7 +2543,15 @@ class ImportCommandTest
     {
         final var ctx = new ExecutionContext( homeDir, homeDir.resolve( "conf" ), System.out, System.err, testDirectory.getFileSystem() );
         final var cmd = new ImportCommand( ctx );
-        new CommandLine( cmd ).setUseSimplifiedAtFiles( true ).parseArgs( arguments );
+
+        var list = new ArrayList<>( Arrays.asList( arguments ) );
+        if ( !list.contains( "--report-file" ) ) // make sure we write in test directory if not specified
+        {
+            list.add( "--report-file" );
+            list.add( testDirectory.file( "import.report" ).getAbsolutePath() );
+        }
+
+        new CommandLine( cmd ).setUseSimplifiedAtFiles( true ).parseArgs( list.toArray( new String[0] ) );
         cmd.execute();
     }
 }

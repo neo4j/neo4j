@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
+import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
@@ -57,13 +58,16 @@ import org.neo4j.internal.batchimport.staging.SpectrumExecutionMonitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;
@@ -157,8 +161,18 @@ class CsvImporter implements Importer
         LifeSupport life = new LifeSupport();
 
         File internalLogFile = databaseConfig.get( store_internal_log_path ).toFile();
-        LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fileSystem ) );
+        OutputStream outputStream = FileSystemUtils.createOrOpenAsOutputStream( fileSystem, internalLogFile, true );
+        LogProvider logProvider = Util.logProviderRespectingConfig( databaseConfig, outputStream );
+
         final JobScheduler jobScheduler = life.add( createScheduler() );
+        life.add( new LifecycleAdapter()
+        {
+            @Override
+            public void stop() throws Exception
+            {
+                outputStream.close();
+            }
+        });
 
         life.start();
         ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, stdOut,
@@ -167,10 +181,11 @@ class CsvImporter implements Importer
             fileSystem,
             null, // no external page cache
             importConfig,
-            logService, executionMonitor,
+            new SimpleLogService( NullLogProvider.getInstance(), logProvider ),
+            executionMonitor,
             EMPTY,
             databaseConfig,
-            RecordFormatSelector.selectForConfig( databaseConfig, logService.getInternalLogProvider() ),
+            RecordFormatSelector.selectForConfig( databaseConfig, logProvider ),
             new PrintingImportLogicMonitor( stdOut, stdErr ),
             jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE );
         printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );

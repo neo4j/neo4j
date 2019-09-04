@@ -21,9 +21,14 @@ package org.neo4j.commandline;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Path;
 
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
@@ -52,5 +57,13 @@ public class Util
     {
         throw new CommandFailedException(
                 format( "Unable to load database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
+    }
+
+    public static LogProvider logProviderRespectingConfig( Config config, OutputStream out )
+    {
+        return FormattedLogProvider
+                .withZoneId( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
+                .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
+                .toOutputStream( out );
     }
 }
