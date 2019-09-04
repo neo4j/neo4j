@@ -37,13 +37,10 @@ abstract class ExecutionPlan {
           subscriber: QuerySubscriber): RuntimeResult
 
   /**
-    * TODO: This is never used anywhere - surely we should remove it?
-    * I've made it final to trigger compiler errors in case someone does decide to use it, in which case they can remove the final after reading/deleting this message
-    *
     * @return if this ExecutionPlan needs a thread safe cursor factory to be used from the TransactionBoundQueryContext,
     *         then it has to override this method and provide it here.
     */
-  final def threadSafeCursorFactory(debugOptions: Set[String]): Option[CursorFactory] = None
+  def threadSafeCursorFactory(debugOptions: Set[String]): Option[CursorFactory] = None
 
   def runtimeName: RuntimeName
 
