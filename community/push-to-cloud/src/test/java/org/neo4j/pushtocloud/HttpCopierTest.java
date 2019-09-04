@@ -46,6 +46,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static java.lang.String.format;
+import static java.net.HttpURLConnection.HTTP_ACCEPTED;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
@@ -396,7 +397,7 @@ public class HttpCopierTest
     private ResponseDefinitionBuilder successfulInitiateUploadTargetResponse( String signedURIPath )
     {
         return aResponse()
-                .withStatus( HTTP_OK )
+                .withStatus( HTTP_ACCEPTED )
                 .withBody( format( "{\"SignedURI\":\"%s\"}", TEST_CONSOLE_URL + signedURIPath ) );
     }
 

@@ -38,6 +38,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 
 import static java.lang.Long.min;
 import static java.lang.String.format;
+import static java.net.HttpURLConnection.HTTP_ACCEPTED;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
@@ -194,7 +195,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 {
                     throw errorResponse( verbose, connection, "No consent to overwrite database, aborting upload" );
                 }
-            case HTTP_OK:
+            case HTTP_ACCEPTED:
                 // the import request was accepted, and the server has not seen this dump file, meaning the import request is a new operation.
                 return safeUrl( extractSignedURIFromResponse( verbose, connection ) );
             default:
