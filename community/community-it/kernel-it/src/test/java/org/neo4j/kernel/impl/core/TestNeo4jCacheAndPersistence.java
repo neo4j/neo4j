@@ -316,7 +316,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             assertEquals( 1, rel.getProperty( "1" ) );
             // trigger empty load
             getGraphDb().getNodeById( nodeA.getId() );
-            getGraphDb().getRelationshipById( rel.getId() );
+            transaction.getRelationshipById( rel.getId() );
             transaction.commit();
         }
         try ( Transaction transaction = getGraphDb().beginTx() )

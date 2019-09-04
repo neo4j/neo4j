@@ -168,7 +168,7 @@ class ConcurrentChangesOnEntitiesTest
         return new Thread( () -> {
             try ( Transaction tx = db.beginTx() )
             {
-                Relationship relationship = db.getRelationshipById( relationshipId );
+                Relationship relationship = tx.getRelationshipById( relationshipId );
                 barrier.await();
                 relConsumer.accept( relationship );
                 tx.commit();

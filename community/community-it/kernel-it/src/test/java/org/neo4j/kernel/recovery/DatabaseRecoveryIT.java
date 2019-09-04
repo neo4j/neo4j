@@ -284,7 +284,7 @@ class DatabaseRecoveryIT
                 {
                     Node node = tx.createNode( label );
                     node.setProperty( property, "B" );
-                    db.getRelationshipById( relationshipId ).delete(); // this should fail because of the adversary
+                    tx.getRelationshipById( relationshipId ).delete(); // this should fail because of the adversary
                     adversary.enable();
                     tx.commit();
                 }
@@ -301,7 +301,7 @@ class DatabaseRecoveryIT
                 try ( Transaction tx = db.beginTx() )
                 {
                     assertNotNull( findNode( label, property, "B", tx ) );
-                    assertNotNull( db.getRelationshipById( relationshipId ) );
+                    assertNotNull( tx.getRelationshipById( relationshipId ) );
                     tx.commit();
                 }
 
@@ -315,7 +315,7 @@ class DatabaseRecoveryIT
                 try ( Transaction tx = db.beginTx() )
                 {
                     assertNotNull( findNode( label, property, "B", tx ) );
-                    assertRelationshipNotExist( db, relationshipId );
+                    assertRelationshipNotExist( tx, relationshipId );
                     tx.commit();
                 }
             }
@@ -767,9 +767,9 @@ class DatabaseRecoveryIT
         return relationshipId;
     }
 
-    private static void assertRelationshipNotExist( GraphDatabaseService db, long id )
+    private static void assertRelationshipNotExist( Transaction tx, long id )
     {
-        assertThrows( NotFoundException.class, () -> db.getRelationshipById( id ) );
+        assertThrows( NotFoundException.class, () -> tx.getRelationshipById( id ) );
     }
 
     private static Health healthOf( GraphDatabaseService db )

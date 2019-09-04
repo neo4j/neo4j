@@ -675,7 +675,7 @@ public class FulltextProceduresTest
             {
                 // Prepare our transaction state first.
                 nodeIds.forEach( nodeId -> db.getNodeById( nodeId ).setProperty( PROP, newValue ) );
-                relIds.forEach( relId -> db.getRelationshipById( relId ).setProperty( PROP, newValue ) );
+                relIds.forEach( relId -> tx.getRelationshipById( relId ).setProperty( PROP, newValue ) );
                 tx.commit();
                 // Okay, NOW we're ready to race!
                 readyLatch.countDown();
@@ -1362,8 +1362,8 @@ public class FulltextProceduresTest
                 {
                     try ( Transaction forkedTx = db.beginTx() )
                     {
-                        db.getRelationshipById( relIdA ).delete();
-                        db.getRelationshipById( relIdB ).delete();
+                        tx.getRelationshipById( relIdA ).delete();
+                        tx.getRelationshipById( relIdB ).delete();
                         forkedTx.commit();
                     }
                     return null;
@@ -1433,8 +1433,8 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.getRelationshipById( relIdA ).delete();
-            db.getRelationshipById( relIdB ).delete();
+            tx.getRelationshipById( relIdA ).delete();
+            tx.getRelationshipById( relIdB ).delete();
             try ( Result result = db.execute( format( QUERY_RELS, "rels", "value" ) ) )
             {
                 assertThat( result.stream().count(), is( 0L ) );
@@ -1528,7 +1528,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship rel = db.getRelationshipById( relId );
+            Relationship rel = tx.getRelationshipById( relId );
             rel.setProperty( PROP, "value" );
             tx.commit();
         }
@@ -1610,7 +1610,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.getRelationshipById( relId ).setProperty( PROP, "secundo" );
+            tx.getRelationshipById( relId ).setProperty( PROP, "secundo" );
             tx.commit();
         }
         assertQueryFindsIds( db, false, "rels", "primo" );
@@ -1664,7 +1664,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.getRelationshipById( relId ).removeProperty( PROP );
+            tx.getRelationshipById( relId ).removeProperty( PROP );
             tx.commit();
         }
         assertQueryFindsIds( db, false, "rels", "value" );
@@ -1756,7 +1756,7 @@ public class FulltextProceduresTest
         assertQueryFindsIds( db, false, "rels", "secundo" );
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship rel = db.getRelationshipById( relId );
+            Relationship rel = tx.getRelationshipById( relId );
             rel.setProperty( PROP, "secundo" );
             tx.commit();
         }
@@ -1764,7 +1764,7 @@ public class FulltextProceduresTest
         assertQueryFindsIds( db, false, "rels", "secundo", relId );
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship rel = db.getRelationshipById( relId );
+            Relationship rel = tx.getRelationshipById( relId );
             rel.setProperty( PROP, "primo" );
             tx.commit();
         }
@@ -1829,14 +1829,14 @@ public class FulltextProceduresTest
         assertQueryFindsIds( db, false, "rels", "primo", relId );
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship rel = db.getRelationshipById( relId );
+            Relationship rel = tx.getRelationshipById( relId );
             rel.removeProperty( PROP );
             tx.commit();
         }
         assertQueryFindsIds( db, false, "rels", "primo" );
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship rel = db.getRelationshipById( relId );
+            Relationship rel = tx.getRelationshipById( relId );
             rel.setProperty( PROP, "primo" );
             tx.commit();
         }
@@ -2585,11 +2585,11 @@ public class FulltextProceduresTest
     {
         ids = new LongHashSet( ids ); // Create a defensive copy, because we're going to modify this instance.
         String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
-        LongFunction<Entity> getEntity = queryNodes ? db::getNodeById : db::getRelationshipById;
         long[] expectedIds = ids.toArray();
         MutableLongSet actualIds = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
+            LongFunction<Entity> getEntity = queryNodes ? db::getNodeById : tx::getRelationshipById;
             Result result = db.execute( format( queryCall, index, query ) );
             Double score = Double.MAX_VALUE;
             while ( result.hasNext() )

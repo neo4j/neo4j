@@ -49,7 +49,7 @@ public abstract class PropertyContainerProxyTest
 
     protected abstract long createPropertyContainer( Transaction tx );
 
-    protected abstract PropertyContainer lookupPropertyContainer( long id );
+    protected abstract PropertyContainer lookupPropertyContainer( Transaction transaction, long id );
 
     @Test
     void shouldListAllProperties()
@@ -71,7 +71,7 @@ public abstract class PropertyContainerProxyTest
         try ( Transaction tx = db.beginTx() )
         {
             containerId = createPropertyContainer( tx );
-            PropertyContainer container = lookupPropertyContainer( containerId );
+            PropertyContainer container = lookupPropertyContainer( tx, containerId );
 
             for ( Map.Entry<String,Object> entry : properties.entrySet() )
             {
@@ -85,7 +85,7 @@ public abstract class PropertyContainerProxyTest
         Map<String,Object> listedProperties;
         try ( Transaction tx = db.beginTx() )
         {
-            listedProperties = lookupPropertyContainer( containerId ).getAllProperties();
+            listedProperties = lookupPropertyContainer( tx, containerId ).getAllProperties();
             tx.commit();
         }
 

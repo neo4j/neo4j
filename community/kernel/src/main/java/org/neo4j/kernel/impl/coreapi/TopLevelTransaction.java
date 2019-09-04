@@ -24,12 +24,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -58,6 +60,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
@@ -152,6 +155,27 @@ public class TopLevelTransaction implements InternalTransaction
         catch ( KernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+    }
+
+    @Override
+    public Relationship getRelationshipById( long id )
+    {
+        if ( id < 0 )
+        {
+            throw new NotFoundException( format( "Relationship %d not found", id ),
+                    new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
+        }
+
+        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        try ( Statement ignore = ktx.acquireStatement() )
+        {
+            if ( !ktx.dataRead().relationshipExists( id ) )
+            {
+                throw new NotFoundException( format( "Relationship %d not found", id ),
+                        new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
+            }
+            return facade.newRelationshipProxy( id );
         }
     }
 

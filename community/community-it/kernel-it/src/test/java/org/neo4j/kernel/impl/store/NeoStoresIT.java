@@ -200,7 +200,7 @@ class NeoStoresIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Relationship rel = db.getRelationshipById( latestRelationshipId[0] );
+                Relationship rel = tx.getRelationshipById( latestRelationshipId[0] );
 
                 for ( String propertyKey : rel.getPropertyKeys() )
                 {

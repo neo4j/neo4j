@@ -149,6 +149,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
 
             @Override
+            public Relationship getRelationshipById( long id )
+            {
+                return transaction.getRelationshipById( id );
+            }
+
+            @Override
             public BidirectionalTraversalDescription bidirectionalTraversalDescription()
             {
                 return transaction.bidirectionalTraversalDescription();

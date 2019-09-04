@@ -773,7 +773,7 @@ class TestTransactionEvents
 
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship rel = db.getRelationshipById( relId );
+            Relationship rel = tx.getRelationshipById( relId );
             rel.setProperty( "since", 2010 );
             tx.commit();
         }

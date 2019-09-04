@@ -210,9 +210,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // Then
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat( graphDb.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( "hello" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( "hello" ) );
         }
     }
 
@@ -244,9 +244,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // Then
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat( graphDb.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( "hello" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( "hello" ) );
         }
     }
 
@@ -277,9 +277,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // Then
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertFalse( graphDb.getRelationshipById( relationshipId ).hasProperty( "prop" ) );
+            assertFalse( transaction.getRelationshipById( relationshipId ).hasProperty( "prop" ) );
         }
     }
 
@@ -308,9 +308,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // Then
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertFalse( graphDb.getRelationshipById( relationshipId ).hasProperty( "prop" ) );
+            assertFalse( transaction.getRelationshipById( relationshipId ).hasProperty( "prop" ) );
         }
     }
 
@@ -343,9 +343,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // Then
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertFalse( graphDb.getRelationshipById( relationshipId ).hasProperty( "prop" ) );
+            assertFalse( transaction.getRelationshipById( relationshipId ).hasProperty( "prop" ) );
         }
     }
 
@@ -376,9 +376,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // Then
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat( graphDb.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( 1337 ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( 1337 ) );
         }
     }
 

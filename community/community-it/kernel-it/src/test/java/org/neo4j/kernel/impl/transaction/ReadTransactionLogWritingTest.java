@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -118,17 +119,17 @@ class ReadTransactionLogWritingTest
         return new String( characters );
     }
 
-    private void executeTransaction( Runnable runnable )
+    private void executeTransaction( Consumer<Transaction> consumer )
     {
-        executeTransaction( runnable, true );
-        executeTransaction( runnable, false );
+        executeTransaction( consumer, true );
+        executeTransaction( consumer, false );
     }
 
-    private void executeTransaction( Runnable runnable, boolean success )
+    private void executeTransaction( Consumer<Transaction> consumer, boolean success )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            runnable.run();
+            consumer.accept( tx );
             if ( success )
             {
                 tx.commit();
@@ -136,14 +137,14 @@ class ReadTransactionLogWritingTest
         }
     }
 
-    private Runnable getRelationships()
+    private Consumer<Transaction> getRelationships()
     {
-        return () -> assertEquals( 1, Iterables.count( node.getRelationships() ) );
+        return tx -> assertEquals( 1, Iterables.count( node.getRelationships() ) );
     }
 
-    private Runnable getNodesFromRelationship()
+    private Consumer<Transaction> getNodesFromRelationship()
     {
-        return () ->
+        return tx ->
         {
             relationship.getEndNode();
             relationship.getStartNode();
@@ -152,21 +153,21 @@ class ReadTransactionLogWritingTest
         };
     }
 
-    private Runnable getById()
+    private Consumer<Transaction> getById()
     {
-        return () ->
+        return tx ->
         {
             db.getNodeById( node.getId() );
-            db.getRelationshipById( relationship.getId() );
+            tx.getRelationshipById( relationship.getId() );
         };
     }
 
-    private Runnable getProperties()
+    private Consumer<Transaction> getProperties()
     {
-        return new Runnable()
+        return new Consumer<>()
         {
             @Override
-            public void run()
+            public void accept( Transaction tx )
             {
                 getAllProperties( node );
                 getAllProperties( relationship );

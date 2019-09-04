@@ -50,17 +50,6 @@ public interface GraphDatabaseService
     Node getNodeById( long id );
 
     /**
-     * Looks up a relationship by id. Please note: Neo4j reuses its internal ids
-     * when nodes and relationships are deleted, which means it's bad practice
-     * to refer to them this way. Instead, use application generated ids.
-     *
-     * @param id the id of the relationship
-     * @return the relationship with id <code>id</code> if found
-     * @throws NotFoundException if not found
-     */
-    Relationship getRelationshipById( long id );
-
-    /**
      * Use this method to check if the database is currently in a usable state.
      *
      * @param timeout timeout (in milliseconds) to wait for the database to become available.

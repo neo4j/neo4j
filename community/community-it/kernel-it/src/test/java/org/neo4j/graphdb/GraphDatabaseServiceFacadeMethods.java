@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 public enum GraphDatabaseServiceFacadeMethods implements Consumer<GraphDatabaseService>
 {
     GET_NODE_BY_ID( new FacadeMethod<>( "Node getNodeById( long id )", gds -> gds.getNodeById( 42 ) ) ),
-    GET_RELATIONSHIP_BY_ID( new FacadeMethod<>( "Relationship getRelationshipById( long id )", gds -> gds.getRelationshipById( 42 ) ) ),
     SCHEMA( new FacadeMethod<>( "Schema schema()", GraphDatabaseService::schema ) );
 
     private final FacadeMethod<GraphDatabaseService> facadeMethod;

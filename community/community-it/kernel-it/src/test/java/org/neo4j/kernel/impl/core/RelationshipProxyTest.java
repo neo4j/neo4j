@@ -54,9 +54,9 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     }
 
     @Override
-    protected PropertyContainer lookupPropertyContainer( long id )
+    protected PropertyContainer lookupPropertyContainer( Transaction transaction, long id )
     {
-        return db.getRelationshipById( id );
+        return transaction.getRelationshipById( id );
     }
 
     @Test
@@ -142,21 +142,21 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship relationship = db.getRelationshipById( 0 );
+            Relationship relationship = tx.getRelationshipById( 0 );
             assertEquals( propertyValue, relationship.getProperty( testPropertyKey ) );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship relationship = db.getRelationshipById( 0 );
+            Relationship relationship = tx.getRelationshipById( 0 );
             relationship.removeProperty( testPropertyKey );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship relationship = db.getRelationshipById( 0 );
+            Relationship relationship = tx.getRelationshipById( 0 );
             assertFalse( relationship.hasProperty( testPropertyKey ) );
             tx.commit();
         }
@@ -180,21 +180,21 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship relationship = db.getRelationshipById( 0 );
+            Relationship relationship = tx.getRelationshipById( 0 );
             assertArrayEquals( propertyValue, (byte[]) relationship.getProperty( testPropertyKey ) );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship relationship = db.getRelationshipById( 0 );
+            Relationship relationship = tx.getRelationshipById( 0 );
             relationship.removeProperty( testPropertyKey );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship relationship = db.getRelationshipById( 0 );
+            Relationship relationship = tx.getRelationshipById( 0 );
             assertFalse( relationship.hasProperty( testPropertyKey ) );
             tx.commit();
         }

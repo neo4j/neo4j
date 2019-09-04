@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -156,28 +155,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                         new EntityNotFoundException( EntityType.NODE, id ) );
             }
             return newNodeProxy( id );
-        }
-    }
-
-    @Override
-    public Relationship getRelationshipById( long id )
-    {
-        if ( id < 0 )
-        {
-            throw new NotFoundException( format( "Relationship %d not found", id ),
-                    new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
-        }
-
-        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        assertTransactionOpen( ktx );
-        try ( Statement ignore = ktx.acquireStatement() )
-        {
-            if ( !ktx.dataRead().relationshipExists( id ) )
-            {
-                throw new NotFoundException( format( "Relationship %d not found", id ),
-                        new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
-            }
-            return newRelationshipProxy( id );
         }
     }
 

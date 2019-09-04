@@ -65,7 +65,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Override
-    protected PropertyContainer lookupPropertyContainer( long id )
+    protected PropertyContainer lookupPropertyContainer( Transaction transaction, long id )
     {
         return db.getNodeById( id );
     }

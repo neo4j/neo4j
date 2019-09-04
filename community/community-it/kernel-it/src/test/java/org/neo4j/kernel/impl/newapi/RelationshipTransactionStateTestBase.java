@@ -425,10 +425,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat(
-                    graphDb.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "hello" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "hello" ) );
         }
     }
 
@@ -489,9 +488,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            Relationship relationship = graphDb.getRelationshipById( relationshipId );
+            Relationship relationship = transaction.getRelationshipById( relationshipId );
             assertThat( relationship.getProperty( propKey1 ), equalTo( "hello" ) );
             assertThat( relationship.getProperty( propKey2 ), equalTo( "world" ) );
         }
@@ -539,10 +538,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat(
-                    graphDb.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "world" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "world" ) );
         }
     }
 
@@ -583,10 +581,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertFalse(
-                    graphDb.getRelationshipById( relationshipId ).hasProperty( propKey ) );
+            assertFalse( transaction.getRelationshipById( relationshipId ).hasProperty( propKey ) );
         }
     }
 
@@ -633,10 +630,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction transaction = graphDb.beginTx() )
         {
-            assertThat(
-                    graphDb.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "world" ) );
+            assertThat( transaction.getRelationshipById( relationshipId ).getProperty( propKey ), equalTo( "world" ) );
         }
     }
 

@@ -237,16 +237,16 @@ public class TestExceptionTypeOnInvalidIds
                 value.getId(), index, (int) index ) );
     }
 
-    private static void getRelationshipById( long index )
+    private void getRelationshipById( long index )
     {
-        Relationship value = graphdb.getRelationshipById( index );
+        Relationship value = tx.getRelationshipById( index );
         fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }
 
-    private static void getRelationshipByIdReadOnly( long index )
+    private void getRelationshipByIdReadOnly( long index )
     {
-        Relationship value = graphDbReadOnly.getRelationshipById( index );
+        Relationship value = tx.getRelationshipById( index );
         fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }

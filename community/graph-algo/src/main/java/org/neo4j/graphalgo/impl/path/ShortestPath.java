@@ -653,11 +653,10 @@ public class ShortestPath implements PathFinder<Path>
             return result;
         }
         Collection<PathData> set = new ArrayList<>();
-        GraphDatabaseService graphDb = context.databaseService();
+        var transaction = context.transaction();
         for ( long rel : levelData.relsToHere )
         {
-            set.add( new PathData( connectingNode, new LinkedList<>( Arrays.asList( graphDb
-                    .getRelationshipById( rel ) ) ) ) );
+            set.add( new PathData( connectingNode, new LinkedList<>( Arrays.asList( transaction.getRelationshipById( rel ) ) ) ) );
             if ( stopAsap )
             {
                 break;
@@ -681,7 +680,7 @@ public class ShortestPath implements PathFinder<Path>
                     // lists being copied
                             entry.rels
                             : new LinkedList<>( entry.rels );
-                    rels.addFirst( graphDb.getRelationshipById( rel ) );
+                    rels.addFirst( transaction.getRelationshipById( rel ) );
                     nextSet.add( new PathData( otherNode, rels ) );
                     if ( stopAsap )
                     {

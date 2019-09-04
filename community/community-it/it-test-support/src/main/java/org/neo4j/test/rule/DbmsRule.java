@@ -34,7 +34,6 @@ import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.ResultConsumer;
 import org.neo4j.graphdb.Transaction;
@@ -477,12 +476,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public String getDatabaseDirAbsolutePath()
     {
         return databaseLayout().databaseDirectory().getAbsolutePath();
-    }
-
-    @Override
-    public Relationship getRelationshipById( long id )
-    {
-        return database.getRelationshipById( id );
     }
 
     @Override

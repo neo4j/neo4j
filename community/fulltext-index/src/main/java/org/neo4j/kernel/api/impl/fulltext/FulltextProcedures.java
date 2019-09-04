@@ -37,6 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -53,6 +54,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -241,7 +243,8 @@ public class FulltextProcedures
                 {
                     long relationshipReference = cursor.relationshipReference();
                     float score = cursor.score();
-                    RelationshipOutput relationshipOutput = RelationshipOutput.forExistingEntityOrNull( db, relationshipReference, score );
+                    RelationshipOutput relationshipOutput =
+                            RelationshipOutput.forExistingEntityOrNull( GraphDatabaseFacade.TEMP_TOP_LEVEL_TRANSACTION.get(), relationshipReference, score );
                     if ( relationshipOutput != null )
                     {
                         action.accept( relationshipOutput );
@@ -357,11 +360,11 @@ public class FulltextProcedures
             this.score = score;
         }
 
-        public static RelationshipOutput forExistingEntityOrNull( GraphDatabaseService db, long relationshipId, float score )
+        public static RelationshipOutput forExistingEntityOrNull( Transaction transaction, long relationshipId, float score )
         {
             try
             {
-                return new RelationshipOutput( db.getRelationshipById( relationshipId ), score );
+                return new RelationshipOutput( transaction.getRelationshipById( relationshipId ), score );
             }
             catch ( NotFoundException ignore )
             {

@@ -527,11 +527,11 @@ class BatchInsertTest
 
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
 
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             Node realStartNode = db.getNodeById( startNode );
-            Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
-            Relationship realRelationship = db.getRelationshipById( relationship );
+            Relationship realSelfRelationship = transaction.getRelationshipById( selfRelationship );
+            Relationship realRelationship = transaction.getRelationshipById( relationship );
             assertEquals( realSelfRelationship,
                     realStartNode.getSingleRelationship( RelTypes.REL_TYPE1, Direction.INCOMING ) );
             assertEquals( asSet( realSelfRelationship, realRelationship ),

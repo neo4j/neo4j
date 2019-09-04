@@ -57,7 +57,7 @@ public class DatabaseSubGraph implements SubGraph
     @Override
     public boolean contains( Relationship relationship )
     {
-        return gdb.getRelationshipById( relationship.getId() ) != null;
+        return transaction.getRelationshipById( relationship.getId() ) != null;
     }
 
     @Override

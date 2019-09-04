@@ -168,7 +168,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Relationship relationship = database.getDatabase().getRelationshipById( relationshipId );
+            Relationship relationship = tx.getRelationshipById( relationshipId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
             {
                 relationship.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
@@ -181,7 +181,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            Relationship relationship = database.getDatabase().getRelationshipById( relationshipId );
+            Relationship relationship = tx.getRelationshipById( relationshipId );
             Map<String, Object> allProperties = relationship.getAllProperties();
             tx.commit();
             return allProperties;
@@ -192,7 +192,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            Relationship relationship = database.getDatabase().getRelationshipById( relationshipId );
+            Relationship relationship = tx.getRelationshipById( relationshipId );
             tx.commit();
             return relationship;
         }
@@ -221,7 +221,7 @@ public class GraphDbHelper
 
     public Iterable<String> getNodeLabels( long node )
     {
-        return new IterableWrapper<String, Label>( database.getDatabase().getNodeById( node ).getLabels() )
+        return new IterableWrapper<>( database.getDatabase().getNodeById( node ).getLabels() )
         {
             @Override
             protected String underlyingObjectToObject( Label object )
