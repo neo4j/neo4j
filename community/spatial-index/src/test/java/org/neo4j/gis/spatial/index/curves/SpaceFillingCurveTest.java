@@ -1107,7 +1107,7 @@ public class SpaceFillingCurveTest
         long valueWidth = width * width;
         double justInsideMaxX = envelope.getMaxX() - curve.getTileWidth( 0, level ) / 2.0;
         double justInsideMaxY = envelope.getMaxY() - curve.getTileWidth( 1, level ) / 2.0;
-        double midX = (envelope.getMinX() + envelope.getMaxX()) / 2.0;
+        //double midX = (envelope.getMinX() + envelope.getMaxX()) / 2.0;
         double midY = (envelope.getMinY() + envelope.getMaxY()) / 2.0;
 
         long topRight = 1L;
@@ -1117,7 +1117,7 @@ public class SpaceFillingCurveTest
         for ( int l = 0; l < level; l++ )
         {
             topRight = topRightFactor - topRightDiff;
-            topRightDescription = String.valueOf( topRightFactor ) + " - " + topRightDescription;
+            topRightDescription = topRightFactor + " - " + topRightDescription;
             topRightDiff = topRightFactor + topRightDiff;
             topRightFactor *= 4;
         }
@@ -1203,7 +1203,7 @@ public class SpaceFillingCurveTest
         }
 
         long frontRightMid = valueWidth / 2 + valueWidth / 8 + valueWidth / 256;
-        String fromRightMidDescription = String.valueOf( valueWidth ) + "/2 + " + valueWidth + "/8";
+        String fromRightMidDescription = valueWidth + "/2 + " + valueWidth + "/8";
 
         assertThat( "Level " + level + " should have width of " + width, curve.getWidth(), equalTo( width ) );
         assertThat( "Level " + level + " should have max value of " + valueWidth, curve.getValueWidth(), equalTo( valueWidth ) );

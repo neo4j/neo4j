@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.InputFormatException;
@@ -634,7 +633,7 @@ public class InvocationTest
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         TransactionHandle handle =
                 new TransactionHandle( kernel, executionEngine, queryService, mock( TransactionRegistry.class ), uriScheme, true, AUTH_DISABLED,
-                        EMBEDDED_CONNECTION, 100, NullLogProvider.getInstance() );
+                        EMBEDDED_CONNECTION, 100 );
 
         InputEventStream inputEventStream = mock( InputEventStream.class );
         when( inputEventStream.read() ).thenReturn( null );
@@ -846,7 +845,7 @@ public class InvocationTest
     {
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         return new TransactionHandle( kernel, executionEngine, queryService, registry, uriScheme, implicitTransaction, AUTH_DISABLED, EMBEDDED_CONNECTION,
-                anyLong(), NullLogProvider.getInstance() );
+                anyLong() );
     }
 
     private TransitionalPeriodTransactionMessContainer mockKernel()
@@ -860,8 +859,7 @@ public class InvocationTest
     private TransactionalContext prepareKernelWithQuerySession( TransitionalPeriodTransactionMessContainer kernel )
     {
         TransactionalContext tc = mock( TransactionalContext.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any(), any( Type.class ),
-                any( LoginContext.class ), any( String.class ), any( Map.class ) ) ).thenReturn( tc );
+        when( kernel.create( any( GraphDatabaseQueryService.class ), any(), any( String.class ), any( Map.class ) ) ).thenReturn( tc );
         return tc;
     }
 

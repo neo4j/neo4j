@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -39,7 +38,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     private boolean open;
     private boolean batched;
 
-    RecordRelationshipScanCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
+    RecordRelationshipScanCursor( RelationshipStore relationshipStore )
     {
         super( relationshipStore );
     }

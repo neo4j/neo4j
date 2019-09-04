@@ -950,7 +950,7 @@ class BufferedCharSeekerTest
                 break;
             }
         }
-        return line.toArray( new String[line.size()] );
+        return line.toArray( new String[0] );
     }
 
     private CharSeeker seeker( CharReadable readable, boolean threadAhead )

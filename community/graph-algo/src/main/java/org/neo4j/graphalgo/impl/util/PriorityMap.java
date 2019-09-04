@@ -281,7 +281,7 @@ public class PriorityMap<E, K, P>
     // Naive implementation
 
     private final Map<K, Node<E, P>> map = new HashMap<>();
-    private final PriorityQueue<Node<E, P>> queue = new PriorityQueue<>( 11, new Comparator<Node<E,P>>()
+    private final PriorityQueue<Node<E, P>> queue = new PriorityQueue<>( 11, new Comparator<>()
     {
         @Override
         public int compare( Node<E,P> o1, Node<E,P> o2 )

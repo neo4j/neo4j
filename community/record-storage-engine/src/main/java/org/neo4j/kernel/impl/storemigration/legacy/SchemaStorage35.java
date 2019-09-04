@@ -84,7 +84,7 @@ public class SchemaStorage35
      */
     private <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules( final Predicate<ReturnType> predicate, final Class<ReturnType> returnType )
     {
-        return new PrefetchingIterator<ReturnType>()
+        return new PrefetchingIterator<>()
         {
             private final long highestId = schemaStore.getHighestPossibleIdInUse();
             private long currentId = 1; /*record 0 contains the block size*/

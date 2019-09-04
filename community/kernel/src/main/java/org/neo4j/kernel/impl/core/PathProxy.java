@@ -163,7 +163,7 @@ public class PathProxy implements Path
     @Override
     public Iterable<Relationship> relationships()
     {
-        return () -> new Iterator<Relationship>()
+        return () -> new Iterator<>()
         {
             int i;
 
@@ -184,7 +184,7 @@ public class PathProxy implements Path
     @Override
     public Iterable<Relationship> reverseRelationships()
     {
-        return () -> new Iterator<Relationship>()
+        return () -> new Iterator<>()
         {
             int i = relationships.length;
 
@@ -205,7 +205,7 @@ public class PathProxy implements Path
     @Override
     public Iterable<Node> nodes()
     {
-        return () -> new Iterator<Node>()
+        return () -> new Iterator<>()
         {
             int i;
 
@@ -226,7 +226,7 @@ public class PathProxy implements Path
     @Override
     public Iterable<Node> reverseNodes()
     {
-        return () -> new Iterator<Node>()
+        return () -> new Iterator<>()
         {
             int i = nodes.length;
 
@@ -253,7 +253,7 @@ public class PathProxy implements Path
     @Override
     public Iterator<PropertyContainer> iterator()
     {
-        return new Iterator<PropertyContainer>()
+        return new Iterator<>()
         {
             int i;
             boolean relationship;

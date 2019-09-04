@@ -125,7 +125,7 @@ public class CountsRotationTest
     {
         // GIVEN
         DatabaseManagementService managementService = dbBuilder.build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        managementService.database( DEFAULT_DATABASE_NAME );
 
         // WHEN
         managementService.shutdown();

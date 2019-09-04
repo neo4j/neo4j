@@ -54,7 +54,7 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extend
         {
             closeSeeker();
             seeker = tree.seek( from, to );
-            return new PrefetchingIterator<Long>()
+            return new PrefetchingIterator<>()
             {
                 @Override
                 protected Long fetchNextOrNull()

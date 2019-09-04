@@ -39,12 +39,6 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
  */
 public interface KernelTransactionHandle
 {
-    /**
-     * The id of the last transaction that was committed to the store when the underlying transaction started.
-     *
-     * @return the committed transaction id.
-     */
-    long lastTransactionIdWhenStarted();
 
     /**
      * The timestamp of the last transaction that was committed to the store when the underlying transaction started.

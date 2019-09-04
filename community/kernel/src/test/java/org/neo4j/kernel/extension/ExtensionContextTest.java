@@ -130,7 +130,8 @@ class ExtensionContextTest
         @Override
         public Lifecycle newInstance( ExtensionContext context, TestingDependencies dependencies )
         {
-            return new TestingExtension( dependencies.jobScheduler() );
+            dependencies.jobScheduler();
+            return new TestingExtension();
         }
     }
 
@@ -141,7 +142,7 @@ class ExtensionContextTest
 
     private static class TestingExtension extends LifecycleAdapter
     {
-        TestingExtension( JobScheduler jobScheduler )
+        TestingExtension()
         {
             // We don't need it right now
         }

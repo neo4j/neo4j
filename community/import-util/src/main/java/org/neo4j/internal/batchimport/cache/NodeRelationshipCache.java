@@ -885,13 +885,6 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
 
     public MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes )
     {
-        return new MemoryStatsVisitor.Visitable()
-        {
-            @Override
-            public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-            {
-                visitor.offHeapUsage( ID_AND_COUNT_SIZE * numberOfNodes );
-            }
-        };
+        return visitor -> visitor.offHeapUsage( ID_AND_COUNT_SIZE * numberOfNodes );
     }
 }

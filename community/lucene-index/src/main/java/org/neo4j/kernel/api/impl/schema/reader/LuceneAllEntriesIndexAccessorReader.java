@@ -47,7 +47,7 @@ public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long
     public Iterator<Long> iterator()
     {
         Iterator<Document> iterator = documents.iterator();
-        return new Iterator<Long>()
+        return new Iterator<>()
         {
             @Override
             public boolean hasNext()

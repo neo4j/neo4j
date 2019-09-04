@@ -40,8 +40,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
- *
- * @author Mattias Persson
  */
 public class LogTestUtils
 {

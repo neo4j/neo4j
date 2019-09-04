@@ -25,7 +25,6 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.web.WebServer;
@@ -38,8 +37,7 @@ public class ThirdPartyJAXRSModule implements ServerModule
     private List<ThirdPartyJaxRsPackage> packages;
     private final Log log;
 
-    public ThirdPartyJAXRSModule( WebServer webServer, Config config, LogProvider logProvider,
-            NeoServer neoServer )
+    public ThirdPartyJAXRSModule( WebServer webServer, Config config, LogProvider logProvider )
     {
         this.webServer = webServer;
         this.config = config;

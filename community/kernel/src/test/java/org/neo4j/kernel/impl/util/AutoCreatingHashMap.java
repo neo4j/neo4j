@@ -87,8 +87,6 @@ import org.neo4j.function.Factory;
  *
  * An enormous improvement in readability. The only reflection used is in the {@link #values()} {@link Factory},
  * however that's just a convenience as well. Any {@link Factory} can be supplied instead.
- *
- * @author Mattias Persson
  */
 public class AutoCreatingHashMap<K,V> extends HashMap<K,V>
 {

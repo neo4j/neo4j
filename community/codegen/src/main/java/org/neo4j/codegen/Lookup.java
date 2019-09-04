@@ -23,7 +23,7 @@ abstract class Lookup<T>
 {
     static Lookup<FieldReference> field( final TypeReference type, final String name )
     {
-        return new Lookup<FieldReference>()
+        return new Lookup<>()
         {
             @Override
             FieldReference lookup( CodeBlock method )

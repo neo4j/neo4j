@@ -89,7 +89,6 @@ import static org.neo4j.values.storable.Values.COMPARATOR;
 @TestDirectoryExtension
 class IndexConfigMigrationIT
 {
-    private static final CrsConfig wgs84 = CrsConfig.group( WGS84 );
     private enum MinMaxSetting
     {
         wgs84Min( CrsConfig.group( WGS84 ).min, List.of( -1.0, -2.0 ) ),

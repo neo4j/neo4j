@@ -101,18 +101,6 @@ public enum ValueEncoding
 
     abstract Query encodeQuery( Value value, int propertyNumber );
 
-    public static ValueEncoding forKey( String key )
-    {
-        for ( ValueEncoding encoding : AllEncodings )
-        {
-            if ( key.endsWith( encoding.key() ) )
-            {
-                return encoding;
-            }
-        }
-        throw new IllegalArgumentException( "Unknown key: " + key );
-    }
-
     public static ValueEncoding forValue( Value value )
     {
         for ( ValueEncoding encoding : AllEncodings )

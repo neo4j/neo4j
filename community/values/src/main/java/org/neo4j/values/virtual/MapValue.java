@@ -308,7 +308,7 @@ public abstract class MapValue extends VirtualValue
         @Override
         public Iterable<String> keySet()
         {
-            return () -> new Iterator<String>()
+            return () -> new Iterator<>()
             {
                 private Iterator<String> internal = map.keySet().iterator();
                 private int index;
@@ -401,7 +401,7 @@ public abstract class MapValue extends VirtualValue
         @Override
         public Iterable<String> keySet()
         {
-           return () -> new PrefetchingIterator<String>()
+           return () -> new PrefetchingIterator<>()
            {
                private int mapIndex;
                private Iterator<String> internal;

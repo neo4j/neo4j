@@ -167,7 +167,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider
         @Override
         public BoundedIterable<Long> newAllEntriesReader()
         {
-            return new BoundedIterable<Long>()
+            return new BoundedIterable<>()
             {
                 @Override
                 public long maxCount()

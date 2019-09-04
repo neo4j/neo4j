@@ -159,11 +159,11 @@ public class MultipleIndexPopulationStressIT
         // WHEN/THEN run tests for at least the specified durationMillis
         for ( int i = 0; currentTimeMillis() < endTime; i++ )
         {
-            runTest( nodeCount, i, multiThreaded );
+            runTest( nodeCount, multiThreaded );
         }
     }
 
-    private void runTest( int nodeCount, int run, boolean multiThreaded ) throws Exception
+    private void runTest( int nodeCount, boolean multiThreaded ) throws Exception
     {
         // WHEN creating the indexes under stressful updates
         populateDbAndIndexes( nodeCount, multiThreaded );

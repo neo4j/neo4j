@@ -30,7 +30,7 @@ final class FileVersion
     static final int INITIAL_MINOR_VERSION = 0;
     final long txId;
     final long minorVersion;
-    static final HeaderField<FileVersion> FILE_VERSION = new HeaderField<FileVersion>()
+    static final HeaderField<FileVersion> FILE_VERSION = new HeaderField<>()
     {
         @Override
         public FileVersion read( ReadableBuffer header )

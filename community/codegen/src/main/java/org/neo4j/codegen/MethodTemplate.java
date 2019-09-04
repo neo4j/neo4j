@@ -244,7 +244,7 @@ public class MethodTemplate
         this.name = name;
         this.declaration = builder.declaration();
         this.parameters = builder.parameters;
-        this.statements = builder.statements.toArray( new Statement[builder.statements.size()] );
+        this.statements = builder.statements.toArray( new Statement[0] );
         this.modifiers = builder.modifiers;
     }
 }

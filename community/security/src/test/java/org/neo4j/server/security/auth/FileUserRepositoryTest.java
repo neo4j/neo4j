@@ -191,7 +191,7 @@ class FileUserRepositoryTest
         // When
         User updatedUser = new User.Builder( "john", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true )
                 .build();
-        var e = assertThrows( IllegalArgumentException.class, () -> users.update( user, updatedUser ) );
+        assertThrows( IllegalArgumentException.class, () -> users.update( user, updatedUser ) );
         assertThat( users.getUserByName( user.name() ), equalTo( user ) );
     }
 
@@ -206,7 +206,7 @@ class FileUserRepositoryTest
 
         // When
         User updatedUser = user.augment().withCredentials( LegacyCredential.forPassword( "bar" ) ).build();
-        var e = assertThrows( ConcurrentModificationException.class, () -> users.update( modifiedUser, updatedUser ) );
+        assertThrows( ConcurrentModificationException.class, () -> users.update( modifiedUser, updatedUser ) );
     }
 
     @Test

@@ -32,8 +32,6 @@ import org.neo4j.values.storable.Values;
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
  *
  * (This version assumes 14bytes property block, instead of 8bytes)
- *
- * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
 public enum LongerShortString
 {

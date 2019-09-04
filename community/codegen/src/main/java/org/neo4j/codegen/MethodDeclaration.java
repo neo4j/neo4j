@@ -130,7 +130,7 @@ public abstract class MethodDeclaration
 
         TypeReference[] exceptions()
         {
-            return exceptions == null ? NO_TYPES : exceptions.toArray( new TypeReference[exceptions.size()] );
+            return exceptions == null ? NO_TYPES : exceptions.toArray( new TypeReference[0] );
         }
 
         TypeParameter[] typeParameters()

@@ -95,10 +95,4 @@ public class RandomAdversary extends AbstractAdversary
     {
         probabilityFactor = factor;
     }
-
-    public void setAndResetProbabilityFactor( double factor )
-    {
-        // The negative sign bit indicates that the rate should be reset upon failure
-        probabilityFactor = -factor;
-    }
 }

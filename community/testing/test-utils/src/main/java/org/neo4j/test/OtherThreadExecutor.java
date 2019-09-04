@@ -48,7 +48,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * f.ex for testing locking and data visibility.
  *
  * @param <T> type of state
- * @author Mattias Persson
  */
 public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
 {

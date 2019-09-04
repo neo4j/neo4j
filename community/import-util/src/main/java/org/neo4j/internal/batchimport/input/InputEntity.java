@@ -202,7 +202,7 @@ public class InputEntity implements InputEntityVisitor, Cloneable
 
     public String[] labels()
     {
-        return labels.toArray( new String[labels.size()] );
+        return labels.toArray( new String[0] );
     }
 
     public Object[] properties()
@@ -321,7 +321,7 @@ public class InputEntity implements InputEntityVisitor, Cloneable
         }
         else if ( !labels.isEmpty() )
         {
-            visitor.labels( labels.toArray( new String[labels.size()] ) );
+            visitor.labels( labels.toArray( new String[0] ) );
         }
 
         // start id

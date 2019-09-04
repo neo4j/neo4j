@@ -29,7 +29,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -50,8 +49,6 @@ class TestStoreAccess
     private EphemeralFileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
-
-    private final Monitors monitors = new Monitors();
 
     @Test
     void openingThroughStoreAccessShouldNotTriggerRecovery() throws Throwable

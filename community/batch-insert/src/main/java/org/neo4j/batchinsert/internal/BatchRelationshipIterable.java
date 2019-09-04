@@ -46,7 +46,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        return new PrefetchingIterator<T>()
+        return new PrefetchingIterator<>()
         {
             @Override
             protected T fetchNextOrNull()
@@ -57,7 +57,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
                 }
 
                 return nextFrom( relationshipCursor.entityReference(), relationshipCursor.type(),
-                        relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+                                 relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
             }
         };
     }

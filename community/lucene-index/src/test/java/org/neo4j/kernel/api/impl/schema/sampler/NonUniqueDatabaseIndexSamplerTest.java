@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -37,12 +36,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
-import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartition;
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -96,13 +92,6 @@ class NonUniqueDatabaseIndexSamplerTest
         when( termsEnum.next() ).thenReturn( new BytesRef( value.getBytes() ) ).thenReturn( null );
         when( termsEnum.docFreq() ).thenReturn( frequency );
         return terms;
-    }
-
-    private static void insertDocument( WritableIndexPartition partition, long nodeId, Object propertyValue )
-            throws IOException
-    {
-        Document doc = LuceneDocumentStructure.documentRepresentingProperties( nodeId, Values.of( propertyValue ) );
-        partition.getIndexWriter().addDocument( doc );
     }
 
     private static class SamplingFields extends Fields

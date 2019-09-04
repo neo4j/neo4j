@@ -22,7 +22,6 @@ package org.neo4j.io.fs;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -63,8 +62,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -180,62 +177,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         if ( exception != null )
         {
             throw exception;
-        }
-    }
-
-    public void dumpZip( OutputStream output ) throws IOException
-    {
-        try ( ZipOutputStream zip = new ZipOutputStream( output ) )
-        {
-            String prefix = null;
-            for ( Map.Entry<File,EphemeralFileData> entry : files.entrySet() )
-            {
-                File file = entry.getKey();
-                String parent = file.getParentFile().getAbsolutePath();
-                if ( prefix == null || prefix.startsWith( parent ) )
-                {
-                    prefix = parent;
-                }
-                zip.putNextEntry( new ZipEntry( file.getAbsolutePath() ) );
-                entry.getValue().dumpTo( zip );
-                zip.closeEntry();
-            }
-            if ( prefix != null )
-            {
-                File directory = new File( prefix );
-                if ( directory.exists() ) // things ended up on the file system...
-                {
-                    addRecursively( zip, directory );
-                }
-            }
-        }
-    }
-
-    private static void addRecursively( ZipOutputStream output, File input ) throws IOException
-    {
-        if ( input.isFile() )
-        {
-            output.putNextEntry( new ZipEntry( input.getAbsolutePath() ) );
-            byte[] scratchPad = EphemeralFileData.SCRATCH_PAD.get();
-            try ( FileInputStream source = new FileInputStream( input ) )
-            {
-                for ( int read; 0 <= (read = source.read( scratchPad )); )
-                {
-                    output.write( scratchPad, 0, read );
-                }
-            }
-            output.closeEntry();
-        }
-        else
-        {
-            File[] children = input.listFiles();
-            if ( children != null )
-            {
-                for ( File child : children )
-                {
-                    addRecursively( output, child );
-                }
-            }
         }
     }
 
@@ -449,7 +390,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             }
         }
 
-        return found.toArray( new File[found.size()] );
+        return found.toArray( new File[0] );
     }
 
     @Override
@@ -478,7 +419,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 }
             }
         }
-        return found.toArray( new File[found.size()] );
+        return found.toArray( new File[0] );
     }
 
     private static File constructPath( List<String> pathItems, List<String> base )
@@ -581,7 +522,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         return new EphemeralFileSystemAbstraction( directories, copiedFiles, clock );
     }
 
-    public void copyRecursivelyFromOtherFs( File from, FileSystemAbstraction fromFs, File to ) throws IOException
+    private void copyRecursivelyFromOtherFs( File from, FileSystemAbstraction fromFs, File to ) throws IOException
     {
         copyRecursivelyFromOtherFs( from, fromFs, to, newCopyBuffer() );
     }
@@ -1106,12 +1047,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             return locked == 0;
         }
 
-        synchronized void dumpTo( OutputStream target ) throws IOException
-        {
-            byte[] scratchPad = SCRATCH_PAD.get();
-            fileAsBuffer.dump( target, scratchPad, size );
-        }
-
         @Override
         public String toString()
         {
@@ -1308,19 +1243,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 throw new IllegalStateException( "This buffer have been freed.", freeCall );
             }
         }
-
-        void dump( OutputStream target, byte[] scratchPad, int size ) throws IOException
-        {
-            ByteBuffer buf = buf();
-            buf.position( 0 );
-            while ( size > 0 )
-            {
-                int read = min( size, scratchPad.length );
-                buf.get( scratchPad, 0, read );
-                size -= read;
-                target.write( scratchPad, 0, read );
-            }
-        }
     }
 
     // Copied from kernel since we don't want to depend on that module here
@@ -1415,7 +1337,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             return currentIterator != null ? currentIterator.next() : null;
         }
 
-        protected Iterator<T> nextIteratorOrNull()
+        Iterator<T> nextIteratorOrNull()
         {
             if ( iterators.hasNext() )
             {

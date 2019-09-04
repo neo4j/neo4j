@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import java.util.Optional;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.CompilerFactory;

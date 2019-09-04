@@ -71,7 +71,7 @@ public final class CommonMatchers
      */
     public static Matcher<Throwable> hasSuppressed( Throwable... expectedSuppressedErrors )
     {
-        return new TypeSafeMatcher<Throwable>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( Throwable item )
@@ -93,8 +93,8 @@ public final class CommonMatchers
                     description.appendText( "a throwable with suppressed:\n" );
 
                     String expectedSuppressedAsString = Arrays.stream( expectedSuppressedErrors )
-                            .map( ExceptionUtils::readStackTrace )
-                            .collect( joining( "\n", "[\n", "]" ) );
+                                                              .map( ExceptionUtils::readStackTrace )
+                                                              .collect( joining( "\n", "[\n", "]" ) );
 
                     description.appendText( expectedSuppressedAsString );
                 }

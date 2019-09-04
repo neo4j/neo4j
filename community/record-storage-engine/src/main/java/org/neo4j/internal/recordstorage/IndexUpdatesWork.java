@@ -66,7 +66,7 @@ public class IndexUpdatesWork implements Work<IndexUpdateListener,IndexUpdatesWo
 
     private Iterable<IndexEntryUpdate<SchemaDescriptor>> combinedUpdates()
     {
-        return () -> new NestingIterator<IndexEntryUpdate<SchemaDescriptor>,IndexUpdates>( updates.iterator() )
+        return () -> new NestingIterator<>( updates.iterator() )
         {
             @Override
             protected Iterator<IndexEntryUpdate<SchemaDescriptor>> createNestedIterator( IndexUpdates item )

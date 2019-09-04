@@ -332,7 +332,7 @@ public class GraphDescription implements GraphDefinition
                 joinedLabels.add( label.value() );
             }
 
-            String[] labelNameArray = joinedLabels.toArray(new String[joinedLabels.size()]);
+            String[] labelNameArray = joinedLabels.toArray( new String[0] );
             nodes.put( name, new NodeWithAddedLabels( preexistingNode, labelNameArray ) );
         }
     }

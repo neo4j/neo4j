@@ -199,7 +199,7 @@ public class StoreProcessor extends AbstractStoreProcessor
             long recordsPerCpu, final QueueDistributor<R> distributor )
     {
         cacheAccess.prepareForProcessingOfSingleStore( recordsPerCpu );
-        RecordProcessor<R> processor = new RecordProcessor.Adapter<R>()
+        RecordProcessor<R> processor = new RecordProcessor.Adapter<>()
         {
             @Override
             public void init( int id )

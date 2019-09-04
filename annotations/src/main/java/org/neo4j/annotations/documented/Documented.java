@@ -26,17 +26,6 @@ import java.lang.annotation.Target;
 
 /**
  * Defines documentation for a class, interface, field or method.
- *
- * If no documentation is given for the {@link #value() value} to this
- * annotation, the JavaDoc documentation comment will be
- * {@link DocumentationProcessor extracted at compile time} and inserted as the
- * {@link #value() value} of this annotation. If no JavaDoc is specified a
- * compiler warning will be issued.
- *
- * Note that for the JavaDoc to be possible to be extracted it must come before
- * any annotation on the documented element.
- *
- * @author Tobias Ivarsson
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( { ElementType.TYPE, ElementType.FIELD, ElementType.METHOD } )

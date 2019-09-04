@@ -45,7 +45,6 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;

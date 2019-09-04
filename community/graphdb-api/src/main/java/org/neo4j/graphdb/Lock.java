@@ -28,8 +28,6 @@ import org.neo4j.annotations.api.PublicApi;
  * can be released manually using {@link #release()}. If not released
  * manually it will be automatically released when the transaction owning
  * it finishes.
- *
- * @author Mattias Persson
  */
 @PublicApi
 public interface Lock

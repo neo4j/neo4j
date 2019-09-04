@@ -44,8 +44,8 @@ public class TransitionalPeriodTransactionMessContainer
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    public TransitionalTxManagementKernelTransaction newTransaction( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
-            long customTransactionTimeout )
+    TransitionalTxManagementKernelTransaction newTransaction( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
+                                                              long customTransactionTimeout )
     {
         return new TransitionalTxManagementKernelTransaction( db, type, loginContext, connectionInfo, customTransactionTimeout, txBridge );
     }
@@ -63,8 +63,6 @@ public class TransitionalPeriodTransactionMessContainer
     public TransactionalContext create(
             GraphDatabaseQueryService service,
             InternalTransaction transaction,
-            Type type,
-            LoginContext loginContext,
             String query,
             Map<String, Object> queryParameters )
     {

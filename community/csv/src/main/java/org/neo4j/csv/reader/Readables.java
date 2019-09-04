@@ -301,7 +301,7 @@ public class Readables
             throw new IllegalStateException( "No source items specified" );
         }
 
-        return new RawIterator<OUT,IOException>()
+        return new RawIterator<>()
         {
             private int cursor;
 

@@ -204,7 +204,7 @@ public class DataGeneratorInput implements Input
         entries.add( new Entry( idKey, Type.ID, null, idExtractor( idType, extractors ) ) );
         entries.add( new Entry( null, Type.LABEL, null, extractors.stringArray() ) );
         entries.addAll( asList( additionalEntries ) );
-        return new Header( entries.toArray( new Entry[entries.size()] ) );
+        return new Header( entries.toArray( new Entry[0] ) );
     }
 
     public static Header bareboneRelationshipHeader( IdType idType, Extractors extractors, Entry... additionalEntries )
@@ -214,7 +214,7 @@ public class DataGeneratorInput implements Input
         entries.add( new Entry( null, Type.END_ID, null, idExtractor( idType, extractors ) ) );
         entries.add( new Entry( null, Type.TYPE, null, extractors.string() ) );
         entries.addAll( asList( additionalEntries ) );
-        return new Header( entries.toArray( new Entry[entries.size()] ) );
+        return new Header( entries.toArray( new Entry[0] ) );
     }
 
     private static String[] tokens( String prefix, int count )

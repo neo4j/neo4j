@@ -26,10 +26,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-/**
- * @author mh
- * @since 18.02.13
- */
 public class DatabaseSubGraph implements SubGraph
 {
     private final GraphDatabaseService gdb;

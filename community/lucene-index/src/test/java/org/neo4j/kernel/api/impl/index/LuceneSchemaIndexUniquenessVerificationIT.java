@@ -66,8 +66,6 @@ class LuceneSchemaIndexUniquenessVerificationIT
     private static final int PROPERTY_KEY_ID = 42;
     private static final IndexDescriptor descriptor = TestIndexDescriptorFactory.uniqueForLabel( 0, PROPERTY_KEY_ID );
     private static final int nodesToCreate = DOCS_PER_PARTITION * 2 + 1;
-    private static final long MAX_LONG_VALUE = Long.MAX_VALUE >> 10;
-    private static final long MIN_LONG_VALUE = MAX_LONG_VALUE - 20;
 
     @Inject
     private TestDirectory testDir;

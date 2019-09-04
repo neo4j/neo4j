@@ -131,7 +131,7 @@ public class NativeLabelScanStoreTest
         // label scan store init but no start
         LifeSupport life = new LifeSupport();
         TrackingMonitor monitor = new TrackingMonitor();
-        life.add( createLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, true, false, monitor ) );
+        life.add( createLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, false, monitor ) );
         life.init();
         assertTrue( monitor.noIndexCalled );
         monitor.reset();
@@ -140,7 +140,7 @@ public class NativeLabelScanStoreTest
         // when
         // starting label scan store again
         life = new LifeSupport();
-        life.add( createLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, true, false, monitor ) );
+        life.add( createLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, false, monitor ) );
         life.init();
 
         // then
@@ -162,7 +162,7 @@ public class NativeLabelScanStoreTest
         LifeSupport life = new LifeSupport();
 
         // when
-        life.add( createLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, true, false, monitor ) );
+        life.add( createLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, false, monitor ) );
         life.start();
 
         // then
@@ -189,7 +189,7 @@ public class NativeLabelScanStoreTest
     void shouldStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode() throws IOException
     {
         // WHEN
-        start( false, true );
+        start( true );
 
         // THEN
 
@@ -424,10 +424,10 @@ public class NativeLabelScanStoreTest
         List<NodeLabelUpdate> data = asList(
                 labelChanges( 1, NO_LABELS, new long[]{1} ),
                 labelChanges( 2, NO_LABELS, new long[]{1, 2} ) );
-        start( data, true, false );
+        start( data, false );
 
         // WHEN the index is corrupted and then started again
-        scrambleIndexFilesAndRestart( data, true, false );
+        scrambleIndexFilesAndRestart( data );
 
         assertTrue( monitor.corruptedIndex, "Index corruption should be detected" );
         assertTrue( monitor.rebuildingCalled, "Index should be rebuild" );
@@ -502,8 +502,8 @@ public class NativeLabelScanStoreTest
     }
 
     private LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
-            FullStoreChangeStream fullStoreChangeStream, boolean usePersistentStore, boolean readOnly,
-            LabelScanStore.Monitor monitor )
+                                                 FullStoreChangeStream fullStoreChangeStream, boolean readOnly,
+                                                 LabelScanStore.Monitor monitor )
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
@@ -605,43 +605,43 @@ public class NativeLabelScanStoreTest
         start();
         life.shutdown();
 
-        start( false, true );
+        start( true );
     }
 
     private void start()
     {
-        start( false, false );
+        start( false );
     }
 
-    private void start( boolean usePersistentStore, boolean readOnly )
+    private void start( boolean readOnly )
     {
-        start( Collections.emptyList(), usePersistentStore, readOnly );
+        start( Collections.emptyList(), readOnly );
     }
 
     private void start( List<NodeLabelUpdate> existingData )
     {
-        start( existingData, false, false );
+        start( existingData, false );
     }
 
-    private void start( List<NodeLabelUpdate> existingData, boolean usePersistentStore,
-            boolean readOnly )
+    private void start( List<NodeLabelUpdate> existingData,
+                        boolean readOnly )
     {
         life = new LifeSupport();
         monitor = new TrackingMonitor();
 
-        store = createLabelScanStore( fileSystem, testDirectory.databaseLayout(), asStream( existingData ), usePersistentStore, readOnly,
-                monitor );
+        store = createLabelScanStore( fileSystem, testDirectory.databaseLayout(), asStream( existingData ), readOnly,
+                                      monitor );
         life.add( store );
 
         life.start();
         assertTrue( monitor.initCalled );
     }
 
-    private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data, boolean usePersistentStore, boolean readOnly ) throws IOException
+    private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data ) throws IOException
     {
         shutdown();
         corruptIndex( testDirectory.databaseLayout() );
-        start( data, usePersistentStore, readOnly );
+        start( data, false );
     }
 
     void scrambleFile( File file ) throws IOException

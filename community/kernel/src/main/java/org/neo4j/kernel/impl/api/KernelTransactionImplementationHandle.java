@@ -79,12 +79,6 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public long lastTransactionIdWhenStarted()
-    {
-        return lastTransactionIdWhenStarted;
-    }
-
-    @Override
     public long lastTransactionTimestampWhenStarted()
     {
         return lastTransactionTimestampWhenStarted;

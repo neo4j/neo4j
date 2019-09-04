@@ -114,7 +114,7 @@ class ImportLogicTest
         }
         types.sort( ( t1, t2 ) -> Long.compare( t2.getCount(), t1.getCount() ) );
         DataStatistics typeDistribution =
-                new DataStatistics( 0, 0, types.toArray( new DataStatistics.RelationshipTypeCount[types.size()] ) );
+                new DataStatistics( 0, 0, types.toArray( new DataStatistics.RelationshipTypeCount[0] ) );
 
         // WHEN enough memory for all types
         {

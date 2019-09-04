@@ -24,7 +24,6 @@ import java.util.concurrent.ForkJoinPool;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;

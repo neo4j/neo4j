@@ -66,7 +66,7 @@ public class IndexSamplingControllerFactory
 
     private Predicate<Long> createSamplingPredicate()
     {
-        return new Predicate<Long>()
+        return new Predicate<>()
         {
             private final DoubleLongRegister output = newDoubleLongRegister();
 

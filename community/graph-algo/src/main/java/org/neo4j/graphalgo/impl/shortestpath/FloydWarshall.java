@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Relationship;
  *             The {@link CostAccumulator} and cost comparator are both called
  *             n^3 times. Assuming they run in constant time, the time
  *             complexity for this algorithm is O(n^3).
- * @author Patrik Larsson
  * @param <CostType>
  *            The datatype the edge weights are represented by.
  */

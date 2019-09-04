@@ -87,7 +87,6 @@ import static org.neo4j.values.storable.Values.utf8Value;
 public class TopLevelTransaction implements InternalTransaction
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
-    private boolean commitCalled;
     private final GraphDatabaseFacade facade;
     private KernelTransaction transaction;
     private final ThreadLocal<TopLevelTransaction> tempTopLevelTransaction;
@@ -408,8 +407,7 @@ public class TopLevelTransaction implements InternalTransaction
             Code statusCode = e.status().code();
             if ( statusCode.classification() == Classification.TransientError )
             {
-                throw new TransientTransactionFailureException(
-                        closeFailureMessage() + ": " + statusCode.description(), e );
+                throw new TransientTransactionFailureException( closeFailureMessage() + ": " + statusCode.description(), e );
             }
             throw new TransactionFailureException( closeFailureMessage(), e );
         }
@@ -433,7 +431,7 @@ public class TopLevelTransaction implements InternalTransaction
 
     private String closeFailureMessage()
     {
-        return commitCalled ? "Transaction failed to commit and was rolled back." : "Unable to rollback transaction";
+        return "Unable to rollback transaction";
     }
 
     @Override

@@ -45,9 +45,6 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-/**
- * @author Anton Persson
- */
 class TestBestFirstSelectorFactory extends Neo4jAlgoTestCase
 {
     private static final String LENGTH = "length";

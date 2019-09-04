@@ -97,7 +97,7 @@ public class Groups implements ReadableGroups
 
     private String groupNames()
     {
-        return Arrays.toString( byName.keySet().toArray( new String[byName.keySet().size()] ) );
+        return Arrays.toString( byName.keySet().toArray( new String[0] ) );
     }
 
     @Override

@@ -56,12 +56,6 @@ public class Registers
             }
 
             @Override
-            public boolean hasValues( long first, long second )
-            {
-                return this.first == first && this.second == second;
-            }
-
-            @Override
             public void write( long first, long second )
             {
                 this.first = first;

@@ -25,7 +25,6 @@ package org.neo4j.graphdb.traversal;
  * {@link TraversalBranch} and whether or not to include a
  * {@link TraversalBranch} in the result of a traversal.
  *
- * @author Mattias Persson
  * @see Evaluator
  */
 public enum Evaluation

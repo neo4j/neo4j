@@ -60,7 +60,7 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
     @Override
     public Iterator<Document> iterator()
     {
-        return new PrefetchingIterator<Document>()
+        return new PrefetchingIterator<>()
         {
             DocIdSetIterator idIterator = iterateAllDocs();
 

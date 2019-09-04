@@ -122,7 +122,7 @@ class RecordPropertyCursorTest
 
     private RecordPropertyCursor createCursor()
     {
-        return new RecordPropertyCursor( neoStores.getPropertyStore(), neoStores.getMetaDataStore() );
+        return new RecordPropertyCursor( neoStores.getPropertyStore() );
     }
 
     private static void assertPropertyChain( Value[] values, long firstPropertyId, RecordPropertyCursor cursor )

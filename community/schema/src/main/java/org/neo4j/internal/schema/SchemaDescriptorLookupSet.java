@@ -356,11 +356,6 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier>
         {
             return byAnyProperty.containsKey( propertyKey );
         }
-
-        boolean isEmpty()
-        {
-            return descriptors.isEmpty() && next.isEmpty();
-        }
     }
 
     /**

@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
@@ -72,8 +71,8 @@ class TransactionHandle implements TransactionTerminationHandle
     private long expirationTimestamp = -1;
 
     TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine, GraphDatabaseQueryService queryService,
-            TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, LoginContext loginContext,
-            ClientConnectionInfo connectionInfo, long customTransactionTimeoutMillis, LogProvider logProvider )
+                       TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, LoginContext loginContext,
+                       ClientConnectionInfo connectionInfo, long customTransactionTimeoutMillis )
     {
         this.txManagerFacade = txManagerFacade;
         this.engine = engine;
@@ -157,8 +156,7 @@ class TransactionHandle implements TransactionTerminationHandle
             }
             return result;
         }
-        TransactionalContext tc = txManagerFacade.create( queryService, context.getInternalTransaction(),
-                type, loginContext, statement.getStatement(), statement.getParameters() );
+        TransactionalContext tc = txManagerFacade.create( queryService, context.getInternalTransaction(), statement.getStatement(), statement.getParameters() );
         return engine.executeQuery( statement.getStatement(), ValueUtils.asMapValue( statement.getParameters() ), tc, false );
     }
 

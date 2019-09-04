@@ -130,7 +130,7 @@ class Configuration
             return warningsHandlers.get( 0 );
         }
         return new WarningsHandler.Multiplex(
-                warningsHandlers.toArray( new WarningsHandler[warningsHandlers.size()] ) );
+                warningsHandlers.toArray( new WarningsHandler[0] ) );
     }
 
     public SourceCompiler sourceCompilerFor( CodeGenerationStrategy<?> strategy )

@@ -68,7 +68,7 @@ public class TransactionFacade
             LoginContext loginContext, ClientConnectionInfo connectionInfo, long customTransactionTimeout )
     {
         return new TransactionHandle( kernel, engine, queryService, registry, uriScheme, implicitTransaction,
-                loginContext, connectionInfo, customTransactionTimeout, logProvider );
+                loginContext, connectionInfo, customTransactionTimeout );
     }
 
     TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException

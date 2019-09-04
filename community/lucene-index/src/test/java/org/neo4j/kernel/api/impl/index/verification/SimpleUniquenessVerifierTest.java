@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index.verification;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
@@ -53,7 +52,6 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 
 @TestDirectoryExtension
@@ -158,25 +156,6 @@ class SimpleUniquenessVerifierTest
         insert( data );
 
         assertDuplicatesCreated( nodePropertyAccessor, valueTupleList( "-99.99999", 'a', "-10", "div" ) );
-    }
-
-    private void runUniquenessVerification( NodePropertyAccessor nodePropertyAccessor, IndexSearcher indexSearcher )
-            throws IOException, IndexEntryConflictException
-    {
-        try
-        {
-            PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
-            when( partitionSearcher.getIndexSearcher() ).thenReturn( indexSearcher );
-
-            try ( UniquenessVerifier verifier = new SimpleUniquenessVerifier( partitionSearcher ) )
-            {
-                verifier.verify( nodePropertyAccessor, PROPERTY_KEY_IDS );
-            }
-        }
-        finally
-        {
-            searcherManager.release( indexSearcher );
-        }
     }
 
     private void assertNoDuplicates( NodePropertyAccessor nodePropertyAccessor ) throws Exception

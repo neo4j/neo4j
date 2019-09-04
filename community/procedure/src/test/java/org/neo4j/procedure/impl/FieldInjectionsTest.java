@@ -82,7 +82,7 @@ class FieldInjectionsTest
         List<FieldSetter> setters = injections.setters( Outer.ClassWithSyntheticField.class );
 
         // Then
-        Outer.ClassWithSyntheticField syntheticField = new Outer().classWithSyntheticField();
+        new Outer().classWithSyntheticField();
         for ( FieldSetter setter : setters )
         {
             assertFalse( setter.field().isSynthetic() );

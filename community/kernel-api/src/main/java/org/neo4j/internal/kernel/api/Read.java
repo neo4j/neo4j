@@ -305,8 +305,6 @@ public interface Read
 
     void relationshipTypeScan( int type, RelationshipScanCursor cursor );
 
-    Scan<RelationshipScanCursor> relationshipTypeScan( int type );
-
     /**
      * @param nodeReference
      *         a reference from {@link NodeCursor#nodeReference()}.

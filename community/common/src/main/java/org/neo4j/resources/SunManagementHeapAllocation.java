@@ -29,7 +29,7 @@ class SunManagementHeapAllocation extends HeapAllocation
     @SuppressWarnings( "unused" )
     static HeapAllocation load( java.lang.management.ThreadMXBean bean )
     {
-        if ( ThreadMXBean.class.isInstance( bean ) )
+        if ( bean instanceof ThreadMXBean )
         {
             return new SunManagementHeapAllocation( (ThreadMXBean) bean );
         }

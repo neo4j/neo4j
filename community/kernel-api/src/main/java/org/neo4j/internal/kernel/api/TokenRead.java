@@ -45,11 +45,6 @@ public interface TokenRead
     int ANY_LABEL = TokenConstants.ANY_LABEL;
 
     /**
-     * Value indicating the a property key token does not exist in the graph.
-     */
-    int ANY_PROPERTY_KEY = TokenConstants.ANY_PROPERTY_KEY;
-
-    /**
      * Return the id of the provided label, or NO_TOKEN if the label isn't known to the graph.
      *
      * @param name The label name.

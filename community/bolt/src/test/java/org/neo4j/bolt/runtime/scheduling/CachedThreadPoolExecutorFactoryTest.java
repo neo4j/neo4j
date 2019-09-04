@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.logging.NullLog;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -63,7 +62,7 @@ public class CachedThreadPoolExecutorFactoryTest
 {
     private static final int TEST_BOUNDED_QUEUE_SIZE = 5;
 
-    private final ExecutorFactory factory = new CachedThreadPoolExecutorFactory( NullLog.getInstance() );
+    private final ExecutorFactory factory = new CachedThreadPoolExecutorFactory();
     private ExecutorService executorService;
 
     @Parameter( 0 )

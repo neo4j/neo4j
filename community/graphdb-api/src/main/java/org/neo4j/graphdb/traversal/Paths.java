@@ -148,7 +148,7 @@ public class Paths
      */
     public static String simplePathToString( Path path )
     {
-        return pathToString( path, new DefaultPathDescriptor<Path>()
+        return pathToString( path, new DefaultPathDescriptor<>()
         {
             @Override
             public String relationshipRepresentation( Path path, Node from,
@@ -171,7 +171,7 @@ public class Paths
      */
     public static String simplePathToString( Path path, final String nodePropertyKey )
     {
-        return pathToString( path, new DefaultPathDescriptor<Path>()
+        return pathToString( path, new DefaultPathDescriptor<>()
         {
             @Override
             public String nodeRepresentation( Path path, Node node )
@@ -200,14 +200,14 @@ public class Paths
     public static <T extends Path> PathDescriptor<T> descriptorForIdAndProperties( final boolean nodeId,
     final boolean relId, final String... propertyKeys )
     {
-        return new Paths.PathDescriptor<T>()
+        return new Paths.PathDescriptor<>()
         {
             @Override
             public String nodeRepresentation( T path, Node node )
             {
                 String representation = representation( node );
-                return "(" + (nodeId ? node.getId() : "" ) +
-                       ( nodeId && !representation.equals( "" ) ? "," : "" ) +
+                return "(" + (nodeId ? node.getId() : "") +
+                       (nodeId && !representation.equals( "" ) ? "," : "") +
                        representation + ")";
             }
 

@@ -54,7 +54,6 @@ import org.neo4j.internal.helpers.collection.Iterables;
  *             cost comparator will all be called once for every relationship
  *             traversed. Assuming they run in constant time, the time
  *             complexity for this algorithm is O(m + n * log(n)).
- * @author Patrik Larsson
  * @param <CostType> The datatype the edge weights will be represented by.
  */
 public class Dijkstra<CostType> implements
@@ -157,8 +156,6 @@ public class Dijkstra<CostType> implements
     /**
      * A DijkstraIterator computes the distances to nodes from a specified
      * starting node, one at a time, following the dijkstra algorithm.
-     *
-     * @author Patrik Larsson
      */
     protected class DijkstraIterator implements Iterator<Node>
     {

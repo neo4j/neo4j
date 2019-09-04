@@ -331,7 +331,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         {
             relList.add( rel );
         }
-        return relList.toArray( new Relationship[relList.size()] );
+        return relList.toArray( new Relationship[0] );
     }
 
     @Test

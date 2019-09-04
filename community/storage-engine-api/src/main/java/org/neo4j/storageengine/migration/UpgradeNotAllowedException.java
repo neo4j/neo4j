@@ -23,9 +23,8 @@ import org.neo4j.exceptions.StoreFailureException;
 
 public class UpgradeNotAllowedException extends StoreFailureException
 {
-    private static final String BASE_MSG = String.format(
-        "Neo4j cannot be started because the database files require upgrading and upgrades are disabled "
-            + "in the configuration. Please set 'dbms.allow_upgrade' to 'true' in your configuration file and try again." );
+    private static final String BASE_MSG = "Neo4j cannot be started because the database files require upgrading and upgrades are disabled "
+                                       + "in the configuration. Please set 'dbms.allow_upgrade' to 'true' in your configuration file and try again.";
 
     public UpgradeNotAllowedException( String msg )
     {

@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Relationship;
  * constructing them from sets of predecessors or counting them. These functions
  * are lifted out here because they can be used by algorithms for too different
  * problems.
- * @author Patrik Larsson
  */
 public class Util
 {

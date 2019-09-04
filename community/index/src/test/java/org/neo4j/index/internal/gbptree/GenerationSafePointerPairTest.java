@@ -225,11 +225,6 @@ class GenerationSafePointerPairTest
         return pointer;
     }
 
-    private static Object[] array( Object... array )
-    {
-        return array;
-    }
-
     enum State
     {
         EMPTY( GenerationSafePointerPair.EMPTY )

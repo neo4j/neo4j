@@ -39,19 +39,4 @@ public interface LabelScanWriter extends Closeable
      */
     @Override
     void close() throws IOException;
-
-    LabelScanWriter EMPTY = new LabelScanWriter()
-    {
-        @Override
-        public void write( NodeLabelUpdate update )
-        {
-            // do nothing
-        }
-
-        @Override
-        public void close()
-        {
-            // nothing to close
-        }
-    };
 }

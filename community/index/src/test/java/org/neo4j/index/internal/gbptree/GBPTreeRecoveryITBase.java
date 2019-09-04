@@ -358,7 +358,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         }
 
         @SuppressWarnings( "unchecked" )
-        Map.Entry<Long,Long>[] entries = map.entrySet().toArray( new Map.Entry[map.size()] );
+        Map.Entry<Long,Long>[] entries = map.entrySet().toArray( new Map.Entry[0] );
         long[] result = new long[entries.length * 2];
         for ( int i = 0, c = 0; i < entries.length; i++ )
         {

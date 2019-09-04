@@ -148,7 +148,7 @@ public class RoutingResultFormat
     private static SocketAddress parseAddress( String address )
     {
         String[] split = address.split( ":" );
-        return new SocketAddress( split[0], Integer.valueOf( split[1] ) );
+        return new SocketAddress( split[0], Integer.parseInt( split[1] ) );
     }
 
     private static AnyValue[] asValues( List<SocketAddress> addresses )

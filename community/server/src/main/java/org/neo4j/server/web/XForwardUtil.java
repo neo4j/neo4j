@@ -98,7 +98,7 @@ public class XForwardUtil
             }
             if ( strings.length > 1 )
             {
-                this.port = Integer.valueOf( strings[1] );
+                this.port = Integer.parseInt( strings[1] );
                 isValid = true;
             }
             if ( strings.length > 2 )

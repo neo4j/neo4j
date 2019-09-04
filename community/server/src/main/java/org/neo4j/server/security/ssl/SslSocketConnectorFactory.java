@@ -76,7 +76,7 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
         List<String> ciphers = sslPolicy.getCipherSuites();
         if ( ciphers != null )
         {
-            sslContextFactory.setIncludeCipherSuites( ciphers.toArray( new String[ciphers.size()] ) );
+            sslContextFactory.setIncludeCipherSuites( ciphers.toArray( new String[0] ) );
             sslContextFactory.setExcludeCipherSuites();
         }
 

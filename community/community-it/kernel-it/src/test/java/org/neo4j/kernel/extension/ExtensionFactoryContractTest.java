@@ -55,7 +55,7 @@ public abstract class ExtensionFactoryContractTest
         this.key = key;
     }
 
-    protected GraphDatabaseAPI graphDb( int instance )
+    protected GraphDatabaseAPI graphDb()
     {
         managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

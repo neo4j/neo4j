@@ -225,7 +225,7 @@ class ForkedProcessorStepTest
             // a particular batch.
             if ( random.nextFloat() < 0.1 )
             {
-                int p = step.processors( random.nextInt( -2, 4 ) );
+                step.processors( random.nextInt( -2, 4 ) );
             }
 
             int[] batch = new int[length];

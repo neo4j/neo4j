@@ -30,9 +30,4 @@ public interface AssertOpen
      * Should throw exception with reason if source is not open.
      */
     void assertOpen();
-
-    AssertOpen ALWAYS_OPEN = () ->
-    {
-        // Always open
-    };
 }

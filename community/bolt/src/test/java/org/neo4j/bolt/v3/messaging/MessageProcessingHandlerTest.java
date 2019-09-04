@@ -133,7 +133,7 @@ public class MessageProcessingHandlerTest
             throws Exception
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        BoltResponseMessageWriter responseHandler = newResponseHandlerMock( error.isFatal(), errorDuringWrite );
+        BoltResponseMessageWriter responseHandler = newResponseHandlerMock( errorDuringWrite );
 
         MessageProcessingHandler handler =
                 new MessageProcessingHandler( responseHandler, mock( BoltConnection.class ),
@@ -145,7 +145,7 @@ public class MessageProcessingHandlerTest
         return logProvider;
     }
 
-    private static BoltResponseMessageWriter newResponseHandlerMock( boolean fatalError, Throwable error ) throws Exception
+    private static BoltResponseMessageWriter newResponseHandlerMock( Throwable error ) throws Exception
     {
         BoltResponseMessageWriter handler = newResponseHandlerMock();
 
@@ -153,7 +153,6 @@ public class MessageProcessingHandlerTest
         return handler;
     }
 
-    @SuppressWarnings( "unchecked" )
     private static BoltResponseMessageWriter newResponseHandlerMock()
     {
         return mock( BoltResponseMessageWriter.class );

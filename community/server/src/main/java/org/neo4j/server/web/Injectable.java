@@ -52,7 +52,7 @@ public interface Injectable<T>
      */
     static <T> Injectable<T> injectable( Class<T> type, T obj )
     {
-        return new Injectable<T>()
+        return new Injectable<>()
         {
             @Override
             public T getValue()

@@ -869,14 +869,10 @@ public class EncodingIdMapper implements IdMapper
     @Override
     public MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes )
     {
-        return new MemoryStatsVisitor.Visitable()
+        return visitor ->
         {
-            @Override
-            public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-            {
-                int trackerSize = numberOfNodes > IntTracker.MAX_ID ? BigIdTracker.SIZE : IntTracker.SIZE;
-                visitor.offHeapUsage( numberOfNodes * (Long.BYTES /*data*/ + trackerSize /*tracker*/) );
-            }
+            int trackerSize = numberOfNodes > IntTracker.MAX_ID ? BigIdTracker.SIZE : IntTracker.SIZE;
+            visitor.offHeapUsage( numberOfNodes * (Long.BYTES /*data*/ + trackerSize /*tracker*/) );
         };
     }
 

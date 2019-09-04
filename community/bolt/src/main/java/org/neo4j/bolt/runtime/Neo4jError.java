@@ -137,8 +137,6 @@ public class Neo4jError
             return Status.Transaction.valueOf( error );
         case "Request":
             return Status.Request.valueOf( error );
-        case "Network":
-            return Status.Network.valueOf( error );
         case "Security":
             return Status.Security.valueOf( error );
         default:

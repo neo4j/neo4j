@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
@@ -71,7 +70,7 @@ public class CommunitySecurityModule extends SecurityModule
         LogProvider logProvider = dependencies.logService().getUserLogProvider();
         FileSystemAbstraction fileSystem = dependencies.fileSystem();
 
-        authManager = createBasicSystemGraphRealm( config, logProvider, fileSystem, databaseManager.databaseIdRepository() );
+        authManager = createBasicSystemGraphRealm( config, logProvider, fileSystem );
 
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
@@ -132,8 +131,7 @@ public class CommunitySecurityModule extends SecurityModule
         return new File( authStoreDir, fileName );
     }
 
-    private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem,
-            DatabaseIdRepository databaseIdRepository )
+    private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
         ContextSwitchingSystemGraphQueryExecutor queryExecutor =
                 new ContextSwitchingSystemGraphQueryExecutor( databaseManager, threadToStatementContextBridge );

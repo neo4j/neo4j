@@ -146,7 +146,6 @@ class InstanceSelector<T>
      */
     <E extends Exception> void throwingForAll( ThrowingConsumer<T,E> consumer ) throws E
     {
-        T exception = null;
         for ( IndexSlot slot : IndexSlot.values() )
         {
             consumer.accept( select( slot ) );

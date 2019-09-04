@@ -34,7 +34,6 @@ import java.util.List;
  * KeyType parameter, all it needs is a comparator for that type. To achieve the
  * stated running times, it is needed that this comparator can do comparisons in
  * constant time (usually the case).
- * @author Patrik Larsson
  * @param <KeyType>
  *            The datatype to be stored in this heap.
  */

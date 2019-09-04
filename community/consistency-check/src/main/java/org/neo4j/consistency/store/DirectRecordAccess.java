@@ -84,7 +84,7 @@ public class DirectRecordAccess implements RecordAccess
     @Override
     public Iterator<PropertyRecord> rawPropertyChain( final long firstId )
     {
-        return new PrefetchingIterator<PropertyRecord>()
+        return new PrefetchingIterator<>()
         {
             private long next = firstId;
 

@@ -40,7 +40,7 @@ abstract class ReadableState<Key> implements Closeable
 
     static <Key> ReadableState<Key> store( final KeyFormat<Key> keys, final KeyValueStoreFile store )
     {
-        return new ReadableState<Key>()
+        return new ReadableState<>()
         {
             @Override
             protected KeyFormat<Key> keyFormat()
@@ -88,7 +88,7 @@ abstract class ReadableState<Key> implements Closeable
 
     static <Key> ReadableState<Key> empty( final KeyFormat<Key> keys, final long version )
     {
-        return new ReadableState<Key>()
+        return new ReadableState<>()
         {
             @Override
             protected KeyFormat<Key> keyFormat()

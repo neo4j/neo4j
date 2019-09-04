@@ -1731,7 +1731,7 @@ class ImportCommandTest
         // WHEN
         runImport(
                 "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
+                "--nodes", data( lines.toArray( new String[0] ) ).getAbsolutePath(),
                 "--legacy-style-quoting", "false");
 
         // THEN
@@ -1757,7 +1757,7 @@ class ImportCommandTest
         {
             runImport(
                     "--additional-config", dbConfig.getAbsolutePath(),
-                    "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
+                    "--nodes", data( lines.toArray( new String[0] ) ).getAbsolutePath(),
                     "--read-buffer-size", "1k"
                     );
             fail( "Should've failed" );
@@ -2013,8 +2013,8 @@ class ImportCommandTest
                 return;
             }
         }
-        fail( "Expected error lines " + join( errorLines.toArray( new String[errorLines.size()] ), format( "%n" ) ) +
-                " to have at least one line containing the string '" + string + "'" );
+        fail( "Expected error lines " + join( errorLines.toArray( new String[0] ), format( "%n" ) ) +
+              " to have at least one line containing the string '" + string + "'" );
     }
 
     private static int occurencesOf( String text, String lookFor )

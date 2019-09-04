@@ -47,8 +47,6 @@ import org.neo4j.values.storable.CSVHeaderInformation;
  * </pre>
  *
  * Any {@link Closeable} resource that gets passed in will be closed in {@link #close()}.
- *
- * @author Mattias Persson
  */
 public interface CharSeeker extends Closeable, SourceTraceability
 {

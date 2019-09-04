@@ -440,13 +440,6 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final Scan<RelationshipScanCursor> relationshipTypeScan( int type )
-    {
-        ktx.assertOpen();
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
     public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
         RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );

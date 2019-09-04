@@ -48,12 +48,6 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
-    public long lastTransactionIdWhenStarted()
-    {
-        return tx.lastTransactionIdWhenStarted();
-    }
-
-    @Override
     public long lastTransactionTimestampWhenStarted()
     {
         return tx.lastTransactionTimestampWhenStarted();

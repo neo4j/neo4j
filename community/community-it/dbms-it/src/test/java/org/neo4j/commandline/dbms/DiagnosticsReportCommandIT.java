@@ -41,7 +41,6 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -62,14 +61,13 @@ class DiagnosticsReportCommandIT
     @Inject
     private TestDirectory testDirectory;
 
-    private GraphDatabaseService database;
     private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
         managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
-        database = managementService.database( DEFAULT_DATABASE_NAME );
+        managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach

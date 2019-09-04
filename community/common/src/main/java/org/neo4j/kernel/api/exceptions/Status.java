@@ -74,24 +74,6 @@ public interface Status
 
     */
 
-    enum Network implements Status
-    {
-        // transient
-        CommunicationError( TransientError, "An unknown network failure occurred, a retry may resolve the issue." );
-        private final Code code;
-
-        @Override
-        public Code code()
-        {
-            return code;
-        }
-
-        Network( Classification classification, String description )
-        {
-            this.code = new Code( classification, this, description );
-        }
-    }
-
     // TODO: rework the names and uses of Invalid and InvalidFormat and reconsider their categorisation (ClientError
     // TODO: MUST be resolvable by the user, do we need ProtocolError/DriverError?)
     enum Request implements Status
@@ -101,9 +83,6 @@ public interface Status
                 "The client provided an invalid request." ),
         InvalidFormat( ClientError,  // TODO: see above
                 "The client provided a request that was missing required fields, or had values that are not allowed." ),
-        TransactionRequired( ClientError,
-                "The request cannot be performed outside of a transaction, and there is no transaction present to " +
-                "use. Wrap your request in a transaction and retry." ),
         InvalidUsage( ClientError,  // TODO: see above
                 "The client made a request but did not consume outgoing buffers in a timely fashion." ),
         NoThreadsAvailable( TransientError,  // TODO: see above
@@ -172,14 +151,6 @@ public interface Status
                 "This transaction, and at least one more transaction, has acquired locks in a way that it will wait " +
                 "indefinitely, and the database has aborted it. Retrying this transaction will most likely be " +
                 "successful." ),
-        InstanceStateChanged( TransientError,
-                "Transactions rely on assumptions around the state of the Neo4j instance they " +
-                "execute on. For instance, transactions in a cluster may expect that " +
-                "they are executing on an instance that can perform writes. However, " +
-                "instances may change state while the transaction is running. This causes " +
-                "assumptions the instance has made about how to execute the transaction " +
-                "to be violated - meaning the transaction must be rolled " +
-                "back. If you see this error, you should retry your operation in a new transaction." ),
         ConstraintsChanged( TransientError,
                 "Database constraints changed since the start of this transaction" ),
         Outdated( TransientError,
@@ -229,8 +200,6 @@ public interface Status
                 "The statement refers to a non-existent entity." ),
         PropertyNotFound( ClientError,
                 "The statement refers to a non-existent property." ),
-        LabelNotFound( ClientError,
-                "The statement is referring to a label that does not exist." ),
         TypeError( ClientError,
                 "The statement is attempting to perform operations on values with types that are not supported by " +
                 "the operation." ),
@@ -313,8 +282,6 @@ public interface Status
                 "The request (directly or indirectly) referred to a constraint that does not exist." ),
         ConstraintValidationFailed( ClientError,
                 "A constraint imposed by the database was violated." ),
-        ConstraintVerificationFailed( ClientError,
-                "Unable to create constraint because data that exists in the database violates it." ),
         ConstraintViolation( ClientError,
                 "Added or changed index entry would violate constraint" ),
         IndexAlreadyExists( ClientError,
@@ -350,13 +317,7 @@ public interface Status
         SchemaRuleAccessFailed( DatabaseError,
                 "The request referred to a schema rule that does not exist." ),
         SchemaRuleDuplicateFound( DatabaseError,
-                "The request referred to a schema rule that is defined multiple times." ),
-
-        // transient errors
-        SchemaModifiedConcurrently( TransientError,
-                "The database schema was modified while this transaction was running, the transaction should be " +
-                "retried." ),
-
+                "The request referred to a schema rule that is defined multiple times." )
         ;
 
         private final Code code;
@@ -411,7 +372,6 @@ public interface Status
         Unauthorized( ClientError, "The client is unauthorized due to authentication failure." ),
         AuthenticationRateLimit( ClientError, "The client has provided incorrect authentication details too many times in a row." ),
         ModifiedConcurrently( TransientError, "The user was modified concurrently to this request." ),
-        EncryptionRequired( ClientError, "A TLS encrypted connection is required." ),
         Forbidden( ClientError, "An attempt was made to perform an unauthorized action." ),
         AuthorizationExpired( ClientError, "The stored authorization info has expired. Please reconnect." ),
         AuthProviderTimeout( TransientError, "An auth provider request timed out." ),

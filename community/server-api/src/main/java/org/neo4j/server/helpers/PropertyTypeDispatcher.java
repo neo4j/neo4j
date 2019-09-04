@@ -294,7 +294,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchByteArrayProperty( final byte[] property, K param )
     {
-        return dispatchByteArrayProperty( new PrimitiveArray<byte[], Byte>()
+        return dispatchByteArrayProperty( new PrimitiveArray<>()
         {
             @Override
             public byte[] getClonedArray()
@@ -325,7 +325,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchCharacterArrayProperty( final char[] property, K param )
     {
-        return dispatchCharacterArrayProperty( new PrimitiveArray<char[], Character>()
+        return dispatchCharacterArrayProperty( new PrimitiveArray<>()
         {
             @Override
             public char[] getClonedArray()
@@ -356,7 +356,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchShortArrayProperty( final short[] property, K param )
     {
-        return dispatchShortArrayProperty( new PrimitiveArray<short[], Short>()
+        return dispatchShortArrayProperty( new PrimitiveArray<>()
         {
             @Override
             public short[] getClonedArray()
@@ -387,7 +387,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchIntegerArrayProperty( final int[] property, K param )
     {
-        return dispatchIntegerArrayProperty( new PrimitiveArray<int[], Integer>()
+        return dispatchIntegerArrayProperty( new PrimitiveArray<>()
         {
             @Override
             public int[] getClonedArray()
@@ -418,7 +418,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchLongArrayProperty( final long[] property, K param )
     {
-        return dispatchLongArrayProperty( new PrimitiveArray<long[], Long>()
+        return dispatchLongArrayProperty( new PrimitiveArray<>()
         {
             @Override
             public long[] getClonedArray()
@@ -449,7 +449,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchFloatArrayProperty( final float[] property, K param )
     {
-        return dispatchFloatArrayProperty( new PrimitiveArray<float[], Float>()
+        return dispatchFloatArrayProperty( new PrimitiveArray<>()
         {
             @Override
             public float[] getClonedArray()
@@ -480,7 +480,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchDoubleArrayProperty( final double[] property, K param )
     {
-        return dispatchDoubleArrayProperty( new PrimitiveArray<double[], Double>()
+        return dispatchDoubleArrayProperty( new PrimitiveArray<>()
         {
             @Override
             public double[] getClonedArray()
@@ -511,7 +511,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchBooleanArrayProperty( final boolean[] property, K param )
     {
-        return dispatchBooleanArrayProperty( new PrimitiveArray<boolean[], Boolean>()
+        return dispatchBooleanArrayProperty( new PrimitiveArray<>()
         {
             @Override
             public boolean[] getClonedArray()
@@ -542,7 +542,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchByteArrayProperty( final Byte[] property, K param )
     {
-        return dispatchByteArrayProperty( new BoxedArray<byte[], Byte>( property )
+        return dispatchByteArrayProperty( new BoxedArray<>( property )
         {
             @Override
             @SuppressWarnings( "boxing" )
@@ -560,7 +560,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchCharacterArrayProperty( final Character[] property, K param )
     {
-        return dispatchCharacterArrayProperty( new BoxedArray<char[], Character>( property )
+        return dispatchCharacterArrayProperty( new BoxedArray<>( property )
         {
             @Override
             @SuppressWarnings( "boxing" )
@@ -578,7 +578,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchShortArrayProperty( final Short[] property, K param )
     {
-        return dispatchShortArrayProperty( new BoxedArray<short[], Short>( property )
+        return dispatchShortArrayProperty( new BoxedArray<>( property )
         {
             @Override
             @SuppressWarnings( "boxing" )
@@ -596,7 +596,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchIntegerArrayProperty( final Integer[] property, K param )
     {
-        return dispatchIntegerArrayProperty( new BoxedArray<int[], Integer>( property )
+        return dispatchIntegerArrayProperty( new BoxedArray<>( property )
         {
             @Override
             @SuppressWarnings( "boxing" )
@@ -614,7 +614,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchLongArrayProperty( final Long[] property, K param )
     {
-        return dispatchLongArrayProperty( new BoxedArray<long[], Long>( property )
+        return dispatchLongArrayProperty( new BoxedArray<>( property )
         {
             @Override
             @SuppressWarnings( "boxing" )
@@ -632,7 +632,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchFloatArrayProperty( final Float[] property, K param )
     {
-        return dispatchFloatArrayProperty( new BoxedArray<float[], Float>( property )
+        return dispatchFloatArrayProperty( new BoxedArray<>( property )
         {
             @Override
             @SuppressWarnings( "boxing" )
@@ -650,7 +650,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchDoubleArrayProperty( final Double[] property, K param )
     {
-        return dispatchDoubleArrayProperty( new BoxedArray<double[], Double>( property )
+        return dispatchDoubleArrayProperty( new BoxedArray<>( property )
         {
             @Override
             @SuppressWarnings( "boxing" )
@@ -668,7 +668,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchBooleanArrayProperty( final Boolean[] property, K param )
     {
-        return dispatchBooleanArrayProperty( new BoxedArray<boolean[], Boolean>( property )
+        return dispatchBooleanArrayProperty( new BoxedArray<>( property )
         {
             @Override
             @SuppressWarnings( "boxing" )
@@ -688,7 +688,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchStringArrayProperty( final String[] property, K param )
     {
-        return dispatchStringArrayProperty( new BoxedArray<String[], String>( property )
+        return dispatchStringArrayProperty( new BoxedArray<>( property )
         {
             @Override
             public String[] getClonedArray()
@@ -705,7 +705,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchPointArrayProperty( final Point[] property, K param )
     {
-        return dispatchPointArrayProperty( new BoxedArray<Point[], Point>( property )
+        return dispatchPointArrayProperty( new BoxedArray<>( property )
         {
             @Override
             public Point[] getClonedArray()
@@ -727,7 +727,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchTemporalArrayProperty( final Temporal[] property, K param )
     {
-        return dispatchTemporalArrayProperty( new BoxedArray<Temporal[], Temporal>( property )
+        return dispatchTemporalArrayProperty( new BoxedArray<>( property )
         {
             @Override
             public Temporal[] getClonedArray()
@@ -744,7 +744,7 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     protected T dispatchTemporalAmountArrayProperty( final TemporalAmount[] property, K param )
     {
-        return dispatchTemporalAmountArrayProperty( new BoxedArray<TemporalAmount[], TemporalAmount>( property )
+        return dispatchTemporalAmountArrayProperty( new BoxedArray<>( property )
         {
             @Override
             public TemporalAmount[] getClonedArray()
@@ -837,7 +837,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         @Override
         public Iterator<T> iterator()
         {
-            return new Iterator<T>()
+            return new Iterator<>()
             {
                 final int size = length();
                 int pos;

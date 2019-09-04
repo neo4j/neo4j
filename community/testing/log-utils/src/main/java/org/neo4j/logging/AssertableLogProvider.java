@@ -605,24 +605,6 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    public void assertContainsThrowablesMatching( int logSkipCount,  Throwable... throwables )
-    {
-        LogCall[] calls = logCalls.stream().skip( logSkipCount ).toArray( LogCall[]::new );
-        assertEquals( calls.length, throwables.length );
-        for ( int i = 0; i < throwables.length; i++ )
-        {
-            LogCall logCall = calls[i];
-            Throwable throwable = throwables[i];
-
-            if ( logCall.throwable == null && throwable != null ||
-                    logCall.throwable != null && logCall.throwable.getClass() != throwable.getClass() )
-            {
-                fail( format( "Expected %s, but was:\n%s",
-                        throwable, logCall.throwable ) );
-            }
-        }
-    }
-
     /**
      * Note: Does not care about ordering.
      */

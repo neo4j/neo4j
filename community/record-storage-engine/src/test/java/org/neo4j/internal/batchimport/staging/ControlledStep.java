@@ -170,7 +170,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     @Override
     public Key[] keys()
     {
-        return stats.keySet().toArray( new Key[stats.size()] );
+        return stats.keySet().toArray( new Key[0] );
     }
 
     public void complete()

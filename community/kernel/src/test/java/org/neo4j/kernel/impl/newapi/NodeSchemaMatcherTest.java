@@ -42,7 +42,6 @@ import static org.neo4j.values.storable.Values.stringValue;
 class NodeSchemaMatcherTest
 {
     private static final int labelId1 = 10;
-    private static final int labelId2 = 11;
     private static final int nonExistentLabelId = 12;
     private static final int propId1 = 20;
     private static final int propId2 = 21;

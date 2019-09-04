@@ -62,8 +62,8 @@ class FulltextConfigExtractor
         }
 
         HashMap<String,Value> indexConfig = new HashMap<>();
-        TextValue analyser = extractSetting( settings, indexConfig, INDEX_CONFIG_ANALYZER );
-        BooleanValue eventuallyConsistent = extractBooleanSetting( settings, indexConfig, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
+        TextValue analyser = extractSetting( settings, INDEX_CONFIG_ANALYZER );
+        BooleanValue eventuallyConsistent = extractBooleanSetting( settings, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
         if ( analyser != null )
         {
             indexConfig.put( FulltextIndexSettingsKeys.ANALYZER, analyser );
@@ -75,7 +75,7 @@ class FulltextConfigExtractor
         return IndexConfig.with( indexConfig );
     }
 
-    private static TextValue extractSetting( Properties settings, HashMap<String,Value> indexConfig, String setting )
+    private static TextValue extractSetting( Properties settings, String setting )
     {
         String property = settings.getProperty( setting );
         if ( property != null )
@@ -85,7 +85,7 @@ class FulltextConfigExtractor
         return null;
     }
 
-    private static BooleanValue extractBooleanSetting( Properties settings, HashMap<String,Value> indexConfig, String setting )
+    private static BooleanValue extractBooleanSetting( Properties settings, String setting )
     {
         String property = settings.getProperty( setting );
         if ( property != null )

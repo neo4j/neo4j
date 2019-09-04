@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.util.Preconditions;
-
 /**
  * Tracer of kernel API reads. The Kernel will callback the tracer methods on various key events
  * of kernel reads, allowing a tracer to analyze the read patterns.

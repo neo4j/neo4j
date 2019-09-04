@@ -30,9 +30,6 @@ import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
-/**
- * @author Anton Persson
- */
 public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDetector
 {
     private final CostEvaluator costEvaluator;

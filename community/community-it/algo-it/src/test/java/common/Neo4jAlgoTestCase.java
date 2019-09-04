@@ -48,7 +48,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 /**
  * Base class for test cases working on a NeoService. It sets up a NeoService
  * and a transaction.
- * @author Patrik Larsson
  */
 public abstract class Neo4jAlgoTestCase
 {

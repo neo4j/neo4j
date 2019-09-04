@@ -289,8 +289,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
 
     void freeId( long id );
 
-    Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;
-
     class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
     {
         private final RecordStore<R> actual;

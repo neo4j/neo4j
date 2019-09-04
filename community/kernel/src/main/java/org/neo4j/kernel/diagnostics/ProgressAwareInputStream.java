@@ -114,13 +114,13 @@ class ProgressAwareInputStream extends InputStream
     }
 
     @Override
-    public void mark( int readLimit )
+    public synchronized void mark( int readLimit )
     {
         wrappedInputStream.mark( readLimit );
     }
 
     @Override
-    public void reset() throws IOException
+    public synchronized void reset() throws IOException
     {
         wrappedInputStream.reset();
     }

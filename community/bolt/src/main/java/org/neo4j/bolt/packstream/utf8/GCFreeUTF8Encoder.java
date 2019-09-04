@@ -111,9 +111,8 @@ public class GCFreeUTF8Encoder implements UTF8Encoder
         }
 
         int dp = 0;
-        for ( int sp = 0; sp < val.length; sp++ )
+        for ( byte c : val )
         {
-            byte c = val[sp];
             if ( c < 0 )
             {
                 dst[dp++] = (byte) (0xc0 | ((c & 0xff) >> 6));

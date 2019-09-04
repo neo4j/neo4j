@@ -192,7 +192,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     public Iterator<PropertyBlock> iterator()
     {
         ensureBlocksLoaded();
-        return new Iterator<PropertyBlock>()
+        return new Iterator<>()
         {
             // state for the Iterator aspect of this class.
             private int blockRecordsIteratorCursor;

@@ -45,7 +45,7 @@ public interface InitialBranchState<STATE>
         }
     };
 
-    InitialBranchState<Double> DOUBLE_ZERO = new InitialBranchState<Double>()
+    InitialBranchState<Double> DOUBLE_ZERO = new InitialBranchState<>()
     {
         @Override
         public Double initialState( Path path )

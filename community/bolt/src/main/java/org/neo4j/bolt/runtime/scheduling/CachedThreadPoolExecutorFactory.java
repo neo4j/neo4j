@@ -29,26 +29,22 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import org.neo4j.logging.Log;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class CachedThreadPoolExecutorFactory implements ExecutorFactory
 {
-    public static final int UNBOUNDED_QUEUE = -1;
-    public static final int SYNCHRONOUS_QUEUE = 0;
+    static final int UNBOUNDED_QUEUE = -1;
+    static final int SYNCHRONOUS_QUEUE = 0;
 
-    private final Log log;
     private final RejectedExecutionHandler rejectionHandler;
 
-    public CachedThreadPoolExecutorFactory( Log log )
+    public CachedThreadPoolExecutorFactory()
     {
-        this( log, new ThreadPoolExecutor.AbortPolicy() );
+        this( new ThreadPoolExecutor.AbortPolicy() );
     }
 
-    public CachedThreadPoolExecutorFactory( Log log, RejectedExecutionHandler rejectionHandler )
+    private CachedThreadPoolExecutorFactory( RejectedExecutionHandler rejectionHandler )
     {
-        this.log = log;
         this.rejectionHandler = rejectionHandler;
     }
 

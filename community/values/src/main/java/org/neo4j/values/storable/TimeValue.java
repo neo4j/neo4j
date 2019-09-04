@@ -35,11 +35,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.TemporalUtil;
-import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
@@ -191,7 +191,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     static TimeBuilder<TimeValue> builder( Supplier<ZoneId> defaultZone )
     {
-        return new TimeBuilder<TimeValue>( defaultZone )
+        return new TimeBuilder<>( defaultZone )
         {
             @Override
             protected boolean supportsTimeZone()
@@ -243,6 +243,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 }
                 return time( result );
             }
+
             @Override
             protected TimeValue selectTime(
                     AnyValue temporal )
@@ -252,7 +253,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                     throw new InvalidArgumentException( String.format( "Cannot construct time from: %s", temporal ) );
                 }
                 if ( temporal instanceof TimeValue &&
-                        timezone == null )
+                     timezone == null )
                 {
                     return (TimeValue) temporal;
                 }

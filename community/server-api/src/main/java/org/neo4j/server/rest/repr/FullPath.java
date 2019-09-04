@@ -21,10 +21,6 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.Path;
 
-/**
- * @author mh
- * @since 27.01.11
- */
 public class FullPath
 {
     private final Path path;

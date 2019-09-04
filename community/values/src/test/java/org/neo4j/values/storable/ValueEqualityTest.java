@@ -132,8 +132,6 @@ public class ValueEqualityTest
         );
     }
 
-    private Testcase currentTest;
-
     @ParameterizedTest
     @MethodSource( "parameters" )
     void runTest( Testcase testcase )
@@ -226,19 +224,9 @@ public class ValueEqualityTest
         return new Testcase( Values.intArray( propertyValue ), value, true );
     }
 
-    public static Testcase shouldNotMatch( int[] propertyValue, Object value )
-    {
-        return new Testcase( Values.intArray( propertyValue ), value, false );
-    }
-
     private static Testcase shouldMatch( char[] propertyValue, Object value )
     {
         return new Testcase( Values.charArray( propertyValue ), value, true );
-    }
-
-    public static Testcase shouldNotMatch( char[] propertyValue, Object value )
-    {
-        return new Testcase( Values.charArray( propertyValue ), value, false );
     }
 
     private static Testcase shouldMatch( String[] propertyValue, Object value )

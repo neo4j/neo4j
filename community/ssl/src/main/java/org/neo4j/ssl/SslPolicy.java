@@ -62,7 +62,7 @@ public class SslPolicy
     {
         this.privateKey = privateKey;
         this.keyCertChain = keyCertChain;
-        this.tlsVersions = tlsVersions == null ? null : tlsVersions.toArray( new String[tlsVersions.size()] );
+        this.tlsVersions = tlsVersions == null ? null : tlsVersions.toArray( new String[0] );
         this.ciphers = ciphers;
         this.clientAuth = clientAuth;
         this.trustManagerFactory = trustManagerFactory;

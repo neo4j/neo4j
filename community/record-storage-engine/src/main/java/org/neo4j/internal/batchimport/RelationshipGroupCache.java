@@ -246,11 +246,12 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
     @Override
     public Iterator<RelationshipGroupRecord> iterator()
     {
-        return new PrefetchingIterator<RelationshipGroupRecord>()
+        return new PrefetchingIterator<>()
         {
             private long cursor;
             private long nodeId = fromNodeId;
             private int countLeftForThisNode = groupCount( nodeId );
+
             {
                 findNextNodeWithGroupsIfNeeded();
             }
@@ -265,15 +266,15 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                     {
                         // Here we have an alive group
                         group = new RelationshipGroupRecord( -1 ).initialize( true,
-                                cache.get3ByteInt( cursor, 1 ),
-                                cache.get6ByteLong( cursor, 1 + 3 ),
-                                cache.get6ByteLong( cursor, 1 + 3 + 6 ),
-                                cache.get6ByteLong( cursor, 1 + 3 + 6 + 6 ),
-                                nodeId,
-                                // Special: we want to convey information about how many groups are coming
-                                // after this one so that chains can be ordered accordingly in the store
-                                // so this isn't at all "next" in the true sense of chain next.
-                                countLeftForThisNode - 1 );
+                                                                              cache.get3ByteInt( cursor, 1 ),
+                                                                              cache.get6ByteLong( cursor, 1 + 3 ),
+                                                                              cache.get6ByteLong( cursor, 1 + 3 + 6 ),
+                                                                              cache.get6ByteLong( cursor, 1 + 3 + 6 + 6 ),
+                                                                              nodeId,
+                                                                              // Special: we want to convey information about how many groups are coming
+                                                                              // after this one so that chains can be ordered accordingly in the store
+                                                                              // so this isn't at all "next" in the true sense of chain next.
+                                                                              countLeftForThisNode - 1 );
                     }
 
                     cursor++;

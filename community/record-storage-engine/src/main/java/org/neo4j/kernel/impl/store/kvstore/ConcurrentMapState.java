@@ -142,7 +142,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
         {
             throw new IllegalStateException( "Cannot reset when there are changes!" );
         }
-        return new EntryUpdater<Key>( lock )
+        return new EntryUpdater<>( lock )
         {
             @Override
             public void apply( Key key, ValueUpdate update ) throws IOException

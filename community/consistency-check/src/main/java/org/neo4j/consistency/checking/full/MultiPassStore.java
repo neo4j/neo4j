@@ -144,7 +144,7 @@ public enum MultiPassStore
                     result.add( new ConsistencyReporter( filter, report ) );
                 }
             }
-            return result.toArray( new ConsistencyReporter[result.size()] );
+            return result.toArray( new ConsistencyReporter[0] );
         }
 
         ConsistencyReporter reporter( MultiPassStore store )

@@ -44,7 +44,7 @@ import static org.neo4j.test.ReflectionUtil.verifyMethodExists;
 public class ThreadingRule extends ExternalResource
 {
     private ExecutorService executor;
-    private static final FailableConsumer<Thread> NULL_CONSUMER = new FailableConsumer<Thread>()
+    private static final FailableConsumer<Thread> NULL_CONSUMER = new FailableConsumer<>()
     {
         @Override
         public void fail( Exception failure )

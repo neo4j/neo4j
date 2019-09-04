@@ -57,7 +57,7 @@ public class TimeZones
         return zoneId >= 0 && zoneId < TIME_ZONE_SHORT_TO_STRING.size();
     }
 
-    public static final String LATEST_SUPPORTED_IANA_VERSION;
+    private static final String LATEST_SUPPORTED_IANA_VERSION;
 
     /**
      * @throws IllegalArgumentException if tzid is not in the file

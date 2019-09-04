@@ -160,14 +160,15 @@ public class ListRepresentation extends Representation
 
     public static ListRepresentation relationshipTypes( Iterable<RelationshipType> types )
     {
-        return new ListRepresentation( RepresentationType.RELATIONSHIP_TYPE, new IterableWrapper<>( types )
-        {
-            @Override
-            protected Representation underlyingObjectToObject( RelationshipType value )
-            {
-                return ValueRepresentation.relationshipType( value );
-            }
-        } );
+        return new ListRepresentation( RepresentationType.RELATIONSHIP_TYPE,
+                                       new IterableWrapper<>( types )
+                                       {
+                                           @Override
+                                           protected Representation underlyingObjectToObject( RelationshipType value )
+                                           {
+                                               return ValueRepresentation.relationshipType( value );
+                                           }
+                                       } );
     }
 
     public static ListRepresentation numbers( final long... values )

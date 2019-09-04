@@ -247,7 +247,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Relationship> reverseRelationships()
     {
-        return () -> new PrefetchingIterator<Relationship>()
+        return () -> new PrefetchingIterator<>()
         {
             private TraversalBranch branch = TraversalBranchImpl.this;
 
@@ -283,7 +283,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Node> reverseNodes()
     {
-        return () -> new PrefetchingIterator<Node>()
+        return () -> new PrefetchingIterator<>()
         {
             private TraversalBranch branch = TraversalBranchImpl.this;
 

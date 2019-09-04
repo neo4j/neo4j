@@ -71,11 +71,11 @@ class AnyValueComparator implements TernaryComparator<AnyValue>
         }
         else if ( isSequence1 )
         {
-            return  compareSequenceAndNonSequence( (SequenceValue) v1, v2 );
+            return  compareSequenceAndNonSequence( v2 );
         }
         else if ( isSequence2 )
         {
-            return  -compareSequenceAndNonSequence( (SequenceValue) v2, v1 );
+            return  -compareSequenceAndNonSequence( v1 );
         }
 
         // Handle remaining AnyValues
@@ -183,16 +183,16 @@ class AnyValueComparator implements TernaryComparator<AnyValue>
         }
     }
 
-    private int compareSequenceAndNonSequence( SequenceValue v1, AnyValue v2 )
+    private int compareSequenceAndNonSequence( AnyValue v )
     {
-        boolean isValue2 = v2 instanceof Value;
+        boolean isValue2 = v instanceof Value;
         if ( isValue2 )
         {
             return -1;
         }
         else
         {
-            return virtualValueGroupComparator.compare( VirtualValueGroup.LIST, ((VirtualValue) v2).valueGroup() );
+            return virtualValueGroupComparator.compare( VirtualValueGroup.LIST, ((VirtualValue) v).valueGroup() );
         }
     }
 }

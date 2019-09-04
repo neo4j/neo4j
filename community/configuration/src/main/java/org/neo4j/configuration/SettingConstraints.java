@@ -319,14 +319,14 @@ public final class SettingConstraints
         }
     };
 
-    public static final SettingConstraint<Path> ABSOLUTE_PATH = new SettingConstraint<Path>()
+    public static final SettingConstraint<Path> ABSOLUTE_PATH = new SettingConstraint<>()
     {
         @Override
         public void validate( Path value )
         {
             if ( !value.isAbsolute() )
             {
-                throw new IllegalArgumentException( format("`%s` is not an absolute path.", value ) );
+                throw new IllegalArgumentException( format( "`%s` is not an absolute path.", value ) );
             }
         }
 

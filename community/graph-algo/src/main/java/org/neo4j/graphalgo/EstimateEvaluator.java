@@ -26,7 +26,6 @@ import org.neo4j.graphdb.Node;
  * Evaluator used to estimate the weight of the remaining path from one node to
  * another.
  *
- * @author Mattias Persson
  * @param <T> The data type of the estimated weight.
  */
 @PublicApi

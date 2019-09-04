@@ -22,8 +22,6 @@ package org.neo4j.server.http.cypher.format.api;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import javax.ws.rs.core.UriInfo;
-
 import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
 
 /**

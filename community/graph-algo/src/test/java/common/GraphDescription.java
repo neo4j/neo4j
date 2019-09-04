@@ -91,7 +91,7 @@ public class GraphDescription implements GraphDefinition
                 lines.add( new RelationshipDescription( line ) );
             }
         }
-        this.description = lines.toArray( new RelationshipDescription[lines.size()] );
+        this.description = lines.toArray( new RelationshipDescription[0] );
     }
 
     @Override

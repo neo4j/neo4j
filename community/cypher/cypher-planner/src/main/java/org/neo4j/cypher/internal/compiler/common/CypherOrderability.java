@@ -300,7 +300,7 @@ public class CypherOrderability
                                                          : 0;
     };
 
-    private static final Comparator<Object> LIST_COMPARATOR = new Comparator<Object>()
+    private static final Comparator<Object> LIST_COMPARATOR = new Comparator<>()
     {
         @Override
         public int compare( Object lhs, Object rhs )
@@ -323,11 +323,11 @@ public class CypherOrderability
         private Iterator toIterator( Object o )
         {
             Class<?> clazz = o.getClass();
-            if ( Iterable.class.isAssignableFrom( clazz) )
+            if ( Iterable.class.isAssignableFrom( clazz ) )
             {
                 return ((Iterable) o).iterator();
             }
-            else if ( Object[].class.isAssignableFrom( clazz) )
+            else if ( Object[].class.isAssignableFrom( clazz ) )
             {
                 return Arrays.stream( (Object[]) o ).iterator();
             }

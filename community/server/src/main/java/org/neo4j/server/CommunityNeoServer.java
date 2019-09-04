@@ -60,7 +60,7 @@ public class CommunityNeoServer extends AbstractNeoServer
                 createDBMSModule(),
                 new DatabaseModule( webServer, getConfig() ),
                 new LegacyTransactionModule( webServer, getConfig() ),
-                new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider, this ),
+                new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider ),
                 new Neo4jBrowserModule( webServer ),
                 createAuthorizationModule() );
     }

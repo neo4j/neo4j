@@ -122,8 +122,8 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
             }
         }
 
-        Terms[] termsArray = terms.toArray( new Terms[terms.size()] );
-        ReaderSlice[] readerSlicesArray = readerSlices.toArray( new ReaderSlice[readerSlices.size()] );
+        Terms[] termsArray = terms.toArray( new Terms[0] );
+        ReaderSlice[] readerSlicesArray = readerSlices.toArray( new ReaderSlice[0] );
 
         return new MultiTerms( termsArray, readerSlicesArray );
     }

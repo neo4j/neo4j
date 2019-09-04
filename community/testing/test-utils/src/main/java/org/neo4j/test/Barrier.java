@@ -34,10 +34,6 @@ import java.util.concurrent.CountDownLatch;
  */
 public interface Barrier
 {
-    Barrier NONE = () ->
-    {
-    };
-
     void reached();
 
     class Control implements Barrier

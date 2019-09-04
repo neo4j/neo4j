@@ -19,11 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import java.util.Map;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.collection.MapUtil;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
@@ -44,7 +41,7 @@ public final class RecordFormatPropertyConfigurator
         // util class
     }
 
-    private static void configureIntegerSetting( Config config, Setting<Integer> setting, int fullBlockSize, int headerSize, Map<String,String> format )
+    private static void configureIntegerSetting( Config config, Setting<Integer> setting, int fullBlockSize, int headerSize )
     {
         int defaultValue = setting.defaultValue();
         int propertyValue = config.get( setting );
@@ -64,11 +61,10 @@ public final class RecordFormatPropertyConfigurator
 
     public static void configureRecordFormat( RecordFormats recordFormats, Config config )
     {
-        Map<String,String> formatConfig = MapUtil.stringMap();
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
 
-        configureIntegerSetting( config, string_block_size, DEFAULT_BLOCK_SIZE, headerSize, formatConfig );
-        configureIntegerSetting( config, array_block_size, DEFAULT_BLOCK_SIZE, headerSize, formatConfig );
-        configureIntegerSetting( config, label_block_size, DEFAULT_LABEL_BLOCK_SIZE, headerSize, formatConfig );
+        configureIntegerSetting( config, string_block_size, DEFAULT_BLOCK_SIZE, headerSize );
+        configureIntegerSetting( config, array_block_size, DEFAULT_BLOCK_SIZE, headerSize );
+        configureIntegerSetting( config, label_block_size, DEFAULT_LABEL_BLOCK_SIZE, headerSize );
     }
 }

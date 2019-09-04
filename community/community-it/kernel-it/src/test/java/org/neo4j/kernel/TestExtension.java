@@ -52,7 +52,7 @@ class TestExtension extends ExtensionFactoryContractTest
     @Test
     void shouldBeStarted()
     {
-        GraphDatabaseAPI graphdb = graphDb( 0 );
+        GraphDatabaseAPI graphdb = graphDb();
         try
         {
             assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
@@ -70,7 +70,7 @@ class TestExtension extends ExtensionFactoryContractTest
     @Test
     void dependenciesCanBeRetrieved()
     {
-        GraphDatabaseAPI graphdb = graphDb( 0 );
+        GraphDatabaseAPI graphdb = graphDb();
         try
         {
             GlobalExtensions globalExtensions = graphdb.getDependencyResolver().resolveDependency( GlobalExtensions.class );
@@ -90,7 +90,7 @@ class TestExtension extends ExtensionFactoryContractTest
     @Test
     void shouldBeShutdown()
     {
-        GraphDatabaseAPI graphdb = graphDb( 0 );
+        GraphDatabaseAPI graphdb = graphDb();
         managementService.shutdown();
 
         assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( GlobalExtensions

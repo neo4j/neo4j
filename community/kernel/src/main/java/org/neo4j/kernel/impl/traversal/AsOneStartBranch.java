@@ -43,8 +43,6 @@ import org.neo4j.graphdb.traversal.UniquenessFactory;
  * one starting {@link Node} and for implementation simplicity a
  * {@link BranchSelector} starts from one {@link TraversalBranch}.
  * This class bridges that gap.
- *
- * @author Mattias Persson
  */
 class AsOneStartBranch implements TraversalBranch
 {

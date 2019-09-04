@@ -165,7 +165,7 @@ public class ValueRepresentation extends Representation
     }
 
     private static final PropertyTypeDispatcher<Void,Representation> PROPERTY_REPRESENTATION =
-            new PropertyTypeDispatcher<Void,Representation>()
+            new PropertyTypeDispatcher<>()
             {
                 @Override
                 protected Representation dispatchBooleanProperty( boolean property, Void param )
@@ -266,7 +266,7 @@ public class ValueRepresentation extends Representation
                 @SuppressWarnings( "unchecked" )
                 private Iterable<Representation> dispatch( PropertyArray<?,?> array )
                 {
-                    return new IterableWrapper<Representation,Object>( (Iterable<Object>) array )
+                    return new IterableWrapper<>( (Iterable<Object>) array )
                     {
                         @Override
                         protected Representation underlyingObjectToObject( Object object )
@@ -298,7 +298,7 @@ public class ValueRepresentation extends Representation
                 @Override
                 @SuppressWarnings( "boxing" )
                 protected Representation dispatchCharacterArrayProperty( PropertyArray<char[],Character> array,
-                        Void param )
+                                                                         Void param )
                 {
                     return toListRepresentation( RepresentationType.CHAR, array );
                 }
@@ -334,7 +334,7 @@ public class ValueRepresentation extends Representation
                 @Override
                 @SuppressWarnings( "boxing" )
                 protected Representation dispatchBooleanArrayProperty( PropertyArray<boolean[],Boolean> array,
-                        Void param )
+                                                                       Void param )
                 {
                     return toListRepresentation( RepresentationType.BOOLEAN, array );
                 }

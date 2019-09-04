@@ -246,11 +246,6 @@ class DefaultFileSystemWatcherTest
         {
             return null;
         }
-
-        public boolean isCanceled()
-        {
-            return canceled;
-        }
     }
 
     private static class TestWatchEvent<T> implements WatchEvent

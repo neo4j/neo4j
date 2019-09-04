@@ -26,13 +26,13 @@ import java.time.Clock;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
-import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineFactoryImpl;
-import org.neo4j.bolt.runtime.scheduling.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
+import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
+import org.neo4j.bolt.runtime.scheduling.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.scheduling.ExecutorBoltSchedulerProvider;
 import org.neo4j.bolt.runtime.scheduling.NettyThreadFactory;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
@@ -112,7 +112,7 @@ public class BoltServer extends LifecycleAdapter
         TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
 
         BoltSchedulerProvider boltSchedulerProvider =
-                life.setLast( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), jobScheduler, logService ) );
+                life.setLast( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory(), jobScheduler, logService ) );
         BoltConnectionFactory boltConnectionFactory =
                 createConnectionFactory( config, boltSchedulerProvider, throttleGroup, logService, clock );
         BoltStateMachineFactory boltStateMachineFactory = createBoltStateMachineFactory( authentication, clock );

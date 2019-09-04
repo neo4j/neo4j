@@ -42,12 +42,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.TemporalParseException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.exceptions.TemporalParseException;
-import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.time.Instant.ofEpochMilli;
@@ -237,7 +237,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     static DateTimeBuilder<DateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
-        return new DateTimeBuilder<DateTimeValue>( defaultZone )
+        return new DateTimeBuilder<>( defaultZone )
         {
             @Override
             protected boolean supportsTimeZone()
@@ -253,9 +253,9 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
             private final ZonedDateTime defaultZonedDateTime =
                     ZonedDateTime.of( TemporalFields.year.defaultValue, TemporalFields.month.defaultValue,
-                            TemporalFields.day.defaultValue, TemporalFields.hour.defaultValue,
-                            TemporalFields.minute.defaultValue, TemporalFields.second.defaultValue,
-                            TemporalFields.nanosecond.defaultValue, timezone() );
+                                      TemporalFields.day.defaultValue, TemporalFields.hour.defaultValue,
+                                      TemporalFields.minute.defaultValue, TemporalFields.second.defaultValue,
+                                      TemporalFields.nanosecond.defaultValue, timezone() );
 
             @Override
             public DateTimeValue buildInternal()
@@ -363,8 +363,8 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     // Be sure to be in the start of the week based year (which can be later than 1st Jan)
                     result = result
                             .with( IsoFields.WEEK_BASED_YEAR,
-                                    safeCastIntegral( TemporalFields.year.name(), fields.get( TemporalFields.year ),
-                                            TemporalFields.year.defaultValue ) )
+                                   safeCastIntegral( TemporalFields.year.name(), fields.get( TemporalFields.year ),
+                                                     TemporalFields.year.defaultValue ) )
                             .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
                             .with( ChronoField.DAY_OF_WEEK, 1 );
                 }

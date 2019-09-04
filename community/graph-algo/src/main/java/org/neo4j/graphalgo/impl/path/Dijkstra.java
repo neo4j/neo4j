@@ -63,11 +63,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.firstOrNull;
  *                                                            {@link DijkstraBidirectional} does this faster.
  * {@link PathInterestFactory#all(double)}                  - Find all paths in increasing order. This option has
  *                                                            performance problem and is not recommended.
- *
- * @author Tobias Ivarsson
- * @author Martin Neumann
- * @author Mattias Persson
- * @author Anton Persson
  */
 public class Dijkstra implements PathFinder<WeightedPath>
 {

@@ -101,7 +101,6 @@ class TransactionLogFileTest
     void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception
     {
         // GIVEN
-        String name = "log";
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
@@ -126,7 +125,6 @@ class TransactionLogFileTest
     void shouldWriteSomeDataIntoTheLog() throws Exception
     {
         // GIVEN
-        String name = "log";
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
@@ -203,7 +201,6 @@ class TransactionLogFileTest
     void shouldVisitLogFile() throws Exception
     {
         // GIVEN
-        String name = "log";
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )

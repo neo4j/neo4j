@@ -161,7 +161,7 @@ public interface NumberArrayFactory
             result.add( HEAP );
         }
         result.addAll( asList( additional ) );
-        return result.toArray( new NumberArrayFactory[result.size()] );
+        return result.toArray( new NumberArrayFactory[0] );
     }
 
     class AllocationFailure

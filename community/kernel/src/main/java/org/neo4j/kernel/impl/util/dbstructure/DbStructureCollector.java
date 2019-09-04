@@ -375,7 +375,7 @@ public class DbStructureCollector implements DbStructureVisitor
         public Iterator<Pair<String[],String[]>> iterator()
         {
             final Iterator<SchemaDescriptor> iterator = indexMap.keySet().iterator();
-            return new Iterator<Pair<String[],String[]>>()
+            return new Iterator<>()
             {
                 @Override
                 public boolean hasNext()
@@ -468,7 +468,7 @@ public class DbStructureCollector implements DbStructureVisitor
         public Iterator<Pair<Integer, String>> iterator()
         {
             final Iterator<Map.Entry<Integer, String>> iterator = forward.entrySet().iterator();
-            return new Iterator<Pair<Integer, String>>()
+            return new Iterator<>()
             {
                 @Override
                 public boolean hasNext()
@@ -477,9 +477,9 @@ public class DbStructureCollector implements DbStructureVisitor
                 }
 
                 @Override
-                public Pair<Integer, String> next()
+                public Pair<Integer,String> next()
                 {
-                    Map.Entry<Integer, String> next = iterator.next();
+                    Map.Entry<Integer,String> next = iterator.next();
                     return Pair.of( next.getKey(), next.getValue() );
                 }
 

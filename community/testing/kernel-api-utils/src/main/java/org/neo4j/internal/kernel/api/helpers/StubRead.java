@@ -189,12 +189,6 @@ public class StubRead implements Read
     }
 
     @Override
-    public Scan<RelationshipScanCursor> relationshipTypeScan( int type )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void nodeProperties( long nodeReference, long reference, PropertyCursor cursor )
     {
         throw new UnsupportedOperationException();

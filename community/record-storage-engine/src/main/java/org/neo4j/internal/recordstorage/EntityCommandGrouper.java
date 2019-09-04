@@ -50,7 +50,7 @@ public class EntityCommandGrouper<ENTITY extends Command>
     /**
      * Enforces the order described on the class-level javadoc above.
      */
-    private final Comparator<Command> COMMAND_COMPARATOR = new Comparator<Command>()
+    private final Comparator<Command> COMMAND_COMPARATOR = new Comparator<>()
     {
         @Override
         public int compare( Command o1, Command o2 )

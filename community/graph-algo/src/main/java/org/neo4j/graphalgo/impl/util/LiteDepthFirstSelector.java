@@ -31,9 +31,6 @@ import org.neo4j.graphdb.traversal.TraversalContext;
  * A preorder depth first selector which detects "super nodes", i.e. nodes
  * which has many relationships. It delays traversing those super nodes until
  * after all non-super nodes have been traversed.
- *
- * @author Mattias Persson
- * @author Tobias Ivarsson
  */
 public class LiteDepthFirstSelector implements BranchSelector
 {

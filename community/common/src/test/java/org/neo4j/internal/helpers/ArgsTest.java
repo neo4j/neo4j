@@ -174,7 +174,7 @@ class ArgsTest
             argList.add( "--" + key );
             argList.add( String.valueOf( value ) );
         }
-        Args args = Args.parse( argList.toArray( new String[argList.size()] ) );
+        Args args = Args.parse( argList.toArray( new String[0] ) );
 
         // WHEN
         assertThrows( IllegalArgumentException.class, () -> args.get( key ) );

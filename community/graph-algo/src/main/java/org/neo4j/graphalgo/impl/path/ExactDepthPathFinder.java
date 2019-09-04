@@ -38,9 +38,6 @@ import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
  * threshold is reached such nodes are considered super nodes and are put on a
  * queue for later traversal. This makes it possible to find paths w/o having to
  * traverse heavy super nodes.
- *
- * @author Mattias Persson
- * @author Tobias Ivarsson
  */
 public class ExactDepthPathFinder extends TraversalPathFinder
 {

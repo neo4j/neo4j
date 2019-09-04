@@ -100,7 +100,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     @Override
     public Iterable<RecordProxy<RECORD,ADDITIONAL>> changes()
     {
-        return new IterableWrapper<RecordProxy<RECORD,ADDITIONAL>,DirectRecordProxy>(
+        return new IterableWrapper<>(
                 batch.values() )
         {
             @Override

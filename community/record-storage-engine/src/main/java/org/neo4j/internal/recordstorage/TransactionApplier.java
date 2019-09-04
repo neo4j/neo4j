@@ -42,11 +42,6 @@ import org.neo4j.storageengine.api.StorageCommand;
 public interface TransactionApplier extends Visitor<StorageCommand,IOException>, CommandVisitor, AutoCloseable
 {
     /**
-     * A {@link TransactionApplier} which does nothing.
-     */
-    TransactionApplier EMPTY = new Adapter();
-
-    /**
      * Delegates to individual visit methods (see {@link CommandVisitor}) which need to be implemented, as well as
      * {@link #close()} if applicable.
      */

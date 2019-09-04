@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
-import java.util.Arrays;
-
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -263,7 +260,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         }
         else
         {
-            String mode = "mode=";
             return "RelationshipTraversalCursor[id=" + storeCursor.entityReference() +
                     ", " + storeCursor.toString() + "]";
         }

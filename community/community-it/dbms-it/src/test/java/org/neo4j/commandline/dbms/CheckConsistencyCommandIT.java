@@ -74,13 +74,12 @@ class CheckConsistencyCommandIT
     @Inject
     private TestDirectory testDir;
     private Path homeDir;
-    private DatabaseLayout databaseLayout;
 
     @BeforeEach
     void setUp()
     {
         homeDir = testDir.directory( "home" ).toPath();
-        databaseLayout = prepareDatabase( homeDir, Config.defaults() );
+        prepareDatabase( homeDir, Config.defaults() );
     }
 
     @Test
@@ -223,7 +222,6 @@ class CheckConsistencyCommandIT
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
         when( consistencyCheckService
                 .runFullConsistencyCheck( any( DatabaseLayout.class ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
@@ -405,12 +403,11 @@ class CheckConsistencyCommandIT
         return Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() ).get( databases_root_path ).toFile();
     }
 
-    private DatabaseLayout prepareDatabase( Path homeDir, Config config )
+    private void prepareDatabase( Path homeDir, Config config )
     {
         File databasesFolder = getDatabasesFolder( homeDir );
         DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
         prepareDatabase( databaseLayout, config );
-        return databaseLayout;
     }
 
     private void prepareDatabase( DatabaseLayout databaseLayout, Config config )

@@ -28,7 +28,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 class EnvelopeSettings
 {
-    private static final String SPATIAL_SETTING_PREFIX = "unsupported.dbms.db.spatial.crs.";
     private static final double DEFAULT_MIN_EXTENT = -1000000;
     private static final double DEFAULT_MAX_EXTENT = 1000000;
     private static final double DEFAULT_MIN_LATITUDE = -90;

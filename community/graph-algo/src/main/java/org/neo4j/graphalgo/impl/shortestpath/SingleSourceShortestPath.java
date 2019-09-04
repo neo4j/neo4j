@@ -32,7 +32,6 @@ import org.neo4j.graphdb.RelationshipType;
  * An object implementing this encapsulates an algorithm able to solve the
  * single source shortest path problem. I.e. it can find the shortest path(s)
  * from a given start node to all other nodes in a network.
- * @author Patrik Larsson
  * @param <CostType>
  *            The datatype the edge weights are represented by.
  */

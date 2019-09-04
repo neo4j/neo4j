@@ -21,9 +21,6 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.Comparator;
 
-/**
- * @author Anton Persson
- */
 public class NoneStrictMath
 {
     // NOTE: This cannot be final since it's used to change the tolerance in the graph algorithms module

@@ -27,7 +27,6 @@ import java.util.function.BiFunction;
  * {@link org.neo4j.graphalgo.impl.path.Dijkstra} or {@link org.neo4j.graphalgo.impl.path.AStar}.
  * {@link #comparator()} provides a comparator on priority object to be used when ordering paths.
  * {@link #canBeRuledOut(int, Object, Object)}
- * @author Anton Persson
  */
 public interface PathInterest<P>
 {

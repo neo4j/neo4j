@@ -56,7 +56,6 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
@@ -92,8 +91,8 @@ public class ResetFuzzTest
     private final JobScheduler scheduler = life.add( createScheduler() );
     private final Config config = createConfig();
     private final BoltSchedulerProvider boltSchedulerProvider = life.add(
-            new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( NullLog.getInstance() ), scheduler,
-                    NullLogService.getInstance() ) );
+            new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory(), scheduler,
+                                               NullLogService.getInstance() ) );
     private final Clock clock = Clock.systemUTC();
     private final BoltStateMachine machine = new BoltStateMachineV3( new FuzzStubSPI(), newTestBoltChannel(), clock );
     private final BoltConnectionFactory connectionFactory =

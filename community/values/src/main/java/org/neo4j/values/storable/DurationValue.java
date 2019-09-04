@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import java.lang.invoke.MethodHandle;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Period;
@@ -35,13 +34,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.Equality;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Double.parseDouble;
@@ -54,8 +53,6 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
@@ -143,9 +140,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         }
     }
 
-    static StructureBuilder<AnyValue,DurationValue> builder()
+    private static StructureBuilder<AnyValue,DurationValue> builder()
     {
-        return new DurationBuilder<AnyValue,DurationValue>()
+        return new DurationBuilder<>()
         {
             @Override
             DurationValue create(
@@ -162,26 +159,22 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             {
                 return approximate(
                         safeCastFloatingPoint( "years", years, 0 ) * 12 +
-                                safeCastFloatingPoint( "months", months, 0 ),
+                        safeCastFloatingPoint( "months", months, 0 ),
                         safeCastFloatingPoint( "weeks", weeks, 0 ) * 7 +
-                                safeCastFloatingPoint( "days", days, 0 ),
+                        safeCastFloatingPoint( "days", days, 0 ),
                         safeCastFloatingPoint( "hours", hours, 0 ) * 3600 +
-                                safeCastFloatingPoint( "minutes", minutes, 0 ) * 60 +
-                                safeCastFloatingPoint( "seconds", seconds, 0 ),
+                        safeCastFloatingPoint( "minutes", minutes, 0 ) * 60 +
+                        safeCastFloatingPoint( "seconds", seconds, 0 ),
                         safeCastFloatingPoint( "milliseconds", milliseconds, 0 ) * 1_000_000 +
-                                safeCastFloatingPoint( "microseconds", microseconds, 0 ) * 1_000 +
-                                safeCastFloatingPoint( "nanoseconds", nanoseconds, 0 )
+                        safeCastFloatingPoint( "microseconds", microseconds, 0 ) * 1_000 +
+                        safeCastFloatingPoint( "nanoseconds", nanoseconds, 0 )
                 );
             }
         };
     }
 
-    public abstract static class Compiler<Input> extends DurationBuilder<Input,MethodHandle>
-    {
-    }
-
     public static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
-    private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
+    private static final List<TemporalUnit> UNITS = List.of( MONTHS, DAYS, SECONDS, NANOS );
     // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
     private static final Comparator<DurationValue> COMPARATOR =
             Comparator.comparingLong( DurationValue::getAverageLengthInSeconds )

@@ -81,7 +81,6 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                                           'S', 't', 'o', 'r', 'e', /**/0, 2, 'V'};
     @SuppressWarnings( "unchecked" )
     private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
-    public static final String TYPE_DESCRIPTOR = "CountsStore";
 
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
             DatabaseLayout databaseLayout, VersionContextSupplier versionContextSupplier )
@@ -99,7 +98,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )
     {
-        setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<CountsKey>>()
+        setEntryUpdaterInitializer( new DataInitializer<>()
         {
             @Override
             public void initialize( EntryUpdater<CountsKey> updater )

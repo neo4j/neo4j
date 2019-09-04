@@ -117,7 +117,7 @@ public class StageExecution implements StageControl, AutoCloseable
             return trueForAscending ? stat1.compareTo( stat2 ) : stat2.compareTo( stat1 );
         } );
 
-        return () -> new PrefetchingIterator<Pair<Step<?>,Float>>()
+        return () -> new PrefetchingIterator<>()
         {
             private final Iterator<Step<?>> source = steps.iterator();
             private Step<?> next = source.hasNext() ? source.next() : null;
@@ -133,8 +133,8 @@ public class StageExecution implements StageControl, AutoCloseable
                 Step<?> current = next;
                 next = source.hasNext() ? source.next() : null;
                 float factor = next != null
-                        ? (float) stat( current, stat ) / (float) stat( next, stat )
-                        : 1.0f;
+                               ? (float) stat( current, stat ) / (float) stat( next, stat )
+                               : 1.0f;
                 return Pair.of( current, factor );
             }
 

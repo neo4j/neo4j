@@ -27,7 +27,7 @@ import org.neo4j.cursor.RawCursor;
 
 public class Cursors
 {
-    private static Cursor<Object> EMPTY = new Cursor<Object>()
+    private static Cursor<Object> EMPTY = new Cursor<>()
     {
         @Override
         public boolean next()
@@ -60,7 +60,7 @@ public class Cursors
 
     public static <T, EX extends Exception> RawCursor<T,EX> rawCursorOf( Iterable<T> iterable )
     {
-        return new RawCursor<T,EX>()
+        return new RawCursor<>()
         {
             private CursorValue<T> current = new CursorValue<>();
             private Iterator<T> itr = iterable.iterator();

@@ -141,9 +141,7 @@ public class Listeners<T> implements Iterable<T>
 
     private static <T> List<T> createListeners( List<T> existingListeners )
     {
-        List<T> result = new CopyOnWriteArrayList<>();
-        result.addAll( existingListeners );
-        return result;
+        return new CopyOnWriteArrayList<>( existingListeners );
     }
 
     public interface Notification<T>

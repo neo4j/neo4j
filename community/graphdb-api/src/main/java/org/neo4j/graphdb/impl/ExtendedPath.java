@@ -61,7 +61,7 @@ public class ExtendedPath implements Path
     @Override
     public Iterable<Relationship> relationships()
     {
-        return () -> new PrefetchingIterator<Relationship>()
+        return () -> new PrefetchingIterator<>()
         {
             final Iterator<Relationship> startRelationships = start.relationships().iterator();
             boolean lastReturned;
@@ -86,7 +86,7 @@ public class ExtendedPath implements Path
     @Override
     public Iterable<Relationship> reverseRelationships()
     {
-        return () -> new PrefetchingIterator<Relationship>()
+        return () -> new PrefetchingIterator<>()
         {
             final Iterator<Relationship> startRelationships = start.reverseRelationships().iterator();
             boolean endReturned;
@@ -107,7 +107,7 @@ public class ExtendedPath implements Path
     @Override
     public Iterable<Node> nodes()
     {
-        return () -> new PrefetchingIterator<Node>()
+        return () -> new PrefetchingIterator<>()
         {
             final Iterator<Node> startNodes = start.nodes().iterator();
             boolean lastReturned;
@@ -132,7 +132,7 @@ public class ExtendedPath implements Path
     @Override
     public Iterable<Node> reverseNodes()
     {
-        return () -> new PrefetchingIterator<Node>()
+        return () -> new PrefetchingIterator<>()
         {
             final Iterator<Node> startNodes = start.reverseNodes().iterator();
             boolean endReturned;
@@ -159,7 +159,7 @@ public class ExtendedPath implements Path
     @Override
     public Iterator<PropertyContainer> iterator()
     {
-        return new PrefetchingIterator<PropertyContainer>()
+        return new PrefetchingIterator<>()
         {
             final Iterator<PropertyContainer> startEntities = start.iterator();
             int lastReturned = 2;
@@ -173,9 +173,12 @@ public class ExtendedPath implements Path
                 }
                 switch ( lastReturned-- )
                 {
-                case 2: return endNode;
-                case 1: return lastRelationship;
-                default: return null;
+                case 2:
+                    return endNode;
+                case 1:
+                    return lastRelationship;
+                default:
+                    return null;
                 }
             }
         };

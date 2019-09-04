@@ -119,9 +119,10 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     @Override
     public Iterator<IndexUpdater> iterator()
     {
-        return new PrefetchingIterator<IndexUpdater>()
+        return new PrefetchingIterator<>()
         {
             private Iterator<SchemaDescriptor> descriptors = indexMap.descriptors();
+
             @Override
             protected IndexUpdater fetchNextOrNull()
             {

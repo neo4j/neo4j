@@ -127,7 +127,7 @@ public final class RepresentationFormatRepository
 
     private DefaultFormat useDefault( final List<MediaType> acceptable )
     {
-        return useDefault( acceptable.toArray( new MediaType[acceptable.size()] ) );
+        return useDefault( acceptable.toArray( new MediaType[0] ) );
     }
 
     private DefaultFormat useDefault( final MediaType... type )

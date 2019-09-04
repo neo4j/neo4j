@@ -58,8 +58,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.firstOrNull;
  * Relationships are traversed in the specified directions from the start node,
  * but in the reverse direction ( {@link org.neo4j.graphdb.Direction#reverse()} ) from the
  * end node. This doesn't affect {@link org.neo4j.graphdb.Direction#BOTH}.
- *
- * @author Anton Persson
  */
 public class DijkstraBidirectional implements PathFinder<WeightedPath>
 {

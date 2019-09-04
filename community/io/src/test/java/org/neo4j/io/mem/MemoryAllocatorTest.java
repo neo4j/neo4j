@@ -167,7 +167,7 @@ class MemoryAllocatorTest
 
         assertEquals( 0, memoryTracker.usedDirectMemory() );
 
-        long pointer = allocator.allocateAligned( ByteUnit.mebiBytes( 1 ), 1 );
+        allocator.allocateAligned( ByteUnit.mebiBytes( 1 ), 1 );
 
         assertEquals( ByteUnit.mebiBytes( 1 ), memoryTracker.usedDirectMemory() );
 

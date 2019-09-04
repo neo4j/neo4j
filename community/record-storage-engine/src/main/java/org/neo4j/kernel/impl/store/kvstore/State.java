@@ -51,7 +51,7 @@ public @interface State
             @Override
             public <Key> ActiveState<Key> open( ReadableState<Key> store, File file, VersionContextSupplier versionContextSupplier )
             {
-                return new ConcurrentMapState<Key>( store, file, EmptyVersionContextSupplier.EMPTY )
+                return new ConcurrentMapState<>( store, file, EmptyVersionContextSupplier.EMPTY )
                 {
                     @Override
                     protected boolean hasChanges()

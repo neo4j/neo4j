@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
@@ -53,7 +52,6 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     private static final int INITIAL_POSITION = -1;
 
     private final PropertyStore read;
-    private final MetaDataStore metaDataStore;
     private long next;
     private int block;
     public ByteBuffer buffer;
@@ -62,11 +60,10 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     private PageCursor arrayPage;
     private boolean open;
 
-    RecordPropertyCursor( PropertyStore read, MetaDataStore metaDataStore )
+    RecordPropertyCursor( PropertyStore read )
     {
         super( NO_ID );
         this.read = read;
-        this.metaDataStore = metaDataStore;
     }
 
     @Override

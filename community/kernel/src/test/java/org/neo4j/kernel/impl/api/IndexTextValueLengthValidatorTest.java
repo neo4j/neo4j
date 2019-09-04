@@ -40,7 +40,7 @@ class IndexTextValueLengthValidatorTest
     void tooLongByteArrayIsNotAllowed()
     {
         int length = MAX_BYTE_LENGTH * 2;
-        var e = assertThrows( IllegalArgumentException.class, () -> validator.validate( RandomUtils.nextBytes( length ) ),
+        assertThrows( IllegalArgumentException.class, () -> validator.validate( RandomUtils.nextBytes( length ) ),
             "Property value is too large to index into this particular index. Please see index documentation for limitations." );
     }
 
@@ -48,7 +48,7 @@ class IndexTextValueLengthValidatorTest
     void tooLongStringIsNotAllowed()
     {
         int length = MAX_BYTE_LENGTH * 2;
-        var e = assertThrows( IllegalArgumentException.class, () -> validator.validate( string( length ) ),
+        assertThrows( IllegalArgumentException.class, () -> validator.validate( string( length ) ),
             "Property value is too large to index into this particular index. Please see index documentation for limitations." );
     }
 

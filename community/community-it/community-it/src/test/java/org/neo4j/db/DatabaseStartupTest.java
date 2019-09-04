@@ -171,7 +171,7 @@ class DatabaseStartupTest
         EphemeralCommunityManagementServiceFactory factory = new EphemeralCommunityManagementServiceFactory();
         DatabaseManagementServiceBuilder databaseFactory = new EphemeralDatabaseManagementServiceBuilder(  directory, factory );
         DatabaseManagementService managementService = databaseFactory.build();
-        GraphDatabaseService service = managementService.database( DEFAULT_DATABASE_NAME );
+        managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
     }
 
@@ -182,7 +182,7 @@ class DatabaseStartupTest
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setInternalLogProvider( logProvider )
                 .build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+        managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             logProvider.rawMessageMatcher().assertContains( "System diagnostics" );

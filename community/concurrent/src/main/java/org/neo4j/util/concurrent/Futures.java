@@ -58,7 +58,7 @@ public class Futures
      */
     public static <V> Future<List<V>> combine( final Iterable<? extends Future<? extends V>> futures )
     {
-        return new Future<List<V>>()
+        return new Future<>()
         {
             @Override
             public boolean cancel( boolean mayInterruptIfRunning )

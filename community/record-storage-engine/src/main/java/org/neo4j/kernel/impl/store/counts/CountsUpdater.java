@@ -90,25 +90,6 @@ final class CountsUpdater implements CountsAccessor.Updater, AutoCloseable
         updater.close();
     }
 
-    private static class Write implements ValueUpdate
-    {
-        private final long first;
-        private final long second;
-
-        Write( long first, long second )
-        {
-            this.first = first;
-            this.second = second;
-        }
-
-        @Override
-        public void update( WritableBuffer target )
-        {
-            target.putLong( 0, first );
-            target.putLong( 8, second );
-        }
-    }
-
     private static IncrementLong incrementFirstBy( long delta )
     {
         return new IncrementLong( 0, delta );

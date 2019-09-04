@@ -107,7 +107,7 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
             // This should never happen in generated code but is here to simplify debugging if used incorrectly
             throw new IllegalStateException( "sort() needs to be called before requesting an iterator" );
         }
-        return new Iterator<T>()
+        return new Iterator<>()
         {
             private int cursor = count;
 

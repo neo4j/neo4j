@@ -261,7 +261,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
             @Override
             public Iterator<PropertyContainer> iterator()
             {
-                return new Iterator<PropertyContainer>()
+                return new Iterator<>()
                 {
                     Iterator<? extends PropertyContainer> current = nodes().iterator();
                     Iterator<? extends PropertyContainer> next = relationships().iterator();

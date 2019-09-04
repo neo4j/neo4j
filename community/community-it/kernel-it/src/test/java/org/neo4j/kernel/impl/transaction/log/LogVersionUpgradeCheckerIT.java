@@ -30,7 +30,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -74,7 +73,7 @@ class LogVersionUpgradeCheckerIT
                 .impermanent()
                 .setConfig( allow_upgrade, false )
                 .build();
-        final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
     }
 
@@ -93,7 +92,6 @@ class LogVersionUpgradeCheckerIT
         try
         {
             DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
             DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get();
             assertTrue( databaseContext.isFailed() );
             assertThat( databaseContext.failureCause() , new NestedThrowableMatcher( UpgradeNotAllowedException.class ) );
@@ -115,7 +113,7 @@ class LogVersionUpgradeCheckerIT
                 .impermanent()
                 .setConfig( allow_upgrade, true )
                 .build();
-        final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
     }
 

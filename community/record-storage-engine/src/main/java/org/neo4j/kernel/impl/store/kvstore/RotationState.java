@@ -135,7 +135,7 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
             if ( version <= threshold )
             {
                 final EntryUpdater<Key> pre = preState.updater( version, lock );
-                return Optional.of( new EntryUpdater<Key>( lock )
+                return Optional.of( new EntryUpdater<>( lock )
                 {
                     @Override
                     public void apply( Key key, ValueUpdate update ) throws IOException

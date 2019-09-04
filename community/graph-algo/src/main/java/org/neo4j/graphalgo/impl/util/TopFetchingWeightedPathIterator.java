@@ -29,9 +29,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
-/**
- * @author Anton Persson
- */
 public class TopFetchingWeightedPathIterator extends PrefetchingIterator<WeightedPath>
 {
     private final Iterator<Path> paths;

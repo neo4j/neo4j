@@ -35,7 +35,7 @@ public class DefaultCacheAccess implements CacheAccess
 {
     public static final int DEFAULT_QUEUE_SIZE = 1_000;
 
-    private final IdAssigningThreadLocal<Client> clients = new IdAssigningThreadLocal<Client>()
+    private final IdAssigningThreadLocal<Client> clients = new IdAssigningThreadLocal<>()
     {
         @Override
         protected Client initialValue( int id )

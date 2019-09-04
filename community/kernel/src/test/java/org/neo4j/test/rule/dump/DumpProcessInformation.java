@@ -47,7 +47,7 @@ public class DumpProcessInformation
     {
         Args arg = Args.withFlags( HEAP ).parse( args == null ? new String[0] : args );
         boolean doHeapDump = arg.getBoolean( HEAP, false, true );
-        String[] containing = arg.orphans().toArray( new String[arg.orphans().size()] );
+        String[] containing = arg.orphans().toArray( new String[0] );
         String dumpDir = arg.get( DIR, "data" );
         new DumpProcessInformation( FormattedLogProvider.toOutputStream( System.out ), new File( dumpDir ) ).dumpRunningProcesses(
                 doHeapDump, containing );

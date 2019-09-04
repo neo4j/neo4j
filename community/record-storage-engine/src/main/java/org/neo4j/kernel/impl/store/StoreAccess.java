@@ -181,7 +181,7 @@ public class StoreAccess
 
     private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store )
     {
-        return new RecordStore.Delegator<DynamicRecord>( store )
+        return new RecordStore.Delegator<>( store )
         {
             @Override
             public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record )

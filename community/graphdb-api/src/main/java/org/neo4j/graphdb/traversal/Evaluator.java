@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Path;
  * should continue down that path or if it should be pruned so that the traverser
  * won't continue down that path.
  *
- * @author Mattias Persson
  * @see Evaluation
  * @see Evaluators
  * @see TraversalDescription#evaluator(Evaluator)

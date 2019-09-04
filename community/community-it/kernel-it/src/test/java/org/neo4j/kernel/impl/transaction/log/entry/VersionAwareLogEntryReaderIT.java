@@ -30,7 +30,6 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.PositionableChannel;
@@ -209,7 +208,7 @@ class VersionAwareLogEntryReaderIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = transaction.createNode();
+            transaction.createNode();
             transaction.commit();
         }
     }

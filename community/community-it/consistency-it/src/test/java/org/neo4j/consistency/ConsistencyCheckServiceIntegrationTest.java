@@ -319,11 +319,6 @@ public class ConsistencyCheckServiceIntegrationTest
         return file;
     }
 
-    private GraphDatabaseService getGraphDatabaseService()
-    {
-        return getGraphDatabaseService( testDirectory.absolutePath() );
-    }
-
     private GraphDatabaseService getGraphDatabaseService( File storeDir )
     {
         return getGraphDatabaseService( storeDir, Map.of() );

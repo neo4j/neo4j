@@ -294,7 +294,6 @@ class CsvImporter implements Importer
         }
 
         out.println( name + ":" );
-        int i = 0;
 
         inputFiles.forEach( ( k, files ) ->
         {

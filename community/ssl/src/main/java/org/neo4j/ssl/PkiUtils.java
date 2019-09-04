@@ -78,7 +78,7 @@ public final class PkiUtils
             }
         }
 
-        return certificates.toArray( new X509Certificate[certificates.size()] );
+        return certificates.toArray( new X509Certificate[0] );
     }
 
     public static PrivateKey loadPrivateKey( File privateKeyFile )

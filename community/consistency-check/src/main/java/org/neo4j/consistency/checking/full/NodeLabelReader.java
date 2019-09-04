@@ -65,23 +65,23 @@ public class NodeLabelReader
             RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
             engine.comparativeCheck( firstRecordReference,
                     new LabelChainWalker<>(
-                            new LabelChainWalker.Validator<RECORD, REPORT>()
+                            new LabelChainWalker.Validator<>()
                             {
                                 @Override
                                 public void onRecordNotInUse( DynamicRecord dynamicRecord,
-                                                              CheckerEngine<RECORD, REPORT> engine )
+                                                              CheckerEngine<RECORD,REPORT> engine )
                                 {
                                 }
 
                                 @Override
                                 public void onRecordChainCycle( DynamicRecord record,
-                                                                CheckerEngine<RECORD, REPORT> engine )
+                                                                CheckerEngine<RECORD,REPORT> engine )
                                 {
                                 }
 
                                 @Override
                                 public void onWellFormedChain( long[] labelIds,
-                                                               CheckerEngine<RECORD, REPORT> engine,
+                                                               CheckerEngine<RECORD,REPORT> engine,
                                                                RecordAccess records )
                                 {
                                     copyToSet( labelIds, labels );

@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
@@ -62,7 +61,7 @@ class BigPropertyIndexValidationIT
     void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation()
     {
         // GIVEN
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL, propertyKey );
+        Neo4jMatchers.createIndex( db, LABEL, propertyKey );
 
         //We expect this transaction to fail due to the huge property
         assertThrows( TransactionFailureException.class, () ->
@@ -85,7 +84,7 @@ class BigPropertyIndexValidationIT
     void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation()
     {
         // GIVEN
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL, propertyKey );
+        Neo4jMatchers.createIndex( db, LABEL, propertyKey );
 
         //We expect this transaction to fail due to the huge property
         assertThrows( TransactionFailureException.class, () ->
@@ -109,7 +108,7 @@ class BigPropertyIndexValidationIT
     void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd()
     {
         // GIVEN
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL, propertyKey );
+        Neo4jMatchers.createIndex( db, LABEL, propertyKey );
 
         //We expect this transaction to fail due to the huge property
         assertThrows( TransactionFailureException.class, () ->

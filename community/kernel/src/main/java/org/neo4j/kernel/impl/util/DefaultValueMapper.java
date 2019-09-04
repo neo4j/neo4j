@@ -80,7 +80,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
 
     private <U, V> Iterable<V> asList( U[] values, Function<U,V> mapper )
     {
-        return () -> new Iterator<V>()
+        return () -> new Iterator<>()
         {
             private int index;
 
@@ -100,7 +100,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
 
     private <U, V> Iterable<V> asReverseList( U[] values, Function<U,V> mapper )
     {
-        return () -> new Iterator<V>()
+        return () -> new Iterator<>()
         {
             private int index = values.length - 1;
 
@@ -223,7 +223,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         @Override
         public Iterator<PropertyContainer> iterator()
         {
-            return new Iterator<PropertyContainer>()
+            return new Iterator<>()
             {
                 private final int size = 2 * value.size() + 1;
                 private int index;

@@ -39,7 +39,6 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.testing.Jobs;
 import org.neo4j.function.Predicates;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.Group;
@@ -72,7 +71,7 @@ public class ExecutorBoltSchedulerTest
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final LogService logService = new SimpleLogService( logProvider );
-    private final ExecutorFactory executorFactory = new CachedThreadPoolExecutorFactory( NullLog.getInstance() );
+    private final ExecutorFactory executorFactory = new CachedThreadPoolExecutorFactory();
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltScheduler =
             new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(),

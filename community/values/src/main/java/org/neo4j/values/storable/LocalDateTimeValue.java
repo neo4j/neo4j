@@ -37,11 +37,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.time.Instant.ofEpochSecond;
@@ -162,7 +162,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
 
     static DateTimeValue.DateTimeBuilder<LocalDateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
-        return new DateTimeValue.DateTimeBuilder<LocalDateTimeValue>( defaultZone )
+        return new DateTimeValue.DateTimeBuilder<>( defaultZone )
         {
             @Override
             protected boolean supportsTimeZone()
@@ -238,7 +238,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     // Be sure to be in the start of the week based year (which can be later than 1st Jan)
                     result = result
                             .with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( TemporalFields.year.name(), fields.get( TemporalFields.year ),
-                                    TemporalFields.year.defaultValue ) )
+                                                                                TemporalFields.year.defaultValue ) )
                             .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
                             .with( ChronoField.DAY_OF_WEEK, 1 );
                 }

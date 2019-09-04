@@ -203,11 +203,11 @@ public class PropertyRecordCheck
     private static ComparativeRecordChecker<PropertyRecord, PropertyKeyTokenRecord, ConsistencyReport.PropertyConsistencyReport>
     propertyKey( final PropertyBlock block )
     {
-        return new ComparativeRecordChecker<PropertyRecord, PropertyKeyTokenRecord, ConsistencyReport.PropertyConsistencyReport>()
+        return new ComparativeRecordChecker<>()
         {
             @Override
             public void checkReference( PropertyRecord record, PropertyKeyTokenRecord referred,
-                                        CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
+                                        CheckerEngine<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> engine,
                                         RecordAccess records )
             {
                 if ( !referred.inUse() )

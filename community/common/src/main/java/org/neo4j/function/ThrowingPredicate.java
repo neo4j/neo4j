@@ -40,7 +40,7 @@ public interface ThrowingPredicate<T, E extends Exception>
 
     static <TYPE> ThrowingPredicate<TYPE,RuntimeException> throwingPredicate( Predicate<TYPE> predicate )
     {
-        return new ThrowingPredicate<TYPE,RuntimeException>()
+        return new ThrowingPredicate<>()
         {
             @Override
             public boolean test( TYPE value )

@@ -105,7 +105,7 @@ public class ParameterizedSuiteRunner extends Suite
                     classes.add( suiteClass );
                 }
             }
-            return classes.toArray( new Class[classes.size()] );
+            return classes.toArray( new Class[0] );
         }
 
         private void buildParameterizations( Map<Class<?>, Parameterization> result, Class<?> type,

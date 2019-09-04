@@ -153,7 +153,6 @@ public abstract class CRSCalculator
             // with rounding errors taken into account
             double extendedDistance = distance * EXTENSION_FACTOR;
 
-            CoordinateReferenceSystem crs = center.getCoordinateReferenceSystem();
             double lat = center.coordinate()[1];
             double lon = center.coordinate()[0];
 

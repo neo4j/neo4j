@@ -26,7 +26,6 @@ import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.DeferredExecutor;

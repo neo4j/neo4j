@@ -499,7 +499,7 @@ public class Args
         while ( description.length() > 0 )
         {
             String line = description.substring( 0, Math.min( maxLength, description.length() ) );
-            int position = line.indexOf( "\n" );
+            int position = line.indexOf( '\n' );
             if ( position > -1 )
             {
                 line = description.substring( 0, position );

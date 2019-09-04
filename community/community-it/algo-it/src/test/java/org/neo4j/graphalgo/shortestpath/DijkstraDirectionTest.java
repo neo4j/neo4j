@@ -36,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * This set of tests is mainly made to test the "backwards" argument to the
  * CostEvaluator sent to a Dijkstra.
- * @author Patrik Larsson
  * @see CostEvaluator
  */
 class DijkstraDirectionTest extends Neo4jAlgoTestCase

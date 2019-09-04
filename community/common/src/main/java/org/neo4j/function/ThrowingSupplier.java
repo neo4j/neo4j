@@ -39,7 +39,7 @@ public interface ThrowingSupplier<T, E extends Exception>
 
     static <TYPE> ThrowingSupplier<TYPE,RuntimeException> throwingSupplier( Supplier<TYPE> supplier )
     {
-        return new ThrowingSupplier<TYPE,RuntimeException>()
+        return new ThrowingSupplier<>()
         {
             @Override
             public TYPE get()

@@ -25,10 +25,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
@@ -212,7 +210,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         {
             relList.add( rel );
         }
-        return relList.toArray( new Relationship[relList.size()] );
+        return relList.toArray( new Relationship[0] );
     }
 
     @Test
@@ -409,8 +407,6 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     @Test
     void testLowGrabSize()
     {
-        Map<String,String> config = new HashMap<>();
-
         Node node1;
         Node node2;
         try ( Transaction tx = getGraphDb().beginTx() )
@@ -461,7 +457,6 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
     private void testLowGrabSize( boolean includeLoops )
     {
-        Map<String, String> config = new HashMap<>();
         Collection<Relationship> outgoingOriginal = new HashSet<>();
         Collection<Relationship> incomingOriginal = new HashSet<>();
         Collection<Relationship> loopsOriginal = new HashSet<>();

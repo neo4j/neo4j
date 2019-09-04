@@ -26,8 +26,6 @@ import org.neo4j.graphdb.ResourceIterator;
 /**
  * Limits the amount of items returned by an {@link Iterator}.
  *
- * @author Mattias Persson
- *
  * @param <T> the type of items in this {@link Iterator}.
  */
 public class LimitingResourceIterator<T> extends PrefetchingResourceIterator<T>

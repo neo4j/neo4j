@@ -90,7 +90,6 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
 
     protected List<Object> buffer = new ArrayList<>();
 
-    @SuppressWarnings( "WeakerAccess" )
     public void assertBuffer( Object... writeEvents )
     {
         assertThat( buffer, Matchers.contains( writeEvents ) );
@@ -216,7 +215,6 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
         buffer.add( DateTimeValue.datetime( zonedDateTime ) );
     }
 
-    @SuppressWarnings( "WeakerAccess" )
     public static class Specials
     {
         public static Special byteArray( byte[] value )

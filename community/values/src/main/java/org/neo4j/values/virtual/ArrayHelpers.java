@@ -19,14 +19,9 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.VirtualValue;
-import org.neo4j.values.storable.Value;
 
 /**
  * This class is way too similar to org.neo4j.collection.PrimitiveArrays.
@@ -37,42 +32,6 @@ final class ArrayHelpers
 {
     private ArrayHelpers()
     {
-    }
-
-    static boolean isSortedSet( int[] keys )
-    {
-        for ( int i = 0; i < keys.length - 1; i++ )
-        {
-            if ( keys[i] >= keys[i + 1] )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    static boolean isSortedSet( VirtualValue[] keys, Comparator<AnyValue> comparator )
-    {
-        for ( int i = 0; i < keys.length - 1; i++ )
-        {
-            if ( comparator.compare( keys[i], keys[i + 1] ) >= 0 )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    static boolean isSortedSet( Value[] keys, Comparator<AnyValue> comparator )
-    {
-        for ( int i = 0; i < keys.length - 1; i++ )
-        {
-            if ( comparator.compare( keys[i], keys[i + 1] ) >= 0 )
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     static boolean containsNull( AnyValue[] values )
@@ -97,30 +56,5 @@ final class ArrayHelpers
             }
         }
         return false;
-    }
-
-    static <T> Iterator<T> asIterator( T[] array )
-    {
-        assert array != null;
-        return new Iterator<T>()
-        {
-            private int index;
-
-            @Override
-            public boolean hasNext()
-            {
-                return index < array.length;
-            }
-
-            @Override
-            public T next()
-            {
-                if ( !hasNext() )
-                {
-                    throw new NoSuchElementException();
-                }
-                return array[index++];
-            }
-        };
     }
 }

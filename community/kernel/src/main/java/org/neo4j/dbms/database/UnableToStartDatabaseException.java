@@ -21,15 +21,11 @@ package org.neo4j.dbms.database;
 
 import org.neo4j.dbms.api.DatabaseManagementException;
 
-/** * An error
+/**
+ * An error
  */
 public class UnableToStartDatabaseException extends DatabaseManagementException
 {
-    public UnableToStartDatabaseException()
-    {
-        super();
-    }
-
     public UnableToStartDatabaseException( String message )
     {
         super( message );
@@ -38,10 +34,5 @@ public class UnableToStartDatabaseException extends DatabaseManagementException
     public UnableToStartDatabaseException( String message, Throwable cause )
     {
         super( message, cause );
-    }
-
-    public UnableToStartDatabaseException( Throwable cause )
-    {
-        super( cause );
     }
 }

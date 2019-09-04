@@ -60,7 +60,7 @@ public class NullTracersFactory implements TracerFactory
     }
 
     @Override
-    public PageCursorTracerSupplier createPageCursorTracerSupplier( Monitors monitors, JobScheduler jobScheduler )
+    public PageCursorTracerSupplier createPageCursorTracerSupplier()
     {
         return PageCursorTracerSupplier.NULL;
     }

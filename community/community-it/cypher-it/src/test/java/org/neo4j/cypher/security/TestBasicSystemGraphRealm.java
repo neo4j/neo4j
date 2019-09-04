@@ -27,8 +27,6 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -51,8 +49,6 @@ import static org.neo4j.dbms.DatabaseManagementSystemSettings.auth_store_directo
 
 public class TestBasicSystemGraphRealm
 {
-    private static final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-
     protected static final SecureHasher secureHasher = new SecureHasher();
 
     static BasicSystemGraphRealm testRealm( BasicImportOptionsBuilder importOptions, TestDatabaseManager dbManager, Config config ) throws Throwable

@@ -27,8 +27,6 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 /**
  * Interface of algorithms that finds paths in between two nodes.
  *
- * @author Tobias Ivarsson
- *
  * @param <P> the path type that the algorithm produces
  */
 @PublicApi

@@ -74,11 +74,9 @@ public interface TracerFactory extends NamedService
 
     /**
      * Create a new PageCursorTracerSupplier instance.
-     * @param monitors the monitoring manager
-     * @param jobScheduler a scheduler for async jobs
      * @return The created instance.
      */
-    default PageCursorTracerSupplier createPageCursorTracerSupplier( Monitors monitors, JobScheduler jobScheduler )
+    default PageCursorTracerSupplier createPageCursorTracerSupplier()
     {
         return DefaultPageCursorTracerSupplier.INSTANCE;
     }

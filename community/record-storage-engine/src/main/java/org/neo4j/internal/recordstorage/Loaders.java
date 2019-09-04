@@ -127,7 +127,7 @@ public class Loaders
 
     public static Loader<NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store )
     {
-        return new Loader<NodeRecord,Void>()
+        return new Loader<>()
         {
             @Override
             public NodeRecord newUnused( long key, Void additionalData )
@@ -157,7 +157,7 @@ public class Loaders
 
     public static Loader<PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store )
     {
-        return new Loader<PropertyRecord,PrimitiveRecord>()
+        return new Loader<>()
         {
             @Override
             public PropertyRecord newUnused( long key, PrimitiveRecord additionalData )
@@ -203,7 +203,7 @@ public class Loaders
     public static Loader<RelationshipRecord,Void> relationshipLoader(
             final RecordStore<RelationshipRecord> store )
     {
-        return new Loader<RelationshipRecord, Void>()
+        return new Loader<>()
         {
             @Override
             public RelationshipRecord newUnused( long key, Void additionalData )
@@ -233,7 +233,7 @@ public class Loaders
     public static Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader(
             final RecordStore<RelationshipGroupRecord> store )
     {
-        return new Loader<RelationshipGroupRecord, Integer>()
+        return new Loader<>()
         {
             @Override
             public RelationshipGroupRecord newUnused( long key, Integer type )
@@ -264,7 +264,7 @@ public class Loaders
 
     private static Loader<SchemaRecord, SchemaRule> schemaRuleLoader( final SchemaStore store )
     {
-        return new Loader<SchemaRecord, SchemaRule>()
+        return new Loader<>()
         {
             @Override
             public SchemaRecord newUnused( long key, SchemaRule additionalData )
@@ -294,7 +294,7 @@ public class Loaders
     public static Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader(
             final RecordStore<PropertyKeyTokenRecord> store )
     {
-        return new Loader<PropertyKeyTokenRecord, Void>()
+        return new Loader<>()
         {
             @Override
             public PropertyKeyTokenRecord newUnused( long key, Void additionalData )
@@ -325,7 +325,7 @@ public class Loaders
     public static Loader<LabelTokenRecord,Void> labelTokenLoader(
             final RecordStore<LabelTokenRecord> store )
     {
-        return new Loader<LabelTokenRecord, Void>()
+        return new Loader<>()
         {
             @Override
             public LabelTokenRecord newUnused( long key, Void additionalData )
@@ -356,7 +356,7 @@ public class Loaders
     public static Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader(
             final RecordStore<RelationshipTypeTokenRecord> store )
     {
-        return new Loader<RelationshipTypeTokenRecord, Void>()
+        return new Loader<>()
         {
             @Override
             public RelationshipTypeTokenRecord newUnused( long key, Void additionalData )

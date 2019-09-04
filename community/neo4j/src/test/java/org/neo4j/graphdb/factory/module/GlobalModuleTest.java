@@ -76,7 +76,7 @@ class GlobalModuleTest
 
         // When I construct a GlobalModule...
         Config cfg = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().toPath() );
-        GlobalModule pm = new GlobalModule( testDirectory.storeDir(), cfg, DatabaseInfo.UNKNOWN, externalDependencies );
+        new GlobalModule( testDirectory.storeDir(), cfg, DatabaseInfo.UNKNOWN, externalDependencies );
 
         // then the tasks that I queued up earlier should be run...
         // the timeout here is really high to ensure that this test does not become flaky because of a slow running JVM

@@ -75,6 +75,6 @@ public class GivenTransactionCursor implements TransactionCursor
         {
             list.add( cursor.get() );
         }
-        return list.toArray( new CommittedTransactionRepresentation[list.size()] );
+        return list.toArray( new CommittedTransactionRepresentation[0] );
     }
 }

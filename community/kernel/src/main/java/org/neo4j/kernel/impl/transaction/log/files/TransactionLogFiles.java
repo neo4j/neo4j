@@ -42,7 +42,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
  */
 public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
 {
-    public static final String DEFAULT_NAME = "neostore.transaction.db";
     public static final FilenameFilter DEFAULT_FILENAME_FILTER = TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
 
     private final TransactionLogFilesContext logFilesContext;

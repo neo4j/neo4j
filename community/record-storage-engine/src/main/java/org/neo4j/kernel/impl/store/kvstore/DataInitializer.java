@@ -30,7 +30,7 @@ public interface DataInitializer<Sink>
 
     static <Sink> DataInitializer<Sink> empty( long initialTxId )
     {
-        return new DataInitializer<Sink>()
+        return new DataInitializer<>()
         {
             @Override
             public void initialize( Sink sink )

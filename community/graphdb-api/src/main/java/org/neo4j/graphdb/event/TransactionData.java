@@ -31,9 +31,6 @@ import org.neo4j.graphdb.Relationship;
  * it was before the transaction started. This implies f.ex. that a node which
  * is created, modified and then deleted in the same transaction won't be seen
  * in the transaction data at all.
- *
- * @author Tobias Ivarsson
- * @author Mattias Persson
  */
 @PublicApi
 public interface TransactionData

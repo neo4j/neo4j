@@ -31,6 +31,4 @@ public interface CancellationRequest
      * so once this method returns true it must always return true on all subsequent calls.
      */
     boolean cancellationRequested();
-
-    CancellationRequest NEVER_CANCELLED = () -> false;
 }

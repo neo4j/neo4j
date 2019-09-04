@@ -203,7 +203,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
         @Override
         RotationState<Key> prepareRotation( long version )
         {
-            return new Rotation<Key, NeedsCreation<Key>>( this )
+            return new Rotation<>( this )
             {
                 @Override
                 ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,
@@ -272,7 +272,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
         @Override
         RotationState<Key> prepareRotation( long version )
         {
-            return new Rotation<Key, RotationState.Rotation<Key>>( state.prepareRotation( version ) )
+            return new Rotation<>( state.prepareRotation( version ) )
             {
                 @Override
                 ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,

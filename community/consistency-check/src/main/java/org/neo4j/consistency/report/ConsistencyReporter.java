@@ -159,14 +159,14 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     {
         ProxyFactory<REPORT> proxyFactory = ProxyFactory.get( cls );
         ReportInvocationHandler<RECORD,REPORT> handler =
-                new ReportHandler<RECORD,REPORT>( report, proxyFactory, recordType, records, record, monitor )
-        {
-            @Override
-            protected void inconsistencyReported()
-            {
-                updateSummary();
-            }
-        };
+                new ReportHandler<>( report, proxyFactory, recordType, records, record, monitor )
+                {
+                    @Override
+                    protected void inconsistencyReported()
+                    {
+                        updateSummary();
+                    }
+                };
         return handler.report();
     }
 

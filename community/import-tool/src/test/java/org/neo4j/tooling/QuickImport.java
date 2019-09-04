@@ -21,8 +21,6 @@ package org.neo4j.tooling;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Collection;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
@@ -173,37 +171,6 @@ public class QuickImport
         }
     }
 
-    private static void printInputFiles( String name, Collection<Args.Option<File[]>> files, PrintStream out )
-    {
-        if ( files.isEmpty() )
-        {
-            return;
-        }
-
-        out.println( name + ":" );
-        int i = 0;
-        for ( Args.Option<File[]> group : files )
-        {
-            if ( i++ > 0 )
-            {
-                out.println();
-            }
-            if ( group.metadata() != null )
-            {
-                printIndented( ":" + group.metadata(), out );
-            }
-            for ( File file : group.value() )
-            {
-                printIndented( file, out );
-            }
-        }
-    }
-
-    private static void printIndented( Object value, PrintStream out )
-    {
-        out.println( "  " + value );
-    }
-
     private static Long parseMaxMemory( String maxMemoryString )
     {
         if ( maxMemoryString != null )
@@ -212,8 +179,7 @@ public class QuickImport
             if ( maxMemoryString.endsWith( "%" ) )
             {
                 int percent = Integer.parseInt( maxMemoryString.substring( 0, maxMemoryString.length() - 1 ) );
-                long result = calculateMaxMemoryFromPercent( percent );
-                return result;
+                return calculateMaxMemoryFromPercent( percent );
             }
             return parseLongWithUnit( maxMemoryString );
         }

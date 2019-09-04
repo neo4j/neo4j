@@ -58,16 +58,6 @@ public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
         this.highWatermark = highWatermark;
     }
 
-    protected int getLowWatermark()
-    {
-        return lowWatermark;
-    }
-
-    protected int getHighWatermark()
-    {
-        return highWatermark;
-    }
-
     @Override
     public synchronized void enqueued( BoltConnection to, Job job )
     {

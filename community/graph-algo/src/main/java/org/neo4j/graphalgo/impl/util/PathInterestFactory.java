@@ -27,9 +27,6 @@ import org.neo4j.kernel.impl.util.NoneStrictMath;
 import static org.neo4j.graphalgo.impl.util.PathInterest.PriorityBasedPathInterest;
 import static org.neo4j.graphalgo.impl.util.PathInterest.VisitCountBasedPathInterest;
 
-/**
- * @author Anton Persson
- */
 public class PathInterestFactory
 {
     public static final Comparator<Comparable> STANDARD_COMPARATOR = Comparable::compareTo;
@@ -53,7 +50,7 @@ public class PathInterestFactory
         return ALL;
     }
 
-    private static final PathInterest<? extends Comparable> SINGLE = new PathInterest<Comparable>()
+    private static final PathInterest<? extends Comparable> SINGLE = new PathInterest<>()
     {
         @Override
         public Comparator<Comparable> comparator()
@@ -81,7 +78,7 @@ public class PathInterestFactory
     };
 
     private static final PathInterest<? extends Comparable> ALL_SHORTEST =
-            new PriorityBasedPathInterest<Comparable>()
+            new PriorityBasedPathInterest<>()
             {
                 private BiFunction<Comparable,Comparable,Boolean> interestFunction;
 
@@ -102,7 +99,7 @@ public class PathInterestFactory
                 }
             };
 
-    private static final PathInterest<? extends Comparable> ALL = new PathInterest<Comparable>()
+    private static final PathInterest<? extends Comparable> ALL = new PathInterest<>()
     {
         @Override
         public Comparator<Comparable> comparator()
@@ -136,7 +133,7 @@ public class PathInterestFactory
             throw new IllegalArgumentException( "Can not create PathInterest with interested in less than 1 path." );
         }
 
-        return new VisitCountBasedPathInterest<P>()
+        return new VisitCountBasedPathInterest<>()
         {
             private Comparator<P> comparator = Comparable::compareTo;
 
@@ -178,7 +175,7 @@ public class PathInterestFactory
     {
         private final double epsilon;
         private BiFunction<Double,Double,Boolean> interestFunction =
-                new BiFunction<Double,Double,Boolean>()
+                new BiFunction<>()
                 {
                     @Override
                     public Boolean apply( Double newValue, Double oldValue )

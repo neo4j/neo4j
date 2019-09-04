@@ -36,7 +36,6 @@ import org.neo4j.graphdb.RelationshipType;
  * Dijkstra with the right arguments, but this should be faster.
  * @complexity This algorithm runs in O(m) time (not including the case when m
  *             is zero).
- * @author Patrik Larsson
  */
 public class SingleSourceShortestPathBFS implements
     SingleSourceShortestPath<Integer>

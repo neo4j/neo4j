@@ -61,7 +61,7 @@ public class TextUtil
         {
             result.add( current.toString() );
         }
-        return result.toArray( new String[result.size()] );
+        return result.toArray( new String[0] );
     }
 
     /**
@@ -126,6 +126,6 @@ public class TextUtil
             }
             inside = !inside;
         }
-        return result.toArray( new String[result.size()] );
+        return result.toArray( new String[0] );
     }
 }

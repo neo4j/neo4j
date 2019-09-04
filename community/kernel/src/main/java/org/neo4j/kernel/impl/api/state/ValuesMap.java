@@ -1055,7 +1055,7 @@ public class ValuesMap implements MutableLongObjectMap<Value>
         public Iterator<LongObjectPair<Value>> iterator()
         {
             Iterator<LongLongPair> refsIterator = refs.keyValuesView().iterator();
-            return new Iterator<LongObjectPair<Value>>()
+            return new Iterator<>()
             {
                 @Override
                 public boolean hasNext()

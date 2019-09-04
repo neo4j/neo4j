@@ -152,7 +152,7 @@ public class NeoStoresRule extends ExternalResource
             if ( pageCache == null )
             {
                 jobScheduler = new ThreadPoolJobScheduler();
-                pageCache = rulePageCache( dbConfig, fs, jobScheduler );
+                pageCache = rulePageCache( fs, jobScheduler );
             }
             if ( format == null )
             {
@@ -162,9 +162,9 @@ public class NeoStoresRule extends ExternalResource
         }
     }
 
-    private PageCache rulePageCache( Config dbConfig, FileSystemAbstraction fs, JobScheduler scheduler )
+    private PageCache rulePageCache( FileSystemAbstraction fs, JobScheduler scheduler )
     {
-        return rulePageCache = getOrCreatePageCache( dbConfig, fs, scheduler );
+        return rulePageCache = getOrCreatePageCache( fs, scheduler );
     }
 
     private EphemeralFileSystemAbstraction ruleFs()
@@ -172,7 +172,7 @@ public class NeoStoresRule extends ExternalResource
         return ruleFs = new EphemeralFileSystemAbstraction();
     }
 
-    private static PageCache getOrCreatePageCache( Config config, FileSystemAbstraction fs, JobScheduler jobScheduler )
+    private static PageCache getOrCreatePageCache( FileSystemAbstraction fs, JobScheduler jobScheduler )
     {
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.open( fs );

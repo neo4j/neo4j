@@ -782,7 +782,6 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             while ( relationships.next() )
             {
                 // only include this type if there are any relationships with this type
-                int type = relationships.type();
                 if ( relationships.totalCount() > 0 )
                 {
                     types.add( RelationshipType.withName( tokenRead.relationshipTypeName( relationships.type() ) ) );

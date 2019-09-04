@@ -203,7 +203,7 @@ class GraphExtractionWriter implements ResultDataContentWriter
 
     private static Iterable<?> map( RecordEvent recordEvent )
     {
-        return new IterableWrapper<Object, String>( recordEvent.getColumns() )
+        return new IterableWrapper<>( recordEvent.getColumns() )
         {
             @Override
             protected Object underlyingObjectToObject( String key )

@@ -34,10 +34,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
@@ -136,7 +136,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
 
     static TimeValue.TimeBuilder<LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
-        return new TimeValue.TimeBuilder<LocalTimeValue>( defaultZone )
+        return new TimeValue.TimeBuilder<>( defaultZone )
         {
             @Override
             protected boolean supportsTimeZone()

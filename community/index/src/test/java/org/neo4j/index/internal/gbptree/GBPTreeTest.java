@@ -80,7 +80,6 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.PageCacheConfig;
-import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Long.MAX_VALUE;
@@ -117,8 +116,6 @@ class GBPTreeTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDirectory;
-    @Inject
-    private RandomRule random;
 
     private File indexFile;
     private ExecutorService executor;

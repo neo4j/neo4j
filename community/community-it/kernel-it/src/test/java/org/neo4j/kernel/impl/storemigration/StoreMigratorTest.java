@@ -33,7 +33,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -250,7 +249,7 @@ class StoreMigratorTest
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Node node = transaction.createNode();
+                transaction.createNode();
                 transaction.commit();
             }
         }

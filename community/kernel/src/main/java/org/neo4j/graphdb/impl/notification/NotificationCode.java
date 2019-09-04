@@ -41,11 +41,6 @@ public enum NotificationCode
        "use of this cross " +
        "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH"
     ),
-    LEGACY_PLANNER(
-        SeverityLevel.WARNING,
-        Status.Statement.FeatureDeprecationWarning,
-        "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=cost instead"
-    ),
     DEPRECATED_COMPILED_RUNTIME(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
@@ -76,11 +71,6 @@ public enum NotificationCode
         SeverityLevel.WARNING,
         Status.Statement.DynamicPropertyWarning,
         "Using a dynamic property makes it impossible to use an index lookup for this query"
-    ),
-    BARE_NODE_SYNTAX_DEPRECATED( // This notification is no longer produced by current Cypher compilers
-        SeverityLevel.WARNING,   // but it is left here for backwards compatibility.
-        Status.Statement.FeatureDeprecationWarning,
-        "Use of bare node patterns has been deprecated. Please enclose the identifier in parenthesis."
     ),
     DEPRECATED_FUNCTION(
             SeverityLevel.WARNING,

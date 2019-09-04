@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
@@ -58,7 +57,6 @@ class NativeLabelScanWriterTest
 {
     private static final int LABEL_COUNT = 5;
     private static final int NODE_COUNT = 10_000;
-    private static final Comparator<LabelScanKey> KEY_COMPARATOR = new LabelScanLayout();
 
     @Inject
     private RandomRule random;

@@ -111,7 +111,7 @@ class PartitionedIndexStorageTest
     @Test
     void openIndexDirectoriesForEmptyIndex() throws IOException
     {
-        File indexFolder = storage.getIndexFolder();
+        storage.getIndexFolder();
 
         Map<File,Directory> directories = storage.openIndexDirectories();
 
@@ -178,7 +178,7 @@ class PartitionedIndexStorageTest
                     {
                         List<File> files = asList( super.listFiles( directory ) );
                         Collections.shuffle( files );
-                        return files.toArray( new File[files.size()] );
+                        return files.toArray( new File[0] );
                     }
                 } )
         {

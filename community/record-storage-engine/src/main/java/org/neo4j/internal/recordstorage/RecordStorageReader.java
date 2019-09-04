@@ -334,7 +334,7 @@ public class RecordStorageReader implements StorageReader
     @Override
     public RecordRelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return new RecordRelationshipScanCursor( relationshipStore, relationshipGroupStore );
+        return new RecordRelationshipScanCursor( relationshipStore );
     }
 
     @Override
@@ -346,6 +346,6 @@ public class RecordStorageReader implements StorageReader
     @Override
     public StoragePropertyCursor allocatePropertyCursor()
     {
-        return new RecordPropertyCursor( propertyStore, metaDataStore );
+        return new RecordPropertyCursor( propertyStore );
     }
 }

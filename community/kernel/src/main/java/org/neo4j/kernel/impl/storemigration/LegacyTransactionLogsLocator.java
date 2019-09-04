@@ -29,7 +29,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_logs_locatio
 
 public class LegacyTransactionLogsLocator
 {
-    public static final String LEGACY_TX_LOGS_LOCATION_SETTING = "dbms.directories.tx_log";
     private final Config config;
     private final DatabaseLayout databaseLayout;
 

@@ -113,7 +113,7 @@ public abstract class PathExpanders
      */
     public static <STATE> PathExpander<STATE> forConstantDirectionWithTypes( final RelationshipType... types )
     {
-        return new PathExpander<STATE>()
+        return new PathExpander<>()
         {
             @Override
             public Iterable<Relationship> expand( Path path, BranchState<STATE> state )
@@ -232,7 +232,7 @@ public abstract class PathExpanders
             final Paths.PathDescriptor descriptor,
             final PrintStream out )
     {
-        return new PathExpander<STATE>()
+        return new PathExpander<>()
         {
             @Override
             public Iterable<Relationship> expand( Path path, BranchState state )

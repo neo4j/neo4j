@@ -205,7 +205,7 @@ public class DatabaseIndexAccessorTest
 
         try
         {
-            long[] rangeTwoThree = resultsArray( reader, range( PROP_ID, 2, true, 3, true ) );
+            resultsArray( reader, range( PROP_ID, 2, true, 3, true ) );
             fail( "Expected to throw" );
         }
         catch ( UnsupportedOperationException e )

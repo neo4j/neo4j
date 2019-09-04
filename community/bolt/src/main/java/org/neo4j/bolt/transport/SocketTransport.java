@@ -60,7 +60,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     @Override
     public ChannelInitializer<Channel> channelInitializer()
     {
-        return new ChannelInitializer<Channel>()
+        return new ChannelInitializer<>()
         {
             @Override
             public void initChannel( Channel ch )
@@ -78,7 +78,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
                 ch.closeFuture().addListener( future -> throttleGroup.uninstall( ch ) );
 
                 TransportSelectionHandler transportSelectionHandler = new TransportSelectionHandler( boltChannel, sslCtx,
-                        encryptionRequired, false, logging, boltProtocolFactory );
+                                                                                                     encryptionRequired, false, logging, boltProtocolFactory );
 
                 ch.pipeline().addLast( transportSelectionHandler );
             }

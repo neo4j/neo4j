@@ -122,7 +122,7 @@ public class Tracers
     {
         this.clock = clock;
         this.tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
-        this.pageCursorTracerSupplier = tracersFactory.createPageCursorTracerSupplier( monitors, jobScheduler );
+        this.pageCursorTracerSupplier = tracersFactory.createPageCursorTracerSupplier();
         this.pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
     }
 

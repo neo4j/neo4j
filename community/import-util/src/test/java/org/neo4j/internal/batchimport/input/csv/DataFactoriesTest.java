@@ -232,7 +232,7 @@ public class DataFactoriesTest
         // WHEN
         try
         {
-            Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType, groups );
+            DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType, groups );
             fail( "Should have failed" );
         }
         catch ( InputException e )
@@ -252,7 +252,7 @@ public class DataFactoriesTest
         // WHEN
         try
         {
-            Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, COMMAS, idType, groups );
+            DataFactories.defaultFormatRelationshipFileHeader().create( seeker, COMMAS, idType, groups );
             fail( "Should have failed" );
         }
         catch ( InputException e )
