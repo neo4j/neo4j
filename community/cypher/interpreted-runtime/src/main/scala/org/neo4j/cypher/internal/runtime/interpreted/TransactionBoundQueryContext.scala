@@ -49,7 +49,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
+import org.neo4j.kernel.api.exceptions.schema.{EquivalentSchemaRuleAlreadyExistsException, NoSuchIndexException}
 import org.neo4j.kernel.api.{ResourceManager => _, _}
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
@@ -709,10 +709,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexDescriptor] = {
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IdempotentResult[IndexDescriptor] = {
     val ktx = transactionalContext.kernelTransaction
     try {
-      IdempotentResult(ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)))
+      IdempotentResult(ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull))
     } catch {
       case _: EquivalentSchemaRuleAlreadyExistsException =>
         val indexReference = ktx.schemaRead().index(labelId, propertyKeyIds:_*)
@@ -727,6 +727,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
     val ktx = transactionalContext.kernelTransaction
     ktx.schemaWrite().indexDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
+  }
+
+  override def dropIndexRule(name: String): Unit = {
+    val ktx = transactionalContext.kernelTransaction
+    val index = ktx.schemaRead().indexGetForName(name)
+    if (index == IndexDescriptor.NO_INDEX) throw new NoSuchIndexException(name)
+    ktx.schemaWrite().indexDrop(index)
   }
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {

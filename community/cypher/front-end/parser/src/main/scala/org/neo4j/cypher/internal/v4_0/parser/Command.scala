@@ -39,6 +39,7 @@ trait Command extends Parser
       | DropNodePropertyExistenceConstraint
       | DropRelationshipPropertyExistenceConstraint
       | DropIndex
+      | DropIndexOnName
   )
 
   def PropertyExpressions: Rule1[Seq[org.neo4j.cypher.internal.v4_0.expressions.Property]] = rule("multiple property expressions") {
@@ -46,11 +47,17 @@ trait Command extends Parser
   }
 
   def CreateIndex: Rule1[ast.CreateIndex] = rule {
-    group(keyword("CREATE INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyNames ~~ ")") ~~>> (ast.CreateIndex(_, _))
+    group(keyword("CREATE INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyNames ~~ ")") ~~>> (ast.CreateIndex(_, _, None)) |
+    group(keyword("CREATE INDEX") ~~ SymbolicNameString ~~ keyword("ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyNames ~~ ")") ~~>>
+      ((name, label, properties) => ast.CreateIndex(label, properties, Some(name)))
   }
 
   def DropIndex: Rule1[ast.DropIndex] = rule {
     group(keyword("DROP INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyNames ~~ ")") ~~>> (ast.DropIndex(_, _))
+  }
+
+  def DropIndexOnName: Rule1[ast.DropIndexOnName] = rule {
+    group(keyword("DROP INDEX") ~~ SymbolicNameString) ~~>> (ast.DropIndexOnName(_))
   }
 
   def CreateUniqueConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {

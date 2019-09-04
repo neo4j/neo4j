@@ -110,11 +110,12 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             })
 
     // CREATE INDEX ON :LABEL(prop)
-    case CreateIndex(label, props) => (_, _) =>
+    // CREATE INDEX name ON :LABEL(prop)
+    case CreateIndex(label, props, name) => (_, _) =>
       SchemaWriteExecutionPlan("CreateIndex", ctx => {
               val labelId = ctx.getOrCreateLabelId(label.name)
               val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-              ctx.addIndexRule(labelId, propertyKeyIds)
+              ctx.addIndexRule(labelId, propertyKeyIds, name)
             })
 
     // DROP INDEX ON :LABEL(prop)
@@ -124,6 +125,10 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
               ctx.dropIndexRule(labelId, propertyKeyIds)
             })
+
+    // DROP INDEX name
+    case DropIndexOnName(name) => (_, _) =>
+      SchemaWriteExecutionPlan("DropIndex", ctx => ctx.dropIndexRule(name))
   }
 
   def isApplicable(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)

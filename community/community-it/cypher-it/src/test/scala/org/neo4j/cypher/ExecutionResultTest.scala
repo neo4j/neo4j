@@ -121,6 +121,14 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     assert(stats.indexesRemoved === 0)
   }
 
+  test("correctIndexStatisticsForIndexWithNameAdded") {
+    val result = execute("create index my_index on :Person(name)")
+    val stats  = result.queryStatistics()
+
+    assert(stats.indexesAdded === 1)
+    assert(stats.indexesRemoved === 0)
+  }
+
   test("correctConstraintStatisticsForUniquenessConstraintAdded") {
     val result = execute("create constraint on (n:Person) assert n.name is unique")
     val stats  = result.queryStatistics()

@@ -30,17 +30,33 @@ import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 public class NoSuchIndexException extends SchemaKernelException
 {
     private final SchemaDescriptor descriptor;
-    private static final String message = "No such INDEX ON %s.";
+    private final String name;
+    private static final String message = "No such INDEX %s.";
 
     public NoSuchIndexException( SchemaDescriptor descriptor )
     {
-        super( Status.Schema.IndexNotFound, format( message, descriptor.userDescription( idTokenNameLookup ) ) );
+        super( Status.Schema.IndexNotFound, format( message, "ON " + descriptor.userDescription( idTokenNameLookup ) ) );
         this.descriptor = descriptor;
+        this.name = "";
+    }
+
+    public NoSuchIndexException( String name )
+    {
+        super( Status.Schema.IndexNotFound, format( message, name ) );
+        this.descriptor = null;
+        this.name = name;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( message, descriptor.userDescription( tokenNameLookup ) );
+        if ( descriptor == null )
+        {
+            return format( message, name );
+        }
+        else
+        {
+            return format( message, "ON " + descriptor.userDescription( tokenNameLookup ) );
+        }
     }
 }

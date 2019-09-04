@@ -91,9 +91,11 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
 
-  def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexDescriptor]
+  def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IdempotentResult[IndexDescriptor]
 
   def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
+
+  def dropIndexRule(name: String): Unit
 
   def indexReference(label: Int, properties: Int*): IndexDescriptor
 

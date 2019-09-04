@@ -51,6 +51,7 @@ object PlanDescriptionArgumentSerializer {
       case InequalityIndex(label, property, bounds, caches) => bounds.map(bound => s":$label($property) $bound").mkString(" AND ") + cachesSuffix(caches)
       case PointDistanceIndex(label, property, point, distance, inclusive, caches) =>
         s":$label($property) WHERE distance(_,$point) <${if(inclusive) "=" else ""} $distance" + cachesSuffix(caches)
+      case IndexName(index) => index
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)

@@ -35,11 +35,17 @@ case class Prettifier(expr: ExpressionStringifier) {
       val query = queryPart(part)
       s"$hint$query"
 
-    case CreateIndex(LabelName(label), properties) =>
+    case CreateIndex(LabelName(label), properties, None) =>
       s"CREATE INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
+
+    case CreateIndex(LabelName(label), properties, Some(name)) =>
+      s"CREATE INDEX ${Prettifier.escapeName(name)} ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
 
     case DropIndex(LabelName(label), properties) =>
       s"DROP INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
+
+    case DropIndexOnName(name) =>
+      s"DROP INDEX ${Prettifier.escapeName(name)}"
 
     case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties) =>
       s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${asString(properties)} IS NODE KEY"

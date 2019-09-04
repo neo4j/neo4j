@@ -84,6 +84,18 @@ trait GraphIcing {
       getIndex(label, properties)
     }
 
+    def createIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
+      withTx( tx => {
+        tx.execute(s"CREATE INDEX `$name` ON :$label(${properties.map(p => s"`$p`").mkString(",")})")
+      })
+
+      inTx {
+        graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      }
+
+      getIndex(label, properties)
+    }
+
     def getIndex(label: String, properties: Seq[String]): IndexDefinition = {
       withTx( tx => {
         tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get

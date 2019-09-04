@@ -123,11 +123,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: UndirectedRelationshipByIdSeek =>
         PlanDescriptionImpl(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq.empty, variables)
 
-      case _: CreateIndex =>
+      case CreateIndex(_ , _, None) =>
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq.empty, variables)
+
+      case CreateIndex(_ , _, Some(name)) =>
+        val indexName = IndexName(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(indexName), variables)
 
       case _: DropIndex =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq.empty, variables)
+
+      case DropIndexOnName(name) =>
+        val indexName = IndexName(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(indexName), variables)
 
       case _: CreateUniquePropertyConstraint =>
         PlanDescriptionImpl(id, "CreateUniquePropertyConstraint", NoChildren, Seq.empty, variables)

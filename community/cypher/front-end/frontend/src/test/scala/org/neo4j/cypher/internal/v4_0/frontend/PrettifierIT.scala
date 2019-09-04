@@ -148,11 +148,29 @@ class PrettifierIT extends CypherFunSuite {
       "create INDEX ON :A(p1, p2, p3)" ->
         "CREATE INDEX ON :A(p1, p2, p3)",
 
+      "create INDEX foo ON :A(p)" ->
+        "CREATE INDEX foo ON :A(p)",
+
+      "create INDEX `foo` ON :A(p)" ->
+        "CREATE INDEX foo ON :A(p)",
+
+      "create INDEX `$foo` ON :A(p1, p2, p3)" ->
+        "CREATE INDEX `$foo` ON :A(p1, p2, p3)",
+
       "drop INDEX ON :A(p)" ->
         "DROP INDEX ON :A(p)",
 
       "drop INDEX ON :A(p1, p2, p3)" ->
         "DROP INDEX ON :A(p1, p2, p3)",
+
+      "drop INDEX foo" ->
+        "DROP INDEX foo",
+
+      "drop INDEX `foo`" ->
+        "DROP INDEX foo",
+
+      "drop INDEX `$foo`" ->
+        "DROP INDEX `$foo`",
 
       "create CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
         "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",

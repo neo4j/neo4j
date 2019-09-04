@@ -62,6 +62,8 @@ object Arguments {
 
   case class PointDistanceIndex(label: String, propertyKey: String, point: String, distance: String, inclusive: Boolean, caches: Seq[ast.Expression]) extends Argument
 
+  case class IndexName(index: String) extends Argument
+
   case class LabelName(label: String) extends Argument
 
   case class KeyNames(keys: Seq[String]) extends Argument

@@ -66,7 +66,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
 
   when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
-  when(inner.addIndexRule(anyInt(), any()))
+  when(inner.addIndexRule(anyInt(), any(), any()))
     .thenReturn(IdempotentResult(IndexPrototype.forSchema(SchemaDescriptor.forLabel(1, 2)).withName("index_1").materialise(1)))
 
   var context: UpdateCountingQueryContext = _
@@ -137,13 +137,25 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("add_index") {
-    context.addIndexRule(0, Array(1))
+    context.addIndexRule(0, Array(1), None)
+
+    context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
+  }
+
+  test("add_index with name") {
+    context.addIndexRule(0, Array(1), Some("name"))
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
   test("remove_index") {
     context.dropIndexRule(0, Array(1))
+
+    context.getStatistics should equal(QueryStatistics(indexesRemoved = 1))
+  }
+
+  test("remove_index with name") {
+    context.dropIndexRule("name")
 
     context.getStatistics should equal(QueryStatistics(indexesRemoved = 1))
   }

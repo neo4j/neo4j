@@ -46,5 +46,6 @@ case class DropNodePropertyExistenceConstraint(label: LabelName, prop: Property)
 case class CreateRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class CreateIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class DropIndexOnName(name: String)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
