@@ -319,7 +319,7 @@ public class IndexingCompositeQueryAcceptanceTest
             {
                 assert keys.length == 3;
                 assert values.length == 3;
-                return db.findNodes( LABEL, keys[0], values[0], keys[1], values[1], keys[2], values[2] );
+                return tx.findNodes( LABEL, keys[0], values[0], keys[1], values[1], keys[2], values[2] );
             };
 
     private static final IndexSeek mapIndexSeek =
