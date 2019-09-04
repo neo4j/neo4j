@@ -137,7 +137,6 @@ public class BuiltInProcedures
 
             SchemaReadCore schemaRead = tx.schemaRead().snapshot();
             List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
-            indexes.sort( Comparator.comparing( a -> a.schema().userDescription( tokenLookup ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
             for ( IndexDescriptor index : indexes )
@@ -212,9 +211,6 @@ public class BuiltInProcedures
         String provider = index.getIndexProvider().name();
         Map<String,Object> indexConfig = asObjectMap( schema.getIndexConfig().asMap() );
 
-        //todo
-        // cypherCreate - String description = "INDEX ON " + schema.userDescription( tokens );
-        // cypherDrop
         return new IndexDetailResult( id, name, status.state, status.populationProgress, uniqueness, type, entityType, labelsOrTypes, properties, provider,
                 indexConfig, status.failureMessage );
     }
@@ -227,7 +223,7 @@ public class BuiltInProcedures
             InternalIndexState internalIndexState = schemaRead.indexGetState( index );
             status.state = internalIndexState.toString();
             PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
-            status.populationProgress = (double) progress.toIndexPopulationProgress().getCompletedPercentage();
+            status.populationProgress = progress.toIndexPopulationProgress().getCompletedPercentage();
             status.failureMessage = internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure( index ) : "";
         }
         catch ( IndexNotFoundKernelException e )
@@ -253,7 +249,7 @@ public class BuiltInProcedures
     {
         String state;
         String failureMessage;
-        Double populationProgress;
+        double populationProgress;
     }
 
     @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
@@ -447,7 +443,7 @@ public class BuiltInProcedures
         public final long id;                    //1
         public final String name;                //"myIndex"
         public final String state;               //"ONLINE", "FAILED", "POPULATING"
-        public final Double populationPercent;    // 0.0, 100.0, 75.1
+        public final double populationPercent;    // 0.0, 100.0, 75.1
         public final String uniqueness;          //"UNIQUE", "NONUNIQUE"
         public final String type;                //"FULLTEXT", "FUSION", "BTREE"
         public final String entityType;          //"NODE", "RELATIONSHIP"
@@ -455,7 +451,7 @@ public class BuiltInProcedures
         public final List<String> properties;    //["propKey", "propKey2"]
         public final String provider;            //"native-btree-1.0", "lucene+native-3.0"
 
-        private IndexResult( long id, String name, String state, Double populationPercent, String uniqueness, String type, String entityType,
+        private IndexResult( long id, String name, String state, double populationPercent, String uniqueness, String type, String entityType,
                 List<String> labelsOrTypes, List<String> properties, String provider )
         {
             this.id = id;
@@ -477,7 +473,7 @@ public class BuiltInProcedures
         public final long id;                    //1
         public final String name;                //"myIndex"
         public final String state;               //"ONLINE", "FAILED", "POPULATING"
-        public final Double populationPercent;    // 0.0, 100.0, 75.1
+        public final double populationPercent;    // 0.0, 100.0, 75.1
         public final String uniqueness;          //"UNIQUE", "NONUNIQUE"
         public final String type;                //"FULLTEXT", "FUSION", "BTREE"
         public final String entityType;          //"NODE", "RELATIONSHIP"
@@ -493,7 +489,7 @@ public class BuiltInProcedures
 //        public final String dropCommand; // - "DROP INDEX 'myIndex'"
 //        public final String indexSize; // Index size on disk
 
-        private IndexDetailResult( long id, String name, String state, Double populationPercent, String uniqueness, String type, String entityType,
+        private IndexDetailResult( long id, String name, String state, double populationPercent, String uniqueness, String type, String entityType,
                 List<String> labelsOrTypes, List<String> properties, String provider, Map<String,Object> indexConfig, String failureMessage )
         {
             this.id = id;
