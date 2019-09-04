@@ -51,7 +51,8 @@ abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
 trait NumericHelper {
 
   protected def asLongEntityId(a: AnyValue): Option[Long] = a match {
-    case a: IntegralValue => Some(a.longValue())
+    case i: IntegralValue => Some(i.longValue())
+    case f: FloatingPointValue => if (NumberValues.numbersEqual(f.doubleValue(), f.longValue())) Some(f.longValue()) else None
     case _ => None
   }
 
