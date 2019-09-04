@@ -202,7 +202,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
                                 "entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?)",
                         "List all indexes in the database.", "READ" ),
                 proc( "db.indexDetails",
-                        "(indexId :: INTEGER?) :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, " +
+                        "(indexName :: STRING?) :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, " +
                                 "type :: STRING?, entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: " +
                                 "STRING?, indexConfig :: MAP?, failureMessage :: STRING?)", "Detailed description of specific index.", "READ" ),
                 proc( "db.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",

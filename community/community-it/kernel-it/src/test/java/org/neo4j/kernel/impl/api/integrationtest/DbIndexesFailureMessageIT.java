@@ -34,10 +34,8 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -83,7 +81,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexDetails" ) ).id(),
-                        new LongValue[]{Values.longValue( index.getId() )},
+                        new TextValue[]{stringValue( index.getName() )},
                         ProcedureCallContext.EMPTY );
         assertTrue( stream.hasNext() );
         AnyValue[] result = stream.next();
@@ -112,10 +110,10 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> {
             procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexDetails" ) ).id(),
-                    new LongValue[]{longValue( 1 )},
+                    new TextValue[]{stringValue( "MyIndex" )},
                     ProcedureCallContext.EMPTY );
         } );
-        assertEquals( exception.getMessage(), "Could not find index with id 1" );
+        assertEquals( exception.getMessage(), "Could not find index with name \"MyIndex\"" );
     }
 
     private void assertMapsEqual( Map<String,Value> expected, MapValue actual )

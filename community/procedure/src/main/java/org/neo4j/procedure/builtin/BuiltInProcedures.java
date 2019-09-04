@@ -152,7 +152,7 @@ public class BuiltInProcedures
 
     @Description( "Detailed description of specific index." )
     @Procedure( name = "db.indexDetails", mode = READ )
-    public Stream<IndexDetailResult> indexDetails( @Name( "indexId" ) long indexId ) throws ProcedureException
+    public Stream<IndexDetailResult> indexDetails( @Name( "indexName" ) String indexName ) throws ProcedureException
     {
         try ( Statement ignore = tx.acquireStatement() )
         {
@@ -165,7 +165,7 @@ public class BuiltInProcedures
             IndexDescriptor index = null;
             for ( IndexDescriptor candidate : indexes )
             {
-                if ( candidate.getId() == indexId )
+                if ( candidate.getName().equals( indexName ) )
                 {
                     index = candidate;
                     break;
@@ -173,7 +173,7 @@ public class BuiltInProcedures
             }
             if ( index == null )
             {
-                throw new ProcedureException( Status.Schema.IndexNotFound, "Could not find index with id " + indexId );
+                throw new ProcedureException( Status.Schema.IndexNotFound, "Could not find index with name \"" + indexName + "\"" );
             }
 
             final IndexDetailResult indexDetailResult = asIndexDetails( tokenLookup, schemaRead, index );

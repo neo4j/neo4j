@@ -218,7 +218,7 @@ class BuiltInProceduresTest
 
         // When/Then
         final Map<String,Object> configMap = MapUtil.genericMap( new HashMap<>(), "config1", "value1", "config2", 2, "config3", true );
-        assertThat( call( "db.indexDetails", 1000 ), contains( record(
+        assertThat( call( "db.indexDetails", "index_" + 1000 ), contains( record(
                 1000L, "index_1000", "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE", singletonList( "User" ), singletonList( "name" ),
                 EMPTY.getProviderDescriptor().name(), configMap, "" ) ) );
     }
@@ -232,7 +232,7 @@ class BuiltInProceduresTest
 
         // When/Then
         final Map<String,Object> configMap = MapUtil.genericMap( new HashMap<>(), "config1", "value1", "config2", 2, "config3", true );
-        assertThat( call( "db.indexDetails", 1000 ), contains( record(
+        assertThat( call( "db.indexDetails", "index_" + 1000 ), contains( record(
                 1000L, "index_1000", "NOT FOUND", 0D, "NONUNIQUE", "BTREE", "NODE", singletonList( "User" ), singletonList( "name" ),
                 EMPTY.getProviderDescriptor().name(), configMap, "Index not found. It might have been concurrently dropped." ) ) );
     }
