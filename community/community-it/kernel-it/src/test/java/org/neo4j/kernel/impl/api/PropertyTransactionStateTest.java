@@ -62,7 +62,7 @@ class PropertyTransactionStateTest
             tx.commit();
         }
 
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 100; i++ )
             {
@@ -87,7 +87,7 @@ class PropertyTransactionStateTest
             tx.commit();
         }
 
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node.setProperty( key, "one" );
             node.setProperty( key, "two" );

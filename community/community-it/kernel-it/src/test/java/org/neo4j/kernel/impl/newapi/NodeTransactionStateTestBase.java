@@ -64,9 +64,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( nodeId, graphDb.getNodeById( nodeId ).getId() );
+            assertEquals( nodeId, tx.getNodeById( nodeId ).getId() );
         }
     }
 
@@ -98,10 +98,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             assertThat(
-                    graphDb.getNodeById( nodeId ).getLabels(),
+                    tx.getNodeById( nodeId ).getLabels(),
                     equalTo( Iterables.iterable( label( labelName ) ) ) );
         }
     }
@@ -126,10 +126,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             assertThat(
-                    graphDb.getNodeById( nodeId ).getLabels(),
+                    tx.getNodeById( nodeId ).getLabels(),
                     containsInAnyOrder( label( toRetainName ), label( toDeleteName ) ) );
         }
 
@@ -158,10 +158,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             assertThat(
-                    graphDb.getNodeById( nodeId ).getLabels(),
+                    tx.getNodeById( nodeId ).getLabels(),
                     containsInAnyOrder( label( toRetainName ), label( toAddName ) ) );
         }
     }
@@ -280,10 +280,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             assertThat(
-                    graphDb.getNodeById( nodeId ).getProperty( propKey ), equalTo( "hello" ) );
+                    tx.getNodeById( nodeId ).getProperty( propKey ), equalTo( "hello" ) );
         }
     }
 
@@ -334,12 +334,12 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             assertThat(
-                    graphDb.getNodeById( nodeId ).getProperty( propKey1 ), equalTo( "hello" ) );
+                    tx.getNodeById( nodeId ).getProperty( propKey1 ), equalTo( "hello" ) );
             assertThat(
-                    graphDb.getNodeById( nodeId ).getProperty( propKey2 ), equalTo( "world" ) );
+                    tx.getNodeById( nodeId ).getProperty( propKey2 ), equalTo( "world" ) );
         }
     }
 
@@ -382,10 +382,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             assertThat(
-                    graphDb.getNodeById( nodeId ).getProperty( propKey ), equalTo( "world" ) );
+                    tx.getNodeById( nodeId ).getProperty( propKey ), equalTo( "world" ) );
         }
     }
 
@@ -422,10 +422,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             assertFalse(
-                    graphDb.getNodeById( nodeId ).hasProperty( propKey ) );
+                    tx.getNodeById( nodeId ).hasProperty( propKey ) );
         }
     }
 
@@ -467,10 +467,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             assertThat(
-                    graphDb.getNodeById( nodeId ).getProperty( propKey ), equalTo( "world" ) );
+                    tx.getNodeById( nodeId ).getProperty( propKey ), equalTo( "world" ) );
         }
     }
 

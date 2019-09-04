@@ -175,12 +175,12 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
 
         Runnable aliceWork = work( nodesCreatedPerThread, tx ->
         {
-            db.getNodeById( createNodeIndexableByPropertyValue( tx, LABEL, "alice" ) );
+            tx.getNodeById( createNodeIndexableByPropertyValue( tx, LABEL, "alice" ) );
             aliceLatch.countDown();
         } );
         Runnable bobWork = work( nodesCreatedPerThread, tx ->
         {
-            db.getNodeById( createNodeWithProperty( tx, LABEL, "otherProp", "bob" ) );
+            tx.getNodeById( createNodeWithProperty( tx, LABEL, "otherProp", "bob" ) );
             bobLatch.countDown();
         } );
         Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newDescriptor ).apply() );

@@ -110,7 +110,7 @@ class ConstraintCreationIT
         }
 
         // then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertEquals( 0, Iterables.count( db.schema().getIndexes() ) );
         }

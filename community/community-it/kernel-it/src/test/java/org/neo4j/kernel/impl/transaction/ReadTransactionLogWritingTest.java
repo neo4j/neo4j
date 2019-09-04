@@ -157,7 +157,7 @@ class ReadTransactionLogWritingTest
     {
         return tx ->
         {
-            db.getNodeById( node.getId() );
+            tx.getNodeById( node.getId() );
             tx.getRelationshipById( relationship.getId() );
         };
     }

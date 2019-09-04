@@ -577,7 +577,7 @@ public class FulltextIndexProviderTest
 
     private void await( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             while ( getKernelTransaction().schemaRead().indexGetState( descriptor ) != InternalIndexState.ONLINE )
             {

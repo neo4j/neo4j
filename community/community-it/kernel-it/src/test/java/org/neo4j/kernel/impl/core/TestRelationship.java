@@ -847,7 +847,7 @@ class TestRelationship extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            hub = graphDB.getNodeById( hub.getId() );
+            hub = transaction.getNodeById( hub.getId() );
 
             int count = 0;
             for ( Relationship ignore : hub.getRelationships() )

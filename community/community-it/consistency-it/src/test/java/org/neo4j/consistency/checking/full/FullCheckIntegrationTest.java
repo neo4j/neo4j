@@ -244,7 +244,7 @@ public class FullCheckIntegrationTest
                 throw new RuntimeException( e );
             }
 
-            try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
+            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             }

@@ -550,7 +550,7 @@ class FulltextIndexConsistencyCheckIT
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nodeId ).removeProperty( "prop" );
+            tx.getNodeById( nodeId ).removeProperty( "prop" );
             tx.commit();
         }
         managementService.shutdown();

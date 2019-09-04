@@ -67,13 +67,13 @@ public class Neo4jMatchers
             @Override
             protected boolean matches( Object item, Description mismatchDescription )
             {
-                try ( Transaction ignored = db.beginTx() )
+                try ( Transaction tx = db.beginTx() )
                 {
                     if ( inner.matches( item ) )
                     {
                         if ( successful )
                         {
-                            ignored.commit();
+                            tx.commit();
                         }
                         return true;
                     }
@@ -82,7 +82,7 @@ public class Neo4jMatchers
 
                     if ( successful )
                     {
-                        ignored.commit();
+                        tx.commit();
                     }
                     return false;
                 }
@@ -591,7 +591,7 @@ public class Neo4jMatchers
 
     public static void waitForIndex( GraphDatabaseService beansAPI, IndexDefinition indexDef )
     {
-        try ( Transaction ignored = beansAPI.beginTx() )
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             beansAPI.schema().awaitIndexOnline( indexDef, 30, SECONDS );
         }
@@ -599,7 +599,7 @@ public class Neo4jMatchers
 
     public static void waitForIndexes( GraphDatabaseService beansAPI )
     {
-        try ( Transaction ignored = beansAPI.beginTx() )
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             beansAPI.schema().awaitIndexesOnline( 30, SECONDS );
         }
@@ -607,7 +607,7 @@ public class Neo4jMatchers
 
     public static Object getIndexState( GraphDatabaseService beansAPI, IndexDefinition indexDef )
     {
-        try ( Transaction ignored = beansAPI.beginTx() )
+        try ( Transaction tx = beansAPI.beginTx() )
         {
             return beansAPI.schema().getIndexState( indexDef );
         }

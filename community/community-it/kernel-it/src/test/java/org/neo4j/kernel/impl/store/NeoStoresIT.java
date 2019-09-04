@@ -96,7 +96,7 @@ class NeoStoresIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getNodeById( latestNodeId[0] );
+                Node node = tx.getNodeById( latestNodeId[0] );
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
                     node.getProperty( propertyKey );
@@ -138,7 +138,7 @@ class NeoStoresIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getNodeById( latestNodeId[0] );
+                Node node = tx.getNodeById( latestNodeId[0] );
 
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
@@ -185,8 +185,8 @@ class NeoStoresIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node1 = db.getNodeById( node1Id );
-                Node node2 = db.getNodeById( node2Id );
+                Node node1 = tx.getNodeById( node1Id );
+                Node node2 = tx.getNodeById( node2Id );
 
                 Relationship rel = node1.createRelationshipTo( node2, FRIEND );
                 latestRelationshipId[0] = rel.getId();

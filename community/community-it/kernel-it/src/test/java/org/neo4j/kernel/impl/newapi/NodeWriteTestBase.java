@@ -61,9 +61,9 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( node, graphDb.getNodeById( node ).getId() );
+            assertEquals( node, tx.getNodeById( node ).getId() );
         }
     }
 
@@ -77,9 +77,9 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             tx.rollback();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            graphDb.getNodeById( node );
+            tx.getNodeById( node );
             fail( "There should be no node" );
         }
         catch ( NotFoundException e )
@@ -98,11 +98,11 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             tx.dataWrite().nodeDelete( node );
             tx.commit();
         }
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             try
             {
-                graphDb.getNodeById( node );
+                tx.getNodeById( node );
                 fail( "Did not remove node" );
             }
             catch ( NotFoundException e )
@@ -448,10 +448,10 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
     private void deleteNode( long node )
     {
-        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            graphDb.getNodeById( node ).delete();
-            ctx.commit();
+            tx.getNodeById( node ).delete();
+            tx.commit();
         }
     }
 
@@ -480,33 +480,33 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
     private void assertNoLabels( long nodeId )
     {
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat( graphDb.getNodeById( nodeId ).getLabels(), equalTo( Iterables.empty() ) );
+            assertThat( tx.getNodeById( nodeId ).getLabels(), equalTo( Iterables.empty() ) );
         }
     }
 
     private void assertLabels( long nodeId, String label )
     {
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat( graphDb.getNodeById( nodeId ).getLabels(), containsInAnyOrder( label( label ) ) );
+            assertThat( tx.getNodeById( nodeId ).getLabels(), containsInAnyOrder( label( label ) ) );
         }
     }
 
     private void assertNoProperty( long node, String propertyKey )
     {
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertFalse( graphDb.getNodeById( node ).hasProperty( propertyKey ) );
+            assertFalse( tx.getNodeById( node ).hasProperty( propertyKey ) );
         }
     }
 
     private void assertProperty( long node, String propertyKey, Object value )
     {
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertThat( graphDb.getNodeById( node ).getProperty( propertyKey ), equalTo( value ) );
+            assertThat( tx.getNodeById( node ).getProperty( propertyKey ), equalTo( value ) );
         }
     }
 }

@@ -112,8 +112,8 @@ class TestReadOnlyNeo4j
 
         try ( Transaction transaction = db.beginTx() )
         {
-            assertEquals( node1, db.getNodeById( node1.getId() ) );
-            assertEquals( node2, db.getNodeById( node2.getId() ) );
+            assertEquals( node1, transaction.getNodeById( node1.getId() ) );
+            assertEquals( node2, transaction.getNodeById( node2.getId() ) );
             assertEquals( rel, transaction.getRelationshipById( rel.getId() ) );
 
             assertThat( node1, hasProperty( "key1" ).withValue( "value1" ) );

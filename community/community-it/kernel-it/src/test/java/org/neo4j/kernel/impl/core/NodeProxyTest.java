@@ -67,7 +67,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     @Override
     protected PropertyContainer lookupPropertyContainer( Transaction transaction, long id )
     {
-        return db.getNodeById( id );
+        return transaction.getNodeById( id );
     }
 
     @Test
@@ -213,7 +213,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.getNodeById( node.getId() ); // should throw NotFoundException
+                tx.getNodeById( node.getId() ); // should throw NotFoundException
                 tx.commit();
             }
         } );
@@ -280,7 +280,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
                     {
                         try ( Transaction tx = db.beginTx() )
                         {
-                            Node node = db.getNodeById( nodeId );
+                            Node node = tx.getNodeById( nodeId );
                             for ( int i = 0; i < 10 && propertyKey < propertiesCount; i++, propertyKey++ )
                             {
                                 node.setProperty( "property-" + propertyKey, UUID.randomUUID().toString() );
@@ -298,7 +298,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    Node node = db.getNodeById( nodeId );
+                    Node node = tx.getNodeById( nodeId );
                     awaitLatch( start );
                     while ( !writerDone.get() )
                     {
@@ -321,7 +321,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             // Then
             try ( Transaction tx = db.beginTx() )
             {
-                assertEquals( propertiesCount, db.getNodeById( nodeId ).getAllProperties().size() );
+                assertEquals( propertiesCount, tx.getNodeById( nodeId ).getAllProperties().size() );
                 tx.commit();
             }
         }
@@ -351,7 +351,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         }
 
         // Then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertThat( node.getProperty( "prop" ), instanceOf( Double.class ) );
         }

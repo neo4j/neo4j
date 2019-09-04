@@ -47,25 +47,25 @@ class UpdateDeletedIndexIT
     @Test
     void shouldHandleUpdateRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable
     {
-        shouldHandleIndexDropConcurrentlyWithOperation( nodeId -> db.getNodeById( nodeId ).removeLabel( LABEL ) );
+        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).removeLabel( LABEL ) );
     }
 
     @Test
     void shouldHandleDeleteNodeConcurrentlyWithIndexDrop() throws Throwable
     {
-        shouldHandleIndexDropConcurrentlyWithOperation( nodeId -> db.getNodeById( nodeId ).delete() );
+        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).delete() );
     }
 
     @Test
     void shouldHandleRemovePropertyConcurrentlyWithIndexDrop() throws Throwable
     {
-        shouldHandleIndexDropConcurrentlyWithOperation( nodeId -> db.getNodeById( nodeId ).removeProperty( KEY ) );
+        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).removeProperty( KEY ) );
     }
 
     @Test
     void shouldHandleNodeDetachDeleteConcurrentlyWithIndexDrop() throws Throwable
     {
-        shouldHandleIndexDropConcurrentlyWithOperation( nodeId ->
+        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) ->
         {
             ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
             txBridge.getKernelTransactionBoundToThisThread( true, db.databaseId() ).dataWrite().nodeDetachDelete( nodeId );
@@ -95,7 +95,7 @@ class UpdateDeletedIndexIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    operation.run( nodeId );
+                    operation.run( tx, nodeId );
                     tx.commit();
                 }
             } ) );
@@ -147,6 +147,6 @@ class UpdateDeletedIndexIT
 
     private interface NodeOperation
     {
-        void run( long nodeId ) throws Exception;
+        void run( Transaction tx, long nodeId ) throws Exception;
     }
 }

@@ -84,7 +84,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            Node node = database.getDatabase().getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             Map<String, Object> allProperties = node.getAllProperties();
             tx.commit();
             return allProperties;
@@ -95,7 +95,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node node = database.getDatabase().getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
             {
                 node.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
@@ -132,7 +132,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.write() ) )
         {
-            Node node = database.getDatabase().getNodeById( id );
+            Node node = tx.getNodeById( id );
             node.delete();
             tx.commit();
         }
@@ -142,8 +142,8 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            Node startNode = database.getDatabase().getNodeById( startNodeId );
-            Node endNode = database.getDatabase().getNodeById( endNodeId );
+            Node startNode = tx.getNodeById( startNodeId );
+            Node endNode = tx.getNodeById( endNodeId );
             Relationship relationship = startNode.createRelationshipTo( endNode, RelationshipType.withName( type ) );
             tx.commit();
             return relationship.getId();
@@ -204,7 +204,7 @@ public class GraphDbHelper
         {
             try
             {
-                Node referenceNode = database.getDatabase().getNodeById( 0L );
+                Node referenceNode = tx.getNodeById( 0L );
 
                 tx.commit();
                 return referenceNode.getId();
@@ -219,9 +219,9 @@ public class GraphDbHelper
         }
     }
 
-    public Iterable<String> getNodeLabels( long node )
+    public Iterable<String> getNodeLabels( Transaction tx, long node )
     {
-        return new IterableWrapper<>( database.getDatabase().getNodeById( node ).getLabels() )
+        return new IterableWrapper<>( tx.getNodeById( node ).getLabels() )
         {
             @Override
             protected String underlyingObjectToObject( Label object )
@@ -235,7 +235,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
-            database.getDatabase().getNodeById( node ).addLabel( label( labelName ) );
+            tx.getNodeById( node ).addLabel( label( labelName ) );
             tx.commit();
         }
     }
@@ -296,7 +296,7 @@ public class GraphDbHelper
     {
         try ( Transaction transaction = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            return count( database.getDatabase().getNodeById( nodeId ).getLabels());
+            return count( transaction.getNodeById( nodeId ).getLabels());
         }
     }
 }

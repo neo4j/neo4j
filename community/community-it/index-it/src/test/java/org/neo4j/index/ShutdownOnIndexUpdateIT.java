@@ -75,7 +75,7 @@ class ShutdownOnIndexUpdateIT
 
     private static void waitIndexesOnline( GraphDatabaseService database )
     {
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             database.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
         }

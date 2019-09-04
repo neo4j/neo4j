@@ -50,7 +50,7 @@ class TestReferenceDangling
         // Then reading the property is still possible
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nId ).getProperty( "some" );
+            tx.getNodeById( nId ).getProperty( "some" );
             tx.commit();
         }
     }
@@ -67,7 +67,7 @@ class TestReferenceDangling
         // Then it should still be possible to manipulate properties on this node
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nId ).setProperty( "some", new long[]{-1, 2, 2, 3, 4, 5, 5} );
+            tx.getNodeById( nId ).setProperty( "some", new long[]{-1, 2, 2, 3, 4, 5, 5} );
             tx.commit();
         }
     }
@@ -85,7 +85,7 @@ class TestReferenceDangling
 
         try ( Transaction tx = slave.beginTx() )
         {
-            slave.getNodeById( nId ).hasProperty( key );
+            tx.getNodeById( nId ).hasProperty( key );
             tx.commit();
         }
         return nId;

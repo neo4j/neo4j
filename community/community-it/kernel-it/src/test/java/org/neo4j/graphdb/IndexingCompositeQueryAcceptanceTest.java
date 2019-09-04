@@ -190,7 +190,7 @@ public class IndexingCompositeQueryAcceptanceTest
             while ( deleting.hasNext() )
             {
                 long id = deleting.next();
-                db.getNodeById( id ).delete();
+                tx.getNodeById( id ).delete();
                 expected.remove( id );
             }
 
@@ -216,14 +216,14 @@ public class IndexingCompositeQueryAcceptanceTest
             while ( toMatching.hasNext() )
             {
                 long id = toMatching.next();
-                setProperties( id, values );
+                setProperties( tx, id, values );
                 expected.add( id );
             }
             LongIterator toNotMatching = toChangeToNotMatch.longIterator();
             while ( toNotMatching.hasNext() )
             {
                 long id = toNotMatching.next();
-                setProperties( id, nonMatching[2] );
+                setProperties( tx, id, nonMatching[2] );
                 expected.remove( id );
             }
 
@@ -292,9 +292,9 @@ public class IndexingCompositeQueryAcceptanceTest
         return result;
     }
 
-    private void setProperties( long id, Object[] values )
+    private void setProperties( Transaction tx, long id, Object[] values )
     {
-        Node node = db.getNodeById( id );
+        Node node = tx.getNodeById( id );
         for ( int i = 0; i < keys.length; i++ )
         {
             node.setProperty( keys[i], values[i] );

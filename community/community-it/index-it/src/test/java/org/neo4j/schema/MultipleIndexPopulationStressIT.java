@@ -281,7 +281,7 @@ public class MultipleIndexPopulationStressIT
         try ( Transaction tx = db.beginTx() )
         {
             long nodeId = random.nextInt( nodeCount );
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             Object[] keys = Iterables.asCollection( node.getPropertyKeys() ).toArray();
             String key = (String) random.among( keys );
             if ( random.nextFloat() < 0.1 )

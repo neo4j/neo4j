@@ -143,7 +143,7 @@ class IndexStatisticsIT
 
     private int labelId( Label alien )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             return ktx().tokenRead().nodeLabel( alien.name() );
         }
@@ -151,7 +151,7 @@ class IndexStatisticsIT
 
     private int pkId( String propertyName )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             return ktx().tokenRead().propertyKey( propertyName );
         }

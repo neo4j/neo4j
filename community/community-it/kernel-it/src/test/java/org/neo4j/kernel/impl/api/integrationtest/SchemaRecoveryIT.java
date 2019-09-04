@@ -148,7 +148,7 @@ class SchemaRecoveryIT
 
     private List<ConstraintDefinition> constraints( GraphDatabaseService database )
     {
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             return Iterables.asList( database.schema().getConstraints() );
         }
@@ -156,7 +156,7 @@ class SchemaRecoveryIT
 
     private List<IndexDefinition> indexes( GraphDatabaseService database )
     {
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             return Iterables.asList( database.schema().getIndexes() );
         }

@@ -529,7 +529,7 @@ class BatchInsertTest
 
         try ( Transaction transaction = db.beginTx() )
         {
-            Node realStartNode = db.getNodeById( startNode );
+            Node realStartNode = transaction.getNodeById( startNode );
             Relationship realSelfRelationship = transaction.getRelationshipById( selfRelationship );
             Relationship realRelationship = transaction.getRelationshipById( relationship );
             assertEquals( realSelfRelationship,
@@ -565,7 +565,7 @@ class BatchInsertTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             for ( Relationship relationship : node.getRelationships() )
             {
                 relationship.delete();
@@ -1507,9 +1507,9 @@ class BatchInsertTest
 
     private static Node getNodeInTx( long nodeId, GraphDatabaseService db )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( var tx = db.beginTx() )
         {
-            return db.getNodeById( nodeId );
+            return tx.getNodeById( nodeId );
         }
     }
 

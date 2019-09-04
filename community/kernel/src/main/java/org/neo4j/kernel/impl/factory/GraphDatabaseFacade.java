@@ -28,12 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
@@ -53,7 +51,6 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -134,28 +131,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ),
                 new FacadeKernelTransactionFactory( config, this ),
                 txBridge );
-    }
-
-    @Override
-    public Node getNodeById( long id )
-    {
-        if ( id < 0 )
-        {
-            throw new NotFoundException( format( "Node %d not found", id ),
-                    new EntityNotFoundException( EntityType.NODE, id ) );
-        }
-
-        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        assertTransactionOpen( ktx );
-        try ( Statement ignore = ktx.acquireStatement() )
-        {
-            if ( !ktx.dataRead().nodeExists( id ) )
-            {
-                throw new NotFoundException( format( "Node %d not found", id ),
-                        new EntityNotFoundException( EntityType.NODE, id ) );
-            }
-            return newNodeProxy( id );
-        }
     }
 
     @Override

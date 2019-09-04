@@ -123,10 +123,10 @@ class PartialTransactionFailureIT
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = database.beginTx() )
         {
-            Node x = database.getNodeById( a.getId() );
-            Node y = database.getNodeById( b.getId() );
-            Node z = database.getNodeById( c.getId() );
-            Node w = database.getNodeById( d.getId() );
+            Node x = tx.getNodeById( a.getId() );
+            Node y = tx.getNodeById( b.getId() );
+            Node z = tx.getNodeById( c.getId() );
+            Node w = tx.getNodeById( d.getId() );
             Iterator<Relationship> itrRelX = x.getRelationships().iterator();
             Iterator<Relationship> itrRelY = y.getRelationships().iterator();
             Iterator<Relationship> itrRelZ = z.getRelationships().iterator();

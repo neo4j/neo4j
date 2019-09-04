@@ -101,7 +101,7 @@ public class KernelTransactionTimeoutMonitorIT
         {
             try ( Transaction tx = database.beginTx() )
             {
-                Node node = database.getNodeById( nodeId );
+                Node node = tx.getNodeById( nodeId );
                 tx.acquireReadLock( node );
                 nodeLockAcquired.set( true );
                 lockerPause.await();
@@ -123,7 +123,7 @@ public class KernelTransactionTimeoutMonitorIT
         try ( Transaction tx = database.beginTx() )
         {
             // Write-locking is only possible if their shared lock was released
-            tx.acquireWriteLock( database.getNodeById( nodeId ) );
+            tx.acquireWriteLock( tx.getNodeById( nodeId ) );
             tx.commit();
         }
         // No exception from our lock client being stopped (e.g. we ended up blocked for too long) or from timeout
@@ -146,7 +146,7 @@ public class KernelTransactionTimeoutMonitorIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Node nodeById = database.getNodeById( NODE_ID );
+                Node nodeById = transaction.getNodeById( NODE_ID );
                 nodeById.setProperty( "a", "b" );
                 executor.submit( startAnotherTransaction() ).get();
             }
@@ -169,10 +169,10 @@ public class KernelTransactionTimeoutMonitorIT
     {
         return () ->
         {
-            try ( InternalTransaction ignored = database
+            try ( InternalTransaction tx = database
                     .beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED, EMBEDDED_CONNECTION, 1, TimeUnit.SECONDS ) )
             {
-                Node node = database.getNodeById( NODE_ID );
+                Node node = tx.getNodeById( NODE_ID );
                 node.setProperty( "c", "d" );
             }
         };

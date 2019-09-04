@@ -89,9 +89,9 @@ class CypherUpdateMapTest
 
     private Node getNodeByIdInTx( int nodeId )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            return db.getNodeById( nodeId );
+            return transaction.getNodeById( nodeId );
         }
     }
 }

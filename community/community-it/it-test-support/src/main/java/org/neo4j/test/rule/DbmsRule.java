@@ -32,7 +32,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.ResultConsumer;
@@ -210,12 +209,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public Transaction beginTx( long timeout, TimeUnit timeUnit )
     {
         return getGraphDatabaseAPI().beginTx( timeout, timeUnit );
-    }
-
-    @Override
-    public Node getNodeById( long id )
-    {
-        return getGraphDatabaseAPI().getNodeById( id );
     }
 
     @Override

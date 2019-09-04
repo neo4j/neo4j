@@ -311,7 +311,7 @@ class FileWatchIT
             transaction.commit();
         }
 
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }

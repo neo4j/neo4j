@@ -79,7 +79,7 @@ class DefaultValueMapperTest
         Path mapped = mapper.mapPath( path( asNodeValues( node ), asRelationshipsValues() ) );
 
         // Then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertThat( mapped.length(), equalTo( 0 ) );
             assertThat( mapped.startNode(), equalTo( node ) );
@@ -111,7 +111,7 @@ class DefaultValueMapperTest
         Path mapped = mapper.mapPath( path( asNodeValues( start, end ), asRelationshipsValues( relationship ) ) );
 
         // Then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertThat( mapped.length(), equalTo( 1 ) );
             assertThat( mapped.startNode(), equalTo( start ) );
@@ -149,7 +149,7 @@ class DefaultValueMapperTest
         Path mapped = mapper.mapPath( path( asNodeValues( a, b, c, d, e ), asRelationshipsValues( r1, r2, r3, r4 ) ) );
 
         // Then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertThat( mapped.length(), equalTo( 4 ) );
             assertThat( mapped.startNode(), equalTo( a ) );
@@ -186,7 +186,7 @@ class DefaultValueMapperTest
         Relationship coreAPIRelationship = mapper.mapRelationship( relationshipValue );
 
         // Then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertThat( coreAPIRelationship.getId(), equalTo( relationship.getId() ) );
             assertThat( coreAPIRelationship.getStartNode(), equalTo( start ) );

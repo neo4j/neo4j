@@ -67,7 +67,7 @@ class PropertyKeyTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.createNode();
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
 
             // Then
             assertEquals( count, Iterables.count( node.getPropertyKeys() ) );

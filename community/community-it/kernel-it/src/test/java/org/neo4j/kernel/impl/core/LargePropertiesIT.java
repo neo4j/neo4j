@@ -67,7 +67,7 @@ class LargePropertiesIT
 
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getNodeById( nodeId );
+                Node node = tx.getNodeById( nodeId );
                 assertEquals( stringValue, node.getProperty( "string" ) );
                 assertArrayEquals( arrayValue, (byte[]) node.getProperty( "array" ) );
                 tx.commit();

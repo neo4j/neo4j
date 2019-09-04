@@ -175,11 +175,11 @@ class IndexConsistencyIT
             }
             else if ( selectModification < DELETE_RATIO )
             {
-                deleteExistingNode( existingNodes );
+                deleteExistingNode( tx, existingNodes );
             }
             else
             {
-                modifyLabelsOnExistingNode( existingNodes );
+                modifyLabelsOnExistingNode( tx, existingNodes );
             }
         }
     }
@@ -198,12 +198,12 @@ class IndexConsistencyIT
         return node;
     }
 
-    private void modifyLabelsOnExistingNode( List<Pair<Long,Label[]>> existingNodes )
+    private void modifyLabelsOnExistingNode( Transaction transaction, List<Pair<Long,Label[]>> existingNodes )
     {
         int targetIndex = random.nextInt( existingNodes.size() );
         Pair<Long,Label[]> existingPair = existingNodes.get( targetIndex );
         long nodeId = existingPair.first();
-        Node node = db.getNodeById( nodeId );
+        Node node = transaction.getNodeById( nodeId );
         node.getLabels().forEach( node::removeLabel );
         Label[] newLabels = randomLabels();
         for ( Label label : newLabels )
@@ -214,11 +214,11 @@ class IndexConsistencyIT
         existingNodes.add( Pair.of( nodeId, newLabels ) );
     }
 
-    private void deleteExistingNode( List<Pair<Long,Label[]>> existingNodes )
+    private void deleteExistingNode( Transaction transaction, List<Pair<Long,Label[]>> existingNodes )
     {
         int targetIndex = random.nextInt( existingNodes.size() );
         Pair<Long,Label[]> existingPair = existingNodes.get( targetIndex );
-        Node node = db.getNodeById( existingPair.first() );
+        Node node = transaction.getNodeById( existingPair.first() );
         node.delete();
         existingNodes.remove( targetIndex );
     }

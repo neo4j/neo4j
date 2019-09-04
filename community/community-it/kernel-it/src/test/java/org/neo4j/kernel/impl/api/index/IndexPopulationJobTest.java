@@ -819,8 +819,8 @@ class IndexPopulationJobTest
     {
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Node node1 = db.getNodeById( fromNode );
-            Node node2 = db.getNodeById( toNode );
+            Node node1 = tx.getNodeById( fromNode );
+            Node node2 = tx.getNodeById( toNode );
             Relationship relationship = node1.createRelationshipTo( node2, relType );
             for ( Map.Entry<String,Object> property : properties.entrySet() )
             {

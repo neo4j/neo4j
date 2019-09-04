@@ -94,7 +94,7 @@ class CommunityGlobalTransactionStatsIT
             startSeparateTransaction.await();
             assertEquals( 1, globalTransactionStats.getNumberOfActiveTransactions() );
 
-            try ( Transaction ignored = defaultFacade.beginTx() )
+            try ( Transaction tx = defaultFacade.beginTx() )
             {
                 TransactionCounters databaseStats = ((GraphDatabaseAPI) defaultFacade).getDependencyResolver().resolveDependency( TransactionCounters.class );
                 assertEquals( 2, globalTransactionStats.getNumberOfActiveTransactions() );

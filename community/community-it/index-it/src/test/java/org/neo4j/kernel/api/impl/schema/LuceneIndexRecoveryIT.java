@@ -103,9 +103,9 @@ class LuceneIndexRecoveryIT
         waitForIndex( index );
 
         long nodeId = createNode( myLabel, "12" );
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertNotNull( db.getNodeById( nodeId ) );
+            assertNotNull( tx.getNodeById( nodeId ) );
         }
         assertEquals( 1, doIndexLookup( myLabel, "12" ).size() );
 
@@ -116,9 +116,9 @@ class LuceneIndexRecoveryIT
         startDb( createLuceneIndexFactory() );
 
         // Then
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertNotNull( db.getNodeById( nodeId ) );
+            assertNotNull( tx.getNodeById( nodeId ) );
         }
         assertEquals( 1, doIndexLookup( myLabel, "12" ).size() );
     }
@@ -191,15 +191,15 @@ class LuceneIndexRecoveryIT
         startDb( createAlwaysInitiallyPopulatingLuceneIndexFactory() );
 
         IndexDefinition index;
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             index = db.schema().getIndexes().iterator().next();
         }
         waitForIndex( index );
 
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( "12", db.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
+            assertEquals( "12", tx.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
         }
         assertEquals( 1, doIndexLookup( myLabel, "12" ).size() );
     }
@@ -304,7 +304,7 @@ class LuceneIndexRecoveryIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.setProperty( NUM_BANANAS_KEY, value );
             tx.commit();
         }
@@ -315,7 +315,7 @@ class LuceneIndexRecoveryIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( node ).delete();
+            tx.getNodeById( node ).delete();
             tx.commit();
         }
     }

@@ -86,7 +86,7 @@ class TestConcurrentRelationshipChainLoadingIssue
 
     private void loadNode( GraphDatabaseAPI db, Node node )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Iterables.count( node.getRelationships() );
         }
@@ -97,7 +97,7 @@ class TestConcurrentRelationshipChainLoadingIssue
         Race race = new Race().withRandomStartDelays();
         race.addContestants( Runtime.getRuntime().availableProcessors(), () ->
         {
-            try ( Transaction ignored = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
                 Assertions.assertEquals( relCount, count( node.getRelationships() ) );
             }

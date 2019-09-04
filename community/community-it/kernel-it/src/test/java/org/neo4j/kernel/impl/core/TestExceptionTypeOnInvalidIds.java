@@ -223,16 +223,16 @@ public class TestExceptionTypeOnInvalidIds
         getRelationshipByIdReadOnly( BIG_NEGATIVE_LONG );
     }
 
-    private static void getNodeById( long index )
+    private void getNodeById( long index )
     {
-        Node value = graphdb.getNodeById( index );
+        Node value = tx.getNodeById( index );
         fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }
 
-    private static void getNodeByIdReadOnly( long index )
+    private void getNodeByIdReadOnly( long index )
     {
-        Node value = graphDbReadOnly.getNodeById( index );
+        Node value = tx.getNodeById( index );
         fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }

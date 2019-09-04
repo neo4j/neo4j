@@ -65,7 +65,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
             {
                 Long source = NODE_IDS.get( RANDOM.nextInt( N_NODES ) );
                 Long target = NODE_IDS.get( RANDOM.nextInt( N_NODES ) );
-                graphDb.getNodeById( source ).createRelationshipTo( graphDb.getNodeById( target ),
+                tx.getNodeById( source ).createRelationshipTo( tx.getNodeById( target ),
                         RelationshipType.withName( "REL" + (i % 10) ) );
             }
             tx.commit();

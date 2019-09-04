@@ -106,7 +106,7 @@ class ConstraintRecoveryIT
 
         assertThrows( ConstraintViolationException.class, () ->
         {
-            try ( Transaction ignored = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
             }
@@ -122,7 +122,7 @@ class ConstraintRecoveryIT
         db = (GraphDatabaseAPI) secondManagementService.database( DEFAULT_DATABASE_NAME );
 
         // then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
         }
@@ -132,12 +132,12 @@ class ConstraintRecoveryIT
             assertEquals( 2, Iterables.count( transaction.getAllNodes() ) );
         }
 
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertEquals( 0, Iterables.count( Iterables.asList( db.schema().getConstraints() ) ) );
         }
 
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition orphanedConstraintIndex = single( db.schema().getIndexes() );
             assertEquals( LABEL.name(), single( orphanedConstraintIndex.getLabels() ).name() );

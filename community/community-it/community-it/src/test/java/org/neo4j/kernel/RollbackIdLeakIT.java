@@ -109,7 +109,7 @@ class RollbackIdLeakIT
                 // when deleting the committed nodes/relationships and restarting
                 try ( Transaction tx = db.beginTx() )
                 {
-                    committedNodeIds.forEach( nodeId -> db.getNodeById( nodeId ).delete() );
+                    committedNodeIds.forEach( nodeId -> tx.getNodeById( nodeId ).delete() );
                     committedRelationshipIds.forEach( relationshipId -> tx.getRelationshipById( relationshipId ).delete() );
                     tx.commit();
                 }

@@ -59,7 +59,7 @@ class IndexFreshDataReadIT
             addStaffMember( "Fry" );
             assertEquals( 1, countStaff().intValue() );
 
-            Node fry = db.getNodeById( 0 );
+            Node fry = transaction.getNodeById( 0 );
             Iterable<Relationship> fryRelationships = fry.getRelationships();
             assertFalse( fryRelationships.iterator().hasNext() );
 

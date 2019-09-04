@@ -303,7 +303,7 @@ class SchemaStorageIT
 
     private int labelId( String labelName )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             return getTransaction().tokenRead().nodeLabel( labelName );
         }
@@ -311,7 +311,7 @@ class SchemaStorageIT
 
     private int propId( String propName )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             return getTransaction().tokenRead().propertyKey( propName );
         }

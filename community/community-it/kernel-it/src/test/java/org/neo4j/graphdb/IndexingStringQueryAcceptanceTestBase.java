@@ -138,7 +138,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
             while ( deleting.hasNext() )
             {
                 long id = deleting.next();
-                db.getNodeById( id ).delete();
+                tx.getNodeById( id ).delete();
                 expected.remove( id );
             }
 
@@ -164,14 +164,14 @@ public abstract class IndexingStringQueryAcceptanceTestBase
             while ( toMatching.hasNext() )
             {
                 long id = toMatching.next();
-                db.getNodeById( id ).setProperty( KEY, matching[2] );
+                tx.getNodeById( id ).setProperty( KEY, matching[2] );
                 expected.add( id );
             }
             LongIterator toNotMatching = toChangeToNotMatch.longIterator();
             while ( toNotMatching.hasNext() )
             {
                 long id = toNotMatching.next();
-                db.getNodeById( id ).setProperty( KEY, nonMatching[2] );
+                tx.getNodeById( id ).setProperty( KEY, nonMatching[2] );
                 expected.remove( id );
             }
 

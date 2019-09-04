@@ -160,7 +160,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            addLabelToExistingNode( nodesInStore );
+            addLabelToExistingNode( tx, nodesInStore );
             tx.commit();
         }
 
@@ -183,7 +183,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            removeLabelFromExistingNode( nodesInStore );
+            removeLabelFromExistingNode( tx, nodesInStore );
             tx.commit();
         }
 
@@ -206,7 +206,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            removeExistingNode( nodesInStore );
+            removeExistingNode( tx, nodesInStore );
             tx.commit();
         }
 
@@ -224,7 +224,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         return Files.readString( result.reportFile().toPath() );
     }
 
-    private void removeExistingNode( List<Pair<Long,Label[]>> nodesInStore )
+    private void removeExistingNode( Transaction transaction, List<Pair<Long,Label[]>> nodesInStore )
     {
         Node node;
         Label[] labels;
@@ -232,22 +232,22 @@ public class AllNodesInStoreExistInLabelIndexTest
         {
             int targetIndex = random.nextInt( nodesInStore.size() );
             Pair<Long,Label[]> existingNode = nodesInStore.get( targetIndex );
-            node = db.getNodeById( existingNode.first() );
+            node = transaction.getNodeById( existingNode.first() );
             labels = existingNode.other();
         }
         while ( labels.length == 0 );
         node.delete();
     }
 
-    private void addLabelToExistingNode( List<Pair<Long,Label[]>> nodesInStore )
+    private void addLabelToExistingNode( Transaction transaction, List<Pair<Long,Label[]>> nodesInStore )
     {
         int targetIndex = random.nextInt( nodesInStore.size() );
         Pair<Long,Label[]> existingNode = nodesInStore.get( targetIndex );
-        Node node = db.getNodeById( existingNode.first() );
+        Node node = transaction.getNodeById( existingNode.first() );
         node.addLabel( EXTRA_LABEL );
     }
 
-    private void removeLabelFromExistingNode( List<Pair<Long,Label[]>> nodesInStore )
+    private void removeLabelFromExistingNode( Transaction transaction, List<Pair<Long,Label[]>> nodesInStore )
     {
         Pair<Long,Label[]> existingNode;
         Node node;
@@ -255,7 +255,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         {
             int targetIndex = random.nextInt( nodesInStore.size() );
             existingNode = nodesInStore.get( targetIndex );
-            node = db.getNodeById( existingNode.first() );
+            node = transaction.getNodeById( existingNode.first() );
         }
         while ( existingNode.other().length == 0 );
         node.removeLabel( existingNode.other()[0] );
@@ -308,11 +308,11 @@ public class AllNodesInStoreExistInLabelIndexTest
             }
             else if ( selectModification < DELETE_RATIO )
             {
-                deleteExistingNode( existingNodes );
+                deleteExistingNode( tx, existingNodes );
             }
             else
             {
-                modifyLabelsOnExistingNode( existingNodes );
+                modifyLabelsOnExistingNode( tx, existingNodes );
             }
         }
     }
@@ -324,12 +324,12 @@ public class AllNodesInStoreExistInLabelIndexTest
         existingNodes.add( Pair.of( node.getId(), labels ) );
     }
 
-    private void modifyLabelsOnExistingNode( List<Pair<Long,Label[]>> existingNodes )
+    private void modifyLabelsOnExistingNode( Transaction transaction, List<Pair<Long,Label[]>> existingNodes )
     {
         int targetIndex = random.nextInt( existingNodes.size() );
         Pair<Long,Label[]> existingPair = existingNodes.get( targetIndex );
         long nodeId = existingPair.first();
-        Node node = db.getNodeById( nodeId );
+        Node node = transaction.getNodeById( nodeId );
         node.getLabels().forEach( node::removeLabel );
         Label[] newLabels = randomLabels();
         for ( Label label : newLabels )
@@ -340,11 +340,11 @@ public class AllNodesInStoreExistInLabelIndexTest
         existingNodes.add( Pair.of( nodeId, newLabels ) );
     }
 
-    private void deleteExistingNode( List<Pair<Long,Label[]>> existingNodes )
+    private void deleteExistingNode( Transaction transaction, List<Pair<Long,Label[]>> existingNodes )
     {
         int targetIndex = random.nextInt( existingNodes.size() );
         Pair<Long,Label[]> existingPair = existingNodes.get( targetIndex );
-        Node node = db.getNodeById( existingPair.first() );
+        Node node = transaction.getNodeById( existingPair.first() );
         node.delete();
         existingNodes.remove( targetIndex );
     }

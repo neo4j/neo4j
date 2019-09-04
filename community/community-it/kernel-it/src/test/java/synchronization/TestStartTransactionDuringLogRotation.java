@@ -137,7 +137,7 @@ public class TestStartTransactionDuringLogRotation
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( 0 );
+            tx.getNodeById( 0 );
             completeLogRotationLatch.countDown();
             tx.commit();
         }

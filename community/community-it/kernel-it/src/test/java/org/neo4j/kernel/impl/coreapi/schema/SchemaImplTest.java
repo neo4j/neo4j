@@ -105,7 +105,7 @@ class SchemaImplTest
         }
 
         // Get state and progress
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Schema schema = db.schema();
             Schema.IndexState state;

@@ -179,7 +179,7 @@ class QueryExecutionLocksIT
             db.schema().indexFor( label ).on( propertyKey ).create();
             transaction.commit();
         }
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }

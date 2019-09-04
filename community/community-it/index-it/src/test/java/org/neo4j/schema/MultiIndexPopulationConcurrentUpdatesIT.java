@@ -172,7 +172,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
-        try ( Transaction ignored = embeddedDatabase.beginTx() )
+        try ( Transaction tx = embeddedDatabase.beginTx() )
         {
             Integer countryLabelId = labelsNameIdMap.get( COUNTRY_LABEL );
             Integer colorLabelId = labelsNameIdMap.get( COLOR_LABEL );
@@ -202,7 +202,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
-        try ( Transaction ignored = embeddedDatabase.beginTx() )
+        try ( Transaction tx = embeddedDatabase.beginTx() )
         {
             Integer countryLabelId = labelsNameIdMap.get( COUNTRY_LABEL );
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
@@ -232,7 +232,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
-        try ( Transaction ignored = embeddedDatabase.beginTx() )
+        try ( Transaction tx = embeddedDatabase.beginTx() )
         {
             Integer colorLabelId = labelsNameIdMap.get( COLOR_LABEL );
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
@@ -347,7 +347,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        try ( Transaction ignored = embeddedDatabase.beginTx() )
+        try ( Transaction tx = embeddedDatabase.beginTx() )
         {
             for ( int labelId : labelsIds.values() )
             {
@@ -358,7 +358,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private int getPropertyId()
     {
-        try ( Transaction ignored = embeddedDatabase.beginTx() )
+        try ( Transaction tx = embeddedDatabase.beginTx() )
         {
             return getPropertyIdByName( NAME_PROPERTY );
         }
@@ -366,7 +366,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private Map<String,Integer> getLabelsNameIdMap()
     {
-        try ( Transaction ignored = embeddedDatabase.beginTx() )
+        try ( Transaction tx = embeddedDatabase.beginTx() )
         {
             return getLabelIdsByName( COUNTRY_LABEL, COLOR_LABEL, CAR_LABEL );
         }
@@ -596,7 +596,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 {
                     try ( Transaction transaction = embeddedDatabase.beginTx() )
                     {
-                        Node node = embeddedDatabase.getNodeById( update.getEntityId() );
+                        Node node = transaction.getNodeById( update.getEntityId() );
                         for ( int labelId : labelsNameIdMap.values() )
                         {
                             LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );

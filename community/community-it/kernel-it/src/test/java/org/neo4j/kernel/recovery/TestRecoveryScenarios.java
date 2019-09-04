@@ -100,7 +100,7 @@ class TestRecoveryScenarios
         // -- really the problem was that recovery threw exception, so mostly assert that.
         try ( Transaction tx = db.beginTx() )
         {
-            node = db.getNodeById( node.getId() );
+            node = tx.getNodeById( node.getId() );
             tx.commit();
             fail( "Should not exist" );
         }

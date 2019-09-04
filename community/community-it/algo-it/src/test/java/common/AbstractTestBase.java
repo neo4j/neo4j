@@ -56,9 +56,9 @@ public abstract class AbstractTestBase
         graphdb = null;
     }
 
-    protected static Node getNode( long id )
+    protected static Node getNode( Transaction tx, long id )
     {
-        return graphdb.getNodeById( id );
+        return tx.getNodeById( id );
     }
 
     protected static Transaction beginTx()

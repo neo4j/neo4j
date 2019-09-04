@@ -83,14 +83,14 @@ class NodeTest
         {
             Node node = transaction.createNode();
             nodeId = node.getId();
-            db.getNodeById( nodeId );
+            transaction.getNodeById( nodeId );
             node.delete();
             transaction.commit();
         }
         assertThrows( NotFoundException.class, () -> {
             try ( Transaction transaction = db.beginTx() )
             {
-                db.getNodeById( nodeId );
+                transaction.getNodeById( nodeId );
             }
         } );
     }

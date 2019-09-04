@@ -91,6 +91,17 @@ public interface Transaction extends AutoCloseable
     Node createNode( Label... labels );
 
     /**
+     * Looks up a node by id. Please note: Neo4j reuses its internal ids when
+     * nodes and relationships are deleted, which means it's bad practice to
+     * refer to them this way. Instead, use application generated ids.
+     *
+     * @param id the id of the node
+     * @return the node with id <code>id</code> if found
+     * @throws NotFoundException if not found
+     */
+    Node getNodeById( long id );
+
+    /**
      * Looks up a relationship by id. Please note: Neo4j reuses its internal ids
      * when nodes and relationships are deleted, which means it's bad practice
      * to refer to them this way. Instead, use application generated ids.

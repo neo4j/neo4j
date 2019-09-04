@@ -152,11 +152,11 @@ public class DynamicIndexStoreViewIT
                         {
                         case 0:
                             long targetNodeId = randomValues.nextLongValue( totalNodes ).value();
-                            databaseService.getNodeById( targetNodeId ).delete();
+                            transaction.getNodeById( targetNodeId ).delete();
                             break;
                         case 1:
                             long nodeId = randomValues.nextLongValue( totalNodes ).value();
-                            Node node = databaseService.getNodeById( nodeId );
+                            Node node = transaction.getNodeById( nodeId );
                             Map<String,Object> allProperties = node.getAllProperties();
                             for ( String key : allProperties.keySet() )
                             {

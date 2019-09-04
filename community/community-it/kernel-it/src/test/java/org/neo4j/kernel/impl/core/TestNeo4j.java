@@ -159,7 +159,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
             tx.commit();
         }
 
-        try ( Transaction ignored = getGraphDb().beginTx() )
+        try ( Transaction tx = getGraphDb().beginTx() )
         {
             node.setProperty( "test", new String[] { "value1", "value2" } );
             // no success, we wanna test rollback on this operation

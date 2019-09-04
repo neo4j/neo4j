@@ -128,15 +128,15 @@ public class LuceneFulltextTestSupport
         return node.getId();
     }
 
-    long createRelationshipIndexableByPropertyValue( long firstNodeId, long secondNodeId, Object propertyValue )
+    long createRelationshipIndexableByPropertyValue( Transaction transaction, long firstNodeId, long secondNodeId, Object propertyValue )
     {
-        return createRelationshipWithProperty( firstNodeId, secondNodeId, PROP, propertyValue );
+        return createRelationshipWithProperty( transaction, firstNodeId, secondNodeId, PROP, propertyValue );
     }
 
-    long createRelationshipWithProperty( long firstNodeId, long secondNodeId, String propertyKey, Object propertyValue )
+    long createRelationshipWithProperty( Transaction transaction, long firstNodeId, long secondNodeId, String propertyKey, Object propertyValue )
     {
-        Node first = db.getNodeById( firstNodeId );
-        Node second = db.getNodeById( secondNodeId );
+        Node first = transaction.getNodeById( firstNodeId );
+        Node second = transaction.getNodeById( secondNodeId );
         Relationship relationship = first.createRelationshipTo( second, RELTYPE );
         relationship.setProperty( propertyKey, propertyValue );
         return relationship.getId();
@@ -216,14 +216,14 @@ public class LuceneFulltextTestSupport
         }
     }
 
-    void setNodeProp( long nodeId, String value )
+    void setNodeProp( Transaction transaction, long nodeId, String value )
     {
-        setNodeProp( nodeId, PROP, value );
+        setNodeProp( transaction, nodeId, PROP, value );
     }
 
-    void setNodeProp( long nodeId, String propertyKey, String value )
+    void setNodeProp( Transaction transaction, long nodeId, String propertyKey, String value )
     {
-        Node node = db.getNodeById( nodeId );
+        Node node = transaction.getNodeById( nodeId );
         node.setProperty( propertyKey, value );
     }
 

@@ -67,9 +67,9 @@ class DenseNodeRelChainPositionTest
         }
 
         // When/Then
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node1b = db.getNodeById( node1.getId() );
+            Node node1b = tx.getNodeById( node1.getId() );
 
             Iterable<Relationship> rels = node1b.getRelationships( Direction.INCOMING );
             assertEquals( 0, Iterables.count( rels ) );

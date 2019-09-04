@@ -277,9 +277,9 @@ class NativeLabelScanStoreUpdateIT
 
     private Node getNodeById( long id )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            return db.getNodeById( id );
+            return tx.getNodeById( id );
         }
     }
 

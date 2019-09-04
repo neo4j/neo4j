@@ -33,7 +33,6 @@ import java.util.stream.StreamSupport;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -204,7 +203,7 @@ public class FulltextProcedures
                 {
                     long nodeReference = cursor.nodeReference();
                     float score = cursor.score();
-                    NodeOutput nodeOutput = NodeOutput.forExistingEntityOrNull( db, nodeReference, score );
+                    NodeOutput nodeOutput = NodeOutput.forExistingEntityOrNull( GraphDatabaseFacade.TEMP_TOP_LEVEL_TRANSACTION.get(), nodeReference, score );
                     if ( nodeOutput != null )
                     {
                         action.accept( nodeOutput );
@@ -323,11 +322,11 @@ public class FulltextProcedures
             this.score = score;
         }
 
-        public static NodeOutput forExistingEntityOrNull( GraphDatabaseService db, long nodeId, float score )
+        public static NodeOutput forExistingEntityOrNull( Transaction transaction, long nodeId, float score )
         {
             try
             {
-                return new NodeOutput( db.getNodeById( nodeId ), score );
+                return new NodeOutput( transaction.getNodeById( nodeId ), score );
             }
             catch ( NotFoundException ignore )
             {

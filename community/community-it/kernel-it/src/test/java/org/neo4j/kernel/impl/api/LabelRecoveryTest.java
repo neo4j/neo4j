@@ -100,9 +100,9 @@ class LabelRecoveryTest
         database = managementService.database( DEFAULT_DATABASE_NAME );
 
         // THEN
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
-            node = database.getNodeById( node.getId() );
+            node = tx.getNodeById( node.getId() );
             for ( Label label : labels )
             {
                 assertTrue( node.hasLabel( label ) );

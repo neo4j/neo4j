@@ -80,7 +80,7 @@ public class TestGraphDescription implements GraphHolder
         Node n = graph.get( "a" );
         while ( unique.add( n ) )
         {
-            try ( Transaction ignored = graphdb.beginTx() )
+            try ( Transaction tx = graphdb.beginTx() )
             {
                 n = n.getSingleRelationship( RelationshipType.withName( "TO" ), Direction.OUTGOING ).getEndNode();
             }
@@ -96,7 +96,7 @@ public class TestGraphDescription implements GraphHolder
         Node a = graph.get( "a" );
         Node b = graph.get( "b" );
 
-        try ( Transaction ignored = graphdb.beginTx() )
+        try ( Transaction tx = graphdb.beginTx() )
         {
             assertTrue( a.hasLabel( label( "Person" ) ) );
             assertTrue( b.hasLabel( label( "Banana" ) ) );
@@ -111,7 +111,7 @@ public class TestGraphDescription implements GraphHolder
         Node a = graph.get( "a" );
         Node b = graph.get( "b" );
 
-        try ( Transaction ignored = graphdb.beginTx() )
+        try ( Transaction tx = graphdb.beginTx() )
         {
             assertTrue( "Person label missing", a.hasLabel( label( "Person" ) ) );
             assertTrue( "Banana label missing", b.hasLabel( label( "Banana" ) ) );
@@ -123,7 +123,7 @@ public class TestGraphDescription implements GraphHolder
     private void verifyIKnowYou( String type, String myName )
     {
         Map<String, Node> graph = data.get();
-        try ( Transaction ignored = graphdb.beginTx() )
+        try ( Transaction tx = graphdb.beginTx() )
         {
             assertEquals( "Wrong graph size.", 2, graph.size() );
             Node iNode = graph.get( "I" );

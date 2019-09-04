@@ -98,7 +98,7 @@ class CompositeIndexingIT
             tx.commit();
         }
 
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
             while ( ktx.schemaRead().indexGetState( index ) != InternalIndexState.ONLINE )
@@ -157,7 +157,7 @@ class CompositeIndexingIT
     void shouldSeeNodeAddedByPropertyToIndexInTranslation( IndexPrototype prototype ) throws Exception
     {
         setup( prototype );
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
             Write write = ktx.dataWrite();
@@ -181,7 +181,7 @@ class CompositeIndexingIT
     void shouldSeeNodeAddedToByLabelIndexInTransaction( IndexPrototype prototype ) throws Exception
     {
         setup( prototype );
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
             Write write = ktx.dataWrite();
@@ -206,7 +206,7 @@ class CompositeIndexingIT
     {
         setup( prototype );
         long nodeID = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
             ktx.dataWrite().nodeDelete( nodeID );
@@ -223,7 +223,7 @@ class CompositeIndexingIT
     {
         setup( prototype );
         long nodeID = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
             ktx.dataWrite().nodeRemoveLabel( nodeID, LABEL_ID );
@@ -240,7 +240,7 @@ class CompositeIndexingIT
     {
         setup( prototype );
         long nodeID = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
             ktx.dataWrite().nodeRemoveProperty( nodeID, index.schema().getPropertyIds()[0] );
@@ -261,7 +261,7 @@ class CompositeIndexingIT
             long nodeID1 = createNode();
             long nodeID2 = createNode();
             long nodeID3 = createNode();
-            try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+            try ( Transaction tx = graphDatabaseAPI.beginTx() )
             {
                 KernelTransaction ktx = ktx();
                 Set<Long> result = new HashSet<>();
@@ -287,7 +287,7 @@ class CompositeIndexingIT
             long nodeID1 = createNode();
             long nodeID2 = createNode();
             long nodeID3 = createNode();
-            try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+            try ( Transaction tx = graphDatabaseAPI.beginTx() )
             {
                 KernelTransaction ktx = ktx();
                 Set<Long> result = new HashSet<>();
@@ -309,7 +309,7 @@ class CompositeIndexingIT
     {
         setup( prototype );
         long nodeID1 = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
             Write write = ktx.dataWrite();

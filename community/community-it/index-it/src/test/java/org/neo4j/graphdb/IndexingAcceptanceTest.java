@@ -145,7 +145,7 @@ public class IndexingAcceptanceTest
         Node myNode;
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            myNode = beansAPI.getNodeById( id );
+            myNode = tx.getNodeById( id );
             myNode.addLabel( LABEL1 );
             myNode.setProperty( "key2", LONG_STRING );
             myNode.setProperty( "key3", LONG_STRING );
@@ -520,7 +520,7 @@ public class IndexingAcceptanceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             for ( int i = 0; i < indexesCount; i++ )
             {
                 node.addLabel( Label.label( labelPrefix + i ) );

@@ -159,6 +159,27 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
+    public Node getNodeById( long id )
+    {
+        if ( id < 0 )
+        {
+            throw new NotFoundException( format( "Node %d not found", id ),
+                    new EntityNotFoundException( EntityType.NODE, id ) );
+        }
+
+        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        try ( Statement ignore = ktx.acquireStatement() )
+        {
+            if ( !ktx.dataRead().nodeExists( id ) )
+            {
+                throw new NotFoundException( format( "Node %d not found", id ),
+                        new EntityNotFoundException( EntityType.NODE, id ) );
+            }
+            return facade.newNodeProxy( id );
+        }
+    }
+
+    @Override
     public Relationship getRelationshipById( long id )
     {
         if ( id < 0 )

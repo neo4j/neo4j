@@ -61,9 +61,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            List<Relationship> relationships = Iterables.asList( graphDb.getNodeById( n1 ).getRelationships() );
+            List<Relationship> relationships = Iterables.asList( tx.getNodeById( n1 ).getRelationships() );
             assertEquals( 1, relationships.size() );
             assertEquals( relationships.get( 0 ).getId(), r );
         }
@@ -82,9 +82,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            List<Relationship> relationships = Iterables.asList( graphDb.getNodeById( n1 ).getRelationships() );
+            List<Relationship> relationships = Iterables.asList( tx.getNodeById( n1 ).getRelationships() );
             assertEquals( 1, relationships.size() );
             assertEquals( relationships.get( 0 ).getId(), r );
         }
@@ -108,9 +108,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             tx.rollback();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( 0, graphDb.getNodeById( n1 ).getDegree() );
+            assertEquals( 0, tx.getNodeById( n1 ).getDegree() );
         }
     }
 
@@ -135,9 +135,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( 0, graphDb.getNodeById( n1 ).getDegree() );
+            assertEquals( 0, tx.getNodeById( n1 ).getDegree() );
         }
     }
 
@@ -179,9 +179,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            assertEquals( 0, graphDb.getNodeById( n1 ).getDegree() );
+            assertEquals( 0, tx.getNodeById( n1 ).getDegree() );
         }
     }
 

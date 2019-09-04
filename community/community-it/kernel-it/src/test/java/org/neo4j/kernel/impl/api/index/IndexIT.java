@@ -313,7 +313,7 @@ class IndexIT extends KernelIntegrationTest
         commit();
 
         // when
-        try ( org.neo4j.graphdb.Transaction ignore = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
@@ -339,7 +339,7 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), null );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction ignore = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
@@ -367,7 +367,7 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction ignore = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
@@ -395,7 +395,7 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction ignore = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
@@ -424,7 +424,7 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "index name" );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction ignore = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 

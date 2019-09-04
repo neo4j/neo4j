@@ -163,7 +163,7 @@ public class IndexingServiceIntegrationTest
             transaction.commit();
         }
 
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
@@ -197,7 +197,7 @@ public class IndexingServiceIntegrationTest
             }
         }
 
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
@@ -252,7 +252,7 @@ public class IndexingServiceIntegrationTest
 
     private int getPropertyKeyId( String name )
     {
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) database).databaseId() );
@@ -262,7 +262,7 @@ public class IndexingServiceIntegrationTest
 
     private int getLabelId( String name )
     {
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) database).databaseId() );

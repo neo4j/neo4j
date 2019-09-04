@@ -103,7 +103,7 @@ class TestNeo4jApiExceptions
         node2.delete();
         node1.delete();
         newTransaction();
-        assertThrows( NotFoundException.class, () -> graph.getNodeById( nodeId ) );
+        assertThrows( NotFoundException.class, () -> tx.getNodeById( nodeId ) );
         assertThrows( NotFoundException.class, () -> tx.getRelationshipById( relId ) );
 
         // Finally

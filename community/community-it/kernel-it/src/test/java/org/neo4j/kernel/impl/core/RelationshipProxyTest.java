@@ -220,7 +220,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         }
 
         // Then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertThat( relationship.getProperty( "prop" ), instanceOf( Double.class ) );
         }

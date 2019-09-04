@@ -67,7 +67,7 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertFalse( db.schema().getConstraints().iterator().hasNext() );
             assertFalse( db.schema().getIndexes().iterator().hasNext() );
@@ -97,7 +97,7 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertFalse( db.schema().getConstraints().iterator().hasNext() );
             assertFalse( db.schema().getIndexes().iterator().hasNext() );
@@ -130,7 +130,7 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertFalse( db.schema().getConstraints().iterator().hasNext() );
             assertFalse( db.schema().getIndexes().iterator().hasNext() );
@@ -164,7 +164,7 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // then
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertFalse( db.schema().getConstraints().iterator().hasNext() );
             assertFalse( db.schema().getIndexes().iterator().hasNext() );

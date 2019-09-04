@@ -649,7 +649,7 @@ class LabelsAcceptanceTest
         }
 
         // then
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             List<String> labels = new ArrayList<>();
             for ( Label label : node.getLabels() )
@@ -737,7 +737,7 @@ class LabelsAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             int endLabelIndex = startLabelIndex + count;
             for ( int i = startLabelIndex; i < endLabelIndex; i++ )
             {
@@ -751,7 +751,7 @@ class LabelsAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             Set<String> labelNames = Iterables.asList( node.getLabels() )
                     .stream()
                     .map( Label::name )
@@ -771,7 +771,7 @@ class LabelsAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             int endLabelIndex = startLabelIndex + count;
             for ( int i = startLabelIndex; i < endLabelIndex; i++ )
             {

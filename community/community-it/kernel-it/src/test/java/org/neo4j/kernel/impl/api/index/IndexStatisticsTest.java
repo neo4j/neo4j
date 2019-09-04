@@ -447,7 +447,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nodeId ).delete();
+            tx.getNodeById( nodeId ).delete();
             tx.commit();
         }
     }
@@ -457,7 +457,7 @@ public class IndexStatisticsTest
         boolean changeIndexedNode = false;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             Object oldValue = node.getProperty( NAME_PROPERTY );
             if ( !oldValue.equals( newValue ) )
             {
@@ -638,7 +638,7 @@ public class IndexStatisticsTest
 
     private void awaitIndexesOnline()
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline(3, TimeUnit.MINUTES );
         }

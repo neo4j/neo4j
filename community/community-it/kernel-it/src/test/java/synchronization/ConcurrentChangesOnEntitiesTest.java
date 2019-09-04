@@ -151,7 +151,7 @@ class ConcurrentChangesOnEntitiesTest
         return new Thread( () -> {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getNodeById( nodeId );
+                Node node = tx.getNodeById( nodeId );
                 barrier.await();
                 nodeConsumer.accept( node );
                 tx.commit();

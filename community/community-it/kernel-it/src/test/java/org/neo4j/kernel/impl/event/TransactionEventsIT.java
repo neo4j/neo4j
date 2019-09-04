@@ -268,7 +268,7 @@ class TransactionEventsIT
                     {
                         try ( Transaction tx = db.beginTx() )
                         {
-                            Node relNode = db.getNodeById( relNodeId );
+                            Node relNode = tx.getNodeById( relNodeId );
                             relNode.createRelationshipTo( relNode, relationshipType );
                             if ( ThreadLocalRandom.current().nextBoolean() )
                             {

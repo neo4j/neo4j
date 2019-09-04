@@ -159,7 +159,7 @@ public class IndexBackupIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            idRange.mapToObj( id -> database.getNodeById( id ) ).forEach( Node::delete );
+            idRange.mapToObj( transaction::getNodeById ).forEach( Node::delete );
             transaction.commit();
         }
     }
@@ -168,7 +168,7 @@ public class IndexBackupIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            List<Node> nodes = idRange.mapToObj( id -> database.getNodeById( id ) ).collect( Collectors.toList() );
+            List<Node> nodes = idRange.mapToObj( transaction::getNodeById ).collect( Collectors.toList() );
             for ( int i = 0; i < NUMBER_OF_INDEXES; i++ )
             {
                 String propertyName = PROPERTY_PREFIX + i;
@@ -209,7 +209,7 @@ public class IndexBackupIT
             transaction.commit();
         }
 
-        try ( Transaction ignored = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
             database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }

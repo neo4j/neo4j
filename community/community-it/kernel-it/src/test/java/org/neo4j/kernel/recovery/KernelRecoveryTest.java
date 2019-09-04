@@ -92,8 +92,8 @@ class KernelRecoveryTest
         applyTransactions( transactions, (GraphDatabaseAPI) rebuilt );
         try ( Transaction tx = rebuilt.beginTx() )
         {
-            assertEquals( "v1", rebuilt.getNodeById( node1 ).getProperty( "k" ) );
-            assertEquals( "v2", rebuilt.getNodeById( node2 ).getProperty( "k" ) );
+            assertEquals( "v1", tx.getNodeById( node1 ).getProperty( "k" ) );
+            assertEquals( "v2", tx.getNodeById( node2 ).getProperty( "k" ) );
             tx.commit();
         }
     }

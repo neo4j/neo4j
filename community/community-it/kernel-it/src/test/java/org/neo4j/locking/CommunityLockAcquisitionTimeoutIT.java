@@ -142,7 +142,7 @@ public class CommunityLockAcquisitionTimeoutIT
     {
         var e = assertThrows( Exception.class, () ->
         {
-            try ( Transaction ignored = database.beginTx() )
+            try ( Transaction tx = database.beginTx() )
             {
                 Locks lockManger = getLockManager();
                 lockManger.newClient().acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 1 );

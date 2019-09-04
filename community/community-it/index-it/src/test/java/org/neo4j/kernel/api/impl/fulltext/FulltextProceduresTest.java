@@ -352,7 +352,7 @@ public class FulltextProceduresTest
     {
         db = createDatabase();
 
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             // The property keys and labels we ask for do not exist, so those tokens will have to be allocated.
             // This test verifies that the locking required for the index modifications do not conflict with the
@@ -674,7 +674,7 @@ public class FulltextProceduresTest
             try ( Transaction tx = db.beginTx() )
             {
                 // Prepare our transaction state first.
-                nodeIds.forEach( nodeId -> db.getNodeById( nodeId ).setProperty( PROP, newValue ) );
+                nodeIds.forEach( nodeId -> tx.getNodeById( nodeId ).setProperty( PROP, newValue ) );
                 relIds.forEach( relId -> tx.getRelationshipById( relId ).setProperty( PROP, newValue ) );
                 tx.commit();
                 // Okay, NOW we're ready to race!
@@ -981,7 +981,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, 42 );
             tx.commit();
         }
@@ -1018,7 +1018,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, "bla bla" );
             tx.commit();
         }
@@ -1050,7 +1050,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.setProperty( "prop2", 42 );
             tx.commit();
         }
@@ -1089,7 +1089,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.setProperty( "prop2", "bar" );
             tx.commit();
         }
@@ -1281,7 +1281,7 @@ public class FulltextProceduresTest
     public void queryingIndexInTransactionItWasCreatedInMustThrow()
     {
         db = createDatabase();
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
             expectedException.expect( QueryExecutionException.class );
@@ -1319,8 +1319,8 @@ public class FulltextProceduresTest
                 {
                     try ( Transaction forkedTx = db.beginTx() )
                     {
-                        db.getNodeById( nodeIdA ).delete();
-                        db.getNodeById( nodeIdB ).delete();
+                        tx.getNodeById( nodeIdA ).delete();
+                        tx.getNodeById( nodeIdB ).delete();
                         forkedTx.commit();
                     }
                     return null;
@@ -1398,8 +1398,8 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nodeIdA ).delete();
-            db.getNodeById( nodeIdB ).delete();
+            tx.getNodeById( nodeIdA ).delete();
+            tx.getNodeById( nodeIdB ).delete();
             try ( Result result = db.execute( format( QUERY_NODES, "nodes", "value" ) ) )
             {
                 assertThat( result.stream().count(), is( 0L ) );
@@ -1502,7 +1502,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nodeId ).setProperty( PROP, "value" );
+            tx.getNodeById( nodeId ).setProperty( PROP, "value" );
             tx.commit();
         }
         assertQueryFindsIds( db, true, "nodes", "prop:value", nodeId );
@@ -1555,7 +1555,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.addLabel( LABEL );
             tx.commit();
         }
@@ -1582,7 +1582,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nodeId ).setProperty( PROP, "secundo" );
+            tx.getNodeById( nodeId ).setProperty( PROP, "secundo" );
             tx.commit();
         }
         assertQueryFindsIds( db, true, "nodes", "primo" );
@@ -1637,7 +1637,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nodeId ).removeProperty( PROP );
+            tx.getNodeById( nodeId ).removeProperty( PROP );
             tx.commit();
         }
         assertQueryFindsIds( db, true, "nodes", "value" );
@@ -1689,7 +1689,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nodeId ).removeLabel( LABEL );
+            tx.getNodeById( nodeId ).removeLabel( LABEL );
             tx.commit();
         }
         assertQueryFindsIds( db, true, "nodes", "nodes" );
@@ -1717,7 +1717,7 @@ public class FulltextProceduresTest
         assertQueryFindsIds( db, true, "nodes", "secundo" );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, "secundo" );
             tx.commit();
         }
@@ -1725,7 +1725,7 @@ public class FulltextProceduresTest
         assertQueryFindsIds( db, true, "nodes", "secundo", nodeId );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, "primo" );
             tx.commit();
         }
@@ -1793,14 +1793,14 @@ public class FulltextProceduresTest
         assertQueryFindsIds( db, true, "nodes", "primo", nodeId );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.removeProperty( PROP );
             tx.commit();
         }
         assertQueryFindsIds( db, true, "nodes", "primo" );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.setProperty( PROP, "primo" );
             tx.commit();
         }
@@ -1863,14 +1863,14 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.removeLabel( LABEL );
             tx.commit();
         }
         assertQueryFindsIds( db, true, "nodes", "primo" );
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.getNodeById( nodeId );
+            Node node = tx.getNodeById( nodeId );
             node.addLabel( LABEL );
             tx.commit();
         }
@@ -1957,7 +1957,7 @@ public class FulltextProceduresTest
             tx.commit();
         }
         awaitIndexesOnline();
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( DROP, "nodes" ) ).close();
             expectedException.expect( QueryExecutionException.class );
@@ -1975,7 +1975,7 @@ public class FulltextProceduresTest
             tx.commit();
         }
         awaitIndexesOnline();
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( DROP, "rels" ) ).close();
             expectedException.expect( QueryExecutionException.class );
@@ -2089,7 +2089,7 @@ public class FulltextProceduresTest
         }
         awaitIndexesOnline();
         String schemaIndexName;
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             try ( Result result = db.execute( "call db.indexes()" ) )
             {
@@ -2589,7 +2589,7 @@ public class FulltextProceduresTest
         MutableLongSet actualIds = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
-            LongFunction<Entity> getEntity = queryNodes ? db::getNodeById : tx::getRelationshipById;
+            LongFunction<Entity> getEntity = queryNodes ? tx::getNodeById : tx::getRelationshipById;
             Result result = db.execute( format( queryCall, index, query ) );
             Double score = Double.MAX_VALUE;
             while ( result.hasNext() )

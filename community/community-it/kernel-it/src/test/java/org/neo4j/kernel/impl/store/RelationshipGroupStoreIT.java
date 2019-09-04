@@ -65,7 +65,7 @@ class RelationshipGroupStoreIT
             tx.commit();
         }
 
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
             {
