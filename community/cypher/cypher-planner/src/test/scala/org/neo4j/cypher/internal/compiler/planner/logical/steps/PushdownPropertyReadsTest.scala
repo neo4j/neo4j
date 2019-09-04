@@ -737,4 +737,31 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
+
+  test("should not pushdown if property setNodePropertiesFromMap with dynamic map") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .setNodePropertiesFromMap("n", "m", removeOtherProps = false).withCardinality(100)
+      .expand("(n)-->(m)").withCardinality(100)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown if property setRelationshipPropertiesFromMap with dynamic map") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .filter("r.prop == 'NOT-IMPORTANT'").withCardinality(100)
+      .setRelationshipPropertiesFromMap("r", "r2", removeOtherProps = false).withCardinality(100)
+      .expand("(m)-[r2]->(k)").withCardinality(100)
+      .expand("(n)-[r]->(m)").withCardinality(20)
+      .allNodeScan("n").withCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
 }

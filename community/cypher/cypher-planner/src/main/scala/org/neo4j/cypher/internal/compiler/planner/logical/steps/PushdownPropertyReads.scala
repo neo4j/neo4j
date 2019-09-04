@@ -146,19 +146,21 @@ case object PushdownPropertyReads {
                   case set: SetRelationshipProperty =>
                     Seq(Property(Variable(set.idName)(InputPosition.NONE), set.propertyKey)(InputPosition.NONE))
 
-                  case set: SetNodePropertiesFromMap if !set.removeOtherProps =>
-                    propertiesFromMap(set.idName, set.expression)
+                  case SetNodePropertiesFromMap(_, idName, map: MapExpression, false) =>
+                    propertiesFromMap(idName, map)
 
-                  case set: SetRelationshipPropertiesFromMap if !set.removeOtherProps =>
-                    propertiesFromMap(set.idName, set.expression)
+                  case SetRelationshipPropertiesFromMap(_, idName, map: MapExpression, false) =>
+                    propertiesFromMap(idName, map)
 
                   case _ => Seq.empty
                 }
 
               val maybeEntityFromPlan =
                 plan match {
-                  case set: SetNodePropertiesFromMap if set.removeOtherProps => Some(set.idName)
-                  case set: SetRelationshipPropertiesFromMap if set.removeOtherProps => Some(set.idName)
+                  case SetNodePropertiesFromMap(_, idName, _, true) => Some(idName)
+                  case SetNodePropertiesFromMap(_, idName, expr, _) if !expr.isInstanceOf[MapExpression] => Some(idName)
+                  case SetRelationshipPropertiesFromMap(_, idName, _, true) => Some(idName)
+                  case SetRelationshipPropertiesFromMap(_, idName, expr, _) if !expr.isInstanceOf[MapExpression] => Some(idName)
                   case _ => None
                 }
 
@@ -224,13 +226,10 @@ case object PushdownPropertyReads {
       case _ => throw new InternalException(s"Unexpected property read of non-variable `${p.map}`")
     }
 
-  private def propertiesFromMap(idName: String, expression: Expression): Seq[Property] = {
-    expression match {
-      case MapExpression(data) =>
-        data.map {
-          case (prop, _) =>
-            Property(Variable(idName)(InputPosition.NONE),prop)(InputPosition.NONE)
-        }
+  private def propertiesFromMap(idName: String, map: MapExpression): Seq[Property] = {
+    map.items.map {
+      case (prop, _) =>
+        Property(Variable(idName)(InputPosition.NONE),prop)(InputPosition.NONE)
     }
   }
 }
