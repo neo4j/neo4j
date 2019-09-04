@@ -314,7 +314,7 @@ class SchemaAcceptanceTest
         waitForIndex( db, index );
 
         // THEN
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db, transaction ), containsOnly( node ) );
         }
