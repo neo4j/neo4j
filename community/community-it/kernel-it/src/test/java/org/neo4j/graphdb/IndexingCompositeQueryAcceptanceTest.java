@@ -124,7 +124,7 @@ public class IndexingCompositeQueryAcceptanceTest
         MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
-            collectNodes( found, indexSeek.findNodes( keys, values, db ) );
+            collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
         }
 
         // THEN
@@ -149,7 +149,7 @@ public class IndexingCompositeQueryAcceptanceTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            collectNodes( found, indexSeek.findNodes( reversedKeys, reversedValues, db ) );
+            collectNodes( found, indexSeek.findNodes( reversedKeys, reversedValues, db, tx ) );
         }
 
         // THEN
@@ -169,7 +169,7 @@ public class IndexingCompositeQueryAcceptanceTest
             expected.add( createNode( tx, propertyMap( keys, values ), LABEL ).getId() );
             createNode( tx, propertyMap( keys, nonMatching[2] ), LABEL );
 
-            collectNodes( found, indexSeek.findNodes( keys, values, db ) );
+            collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -194,7 +194,7 @@ public class IndexingCompositeQueryAcceptanceTest
                 expected.remove( id );
             }
 
-            collectNodes( found, indexSeek.findNodes( keys, values, db ) );
+            collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -227,7 +227,7 @@ public class IndexingCompositeQueryAcceptanceTest
                 expected.remove( id );
             }
 
-            collectNodes( found, indexSeek.findNodes( keys, values, db ) );
+            collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -303,11 +303,11 @@ public class IndexingCompositeQueryAcceptanceTest
 
     private interface IndexSeek
     {
-        ResourceIterator<Node> findNodes( String[] keys, Object[] values, GraphDatabaseService db );
+        ResourceIterator<Node> findNodes( String[] keys, Object[] values, GraphDatabaseService db, Transaction tx );
     }
 
     private static final IndexSeek biIndexSeek =
-            ( keys, values, db ) ->
+            ( keys, values, db, tx ) ->
             {
                 assert keys.length == 2;
                 assert values.length == 2;
@@ -315,7 +315,7 @@ public class IndexingCompositeQueryAcceptanceTest
             };
 
     private static final IndexSeek triIndexSeek =
-            ( keys, values, db ) ->
+            ( keys, values, db, tx ) ->
             {
                 assert keys.length == 3;
                 assert values.length == 3;
@@ -323,5 +323,5 @@ public class IndexingCompositeQueryAcceptanceTest
             };
 
     private static final IndexSeek mapIndexSeek =
-            ( keys, values, db ) -> db.findNodes( LABEL, propertyMap( keys, values ) );
+            ( keys, values, db, tx ) -> tx.findNodes( LABEL, propertyMap( keys, values ) );
 }

@@ -279,7 +279,7 @@ public class GenericIndexValidationIT
             {
                 values.put( propKeys[propKey], propValues[propKey] );
             }
-            ResourceIterator<Node> nodes = db.findNodes( LABEL_ONE, values );
+            ResourceIterator<Node> nodes = tx.findNodes( LABEL_ONE, values );
             if ( ableToWrite )
             {
                 assertTrue( nodes.hasNext() );

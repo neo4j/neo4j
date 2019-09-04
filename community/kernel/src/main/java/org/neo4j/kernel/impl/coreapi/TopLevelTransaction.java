@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
@@ -61,6 +63,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
@@ -71,7 +74,9 @@ import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
+import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
@@ -218,6 +223,21 @@ public class TopLevelTransaction implements InternalTransaction
             throw new IllegalStateException( "Unknown string search mode: " + searchMode );
         }
         return nodesByLabelAndProperty( transaction, labelId, query );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
+    {
+        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.nodeLabel( label.name() );
+        IndexQuery.ExactPredicate[] queries = new IndexQuery.ExactPredicate[propertyValues.size()];
+        int i = 0;
+        for ( Map.Entry<String,Object> entry : propertyValues.entrySet() )
+        {
+            queries[i++] = IndexQuery.exact( tokenRead.propertyKey( entry.getKey() ), Values.of( entry.getValue() ) );
+        }
+        return nodesByLabelAndProperties( transaction, labelId, queries );
     }
 
     @Override
@@ -457,6 +477,136 @@ public class TopLevelTransaction implements InternalTransaction
                 statement,
                 facade::newNodeProxy,
                 queries );
+    }
+
+    private ResourceIterator<Node> nodesByLabelAndProperties(
+            KernelTransaction transaction, int labelId, IndexQuery.ExactPredicate... queries )
+    {
+        Statement statement = transaction.acquireStatement();
+        Read read = transaction.dataRead();
+
+        if ( isInvalidQuery( labelId, queries ) )
+        {
+            statement.close();
+            return emptyResourceIterator();
+        }
+
+        int[] propertyIds = getPropertyIds( queries );
+        IndexDescriptor index = findMatchingIndex( transaction, labelId, propertyIds );
+
+        if ( index != IndexDescriptor.NO_INDEX )
+        {
+            try
+            {
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
+                IndexReadSession indexSession = read.indexReadSession( index );
+                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
+                return new NodeCursorResourceIterator<>( cursor, statement, facade::newNodeProxy );
+            }
+            catch ( KernelException e )
+            {
+                // weird at this point but ignore and fallback to a label scan
+            }
+        }
+        return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, queries );
+    }
+
+    private static IndexQuery[] getReorderedIndexQueries( int[] indexPropertyIds, IndexQuery[] queries )
+    {
+        IndexQuery[] orderedQueries = new IndexQuery[queries.length];
+        for ( int i = 0; i < indexPropertyIds.length; i++ )
+        {
+            int propertyKeyId = indexPropertyIds[i];
+            for ( IndexQuery query : queries )
+            {
+                if ( query.propertyKeyId() == propertyKeyId )
+                {
+                    orderedQueries[i] = query;
+                    break;
+                }
+            }
+        }
+        return orderedQueries;
+    }
+
+    private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
+    {
+        IndexDescriptor index = transaction.schemaRead().index( labelId, propertyIds );
+        if ( index != IndexDescriptor.NO_INDEX )
+        {
+            // index found with property order matching the query
+            return index;
+        }
+        else
+        {
+            // attempt to find matching index with different property order
+            Arrays.sort( propertyIds );
+            assertNoDuplicates( propertyIds, transaction.tokenRead() );
+
+            int[] workingCopy = new int[propertyIds.length];
+
+            Iterator<IndexDescriptor> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
+            while ( indexes.hasNext() )
+            {
+                index = indexes.next();
+                int[] original = index.schema().getPropertyIds();
+                if ( hasSamePropertyIds( original, workingCopy, propertyIds ) )
+                {
+                    // Ha! We found an index with the same properties in another order
+                    return index;
+                }
+            }
+            return IndexDescriptor.NO_INDEX;
+        }
+    }
+
+    private static void assertNoDuplicates( int[] propertyIds, TokenRead tokenRead )
+    {
+        int prev = propertyIds[0];
+        for ( int i = 1; i < propertyIds.length; i++ )
+        {
+            int curr = propertyIds[i];
+            if ( curr == prev )
+            {
+                SilentTokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
+                throw new IllegalArgumentException(
+                        format( "Provided two queries for property %s. Only one query per property key can be performed",
+                                tokenLookup.propertyKeyGetName( curr ) ) );
+            }
+            prev = curr;
+        }
+    }
+
+    private static boolean hasSamePropertyIds( int[] original, int[] workingCopy, int[] propertyIds )
+    {
+        if ( original.length == propertyIds.length )
+        {
+            System.arraycopy( original, 0, workingCopy, 0, original.length );
+            Arrays.sort( workingCopy );
+            return Arrays.equals( propertyIds, workingCopy );
+        }
+        return false;
+    }
+
+    private static int[] getPropertyIds( IndexQuery[] queries )
+    {
+        int[] propertyIds = new int[queries.length];
+        for ( int i = 0; i < queries.length; i++ )
+        {
+            propertyIds[i] = queries[i].propertyKeyId();
+        }
+        return propertyIds;
+    }
+
+    private static boolean isInvalidQuery( int labelId, IndexQuery[] queries )
+    {
+        boolean invalidQuery = labelId == TokenRead.NO_TOKEN;
+        for ( IndexQuery query : queries )
+        {
+            int propertyKeyId = query.propertyKeyId();
+            invalidQuery = invalidQuery || propertyKeyId == TokenRead.NO_TOKEN;
+        }
+        return invalidQuery;
     }
 
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
