@@ -159,7 +159,7 @@ class BigStoreIT
 
         try ( Transaction transaction = db.beginTx() )
         {
-            refNode = tx.getNodeById( refNode.getId() );
+            refNode = transaction.getNodeById( refNode.getId() );
             for ( Relationship rel : refNode.getRelationships( Direction.OUTGOING ) )
             {
                 Node node = rel.getEndNode();
@@ -264,19 +264,19 @@ class BigStoreIT
         {
             try ( Transaction transaction = db.beginTx() )
             {
-                assertEquals( nodeAboveTheLine, tx.getNodeById( highMark ) );
+                assertEquals( nodeAboveTheLine, transaction.getNodeById( highMark ) );
                 assertEquals( idBelow, nodeBelowTheLine.getId() );
                 assertEquals( highMark, nodeAboveTheLine.getId() );
                 assertEquals( idBelow, relBelowTheLine.getId() );
                 assertEquals( highMark, relAboveTheLine.getId() );
                 assertEquals( relBelowTheLine,
-                    tx.getNodeById( idBelow ).getSingleRelationship( BIG_TYPE, Direction.OUTGOING ) );
+                    transaction.getNodeById( idBelow ).getSingleRelationship( BIG_TYPE, Direction.OUTGOING ) );
                 assertEquals( relAboveTheLine,
-                    tx.getNodeById( idBelow ).getSingleRelationship( BIG_TYPE, Direction.INCOMING ) );
+                    transaction.getNodeById( idBelow ).getSingleRelationship( BIG_TYPE, Direction.INCOMING ) );
                 assertEquals( idBelow, relBelowTheLine.getId() );
                 assertEquals( highMark, relAboveTheLine.getId() );
                 assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ),
-                    asSet( Iterables.asCollection( tx.getNodeById( idBelow ).getRelationships() ) ) );
+                    asSet( Iterables.asCollection( transaction.getNodeById( idBelow ).getRelationships() ) ) );
                 transaction.commit();
             }
             if ( i == 0 )
