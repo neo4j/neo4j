@@ -398,7 +398,7 @@ public class HttpCopierTest
     {
         return aResponse()
                 .withStatus( HTTP_ACCEPTED )
-                .withBody( format( "{\"SignedURI\":\"%s\"}", TEST_CONSOLE_URL + signedURIPath ) );
+                .withBody( format( "{\"SignedURI\":\"%s\", \"expiration_date\":\"Fri, 04 Oct 2019 08:21:59 GMT\"}", TEST_CONSOLE_URL + signedURIPath ) );
     }
 
     private MappingBuilder initiateUploadRequest( String signedURIPath )

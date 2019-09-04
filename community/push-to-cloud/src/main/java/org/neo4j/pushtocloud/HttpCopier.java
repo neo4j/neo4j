@@ -18,6 +18,7 @@ package org.neo4j.pushtocloud;
 
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.BufferedInputStream;
@@ -498,11 +499,13 @@ public class HttpCopier implements PushToCloudCommand.Copier
     }
 
     // Simple structs for mapping JSON to objects, used by the jackson parser which Neo4j happens to depend on anyway
+    @JsonIgnoreProperties( ignoreUnknown = true )
     private static class SignedURIBody
     {
         public String SignedURI;
     }
 
+    @JsonIgnoreProperties( ignoreUnknown = true )
     private static class TokenBody
     {
         public String Token;
