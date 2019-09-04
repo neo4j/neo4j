@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
+import org.neo4j.internal.kernel.api.{CursorFactory, Transaction}
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber, TransactionalContext}
 import org.neo4j.kernel.lifecycle.LifeSupport
@@ -85,7 +85,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     txHolder.set(transaction)
     try {
       val txContext = beginTx(transaction)
-      val queryContext = newQueryContext(txContext)
+      val queryContext = newQueryContext(txContext, executableQuery.threadSafeCursorFactory(Set.empty))
       val runtimeContext = newRuntimeContext(txContext, queryContext)
 
       val result = executableQuery.run(queryContext, doProfile = profile, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
@@ -124,7 +124,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  compileExpressions = false)
   }
 
-  private def newQueryContext(txContext: TransactionalContext): QueryContext = {
-    new TransactionBoundQueryContext(TransactionalContextWrapper(txContext))(monitors.newMonitor(classOf[IndexSearchMonitor]))
+  private def newQueryContext(txContext: TransactionalContext, maybeCursorFactory: Option[CursorFactory] = None): QueryContext = {
+    new TransactionBoundQueryContext(TransactionalContextWrapper(txContext, maybeCursorFactory.orNull))(monitors.newMonitor(classOf[IndexSearchMonitor]))
   }
 }
