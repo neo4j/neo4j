@@ -44,8 +44,8 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "call db.index.fulltext.createNodeIndex('ftsNodes', ['Label'], ['prop'])" ).close();
-            db.execute( "call db.index.fulltext.createRelationshipIndex('ftsRels', ['Type'], ['prop'])" ).close();
+            tx.execute( "call db.index.fulltext.createNodeIndex('ftsNodes', ['Label'], ['prop'])" ).close();
+            tx.execute( "call db.index.fulltext.createRelationshipIndex('ftsRels', ['Type'], ['prop'])" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )

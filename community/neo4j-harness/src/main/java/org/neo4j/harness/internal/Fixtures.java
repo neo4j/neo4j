@@ -96,7 +96,7 @@ public class Fixtures
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute( fixtureStatement );
+                tx.execute( fixtureStatement );
                 tx.commit();
             }
         }

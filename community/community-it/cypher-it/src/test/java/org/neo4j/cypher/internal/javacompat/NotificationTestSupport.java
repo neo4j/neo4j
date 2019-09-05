@@ -54,7 +54,7 @@ public class NotificationTestSupport
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            try ( Result result = db.execute( query ) )
+            try ( Result result = transaction.execute( query ) )
             {
                 assertThat( result.getNotifications(), matchesExpectation );
             }
@@ -136,7 +136,7 @@ public class NotificationTestSupport
         try ( Transaction transaction = db.beginTx() )
         {
             //when
-            try ( Result result = db.execute( version + query ) )
+            try ( Result result = transaction.execute( version + query ) )
             {
                 //then
                 NotificationCode.Notification notification = code.notification( pos );
@@ -154,7 +154,7 @@ public class NotificationTestSupport
         try ( Transaction transaction = db.beginTx() )
         {
             //when
-            try ( Result result = db.execute( version + query ) )
+            try ( Result result = transaction.execute( version + query ) )
             {
 
                 //then
@@ -172,7 +172,7 @@ public class NotificationTestSupport
         try ( Transaction transaction = db.beginTx() )
         {
             // when
-            try ( Result result = db.execute( version + query ) )
+            try ( Result result = transaction.execute( version + query ) )
             {
 
                 // then

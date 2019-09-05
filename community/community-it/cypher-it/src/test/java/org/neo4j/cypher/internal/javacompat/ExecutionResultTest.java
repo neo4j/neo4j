@@ -61,7 +61,7 @@ class ExecutionResultTest
         createNode();
         try ( Transaction transaction = db.beginTx() )
         {
-            try ( Result executionResult = db.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" ) )
+            try ( Result executionResult = transaction.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" ) )
             {
                 executionResult.next();
                 assertThat( activeTransaction(), is( notNullValue() ) );
@@ -82,7 +82,7 @@ class ExecutionResultTest
         createNode();
         try ( Transaction transaction = db.beginTx() )
         {
-            try ( Result executionResult = db.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" ) )
+            try ( Result executionResult = transaction.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" ) )
             {
                 ResourceIterator<Node> resultIterator = executionResult.columnAs( "n" );
                 resultIterator.next();
@@ -104,7 +104,7 @@ class ExecutionResultTest
         {
             try ( Transaction transaction = db.beginTx() )
             {
-                db.execute( "RETURN rand()/0" ).next();
+                transaction.execute( "RETURN rand()/0" ).next();
             }
         }
         catch ( QueryExecutionException ex )
@@ -121,7 +121,7 @@ class ExecutionResultTest
         {
             try ( Transaction transaction = db.beginTx() )
             {
-                db.execute( "RETURN rand()/0" ).accept( row -> true );
+                transaction.execute( "RETURN rand()/0" ).accept( row -> true );
             }
         }
         catch ( QueryExecutionException ex )
@@ -146,8 +146,8 @@ class ExecutionResultTest
         try ( Transaction transaction = db.beginTx() )
         {
             // Given
-            Point point1 = (Point) db.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );
-            Point point2 = (Point) db.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
+            Point point1 = (Point) transaction.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );
+            Point point2 = (Point) transaction.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
 
             // When
             double distance = (double) transaction.execute( "RETURN distance($points[0], $points[1]) as dist",
@@ -164,8 +164,8 @@ class ExecutionResultTest
         try ( Transaction transaction = db.beginTx() )
         {
             // Given
-            Point point1 = (Point) db.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );
-            Point point2 = (Point) db.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
+            Point point1 = (Point) transaction.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );
+            Point point2 = (Point) transaction.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
 
             // When
             double distance = (double) transaction.execute( "RETURN distance($points['p1'], $points['p2']) as dist",
@@ -181,7 +181,7 @@ class ExecutionResultTest
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( db.execute( "RETURN toLower(null) AS lower" ).<String>columnAs( "lower" ).next(), nullValue() );
+            assertThat( transaction.execute( "RETURN toLower(null) AS lower" ).<String>columnAs( "lower" ).next(), nullValue() );
         }
     }
 

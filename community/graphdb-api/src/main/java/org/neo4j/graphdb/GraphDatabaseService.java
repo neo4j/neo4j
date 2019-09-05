@@ -115,17 +115,6 @@ public interface GraphDatabaseService
     void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer, Duration timeout ) throws QueryExecutionException;
 
     /**
-     * Executes a query and returns an iterable that contains the result set.
-     *
-     * This method is the same as {@link #execute(String, java.util.Map)} with an empty parameters-map.
-     *
-     * @param query The query to execute
-     * @return A {@link org.neo4j.graphdb.Result} that contains the result set.
-     * @throws QueryExecutionException If the Query contains errors
-     */
-    Result execute( String query ) throws QueryExecutionException;
-
-    /**
      * Returns the {@link Schema schema manager} where all things related to schema,
      * for example constraints and indexing on {@link Label labels}.
      *

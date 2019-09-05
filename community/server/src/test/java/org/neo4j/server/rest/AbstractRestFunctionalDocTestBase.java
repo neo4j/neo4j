@@ -33,7 +33,7 @@ public class AbstractRestFunctionalDocTestBase extends AbstractRestFunctionalTes
     {
         try ( Transaction tx = graphdb().beginTx() )
         {
-            graphdb().execute( "MATCH (n) DETACH DELETE n" );
+            tx.execute( "MATCH (n) DETACH DELETE n" );
             tx.commit();
         }
     }

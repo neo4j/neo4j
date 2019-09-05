@@ -139,7 +139,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   }
 
   test("monitor is called directly when proc return is void") {
-    db.inTx(db.execute("CREATE INDEX ON :Person(name)").close())
+    db.withTx( tx => tx.execute("CREATE INDEX ON :Person(name)").close())
 
     val context = runQuery("CALL db.awaitIndex(':Person(name)')")
 

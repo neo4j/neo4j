@@ -488,7 +488,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         // Given, something is cached
         try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
         {
-            db.execute( "MATCH (n) RETURN n" ).close();
+            transaction.execute( "MATCH (n) RETURN n" ).close();
             transaction.commit();
         }
 
@@ -497,7 +497,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
         {
-            db.execute( "CALL db.prepareForReplanning()" ).close();
+            transaction.execute( "CALL db.prepareForReplanning()" ).close();
             transaction.commit();
         }
 
@@ -514,7 +514,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
         {
-            db.execute( "CALL db.prepareForReplanning()" ).close();
+            transaction.execute( "CALL db.prepareForReplanning()" ).close();
             transaction.commit();
         }
 

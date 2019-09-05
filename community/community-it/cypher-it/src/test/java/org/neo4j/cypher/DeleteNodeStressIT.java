@@ -134,7 +134,7 @@ class DeleteNodeStressIT
         {
             try ( Transaction transaction = db.beginTx() )
             {
-                db.execute( query ).resultAsString();
+                transaction.execute( query ).resultAsString();
                 transaction.commit();
             }
         } );

@@ -57,17 +57,17 @@ class IndexFreshDataReadIT
         try ( Transaction transaction = db.beginTx() )
         {
             addStaffMember( "Fry" );
-            assertEquals( 1, countStaff().intValue() );
+            assertEquals( 1, countStaff( transaction ).intValue() );
 
             Node fry = transaction.getNodeById( 0 );
             Iterable<Relationship> fryRelationships = fry.getRelationships();
             assertFalse( fryRelationships.iterator().hasNext() );
 
             addStaffMember( "Lila" );
-            assertEquals( 2, countStaff().intValue() );
+            assertEquals( 2, countStaff( transaction ).intValue() );
 
             addStaffMember( "Bender" );
-            assertEquals( 3, countStaff().intValue() );
+            assertEquals( 3, countStaff( transaction ).intValue() );
         }
     }
 
@@ -76,9 +76,9 @@ class IndexFreshDataReadIT
         executor.submit( new CreateNamedNodeTask( name ) ).get();
     }
 
-    private Number countStaff()
+    private Number countStaff( Transaction tx )
     {
-        try ( Result countResult = db.execute( "MATCH (n:staff) return count(n.name) as count" ) )
+        try ( Result countResult = tx.execute( "MATCH (n:staff) return count(n.name) as count" ) )
         {
             return (Number) countResult.columnAs( "count" ).next();
         }

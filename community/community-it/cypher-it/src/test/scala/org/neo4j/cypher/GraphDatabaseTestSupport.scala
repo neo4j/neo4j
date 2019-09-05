@@ -122,8 +122,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def resampleIndexes(): Unit = {
-    graph.inTx( {
-      graph.execute("CALL db.resampleOutdatedIndexes")
+    graph.withTx( tx => {
+      tx.execute("CALL db.resampleOutdatedIndexes")
       assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
     })
   }

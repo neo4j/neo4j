@@ -116,7 +116,7 @@ public class JUnitRuleTestIT
         try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
             // Then
-            assertEquals( 2, Iterators.count( graphDatabaseService.execute( "MATCH (n:User) RETURN n" ) ) );
+            assertEquals( 2, Iterators.count( transaction.execute( "MATCH (n:User) RETURN n" ) ) );
             transaction.commit();
         }
     }
@@ -135,7 +135,7 @@ public class JUnitRuleTestIT
 
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( "CREATE ()" );
+            transaction.execute( "CREATE ()" );
             transaction.commit();
         }
         finally
@@ -155,7 +155,7 @@ public class JUnitRuleTestIT
                 final GraphDatabaseService graphDatabaseService = ruleWithDirectory.defaultDatabaseService();
                 try ( Transaction transaction = graphDatabaseService.beginTx() )
                 {
-                    try ( Result result = graphDatabaseService.execute( "MATCH (n) RETURN count(n) AS " + "count" ) )
+                    try ( Result result = transaction.execute( "MATCH (n) RETURN count(n) AS " + "count" ) )
                     {
                         List<Object> column = Iterators.asList( result.columnAs( "count" ) );
                         assertEquals( 1, column.size() );

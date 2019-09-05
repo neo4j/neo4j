@@ -56,8 +56,6 @@ trait GraphIcing {
 
     def schema() = graph.schema
 
-    def execute(query: String) = graph.execute(query)
-
     def indexPropsForLabel(label: String): List[List[String]] = {
       val indexDefs = graph.schema.getIndexes(Label.label(label)).asScala.toList
       indexDefs.map(_.getPropertyKeys.asScala.toList)
@@ -70,21 +68,21 @@ trait GraphIcing {
     }
 
     def createExistenceConstraint(label: String, property: String) = {
-      inTx {
-        graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT exists(n.$property)")
-      }
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT exists(n.$property)")
+      })
     }
 
     def createNodeKeyConstraint(label: String, properties: String*): Result = {
-      inTx {
-        graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
-      }
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
+      })
     }
 
     def createIndex(label: String, properties: String*): IndexDefinition = {
-      inTx {
-        graph.execute(s"CREATE INDEX ON :$label(${properties.map(p => s"`$p`").mkString(",")})")
-      }
+      withTx( tx => {
+        tx.execute(s"CREATE INDEX ON :$label(${properties.map(p => s"`$p`").mkString(",")})")
+      })
 
       inTx {
         graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
@@ -100,9 +98,9 @@ trait GraphIcing {
     }
 
     def createUniqueIndex(label: String, property: String): Unit = {
-      inTx {
-        graph.execute(s"CREATE CONSTRAINT ON (p:$label) ASSERT p.$property IS UNIQUE")
-      }
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT ON (p:$label) ASSERT p.$property IS UNIQUE")
+      } )
 
       inTx {
         graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)

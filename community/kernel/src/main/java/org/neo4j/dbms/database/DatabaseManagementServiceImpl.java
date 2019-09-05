@@ -145,7 +145,7 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
             GraphDatabaseService database = database( SYSTEM_DATABASE_NAME );
             try ( Transaction transaction = database.beginTx() )
             {
-                database.execute( query );
+                transaction.execute( query );
                 transaction.commit();
             }
         }

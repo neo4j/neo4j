@@ -266,7 +266,7 @@ public class IndexPopulationIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                Result result = database.execute( "MATCH (n) RETURN count(n) as count" );
+                Result result = transaction.execute( "MATCH (n) RETURN count(n) as count" );
                 Map<String,Object> resultMap = result.next();
                 return (Number) resultMap.get( "count" );
             }

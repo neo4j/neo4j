@@ -245,7 +245,7 @@ class InProcessServerBuilderIT
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( "create ()" );
+            transaction.execute( "create ()" );
             transaction.commit();
         }
         finally

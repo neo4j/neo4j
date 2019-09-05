@@ -297,7 +297,7 @@ public class AuthProceduresIT
     {
         try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.implicit, subject ) )
         {
-            resultConsumer.accept( db.execute( query ) );
+            resultConsumer.accept( tx.execute( query ) );
             tx.commit();
             return "";
         }

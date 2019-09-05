@@ -39,7 +39,6 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
@@ -259,7 +258,7 @@ public class UniquenessRecoveryTest
     {
         if ( USE_CYPHER )
         {
-            db.execute( "create constraint on (p:Person) assert p.name is unique" );
+            db.executeTransactionally( "create constraint on (p:Person) assert p.name is unique" );
         }
         else
         {
@@ -276,8 +275,7 @@ public class UniquenessRecoveryTest
     {
         if ( USE_CYPHER )
         {
-            Result result = db.execute( "create (:Person {name: 'Sneaky Steve'})" );
-            System.out.println( result.resultAsString() );
+            db.executeTransactionally(  "create (:Person {name: 'Sneaky Steve'})" );
         }
         else
         {

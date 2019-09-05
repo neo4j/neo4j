@@ -122,7 +122,7 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
         GraphDatabaseService database = graphdb();
         try ( Transaction transaction = database.beginTx() )
         {
-            database.execute( query );
+            transaction.execute( query );
             transaction.commit();
         }
     }

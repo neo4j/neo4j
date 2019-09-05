@@ -197,12 +197,12 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
 
         Runnable aliceWork = work( nodesCreatedPerThread, tx ->
         {
-            db.execute( "create (:LABEL {" + PROP + ": \"alice\"})" ).close();
+            tx.execute( "create (:LABEL {" + PROP + ": \"alice\"})" ).close();
             aliceLatch.countDown();
         } );
         Runnable bobWork = work( nodesCreatedPerThread, tx ->
         {
-            db.execute( "create (:LABEL {otherProp: \"bob\"})" ).close();
+            tx.execute( "create (:LABEL {otherProp: \"bob\"})" ).close();
             bobLatch.countDown();
         } );
         Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newDescriptor ).apply() );

@@ -75,7 +75,7 @@ class CreateIndexStressIT
         }
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( "CREATE INDEX ON :A(prop) " );
+            transaction.execute( "CREATE INDEX ON :A(prop) " );
             transaction.commit();
         }
 

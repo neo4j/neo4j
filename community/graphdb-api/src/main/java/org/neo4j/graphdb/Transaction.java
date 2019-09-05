@@ -129,6 +129,17 @@ public interface Transaction extends AutoCloseable
     /**
      * Executes a query and returns an iterable that contains the result set.
      *
+     * This method is the same as {@link #execute(String, java.util.Map)} with an empty parameters-map.
+     *
+     * @param query The query to execute
+     * @return A {@link org.neo4j.graphdb.Result} that contains the result set.
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    Result execute( String query ) throws QueryExecutionException;
+
+    /**
+     * Executes a query and returns an iterable that contains the result set.
+     *
      * @param query      The query to execute
      * @param parameters Parameters for the query
      * @return A {@link org.neo4j.graphdb.Result} that contains the result set

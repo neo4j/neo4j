@@ -86,6 +86,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.emptyMap;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 import static org.neo4j.values.storable.Values.utf8Value;
@@ -180,6 +181,12 @@ public class TopLevelTransaction implements InternalTransaction
             }
             return facade.newNodeProxy( id );
         }
+    }
+
+    @Override
+    public Result execute( String query ) throws QueryExecutionException
+    {
+        return execute( query, emptyMap() );
     }
 
     @Override

@@ -57,8 +57,8 @@ public class CypherLoggingTest
         // when
         try ( Transaction transaction = database.beginTx() )
         {
-            database.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" ).close();
-            database.execute( "MATCH (n) RETURN n" ).close();
+            transaction.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" ).close();
+            transaction.execute( "MATCH (n) RETURN n" ).close();
         }
 
         // then

@@ -95,7 +95,7 @@ class ManyMergesStressTest
 
             try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
             {
-                Result result = db.execute( query );
+                Result result = tx.execute( query );
                 result.close();
                 tx.commit();
             }

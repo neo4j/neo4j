@@ -580,7 +580,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         {
             for ( int i = 0; i < limit + 1; i++ )
             {
-                db.execute( cachedQuery ).resultAsString();
+                transaction.execute( cachedQuery ).resultAsString();
             }
             transaction.commit();
         }
@@ -588,8 +588,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         // When
         try ( Transaction transaction = db.beginTx() )
         {
-            Notification cachedNotification = Iterables.asList( db.execute( "EXPLAIN " + cachedQuery ).getNotifications() ).get( 0 );
-            Notification nonCachedNotication = Iterables.asList( db.execute( "EXPLAIN " + nonCachedQuery ).getNotifications() ).get( 0 );
+            Notification cachedNotification = Iterables.asList( transaction.execute( "EXPLAIN " + cachedQuery ).getNotifications() ).get( 0 );
+            Notification nonCachedNotication = Iterables.asList( transaction.execute( "EXPLAIN " + nonCachedQuery ).getNotifications() ).get( 0 );
 
             // Then
             assertThat( cachedNotification.getPosition(), equalTo( new InputPosition( 17, 1, 18 ) ) );

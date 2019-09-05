@@ -162,14 +162,14 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "test-index", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "test-index", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
         Result result;
         Map<String,Object> row;
         try ( Transaction tx = db.beginTx() )
         {
-            result = db.execute( DB_INDEXES );
+            result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
             assertEquals( "INDEX ON :Label1,Label2(prop1, prop2)", row.get( "description" ) );
@@ -184,7 +184,7 @@ public class FulltextProceduresTest
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
         {
-            result = db.execute( DB_INDEXES );
+            result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             assertEquals( "ONLINE", result.next().get( "state" ) );
             assertFalse( result.hasNext() );
@@ -196,7 +196,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            result = db.execute( DB_INDEXES );
+            result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
             assertEquals( "INDEX ON :Label1,Label2(prop1, prop2)", row.get( "description" ) );
@@ -214,14 +214,14 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( RELATIONSHIP_CREATE, "test-index", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( RELATIONSHIP_CREATE, "test-index", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
         Result result;
         Map<String,Object> row;
         try ( Transaction tx = db.beginTx() )
         {
-            result = db.execute( DB_INDEXES );
+            result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
             assertEquals( "INDEX ON -[:Reltype1,Reltype2(prop1, prop2)]-", row.get( "description" ) );
@@ -236,7 +236,7 @@ public class FulltextProceduresTest
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
         {
-            result = db.execute( DB_INDEXES );
+            result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             assertEquals( "ONLINE", result.next().get( "state" ) );
             assertFalse( result.hasNext() );
@@ -248,7 +248,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            result = db.execute( DB_INDEXES );
+            result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
             assertEquals( "INDEX ON -[:Reltype1,Reltype2(prop1, prop2)]-", row.get( "description" ) );
@@ -266,21 +266,21 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
-            db.execute( format( RELATIONSHIP_CREATE, "rel", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( RELATIONSHIP_CREATE, "rel", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
             Map<String,String> indexes = new HashMap<>();
-            db.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+            transaction.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
 
-            db.execute( format( DROP, "node" ) );
+            transaction.execute( format( DROP, "node" ) );
             indexes.remove( "node" );
             Map<String,String> newIndexes = new HashMap<>();
-            db.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+            transaction.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
             assertEquals( indexes, newIndexes );
 
-            db.execute( format( DROP, "rel" ) );
+            transaction.execute( format( DROP, "rel" ) );
             indexes.remove( "rel" );
             newIndexes.clear();
-            db.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+            transaction.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
             assertEquals( indexes, newIndexes );
             transaction.commit();
         }
@@ -292,13 +292,13 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
         expectedException.expectMessage( "already exists" );
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop3", "prop4" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop3", "prop4" ) ) ).close();
             transaction.commit();
         }
     }
@@ -310,7 +310,7 @@ public class FulltextProceduresTest
         expectedException.expect( QueryExecutionException.class );
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "nodeIndex", array(), array( PROP ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "nodeIndex", array(), array( PROP ) ) ).close();
         }
     }
 
@@ -321,7 +321,7 @@ public class FulltextProceduresTest
         expectedException.expect( QueryExecutionException.class );
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( RELATIONSHIP_CREATE, "relIndex", array(), array( PROP ) ) );
+            transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", array(), array( PROP ) ) );
         }
     }
 
@@ -332,7 +332,7 @@ public class FulltextProceduresTest
         expectedException.expect( QueryExecutionException.class );
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "nodeIndex", array( "Label" ), array() ) ).close();
+            transaction.execute( format( NODE_CREATE, "nodeIndex", array( "Label" ), array() ) ).close();
         }
     }
 
@@ -343,7 +343,7 @@ public class FulltextProceduresTest
         expectedException.expect( QueryExecutionException.class );
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( RELATIONSHIP_CREATE, "relIndex", array( "RELTYPE" ), array() ) );
+            transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", array( "RELTYPE" ), array() ) );
         }
     }
 
@@ -357,10 +357,10 @@ public class FulltextProceduresTest
             // The property keys and labels we ask for do not exist, so those tokens will have to be allocated.
             // This test verifies that the locking required for the index modifications do not conflict with the
             // locking required for the token allocation.
-            db.execute( format( NODE_CREATE, "nodesA", array( "SOME_LABEL" ), array( "this" ) ) );
-            db.execute( format( RELATIONSHIP_CREATE, "relsA", array( "SOME_REL_TYPE" ), array( "foo" ) ) );
-            db.execute( format( NODE_CREATE, "nodesB", array( "SOME_OTHER_LABEL" ), array( "that" ) ) );
-            db.execute( format( RELATIONSHIP_CREATE, "relsB", array( "SOME_OTHER_REL_TYPE" ), array( "bar" ) ) );
+            tx.execute( format( NODE_CREATE, "nodesA", array( "SOME_LABEL" ), array( "this" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "relsA", array( "SOME_REL_TYPE" ), array( "foo" ) ) );
+            tx.execute( format( NODE_CREATE, "nodesB", array( "SOME_OTHER_LABEL" ), array( "that" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "relsB", array( "SOME_OTHER_REL_TYPE" ), array( "bar" ) ) );
         }
     }
 
@@ -400,8 +400,8 @@ public class FulltextProceduresTest
             String rel = array( REL.name() );
             String props = array( PROP );
             String swedish = props + ", {analyzer: '" + FulltextAnalyzerTest.SWEDISH + "'}";
-            db.execute( format( NODE_CREATE, labelledSwedishNodes, lbl, swedish ) ).close();
-            db.execute( format( RELATIONSHIP_CREATE, typedSwedishRelationships, rel, swedish ) ).close();
+            tx.execute( format( NODE_CREATE, labelledSwedishNodes, lbl, swedish ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, typedSwedishRelationships, rel, swedish ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -438,8 +438,8 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
-            db.execute( format( RELATIONSHIP_CREATE, "rel", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( RELATIONSHIP_CREATE, "rel", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
         awaitIndexesOnline();
@@ -488,8 +488,8 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP, "otherprop" ) ) );
-            db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP, "otherprop" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -509,8 +509,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
-            db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
 
@@ -562,8 +562,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
-            db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -587,7 +587,7 @@ public class FulltextProceduresTest
 
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( AWAIT_REFRESH ).close();
+            transaction.execute( AWAIT_REFRESH ).close();
             transaction.commit();
         }
         assertQueryFindsIds( db, true, "node", "bla", nodeIds );
@@ -619,8 +619,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
-            db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
 
@@ -664,8 +664,8 @@ public class FulltextProceduresTest
             startLatch.await();
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
-                db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+                tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+                tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
                 tx.commit();
             }
         };
@@ -694,7 +694,7 @@ public class FulltextProceduresTest
         awaitIndexesOnline();
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( AWAIT_REFRESH ).close();
+            transaction.execute( AWAIT_REFRESH ).close();
         }
         assertQueryFindsIds( db, true, "node", newValue, nodeIds );
         assertQueryFindsIds( db, false, "rel", newValue, relIds );
@@ -708,8 +708,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP, "otherprop" ) ) );
-            db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP, "otherprop" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -749,7 +749,7 @@ public class FulltextProceduresTest
         // And wait for them to apply.
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( AWAIT_REFRESH ).close();
+            transaction.execute( AWAIT_REFRESH ).close();
             transaction.commit();
         }
 
@@ -767,7 +767,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             Set<String> analyzers = new HashSet<>();
-            try ( ResourceIterator<String> iterator = db.execute( LIST_AVAILABLE_ANALYZERS ).columnAs( "analyzer" ) )
+            try ( ResourceIterator<String> iterator = tx.execute( LIST_AVAILABLE_ANALYZERS ).columnAs( "analyzer" ) )
             {
                 while ( iterator.hasNext() )
                 {
@@ -783,7 +783,7 @@ public class FulltextProceduresTest
         // Verify that all analyzers have a description.
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = db.execute( LIST_AVAILABLE_ANALYZERS ) )
+            try ( Result result = tx.execute( LIST_AVAILABLE_ANALYZERS ) )
             {
                 while ( result.hasNext() )
                 {
@@ -805,7 +805,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
 
@@ -814,7 +814,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             expectedException.expect( Exception.class );
-            db.execute( format( QUERY_NODES, "rels", "bla bla" ) ).next();
+            tx.execute( format( QUERY_NODES, "rels", "bla bla" ) ).next();
             tx.commit();
         }
     }
@@ -826,7 +826,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
 
@@ -835,7 +835,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             expectedException.expect( Exception.class );
-            db.execute( format( QUERY_RELS, "nodes", "bla bla" ) ).next();
+            tx.execute( format( QUERY_RELS, "nodes", "bla bla" ) ).next();
             tx.commit();
         }
     }
@@ -848,8 +848,8 @@ public class FulltextProceduresTest
         Label label = LABEL;
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "nodes", array( label.name() ), array( PROP ) ) ).close();
-            createSimpleRelationshipIndex();
+            tx.execute( format( NODE_CREATE, "nodes", array( label.name() ), array( PROP ) ) ).close();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
 
@@ -878,7 +878,7 @@ public class FulltextProceduresTest
                 Result nodes;
                 try
                 {
-                    nodes = db.execute( cypherQuery );
+                    nodes = transaction.execute( cypherQuery );
                 }
                 catch ( QueryExecutionException e )
                 {
@@ -889,7 +889,7 @@ public class FulltextProceduresTest
                     fail( "did not expect to find any nodes, but found at least: " + nodes.next() );
                 }
                 nodes.close();
-                Result relationships = db.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
+                Result relationships = transaction.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
                 if ( relationships.hasNext() )
                 {
                     fail( "did not expect to find any relationships, but found at least: " + relationships.next() );
@@ -920,8 +920,8 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
-            createSimpleRelationshipIndex();
+            createSimpleNodesIndex( tx );
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
 
@@ -936,7 +936,7 @@ public class FulltextProceduresTest
                 Result nodes;
                 try
                 {
-                    nodes = db.execute( cypherQuery );
+                    nodes = transaction.execute( cypherQuery );
                 }
                 catch ( QueryExecutionException e )
                 {
@@ -947,7 +947,7 @@ public class FulltextProceduresTest
                     fail( "did not expect to find any nodes, but found at least: " + nodes.next() );
                 }
                 nodes.close();
-                Result relationships = db.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
+                Result relationships = transaction.execute( format( QUERY_RELS, "rels", fulltextQuery ) );
                 if ( relationships.hasNext() )
                 {
                     fail( "did not expect to find any relationships, but found at least: " + relationships.next() );
@@ -965,7 +965,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -988,7 +988,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            Result result = db.execute( format( QUERY_NODES, "nodes", "bla" ) );
+            Result result = tx.execute( format( QUERY_NODES, "nodes", "bla" ) );
             assertFalse( result.hasNext() );
             result.close();
             tx.commit();
@@ -1002,7 +1002,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -1033,7 +1033,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1058,7 +1058,7 @@ public class FulltextProceduresTest
         assertQueryFindsIds( db, true, "nodes", "foo", nodeId );
         try ( Transaction tx = db.beginTx() )
         {
-            Result result = db.execute( format( QUERY_NODES, "nodes", "bar" ) );
+            Result result = tx.execute( format( QUERY_NODES, "nodes", "bar" ) );
             assertFalse( result.hasNext() );
             result.close();
             tx.commit();
@@ -1072,7 +1072,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1113,7 +1113,7 @@ public class FulltextProceduresTest
         Label label = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "books", array( label.name() ), array( "title", "author", "contents" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "books", array( label.name() ), array( "title", "author", "contents" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1157,7 +1157,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "books", array( label.name() ), array( "title", "author", "contents" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "books", array( label.name() ), array( "title", "author", "contents" ) ) ).close();
             tx.commit();
         }
 
@@ -1173,7 +1173,7 @@ public class FulltextProceduresTest
         Label book = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "books", array( book.name() ), array( "title", "author" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "books", array( book.name() ), array( "title", "author" ) ) ).close();
             tx.commit();
         }
 
@@ -1201,7 +1201,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "a", "b", "c", "d", "e", "f" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "a", "b", "c", "d", "e", "f" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1232,12 +1232,12 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = db.execute( format( QUERY_NODES, "nodes", "value" ) );
+            try ( Result result = tx.execute( format( QUERY_NODES, "nodes", "value" ) );
                   Stream<Map<String,Object>> stream = result.stream() )
             {
                 assertThat( stream.count(), is( nodeCount ) );
@@ -1262,13 +1262,13 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             tx.createNode( LABEL ).setProperty( PROP, "value" );
-            try ( Result result = db.execute( format( QUERY_NODES, "nodes", "value" ) );
+            try ( Result result = tx.execute( format( QUERY_NODES, "nodes", "value" ) );
                   Stream<Map<String,Object>> stream = result.stream() )
             {
                 assertThat( stream.count(), is( nodeCount + 1 ) );
@@ -1283,9 +1283,9 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             expectedException.expect( QueryExecutionException.class );
-            db.execute( format( QUERY_NODES, "nodes", "value" ) ).next();
+            tx.execute( format( QUERY_NODES, "nodes", "value" ) ).next();
         }
     }
 
@@ -1295,7 +1295,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeIdA;
@@ -1313,7 +1313,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = db.execute( format( QUERY_NODES, "nodes", "value" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "nodes", "value" ) ) )
             {
                 ThreadTestUtils.forkFuture( () ->
                 {
@@ -1337,7 +1337,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         long relIdA;
@@ -1356,7 +1356,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = db.execute( format( QUERY_RELS, "rels", "value" ) ) )
+            try ( Result result = tx.execute( format( QUERY_RELS, "rels", "value" ) ) )
             {
                 ThreadTestUtils.forkFuture( () ->
                 {
@@ -1380,7 +1380,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeIdA;
@@ -1400,7 +1400,7 @@ public class FulltextProceduresTest
         {
             tx.getNodeById( nodeIdA ).delete();
             tx.getNodeById( nodeIdB ).delete();
-            try ( Result result = db.execute( format( QUERY_NODES, "nodes", "value" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "nodes", "value" ) ) )
             {
                 assertThat( result.stream().count(), is( 0L ) );
             }
@@ -1414,7 +1414,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         long relIdA;
@@ -1435,7 +1435,7 @@ public class FulltextProceduresTest
         {
             tx.getRelationshipById( relIdA ).delete();
             tx.getRelationshipById( relIdB ).delete();
-            try ( Result result = db.execute( format( QUERY_RELS, "rels", "value" ) ) )
+            try ( Result result = tx.execute( format( QUERY_RELS, "rels", "value" ) ) )
             {
                 assertThat( result.stream().count(), is( 0L ) );
             }
@@ -1449,7 +1449,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -1469,7 +1469,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -1490,7 +1490,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -1514,7 +1514,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         long relId;
@@ -1541,7 +1541,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -1568,7 +1568,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -1595,7 +1595,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         long relId;
@@ -1623,7 +1623,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -1649,7 +1649,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         long relId;
@@ -1676,7 +1676,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -1701,7 +1701,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -1739,7 +1739,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         long relId;
@@ -1778,7 +1778,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -1813,7 +1813,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         long relId;
@@ -1849,7 +1849,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long nodeId;
@@ -1883,7 +1883,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long firstId;
@@ -1916,7 +1916,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         long firstId;
@@ -1953,15 +1953,15 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( DROP, "nodes" ) ).close();
+            tx.execute( format( DROP, "nodes" ) ).close();
             expectedException.expect( QueryExecutionException.class );
-            db.execute( format( QUERY_NODES, "nodes", "blabla" ) ).next();
+            tx.execute( format( QUERY_NODES, "nodes", "blabla" ) ).next();
         }
     }
 
@@ -1971,15 +1971,15 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( DROP, "rels" ) ).close();
+            tx.execute( format( DROP, "rels" ) ).close();
             expectedException.expect( QueryExecutionException.class );
-            db.execute( format( QUERY_RELS, "rels", "blabla" ) ).next();
+            tx.execute( format( QUERY_RELS, "rels", "blabla" ) ).next();
         }
     }
 
@@ -1989,14 +1989,14 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
-            db.execute( format( DROP, "nodes" ) ).close();
+            createSimpleNodesIndex( tx );
+            tx.execute( format( DROP, "nodes" ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleRelationshipIndex();
-            db.execute( format( DROP, "rels" ) ).close();
+            createSimpleRelationshipIndex( tx );
+            tx.execute( format( DROP, "rels" ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2013,8 +2013,8 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
-            db.execute( format( RELATIONSHIP_CREATE, "rels", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2029,7 +2029,7 @@ public class FulltextProceduresTest
         assertQueryFindsIds( db, false, "rels", "value" );
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( AWAIT_REFRESH ).close();
+            transaction.execute( AWAIT_REFRESH ).close();
             transaction.commit();
         }
         assertQueryFindsIds( db, true, "nodes", "value" );
@@ -2042,8 +2042,8 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
-            createSimpleRelationshipIndex();
+            createSimpleNodesIndex( tx );
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2091,13 +2091,13 @@ public class FulltextProceduresTest
         String schemaIndexName;
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = db.execute( "call db.indexes()" ) )
+            try ( Result result = tx.execute( "call db.indexes()" ) )
             {
                 assertTrue( result.hasNext() );
                 schemaIndexName = result.next().get( "indexName" ).toString();
             }
             expectedException.expect( QueryExecutionException.class );
-            db.execute( format( DROP, schemaIndexName ) ).close();
+            tx.execute( format( DROP, schemaIndexName ) ).close();
         }
     }
 
@@ -2107,7 +2107,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         String valueToQueryFor = "value to query for";
@@ -2144,7 +2144,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         managementService.shutdown();
@@ -2240,14 +2240,14 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
-            createSimpleRelationshipIndex();
+            createSimpleNodesIndex( tx );
+            createSimpleRelationshipIndex( tx );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( DB_AWAIT_INDEX, "nodes" ) ).close();
-            db.execute( format( DB_AWAIT_INDEX, "rels" ) ).close();
+            tx.execute( format( DB_AWAIT_INDEX, "nodes" ) ).close();
+            tx.execute( format( DB_AWAIT_INDEX, "rels" ) ).close();
             tx.commit();
         }
     }
@@ -2258,8 +2258,8 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "CREATE INDEX ON :Person(name)" ).close();
-            db.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
+            tx.execute( "CREATE INDEX ON :Person(name)" ).close();
+            tx.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2270,7 +2270,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             // This must not throw:
-            db.execute( "call db.index.fulltext.drop('nameIndex')" ).close();
+            tx.execute( "call db.index.fulltext.drop('nameIndex')" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2286,8 +2286,8 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "CREATE INDEX ON :Person(name)" ).close();
-            db.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
+            tx.execute( "CREATE INDEX ON :Person(name)" ).close();
+            tx.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2298,7 +2298,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             // This must not throw:
-            db.execute( "DROP INDEX ON :Person(name)" ).close();
+            tx.execute( "DROP INDEX ON :Person(name)" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2316,7 +2316,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "call db.createIndex( \":User(searchableString)\", \"" + FulltextIndexProviderFactory.DESCRIPTOR.name() + "\" );" ).close();
+            tx.execute( "call db.createIndex( \":User(searchableString)\", \"" + FulltextIndexProviderFactory.DESCRIPTOR.name() + "\" );" ).close();
             tx.commit();
         }
         catch ( QueryExecutionException e )
@@ -2326,7 +2326,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            long indexCount = db.execute( DB_INDEXES ).stream().count();
+            long indexCount = tx.execute( DB_INDEXES ).stream().count();
             assertThat( indexCount, is( 0L ) );
             tx.commit();
         }
@@ -2338,7 +2338,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         LongHashSet ids = new LongHashSet();
@@ -2365,7 +2365,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         LongHashSet ids = new LongHashSet();
@@ -2392,7 +2392,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            createSimpleNodesIndex();
+            createSimpleNodesIndex( tx );
             tx.commit();
         }
         LongHashSet ids = new LongHashSet();
@@ -2420,30 +2420,30 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) + ", {analyzer: 'standard'}" ) ).close();
+            tx.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) + ", {analyzer: 'standard'}" ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
 
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "A" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "A" ) ) )
             {
                 assertThat( result.stream().count(), is( 0L ) ); // The letter 'A' is a stop-word in English, so it is not indexed.
             }
-            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "B" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "B" ) ) )
             {
                 assertThat( result.stream().count(), is( 2000L ) ); // Both upper- and lower-case 'B' nodes.
             }
-            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "C" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "C" ) ) )
             {
                 assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
             }
@@ -2458,30 +2458,30 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) + ", {analyzer: 'simple'}" ) ).close();
+            tx.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) + ", {analyzer: 'simple'}" ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
 
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "A" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "A" ) ) )
             {
                 assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'A' nodes.
             }
-            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "B" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "B" ) ) )
             {
                 assertThat( result.stream().count(), is( 2000L ) ); // Both upper- and lower-case 'B' nodes.
             }
-            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "C" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "C" ) ) )
             {
                 assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
             }
@@ -2496,30 +2496,30 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
-            db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'A'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
+            tx.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
 
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "A" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "A" ) ) )
             {
                 assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'A' nodes.
             }
-            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "B" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "B" ) ) )
             {
                 assertThat( result.stream().count(), is( 2000L ) ); // Both upper- and lower-case 'B' nodes.
             }
-            try ( Result result = db.execute( format( QUERY_NODES, "myindex", "C" ) ) )
+            try ( Result result = tx.execute( format( QUERY_NODES, "myindex", "C" ) ) )
             {
                 assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
             }
@@ -2556,7 +2556,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
-            Result result = db.execute( format( queryCall, index, query ) );
+            Result result = tx.execute( format( queryCall, index, query ) );
             int num = 0;
             Double score = Double.MAX_VALUE;
             while ( result.hasNext() )
@@ -2590,7 +2590,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             LongFunction<Entity> getEntity = queryNodes ? tx::getNodeById : tx::getRelationshipById;
-            Result result = db.execute( format( queryCall, index, query ) );
+            Result result = tx.execute( format( queryCall, index, query ) );
             Double score = Double.MAX_VALUE;
             while ( result.hasNext() )
             {
@@ -2703,13 +2703,13 @@ public class FulltextProceduresTest
         return QueryParserUtil.escape( value.prettyPrint() ).replace( "\\", "\\\\" ).replace( "\"", "\\\"" );
     }
 
-    private void createSimpleRelationshipIndex()
+    private void createSimpleRelationshipIndex( Transaction tx )
     {
-        db.execute( format( RELATIONSHIP_CREATE, "rels", array( REL.name() ), array( PROP ) ) ).close();
+        tx.execute( format( RELATIONSHIP_CREATE, "rels", array( REL.name() ), array( PROP ) ) ).close();
     }
 
-    private void createSimpleNodesIndex()
+    private void createSimpleNodesIndex( Transaction tx )
     {
-        db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( PROP ) ) ).close();
+        tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( PROP ) ) ).close();
     }
 }

@@ -68,7 +68,7 @@ public class GraphDatabaseServiceExecuteTest
         // when
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( "CREATE (n:Foo{bar:\"baz\"})" );
+            transaction.execute( "CREATE (n:Foo{bar:\"baz\"})" );
             transaction.commit();
         }
 
@@ -87,7 +87,7 @@ public class GraphDatabaseServiceExecuteTest
         try ( Transaction transaction = db.beginTx() )
         {
             // when
-            Result execute = db.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
+            Result execute = transaction.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
 
             // then
             Object obj = execute.next().get( "p" );
@@ -111,7 +111,7 @@ public class GraphDatabaseServiceExecuteTest
         // when
         try ( Transaction transaction = db.beginTx() )
         {
-            Result execute = db.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
+            Result execute = transaction.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
 
             // then
             Object obj = execute.next().get( "p" );
@@ -135,7 +135,7 @@ public class GraphDatabaseServiceExecuteTest
         // when
         try ( Transaction transaction = db.beginTx() )
         {
-            Result execute = db.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
+            Result execute = transaction.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
 
             // then
             List<Point> points = (List<Point>) execute.next().get( "ps" );
@@ -151,7 +151,7 @@ public class GraphDatabaseServiceExecuteTest
         try ( Transaction transaction = db.beginTx() )
         {
             // when
-            Result execute = db.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
+            Result execute = transaction.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
 
             // then
             Map<String,Object> points = (Map<String,Object>) execute.next().get( "m" );
@@ -166,7 +166,7 @@ public class GraphDatabaseServiceExecuteTest
         try ( Transaction transaction = db.beginTx() )
         {
             // given a point create by one cypher query
-            Result execute = db.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
+            Result execute = transaction.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
             Point point = (Point) execute.next().get( "p" );
             // when passing as params to a distance function
             Result result = transaction.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
@@ -247,7 +247,7 @@ public class GraphDatabaseServiceExecuteTest
         try ( Transaction transaction = db.beginTx() )
         {
             // when calling procedure that produces a point
-            Result result = db.execute( "CALL spatial.point(144.317718, -37.031738) YIELD point " +
+            Result result = transaction.execute( "CALL spatial.point(144.317718, -37.031738) YIELD point " +
                     "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), point) AS dist" );
 
             // then
@@ -268,7 +268,7 @@ public class GraphDatabaseServiceExecuteTest
         // when calling procedure that produces a point
         try ( Transaction transaction = db.beginTx() )
         {
-            Result result = db.execute( "CALL spatial.pointGeometry(144.317718, -37.031738) YIELD geometry " +
+            Result result = transaction.execute( "CALL spatial.pointGeometry(144.317718, -37.031738) YIELD geometry " +
                     "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), geometry) AS dist" );
 
             // then

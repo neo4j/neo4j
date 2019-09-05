@@ -96,7 +96,7 @@ class RelationshipsDeadlockTest
         {
             for ( int i = 0; i < NODES; i++ )
             {
-                db.execute( "MERGE (p:Person {name: " + i + "})" );
+                tx.execute( "MERGE (p:Person {name: " + i + "})" );
             }
             tx.commit();
         }

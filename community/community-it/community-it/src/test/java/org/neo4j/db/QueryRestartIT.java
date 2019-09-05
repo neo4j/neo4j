@@ -84,7 +84,7 @@ class QueryRestartIT
 
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n:label) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n:label) RETURN n.c" );
             while ( result.hasNext() )
             {
                 assertEquals( "d", result.next().get( "n.c" ) );
@@ -99,7 +99,7 @@ class QueryRestartIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             while ( result.hasNext() )
             {
@@ -114,7 +114,7 @@ class QueryRestartIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n:toRetry) RETURN count(n)" );
+            Result result = transaction.execute( "MATCH (n:toRetry) RETURN count(n)" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             while ( result.hasNext() )
             {
@@ -129,7 +129,7 @@ class QueryRestartIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n:toRetry) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n:toRetry) RETURN n.c" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             while ( result.hasNext() )
             {
@@ -144,7 +144,7 @@ class QueryRestartIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            QueryExecutionException e = assertThrows( QueryExecutionException.class, () -> database.execute( "MATCH (n:toRetry) CREATE () RETURN n.c" ) );
+            QueryExecutionException e = assertThrows( QueryExecutionException.class, () -> transaction.execute( "MATCH (n:toRetry) CREATE () RETURN n.c" ) );
             assertEquals( "Unable to get clean data snapshot for query " + "'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.", e.getMessage() );
             transaction.commit();
         }

@@ -77,8 +77,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
           statement.schemaRead().schemaStateFlush()
         }
 
-        graph.inTx { graph.execute(firstQuery).resultAsString() }
-        graph.inTx { graph.execute(secondQuery).resultAsString() }
+        graph.withTx( tx => tx.execute(firstQuery).resultAsString() )
+        graph.withTx( tx => tx.execute(secondQuery).resultAsString() )
 
         val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
         val expected = List(

@@ -104,7 +104,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     // when
     val transaction = db.beginTx()
     try {
-      db.execute("RETURN 42").close()
+      transaction.execute("RETURN 42").close()
     } finally {
       transaction.close()
     }
@@ -119,8 +119,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     // when
     val transaction = db.beginTx()
     try {
-      db.execute("EXPLAIN MERGE (a:A) ON MATCH SET a.prop = 21  RETURN *").close()
-      db.execute("EXPLAIN    MERGE (a:A) ON MATCH SET a.prop = 42 RETURN *").close()
+      transaction.execute("EXPLAIN MERGE (a:A) ON MATCH SET a.prop = 21  RETURN *").close()
+      transaction.execute("EXPLAIN    MERGE (a:A) ON MATCH SET a.prop = 42 RETURN *").close()
     } finally {
       transaction.close()
     }
@@ -170,8 +170,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   private implicit class RichDb(db: GraphDatabaseCypherService) {
     def planDescriptionForQuery(query: String): ExecutionPlanDescription = {
-      db.withTx( _ => {
-        val res = db.execute(query)
+      db.withTx( tx => {
+        val res = tx.execute(query)
         res.resultAsString()
         res.getExecutionPlanDescription
       })

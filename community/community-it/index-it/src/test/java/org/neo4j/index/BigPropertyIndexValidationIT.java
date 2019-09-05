@@ -68,7 +68,7 @@ class BigPropertyIndexValidationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                assertThrows( IllegalArgumentException.class, () -> db.execute( "CREATE (n:" + LABEL + " {name: \"" + longString + "\"})" ) );
+                assertThrows( IllegalArgumentException.class, () -> tx.execute( "CREATE (n:" + LABEL + " {name: \"" + longString + "\"})" ) );
                 tx.commit();
             }
             //Check that the database is empty.
@@ -91,8 +91,8 @@ class BigPropertyIndexValidationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute( "CREATE (n:" + LABEL + ")" );
-                assertThrows( IllegalArgumentException.class, () -> db.execute( "match (n:" + LABEL + ")set n.name= \"" + longString + "\"" ) );
+                tx.execute( "CREATE (n:" + LABEL + ")" );
+                assertThrows( IllegalArgumentException.class, () -> tx.execute( "match (n:" + LABEL + ")set n.name= \"" + longString + "\"" ) );
                 tx.commit();
             }
             //Check that the database is empty.
@@ -116,8 +116,8 @@ class BigPropertyIndexValidationIT
             try ( Transaction tx = db.beginTx() )
             {
                 String otherLabel = "SomethingElse";
-                db.execute( "CREATE (n:" + otherLabel + " {name: \"" + longString + "\"})" );
-                assertThrows( IllegalArgumentException.class, () -> db.execute( "match (n:" + otherLabel + ")set n:" + LABEL ) );
+                tx.execute( "CREATE (n:" + otherLabel + " {name: \"" + longString + "\"})" );
+                assertThrows( IllegalArgumentException.class, () -> tx.execute( "match (n:" + otherLabel + ")set n:" + LABEL ) );
                 tx.commit();
             }
             //Check that the database is empty.

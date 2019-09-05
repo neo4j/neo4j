@@ -33,7 +33,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.ResultConsumer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
@@ -153,12 +152,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
             throws QueryExecutionException
     {
         getGraphDatabaseAPI().executeTransactionally( query, parameters, resultConsumer, timeout );
-    }
-
-    @Override
-    public Result execute( String query ) throws QueryExecutionException
-    {
-        return getGraphDatabaseAPI().execute( query );
     }
 
     @Override

@@ -129,10 +129,10 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute( "CALL db.index.fulltext.createNodeIndex('fts1', ['Fts1'], ['prop1'] )" ).close();
-                db.execute( "CALL db.index.fulltext.createNodeIndex('fts2', ['Fts2', 'Fts3'], ['prop1', 'prop2'] )" ).close();
-                db.execute( "CALL db.index.fulltext.createNodeIndex('fts3', ['Fts4'], ['prop1'], {eventually_consistent: 'true'} )" ).close();
-                db.execute( "CALL db.index.fulltext.createRelationshipIndex('fts4', ['FtsRel1', 'FtsRel2'], ['prop1', 'prop2'], " +
+                tx.execute( "CALL db.index.fulltext.createNodeIndex('fts1', ['Fts1'], ['prop1'] )" ).close();
+                tx.execute( "CALL db.index.fulltext.createNodeIndex('fts2', ['Fts2', 'Fts3'], ['prop1', 'prop2'] )" ).close();
+                tx.execute( "CALL db.index.fulltext.createNodeIndex('fts3', ['Fts4'], ['prop1'], {eventually_consistent: 'true'} )" ).close();
+                tx.execute( "CALL db.index.fulltext.createRelationshipIndex('fts4', ['FtsRel1', 'FtsRel2'], ['prop1', 'prop2'], " +
                         "{eventually_consistent: 'true'} )" ).close();
                 tx.commit();
             }
@@ -148,7 +148,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             }
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute( "call db.index.fulltext.awaitEventuallyConsistentIndexRefresh" ).close();
+                tx.execute( "call db.index.fulltext.awaitEventuallyConsistentIndexRefresh" ).close();
                 tx.commit();
             }
         } );
@@ -274,19 +274,19 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                 assertFalse( fts4props.hasNext() );
                 // TODO verify the index configuration of 'fts3' -- it is eventually consistent.
 
-                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts1', 'abc' )" ).stream() )
+                try ( var result = tx.execute( "CALL db.index.fulltext.queryNodes( 'fts1', 'abc' )" ).stream() )
                 {
                     assertEquals( result.count(), 1L );
                 }
-                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts2', 'abc' )" ).stream() )
+                try ( var result = tx.execute( "CALL db.index.fulltext.queryNodes( 'fts2', 'abc' )" ).stream() )
                 {
                     assertEquals( result.count(), 1L );
                 }
-                try ( var result = db.execute( "CALL db.index.fulltext.queryNodes( 'fts3', 'abc' )" ).stream() )
+                try ( var result = tx.execute( "CALL db.index.fulltext.queryNodes( 'fts3', 'abc' )" ).stream() )
                 {
                     assertEquals( result.count(), 1L );
                 }
-                try ( var result = db.execute( "CALL db.index.fulltext.queryRelationships( 'fts4', 'abc' )" ).stream() )
+                try ( var result = tx.execute( "CALL db.index.fulltext.queryRelationships( 'fts4', 'abc' )" ).stream() )
                 {
                     assertEquals( result.count(), 2L );
                 }

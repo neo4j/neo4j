@@ -358,7 +358,7 @@ class IndexConfigMigrationIT
         {
             String indexPattern = format( "\":%s(%s)\"", label.name(), propKey );
             String indexProvider = "\"" + providerName + "\"";
-            db.execute( format( "CALL db.createIndex( %s, %s )", indexPattern, indexProvider ) ).close();
+            tx.execute( format( "CALL db.createIndex( %s, %s )", indexPattern, indexProvider ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -378,7 +378,7 @@ class IndexConfigMigrationIT
             String configString = asConfigString( configMap );
             System.out.println( fulltextName + " created with config: " + configString );
             String query = format( "CALL db.index.fulltext." + indexProcedure + "(\"%s\", %s, %s, %s )", fulltextName, labelArray, propArray, configString );
-            db.execute( query ).close();
+            tx.execute( query ).close();
             tx.commit();
         }
     }

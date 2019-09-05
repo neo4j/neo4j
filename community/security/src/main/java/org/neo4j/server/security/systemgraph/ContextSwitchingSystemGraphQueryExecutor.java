@@ -175,6 +175,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
 
             @Override
+            public Result execute( String query ) throws QueryExecutionException
+            {
+                return transaction.execute( query );
+            }
+
+            @Override
             public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
             {
                 return transaction.execute( query, parameters );

@@ -100,7 +100,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             int rows = 0;
             while ( result.hasNext() )
@@ -118,7 +118,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             assertEquals( QueryExecutionType.query( QueryExecutionType.QueryType.READ_ONLY ), result.getQueryExecutionType() );
             transaction.commit();
@@ -130,7 +130,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c as a, count(n) as b" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c as a, count(n) as b" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             assertEquals( Arrays.asList( "a", "b" ), result.columns() );
             transaction.commit();
@@ -142,7 +142,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c as c, n.b as b" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c as c, n.b as b" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             ResourceIterator<Object> cValues = result.columnAs( "c" );
             int rows = 0;
@@ -161,7 +161,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             assertFalse( result.getQueryStatistics().containsUpdates() );
             transaction.commit();
@@ -173,7 +173,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "profile MATCH (n) RETURN n.c" );
+            Result result = transaction.execute( "profile MATCH (n) RETURN n.c" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             assertEquals( 2, result.getExecutionPlanDescription().getProfilerStatistics().getRows() );
             transaction.commit();
@@ -185,7 +185,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c, n.d" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c, n.d" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             String resultString = result.resultAsString();
             assertTrue( resultString.contains( "n.c, n.d" ) );
@@ -200,7 +200,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             assertEquals( 1, testCursorContext.getAdditionalAttempts() );
             assertEquals( result.resultAsString(), printToStream( result ) );
             transaction.commit();
@@ -212,7 +212,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             List<String> values = new ArrayList<>();
             result.accept( (Result.ResultVisitor<Exception>) row ->
             {
@@ -230,7 +230,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             List<String> values = new ArrayList<>();
             assertThrows( QueryExecutionException.class, () -> result.accept( (Result.ResultVisitor<Exception>) row ->
             {
@@ -247,7 +247,7 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Result result = database.execute( "MATCH (n) RETURN n.c" );
+            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             assertThrows( QueryExecutionException.class, () -> result.accept( (Result.ResultVisitor<Exception>) row ->
             {
                 testCursorContext.markAsDirty();

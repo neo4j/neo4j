@@ -489,7 +489,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         GraphDatabaseService database = graphdb();
         try ( Transaction transaction = database.beginTx() )
         {
-            database.execute( query );
+            transaction.execute( query );
             transaction.commit();
         }
     }
@@ -852,7 +852,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         GraphDatabaseService database = graphdb();
         try ( Transaction transaction = database.beginTx() )
         {
-            try ( Result r = database.execute( "MATCH (n) RETURN count(n) AS c" ) )
+            try ( Result r = transaction.execute( "MATCH (n) RETURN count(n) AS c" ) )
             {
                 return (Long) r.columnAs( "c" ).next();
             }
