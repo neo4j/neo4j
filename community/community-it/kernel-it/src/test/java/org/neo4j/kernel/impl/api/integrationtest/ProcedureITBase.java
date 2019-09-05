@@ -125,8 +125,10 @@ public interface ProcedureITBase
                 proc( "dbms.cluster.routing.getRoutingTable", "(context :: MAP?, database = null :: STRING?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",
                         "Returns endpoints of this instance.", "DBMS" ),
                 proc( "dbms.setTXMetaData", "(data :: MAP?) :: VOID",
-                        "Attaches a map of data to the transaction. The data will be printed when listing queries, and inserted into the query log.", "DBMS", false),
-                proc( "dbms.getTXMetaData", "() :: (metadata :: MAP?)", "Provides attached transaction metadata.", "DBMS" ));
+                        "Attaches a map of data to the transaction. The data will be printed when listing queries, and inserted into " +
+                                "the query log.", "DBMS", false),
+                proc( "dbms.getTXMetaData", "() :: (metadata :: MAP?)",
+                        "Provides attached transaction metadata.", "DBMS" ));
     }
 
     default List<Object[]> getExpectedEnterpriseProcs()
