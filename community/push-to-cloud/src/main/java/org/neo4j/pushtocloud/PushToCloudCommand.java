@@ -41,6 +41,8 @@ public class PushToCloudCommand implements AdminCommand
     static final String ARG_DUMP = "dump";
     static final String ARG_DUMP_TO = "dump-to";
     static final String ARG_VERBOSE = "v";
+    static final String ARG_USERNAME = "username";
+    static final String ARG_PASSWORD = "password";
 
     static final Arguments arguments = new Arguments()
             // Provide a (potentially running?) database
@@ -78,11 +80,22 @@ public class PushToCloudCommand implements AdminCommand
         try
         {
             Path source = initiateSource( arguments );
-            String username = outsideWorld.promptLine( "Neo4j cloud database user name: " );
-            char[] password = outsideWorld.promptPassword( "Neo4j cloud database password: " );
+
+            String username = arguments.get( ARG_USERNAME );
+            if ( username == null )
+            {
+                username = outsideWorld.promptLine("Neo4j cloud database user name: ");
+            }
+
+            String password = arguments.get( ARG_PASSWORD );
+            if ( password == null )
+            {
+                password = new String( outsideWorld.promptPassword( "Neo4j cloud database password: " ) );
+            }
+
             String boltURI = arguments.get( ARG_BOLT_URI );
             String consoleURL = buildConsoleURI( boltURI );
-            copier.copy( verbose, consoleURL, source, username, password );
+            copier.copy( verbose, consoleURL, source, username, password.toCharArray() );
         }
         catch ( Exception e )
         {
@@ -129,6 +142,8 @@ public class PushToCloudCommand implements AdminCommand
         // Either a dump or database name (of a stopped database) can be provided
         String dump = arguments.get( ARG_DUMP );
         String database = arguments.get( ARG_DATABASE );
+        String username = arguments.get( ARG_USERNAME );
+        String password = arguments.get( ARG_PASSWORD );
         if ( dump != null && database != null )
         {
             throw new IncorrectUsage( "Provide either a dump or database name, not both" );
@@ -152,6 +167,10 @@ public class PushToCloudCommand implements AdminCommand
             }
             dumpCreator.dumpDatabase( database, dumpFile );
             return dumpFile;
+        }
+        else if ( username == null && password != null || username != null && password == null )
+        {
+            throw new CommandFailed( "Provide either 'username' and 'password' or none" );
         }
         else
         {
