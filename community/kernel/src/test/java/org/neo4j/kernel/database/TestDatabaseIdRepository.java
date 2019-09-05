@@ -61,7 +61,7 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
 
     public DatabaseId getRaw( String databaseName )
     {
-        var databaseIdOpt = get( databaseName );
+        var databaseIdOpt = getByName( databaseName );
         Preconditions.checkState( databaseIdOpt.isPresent(),
                 getClass().getSimpleName() + " should always produce a " + DatabaseId.class.getSimpleName() + " for any database name" );
         return databaseIdOpt.get();
@@ -78,9 +78,15 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
     private static class RandomDatabaseIdRepository implements DatabaseIdRepository
     {
         @Override
-        public Optional<DatabaseId> get( NormalizedDatabaseName databaseName )
+        public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
         {
             return Optional.of( new DatabaseId( databaseName.name(), UUID.randomUUID() ) );
+        }
+
+        @Override
+        public Optional<DatabaseId> getByUuid( UUID uuid )
+        {
+            return Optional.of( new DatabaseId( "db" + uuid.hashCode(), uuid ) );
         }
     }
 

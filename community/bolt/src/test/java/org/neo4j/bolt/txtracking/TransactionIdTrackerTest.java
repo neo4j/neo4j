@@ -62,7 +62,7 @@ class TransactionIdTrackerTest
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard = mock( DatabaseAvailabilityGuard.class );
     private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final DatabaseId databaseId = databaseIdRepository.get( "foo" ).get();
+    private final DatabaseId databaseId = databaseIdRepository.getByName( "foo" ).get();
     private final Database db = mock( Database.class );
     private final DatabaseManagementService managementService = mock( DatabaseManagementService.class );
     private final ReconciledTransactionTracker reconciledTransactionTracker = spy( new DefaultReconciledTransactionTracker( NullLogService.getInstance() ) );
@@ -281,7 +281,7 @@ class TransactionIdTrackerTest
     void shouldNotReturnNewestTransactionIdForDatabaseThatDoesNotExist()
     {
         // given
-        var unknownDatabaseId = databaseIdRepository.get( "bar" ).get();
+        var unknownDatabaseId = databaseIdRepository.getByName( "bar" ).get();
         when( managementService.database( unknownDatabaseId.name() ) ).thenThrow( DatabaseNotFoundException.class );
 
         // when
@@ -296,7 +296,7 @@ class TransactionIdTrackerTest
     void shouldNotAwaitForTransactionForDatabaseThatDoesNotExist()
     {
         // given
-        var unknownDatabaseId = databaseIdRepository.get( "bar" ).get();
+        var unknownDatabaseId = databaseIdRepository.getByName( "bar" ).get();
         when( managementService.database( unknownDatabaseId.name() ) ).thenThrow( DatabaseNotFoundException.class );
 
         // when

@@ -173,12 +173,17 @@ class TransactionStateMachineTest
     @Test
     void shouldAwaitMultipleNewBookmarks() throws Exception
     {
-        MapValue params = map( "bookmarks", asList( "kittenDB:15", "kittenDB:5", "kittenDB:92", "kittenDB:9" ) );
         var databaseIdRepository = new TestDatabaseIdRepository();
+        var databaseId = databaseIdRepository.getRaw( "kittenDB" );
+        var uuid = databaseId.uuid().toString();
+
+        MapValue params = map( "bookmarks", asList( uuid + ":15", uuid + ":5", uuid + ":92", uuid + ":9" ) );
+
         var bookmarksParser = new BookmarksParserV4( databaseIdRepository );
         var bookmarks = bookmarksParser.parseBookmarks( params );
         beginTx( stateMachine, bookmarks );
-        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithDatabaseId( 92, databaseIdRepository.getRaw( "kittenDB" ) ) ) );
+
+        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithDatabaseId( 92, databaseId ) ) );
     }
 
     @Test

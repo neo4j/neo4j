@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v4.runtime.bookmarking;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.Bookmark;
@@ -33,8 +34,9 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkError;
+import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidSingleBookmarkError;
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkMixtureError;
-import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkUnknownDatabaseError;
+import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkForUnknownDatabaseError;
 import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 public final class BookmarksParserV4 implements BookmarksParser
@@ -64,7 +66,7 @@ public final class BookmarksParserV4 implements BookmarksParser
         }
         else
         {
-            throw newInvalidBookmarkError( bookmarksObject );
+            throw newInvalidBookmarkError( String.format( "Supplied bookmarks '%s' is not a List.", bookmarksObject ) );
         }
     }
 
@@ -107,20 +109,33 @@ public final class BookmarksParserV4 implements BookmarksParser
     {
         if ( !(bookmark instanceof TextValue) )
         {
-            throw newInvalidBookmarkError( bookmark );
+            throw newInvalidSingleBookmarkError( bookmark );
         }
         var bookmarkString = ((TextValue) bookmark).stringValue();
         var split = bookmarkString.split( ":" );
         if ( split.length != 2 )
         {
-            throw newInvalidBookmarkError( bookmarkString );
+            throw newInvalidSingleBookmarkError( bookmarkString );
         }
 
-        String databaseName = split[0];
-        var databaseId = databaseIdRepository.get( databaseName ).orElseThrow( () -> newInvalidBookmarkUnknownDatabaseError( databaseName ) );
+        UUID databaseUuid = parseDatabaseId( split[0], bookmarkString );
+        var databaseId = databaseIdRepository.getByUuid( databaseUuid ).orElseThrow(
+                () -> newInvalidBookmarkForUnknownDatabaseError( databaseUuid ) );
         var txId = parseTxId( split[1], bookmarkString );
 
         return new ParsedBookmark( databaseId, txId );
+    }
+
+    private static UUID parseDatabaseId( String uuid, String bookmark ) throws BookmarkParsingException
+    {
+        try
+        {
+            return UUID.fromString( uuid );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw BookmarkParsingException.newInvalidSingleBookmarkError( bookmark, String.format( "Unable to parse database id: %s", uuid ), e );
+        }
     }
 
     private static long parseTxId( String txIdString, String bookmark ) throws BookmarkParsingException
@@ -131,7 +146,7 @@ public final class BookmarksParserV4 implements BookmarksParser
         }
         catch ( NumberFormatException e )
         {
-            throw newInvalidBookmarkError( bookmark, String.format( "Unable to parse transaction id: %s", txIdString ), e );
+            throw BookmarkParsingException.newInvalidSingleBookmarkError( bookmark, String.format( "Unable to parse transaction id: %s", txIdString ), e );
         }
     }
 

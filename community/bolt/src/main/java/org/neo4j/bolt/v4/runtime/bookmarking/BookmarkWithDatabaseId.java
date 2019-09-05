@@ -86,6 +86,6 @@ public class BookmarkWithDatabaseId implements Bookmark
     @Override
     public String toString()
     {
-        return format( "%s:%d", databaseId.name(), txId );
+        return format( "%s:%d", databaseId.uuid(), txId );
     }
 }

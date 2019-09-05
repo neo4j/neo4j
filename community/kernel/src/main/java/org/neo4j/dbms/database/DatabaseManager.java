@@ -67,7 +67,7 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      */
     default Optional<DB> getDatabaseContext( String databaseName )
     {
-        return databaseIdRepository().get( databaseName ).flatMap( this::getDatabaseContext );
+        return databaseIdRepository().getByName( databaseName ).flatMap( this::getDatabaseContext );
     }
 
     /**

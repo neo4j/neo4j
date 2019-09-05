@@ -66,7 +66,7 @@ class DatabaseAvailabilityIT
         managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         var databaseManager = database.getDependencyResolver().resolveDependency( DatabaseManager.class );
-        defaultDatabaseId = databaseManager.databaseIdRepository().get( DEFAULT_DATABASE_NAME ).get();
+        defaultDatabaseId = databaseManager.databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();
     }
 
     @AfterEach

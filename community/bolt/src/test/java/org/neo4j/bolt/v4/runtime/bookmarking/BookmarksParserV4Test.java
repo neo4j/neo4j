@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
@@ -78,8 +79,9 @@ class BookmarksParserV4Test
     @Test
     void shouldParseMultipleBookmarksContainingTransactionId() throws Exception
     {
-        var bookmark1 = "molly:1234";
-        var bookmark2 = "molly:12345";
+        var dbId = databaseIdRepository.getRaw( "molly" );
+        var bookmark1 = bookmarkString( 1234, dbId );
+        var bookmark2 = bookmarkString( 12345, dbId );
         var metadata = metadata( List.of( bookmark1, bookmark2 ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
@@ -90,7 +92,7 @@ class BookmarksParserV4Test
     @Test
     void shouldFailWhenParsingBadlyFormattedBookmark()
     {
-        var bookmarkString = "neo4j:1234";
+        var bookmarkString = bookmarkString();
         var wrongBookmarkString = "neo4j:1234:v9:xt998";
 
         var error = assertThrows( BookmarkParsingException.class,
@@ -115,7 +117,7 @@ class BookmarksParserV4Test
     @Test
     void shouldFailWhenMixingOldFormatAndNewFormat()
     {
-        var bookmarkString = "neo4j:1234";
+        var bookmarkString = bookmarkString();
         var wrongBookmarkString = "neo4j:bookmark:v1:tx10";
 
         var error = assertThrows( BookmarkParsingException.class,
@@ -128,8 +130,8 @@ class BookmarksParserV4Test
     @Test
     void shouldFailWhenMixingBookmarksFromDifferentDatabases()
     {
-        var bookmarkString = "foo:1234";
-        var wrongBookmarkString = "neo4j:1234";
+        var bookmarkString = bookmarkString( 1234, databaseIdRepository.getRaw( "foo" ) );
+        var wrongBookmarkString = bookmarkString( 1234, databaseIdRepository.getRaw( "neo4j" ) );
 
         var error = assertThrows( BookmarkParsingException.class,
                 () -> parser.parseBookmarks( metadata( List.of( bookmarkString, wrongBookmarkString ) ) ) );
@@ -144,7 +146,13 @@ class BookmarksParserV4Test
         var unknownDatabaseIdRepo = new DatabaseIdRepository()
         {
             @Override
-            public Optional<DatabaseId> get( NormalizedDatabaseName databaseName )
+            public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
+            {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<DatabaseId> getByUuid( UUID uuid )
             {
                 return Optional.empty();
             }
@@ -152,7 +160,7 @@ class BookmarksParserV4Test
 
         var parser = new BookmarksParserV4( unknownDatabaseIdRepo );
 
-        var bookmarkString = "foo:1234";
+        var bookmarkString = bookmarkString();
 
         var error = assertThrows( BookmarkParsingException.class,
                 () -> parser.parseBookmarks( metadata( List.of( bookmarkString ) ) ) );
@@ -180,7 +188,8 @@ class BookmarksParserV4Test
     @Test
     void shouldSkipNullsInMultipleBookmarks() throws Exception
     {
-        var metadata = metadata( Arrays.asList( "neo4j:3", "neo4j:5", null, "neo4j:17" ) );
+        var dbId = databaseIdRepository.getRaw( "neo4j" );
+        var metadata = metadata( Arrays.asList( bookmarkString( 3, dbId ), bookmarkString( 5, dbId ), null, bookmarkString( 17, dbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
 
@@ -190,7 +199,7 @@ class BookmarksParserV4Test
     @Test
     void shouldThrowWhenMultipleBookmarksIsNotAList()
     {
-        var metadata = metadata( new String[]{"neo4j:68"} );
+        var metadata = metadata( new String[]{bookmarkString()} );
 
         var error = assertThrows( BookmarkParsingException.class, () -> parser.parseBookmarks( metadata ) );
 
@@ -201,7 +210,7 @@ class BookmarksParserV4Test
     @Test
     void shouldThrowWhenMultipleBookmarksIsNotAListOfStrings()
     {
-        var metadata = metadata( List.of( new String[]{"neo4j:50"}, new Object[]{"neo4j:89"} ) );
+        var metadata = metadata( List.of( new String[]{bookmarkString()}, new Object[]{bookmarkString()} ) );
 
         var error = assertThrows( BookmarkParsingException.class, () -> parser.parseBookmarks( metadata ) );
 
@@ -268,6 +277,31 @@ class BookmarksParserV4Test
         assertEquals( List.of( new BookmarkWithDatabaseId( 83, systemDbId ), new BookmarkWithDatabaseId( 69, userDbId ) ), bookmarks );
     }
 
+    @Test
+    void shouldErrorWhenDatabaseIdContainsInvalidUuid() throws Exception
+    {
+        var wrongBookmarkString = "neo4j:1234";
+
+        var error = assertThrows( BookmarkParsingException.class,
+                () -> parser.parseBookmarks( metadata( List.of( wrongBookmarkString ) ) ) );
+
+        assertThat( error.status(), equalTo( InvalidBookmark ) );
+        assertTrue( error.causesFailureMessage() );
+    }
+
+    @Test
+    void shouldErrorWhenDatabaseIdContainsInvalidTxId() throws Exception
+    {
+        var databaseId = databaseIdRepository.getRaw( "foo" );
+        var wrongBookmarkString = String.format( "%s:neo4j", databaseId.uuid() );
+
+        var error = assertThrows( BookmarkParsingException.class,
+                () -> parser.parseBookmarks( metadata( List.of( wrongBookmarkString ) ) ) );
+
+        assertThat( error.status(), equalTo( InvalidBookmark ) );
+        assertTrue( error.causesFailureMessage() );
+    }
+
     private static MapValue metadata( Object bookmarks )
     {
         return singletonMap( "bookmarks", bookmarks );
@@ -283,5 +317,14 @@ class BookmarksParserV4Test
     private static String bookmarkString( long txId, DatabaseId databaseId )
     {
         return new BookmarkWithDatabaseId( txId, databaseId ).toString();
+    }
+
+    /**
+     * Create a random bookmark
+     */
+    private String bookmarkString()
+    {
+        var dbId = databaseIdRepository.getRaw( "molly" );
+        return bookmarkString( 123, dbId );
     }
 }

@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.SortedMap;
+import java.util.UUID;
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseExistsException;
@@ -75,9 +76,22 @@ class DatabaseManagerTest
                 }
 
                 @Override
-                public Optional<DatabaseId> get( NormalizedDatabaseName databaseName )
+                public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
                 {
                     if ( KNOWN_DATABASE_NAME.equals( databaseName.name() ) )
+                    {
+                        return Optional.of( DATABASE_ID );
+                    }
+                    else
+                    {
+                        return Optional.empty();
+                    }
+                }
+
+                @Override
+                public Optional<DatabaseId> getByUuid( UUID uuid )
+                {
+                    if ( DATABASE_ID.uuid().equals( uuid ) )
                     {
                         return Optional.of( DATABASE_ID );
                     }

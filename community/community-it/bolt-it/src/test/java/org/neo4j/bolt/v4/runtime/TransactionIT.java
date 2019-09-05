@@ -61,7 +61,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class TransactionIT extends BoltStateMachineV4StateTestBase
 {
-    private static final Pattern BOOKMARK_PATTERN = Pattern.compile( "neo4j:[0-9]+" );
+    private static final Pattern BOOKMARK_PATTERN = Pattern.compile( "\\b[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b:[0-9]+" );
 
     @Test
     void shouldHandleBeginCommit() throws Throwable

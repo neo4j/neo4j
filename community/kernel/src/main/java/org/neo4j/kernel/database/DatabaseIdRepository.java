@@ -32,11 +32,12 @@ public interface DatabaseIdRepository
 {
     DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, new UUID( 0L, 1L ) );
 
-    Optional<DatabaseId> get( NormalizedDatabaseName databaseName );
+    Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName );
+    Optional<DatabaseId> getByUuid( UUID uuid );
 
-    default Optional<DatabaseId> get( String databaseName )
+    default Optional<DatabaseId> getByName( String databaseName )
     {
-        return get( new NormalizedDatabaseName( databaseName ) );
+        return getByName( new NormalizedDatabaseName( databaseName ) );
     }
 
     interface Caching extends DatabaseIdRepository

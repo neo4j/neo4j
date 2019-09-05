@@ -40,49 +40,79 @@ class MapCachingDatabaseIdRepositoryTest
     private DatabaseIdRepository delegate = Mockito.mock( DatabaseIdRepository.class );
 
     private String otherDbName = "i am a database";
-    private DatabaseId otherDbId = new DatabaseId( otherDbName, UUID.randomUUID() );
+    private UUID otherUuid = UUID.randomUUID();
+    private DatabaseId otherDbId = new DatabaseId( otherDbName, otherUuid );
     private DatabaseIdRepository.Caching databaseIdRepository;
 
     @BeforeEach
     void setUp()
     {
-        when( delegate.get( otherDbName ) ).thenReturn( Optional.of( otherDbId ) );
+        when( delegate.getByName( otherDbName ) ).thenReturn( Optional.of( otherDbId ) );
+        when( delegate.getByUuid( otherUuid ) ).thenReturn( Optional.of( otherDbId ) );
         databaseIdRepository = new MapCachingDatabaseIdRepository( delegate );
     }
 
     @Test
-    void shouldDelegateGet()
+    void shouldDelegateGetByName()
     {
-        DatabaseId databaseId = databaseIdRepository.get( otherDbName ).get();
-
+        DatabaseId databaseId = databaseIdRepository.getByName( otherDbName ).get();
         assertThat( databaseId, equalTo( otherDbId ) );
     }
 
     @Test
-    void shouldCacheDb()
+    void shouldDelegateGetByUuid()
     {
-        databaseIdRepository.get( otherDbName ).get();
-        databaseIdRepository.get( otherDbName ).get();
-
-        verify( delegate, atMostOnce() ).get( otherDbName );
+        var databaseId = databaseIdRepository.getByUuid( otherUuid ).get();
+        assertThat( databaseId, equalTo( otherDbId ) );
     }
 
     @Test
-    void shouldInvalidateDb()
+    void shouldCacheDbByName()
     {
-        databaseIdRepository.get( otherDbName ).get();
+        databaseIdRepository.getByName( otherDbName ).get();
+        databaseIdRepository.getByName( otherDbName ).get();
+
+        verify( delegate, atMostOnce() ).getByName( otherDbName );
+    }
+
+    @Test
+    void shouldCacheDbByUuid()
+    {
+        databaseIdRepository.getByUuid( otherUuid ).get();
+        databaseIdRepository.getByUuid( otherUuid ).get();
+
+        verify( delegate, atMostOnce() ).getByUuid( otherUuid );
+    }
+
+    @Test
+    void shouldInvalidateBoth()
+    {
+        databaseIdRepository.getByName( otherDbName ).get();
+        databaseIdRepository.getByUuid( otherUuid ).get();
         databaseIdRepository.invalidate( otherDbId );
-        databaseIdRepository.get( otherDbName ).get();
+        databaseIdRepository.getByName( otherDbName ).get();
+        databaseIdRepository.getByUuid( otherUuid ).get();
 
-        verify( delegate, times( 2 ) ).get( otherDbName );
+        verify( delegate, times( 2 ) ).getByName( otherDbName );
+        verify( delegate, times( 2 ) ).getByUuid( otherUuid );
     }
 
     @Test
-    void shouldReturnSystemDatabaseIdDirectly()
+    void shouldReturnSystemDatabaseIdDirectlyByName()
     {
-        DatabaseId databaseId = databaseIdRepository.get( SYSTEM_DATABASE_ID.name() ).get();
+        DatabaseId databaseId = databaseIdRepository.getByName( SYSTEM_DATABASE_ID.name() ).get();
 
         assertThat( databaseId, equalTo( SYSTEM_DATABASE_ID ) );
         verifyZeroInteractions( delegate );
     }
+
+    @Test
+    void shouldReturnSystemDatabaseIdDirectlyByUuid()
+    {
+        DatabaseId databaseId = databaseIdRepository.getByUuid( SYSTEM_DATABASE_ID.uuid() ).get();
+
+        assertThat( databaseId, equalTo( SYSTEM_DATABASE_ID ) );
+        verifyZeroInteractions( delegate );
+    }
+
 }

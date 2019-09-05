@@ -109,7 +109,7 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
             throw new IllegalArgumentException( "Illegal database name argument " + arg );
         }
         return databaseManager.databaseIdRepository()
-                .get( databaseName )
+                .getByName( databaseName )
                 .orElseThrow( () -> databaseNotFoundException( databaseName ) );
     }
 

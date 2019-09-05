@@ -59,7 +59,7 @@ class DefaultDatabaseManagerIT
         managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = ((GraphDatabaseAPI)database).getDependencyResolver().resolveDependency( DatabaseManager.class );
-        defaultDatabaseId = databaseManager.databaseIdRepository().get( DEFAULT_DATABASE_NAME ).get();
+        defaultDatabaseId = databaseManager.databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();
     }
 
     @AfterEach

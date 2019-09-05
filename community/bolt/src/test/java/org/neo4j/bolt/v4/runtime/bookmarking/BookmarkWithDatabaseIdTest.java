@@ -23,7 +23,6 @@ package org.neo4j.bolt.v4.runtime.bookmarking;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,13 +32,13 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 class BookmarkWithDatabaseIdTest
 {
-    private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     @Test
     void shouldHaveTransactionIdAndDatabaseId()
     {
         var txId = 42;
-        var databaseId = databaseIdRepository.get( "foo" ).get();
+        var databaseId = databaseIdRepository.getRaw( "foo" );
 
         var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
 
@@ -51,24 +50,25 @@ class BookmarkWithDatabaseIdTest
     void shouldAttachToMetadata()
     {
         var txId = 42;
-        var databaseId = databaseIdRepository.get( "foo" ).get();
+        var databaseId = databaseIdRepository.getRaw( "foo" );
         var responseHandler = mock( BoltResponseHandler.class );
         var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
 
         bookmark.attachTo( responseHandler );
 
-        verify( responseHandler ).onMetadata( "bookmark", stringValue( "foo:42" ) );
+        verify( responseHandler ).onMetadata( "bookmark",
+                stringValue( String.format( "%s:42", databaseId.uuid() ) ) );
     }
 
     @Test
     void shouldFormatAsString()
     {
         var txId = 424242;
-        var databaseId = databaseIdRepository.get( "bar" ).get();
+        var databaseId = databaseIdRepository.getRaw( "bar" );
 
         var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
 
-        assertEquals( "bar:424242", bookmark.toString() );
+        assertEquals( String.format( "%s:424242", databaseId.uuid() ), bookmark.toString() );
     }
 }
 

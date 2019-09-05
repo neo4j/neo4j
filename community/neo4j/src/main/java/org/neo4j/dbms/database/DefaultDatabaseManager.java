@@ -56,7 +56,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     public void initialiseDefaultDatabase()
     {
         String databaseName = config.get( default_database );
-        DatabaseId databaseId = databaseIdRepository().get( databaseName )
+        DatabaseId databaseId = databaseIdRepository().getByName( databaseName )
                 .orElseThrow( () -> new DatabaseNotFoundException( "Default database not found: " + databaseName ) );
         StandaloneDatabaseContext context = createDatabase( databaseId );
         if ( manageDatabasesOnStartAndStop )
