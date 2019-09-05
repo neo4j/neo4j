@@ -56,7 +56,7 @@ class Profiler(databaseInfo: DatabaseInfo,
     val head :: rest = planIdStack
     if (AssertionRunner.isAssertionsEnabled) {
       if (head != id) {
-        throw new IllegalStateException(s"We messed up accounting the page cache statistics. Current stack: $planIdStack")
+        throw new IllegalStateException(s"We messed up accounting the page cache statistics. Expected to pop $id but popped $head. Remaining stack: $planIdStack")
       }
     }
 
@@ -121,7 +121,7 @@ class Profiler(databaseInfo: DatabaseInfo,
 
     def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 
-    override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = outerProfiler.afterCreateResults(pipe, state)
+    override def afterCreateResults(pipe: Pipe, state: QueryState): Unit = outerProfiler.afterCreateResults(owningPipe, state)
   }
 
   def registerParentPipe(pipe: Pipe): Unit =
