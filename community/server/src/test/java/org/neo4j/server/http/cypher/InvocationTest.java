@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.neo4j.cypher.internal.runtime.QueryStatistics;
@@ -45,6 +46,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -234,6 +236,10 @@ public class InvocationTest
         String queryText = "USING PERIODIC COMMIT CREATE()";
         TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
         var facade = mock( GraphDatabaseFacade.class, Answers.RETURNS_DEEP_STUBS );
+        var transaction = mock( InternalTransaction.class );
+        when( facade.beginTransaction( eq( Type.implicit ), any(LoginContext.class), any(ClientConnectionInfo.class), anyLong(), any( TimeUnit.class ) ) )
+                .thenReturn( transaction );
+        when( transaction.execute( eq( queryText), any() ) ).thenReturn( executionResult );
         when( executionEngine.isPeriodicCommit( queryText ) ).thenReturn( true );
         when( kernel.getDb() ).thenReturn( facade );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
