@@ -274,13 +274,15 @@ public class FulltextProceduresTest
             transaction.execute( format( DROP, "node" ) );
             indexes.remove( "node" );
             Map<String,String> newIndexes = new HashMap<>();
-            transaction.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+            transaction.execute( "call db.indexes()" ).forEachRemaining(
+                    m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
             assertEquals( indexes, newIndexes );
 
             transaction.execute( format( DROP, "rel" ) );
             indexes.remove( "rel" );
             newIndexes.clear();
-            transaction.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+            transaction.execute( "call db.indexes()" ).forEachRemaining(
+                    m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
             assertEquals( indexes, newIndexes );
             transaction.commit();
         }
