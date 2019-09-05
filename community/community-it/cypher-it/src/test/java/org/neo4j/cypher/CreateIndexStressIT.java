@@ -70,7 +70,7 @@ class CreateIndexStressIT
         params.put( "param", NUM_PROPS );
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( "FOREACH(x in range(0,$param) | CREATE (:A {prop:x})) ", params );
+            transaction.execute( "FOREACH(x in range(0,$param) | CREATE (:A {prop:x})) ", params );
             transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
@@ -104,7 +104,7 @@ class CreateIndexStressIT
             {
                 try ( Transaction transaction = db.beginTx() )
                 {
-                    db.execute( query, params ).resultAsString();
+                    transaction.execute( query, params ).resultAsString();
                     transaction.commit();
                 }
             }

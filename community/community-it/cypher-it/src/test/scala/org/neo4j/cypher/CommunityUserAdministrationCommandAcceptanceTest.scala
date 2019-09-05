@@ -23,7 +23,7 @@ import java.util
 import java.util.Collections
 
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME}
-import org.neo4j.exceptions.{DatabaseAdministrationException, InvalidArgumentException, ParameterNotFoundException, ParameterWrongTypeException, SyntaxException}
+import org.neo4j.exceptions._
 import org.neo4j.graphdb.{QueryExecutionException, Result}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
@@ -661,7 +661,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val tx = graph.beginTransaction(Transaction.Type.explicit, login)
     try {
       var count = 0
-      val result: Result = new RichGraphDatabaseQueryService(graph).execute(query, params)
+      val result: Result = tx.execute(query, params)
       result.accept(row => {
         resultHandler(row, count)
         count = count + 1

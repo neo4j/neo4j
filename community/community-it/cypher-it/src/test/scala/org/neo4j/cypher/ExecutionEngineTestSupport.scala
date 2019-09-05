@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherT
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.{QueryExecutionEngine, RecordingQuerySubscriber}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.{LogProvider, NullLogProvider}
@@ -178,8 +179,8 @@ trait ExecutionEngineHelper {
     }
   }
 
-  def executeOfficial(q: String, params: (String, Any)*): Result =
-   graph.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]])
+  def executeOfficial(tx: InternalTransaction, q: String, params: (String, Any)*): Result =
+   tx.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]])
 
   def executeScalar[T](q: String, params: (String, Any)*): T = {
     ExecutionEngineHelper.scalar[T](execute(q, params: _*).toList)

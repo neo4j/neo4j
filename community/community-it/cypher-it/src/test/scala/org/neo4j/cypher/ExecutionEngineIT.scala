@@ -137,7 +137,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
     val transaction = db.beginTx()
     try {
-      val result = db.execute("RETURN $erroneous AS x", params)
+      val result = transaction.execute("RETURN $erroneous AS x", params)
 
       // then
       intercept[QueryExecutionException] {
@@ -160,7 +160,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
     val transaction = db.beginTx()
     try {
-      val result = db.execute("RETURN $valid AS x", params)
+      val result = transaction.execute("RETURN $valid AS x", params)
       // then
       result.columnAs[Int]("x").next() should equal(42)
     } finally {

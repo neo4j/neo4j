@@ -169,7 +169,8 @@ public class GraphDatabaseServiceExecuteTest
             Result execute = db.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
             Point point = (Point) execute.next().get( "p" );
             // when passing as params to a distance function
-            Result result = db.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist", map( "previous", point ) );
+            Result result = transaction.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
+                    map( "previous", point ) );
 
             // then
             Double dist = (Double) result.next().get( "dist" );
@@ -187,7 +188,8 @@ public class GraphDatabaseServiceExecuteTest
         try ( Transaction transaction = db.beginTx() )
         {
             // when passing as params to a distance function
-            Result result = db.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist", map( "previous", point ) );
+            Result result = transaction.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
+                    map( "previous", point ) );
 
             // then
             Double dist = (Double) result.next().get( "dist" );
@@ -205,8 +207,8 @@ public class GraphDatabaseServiceExecuteTest
         // when passing as params to a distance function
         try ( Transaction transaction = db.beginTx() )
         {
-            Result result =
-                    db.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist", map( "previous", geometry ) );
+            Result result = transaction.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
+                    map( "previous", geometry ) );
 
             // then
             Double dist = (Double) result.next().get( "dist" );
@@ -225,7 +227,7 @@ public class GraphDatabaseServiceExecuteTest
         // when passing as params to a distance function
         try ( Transaction transaction = db.beginTx() )
         {
-            Result result = db.execute( "RETURN distance($points[0],$points[1]) AS dist", map( "points", points ) );
+            Result result = transaction.execute( "RETURN distance($points[0],$points[1]) AS dist", map( "points", points ) );
 
             // then
             Double dist = (Double) result.next().get( "dist" );

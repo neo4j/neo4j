@@ -33,10 +33,12 @@ import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -79,6 +81,7 @@ import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -177,6 +180,12 @@ public class TopLevelTransaction implements InternalTransaction
             }
             return facade.newNodeProxy( id );
         }
+    }
+
+    @Override
+    public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
+    {
+        return facade.execute( this, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
     @Override

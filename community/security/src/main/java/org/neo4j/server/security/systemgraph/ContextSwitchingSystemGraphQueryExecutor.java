@@ -27,10 +27,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
@@ -170,6 +172,12 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             public TraversalDescription traversalDescription()
             {
                 return transaction.traversalDescription();
+            }
+
+            @Override
+            public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
+            {
+                return transaction.execute( query, parameters );
             }
 
             @Override

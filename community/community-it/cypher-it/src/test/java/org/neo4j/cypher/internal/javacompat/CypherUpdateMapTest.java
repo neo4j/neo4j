@@ -60,7 +60,7 @@ class CypherUpdateMapTest
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( "CREATE (n:Reference) SET n = $data RETURN n", map( "data", map( "key1", "value1", "key2", 1234 ) ) ).close();
+            transaction.execute( "CREATE (n:Reference) SET n = $data RETURN n", map( "data", map( "key1", "value1", "key2", 1234 ) ) ).close();
             transaction.commit();
         }
 
@@ -71,7 +71,7 @@ class CypherUpdateMapTest
 
         try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( "MATCH (n:Reference) SET n = $data RETURN n", map( "data", map( "key1", null, "key3", 5678 ) ) ).close();
+            transaction.execute( "MATCH (n:Reference) SET n = $data RETURN n", map( "data", map( "key1", null, "key3", 5678 ) ) ).close();
             transaction.commit();
         }
 

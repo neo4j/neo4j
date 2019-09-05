@@ -214,14 +214,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return execute( query, emptyMap() );
     }
 
-    @Override
-    public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
+    private Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
         TopLevelTransaction transaction = TEMP_TOP_LEVEL_TRANSACTION.get();
         return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
-    private Result execute( InternalTransaction transaction, String query, MapValue parameters )
+    public Result execute( InternalTransaction transaction, String query, MapValue parameters )
             throws QueryExecutionException
     {
         TransactionalContext context = contextFactory.newContext( transaction, query, parameters );

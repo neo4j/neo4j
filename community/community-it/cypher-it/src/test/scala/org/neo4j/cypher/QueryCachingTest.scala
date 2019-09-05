@@ -28,7 +28,6 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.{Label, QueryExecutionException}
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -42,7 +41,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
   test("re-uses cached plan across different execution modes") {
     // ensure label exists
-    graph.inTx { tx:InternalTransaction => tx.createNode(Label.label("Person")) }
+    graph.withTx( tx => tx.createNode(Label.label("Person")) )
 
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
@@ -101,8 +100,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val query = "RETURN $n"
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    graph.inTx { graph.execute(query, params1).resultAsString() }
-    graph.inTx { graph.execute(query, params1).resultAsString() }
+    graph.withTx(tx => {
+      tx.execute(query, params1).resultAsString()
+    })
+    graph.withTx(tx => {
+      tx.execute(query, params1).resultAsString()
+    })
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
@@ -123,8 +126,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val query = "RETURN $n"
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(12))
     val params2: Map[String, AnyRef] = Map("n" -> Long.box(42))
-    graph.inTx { graph.execute(query, params1).resultAsString() }
-    graph.inTx { graph.execute(query, params2).resultAsString() }
+    graph.withTx( tx => tx.execute(query, params1).resultAsString() )
+    graph.withTx( tx => tx.execute(query, params2).resultAsString() )
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
@@ -146,8 +149,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
     val params2: Map[String, AnyRef] = Map("n" -> "nope")
 
-    graph.inTx { graph.execute(query, params1).resultAsString() }
-    graph.inTx { graph.execute(query, params2).resultAsString() }
+    graph.withTx( tx => tx.execute(query, params1).resultAsString() )
+    graph.withTx( tx => tx.execute(query, params2).resultAsString() )
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
@@ -169,7 +172,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
     try {
-      graph.inTx { graph.execute(query, params1).resultAsString() }
+      graph.withTx( tx => tx.execute(query, params1).resultAsString() )
     } catch {
       case qee: QueryExecutionException => qee.getMessage should equal("Expected parameter(s): m")
     }
@@ -191,7 +194,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val executedQuery = "EXPLAIN " + actualQuery
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    val notifications = graph.inTx { graph.execute(executedQuery, params1).getNotifications }
+    val notifications = graph.withTx( tx => { tx.execute(executedQuery, params1).getNotifications } )
 
     var acc = 0
     notifications.foreach(n => {
@@ -219,7 +222,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val executedQuery = "EXPLAIN " + actualQuery
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42), "m" -> Long.box(21))
 
-    graph.inTx { graph.execute(executedQuery, params1).resultAsString() }
+    graph.withTx( tx => tx.execute(executedQuery, params1).resultAsString() )
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
@@ -239,7 +242,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val query = "RETURN $n + $n"
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    graph.inTx { graph.execute(query, params1).resultAsString() }
+    graph.withTx( tx => tx.execute(query, params1).resultAsString() )
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
@@ -259,7 +262,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val query = "RETURN $n + 3 < 6"
     val params: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    graph.inTx { graph.execute(query, params).resultAsString() }
+    graph.withTx( tx => tx.execute(query, params).resultAsString() )
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
@@ -279,13 +282,13 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val query = "RETURN $n + 3 < 6"
     val params: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    graph.inTx {
-      graph.execute(s"CYPHER $query", params).resultAsString()
-      graph.execute(s"CYPHER $query", params).resultAsString()
-      graph.execute(s"CYPHER $query", params).resultAsString()
-      graph.execute(s"CYPHER $query", params).resultAsString()
-      graph.execute(s"CYPHER $query", params).resultAsString()
-    }
+    graph.withTx( tx => {
+      tx.execute(s"CYPHER $query", params).resultAsString()
+      tx.execute(s"CYPHER $query", params).resultAsString()
+      tx.execute(s"CYPHER $query", params).resultAsString()
+      tx.execute(s"CYPHER $query", params).resultAsString()
+      tx.execute(s"CYPHER $query", params).resultAsString()
+    } )
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(

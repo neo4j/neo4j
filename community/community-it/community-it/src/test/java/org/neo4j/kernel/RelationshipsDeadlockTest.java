@@ -117,7 +117,7 @@ class RelationshipsDeadlockTest
                 {
                     final int a = (Integer) rel.get( "personA" );
                     final int b = (Integer) rel.get( "personB" );
-                    db.execute( a > b ? STMT_AB : STMT_BA, rel );
+                    tx.execute( a > b ? STMT_AB : STMT_BA, rel );
                     tx.commit();
                 }
                 catch ( Exception e )

@@ -80,7 +80,7 @@ class TestNoFileDescriptorLeaks
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute(
+                tx.execute(
                         "MERGE (a:Node {id: $a}) " +
                         "MERGE (b:Node {id: $b}) " +
                         "MERGE (c:Node {id: $c}) " +
@@ -94,12 +94,12 @@ class TestNoFileDescriptorLeaks
                                 "e", nextId(),
                                 "f", nextId() )
                 );
-                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() % 100 ) );
-                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() % 100 ) );
-                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() % 100 ) );
-                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() ) );
-                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() ) );
-                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() ) );
+                tx.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() % 100 ) );
+                tx.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() % 100 ) );
+                tx.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() % 100 ) );
+                tx.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() ) );
+                tx.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() ) );
+                tx.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() ) );
                 tx.commit();
             }
         }

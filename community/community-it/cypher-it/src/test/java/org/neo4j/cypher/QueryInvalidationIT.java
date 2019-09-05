@@ -151,7 +151,7 @@ public class QueryInvalidationIT
         {
             for ( long userId = startingUserId; userId < numUsers + startingUserId; userId++ )
             {
-                db.execute( "CREATE (newUser:User {userId: $userId})", singletonMap( "userId", userId ) );
+                transaction.execute( "CREATE (newUser:User {userId: $userId})", singletonMap( "userId", userId ) );
             }
             Map<String,Object> params = new HashMap<>();
             for ( int i = 0; i < numConnections; i++ )
@@ -165,7 +165,7 @@ public class QueryInvalidationIT
                 while ( user1 == user2 );
                 params.put( "user1", user1 );
                 params.put( "user2", user2 );
-                db.execute( "MATCH (user1:User { userId: $user1 }), (user2:User { userId: $user2 }) " + "MERGE (user1) -[:FRIEND]- (user2)", params );
+                transaction.execute( "MATCH (user1:User { userId: $user1 }), (user2:User { userId: $user2 }) " + "MERGE (user1) -[:FRIEND]- (user2)", params );
             }
             transaction.commit();
         }
@@ -177,7 +177,7 @@ public class QueryInvalidationIT
         {
             Map<String,Object> params = singletonMap( "userId", (long) randomInt( userId ) );
 
-            try ( Result result = db.execute(
+            try ( Result result = transaction.execute(
                     "MATCH (user:User { userId: $userId } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) " + "RETURN COUNT(distinct distantFriend)", params ) )
             {
                 while ( result.hasNext() )

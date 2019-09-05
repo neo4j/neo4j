@@ -151,7 +151,7 @@ class TransactionHandle implements TransactionTerminationHandle
             Result result;
             try ( Transaction transaction = db.beginTransaction(Type.implicit, loginContext, connectionInfo, customTransactionTimeoutMillis, MILLISECONDS ) )
             {
-                result = db.execute( statement.getStatement(), statement.getParameters() );
+                result = transaction.execute( statement.getStatement(), statement.getParameters() );
                 transaction.commit();
             }
             return result;

@@ -64,7 +64,7 @@ class Neo4jAdapter(var managementService: DatabaseManagementService,
     val queryToExecute = if (meta == ExecQuery) {
       s"$executionPrefix $query"
     } else query
-    val result: Result = Try(database.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
+    val result: Result = Try(tx.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
       case Success(converted) =>
         Try(tx.commit()) match {
           case Failure(exception) =>

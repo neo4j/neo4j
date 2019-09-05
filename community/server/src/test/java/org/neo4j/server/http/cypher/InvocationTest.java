@@ -235,7 +235,6 @@ public class InvocationTest
         TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
         var facade = mock( GraphDatabaseFacade.class, Answers.RETURNS_DEEP_STUBS );
         when( executionEngine.isPeriodicCommit( queryText ) ).thenReturn( true );
-        when( facade.execute( eq( queryText), any() ) ).thenReturn( executionResult );
         when( kernel.getDb() ).thenReturn( facade );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );

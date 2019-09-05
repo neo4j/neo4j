@@ -153,7 +153,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     }
 
     private def execute(): ExecutionPlanDescription = {
-      graph.withTx { _ =>
+      graph.withTx { tx =>
         val prepend = (cypherVersion, planner, runtime) match {
           case (None, None, None) => ""
           case _ =>
@@ -162,7 +162,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
             val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
             s"CYPHER $version $plannerString $runtimeString"
         }
-        val result = executeOfficial(s"$prepend PROFILE $query")
+        val result = executeOfficial( tx, s"$prepend PROFILE $query")
         result.resultAsString()
         result.getExecutionPlanDescription()
       }

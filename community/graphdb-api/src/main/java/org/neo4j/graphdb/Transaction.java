@@ -127,6 +127,16 @@ public interface Transaction extends AutoCloseable
     TraversalDescription traversalDescription();
 
     /**
+     * Executes a query and returns an iterable that contains the result set.
+     *
+     * @param query      The query to execute
+     * @param parameters Parameters for the query
+     * @return A {@link org.neo4j.graphdb.Result} that contains the result set
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException;
+
+    /**
      * Returns all labels currently in the underlying store. Labels are added to the store the first time
      * they are used. This method guarantees that it will return all labels currently in use.
      *

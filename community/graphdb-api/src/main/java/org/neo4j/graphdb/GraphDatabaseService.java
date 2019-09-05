@@ -126,16 +126,6 @@ public interface GraphDatabaseService
     Result execute( String query ) throws QueryExecutionException;
 
     /**
-     * Executes a query and returns an iterable that contains the result set.
-     *
-     * @param query      The query to execute
-     * @param parameters Parameters for the query
-     * @return A {@link org.neo4j.graphdb.Result} that contains the result set
-     * @throws QueryExecutionException If the Query contains errors
-     */
-    Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException;
-
-    /**
      * Returns the {@link Schema schema manager} where all things related to schema,
      * for example constraints and indexing on {@link Label labels}.
      *
