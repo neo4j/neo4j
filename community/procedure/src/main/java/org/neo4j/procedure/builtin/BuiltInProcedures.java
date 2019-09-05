@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -338,15 +339,17 @@ public class BuiltInProcedures
     @Procedure( name = "db.constraints", mode = READ )
     public Stream<ConstraintResult> listConstraints()
     {
-
         SchemaReadCore schemaRead = tx.schemaRead().snapshot();
         TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
 
-        return asList( schemaRead.constraintsGetAll() )
-                .stream()
-                .map( constraint -> constraint.prettyPrint( tokens ) )
-                .sorted()
-                .map( ConstraintResult::new );
+        List<ConstraintResult> result = new ArrayList<>();
+        final List<ConstraintDescriptor> constraintDescriptors = asList( schemaRead.constraintsGetAll() );
+        for ( ConstraintDescriptor constraint : constraintDescriptors )
+        {
+            result.add( new ConstraintResult( constraint.getName(), constraint.prettyPrint( tokens ) ) );
+        }
+        result.sort( Comparator.comparing( r -> r.name ) );
+        return result.stream();
     }
 
     @Description( "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
@@ -540,10 +543,12 @@ public class BuiltInProcedures
 
     public static class ConstraintResult
     {
+        public final String name;
         public final String description;
 
-        private ConstraintResult( String description )
+        private ConstraintResult( String name, String description )
         {
+            this.name = name;
             this.description = description;
         }
     }

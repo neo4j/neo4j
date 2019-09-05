@@ -59,6 +59,9 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.Context;
@@ -315,10 +318,10 @@ class BuiltInProceduresTest
         givenNodeKeys( "User", "name" );
         // When/Then
         assertThat( call( "db.constraints" ),
-                containsInAnyOrder(
-                        record( "CONSTRAINT ON ( user:User ) ASSERT exists(user.name)" ),
-                        record( "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS UNIQUE" ),
-                        record( "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS NODE KEY" )
+                contains(
+                        record( "MyExistenceConstraint", "CONSTRAINT ON ( user:User ) ASSERT exists(user.name)" ),
+                        record( "MyNodeKeyConstraint", "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS NODE KEY" ),
+                        record( "constraint_1000", "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS UNIQUE" )
                 ) );
     }
 
@@ -333,8 +336,8 @@ class BuiltInProceduresTest
         List<Object[]> call = call( "db.constraints" );
         assertThat( call,
                 contains(
-                        record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT (`foo:bar`.x.y) IS UNIQUE" ),
-                        record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT exists(`foo:bar`.x.y)" ) ) );
+                        record( "MyExistenceConstraint", "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT exists(`foo:bar`.x.y)" ),
+                        record( "constraint_1000", "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT (`foo:bar`.x.y) IS UNIQUE" ) ) );
     }
 
     @Test
@@ -415,11 +418,14 @@ class BuiltInProceduresTest
 
         LabelSchemaDescriptor schema = forLabel( labelId, propId );
         int id = uniqueIndexes.size() + 1000;
+        final String name = "constraint_" + id;
         IndexDescriptor index = IndexPrototype.uniqueForSchema( schema, EMPTY.getProviderDescriptor() )
-                .withName( "constraint_" + id )
+                .withName( name )
                 .materialise( id );
         uniqueIndexes.add( index );
-        constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
+        final UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( labelId, propId )
+                .withName( name );
+        constraints.add( constraint );
     }
 
     private void givenNodePropExistenceConstraint( String label, String propKey )
@@ -427,7 +433,9 @@ class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        constraints.add( ConstraintDescriptorFactory.existsForLabel( labelId, propId ) );
+        final NodeExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForLabel( labelId, propId )
+                .withName( "MyExistenceConstraint" );
+        constraints.add( constraint );
     }
 
     private void givenNodeKeys( String label, String...props )
@@ -438,8 +446,9 @@ class BuiltInProceduresTest
         {
             propIds[i] = token( props[i], propKeys );
         }
-
-        constraints.add( ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propIds ) );
+        final NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propIds )
+                .withName( "MyNodeKeyConstraint" );
+        constraints.add( constraint );
     }
 
     private void givenPropertyKeys( String... keys )
