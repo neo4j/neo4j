@@ -146,7 +146,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     copy(argumentIds = newArgumentIds)
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
-    val argumentIds = this.argumentIds ++ (allCoveredIds intersect optionalMatch.allCoveredIds)
+    val argumentIds = allCoveredIds intersect optionalMatch.allCoveredIds
     copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentIds(argumentIds.toIndexedSeq))
   }
 
