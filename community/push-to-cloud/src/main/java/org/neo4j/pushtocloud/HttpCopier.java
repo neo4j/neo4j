@@ -270,7 +270,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 return true; // the file is now uploaded, all good
             case HTTP_INTERNAL_ERROR:
             case HTTP_UNAVAILABLE:
-                debugResponse( verbose, connection );
+                debugErrorResponse( verbose, connection );
                 return false;
             default:
                 throw unexpectedResponse( verbose, connection, "Resumable database upload" );
@@ -429,7 +429,12 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private void debugResponse( boolean verbose, HttpURLConnection connection ) throws IOException
+    private void debugErrorResponse( boolean verbose, HttpURLConnection connection ) throws IOException
+    {
+        debugResponse( verbose, connection, false );
+    }
+
+    private void debugResponse( boolean verbose, HttpURLConnection connection, boolean successful ) throws IOException
     {
         if ( verbose )
         {
@@ -443,7 +448,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     debug( true, "  " + key + ": " + value );
                 }
             } );
-            try ( InputStream responseData = connection.getErrorStream() )
+            try ( InputStream responseData = successful ? connection.getInputStream() : connection.getErrorStream() )
             {
                 String responseString = new String( toByteArray( responseData ), UTF_8 );
                 debug( true, "Error response data: " + responseString );
@@ -489,7 +494,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     private CommandFailed errorResponse( boolean verbose, HttpURLConnection connection, String errorDescription ) throws IOException
     {
-        debugResponse( verbose, connection );
+        debugErrorResponse( verbose, connection );
         return new CommandFailed( errorDescription );
     }
 
