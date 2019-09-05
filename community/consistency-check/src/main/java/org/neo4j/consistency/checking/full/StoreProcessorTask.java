@@ -55,7 +55,7 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
 
     private String indexedPartName( String storeFileName, String prefix )
     {
-        return prefix.length() != 0 ? "_" : format( "%s_pass_%s", storeFileName, prefix );
+        return prefix.isEmpty() ? format( "%s_pass_%s", storeFileName, prefix ) : "_";
     }
 
     @Override

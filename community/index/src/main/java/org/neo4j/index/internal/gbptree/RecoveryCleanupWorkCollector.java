@@ -63,7 +63,7 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
     private void shutdownExecutorAndVerifyNoLeaks( ExecutorService executor )
     {
         List<Runnable> leakedTasks = executor.shutdownNow();
-        if ( leakedTasks.size() != 0 )
+        if ( !leakedTasks.isEmpty() )
         {
             throw new IllegalStateException( "Tasks leaked from CleanupJob. Tasks where " + leakedTasks.toString() );
         }

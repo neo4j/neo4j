@@ -81,7 +81,7 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
 
     public Runnable getJob()
     {
-        return jobs.size() > 0 ? jobs.get( 0 ) : null;
+        return jobs.isEmpty() ? null : jobs.get( 0 );
     }
 
     public void runJob()

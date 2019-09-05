@@ -425,7 +425,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     private static File constructPath( List<String> pathItems, List<String> base )
     {
         File file = null;
-        if ( base.size() > 0 )
+        if ( !base.isEmpty() )
         {
             // We're not directly basing off the root directory
             pathItems = pathItems.subList( 0, base.size() + 1 );

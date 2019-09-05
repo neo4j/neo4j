@@ -70,7 +70,7 @@ class MethodSignatureCompiler
             Name parameter = param.getAnnotation( Name.class );
             String name = parameter.value();
 
-            if ( name.trim().length() == 0 )
+            if ( name.trim().isEmpty() )
             {
                 throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Argument at position %d in method `%s` is annotated with a name,%n" +

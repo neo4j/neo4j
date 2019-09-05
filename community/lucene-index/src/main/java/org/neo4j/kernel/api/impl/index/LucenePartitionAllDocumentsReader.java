@@ -119,7 +119,7 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
             @Override
             protected boolean match( int doc )
             {
-                if ( doc > currentMaxDoc && leaves.size() > 0 )
+                if ( doc > currentMaxDoc && !leaves.isEmpty() )
                 {
                     LeafReaderContext leaf = leaves.remove( 0 );
                     LeafReader reader = leaf.reader();

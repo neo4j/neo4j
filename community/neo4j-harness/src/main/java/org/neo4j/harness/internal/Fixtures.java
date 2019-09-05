@@ -78,7 +78,7 @@ public class Fixtures
 
     public void add( String statement )
     {
-        if ( statement.trim().length() > 0 )
+        if ( !statement.trim().isEmpty() )
         {
             fixtureStatements.add( statement );
         }

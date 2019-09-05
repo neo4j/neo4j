@@ -44,16 +44,16 @@ public class AccessStatistics
 
     public String getAccessStatSummary()
     {
-        String msg = "";
+        StringBuilder msg = new StringBuilder();
         for ( AccessStats accessStats : stats.values() )
         {
             String accessStat = accessStats.toString();
-            if ( accessStat.length() != 0 )
+            if ( !accessStat.isEmpty() )
             {
-                msg += format( accessStat + "%n" );
+                msg.append( format( accessStat + "%n" ) );
             }
         }
-        return msg;
+        return msg.toString();
     }
 
     public void reset()

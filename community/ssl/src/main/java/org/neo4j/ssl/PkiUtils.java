@@ -78,7 +78,7 @@ public final class PkiUtils
             }
         }
 
-        if ( certificates.size() == 0 )
+        if ( certificates.isEmpty() )
         {
             // Ok, failed to read as PEM file, try and read it as raw binary certificate
             try ( FileInputStream in = new FileInputStream( certFile ) )

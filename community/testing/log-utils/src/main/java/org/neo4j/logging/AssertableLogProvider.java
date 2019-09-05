@@ -613,7 +613,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         Set<LogMatcher> expectedMatchers = Iterators.asSet( expected );
         expectedMatchers.removeIf( this::containsMatchingLogCall );
 
-        if ( expectedMatchers.size() > 0 )
+        if ( !expectedMatchers.isEmpty() )
         {
             fail( format(
                     "These log calls were expected, but never occurred:\n%s\nActual log calls were:\n%s",
@@ -735,7 +735,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
     public void assertNoLoggingOccurred()
     {
-        if ( logCalls.size() != 0 )
+        if ( !logCalls.isEmpty() )
         {
             fail( format( "Expected no log messages at all, but got:\n%s", serialize( logCalls.iterator() ) ) );
         }

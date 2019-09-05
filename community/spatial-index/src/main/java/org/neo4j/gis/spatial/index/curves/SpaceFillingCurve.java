@@ -339,7 +339,7 @@ public abstract class SpaceFillingCurve
             SearchEnvelope currentExtent, long left, long newMax, ArrayList<LongRange> results )
     {
         // Note that LongRange upper bound is inclusive, hence the '-1' in several places
-        LongRange current = (results.size() > 0) ? results.get( results.size() - 1 ) : null;
+        LongRange current = results.isEmpty() ? null : results.get( results.size() - 1 );
         if ( current != null && current.max == left - 1 )
         {
             current.expandToMax( newMax );

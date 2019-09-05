@@ -38,7 +38,7 @@ public class IndexProviderDescriptor
         {
             throw new IllegalArgumentException( "null provider key prohibited" );
         }
-        if ( key.length() == 0 )
+        if ( key.isEmpty() )
         {
             throw new IllegalArgumentException( "empty provider key prohibited" );
         }

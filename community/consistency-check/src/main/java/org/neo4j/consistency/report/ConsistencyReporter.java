@@ -209,7 +209,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                 if ( checker.getClass().getMethod( "toString" ).getDeclaringClass() == Object.class )
                 {
                     checkName = checker.getClass().getSimpleName();
-                    if ( checkName.length() == 0 )
+                    if ( checkName.isEmpty() )
                     {
                         checkName = checker.getClass().getName();
                     }

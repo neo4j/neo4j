@@ -533,7 +533,7 @@ class RWLock
         // (that is: If writeCount > 0 a waiting thread in the queue cannot be
         // the thread that holds the write locks because then it would never
         // have been put into wait mode)
-        if ( totalWriteCount == 0 && waitingThreadList.size() > 0 )
+        if ( totalWriteCount == 0 && !waitingThreadList.isEmpty() )
         {
             // wake elements in queue until a write lock is found or queue is
             // empty

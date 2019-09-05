@@ -487,7 +487,7 @@ class ProcedureCompiler
     private QualifiedName extractName( Class<?> procDefinition, Method m, String valueName, String definedName )
     {
         String procName = definedName.trim().isEmpty() ? valueName : definedName;
-        if ( procName.trim().length() > 0 )
+        if ( !procName.trim().isEmpty() )
         {
             String[] split = procName.split( "\\." );
             if ( split.length == 1 )

@@ -496,7 +496,7 @@ public class Args
     public static String[] splitLongLine( String description, int maxLength )
     {
         List<String> lines = new ArrayList<>();
-        while ( description.length() > 0 )
+        while ( !description.isEmpty() )
         {
             String line = description.substring( 0, Math.min( maxLength, description.length() ) );
             int position = line.indexOf( '\n' );
@@ -505,7 +505,7 @@ public class Args
                 line = description.substring( 0, position );
                 lines.add( line );
                 description = description.substring( position );
-                if ( description.length() > 0 )
+                if ( !description.isEmpty() )
                 {
                     description = description.substring( 1 );
                 }

@@ -112,7 +112,7 @@ public class TextUtil
             {
                 token = token.trim();
             }
-            if ( token.length() != 0 )
+            if ( !token.isEmpty() )
             {
                 if ( inside )
                 {
