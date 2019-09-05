@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.FunctionInformation;
@@ -61,6 +62,7 @@ public class BuiltInDbmsProcedures
     public SecurityContext securityContext;
 
     @Admin
+    @SystemProcedure
     @Description( "List the currently active config of Neo4j." )
     @Procedure( name = "dbms.listConfig", mode = DBMS )
     public Stream<ConfigResult> listConfig( @Name( value = "searchString", defaultValue = "" ) String searchString )
@@ -100,6 +102,7 @@ public class BuiltInDbmsProcedures
         getCurrentTx().setMetaData( data );
     }
 
+    @SystemProcedure
     @Description( "Provides attached transaction metadata." )
     @Procedure( name = "dbms.getTXMetaData", mode = DBMS )
     public Stream<MetadataResult> getTXMetaData()
@@ -108,6 +111,7 @@ public class BuiltInDbmsProcedures
         return Stream.of( getCurrentTx().getMetaData() ).map( MetadataResult::new );
     }
 
+    @SystemProcedure
     @Description( "List all procedures in the DBMS." )
     @Procedure( name = "dbms.procedures", mode = DBMS )
     public Stream<ProcedureResult> listProcedures()
@@ -118,6 +122,7 @@ public class BuiltInDbmsProcedures
                 .map( ProcedureResult::new );
     }
 
+    @SystemProcedure
     @Description( "List all functions in the DBMS." )
     @Procedure( name = "dbms.functions", mode = DBMS )
     public Stream<FunctionResult> listFunctions()
@@ -145,6 +150,7 @@ public class BuiltInDbmsProcedures
     }
 
     @Admin
+    @SystemProcedure
     @Description( "Clears all query caches." )
     @Procedure( name = "dbms.clearQueryCaches", mode = DBMS )
     public Stream<StringResult> clearAllQueryCaches()
@@ -194,6 +200,7 @@ public class BuiltInDbmsProcedures
         public final String signature;
         public final String description;
         public final String mode;
+        public final boolean worksOnSystem;
 
         private ProcedureResult( ProcedureSignature signature )
         {
@@ -201,6 +208,7 @@ public class BuiltInDbmsProcedures
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
             this.mode = signature.mode().toString();
+            this.worksOnSystem = signature.systemProcedure();
         }
     }
 

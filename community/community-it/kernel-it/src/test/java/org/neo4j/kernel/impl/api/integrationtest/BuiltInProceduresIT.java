@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -44,7 +41,6 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -60,15 +56,14 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -80,7 +75,7 @@ import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class BuiltInProceduresIT extends KernelIntegrationTest
+class BuiltInProceduresIT extends CommunityProcedureITBase
 {
     @Test
     void listAllLabels() throws Throwable
@@ -182,113 +177,6 @@ class BuiltInProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyRelType" ), longValue( 1L ) } ) ) );
-    }
-
-    @Test
-    void listProcedures() throws Throwable
-    {
-        // When
-        ProcedureHandle procedures = procs().procedureGet( procedureName( "dbms", "procedures" ) );
-        RawIterator<AnyValue[],ProcedureException> stream = procs().procedureCallRead( procedures.id(), new AnyValue[0],
-                ProcedureCallContext.EMPTY );
-
-        // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                proc( "dbms.listConfig", "(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
-                        "List the currently active config of Neo4j.", "DBMS" ),
-                proc( "db.constraints", "() :: (name :: STRING?, description :: STRING?)", "List all constraints in the database.", "READ" ),
-                proc( "db.indexes",
-                        "() :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, " +
-                                "entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?)",
-                        "List all indexes in the database.", "READ" ),
-                proc( "db.indexDetails",
-                        "(indexName :: STRING?) :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, " +
-                                "type :: STRING?, entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: " +
-                                "STRING?, indexConfig :: MAP?, failureMessage :: STRING?)", "Detailed description of specific index.", "READ" ),
-                proc( "db.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\")).", "READ" ),
-                proc( "db.awaitIndexes", "(timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\")).", "READ" ),
-                proc( "db.resampleIndex", "(index :: STRING?) :: VOID",
-                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),
-                proc( "db.resampleOutdatedIndexes", "() :: VOID", "Schedule resampling of all outdated indexes.", "READ" ),
-                proc( "db.propertyKeys", "() :: (propertyKey :: STRING?)", "List all property keys in the database.", "READ" ),
-                proc( "db.labels", "() :: (label :: STRING?, nodeCount :: INTEGER?)", "List all labels in the database and their total count.", "READ" ),
-                proc( "db.schema.visualization","() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
-                        "Visualize the schema of the data.", "READ" ),
-                proc( "db.schema.nodeTypeProperties",
-                        "() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?, propertyName :: STRING?, " +
-                                "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
-                        "Show the derived property schema of the nodes in tabular form.", "READ" ),
-                proc( "db.schema.relTypeProperties", "() :: (relType :: STRING?, " +
-                                "propertyName :: STRING?, propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
-                        "Show the derived property schema of the relationships in tabular form.", "READ" ),
-                proc( "db.relationshipTypes", "() :: (relationshipType :: STRING?, relationshipCount :: INTEGER?)",
-                        "List all relationship types in the database and their total count.", "READ" ),
-                proc( "dbms.procedures", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?, mode :: STRING?)",
-                        "List all procedures in the DBMS.", "DBMS" ),
-                proc( "dbms.functions", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?, aggregating :: BOOLEAN?)",
-                        "List all functions in the DBMS.", "DBMS" ),
-                proc( "dbms.components", "() :: (name :: STRING?, versions :: LIST? OF" + " STRING?, edition :: STRING?)",
-                        "List DBMS components and their versions.", "DBMS" ),
-                proc( "dbms.queryJmx", "(query :: STRING?) :: (name :: STRING?, " + "description :: STRING?, attributes :: MAP?)",
-                        "Query JMX management data by domain and name." + " For instance, \"org.neo4j:*\"", "DBMS" ),
-                proc( "db.createLabel", "(newLabel :: STRING?) :: VOID", "Create a label", "WRITE" ),
-                proc( "db.createProperty", "(newProperty :: STRING?) :: VOID", "Create a Property", "WRITE" ),
-                proc( "db.createRelationshipType", "(newRelationshipType :: STRING?) :: VOID", "Create a RelationshipType", "WRITE" ),
-                proc( "dbms.clearQueryCaches", "() :: (value :: STRING?)", "Clears all query caches.", "DBMS" ),
-                proc( "db.createIndex", "(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
-                                "YIELD index, providerName, status", "SCHEMA" ),
-                proc( "db.createUniquePropertyConstraint", "(index :: STRING?, providerName :: STRING?) :: " +
-                                "(index :: STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a unique property constraint with index backed by specified index provider " +
-                                "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
-                                "YIELD index, providerName, status", "SCHEMA" ),
-                proc( "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", "() :: VOID",
-                        "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes.", "READ" ),
-                proc( "db.index.fulltext.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Similar to db.awaitIndex(index, timeout), except instead of an index pattern, the index is specified by name. " +
-                                "The name can be quoted by backticks, if necessary.", "READ" ),
-                proc( "db.index.fulltext.createNodeIndex", "(indexName :: STRING?, labels :: LIST? OF STRING?, propertyNames :: LIST? OF STRING?, " +
-                        "config = {} :: MAP?) :: VOID", startsWith( "Create a node fulltext index for the given labels and properties." ), "SCHEMA" ),
-                proc( "db.index.fulltext.createRelationshipIndex",
-                        "(indexName :: STRING?, relationshipTypes :: LIST? OF STRING?, propertyNames :: LIST? OF STRING?, config = {} :: MAP?) :: VOID",
-                        startsWith( "Create a relationship fulltext index for the given relationship types and properties." ), "SCHEMA" ),
-                proc( "db.index.fulltext.drop", "(indexName :: STRING?) :: VOID", "Drop the specified index.", "SCHEMA" ),
-                proc( "db.index.fulltext.listAvailableAnalyzers", "() :: (analyzer :: STRING?, description :: STRING?)",
-                        "List the available analyzers that the fulltext indexes can be configured with.", "READ" ),
-                proc( "db.index.fulltext.queryNodes", "(indexName :: STRING?, queryString :: STRING?) :: (node :: NODE?, score :: FLOAT?)",
-                        "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score.", "READ"),
-                proc( "db.index.fulltext.queryRelationships", "(indexName :: STRING?, queryString :: STRING?) :: (relationship :: RELATIONSHIP?, " +
-                        "score :: FLOAT?)", "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by " +
-                        "score.", "READ" ),
-                proc( "db.prepareForReplanning", "(timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Triggers an index resample and waits for it to complete, and after that clears query caches." +
-                        " After this procedure has finished queries will be planned using the latest database " +
-                        "statistics.",
-                        "READ" ),
-                proc( "db.stats.retrieve", "(section :: STRING?, config = {} :: MAP?) :: (section :: STRING?, data :: MAP?)",
-                      "Retrieve statistical data about the current database. Valid sections are 'GRAPH COUNTS', 'TOKENS', 'QUERIES', 'META'", "READ" ),
-                proc( "db.stats.retrieveAllAnonymized", "(graphToken :: STRING?, config = {} :: MAP?) :: (section :: STRING?, data :: MAP?)",
-                      "Retrieve all available statistical data about the current database, in an anonymized form.", "READ" ),
-                proc( "db.stats.status", "() :: (section :: STRING?, status :: STRING?, data :: MAP?)",
-                      "Retrieve the status of all available collector daemons, for this database.", "READ" ),
-                proc( "db.stats.collect", "(section :: STRING?, config = {} :: MAP?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
-                      "Start data collection of a given data section. Valid sections are 'QUERIES'", "READ" ),
-                proc( "db.stats.stop", "(section :: STRING?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
-                      "Stop data collection of a given data section. Valid sections are 'QUERIES'", "READ" ),
-                proc( "db.stats.clear", "(section :: STRING?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
-                        "Clear collected data of a given data section. Valid sections are 'QUERIES'", "READ" ),
-                proc( "dbms.routing.getRoutingTable", "(context :: MAP?, database = null :: STRING?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",
-                        "Returns endpoints of this instance.", "DBMS" ),
-                proc( "dbms.cluster.routing.getRoutingTable", "(context :: MAP?, database = null :: STRING?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",
-                        "Returns endpoints of this instance.", "DBMS" ),
-                proc( "dbms.setTXMetaData", "(data :: MAP?) :: VOID",
-                        "Attaches a map of data to the transaction. The data will be printed when listing queries, and inserted into the query log.", "DBMS"),
-                proc( "dbms.getTXMetaData", "() :: (metadata :: MAP?)", "Provides attached transaction metadata.", "DBMS" )
-        ) );
-        commit();
     }
 
     @Test
@@ -645,33 +533,5 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         public void cacheRecompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
         {
         }
-    }
-
-    private Matcher<AnyValue[]> proc( String procName, String procSignature, String description, String mode )
-    {
-        return equalTo( new AnyValue[]{stringValue( procName ), stringValue( procName + procSignature ), stringValue( description ), stringValue( mode )} );
-    }
-
-    @SuppressWarnings( {"unchecked", "SameParameterValue"} )
-    private Matcher<AnyValue[]> proc( String procName, String procSignature, Matcher<String> description, String mode )
-    {
-        Matcher<AnyValue> desc = new TypeSafeMatcher<>()
-        {
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "invalid description" );
-            }
-
-            @Override
-            protected boolean matchesSafely( AnyValue item )
-            {
-                return item instanceof TextValue && description.matches( ((TextValue) item).stringValue() );
-            }
-        };
-
-        Matcher<AnyValue>[] matchers =
-                new Matcher[]{equalTo( stringValue( procName )), equalTo( stringValue( procName + procSignature  ) ), desc, equalTo( stringValue( mode ) )};
-        return arrayContaining( matchers );
     }
 }

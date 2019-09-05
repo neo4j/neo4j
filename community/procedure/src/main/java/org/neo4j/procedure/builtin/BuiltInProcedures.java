@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -87,10 +88,16 @@ public class BuiltInProcedures
     @Context
     public ProcedureCallContext callContext;
 
+    @SystemProcedure
     @Description( "List all labels in the database and their total count." )
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "nodeCount" ) );
         List<LabelResult> labelResults =
                 TokenAccess.LABELS.all( tx ).stream().map( label ->
@@ -102,19 +109,31 @@ public class BuiltInProcedures
         return labelResults.stream();
     }
 
+    @SystemProcedure
     @Description( "List all property keys in the database." )
     @Procedure( name = "db.propertyKeys", mode = READ )
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         List<PropertyKeyResult> propertyKeys =
                 TokenAccess.PROPERTY_KEYS.all( tx ).stream().map( PropertyKeyResult::new ).collect( Collectors.toList() );
         return propertyKeys.stream();
     }
 
+    @SystemProcedure
     @Description( "List all relationship types in the database and their total count." )
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "relationshipCount" ) );
         List<RelationshipTypeResult> relationshipTypes =
                 TokenAccess.RELATIONSHIP_TYPES.all( tx ).stream().map( type ->
@@ -126,10 +145,16 @@ public class BuiltInProcedures
         return relationshipTypes.stream();
     }
 
+    @SystemProcedure
     @Description( "List all indexes in the database." )
     @Procedure( name = "db.indexes", mode = READ )
     public Stream<IndexResult> listIndexes()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         try ( Statement ignore = tx.acquireStatement() )
         {
             TokenRead tokenRead = tx.tokenRead();
@@ -150,7 +175,8 @@ public class BuiltInProcedures
             return result.stream();
         }
     }
-
+//TODO: System?
+    @SystemProcedure
     @Description( "Detailed description of specific index." )
     @Procedure( name = "db.indexDetails", mode = READ )
     public Stream<IndexDetailResult> indexDetails( @Name( "indexName" ) String indexName ) throws ProcedureException
@@ -253,39 +279,63 @@ public class BuiltInProcedures
         double populationProgress;
     }
 
+    @SystemProcedure
     @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
     @Procedure( name = "db.awaitIndex", mode = READ )
     public void awaitIndex( @Name( "index" ) String index,
             @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
             throws ProcedureException
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return;
+        }
+
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
             indexProcedures.awaitIndexByPattern( index, timeout, TimeUnit.SECONDS );
         }
     }
 
+    @SystemProcedure
     @Description( "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." )
     @Procedure( name = "db.awaitIndexes", mode = READ )
     public void awaitIndexes( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return;
+        }
+
         graphDatabaseAPI.schema().awaitIndexesOnline( timeout, TimeUnit.SECONDS );
     }
 
+    @SystemProcedure
     @Description( "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))." )
     @Procedure( name = "db.resampleIndex", mode = READ )
     public void resampleIndex( @Name( "index" ) String index ) throws ProcedureException
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return;
+        }
+
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
             indexProcedures.resampleIndex( index );
         }
     }
 
+    @SystemProcedure
     @Description( "Schedule resampling of all outdated indexes." )
     @Procedure( name = "db.resampleOutdatedIndexes", mode = READ )
     public void resampleOutdatedIndexes()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return;
+        }
+
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
             indexProcedures.resampleOutdatedIndexes();
@@ -293,6 +343,7 @@ public class BuiltInProcedures
     }
 
     @Admin
+    @SystemProcedure
     @Description(
             "Triggers an index resample and waits for it to complete, and after that clears query caches. After this " +
             "procedure has finished queries will be planned using the latest database statistics." )
@@ -313,32 +364,55 @@ public class BuiltInProcedures
                 .clearQueryCaches();
     }
 
+    @SystemProcedure
     @Procedure( name = "db.schema.nodeTypeProperties", mode = Mode.READ )
     @Description( "Show the derived property schema of the nodes in tabular form." )
     public Stream<NodePropertySchemaInfoResult> nodePropertySchema()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         return new SchemaCalculator( tx ).calculateTabularResultStreamForNodes();
     }
 
+    @SystemProcedure
     @Procedure( name = "db.schema.relTypeProperties", mode = Mode.READ )
     @Description( "Show the derived property schema of the relationships in tabular form." )
     public Stream<RelationshipPropertySchemaInfoResult> relationshipPropertySchema()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         return new SchemaCalculator( tx ).calculateTabularResultStreamForRels();
     }
 
+    @SystemProcedure
     @Description( "Visualize the schema of the data." )
     @Procedure( name = "db.schema.visualization", mode = READ )
     public Stream<SchemaProcedure.GraphResult> schemaVisualization()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
         return Stream.of(
                 new SchemaProcedure( graphDatabaseAPI, ((GraphDatabaseFacade) graphDatabaseAPI).TEMP_TOP_LEVEL_TRANSACTION.get() ).buildSchemaGraph() );
     }
 
+    @SystemProcedure
     @Description( "List all constraints in the database." )
     @Procedure( name = "db.constraints", mode = READ )
     public Stream<ConstraintResult> listConstraints()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         SchemaReadCore schemaRead = tx.schemaRead().snapshot();
         TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
 

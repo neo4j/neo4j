@@ -162,10 +162,15 @@ public abstract class KernelIntegrationTest
         stopDb();
     }
 
+    public String getDatabaseName()
+    {
+        return DEFAULT_DATABASE_NAME;
+    }
+
     private void startDb()
     {
         managementService = createDatabaseService();
-        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        db = (GraphDatabaseAPI) managementService.database( getDatabaseName() );
         dependencyResolver = db.getDependencyResolver();
         kernel = dependencyResolver.resolveDependency( Kernel.class );
         indexingService = dependencyResolver.resolveDependency( IndexingService.class );

@@ -67,6 +67,7 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
                 .out( "edition", NTString )
                 .mode( Mode.DBMS )
                 .description( "List DBMS components and their versions." )
+                .systemProcedure()
                 .build() );
         this.neo4jVersion = stringValue( neo4jVersion );
         this.neo4jEdition = stringValue( neo4jEdition );

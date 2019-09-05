@@ -45,12 +45,14 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -89,6 +91,10 @@ public class FulltextProcedures
     @Context
     public FulltextAdapter accessor;
 
+    @Context
+    public ProcedureCallContext callContext;
+
+    @SystemProcedure
     @Description( "List the available analyzers that the fulltext indexes can be configured with." )
     @Procedure( name = "db.index.fulltext.listAvailableAnalyzers", mode = READ )
     public Stream<AvailableAnalyzer> listAvailableAnalyzers()
@@ -97,18 +103,30 @@ public class FulltextProcedures
                 .map( p -> new AvailableAnalyzer( p.getName(), p.description() ) );
     }
 
+    @SystemProcedure
     @Description( "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes." )
     @Procedure( name = "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", mode = READ )
     public void awaitRefresh()
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return;
+        }
+
         accessor.awaitRefresh();
     }
 
+    @SystemProcedure
     @Description( "Similar to db.awaitIndex(index, timeout), except instead of an index pattern, the index is specified by name. " +
             "The name can be quoted by backticks, if necessary." )
     @Procedure( name = "db.index.fulltext.awaitIndex", mode = READ )
     public void awaitIndex( @Name( "index" ) String index, @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout ) throws ProcedureException
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return;
+        }
+
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
             indexProcedures.awaitIndexByName( index, timeout, TimeUnit.SECONDS );
@@ -178,10 +196,16 @@ public class FulltextProcedures
         tx.schemaWrite().indexDrop( indexReference );
     }
 
+    @SystemProcedure
     @Description( "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score." )
     @Procedure( name = "db.index.fulltext.queryNodes", mode = READ )
     public Stream<NodeOutput> queryFulltextForNodes( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         IndexDescriptor indexReference = getValidIndex( name );
         awaitOnline( indexReference );
         EntityType entityType = indexReference.schema().entityType();
@@ -218,10 +242,16 @@ public class FulltextProcedures
         return stream.onClose( cursor::close );
     }
 
+    @SystemProcedure
     @Description( "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by score." )
     @Procedure( name = "db.index.fulltext.queryRelationships", mode = READ )
     public Stream<RelationshipOutput> queryFulltextForRelationships( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         IndexDescriptor indexReference = getValidIndex( name );
         awaitOnline( indexReference );
         EntityType entityType = indexReference.schema().entityType();
