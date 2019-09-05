@@ -28,7 +28,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                   edition: Edition[CONTEXT],
                                   runtime: CypherRuntime[CONTEXT],
                                   sizeHint: Int,
-                                  costOfProperty: Int, // the reported dbHits for a single property lookup
+                                  costOfGetPropertyChain: Int, // the reported dbHits for getting the property chain
+                                  costOfPropertyJumpedOverInChain: Int, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
+                                  costOfProperty: Int, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
                                   costOfLabelLookup: Int, // the reported dbHits for finding the id of a label
                                   costOfExpand: Int, // the reported dbHits for expanding a one-relationship node
                                   costOfRelationshipTypeLookup: Int // the reported dbHits for finding the id of a relationship type
@@ -233,7 +235,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * costOfProperty // filter
+    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * (costOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // sort
   }
 
@@ -320,9 +322,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // node hash join
-    queryProfile.operatorProfile(2).dbHits() shouldBe sizeHint * costOfProperty // filter
+    queryProfile.operatorProfile(2).dbHits() shouldBe sizeHint * (costOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(3).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
-    queryProfile.operatorProfile(4).dbHits() shouldBe sizeHint * costOfProperty // filter
+    queryProfile.operatorProfile(4).dbHits() shouldBe sizeHint * (costOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(5).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
   }
 
@@ -347,9 +349,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (size / 2 * size) * costOfProperty // filter
+    queryProfile.operatorProfile(1).dbHits() shouldBe (size / 2 * size) * (costOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
-    queryProfile.operatorProfile(3).dbHits() shouldBe size * size * costOfProperty // filter
+    queryProfile.operatorProfile(3).dbHits() shouldBe size * size * (costOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(4).dbHits() should (be (size * size) or be (size * (1+size))) // all node scan
     queryProfile.operatorProfile(5).dbHits() should (be (size) or be (size + 1)) // all node scan
   }
@@ -372,9 +374,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     // assertions on property dbHits are tricky because in morsel more dbHits are reported for
     // properties late in the chain, while in interpreted/slotted all property reads cost only 1 dbHit
-    queryProfile.operatorProfile(1).dbHits() should (be (sizeHint * costOfProperty * (1+2)) or  // 1 x.list + 2 x.prop
-                                                     (be (sizeHint * costOfProperty * (2+2)) or // late x.list in morsel
-                                                      be (sizeHint * costOfProperty * (1+4))))  // late x.prop in morsel
+    queryProfile.operatorProfile(1).dbHits() should
+      (be (sizeHint * (2 * (costOfGetPropertyChain + costOfProperty) + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) or // prop is the first prop
+      be (sizeHint * ((costOfGetPropertyChain + costOfProperty) + 2 * (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty)))) // prop is the second prop
   }
 
   test("should profile dbHits of aggregation") {
@@ -393,11 +395,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * costOfProperty // late x.prop in morsel
+    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * (costOfGetPropertyChain + costOfProperty)
   }
 
-  // TODO fix for Morsel. test passes in Slotted but failed in (non)fused Morsel with wrong count
-  ignore("should profile dbHits of aggregation with grouping") {
+  test("should profile dbHits of aggregation with grouping") {
     // given
     val aggregationGroups = sizeHint / 2
 
@@ -415,6 +416,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * (costOfProperty * 2) // late x.prop in morsel
+    queryProfile.operatorProfile(1).dbHits() should be (sizeHint *
+      ((costOfGetPropertyChain + costOfProperty) // first prop in chain
+      + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) // second prop in chain
   }
 }
