@@ -95,7 +95,14 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
 class MapExecutionContext(private val m: MutableMap[String, AnyValue], private var cachedProperties: MutableMap[CachedNodeProperty, Value] = null)
   extends ExecutionContext {
 
-  override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = fail()
+  override def copyTo(target: ExecutionContext,
+                      fromLongOffset: Int = 0,
+                      fromRefOffset: Int = 0,
+                      toLongOffset: Int = 0,
+                      toRefOffset: Int = 0): Unit = target match {
+    case other: MapExecutionContext => m.keys.foreach(k => other.set(k, m(k)))
+    case _ => fail()
+  }
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = fail()
 

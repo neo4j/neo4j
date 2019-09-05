@@ -42,7 +42,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
       val newMap = Eagerly.mutableMapValues(expressions, (expression: Expression) => expression(ctx, state))
       val newCtx = executionContextFactory.newExecutionContext(newMap)
       newCtx.copyCachedFrom(ctx)
-      newCtx.mergeWith(ctx, state.query)
+      state.copyArgumentStateTo(newCtx)
       newCtx
     })
 
