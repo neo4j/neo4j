@@ -316,6 +316,20 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return filePageSize( pageCache.pageSize(), RECORD_SIZE );
     }
 
+    public static void setStoreId( PageCache pageCache, File neoStore, StoreId storeId, long upgradeTxChecksum, long upgradeTxCommitTimestamp )
+            throws IOException
+    {
+        setRecord( pageCache, neoStore, Position.TIME, storeId.getCreationTime() );
+        setRecord( pageCache, neoStore, Position.RANDOM_NUMBER, storeId.getRandomId() );
+        setRecord( pageCache, neoStore, Position.STORE_VERSION, storeId.getStoreVersion() );
+        setRecord( pageCache, neoStore, Position.UPGRADE_TIME, storeId.getUpgradeTime() );
+        setRecord( pageCache, neoStore, Position.STORE_VERSION, storeId.getStoreVersion() );
+
+        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID, storeId.getUpgradeTxId() );
+        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_CHECKSUM, upgradeTxChecksum );
+        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, upgradeTxCommitTimestamp );
+    }
+
     public StoreId getStoreId()
     {
         return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion(), getUpgradeTime(), upgradeTxIdField );

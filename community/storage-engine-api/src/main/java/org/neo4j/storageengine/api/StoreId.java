@@ -33,27 +33,32 @@ public final class StoreId
     private final long randomId;
     private final long storeVersion;
     private final long upgradeTime;
-    private final long upgradeId;
+    private final long upgradeTxId;
 
     public StoreId( long storeVersion )
     {
-        // If creationTime == upgradeTime && randomNumber == upgradeId then store has never been upgraded
+        // If creationTime == upgradeTime && randomNumber == upgradeTxId then store has never been upgraded
         long currentTimeMillis = System.currentTimeMillis();
         long randomLong = r.nextLong();
         this.storeVersion = storeVersion;
         this.creationTime = currentTimeMillis;
         this.randomId = randomLong;
         this.upgradeTime = currentTimeMillis;
-        this.upgradeId = randomLong;
+        this.upgradeTxId = randomLong;
     }
 
-    public StoreId( long creationTime, long randomId, long storeVersion, long upgradeTime, long upgradeId )
+    public StoreId( long creationTime, long randomId, long storeVersion )
+    {
+        this( creationTime, randomId, storeVersion, creationTime, randomId );
+    }
+
+    public StoreId( long creationTime, long randomId, long storeVersion, long upgradeTime, long upgradeTxId )
     {
         this.creationTime = creationTime;
         this.randomId = randomId;
         this.storeVersion = storeVersion;
         this.upgradeTime = upgradeTime;
-        this.upgradeId = upgradeId;
+        this.upgradeTxId = upgradeTxId;
     }
 
     public long getCreationTime()
@@ -71,9 +76,9 @@ public final class StoreId
         return upgradeTime;
     }
 
-    public long getUpgradeId()
+    public long getUpgradeTxId()
     {
-        return upgradeId;
+        return upgradeTxId;
     }
 
     public long getStoreVersion()
@@ -97,13 +102,13 @@ public final class StoreId
                randomId == storeId.randomId &&
                storeVersion == storeId.storeVersion &&
                upgradeTime == storeId.upgradeTime &&
-               upgradeId == storeId.upgradeId;
+               upgradeTxId == storeId.upgradeTxId;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( creationTime, randomId, storeVersion, upgradeTime, upgradeId );
+        return Objects.hash( creationTime, randomId, storeVersion, upgradeTime, upgradeTxId );
     }
 
     @Override
@@ -114,7 +119,7 @@ public final class StoreId
                 ", randomId=" + randomId +
                 ", storeVersion=" + storeVersion +
                 ", upgradeTime=" + upgradeTime +
-                ", upgradeId=" + upgradeId +
+                ", upgradeTxId=" + upgradeTxId +
                 '}';
     }
 }

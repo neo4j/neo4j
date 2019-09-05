@@ -34,9 +34,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.dbms.database.SystemGraphInitializer.DATABASE_LABEL;
-import static org.neo4j.dbms.database.SystemGraphInitializer.DATABASE_NAME_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphInitializer.DATABASE_UUID_PROPERTY;
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_UUID_PROPERTY;
 
 public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
 {

@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.NullLogger;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
@@ -70,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
+import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_STORE_VERSION;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
@@ -707,6 +709,39 @@ class MetaDataStoreTest
         store.close();
 
         assertThrows( StoreFileClosedException.class, store::getLastCommittedTransactionId );
+    }
+
+    @Test
+    void setStoreIdShouldSetAllRelatedFields() throws IOException
+    {
+        // given
+        int creationTime = 1;
+        int randomId = 2;
+        long storeVersion = versionStringToLong( LATEST_STORE_VERSION );
+        int upgradeTime = 4;
+        int upgradeTxId = 5;
+        long upgradeTxChecksum = 6;
+        long upgradeTxCommitTimestamp = 7;
+
+        StoreId storeId = new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeTxId );
+
+        // when
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            MetaDataStore.setStoreId( pageCache, store.getStorageFile(), storeId, upgradeTxChecksum, upgradeTxCommitTimestamp );
+        }
+
+        // then
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            assertEquals( creationTime, store.getCreationTime() );
+            assertEquals( randomId, store.getRandomNumber() );
+            assertEquals( storeVersion, store.getStoreVersion() );
+            assertEquals( upgradeTime, store.getUpgradeTime() );
+
+            TransactionId expectedTx = new TransactionId( upgradeTxId, upgradeTxChecksum, upgradeTxCommitTimestamp );
+            assertEquals( expectedTx, store.getUpgradeTransaction() );
+        }
     }
 
     private MetaDataStore newMetaDataStore()

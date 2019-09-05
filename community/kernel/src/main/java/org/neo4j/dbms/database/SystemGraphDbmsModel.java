@@ -19,31 +19,14 @@
  */
 package org.neo4j.dbms.database;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.graphdb.Label;
 
-public abstract class SystemGraphInitializer extends LifecycleAdapter
+public class SystemGraphDbmsModel
 {
-    @Override
-    public void start() throws Exception
-    {
-        initializeSystemGraph();
-    }
-
-    public abstract void initializeSystemGraph() throws Exception;
-
-    public abstract void initializeSystemGraph( GraphDatabaseService db ) throws Exception;
-
-    public static final SystemGraphInitializer NO_OP = new SystemGraphInitializer()
-    {
-        @Override
-        public void initializeSystemGraph()
-        {
-        }
-
-        @Override
-        public void initializeSystemGraph( GraphDatabaseService db )
-        {
-        }
-    };
+    public static final Label DATABASE_LABEL = Label.label( "Database" );
+    public static final Label DELETED_DATABASE_LABEL = Label.label( "DeletedDatabase" );
+    public static final String DATABASE_UUID_PROPERTY = "uuid";
+    public static final String DATABASE_NAME_PROPERTY = "name";
+    public static final String DATABASE_STATUS_PROPERTY = "status";
+    public static final String DATABASE_DEFAULT_PROPERTY = "default";
 }
