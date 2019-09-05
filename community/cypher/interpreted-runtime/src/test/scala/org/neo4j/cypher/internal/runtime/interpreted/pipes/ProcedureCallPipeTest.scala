@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import java.util.UUID
+
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
@@ -27,10 +29,11 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{EagerReadWriteCallMode, ExecutionContext, LazyReadOnlyCallMode, QueryContext}
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.kernel.database.DatabaseIdFactory
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{IntValue, LongValue, NumberValue, Values}
 import org.scalatest.mock.MockitoSugar
@@ -131,6 +134,11 @@ class ProcedureCallPipeTest
       result(args)
     }
 
+    val transactionalContext = mock[QueryTransactionalContext]
+    val databaseID = DatabaseIdFactory.from("neo4j", UUID.randomUUID())
+
+    Mockito.when(transactionalContext.databaseId).thenReturn(databaseID)
+
     val queryContext = mock[QueryContext]
     Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]](), any[ProcedureCallContext])).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
@@ -149,6 +157,7 @@ class ProcedureCallPipeTest
         }
       }
     )
+    Mockito.when(queryContext.transactionalContext).thenReturn(transactionalContext)
 
     Mockito.when(queryContext.asObject(any[AnyValue]())).thenAnswer(
       new Answer[AnyRef] {
