@@ -36,21 +36,26 @@ class IndexMapTest
 {
     private IndexMap indexMap;
 
-    private LabelSchemaDescriptor schema3_4 = SchemaDescriptor.forLabel( 3, 4 );
-    private LabelSchemaDescriptor schema5_6_7 = SchemaDescriptor.forLabel( 5, 6, 7 );
-    private LabelSchemaDescriptor schema5_8 = SchemaDescriptor.forLabel( 5, 8 );
-    private SchemaDescriptor node35_8 = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} );
-    private SchemaDescriptor rel35_8 = SchemaDescriptor.fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} );
+    private final LabelSchemaDescriptor schema3_4 = SchemaDescriptor.forLabel( 3, 4 );
+    private final IndexDescriptor index3_4 = forSchema( schema3_4 ).withName( "index_1" ).materialise( 1 );
+    private final LabelSchemaDescriptor schema5_6_7 = SchemaDescriptor.forLabel( 5, 6, 7 );
+    private final IndexDescriptor index5_6_7 = forSchema( schema5_6_7 ).withName( "index_2" ).materialise( 2 );
+    private final LabelSchemaDescriptor schema5_8 = SchemaDescriptor.forLabel( 5, 8 );
+    private final IndexDescriptor index5_8 = forSchema( schema5_8 ).withName( "index_3" ).materialise( 3 );
+    private final SchemaDescriptor node35_8 = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} );
+    private final IndexDescriptor index_node35_8 = forSchema( node35_8 ).withName( "index_4" ).materialise( 4 );
+    private final SchemaDescriptor rel35_8 = SchemaDescriptor.fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} );
+    private final IndexDescriptor index_rel35_8 = forSchema( rel35_8 ).withName( "index_5" ).materialise( 5 );
 
     @BeforeEach
     void setup()
     {
         indexMap = new IndexMap();
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema3_4 ).withName( "index_1" ).materialise( 1 ) ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_6_7 ).withName( "index_2" ).materialise( 2 ) ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_8 ).withName( "index_3" ).materialise( 3 ) ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( node35_8 ).withName( "index_4" ).materialise( 4 ) ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( rel35_8 ).withName( "index_5" ).materialise( 5 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( index3_4 ) );
+        indexMap.putIndexProxy( new TestIndexProxy( index5_6_7 ) );
+        indexMap.putIndexProxy( new TestIndexProxy( index5_8 ) );
+        indexMap.putIndexProxy( new TestIndexProxy( index_node35_8 ) );
+        indexMap.putIndexProxy( new TestIndexProxy( index_rel35_8 ) );
     }
 
     @Test
@@ -63,8 +68,8 @@ class IndexMapTest
     @Test
     void shouldGetByDescriptor()
     {
-        assertEquals( schema5_8, indexMap.getIndexProxy( schema5_8 ).getDescriptor().schema() );
-        assertEquals( node35_8, indexMap.getIndexProxy( node35_8 ).getDescriptor().schema() );
+        assertEquals( schema5_8, indexMap.getIndexProxy( index5_8 ).getDescriptor().schema() );
+        assertEquals( node35_8, indexMap.getIndexProxy( index_node35_8 ).getDescriptor().schema() );
     }
 
     // HELPERS

@@ -29,7 +29,7 @@ import java.util.Set;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
@@ -47,7 +47,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
 {
     private final IndexUpdateMode indexUpdateMode;
     private final IndexMap indexMap;
-    private final Map<SchemaDescriptor,IndexUpdater> updaterMap;
+    private final Map<IndexDescriptor,IndexUpdater> updaterMap;
 
     IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode )
     {
@@ -56,7 +56,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         this.updaterMap = new HashMap<>();
     }
 
-    IndexUpdater getUpdater( SchemaDescriptor descriptor )
+    IndexUpdater getUpdater( IndexDescriptor descriptor )
     {
         IndexUpdater updater = updaterMap.get( descriptor );
         if ( null == updater )
@@ -74,9 +74,9 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     @Override
     public void close() throws UnderlyingStorageException
     {
-        Set<Pair<SchemaDescriptor,UnderlyingStorageException>> exceptions = null;
+        Set<Pair<IndexDescriptor,UnderlyingStorageException>> exceptions = null;
 
-        for ( Map.Entry<SchemaDescriptor,IndexUpdater> updaterEntry : updaterMap.entrySet() )
+        for ( Map.Entry<IndexDescriptor,IndexUpdater> updaterEntry : updaterMap.entrySet() )
         {
             IndexUpdater updater = updaterEntry.getValue();
             try
@@ -121,8 +121,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     {
         return new PrefetchingIterator<>()
         {
-            private Iterator<SchemaDescriptor> descriptors = indexMap.descriptors();
-
+            private Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
             @Override
             protected IndexUpdater fetchNextOrNull()
             {

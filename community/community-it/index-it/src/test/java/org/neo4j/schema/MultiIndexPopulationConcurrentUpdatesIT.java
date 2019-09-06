@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -94,6 +95,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
@@ -271,16 +273,20 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void indexDroppedDuringPopulationDoesNotExist() throws Throwable
     {
         Integer labelToDropId = labelsNameIdMap.get( COLOR_LABEL );
-        launchCustomIndexPopulation( labelsNameIdMap, propertyId,
-                new IndexDropAction( labelToDropId ) );
+        launchCustomIndexPopulation( labelsNameIdMap, propertyId, new IndexDropAction( labelToDropId ) );
         labelsNameIdMap.remove( COLOR_LABEL );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
         try
         {
-            indexService.getIndexProxy( SchemaDescriptor.forLabel( labelToDropId, propertyId ) );
+            Iterator<IndexDescriptor> iterator = schemaCache.indexesForSchema( SchemaDescriptor.forLabel( labelToDropId, propertyId ) );
+            while ( iterator.hasNext() )
+            {
+                IndexDescriptor index = iterator.next();
+                indexService.getIndexProxy( index );
+            }
             fail( "Index does not exist, we should fail to find it." );
         }
-        catch ( IndexNotFoundKernelException infe )
+        catch ( IndexNotFoundKernelException ignore )
         {
             // expected
         }
@@ -288,7 +294,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private void checkIndexIsOnline( int labelId ) throws IndexNotFoundKernelException
     {
-        IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptor.forLabel( labelId, propertyId ) );
+        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
+        IndexDescriptor index = single( schemaCache.indexesForSchema( schema ) );
+        IndexProxy indexProxy = indexService.getIndexProxy( index );
         assertSame( indexProxy.getState(), InternalIndexState.ONLINE );
     }
 
@@ -299,12 +307,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private IndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( SchemaDescriptor.forLabel( countryLabelId, propertyId ) )
-                .newReader();
+        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( countryLabelId, propertyId );
+        IndexDescriptor index = single( schemaCache.indexesForSchema( schema ) );
+        return indexService.getIndexProxy( index ).newReader();
     }
 
-    private void launchCustomIndexPopulation( Map<String,Integer> labelNameIdMap, int propertyId,
-            Runnable customAction ) throws Throwable
+    private void launchCustomIndexPopulation( Map<String,Integer> labelNameIdMap, int propertyId, Runnable customAction ) throws Throwable
     {
         RecordStorageEngine storageEngine = getStorageEngine();
         LabelScanStore labelScanStore = getLabelScanStore();
@@ -375,7 +383,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptor.forLabel( labelId, propertyId ) );
+        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
+        IndexDescriptor index = single( schemaCache.indexesForSchema( schema ) );
+        IndexProxy indexProxy = indexService.getIndexProxy( index );
         indexProxy.awaitStoreScanCompleted( 0, TimeUnit.MILLISECONDS );
         while ( indexProxy.getState() != InternalIndexState.ONLINE )
         {
@@ -502,7 +512,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
     }
 
-    private class LabelScanViewNodeStoreWrapper<FAILURE extends Exception> extends LabelScanViewNodeStoreScan<FAILURE>
+    private static class LabelScanViewNodeStoreWrapper<FAILURE extends Exception> extends LabelScanViewNodeStoreScan<FAILURE>
     {
         private final LabelScanViewNodeStoreScan<FAILURE> delegate;
         private final Runnable customAction;
@@ -527,7 +537,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
     }
 
-    private class DelegatingEntityIdIterator implements EntityIdIterator
+    private static class DelegatingEntityIdIterator implements EntityIdIterator
     {
         private final Runnable customAction;
         private final EntityIdIterator delegate;

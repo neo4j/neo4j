@@ -411,7 +411,7 @@ class FulltextIndexConsistencyCheckIT
     }
 
     @Test
-    void mustBeAbleToConsistencycheckRelationshipIndexThatIsMissingRelationshipsBecauseTheirPropertyValuesaAreNotStrings() throws Exception
+    void mustBeAbleToConsistencyCheckRelationshipIndexThatIsMissingRelationshipsBecauseTheirPropertyValuesaAreNotStrings() throws Exception
     {
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
@@ -506,7 +506,7 @@ class FulltextIndexConsistencyCheckIT
             tx.commit();
         }
         IndexingService indexes = getIndexingService( db );
-        IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor.schema() );
+        IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
         try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, Values.stringValue( "value" ) ) );
@@ -581,7 +581,7 @@ class FulltextIndexConsistencyCheckIT
             tx.commit();
         }
         IndexingService indexes = getIndexingService( db );
-        IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor.schema() );
+        IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
         try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( IndexEntryUpdate.remove( relId, indexDescriptor, Values.stringValue( "value" ) ) );

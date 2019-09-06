@@ -25,6 +25,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -156,13 +157,15 @@ public class IndexCreateIT extends KernelIntegrationTest
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             String provider = indexSetting.providerName();
             LabelSchemaDescriptor descriptor = forLabel( labelId++, 0 );
-            creator.create( schemaWrite, descriptor, provider, "index-" + labelId );
+            String indexName = "index-" + labelId;
+            creator.create( schemaWrite, descriptor, provider, indexName );
+            IndexDescriptor index = transaction.kernelTransaction().schemaRead().indexGetForName( indexName );
 
             // when
             commit();
 
             // then
-            assertEquals( provider, indexingService.getIndexProxy( descriptor ).getDescriptor().getIndexProvider().name() );
+            assertEquals( provider, indexingService.getIndexProxy( index ).getDescriptor().getIndexProvider().name() );
         }
     }
 

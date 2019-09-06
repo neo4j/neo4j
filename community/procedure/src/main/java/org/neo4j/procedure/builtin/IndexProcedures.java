@@ -75,14 +75,7 @@ public class IndexProcedures implements AutoCloseable
     public void resampleIndex( String indexSpecification ) throws ProcedureException
     {
         IndexSpecifier specifier = IndexSpecifier.byPattern( indexSpecification );
-        try
-        {
-            triggerSampling( getIndex( specifier ) );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new ProcedureException( e.status(), e.getMessage(), e );
-        }
+        triggerSampling( getIndex( specifier ) );
     }
 
     public void resampleOutdatedIndexes()
@@ -298,9 +291,9 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private void triggerSampling( IndexDescriptor index ) throws IndexNotFoundKernelException
+    private void triggerSampling( IndexDescriptor index )
     {
-        indexingService.triggerIndexSampling( index.schema(), IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        indexingService.triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
 
     @Override

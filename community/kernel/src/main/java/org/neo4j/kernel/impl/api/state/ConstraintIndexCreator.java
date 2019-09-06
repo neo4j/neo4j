@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -37,6 +38,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -122,8 +124,7 @@ public class ConstraintIndexCreator
         try
         {
             locks.acquireShared( transaction.lockTracer(), keyType, lockingKeys );
-            long indexId = index.getId();
-            IndexProxy proxy = indexingService.getIndexProxy( indexId );
+            IndexProxy proxy = indexingService.getIndexProxy( index );
 
             // Release the LABEL WRITE lock during index population.
             // At this point the integrity of the constraint to be created was checked
@@ -143,7 +144,7 @@ public class ConstraintIndexCreator
 
             try ( NodePropertyAccessor propertyAccessor = new DefaultNodePropertyAccessor( transaction.newStorageReader() ) )
             {
-                indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
+                indexingService.getIndexProxy( index ).verifyDeferredConstraints( propertyAccessor );
             }
             log.info( "Constraint %s verified.", constraint.schema() );
             success = true;
@@ -209,7 +210,9 @@ public class ConstraintIndexCreator
                 stillGoing = proxy.awaitStoreScanCompleted( 1, TimeUnit.SECONDS );
                 if ( transaction.isTerminated() )
                 {
-                    throw new TransactionTerminatedException( transaction.getReasonIfTerminated().get() );
+                    Optional<Status> reasonIfTerminated = transaction.getReasonIfTerminated();
+                    assert reasonIfTerminated.isPresent();
+                    throw new TransactionTerminatedException( reasonIfTerminated.get() );
                 }
             }
             while ( stillGoing );
@@ -219,8 +222,7 @@ public class ConstraintIndexCreator
             Throwable cause = e.getCause();
             if ( cause instanceof IndexEntryConflictException )
             {
-                throw new UniquePropertyValueValidationException(
-                        constraint, VERIFICATION, (IndexEntryConflictException) cause );
+                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, (IndexEntryConflictException) cause );
             }
             else
             {

@@ -587,8 +587,7 @@ class OperationsTest
         IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
-        when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
-        when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( Iterators.iterator( index ) );
+        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         when( storageReader.indexExists( index ) ).thenReturn( true );
 
         // when
@@ -606,7 +605,7 @@ class OperationsTest
         IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
-        when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( Iterators.iterator( index ) );
         when( storageReader.indexExists( index ) ).thenReturn( true );
 
@@ -628,7 +627,7 @@ class OperationsTest
         when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, constraint, defaultProvider ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
-        when( indexingService.getIndexProxy( constraintIndex.schema() ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( constraintIndex ) ).thenReturn( indexProxy );
         when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when

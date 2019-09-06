@@ -45,10 +45,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -56,6 +54,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.config.CrsConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
@@ -72,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_max_bits;
@@ -270,7 +270,7 @@ class IndexConfigMigrationIT
     {
         for ( Label label : labels )
         {
-            Map<String,Value> actualIndexConfig = getIndexConfig( db, tx, label, propKey );
+            Map<String,Value> actualIndexConfig = getIndexConfig( db, tx, label );
             Map<String,Value> expectedIndexConfig = new HashMap<>( staticExpectedIndexConfig );
             for ( Map.Entry<String,Value> entry : actualIndexConfig.entrySet() )
             {
@@ -290,7 +290,7 @@ class IndexConfigMigrationIT
     {
         for ( FulltextIndexDescription fulltextIndex : FulltextIndexDescription.values() )
         {
-            Map<String,Value> actualIndexConfig = getFulltextIndexConfig( db, tx, fulltextIndex.indexName );
+            Map<String,Value> actualIndexConfig = getIndexConfig( db, tx, fulltextIndex.indexName );
             for ( Map.Entry<String,Value> expectedEntry : fulltextIndex.configMap.entrySet() )
             {
                 Value actualValue = actualIndexConfig.get( expectedEntry.getKey() );
@@ -301,23 +301,21 @@ class IndexConfigMigrationIT
         }
     }
 
-    private static Map<String,Value> getFulltextIndexConfig( GraphDatabaseAPI db, Transaction tx, String indexName ) throws IndexNotFoundKernelException
+    private static Map<String,Value> getIndexConfig( GraphDatabaseAPI db, Transaction tx, String indexName ) throws IndexNotFoundKernelException
     {
         IndexingService indexingService = getIndexingService( db );
         IndexDescriptor indexReference = schemaRead( tx ).indexGetForName( indexName );
-        IndexProxy indexProxy = indexingService.getIndexProxy( indexReference.schema() );
+        IndexProxy indexProxy = indexingService.getIndexProxy( indexReference );
         return indexProxy.indexConfig();
     }
 
     @SuppressWarnings( "SameParameterValue" )
-    private static Map<String,Value> getIndexConfig( GraphDatabaseAPI db, Transaction tx, Label label, String propKey )
-            throws IndexNotFoundKernelException
+    private static Map<String,Value> getIndexConfig( GraphDatabaseAPI db, Transaction tx, Label label ) throws IndexNotFoundKernelException
     {
-        TokenRead tokenRead = tokenRead( tx );
+        IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) single( tx.schema().getIndexes( label ) );
+        IndexDescriptor index = indexDefinition.getIndexReference();
         IndexingService indexingService = getIndexingService( db );
-        int labelId = tokenRead.nodeLabel( label.name() );
-        int propKeyId = tokenRead.propertyKey( propKey );
-        IndexProxy indexProxy = indexingService.getIndexProxy( SchemaDescriptor.forLabel( labelId, propKeyId ) );
+        IndexProxy indexProxy = indexingService.getIndexProxy( index );
         return indexProxy.indexConfig();
     }
 
@@ -431,12 +429,7 @@ class IndexConfigMigrationIT
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private static TokenRead tokenRead( Transaction tx )
-    {
-        return ((InternalTransaction) tx).kernelTransaction().tokenRead();
-    }
-
-    private static SchemaRead schemaRead( Transaction tx )
+    private static SchemaRead schemaRead( GraphDatabaseAPI db )
     {
         return ((InternalTransaction) tx).kernelTransaction().schemaRead();
     }

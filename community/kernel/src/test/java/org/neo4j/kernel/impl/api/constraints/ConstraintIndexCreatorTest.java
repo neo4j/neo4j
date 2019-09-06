@@ -104,7 +104,7 @@ class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
         IndexProxy indexProxy = mock( IndexProxy.class );
         IndexingService indexingService = mock( IndexingService.class );
-        when( indexingService.getIndexProxy( schema ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
@@ -127,7 +127,7 @@ class ConstraintIndexCreatorTest
 
         IndexingService indexingService = mock( IndexingService.class );
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( schema ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         when( indexProxy.getDescriptor() ).thenReturn( index );
 
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
@@ -181,7 +181,7 @@ class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
 
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( schema ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
 
         when( schemaRead.index( schema ) ).thenReturn( Iterators.emptyResourceIterator() );
 
@@ -209,7 +209,7 @@ class ConstraintIndexCreatorTest
         long orphanedConstraintIndexId = 111;
         IndexDescriptor orphanedIndex = IndexPrototype.uniqueForSchema( schema ).withName( "constraint" ).materialise( orphanedConstraintIndexId );
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( orphanedConstraintIndexId ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( orphanedIndex ) ).thenReturn( indexProxy );
         when( schemaRead.index( schema ) ).thenReturn( Iterators.iterator( orphanedIndex ) );
         when( schemaRead.indexGetOwningUniquenessConstraintId( orphanedIndex ) )
                 .thenReturn( null ); // which means it has no owner
@@ -232,10 +232,7 @@ class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
-        long constraintIndexId = 111;
         long constraintIndexOwnerId = 222;
-        IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( constraintIndexId ) ).thenReturn( indexProxy );
         when( schemaRead.index( schema ) ).thenReturn( Iterators.iterator( index ) );
         when( schemaRead.indexGetOwningUniquenessConstraintId( index ) ).thenReturn( constraintIndexOwnerId ); // which means there's an owner
         when( tokenRead.nodeLabelName( LABEL_ID ) ).thenReturn( "MyLabel" );
@@ -263,7 +260,7 @@ class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
 
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( schema ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "Groovy", "1.2" );
 
@@ -286,7 +283,7 @@ class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
         IndexProxy indexProxy = mock( IndexProxy.class );
         IndexingService indexingService = mock( IndexingService.class );
-        when( indexingService.getIndexProxy( schema ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
         KernelTransactionImplementation transaction = createTransaction();

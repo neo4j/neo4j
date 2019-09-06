@@ -560,15 +560,15 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private static IndexProxy getIndexProxy( IndexingService indexingService, IndexDescriptor descriptpr )
+    private static IndexProxy getIndexProxy( IndexingService indexingService, IndexDescriptor index )
     {
         try
         {
-            return indexingService.getIndexProxy( descriptpr.schema() );
+            return indexingService.getIndexProxy( index );
         }
         catch ( IndexNotFoundKernelException e )
         {
-            throw new IllegalStateException( "Expected index by descriptor " + descriptpr + " to exist, but didn't", e );
+            throw new IllegalStateException( "Expected index by descriptor " + index + " to exist, but didn't", e );
         }
     }
 

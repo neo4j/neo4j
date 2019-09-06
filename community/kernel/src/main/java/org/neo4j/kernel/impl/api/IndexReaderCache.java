@@ -55,7 +55,7 @@ public class IndexReaderCache
 
     public IndexReader newUnCachedReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        IndexProxy index = indexingService.getIndexProxy( descriptor.schema() );
+        IndexProxy index = indexingService.getIndexProxy( descriptor );
         return index.newReader();
     }
 

@@ -553,12 +553,12 @@ public class IndexStatisticsTest
 
     private long indexSize( IndexDescriptor reference ) throws IndexNotFoundKernelException
     {
-        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference.schema() ).readSecond();
+        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).readSecond();
     }
 
     private long indexUpdates( IndexDescriptor reference  ) throws IndexNotFoundKernelException
     {
-        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference.schema() ).readFirst();
+        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).readFirst();
     }
 
     private double indexSelectivity( IndexDescriptor reference ) throws KernelException

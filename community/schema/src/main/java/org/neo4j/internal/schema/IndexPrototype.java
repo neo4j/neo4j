@@ -155,9 +155,10 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof IndexRef )
+        if ( o instanceof IndexPrototype )
         {
-            return IndexRef.equals( this, (IndexRef<?>) o );
+            IndexPrototype that = (IndexPrototype) o;
+            return this.isUnique() == that.isUnique() && this.schema().equals( that.schema() );
         }
         return false;
     }
@@ -165,6 +166,9 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     @Override
     public int hashCode()
     {
-        return IndexRef.hashCode( this );
+        int result = 1;
+        result = 31 * result + Boolean.hashCode( isUnique() );
+        result = 31 * result + schema().hashCode();
+        return result;
     }
 }

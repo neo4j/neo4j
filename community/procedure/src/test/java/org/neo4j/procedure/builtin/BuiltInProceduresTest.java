@@ -166,8 +166,6 @@ class BuiltInProceduresTest
         when( tokens.nodeLabelName( anyInt() ) ).thenAnswer( invocation -> labels.get( invocation.getArgument( 0 ) ) );
         when( tokens.relationshipTypeName( anyInt() ) ).thenAnswer( invocation -> relTypes.get( invocation.getArgument( 0 ) ) );
 
-        when( indexingService.getIndexId( any( SchemaDescriptor.class ) ) ).thenReturn( 42L );
-
         when( schemaReadCore.constraintsGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
         when( schemaReadCore.indexesGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
         when( schemaReadCore.indexesGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );

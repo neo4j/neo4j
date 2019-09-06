@@ -125,13 +125,13 @@ class ResampleIndexProcedureTest
     }
 
     @Test
-    void shouldTriggerResampling() throws Exception
+    void shouldTriggerResampling() throws ProcedureException
     {
         IndexDescriptor index = IndexPrototype.forSchema( forLabel( 123, 456 ) ).withName( "index_42" ).materialise( 42 );
         when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( index ) );
 
         procedure.resampleIndex( ":Person(name)" );
 
-        verify( indexingService ).triggerIndexSampling( index.schema(), IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        verify( indexingService ).triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
 }

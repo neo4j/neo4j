@@ -36,14 +36,11 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -55,7 +52,6 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.internal.helpers.collection.Iterators.single;
 
 @RunWith( Parameterized.class )
 public class DefaultSchemaIndexConfigTest
@@ -66,6 +62,7 @@ public class DefaultSchemaIndexConfigTest
     @Rule
     public TestDirectory directory = TestDirectory.testDirectory();
     private DatabaseManagementServiceBuilder dbBuilder;
+    private IndexDescriptor index;
 
     @Before
     public void setup()
@@ -85,7 +82,7 @@ public class DefaultSchemaIndexConfigTest
     public GraphDatabaseSettings.SchemaIndex provider;
 
     @Test
-    public void shouldUseConfiguredIndexProvider() throws IndexNotFoundKernelException
+    public void shouldUseConfiguredIndexProvider()
     {
         // given
         DatabaseManagementServiceBuilder
@@ -98,7 +95,7 @@ public class DefaultSchemaIndexConfigTest
             createIndex( db );
 
             // then
-            assertIndexProvider( db, provider == null ? GenericNativeIndexProvider.DESCRIPTOR.name() : provider.providerName() );
+            assertIndexProvider( provider == null ? GenericNativeIndexProvider.DESCRIPTOR.name() : provider.providerName() );
         }
         finally
         {
@@ -143,11 +140,8 @@ public class DefaultSchemaIndexConfigTest
         try ( Transaction tx = db.beginTx() )
         {
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            TokenRead tokenRead = tokenRead( tx );
             IndexingService indexingService = getIndexingService( api );
-            int labelId = tokenRead.nodeLabel( LABEL.name() );
-            int propKeyId = tokenRead.propertyKey( KEY );
-            IndexProxy indexProxy = indexingService.getIndexProxy( SchemaDescriptor.forLabel( labelId, propKeyId ) );
+            IndexProxy indexProxy = indexingService.getIndexProxy( index );
             Map<String,Value> indexConfig = indexProxy.indexConfig();
 
             // Expected default values for schema index
@@ -184,32 +178,17 @@ public class DefaultSchemaIndexConfigTest
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private static TokenRead tokenRead( Transaction tx )
+    private void assertIndexProvider( String expectedProviderIdentifier )
     {
-        return ((InternalTransaction) tx).kernelTransaction().tokenRead();
-    }
-
-    private void assertIndexProvider( GraphDatabaseService db, String expectedProviderIdentifier ) throws IndexNotFoundKernelException
-    {
-        GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) db;
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
-        {
-            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            TokenRead tokenRead = ktx.tokenRead();
-            int labelId = tokenRead.nodeLabel( LABEL.name() );
-            int propertyId = tokenRead.propertyKey( KEY );
-            IndexDescriptor index = single( ktx.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyId ) ) );
-
-            assertEquals( "expected IndexProvider.Descriptor", expectedProviderIdentifier, index.getIndexProvider().name() );
-            tx.commit();
-        }
+        assertEquals( "expected IndexProvider.Descriptor", expectedProviderIdentifier, index.getIndexProvider().name() );
     }
 
     private void createIndex( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().indexFor( LABEL ).on( KEY ).create();
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( LABEL ).on( KEY ).create();
+            index = indexDefinition.getIndexReference();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )

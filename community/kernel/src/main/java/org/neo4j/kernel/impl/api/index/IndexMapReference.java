@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.function.Function;
 
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
@@ -45,12 +46,21 @@ public class IndexMapReference implements IndexMapSnapshotProvider
      * This is the only way contents of the {@link IndexMap} considered the current one can be modified.
      *
      * @param modifier the function modifying the snapshot.
-     * @throws E exception thrown by the function.
      */
-    public synchronized <E extends Exception> void modify( Function<IndexMap,IndexMap> modifier ) throws E
+    public synchronized void modify( Function<IndexMap,IndexMap> modifier )
     {
         IndexMap snapshot = indexMapSnapshot();
         indexMap = modifier.apply( snapshot );
+    }
+
+    public IndexProxy getIndexProxy( IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
+        IndexProxy proxy = indexMap.getIndexProxy( index );
+        if ( proxy == null )
+        {
+            throw new IndexNotFoundKernelException( "No index for index " + index + " exists." );
+        }
+        return proxy;
     }
 
     public IndexProxy getIndexProxy( long indexId ) throws IndexNotFoundKernelException
@@ -63,50 +73,27 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return proxy;
     }
 
-    public IndexProxy getIndexProxy( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    long getOnlineIndexId( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
-        IndexProxy proxy = indexMap.getIndexProxy( descriptor );
-        if ( proxy == null )
+        IndexProxy proxy = getIndexProxy( index );
+        if ( proxy.getState() == InternalIndexState.ONLINE )
         {
-            throw new IndexNotFoundKernelException( "No index for " + descriptor + " exists." );
+            return index.getId();
         }
-        return proxy;
+        throw new IndexNotFoundKernelException( "Expected index on " + index + " to be online." );
     }
 
-    public long getIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        IndexProxy proxy = indexMap.getIndexProxy( descriptor );
-        if ( proxy == null )
-        {
-            throw new IndexNotFoundKernelException( "No index for " + descriptor + " exists." );
-        }
-        return indexMap.getIndexId( descriptor );
-    }
-
-    public long getOnlineIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        IndexProxy proxy = getIndexProxy( descriptor );
-        switch ( proxy.getState() )
-        {
-        case ONLINE:
-            return indexMap.getIndexId( descriptor );
-
-        default:
-            throw new IndexNotFoundKernelException( "Expected index on " + descriptor + " to be online." );
-        }
-    }
-
-    public Iterable<IndexProxy> getAllIndexProxies()
+    Iterable<IndexProxy> getAllIndexProxies()
     {
         return indexMap.getAllIndexProxies();
     }
 
-    public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
+    IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
     {
         return new IndexUpdaterMap( indexMap, mode );
     }
 
-    public void validateBeforeCommit( SchemaDescriptor index, Value[] tuple )
+    public void validateBeforeCommit( IndexDescriptor index, Value[] tuple )
     {
         IndexProxy proxy = indexMap.getIndexProxy( index );
         if ( proxy != null )

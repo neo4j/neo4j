@@ -49,9 +49,6 @@ class IndexUpdaterMapTest
     private IndexProxy indexProxy2;
     private IndexDescriptor schemaIndexDescriptor;
 
-    private IndexProxy indexProxy3;
-    private IndexDescriptor schemaIndexDescriptor3;
-
     private IndexUpdaterMap updaterMap;
 
     @BeforeEach
@@ -71,12 +68,6 @@ class IndexUpdaterMapTest
         when( indexProxy2.getDescriptor() ).thenReturn( schemaIndexDescriptor );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
 
-        indexProxy3 = mock( IndexProxy.class );
-        schemaIndexDescriptor3 = forSchema( forLabel( 5, 7, 8 ), PROVIDER_DESCRIPTOR ).withName( "c" ).materialise( 2 );
-        IndexUpdater indexUpdater3 = mock( IndexUpdater.class );
-        when( indexProxy3.getDescriptor() ).thenReturn( schemaIndexDescriptor3 );
-        when( indexProxy3.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater3 );
-
         updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE );
     }
 
@@ -87,7 +78,7 @@ class IndexUpdaterMapTest
         indexMap.putIndexProxy( indexProxy1 );
 
         // when
-        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
+        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1 );
 
         // then
         assertEquals( indexUpdater1, updater );
@@ -101,7 +92,7 @@ class IndexUpdaterMapTest
         indexMap.putIndexProxy( indexProxy1 );
 
         // when
-        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
+        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1 );
 
         // then
         assertThat( updater, equalTo( indexUpdater1 ) );
@@ -114,8 +105,8 @@ class IndexUpdaterMapTest
         indexMap.putIndexProxy( indexProxy1 );
 
         // when
-        IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
-        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
+        IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1 );
+        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor1 );
 
         // then
         assertEquals( updater1, updater2 );
@@ -126,7 +117,7 @@ class IndexUpdaterMapTest
     void shouldRetrieveNoUpdaterForNonExistingIndex()
     {
         // when
-        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
+        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1 );
 
         // then
         assertNull( updater );
@@ -140,8 +131,8 @@ class IndexUpdaterMapTest
         indexMap.putIndexProxy( indexProxy1 );
         indexMap.putIndexProxy( indexProxy2 );
 
-        IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
-        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor.schema() );
+        IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1 );
+        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor );
 
         // hen
         updaterMap.close();

@@ -589,7 +589,7 @@ public class AllStoreHolder extends Read
             }
         }
 
-        return indexingService.getIndexProxy( schema ).getState();
+        return indexingService.getIndexProxy( index ).getState();
     }
 
     @Override
@@ -612,7 +612,7 @@ public class AllStoreHolder extends Read
             }
         }
 
-        return indexingService.getIndexProxy( index.schema() ).getIndexPopulationProgress();
+        return indexingService.getIndexProxy( index ).getIndexPopulationProgress();
     }
 
     @Override
@@ -627,7 +627,7 @@ public class AllStoreHolder extends Read
     public String indexGetFailure( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        return indexingService.getIndexProxy( index.schema() ).getPopulationFailure().asString();
+        return indexingService.getIndexProxy( index ).getPopulationFailure().asString();
     }
 
     @Override

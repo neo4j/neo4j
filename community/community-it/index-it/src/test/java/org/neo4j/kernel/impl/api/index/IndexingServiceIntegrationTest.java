@@ -39,16 +39,18 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -56,7 +58,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
@@ -111,17 +112,16 @@ public class IndexingServiceIntegrationTest
     @Test
     public void testManualIndexPopulation() throws InterruptedException, IndexNotFoundKernelException
     {
+        IndexDescriptor index;
         try ( Transaction tx = database.beginTx() )
         {
-            tx.schema().indexFor( Label.label( FOOD_LABEL ) ).on( PROPERTY_NAME ).create();
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( Label.label( FOOD_LABEL ) ).on( PROPERTY_NAME ).create();
+            index = indexDefinition.getIndexReference();
             tx.commit();
         }
 
-        int labelId = getLabelId( FOOD_LABEL );
-        int propertyKeyId = getPropertyKeyId( PROPERTY_NAME );
-
         IndexingService indexingService = getIndexingService( database );
-        IndexProxy indexProxy = indexingService.getIndexProxy( forLabel( labelId, propertyKeyId ) );
+        IndexProxy indexProxy = indexingService.getIndexProxy( index );
 
         waitIndexOnline( indexProxy );
         assertEquals( InternalIndexState.ONLINE, indexProxy.getState() );
@@ -132,19 +132,19 @@ public class IndexingServiceIntegrationTest
     @Test
     public void testManualRelationshipIndexPopulation() throws Exception
     {
-        RelationTypeSchemaDescriptor descriptor;
+        IndexDescriptor index;
         Kernel kernel = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( Kernel.class );
         try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
         {
             int foodId = tx.tokenWrite().relationshipTypeGetOrCreateForName( FOOD_LABEL );
             int propertyId = tx.tokenWrite().propertyKeyGetOrCreateForName( PROPERTY_NAME );
-            descriptor = forRelType( foodId, propertyId );
-            tx.schemaWrite().indexCreate( descriptor );
+            RelationTypeSchemaDescriptor schema = forRelType( foodId, propertyId );
+            index = tx.schemaWrite().indexCreate( schema );
             tx.commit();
         }
 
         IndexingService indexingService = getIndexingService( database );
-        IndexProxy indexProxy = indexingService.getIndexProxy( descriptor );
+        IndexProxy indexProxy = indexingService.getIndexProxy( index );
 
         waitIndexOnline( indexProxy );
         assertEquals( InternalIndexState.ONLINE, indexProxy.getState() );
@@ -155,10 +155,12 @@ public class IndexingServiceIntegrationTest
     @Test
     public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException
     {
+        String constraintName = "MyConstraint";
+        String indexName = "MyIndex";
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().constraintFor( Label.label( CLOTHES_LABEL ) ).assertPropertyIsUnique( PROPERTY_NAME ).create();
-            transaction.schema().indexFor( Label.label( WEATHER_LABEL ) ).on( PROPERTY_NAME ).create();
+            transaction.schema().constraintFor( Label.label( CLOTHES_LABEL ) ).assertPropertyIsUnique( PROPERTY_NAME ).withName( constraintName ).create();
+            transaction.schema().indexFor( Label.label( WEATHER_LABEL ) ).on( PROPERTY_NAME ).withName( indexName ).create();
 
             transaction.commit();
         }
@@ -169,12 +171,9 @@ public class IndexingServiceIntegrationTest
         }
 
         IndexingService indexingService = getIndexingService( database );
-        int clothedLabelId = getLabelId( CLOTHES_LABEL );
-        int weatherLabelId = getLabelId( WEATHER_LABEL );
-        int propertyId = getPropertyKeyId( PROPERTY_NAME );
 
-        IndexProxy clothesIndex = indexingService.getIndexProxy( forLabel( clothedLabelId, propertyId ) );
-        IndexProxy weatherIndex = indexingService.getIndexProxy( forLabel( weatherLabelId, propertyId ) );
+        IndexProxy clothesIndex = indexingService.getIndexProxy( getIndexByName( constraintName ) );
+        IndexProxy weatherIndex = indexingService.getIndexProxy( getIndexByName( indexName ) );
         assertEquals( InternalIndexState.ONLINE, clothesIndex.getState());
         assertEquals( InternalIndexState.ONLINE, weatherIndex.getState());
     }
@@ -186,13 +185,18 @@ public class IndexingServiceIntegrationTest
         String constraintPropertyPrefix = "ConstraintProperty";
         String indexLabelPrefix = "Label";
         String indexPropertyPrefix = "Property";
+        IndexDescriptor index7 = null;
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
             {
                 transaction.schema().constraintFor( Label.label( constraintLabelPrefix + i ) )
                         .assertPropertyIsUnique( constraintPropertyPrefix + i ).create();
-                transaction.schema().indexFor( Label.label( indexLabelPrefix + i ) ).on( indexPropertyPrefix + i ).create();
+                IndexDefinition indexDefinition = transaction.schema().indexFor( Label.label( indexLabelPrefix + i ) ).on( indexPropertyPrefix + i ).create();
+                if ( i == 7 )
+                {
+                    index7 = ((IndexDefinitionImpl) indexDefinition).getIndexReference();
+                }
                 transaction.commit();
             }
         }
@@ -203,11 +207,8 @@ public class IndexingServiceIntegrationTest
         }
 
         IndexingService indexingService = getIndexingService( database );
-
-        int indexLabel7 = getLabelId( indexLabelPrefix + 7 );
-        int indexProperty7 = getPropertyKeyId( indexPropertyPrefix + 7 );
-
-        IndexProxy index = indexingService.getIndexProxy( TestIndexDescriptorFactory.forLabel( indexLabel7, indexProperty7 ).schema() );
+        assert index7 != null;
+        IndexProxy index = indexingService.getIndexProxy( index7 );
 
         index.drop();
 
@@ -250,21 +251,12 @@ public class IndexingServiceIntegrationTest
         }
     }
 
-    private int getPropertyKeyId( String name )
+    private IndexDescriptor getIndexByName( String name )
     {
         try ( Transaction tx = database.beginTx() )
         {
             KernelTransaction transaction = ((InternalTransaction) tx).kernelTransaction();
-            return transaction.tokenRead().propertyKey( name );
-        }
-    }
-
-    private int getLabelId( String name )
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
-            KernelTransaction transaction = ((InternalTransaction) tx).kernelTransaction();
-            return transaction.tokenRead().nodeLabel( name );
+            return transaction.schemaRead().indexGetForName( name );
         }
     }
 }
