@@ -29,17 +29,33 @@ import static java.lang.String.format;
 public class NoSuchConstraintException extends SchemaKernelException
 {
     private final SchemaDescriptorSupplier constraint;
+    private final String name;
     private static final String message = "No such constraint %s.";
 
     public NoSuchConstraintException( SchemaDescriptorSupplier constraint )
     {
         super( Status.Schema.ConstraintNotFound, format( message, constraint ) );
         this.constraint = constraint;
+        this.name = "";
+    }
+
+    public NoSuchConstraintException( String name )
+    {
+        super( Status.Schema.ConstraintNotFound, format( message, name ) );
+        this.constraint = null;
+        this.name = name;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( message, constraint.userDescription( tokenNameLookup ) );
+        if ( constraint == null )
+        {
+            return format( message, name );
+        }
+        else
+        {
+            return format( message, constraint.userDescription( tokenNameLookup ) );
+        }
     }
 }

@@ -47,29 +47,44 @@ case class Prettifier(expr: ExpressionStringifier) {
     case DropIndexOnName(name) =>
       s"DROP INDEX ${Prettifier.escapeName(name)}"
 
-    case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties) =>
+    case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, None) =>
       s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${asString(properties)} IS NODE KEY"
+
+    case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, Some(name)) =>
+      s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT ${asString(properties)} IS NODE KEY"
 
     case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties) =>
       s"DROP CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS NODE KEY"
 
-    case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties) =>
+    case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, None) =>
       s"CREATE CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
+
+    case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, Some(name)) =>
+      s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
 
     case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties) =>
       s"DROP CONSTRAINT ON ($variable:$label) ASSERT ${properties.map(_.asCanonicalStringVal).mkString("(", ", ", ")")} IS UNIQUE"
 
-    case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property) =>
+    case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, None) =>
       s"CREATE CONSTRAINT ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
+
+    case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, Some(name)) =>
+      s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
 
     case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property) =>
       s"DROP CONSTRAINT ON ($variable:$label) ASSERT exists(${property.asCanonicalStringVal})"
 
-    case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property) =>
+    case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, None) =>
       s"CREATE CONSTRAINT ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
+
+    case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, Some(name)) =>
+      s"CREATE CONSTRAINT ${Prettifier.escapeName(name)} ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
 
     case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property) =>
       s"DROP CONSTRAINT ON ()-[$variable:$relType]-() ASSERT exists(${property.asCanonicalStringVal})"
+
+    case DropConstraintOnName(name) =>
+      s"DROP CONSTRAINT ${Prettifier.escapeName(name)}"
 
     case x: ShowUsers =>
       s"${x.name}"

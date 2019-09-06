@@ -34,17 +34,19 @@ abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 
 }
 
-case class CreateNodeKeyConstraint(node: String, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class CreateNodeKeyConstraint(node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateUniquePropertyConstraint(node: String, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class CreateUniquePropertyConstraint(node: String, label: LabelName, props: Seq[Property], name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateNodePropertyExistenceConstraint(label: LabelName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class CreateNodePropertyExistenceConstraint(label: LabelName, prop: Property, name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropNodePropertyExistenceConstraint(label: LabelName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class CreateRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property, name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+
+case class DropConstraintOnName(name: String)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
 case class CreateIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)

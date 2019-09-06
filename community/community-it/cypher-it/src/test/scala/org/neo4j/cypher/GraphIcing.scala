@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.{RuntimeJavaValueConverter, isGraphKernelResultValue}
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.schema.IndexDefinition
+import org.neo4j.graphdb.schema.{ConstraintDefinition, IndexDefinition}
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -60,15 +60,55 @@ trait GraphIcing {
       } )
     }
 
-    def createExistenceConstraint(label: String, property: String) = {
+    def createUniqueConstraintWithName(name: String, label: String, property: String) = {
+      inTx {
+        graph.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).withName(name).create()
+      }
+    }
+
+    def createNodeExistenceConstraint(label: String, property: String) = {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT exists(n.$property)")
+      })
+    }
+
+    def createNodeExistenceConstraintWithName(name: String, label: String, property: String) = {
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT `$name` ON (n:$label) ASSERT exists(n.$property)")
+      })
+    }
+
+    def createRelationshipExistenceConstraint(relType: String, property: String, direction: Direction = Direction.BOTH): Result = {
+      val relSyntax = direction match {
+        case Direction.OUTGOING => s"()-[r:$relType]->()"
+        case Direction.INCOMING => s"()<-[r:$relType]-()"
+        case _ => s"()-[r:$relType]-()"
+      }
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT ON $relSyntax ASSERT exists(r.$property)")
+      })
+    }
+
+    def createRelationshipExistenceConstraintWithName(name: String, relType: String, property: String, direction: Direction = Direction.BOTH): Result = {
+      val relSyntax = direction match {
+        case Direction.OUTGOING => s"()-[r:$relType]->()"
+        case Direction.INCOMING => s"()<-[r:$relType]-()"
+        case _ => s"()-[r:$relType]-()"
+      }
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT `$name` ON $relSyntax ASSERT exists(r.$property)")
       })
     }
 
     def createNodeKeyConstraint(label: String, properties: String*): Result = {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
+      })
+    }
+
+    def createNodeKeyConstraintWithName(name: String, label: String, properties: String*): Result = {
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT `$name` ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
       })
     }
 
@@ -100,6 +140,18 @@ trait GraphIcing {
       withTx( tx => {
         tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get
       } )
+    }
+
+    def getNodeConstraint(label: String, properties: Seq[String]): ConstraintDefinition = {
+      inTx {
+        graph.schema().getConstraints(Label.label(label)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == properties.toList).get
+      }
+    }
+
+    def getRelationshipConstraint(relType: String, property: String): ConstraintDefinition = {
+      inTx {
+        graph.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == List(property)).get
+      }
     }
 
     def createUniqueIndex(label: String, property: String): Unit = {

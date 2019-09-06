@@ -150,29 +150,32 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(inner.nodeGetTotalDegree(node, relationship, nodeCursor))
 
-  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean =
-    translateException(inner.createNodeKeyConstraint(labelId, propertyKeyIds))
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean =
+    translateException(inner.createNodeKeyConstraint(labelId, propertyKeyIds, name))
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(inner.dropNodeKeyConstraint(labelId, propertyKeyIds))
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean =
-    translateException(inner.createUniqueConstraint(labelId, propertyKeyIds))
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean =
+    translateException(inner.createUniqueConstraint(labelId, propertyKeyIds, name))
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(inner.dropUniqueConstraint(labelId, propertyKeyIds))
 
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
-    translateException(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Boolean =
+    translateException(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId, name))
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
     translateException(inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
-    translateException(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Boolean =
+    translateException(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name))
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     translateException(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
+
+  override def dropNamedConstraint(name: String): Unit =
+    translateException(inner.dropNamedConstraint(name))
 
   override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     translateIterator(inner.callReadOnlyProcedure(id, args, allowed, context))

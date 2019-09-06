@@ -125,24 +125,26 @@ trait QueryContext extends TokenContext with DbAccess {
   def getNodesByLabelPrimitive(id: Int): LongIterator
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean
+  def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean
 
   def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean
+  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean
 
   def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean
+  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Boolean
 
   def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int)
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean
+  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Boolean
 
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int)
+
+  def dropNamedConstraint(name: String)
 
   def getOptStatistics: Option[QueryStatistics] = None
 

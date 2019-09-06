@@ -175,8 +175,26 @@ class PrettifierIT extends CypherFunSuite {
       "create CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
         "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
 
+      "create CONSTRAINT foo ON (n:A) ASSERT (n.p) IS NODE KEY" ->
+        "CREATE CONSTRAINT foo ON (n:A) ASSERT (n.p) IS NODE KEY",
+
+      "create CONSTRAINT `foo` ON (n:A) ASSERT (n.p) IS NODE KEY" ->
+        "CREATE CONSTRAINT foo ON (n:A) ASSERT (n.p) IS NODE KEY",
+
+      "create CONSTRAINT `$foo` ON (n:A) ASSERT (n.p) IS NODE KEY" ->
+        "CREATE CONSTRAINT `$foo` ON (n:A) ASSERT (n.p) IS NODE KEY",
+
       "create CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
         "CREATE CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
+
+      "create CONSTRAINT foo ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
+        "CREATE CONSTRAINT foo ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
+
+      "create CONSTRAINT `foo` ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
+        "CREATE CONSTRAINT foo ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
+
+      "create CONSTRAINT `$foo` ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
+        "CREATE CONSTRAINT `$foo` ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
 
       "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
         "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
@@ -187,8 +205,26 @@ class PrettifierIT extends CypherFunSuite {
       "create CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE" ->
         "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE",
 
+      "create CONSTRAINT foo ON (n:A) ASSERT (n.p) IS UNIQUE" ->
+        "CREATE CONSTRAINT foo ON (n:A) ASSERT (n.p) IS UNIQUE",
+
+      "create CONSTRAINT `foo` ON (n:A) ASSERT (n.p) IS UNIQUE" ->
+        "CREATE CONSTRAINT foo ON (n:A) ASSERT (n.p) IS UNIQUE",
+
+      "create CONSTRAINT `$foo` ON (n:A) ASSERT (n.p) IS UNIQUE" ->
+        "CREATE CONSTRAINT `$foo` ON (n:A) ASSERT (n.p) IS UNIQUE",
+
       "create CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
         "CREATE CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
+
+      "create CONSTRAINT foo ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
+        "CREATE CONSTRAINT foo ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
+
+      "create CONSTRAINT `foo` ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
+        "CREATE CONSTRAINT foo ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
+
+      "create CONSTRAINT `$foo` ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
+        "CREATE CONSTRAINT `$foo` ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
 
       "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE" ->
         "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE",
@@ -199,14 +235,41 @@ class PrettifierIT extends CypherFunSuite {
       "create CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
         "CREATE CONSTRAINT ON (a:A) ASSERT exists(a.p)",
 
+      "create CONSTRAINT foo ON (a:A) ASSERT exists(a.p)" ->
+        "CREATE CONSTRAINT foo ON (a:A) ASSERT exists(a.p)",
+
+      "create CONSTRAINT `foo` ON (a:A) ASSERT exists(a.p)" ->
+        "CREATE CONSTRAINT foo ON (a:A) ASSERT exists(a.p)",
+
+      "create CONSTRAINT `$foo` ON (a:A) ASSERT exists(a.p)" ->
+        "CREATE CONSTRAINT `$foo` ON (a:A) ASSERT exists(a.p)",
+
       "drop CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
         "DROP CONSTRAINT ON (a:A) ASSERT exists(a.p)",
 
       "create CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
         "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
 
+      "create CONSTRAINT foo ON ()-[r:R]-() ASSERT exists(r.p)" ->
+        "CREATE CONSTRAINT foo ON ()-[r:R]-() ASSERT exists(r.p)",
+
+      "create CONSTRAINT `foo` ON ()-[r:R]-() ASSERT exists(r.p)" ->
+        "CREATE CONSTRAINT foo ON ()-[r:R]-() ASSERT exists(r.p)",
+
+      "create CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p)" ->
+        "CREATE CONSTRAINT `$foo` ON ()-[r:R]-() ASSERT exists(r.p)",
+
       "drop CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
         "DROP CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
+
+      "drop CONSTRAINT foo" ->
+        "DROP CONSTRAINT foo",
+
+      "drop CONSTRAINT `foo`" ->
+        "DROP CONSTRAINT foo",
+
+      "drop CONSTRAINT `$foo`" ->
+        "DROP CONSTRAINT `$foo`",
 
       "match (n) UNION match (n)" ->
         """MATCH (n)

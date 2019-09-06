@@ -44,9 +44,8 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
     implicit val idGen = new SequentialIdGen()
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
-      case CreateNodeKeyConstraint(node, label, props) =>
-        Some(plans.CreateNodeKeyConstraint(node.name, label, props))
-
+      case CreateNodeKeyConstraint(node, label, props, name) =>
+        Some(plans.CreateNodeKeyConstraint(node.name, label, props, name))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
       case DropNodeKeyConstraint(_, label, props) =>
@@ -54,8 +53,8 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-      case CreateUniquePropertyConstraint(node, label, props) =>
-        Some(plans.CreateUniquePropertyConstraint(node.name, label, props))
+      case CreateUniquePropertyConstraint(node, label, props, name) =>
+        Some(plans.CreateUniquePropertyConstraint(node.name, label, props, name))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
@@ -63,20 +62,24 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         Some(plans.DropUniquePropertyConstraint(label, props))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
-      case CreateNodePropertyExistenceConstraint(_, label, prop) =>
-        Some(plans.CreateNodePropertyExistenceConstraint(label, prop))
+      case CreateNodePropertyExistenceConstraint(_, label, prop, name) =>
+        Some(plans.CreateNodePropertyExistenceConstraint(label, prop, name))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case DropNodePropertyExistenceConstraint(_, label, prop) =>
         Some(plans.DropNodePropertyExistenceConstraint(label, prop))
 
       // CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
-      case CreateRelationshipPropertyExistenceConstraint(_, relType, prop) =>
-        Some(plans.CreateRelationshipPropertyExistenceConstraint(relType, prop))
+      case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name) =>
+        Some(plans.CreateRelationshipPropertyExistenceConstraint(relType, prop, name))
 
       // DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
       case DropRelationshipPropertyExistenceConstraint(_, relType, prop) =>
         Some(plans.DropRelationshipPropertyExistenceConstraint(relType, prop))
+
+      // DROP CONSTRAINT name
+      case DropConstraintOnName(name) =>
+        Some(plans.DropConstraintOnName(name))
 
       // CREATE INDEX ON :LABEL(prop)
       // CREATE INDEX name ON :LABEL(prop)

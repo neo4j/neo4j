@@ -81,4 +81,183 @@ class CommandParserTest
     failsToParse
   }
 
+  // Create constraint
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateNodeKeyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), None))
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateNodeKeyConstraint(variable, exp.LabelName("Label")(_),
+      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_)), None))
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), None))
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), None))
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_),
+      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_)), None))
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateNodePropertyExistenceConstraint(variable, exp.LabelName("Label")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), None))
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    val variable = exp.Variable("r")(_)
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), None))
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
+    val variable = exp.Variable("r")(_)
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), None))
+  }
+
+  test("CREATE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
+    val variable = exp.Variable("r")(_)
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), None))
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS NODE KEY") {
+    failsToParse
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS node.prop") {
+    failsToParse
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS r.prop") {
+    failsToParse
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateNodeKeyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), Some("my_constraint")))
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateNodeKeyConstraint(variable, exp.LabelName("Label")(_),
+      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_)), Some("my_constraint")))
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS UNIQUE") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), Some("my_constraint")))
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), Some("my_constraint")))
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_),
+      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_)), Some("my_constraint")))
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.CreateNodePropertyExistenceConstraint(variable, exp.LabelName("Label")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), Some("my_constraint")))
+  }
+
+  test("CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    val variable = exp.Variable("r")(_)
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), Some("$my_constraint")))
+  }
+
+  test("CREATE CONSTRAINT $my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsToParse
+  }
+
+  // Drop constraint
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.DropNodeKeyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_))))
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.DropNodeKeyConstraint(variable, exp.LabelName("Label")(_),
+      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_))))
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.DropUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_))))
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.DropUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_))))
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.DropUniquePropertyConstraint(variable, exp.LabelName("Label")(_),
+      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_))))
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
+    val variable = exp.Variable("node")(_)
+    yields(ast.DropNodePropertyExistenceConstraint(variable, exp.LabelName("Label")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)))
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    val variable = exp.Variable("r")(_)
+    yields(ast.DropRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)))
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
+    val variable = exp.Variable("r")(_)
+    yields(ast.DropRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)))
+  }
+
+  test("DROP CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
+    val variable = exp.Variable("r")(_)
+    yields(ast.DropRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)))
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS NODE KEY") {
+    failsToParse
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS node.prop") {
+    failsToParse
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS r.prop") {
+    failsToParse
+  }
+
+  test("DROP CONSTRAINT my_constraint") {
+    yields(ast.DropConstraintOnName("my_constraint"))
+  }
+
+  test("DROP CONSTRAINT `$my_constraint`") {
+    yields(ast.DropConstraintOnName("$my_constraint"))
+  }
+
+  test("DROP CONSTRAINT $my_constraint") {
+    failsToParse
+  }
+
+  test("DROP CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
+    failsToParse
+  }
+
 }

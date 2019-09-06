@@ -52,11 +52,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping) => ExecutionPlan] = {
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
-    case CreateNodeKeyConstraint(_, label, props) => (_, _) =>
+    case CreateNodeKeyConstraint(_, label, props, name) => (_, _) =>
       SchemaWriteExecutionPlan("CreateNodeKeyConstraint", ctx => {
               val labelId = ctx.getOrCreateLabelId(label.name)
               val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-              ctx.createNodeKeyConstraint(labelId, propertyKeyIds)
+              ctx.createNodeKeyConstraint(labelId, propertyKeyIds, name)
             })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
@@ -69,11 +69,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-    case CreateUniquePropertyConstraint(_, label, props) => (_, _) =>
+    case CreateUniquePropertyConstraint(_, label, props, name) => (_, _) =>
       SchemaWriteExecutionPlan("CreateUniqueConstraint", ctx => {
               val labelId = ctx.getOrCreateLabelId(label.name)
               val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-              ctx.createUniqueConstraint(labelId, propertyKeyIds)
+              ctx.createUniqueConstraint(labelId, propertyKeyIds, name)
             })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
@@ -86,9 +86,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             })
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
-    case CreateNodePropertyExistenceConstraint(label, prop) => (_, _) =>
+    case CreateNodePropertyExistenceConstraint(label, prop, name) => (_, _) =>
       SchemaWriteExecutionPlan("CreateNodePropertyExistenceConstraint", ctx => {
-              (ctx.createNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
+              (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(label, prop.propertyKey, name))
             })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
@@ -98,9 +98,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             })
 
     // CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
-    case CreateRelationshipPropertyExistenceConstraint(relType, prop) => (_, _) =>
+    case CreateRelationshipPropertyExistenceConstraint(relType, prop, name) => (_, _) =>
       SchemaWriteExecutionPlan("CreateRelationshipPropertyExistenceConstraint", ctx => {
-              (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
+              (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typePropWithName(ctx)(relType, prop.propertyKey, name))
             })
 
     // DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
@@ -108,6 +108,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       SchemaWriteExecutionPlan("DropRelationshipPropertyExistenceConstraint", ctx => {
               (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
             })
+
+    case DropConstraintOnName(name) => (_, _) =>
+      SchemaWriteExecutionPlan("DropConstraint", ctx => ctx.dropNamedConstraint(name))
 
     // CREATE INDEX ON :LABEL(prop)
     // CREATE INDEX name ON :LABEL(prop)
@@ -145,6 +148,12 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   private def labelProp(ctx: QueryContext)(label: LabelName, prop: PropertyKeyName) =
     (ctx.getOrCreateLabelId(label.name), ctx.getOrCreatePropertyKeyId(prop.name))
 
+  private def labelPropWithName(ctx: QueryContext)(label: LabelName, prop: PropertyKeyName, name: Option[String]) =
+    (ctx.getOrCreateLabelId(label.name), ctx.getOrCreatePropertyKeyId(prop.name), name)
+
   private def typeProp(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName) =
     (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name))
+
+  private def typePropWithName(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName, name: Option[String]) =
+    (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name), name)
 }

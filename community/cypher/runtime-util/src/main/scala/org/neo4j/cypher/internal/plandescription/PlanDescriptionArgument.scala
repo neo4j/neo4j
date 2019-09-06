@@ -64,6 +64,8 @@ object Arguments {
 
   case class IndexName(index: String) extends Argument
 
+  case class ConstraintName(constraint: String) extends Argument
+
   case class LabelName(label: String) extends Argument
 
   case class KeyNames(keys: Seq[String]) extends Argument

@@ -52,6 +52,7 @@ object PlanDescriptionArgumentSerializer {
       case PointDistanceIndex(label, property, point, distance, inclusive, caches) =>
         s":$label($property) WHERE distance(_,$point) <${if(inclusive) "=" else ""} $distance" + cachesSuffix(caches)
       case IndexName(index) => index
+      case ConstraintName(constraint) => constraint
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)

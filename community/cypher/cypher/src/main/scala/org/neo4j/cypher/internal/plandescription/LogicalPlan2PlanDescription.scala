@@ -137,17 +137,33 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val indexName = IndexName(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(indexName), variables)
 
-      case _: CreateUniquePropertyConstraint =>
+      case CreateUniquePropertyConstraint(_, _, _, None) =>
         PlanDescriptionImpl(id, "CreateUniquePropertyConstraint", NoChildren, Seq.empty, variables)
 
-      case _: CreateNodeKeyConstraint =>
+      case CreateUniquePropertyConstraint(_, _, _, Some(name)) =>
+        val constraintName = ConstraintName(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "CreateUniquePropertyConstraint", NoChildren, Seq(constraintName), variables)
+
+      case CreateNodeKeyConstraint(_, _, _, None) =>
         PlanDescriptionImpl(id, "CreateNodeKeyConstraint", NoChildren, Seq.empty, variables)
 
-      case _: CreateNodePropertyExistenceConstraint =>
+      case CreateNodeKeyConstraint(_, _, _, Some(name)) =>
+        val constraintName = ConstraintName(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "CreateNodeKeyConstraint", NoChildren, Seq(constraintName), variables)
+
+      case CreateNodePropertyExistenceConstraint(_, _, None) =>
         PlanDescriptionImpl(id, "CreateNodePropertyExistenceConstraint", NoChildren, Seq.empty, variables)
 
-      case _: CreateRelationshipPropertyExistenceConstraint =>
+      case CreateNodePropertyExistenceConstraint(_, _, Some(name)) =>
+        val constraintName = ConstraintName(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "CreateNodePropertyExistenceConstraint", NoChildren, Seq(constraintName), variables)
+
+      case CreateRelationshipPropertyExistenceConstraint(_, _, None) =>
         PlanDescriptionImpl(id, "CreateRelationshipPropertyExistenceConstraint", NoChildren, Seq.empty, variables)
+
+      case CreateRelationshipPropertyExistenceConstraint(_, _, Some(name)) =>
+        val constraintName = ConstraintName(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "CreateRelationshipPropertyExistenceConstraint", NoChildren, Seq(constraintName), variables)
 
       case _: DropUniquePropertyConstraint =>
         PlanDescriptionImpl(id, "DropUniquePropertyConstraint", NoChildren, Seq.empty, variables)
@@ -160,6 +176,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case _: DropRelationshipPropertyExistenceConstraint =>
         PlanDescriptionImpl(id, "DropRelationshipPropertyExistenceConstraint", NoChildren, Seq.empty, variables)
+
+      case DropConstraintOnName(name) =>
+        val constraintName = ConstraintName(Prettifier.escapeName(name))
+        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(constraintName), variables)
 
       // TODO: Some of these (those with a source) are currently required in both leaf and one-child code paths,
       //  surely there is a way to not require that?

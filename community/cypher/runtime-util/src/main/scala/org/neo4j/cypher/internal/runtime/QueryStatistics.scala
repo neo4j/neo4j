@@ -44,6 +44,7 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
                            existenceConstraintsRemoved: Int = 0,
                            nodekeyConstraintsAdded: Int = 0,
                            nodekeyConstraintsRemoved: Int = 0,
+                           namedConstraintsRemoved: Int = 0,
                            @BeanProperty systemUpdates: Int = 0
                           ) extends org.neo4j.graphdb.QueryStatistics {
 
@@ -51,7 +52,7 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
   val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded + nodekeyConstraintsAdded
 
   @BeanProperty
-  val constraintsRemoved: Int = uniqueConstraintsRemoved + existenceConstraintsRemoved + nodekeyConstraintsRemoved
+  val constraintsRemoved: Int = uniqueConstraintsRemoved + existenceConstraintsRemoved + nodekeyConstraintsRemoved + namedConstraintsRemoved
 
   override def containsUpdates: Boolean =
     nodesCreated > 0 ||
@@ -89,6 +90,7 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
       includeIfNonZero(builder, "Property existence constraints removed: ", existenceConstraintsRemoved)
       includeIfNonZero(builder, "Node key constraints added: ", nodekeyConstraintsAdded)
       includeIfNonZero(builder, "Node key constraints removed: ", nodekeyConstraintsRemoved)
+      includeIfNonZero(builder, "Named constraints removed: ", namedConstraintsRemoved)
     }
     val result = builder.toString()
 

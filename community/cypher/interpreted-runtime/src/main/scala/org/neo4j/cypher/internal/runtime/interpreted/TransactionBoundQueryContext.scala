@@ -49,7 +49,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.exceptions.schema.{EquivalentSchemaRuleAlreadyExistsException, NoSuchIndexException}
+import org.neo4j.kernel.api.exceptions.schema.{EquivalentSchemaRuleAlreadyExistsException, NoSuchConstraintException, NoSuchIndexException}
 import org.neo4j.kernel.api.{ResourceManager => _, _}
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
@@ -736,8 +736,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     ktx.schemaWrite().indexDrop(index)
   }
 
-  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
-    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), null)
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean = try {
+    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull)
     true
   } catch {
     case _: EquivalentSchemaRuleAlreadyExistsException => false
@@ -747,8 +747,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
-    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), null)
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean = try {
+    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull)
     true
   } catch {
     case _: EquivalentSchemaRuleAlreadyExistsException => false
@@ -758,10 +758,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
 
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Boolean =
     try {
       transactionalContext.kernelTransaction.schemaWrite().nodePropertyExistenceConstraintCreate(
-        SchemaDescriptor.forLabel(labelId, propertyKeyId), null)
+        SchemaDescriptor.forLabel(labelId, propertyKeyId), name.orNull)
       true
     } catch {
       case _: EquivalentSchemaRuleAlreadyExistsException => false
@@ -771,10 +771,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyId))
 
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Boolean =
     try {
       transactionalContext.kernelTransaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-        SchemaDescriptor.forRelType(relTypeId, propertyKeyId), null)
+        SchemaDescriptor.forRelType(relTypeId, propertyKeyId), name.orNull)
       true
     } catch {
       case _: EquivalentSchemaRuleAlreadyExistsException => false
@@ -783,6 +783,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forRelType(relTypeId, propertyKeyId))
+
+  override def dropNamedConstraint(name: String): Unit = {
+    val ktx = transactionalContext.kernelTransaction
+    val constraint = ktx.schemaRead().constraintGetForName(name)
+    if (constraint == null) throw new NoSuchConstraintException(name)
+    ktx.schemaWrite().constraintDrop(constraint)
+  }
 
   override def getImportURL(url: URL): Either[String, URL] = transactionalContext.graph match {
     case db: GraphDatabaseQueryService =>
