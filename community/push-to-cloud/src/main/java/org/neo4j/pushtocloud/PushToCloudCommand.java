@@ -87,15 +87,20 @@ public class PushToCloudCommand implements AdminCommand
                 username = outsideWorld.promptLine("Neo4j cloud database user name: ");
             }
 
-            String password = arguments.get( ARG_PASSWORD );
-            if ( password == null )
+            String passwordFromArg = arguments.get( ARG_PASSWORD );
+            char[] password;
+            if ( passwordFromArg != null )
             {
-                password = new String( outsideWorld.promptPassword( "Neo4j cloud database password: " ) );
+                password = passwordFromArg.toCharArray();
+            }
+            else
+            {
+                password = outsideWorld.promptPassword( "Neo4j cloud database password: " );
             }
 
             String boltURI = arguments.get( ARG_BOLT_URI );
             String consoleURL = buildConsoleURI( boltURI );
-            copier.copy( verbose, consoleURL, source, username, password.toCharArray() );
+            copier.copy( verbose, consoleURL, source, username, password );
         }
         catch ( Exception e )
         {
