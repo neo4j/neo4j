@@ -61,7 +61,8 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             log: Log,
                             plannerOption: CypherPlannerOption,
                             updateStrategy: CypherUpdateStrategy,
-                            txIdProvider: () => Long)
+                            txIdProvider: () => Long,
+                            compatibilityMode: Boolean)
   extends BasePlanner[Statement, BaseState](config, clock, kernelMonitors, plannerOption, updateStrategy, txIdProvider) with CypherPlanner {
 
   monitors.addMonitorListener(logStalePlanRemovalMonitor(log), "cypher4.0")
@@ -76,7 +77,8 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
     val innerVariableNamer = new GeneratingNamer
 
     val syntacticQuery =
-      getOrParse(preParsedQuery, params, new Parser4_0(planner, notificationLogger, preParsedQuery.options.offset, tracer, innerVariableNamer))
+      getOrParse(preParsedQuery, params,
+        new CypherParser(planner, notificationLogger, preParsedQuery.options.offset, tracer, innerVariableNamer, compatibilityMode))
 
     doPlan(syntacticQuery, preParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, innerVariableNamer)
   }
@@ -207,11 +209,12 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
   override val name: PlannerName = plannerName
 }
 
-private[v4_0] class Parser4_0(planner: compiler.CypherPlanner[PlannerContext],
-                              notificationLogger: InternalNotificationLogger,
-                              offset: InputPosition,
-                              tracer: CompilationPhaseTracer,
-                              innerVariableNamer: InnerVariableNamer
+private class CypherParser(planner: compiler.CypherPlanner[PlannerContext],
+                                 notificationLogger: InternalNotificationLogger,
+                                 offset: InputPosition,
+                                 tracer: CompilationPhaseTracer,
+                                 innerVariableNamer: InnerVariableNamer,
+                                 compatibilityMode: Boolean
                              ) extends Parser[BaseState] {
 
   override def parse(preParsedQuery: PreParsedQuery, params: MapValue): BaseState = {
@@ -224,6 +227,6 @@ private[v4_0] class Parser4_0(planner: compiler.CypherPlanner[PlannerContext],
                        tracer,
                        innerVariableNamer,
                        params,
-                       compatibilityMode = false)
+                       compatibilityMode)
   }
 }

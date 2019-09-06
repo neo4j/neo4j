@@ -68,7 +68,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       log,
       cypher.CypherPlannerOption.default,
       CypherUpdateStrategy.default,
-      () => 1)
+      () => 1,
+      compatibilityMode = false)
     createCompiler(planner, log, config)
   }
 
