@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.planning.v4_0
+package org.neo4j.cypher.internal.planning
 
-import org.neo4j.cypher.internal.planning.Cypher4_0Planner
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class Cypher4_0PlannerTest extends CypherFunSuite {
+class CypherPlannerTest extends CypherFunSuite {
   /**
     * This test is here to remind us that the customPlanContextCreator can be changed for
     * debugging purposes, but that change should never be committed.
     */
   test("customPlanContextCreator should be None") {
-    Cypher4_0Planner.customPlanContextCreator should be (None)
+    CypherPlanner.customPlanContextCreator should be (None)
   }
 }

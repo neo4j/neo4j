@@ -61,7 +61,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   private def createCompiler(config: CypherPlannerConfiguration, clock: Clock = Clock.systemUTC(),
                              log: Log = NullLog.getInstance): CypherCurrentCompiler[RuntimeContext] = {
-    val planner = Cypher4_0Planner(config,
+    val planner = CypherPlanner(config,
       clock,
       kernelMonitors,
       log,

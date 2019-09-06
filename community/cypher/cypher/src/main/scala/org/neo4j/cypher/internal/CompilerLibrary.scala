@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.util.concurrent.ConcurrentHashMap
 
+import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 
 import scala.collection.JavaConversions._
@@ -45,9 +46,8 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
   def clearCaches(): Long = {
     val numClearedEntries =
       compilers.values().collect {
-        case c: CachingPlanner[_] => c.clearCaches()
-        case c: CypherCurrentCompiler[_] if c.planner.isInstanceOf[CachingPlanner[_]] =>
-          c.planner.asInstanceOf[CachingPlanner[_]].clearCaches()
+        case c: CypherPlanner => c.clearCaches()
+        case c: CypherCurrentCompiler[_] if c.planner.isInstanceOf[CypherPlanner] => c.planner.clearCaches()
       }
 
     if (numClearedEntries.nonEmpty)

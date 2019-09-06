@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.planning.Cypher4_0Planner
+import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -50,7 +50,7 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
     }
 
     val planner =
-      Cypher4_0Planner(
+      CypherPlanner(
         plannerConfig,
         MasterCompiler.CLOCK,
         kernelMonitors,
