@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.assertion.Assert;
@@ -33,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
+abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     @Test
     void shouldRollbackWhenTxIsNotSuccess() throws Exception
@@ -81,24 +82,26 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         // GIVEN
         int label;
         int propertyKey;
+        LabelSchemaDescriptor schema;
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
+            schema = SchemaDescriptor.forLabel( label, propertyKey );
+            tx.schemaWrite().indexCreate( schema );
             tx.commit();
         }
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            assertAllowedLocks( label, propertyKey, tx );
+            assertAllowedLocks( tx, schema );
 
             // WHEN
             tx.freezeLocks();
 
             // THEN
-            assertFrozenLocks( label, propertyKey, tx );
+            assertFrozenLocks( tx, schema );
         }
     }
 
@@ -108,12 +111,14 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         // GIVEN
         int label;
         int propertyKey;
+        LabelSchemaDescriptor schema;
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
+            schema = SchemaDescriptor.forLabel( label, propertyKey );
+            tx.schemaWrite().indexCreate( schema );
             tx.commit();
         }
 
@@ -124,7 +129,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             tx.thawLocks();
 
             // THEN
-            assertAllowedLocks( label, propertyKey, tx );
+            assertAllowedLocks( tx, schema );
         }
     }
 
@@ -159,12 +164,14 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         // GIVEN
         int label;
         int propertyKey;
+        LabelSchemaDescriptor schema;
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
+            schema = SchemaDescriptor.forLabel( label, propertyKey );
+            tx.schemaWrite().indexCreate( schema );
             tx.commit();
         }
 
@@ -177,25 +184,25 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             tx.freezeLocks();
 
             // THEN
-            assertFrozenLocks( label, propertyKey, tx );
+            assertFrozenLocks( tx, schema );
 
             // WHEN
             tx.thawLocks();
-            assertFrozenLocks( label, propertyKey, tx );
+            assertFrozenLocks( tx, schema );
             tx.thawLocks();
-            assertFrozenLocks( label, propertyKey, tx );
+            assertFrozenLocks( tx, schema );
             tx.thawLocks();
-            assertFrozenLocks( label, propertyKey, tx );
+            assertFrozenLocks( tx, schema );
             tx.thawLocks();
 
             // THEN
-            assertAllowedLocks( label, propertyKey, tx );
+            assertAllowedLocks( tx, schema );
 
             // WHEN
             tx.freezeLocks();
 
             // THEN
-            assertFrozenLocks( label, propertyKey, tx );
+            assertFrozenLocks( tx, schema );
         }
     }
 
@@ -220,14 +227,14 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
 
     // HELPERS
 
-    private void assertAllowedLocks( int label, int propertyKey, KernelTransaction tx )
+    private void assertAllowedLocks( KernelTransaction tx, SchemaDescriptor schema )
     {
-        tx.schemaRead().index( label, propertyKey ); // acquires shared schema lock, but that's fine again
+        tx.schemaRead().index( schema ).forEachRemaining( index -> {} ); // acquires shared schema lock, but that's fine again
     }
 
-    private void assertFrozenLocks( int label, int propertyKey, KernelTransaction tx )
+    private void assertFrozenLocks( KernelTransaction tx, SchemaDescriptor schema )
     {
-        Assert.assertException( () -> tx.schemaRead().index( label, propertyKey ), // acquires shared schema lock
+        Assert.assertException( () -> tx.schemaRead().index( schema ).forEachRemaining( index -> {} ), // acquires shared schema lock
                                 FrozenLocksException.class );
     }
 

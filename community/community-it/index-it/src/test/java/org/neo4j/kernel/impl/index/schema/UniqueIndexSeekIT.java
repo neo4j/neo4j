@@ -66,6 +66,8 @@ import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAc
 @TestDirectoryExtension
 class UniqueIndexSeekIT
 {
+    private static final String CONSTRAINT_NAME = "uniqueConstraint";
+
     @Inject
     private TestDirectory directory;
     private DatabaseManagementService managementService;
@@ -92,7 +94,7 @@ class UniqueIndexSeekIT
             assertThat( numberOfOpenReaders(), greaterThan( 0L ) );
             assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
 
-            lockNodeUsingUniqueIndexSeek( database, label, nameProperty );
+            lockNodeUsingUniqueIndexSeek( database, nameProperty );
 
             assertThat( numberOfClosedReaders(), closeTo( numberOfOpenReaders(), 1 ) );
         }
@@ -123,7 +125,7 @@ class UniqueIndexSeekIT
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private static void lockNodeUsingUniqueIndexSeek( GraphDatabaseAPI database, Label label, String nameProperty ) throws KernelException
+    private static void lockNodeUsingUniqueIndexSeek( GraphDatabaseAPI database, String nameProperty ) throws KernelException
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -131,9 +133,8 @@ class UniqueIndexSeekIT
             TokenRead tokenRead = kernelTransaction.tokenRead();
             Read dataRead = kernelTransaction.dataRead();
 
-            int labelId = tokenRead.nodeLabel( label.name() );
             int propertyId = tokenRead.propertyKey( nameProperty );
-            IndexDescriptor indexReference = kernelTransaction.schemaRead().index( labelId, propertyId );
+            IndexDescriptor indexReference = kernelTransaction.schemaRead().indexGetForName( CONSTRAINT_NAME );
             try ( NodeValueIndexCursor cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor()  )
             {
                 dataRead.lockingNodeUniqueIndexSeek( indexReference, cursor, IndexQuery.ExactPredicate.exact( propertyId, "value" ) );
@@ -159,7 +160,7 @@ class UniqueIndexSeekIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().constraintFor( label ).assertPropertyIsUnique( nameProperty ).create();
+            transaction.schema().constraintFor( label ).assertPropertyIsUnique( nameProperty ).withName( CONSTRAINT_NAME ).create();
             transaction.commit();
         }
         try ( Transaction transaction = database.beginTx() )

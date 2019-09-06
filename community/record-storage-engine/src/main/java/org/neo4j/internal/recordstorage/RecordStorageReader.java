@@ -27,6 +27,7 @@ import java.util.function.Function;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -88,9 +89,9 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
+    public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
     {
-        return schemaCache.indexDescriptor( descriptor );
+        return Iterators.iterator( schemaCache.indexDescriptor( descriptor ) );
     }
 
     @Override

@@ -31,9 +31,9 @@ public interface StorageSchemaReader
      * Looks for a stored index by given {@code descriptor}
      *
      * @param descriptor a description of the index.
-     * @return {@link IndexDescriptor} for matching index, or {@code null} if not found.
+     * @return iterator of matching {@link IndexDescriptor}s.
      */
-    IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
+    Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor );
 
     /**
      * @param labelId label to list indexes for.

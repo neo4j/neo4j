@@ -24,6 +24,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.{Read, SchemaRead, TokenRead}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.internal.helpers.collection.Iterators
+import org.neo4j.internal.schema.SchemaDescriptor
 
 object TransactionBoundGraphStatistics {
   def apply(transactionalContext: TransactionalContext): MinimumGraphStatistics =
@@ -37,7 +39,8 @@ object TransactionBoundGraphStatistics {
 
     override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
-        val indexDescriptor = schemaRead.index(index.label, index.properties.map(_.id): _*)
+        val indexDescriptor = Iterators.single(schemaRead.index(SchemaDescriptor.forLabel(index.label, index.properties.map(_.id): _*)),
+          org.neo4j.internal.schema.IndexDescriptor.NO_INDEX)
         val indexSize = schemaRead.indexSize(indexDescriptor)
         if (indexSize == 0)
           Some(Selectivity.ZERO)
@@ -63,7 +66,9 @@ object TransactionBoundGraphStatistics {
           Some(Selectivity.ZERO)
         else {
           // Probability of any node with the given label, to have a given property
-          val indexSize = schemaRead.indexSize(schemaRead.index(index.label, index.properties.map(_.id):_*))
+          val indexDescriptor = Iterators.single(schemaRead.index(SchemaDescriptor.forLabel(index.label, index.properties.map(_.id): _*)),
+            org.neo4j.internal.schema.IndexDescriptor.NO_INDEX)
+          val indexSize = schemaRead.indexSize(indexDescriptor)
           val indexSelectivity = indexSize / labeledNodes
 
           Selectivity.of(indexSelectivity)

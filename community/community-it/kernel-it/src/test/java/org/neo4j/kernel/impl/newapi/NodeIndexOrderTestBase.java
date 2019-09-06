@@ -47,6 +47,8 @@ import static org.neo4j.values.storable.Values.stringValue;
 public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
+    private final String indexName = "myIndex";
+
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING"} )
     void shouldRangeScanInOrder( IndexOrder indexOrder ) throws Exception
@@ -71,9 +73,8 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         // when
         try ( KernelTransaction tx = beginTransaction() )
         {
-            int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
-            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().index( label, prop ) );
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
 
             try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
             {
@@ -114,9 +115,8 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         // when
         try ( KernelTransaction tx = beginTransaction() )
         {
-            int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
-            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().index( label, prop ) );
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( indexName ) );
 
             try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
             {
@@ -160,11 +160,11 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().indexFor( Label.label( "Node" ) ).on( "prop" ).create();
+            tx.schema().indexFor( Label.label( "Node" ) ).on( "prop" ).withName( indexName ).create();
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }

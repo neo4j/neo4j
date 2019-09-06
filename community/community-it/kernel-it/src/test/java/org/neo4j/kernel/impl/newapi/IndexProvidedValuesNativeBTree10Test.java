@@ -29,9 +29,12 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -55,6 +58,8 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
 
     private List<Value> singlePropValues = new ArrayList<>();
     private List<ValueTuple> doublePropValues = new ArrayList<>();
+    private IndexDescriptor indexNodeProp;
+    private IndexDescriptor indexNodePropPrip;
 
     @Override
     public ReadTestSupport newTestSupport()
@@ -69,8 +74,8 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
-            tx.schema().indexFor( label( "Node" ) ).on( "prop" ).on( "prip" ).create();
+            indexNodeProp = unwrap( tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create() );
+            indexNodePropPrip = unwrap( tx.schema().indexFor( label( "Node" ) ).on( "prop" ).on( "prip" ).create() );
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -103,12 +108,15 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
         doublePropValues.sort( ValueTuple.COMPARATOR  );
     }
 
+    private IndexDescriptor unwrap( IndexDefinition indexDefinition )
+    {
+        return ((IndexDefinitionImpl) indexDefinition).getIndexReference();
+    }
+
     @Test
     void shouldGetAllSinglePropertyValues() throws Exception
     {
-        int label = token.nodeLabel( "Node" );
-        int prop = token.propertyKey( "prop" );
-        IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
+        IndexReadSession index = read.indexReadSession( indexNodeProp );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             read.nodeIndexScan( index, node, IndexOrder.NONE, true );
@@ -130,10 +138,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     @Test
     void shouldGetAllDoublePropertyValues() throws Exception
     {
-        int label = token.nodeLabel( "Node" );
-        int prop = token.propertyKey( "prop" );
-        int prip = token.propertyKey( "prip" );
-        IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop, prip ) );
+        IndexReadSession index = read.indexReadSession( indexNodePropPrip );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             read.nodeIndexScan( index, node, IndexOrder.NONE, true );

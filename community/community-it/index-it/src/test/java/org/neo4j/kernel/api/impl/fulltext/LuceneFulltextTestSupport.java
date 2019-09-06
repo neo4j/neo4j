@@ -27,6 +27,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.graphdb.Label;
@@ -45,7 +46,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -225,15 +226,30 @@ public class LuceneFulltextTestSupport
         node.setProperty( propertyKey, value );
     }
 
-    void await( SchemaDescriptorSupplier descriptor ) throws Exception
+    void await( SchemaDescriptor descriptor ) throws Exception
     {
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            IndexDescriptor index;
-            while ( (index = tx.schemaRead().index( descriptor.schema() )) == IndexDescriptor.NO_INDEX )
+            Iterator<IndexDescriptor> iterator;
+            while ( !(iterator = tx.schemaRead().index( descriptor.schema() )).hasNext() )
             {
                 Thread.sleep( 100 );
             }
+            while ( iterator.hasNext() )
+            {
+                IndexDescriptor index = iterator.next();
+                while ( tx.schemaRead().indexGetState( index ) != InternalIndexState.ONLINE )
+                {
+                    Thread.sleep( 100 );
+                }
+            }
+        }
+    }
+
+    void await( IndexDescriptor index ) throws Exception
+    {
+        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        {
             while ( tx.schemaRead().indexGetState( index ) != InternalIndexState.ONLINE )
             {
                 Thread.sleep( 100 );

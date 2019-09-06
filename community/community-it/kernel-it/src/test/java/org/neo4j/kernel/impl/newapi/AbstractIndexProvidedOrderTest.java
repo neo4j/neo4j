@@ -34,10 +34,13 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -64,6 +67,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
     private TreeSet<NodeValueTuple> singlePropValues = new TreeSet<>( COMPARATOR );
     private TreeSet<NodeValueTuple> doublePropValues = new TreeSet<>( COMPARATOR );
     private ValueType[] targetedTypes;
+    private IndexDescriptor indexNodeProp;
 
     @Override
     public ReadTestSupport newTestSupport()
@@ -80,7 +84,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
+            indexNodeProp = unwrap( tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create() );
             tx.schema().indexFor( label( "Node" ) ).on( "prop" ).on( "prip" ).create();
             tx.commit();
         }
@@ -133,14 +137,18 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         }
     }
 
+    private IndexDescriptor unwrap( IndexDefinition indexDefinition )
+    {
+        return ((IndexDefinitionImpl) indexDefinition).getIndexReference();
+    }
+
     @Test
     void shouldProvideResultInOrderIfCapable() throws KernelException
     {
-        int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
 
         RandomValues randomValues = randomRule.randomValues();
-        IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
+        IndexReadSession index = read.indexReadSession( indexNodeProp );
         for ( int i = 0; i < N_ITERATIONS; i++ )
         {
             ValueType type = randomValues.among( targetedTypes );
@@ -215,7 +223,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         return result.toArray( new ValueType[0] );
     }
 
-    private class NodeValueTuple extends ValueTuple
+    private static class NodeValueTuple extends ValueTuple
     {
         private final long nodeId;
 

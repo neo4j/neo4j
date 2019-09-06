@@ -19,12 +19,16 @@
  */
 package org.neo4j.procedure.builtin;
 
+import java.util.Iterator;
+import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -222,13 +226,20 @@ public class IndexProcedures implements AutoCloseable
             // Find index by label and properties.
             int labelId = getLabelId( specifier.label() );
             int[] propertyKeyIds = getPropertyIds( specifier.properties() );
-            IndexDescriptor indexReference = ktx.schemaRead().index( labelId, propertyKeyIds );
+            Iterator<IndexDescriptor> iterator = ktx.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyKeyIds ) );
 
-            if ( indexReference == IndexDescriptor.NO_INDEX )
+            if ( !iterator.hasNext() )
             {
                 throw new ProcedureException( Status.Schema.IndexNotFound, "No such index %s", specifier );
             }
-            return indexReference;
+            IndexDescriptor index = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                String names = Iterators.toString( Iterators.prependTo( iterator, index ), IndexDescriptor::getName, 5 );
+                throw new ProcedureException( Status.Schema.IndexMultipleFound,
+                        "Multiple indexes were found for %s. Try using an index name instead: %s.", specifier, names );
+            }
+            return index;
         }
     }
 

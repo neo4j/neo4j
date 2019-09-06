@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -33,6 +34,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -67,11 +69,14 @@ class KernelAPIParallelIndexScanStressIT
             tx.commit();
         }
 
+        IndexDescriptor index1;
+        IndexDescriptor index2;
+        IndexDescriptor index3;
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            tx.schema().indexFor( Label.label( "LABEL1" ) ).on( "prop" ).create();
-            tx.schema().indexFor( Label.label( "LABEL2" ) ).on( "prop" ).create();
-            tx.schema().indexFor( Label.label( "LABEL3" ) ).on( "prop" ).create();
+            index1 = unwrap( tx.schema().indexFor( Label.label( "LABEL1" ) ).on( "prop" ).create() );
+            index2 = unwrap( tx.schema().indexFor( Label.label( "LABEL2" ) ).on( "prop" ).create() );
+            index3 = unwrap( tx.schema().indexFor( Label.label( "LABEL3" ) ).on( "prop" ).create() );
             tx.commit();
         }
 
@@ -86,11 +91,9 @@ class KernelAPIParallelIndexScanStressIT
         IndexReadSession[] indexes = new IndexReadSession[3];
         try ( KernelTransaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
         {
-            int propKey = tx.tokenRead().propertyKey( "prop" );
-
-            indexes[0] = indexReadSession( tx, propKey, "LABEL1" );
-            indexes[1] = indexReadSession( tx, propKey, "LABEL2" );
-            indexes[2] = indexReadSession( tx, propKey, "LABEL3" );
+            indexes[0] = indexReadSession( tx, index1 );
+            indexes[1] = indexReadSession( tx, index2 );
+            indexes[2] = indexReadSession( tx, index3 );
             tx.commit();
         }
 
@@ -103,10 +106,13 @@ class KernelAPIParallelIndexScanStressIT
 
     }
 
-    private static IndexReadSession indexReadSession( KernelTransaction tx, int propKey, String label ) throws IndexNotFoundKernelException
+    private IndexDescriptor unwrap( IndexDefinition indexDefinition )
     {
-        int labelId = tx.tokenRead().nodeLabel( label );
-        IndexDescriptor index = tx.schemaRead().index( labelId, propKey );
+        return ((IndexDefinitionImpl) indexDefinition).getIndexReference();
+    }
+
+    private static IndexReadSession indexReadSession( KernelTransaction tx, IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
         return tx.dataRead().indexReadSession( index );
     }
 

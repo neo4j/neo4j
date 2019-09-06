@@ -33,7 +33,7 @@ import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 /**
  * Represent something gone wrong related to SchemaRules
  */
-class SchemaRuleException extends SchemaKernelException
+public class SchemaRuleException extends SchemaKernelException
 {
     private final SchemaDescriptorSupplier schemaThing;
     private final String messageTemplate;

@@ -57,6 +57,7 @@ class NonUniqueIndexTest
     private static final String LABEL = "SomeLabel";
     private static final String KEY = "key";
     private static final String VALUE = "value";
+    private static final String INDEX_NAME = "indexName";
 
     @Inject
     private TestDirectory testDirectory;
@@ -72,7 +73,7 @@ class NonUniqueIndexTest
             // When
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().indexFor( label( LABEL ) ).on( KEY ).create();
+                tx.schema().indexFor( label( LABEL ) ).on( KEY ).withName( INDEX_NAME ).create();
                 tx.commit();
             }
             Node node;
@@ -93,7 +94,7 @@ class NonUniqueIndexTest
             try ( Transaction tx = db.beginTx() )
             {
                 KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-                IndexDescriptor index = ktx.schemaRead().index( ktx.tokenRead().nodeLabel( LABEL ), ktx.tokenRead().propertyKey( KEY ) );
+                IndexDescriptor index = ktx.schemaRead().indexGetForName( INDEX_NAME );
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
                 try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
                 {

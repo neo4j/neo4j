@@ -120,7 +120,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        createIndex( "User", "name" );
+        String indexName = createIndex( "User", "name" );
 
         try ( KernelTransaction tx = beginTransaction();
               NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
@@ -130,7 +130,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             long n = tx.dataWrite().nodeCreate();
             tx.dataWrite().nodeAddLabel( n, user );
             tx.dataWrite().nodeSetProperty( n, name, Values.stringValue( "Bosse" ) );
-            IndexDescriptor index = tx.schemaRead().index( user, name );
+            IndexDescriptor index = tx.schemaRead().indexGetForName( indexName );
             IndexReadSession session = tx.dataRead().indexReadSession( index );
 
             // when
@@ -335,11 +335,12 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
     }
 
     @SuppressWarnings( "SameParameterValue" )
-    private void createIndex( String label, String propertyKey )
+    private String createIndex( String label, String propertyKey )
     {
+        String indexName;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().indexFor( Label.label( label ) ).on( propertyKey ).create();
+            indexName = tx.schema().indexFor( Label.label( label ) ).on( propertyKey ).create().getName();
             tx.commit();
         }
 
@@ -347,5 +348,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         {
             tx.schema().awaitIndexesOnline( 1, MINUTES );
         }
+
+        return indexName;
     }
 }

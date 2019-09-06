@@ -63,7 +63,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 /**
  * This class contains transaction-local changes to the graph. These changes can then be used to augment reads from the
  * committed state of the database (to make the local changes appear in local transaction read operations). At commit
- * time a visitor is sent into this class to convert the end result of the tx changes into a physical changeset.
+ * time a visitor is sent into this class to convert the end result of the tx changes into a physical change-set.
  * <p>
  * See {@link org.neo4j.kernel.impl.api.KernelTransactionImplementation} for how this happens.
  * <p>

@@ -41,6 +41,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal
+import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
@@ -238,7 +239,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def indexReference(label: Int,
                               properties: Int*): IndexDescriptor =
-    transactionalContext.kernelTransaction.schemaRead().index(label, properties: _*)
+    Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(SchemaDescriptor.forLabel(label, properties: _*)))
 
   private def seek[RESULT <: AnyRef](index: IndexReadSession,
                                      needsValues: Boolean,
@@ -715,7 +716,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       IdempotentResult(ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull))
     } catch {
       case _: EquivalentSchemaRuleAlreadyExistsException =>
-        val indexReference = ktx.schemaRead().index(labelId, propertyKeyIds:_*)
+        val indexReference = ktx.schemaRead().index(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)).next()
         if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
           val message = ktx.schemaRead().indexGetFailure(indexReference)
           throw new FailedIndexException(indexReference.userDescription(tokenNameLookup), message)

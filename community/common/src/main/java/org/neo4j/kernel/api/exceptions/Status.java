@@ -294,6 +294,8 @@ public interface Status
                 "Unable to perform operation because it would clash with a pre-existing index." ),
         IndexNotFound( ClientError,
                 "The request (directly or indirectly) referred to an index that does not exist." ),
+        IndexMultipleFound( ClientError,
+                "The request referenced an index by its schema, and multiple matching indexes were found." ),
         IndexNotApplicable( ClientError,
                 "The request did not contain the properties required by the index." ),
         IndexWithNameAlreadyExists( ClientError,

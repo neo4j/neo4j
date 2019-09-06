@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
 import org.neo4j.internal.kernel.api.{IndexReadSession, SchemaRead}
 import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor}
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -54,8 +55,8 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
 
   def result(): QueryIndexes = {
     val indexes =
-      buffer.map(index => schemaRead.indexForSchemaNonTransactional(
-        SchemaDescriptor.forLabel(index.label, index.properties:_*))).toArray
+      buffer.flatMap(index => schemaRead.indexForSchemaNonTransactional(
+        SchemaDescriptor.forLabel(index.label, index.properties: _*)).asScala).toArray
 
     QueryIndexes(labelScan, indexes)
   }

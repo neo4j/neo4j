@@ -24,11 +24,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -62,11 +64,12 @@ class ConstraintIndexConcurrencyTest
         Label label = label( "Foo" );
         String propertyKey = "bar";
         String conflictingValue = "baz";
+        String constraintName = "MyConstraint";
 
         // a constraint
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( constraintName ).create();
             tx.commit();
         }
 
@@ -79,8 +82,9 @@ class ConstraintIndexConcurrencyTest
             Read read = ktx.dataRead();
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().index( labelId, propertyKeyId ) );
-                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false,
+                IndexDescriptor index = ktx.schemaRead().indexGetForName( constraintName );
+                IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
+                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false,
                         IndexQuery.exact( propertyKeyId,
                                 "The value is irrelevant, we just want to perform some sort of lookup against this " + "index" ) );
             }

@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,6 +64,8 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
     private long has;
     private long is;
+
+    private IndexDescriptor index;
 
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
@@ -99,7 +102,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().indexFor( label( "Foo" ) ).on( "p1" ).create();
+            index = ((IndexDefinitionImpl) tx.schema().indexFor( label( "Foo" ) ).on( "p1" ).create()).getIndexReference();
             tx.commit();
         }
 
@@ -224,7 +227,6 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
         {
             int p1 = token.propertyKey( "p1" );
-            IndexDescriptor index = tx.schemaRead().index( token.nodeLabel( "Foo" ), p1 );
             IndexReadSession session = read.indexReadSession( index );
 
             assertIndexSeekTracing( tracer, cursor, session, IndexOrder.NONE, p1 );

@@ -20,44 +20,22 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
-
-import static java.lang.String.format;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 public class DropIndexFailureException extends SchemaKernelException
 {
-    private final SchemaDescriptor descriptor;
-    private final String name;
-    private static final String message = "Unable to drop index %s: %s";
+    private final String message;
 
-    public DropIndexFailureException( SchemaDescriptor descriptor, SchemaKernelException cause )
+    public DropIndexFailureException( String message )
     {
-        super( Status.Schema.IndexDropFailed, format( message, "on " + descriptor.userDescription( idTokenNameLookup ), cause.getMessage() ), cause );
-        this.descriptor = descriptor;
-        this.name = null;
-    }
-
-    public DropIndexFailureException( String name, SchemaKernelException cause )
-    {
-        super( Status.Schema.IndexDropFailed, format( message, name, cause.getMessage() ), cause );
-        this.descriptor = null;
-        this.name = name;
+        super( Status.Schema.IndexDropFailed, message );
+        this.message = message;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        if ( descriptor == null )
-        {
-            return format( message, name, ((KernelException) getCause()).getUserMessage( tokenNameLookup ) );
-        }
-        else
-        {
-            return format( message, "on " + descriptor.userDescription( tokenNameLookup ), ((KernelException) getCause()).getUserMessage( tokenNameLookup ) );
-        }
+        return message;
     }
 }

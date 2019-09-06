@@ -42,6 +42,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -62,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 
 @TestDirectoryExtension
 class BatchInsertIndexTest
@@ -93,7 +95,7 @@ class BatchInsertIndexTest
             SchemaRead schemaRead = kernelTransaction.schemaRead();
             int labelId = tokenRead.nodeLabel( TestLabels.LABEL_ONE.name() );
             int propertyId = tokenRead.propertyKey( "key" );
-            IndexDescriptor index = schemaRead.index( labelId, propertyId );
+            IndexDescriptor index = single( schemaRead.index( SchemaDescriptor.forLabel( labelId, propertyId ) ) );
             assertTrue( schemaIndex.providerName().contains( index.getIndexProvider().getKey() ), unexpectedIndexProviderMessage( index ) );
             assertTrue( schemaIndex.providerName().contains( index.getIndexProvider().getVersion() ), unexpectedIndexProviderMessage( index ) );
             tx.commit();

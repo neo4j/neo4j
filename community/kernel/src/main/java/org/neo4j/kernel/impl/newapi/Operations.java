@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -80,6 +81,7 @@ import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsE
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
+import org.neo4j.kernel.api.exceptions.schema.MultipleIndexesException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
@@ -104,6 +106,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.INDEX_CREATION;
@@ -504,18 +507,18 @@ public class Operations implements Write, SchemaWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode )
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        IndexDescriptor schemaIndexDescriptor = allStoreHolder.index( constraint.schema() );
+        IndexDescriptor index = allStoreHolder.indexGetForName( constraint.getName() );
         try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor();
-              IndexReaders indexReaders = new IndexReaders( schemaIndexDescriptor, allStoreHolder ) )
+              IndexReaders indexReaders = new IndexReaders( index, allStoreHolder ) )
         {
-            assertIndexOnline( schemaIndexDescriptor );
-            SchemaDescriptor indexSchema = schemaIndexDescriptor.schema();
-            long[] labelIds = indexSchema.lockingKeys();
+            assertIndexOnline( index );
+            SchemaDescriptor schema = index.schema();
+            long[] labelIds = schema.lockingKeys();
             if ( labelIds.length != 1 )
             {
                 throw new UnableToValidateConstraintException( constraint, new AssertionError( "Constraint indexes are not expected to be multi-token " +
                         "indexes, but the constraint " + constraint.prettyPrint( tokenNameLookup ) + " was referencing an index with the following schema: " +
-                        indexSchema.userDescription( tokenNameLookup ) + "." ) );
+                        schema.userDescription( tokenNameLookup ) + "." ) );
             }
 
             //Take a big fat lock, and check for existing node in index
@@ -795,7 +798,10 @@ public class Operations implements Write, SchemaWrite
         ktx.assertOpen();
         assertValidDescriptor( prototype.schema(), INDEX_CREATION );
         prototype = ensureIndexPrototypeHasName( prototype );
-        prototype.getName().ifPresent( this::exclusiveSchemaNameLock );
+        Optional<String> nameOptional = prototype.getName();
+        assert nameOptional.isPresent();
+        String name = nameOptional.get();
+        exclusiveSchemaNameLock( name );
         assertNoBlockingSchemaRulesExists( prototype );
 
         return indexDoCreate( prototype );
@@ -882,37 +888,42 @@ public class Operations implements Write, SchemaWrite
     @Override
     public void indexDrop( IndexDescriptor index ) throws SchemaKernelException
     {
-        assertValidIndex( index );
+        if ( index == IndexDescriptor.NO_INDEX )
+        {
+            throw new DropIndexFailureException( "No index was specified." );
+        }
+        exclusiveSchemaLock( index.schema() );
         exclusiveSchemaNameLock( index.getName() );
-        indexDrop( index.schema() );
+        if ( index.isUnique() )
+        {
+            if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
+            {
+                throw new IndexBelongsToConstraintException( index.schema() );
+            }
+        }
+        ktx.txState().indexDoDrop( index );
     }
 
     @Override
     public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
     {
         exclusiveSchemaLock( schema );
-        try
-        {
-            IndexDescriptor existingIndex = allStoreHolder.index( schema );
+        Iterator<IndexDescriptor> iterator = allStoreHolder.index( schema );
 
-            if ( existingIndex == IndexDescriptor.NO_INDEX )
-            {
-                throw new NoSuchIndexException( schema );
-            }
-
-            if ( existingIndex.isUnique() )
-            {
-                if ( allStoreHolder.indexGetOwningUniquenessConstraintId( existingIndex ) != null )
-                {
-                    throw new IndexBelongsToConstraintException( schema );
-                }
-            }
-            ktx.txState().indexDoDrop( existingIndex );
-        }
-        catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
+        if ( !iterator.hasNext() )
         {
-            throw new DropIndexFailureException( schema, e );
+            throw new NoSuchIndexException( schema );
         }
+        IndexDescriptor existingIndex = iterator.next();
+        if ( iterator.hasNext() )
+        {
+            Collection<IndexDescriptor> indexes = new ArrayList<>();
+            indexes.add( existingIndex );
+            iterator.forEachRemaining( indexes::add );
+            throw new MultipleIndexesException( schema, indexes );
+        }
+
+        indexDrop( existingIndex );
     }
 
     @Override
@@ -1229,7 +1240,7 @@ public class Operations implements Write, SchemaWrite
         txState.constraintDoDrop( descriptor );
         if ( descriptor.enforcesUniqueness() )
         {
-            IndexDescriptor index = allStoreHolder.index( descriptor.schema() );
+            IndexDescriptor index = allStoreHolder.indexGetForName( descriptor.getName() );
             if ( index != IndexDescriptor.NO_INDEX )
             {
                 txState.indexDoDrop( index );
@@ -1352,7 +1363,7 @@ public class Operations implements Write, SchemaWrite
         SchemaDescriptor descriptor = constraint.schema();
         try
         {
-            IndexDescriptor constraintIndex = allStoreHolder.indexForSchemaNonTransactional( descriptor ); // Ignore transaction state.
+            IndexDescriptor constraintIndex = single( allStoreHolder.indexForSchemaNonTransactional( descriptor ) ); // Ignore transaction state.
             if ( constraintIndex.isUnique() && ktx.hasTxStateWithChanges() && ktx.txState().indexDoUnRemove( constraintIndex ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
                 if ( !ktx.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*

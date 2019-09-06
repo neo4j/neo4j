@@ -69,7 +69,9 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexKind;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -648,9 +650,15 @@ public class TransactionImpl implements InternalTransaction
             statement.close();
             return emptyResourceIterator();
         }
-        IndexDescriptor index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
-        if ( index != IndexDescriptor.NO_INDEX )
+        Iterator<IndexDescriptor> iterator = transaction.schemaRead().index( SchemaDescriptor.forLabel( labelId, query.propertyKeyId() ) );
+        while ( iterator.hasNext() )
         {
+            IndexDescriptor index = iterator.next();
+            if ( index.schema().getIndexType().getKind() == IndexKind.GENERAL )
+            {
+                // Skip special indexes, such as the full-text indexes, because they can't handle all the queries we might throw at them.
+                continue;
+            }
             // Ha! We found an index - let's use it to find matching nodes
             try
             {
@@ -758,33 +766,37 @@ public class TransactionImpl implements InternalTransaction
 
     private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
     {
-        IndexDescriptor index = transaction.schemaRead().index( labelId, propertyIds );
-        if ( index != IndexDescriptor.NO_INDEX )
+        // Try a direct schema match first.
+        Iterator<IndexDescriptor> iterator = transaction.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyIds ) );
+        while ( iterator.hasNext() )
         {
-            // index found with property order matching the query
-            return index;
-        }
-        else
-        {
-            // attempt to find matching index with different property order
-            Arrays.sort( propertyIds );
-            assertNoDuplicates( propertyIds, transaction.tokenRead() );
-
-            int[] workingCopy = new int[propertyIds.length];
-
-            Iterator<IndexDescriptor> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
-            while ( indexes.hasNext() )
+            IndexDescriptor index = iterator.next();
+            if ( index.schema().getIndexType().getKind() == IndexKind.GENERAL )
             {
-                index = indexes.next();
-                int[] original = index.schema().getPropertyIds();
-                if ( hasSamePropertyIds( original, workingCopy, propertyIds ) )
-                {
-                    // Ha! We found an index with the same properties in another order
-                    return index;
-                }
+                return index;
             }
-            return IndexDescriptor.NO_INDEX;
         }
+
+        // Attempt to find matching index with different property order
+        Arrays.sort( propertyIds );
+        assertNoDuplicates( propertyIds, transaction.tokenRead() );
+
+        int[] workingCopy = new int[propertyIds.length];
+
+        Iterator<IndexDescriptor> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
+        while ( indexes.hasNext() )
+        {
+            IndexDescriptor index = indexes.next();
+            int[] original = index.schema().getPropertyIds();
+            if ( hasSamePropertyIds( original, workingCopy, propertyIds ) )
+            {
+                // Ha! We found an index with the same properties in another order
+                return index;
+            }
+        }
+
+        // No dice.
+        return IndexDescriptor.NO_INDEX;
     }
 
     private static void assertNoDuplicates( int[] propertyIds, TokenRead tokenRead )

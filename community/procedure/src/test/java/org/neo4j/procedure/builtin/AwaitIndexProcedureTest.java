@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -107,12 +108,12 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( descriptor.getLabelId() );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( descriptor.getPropertyId() );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
+        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
         procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
 
-        verify( schemaRead ).index( descriptor.getLabelId(), descriptor.getPropertyId() );
+        verify( schemaRead ).index( descriptor );
     }
 
     @Test
@@ -133,7 +134,7 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
+        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( FAILED );
         when( schemaRead.indexGetFailure( any( IndexDescriptor.class ) ) ).thenReturn( Exceptions.stringify( new Exception( "Kilroy was here" ) ) );
 
@@ -148,7 +149,7 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
+        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.emptyResourceIterator() );
 
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT ) );
@@ -177,7 +178,7 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
+        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).then( invocationOnMock -> state.get() );
@@ -208,7 +209,7 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( anyInt(), anyInt() ) ).thenReturn( anyIndex );
+        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenReturn( Iterators.iterator( anyIndex ) );
         when( schemaRead.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();

@@ -61,13 +61,14 @@ class IndexSamplingIntegrationTest
 
     private final Label label = Label.label( "Person" );
     private final String property = "name";
+    private final String schemaName = "schema_name";
     private final long nodes = 1000;
     private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};
 
     @Test
     void shouldSampleNotUniqueIndex() throws Throwable
     {
-        GraphDatabaseService db = null;
+        GraphDatabaseService db;
         DatabaseManagementService managementService = null;
         long deletedNodes = 0;
         try
@@ -78,7 +79,7 @@ class IndexSamplingIntegrationTest
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
             {
-                indexDefinition = tx.schema().indexFor( label ).on( property ).create();
+                indexDefinition = tx.schema().indexFor( label ).on( property ).withName( schemaName ).create();
                 tx.commit();
             }
 
@@ -124,12 +125,12 @@ class IndexSamplingIntegrationTest
         // Then
 
         // lucene will consider also the delete nodes, native won't
-        DoubleLongRegister register = fetchIndexSamplingValues( db );
+        DoubleLongRegister register = fetchIndexSamplingValues();
         assertEquals( names.length, register.readFirst() );
         MatcherAssert.assertThat( register.readSecond(), allOf( greaterThanOrEqualTo( nodes - deletedNodes ), lessThanOrEqualTo( nodes ) ) );
 
         // but regardless, the deleted nodes should not be considered in the index size value
-        DoubleLongRegister indexSizeRegister = fetchIndexSizeValues( db );
+        DoubleLongRegister indexSizeRegister = fetchIndexSizeValues();
         assertEquals( 0, indexSizeRegister.readFirst() );
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
@@ -147,7 +148,7 @@ class IndexSamplingIntegrationTest
             db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+                tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).withName( schemaName ).create();
                 tx.commit();
             }
 
@@ -185,30 +186,28 @@ class IndexSamplingIntegrationTest
         triggerIndexResamplingOnNextStartup();
 
         // Then
-        DoubleLongRegister indexSampleRegister = fetchIndexSamplingValues( db );
+        DoubleLongRegister indexSampleRegister = fetchIndexSamplingValues();
         assertEquals( nodes - deletedNodes, indexSampleRegister.readFirst() );
         assertEquals( nodes - deletedNodes, indexSampleRegister.readSecond() );
 
-        DoubleLongRegister indexSizeRegister = fetchIndexSizeValues( db );
+        DoubleLongRegister indexSizeRegister = fetchIndexSizeValues();
         assertEquals( 0, indexSizeRegister.readFirst() );
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
 
     private IndexDescriptor indexId( KernelTransaction tx )
     {
-        int labelId = tx.tokenRead().nodeLabel( label.name() );
-        int propertyKeyId = tx.tokenRead().propertyKey( property );
-        return tx.schemaRead().index( labelId, propertyKeyId );
+        return tx.schemaRead().indexGetForName( schemaName );
     }
 
-    private DoubleLongRegister fetchIndexSamplingValues( GraphDatabaseService db ) throws IndexNotFoundKernelException, TransactionFailureException
+    private DoubleLongRegister fetchIndexSamplingValues() throws IndexNotFoundKernelException, TransactionFailureException
     {
         DatabaseManagementService managementService = null;
         try
         {
             // Then
             managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
-            db = managementService.database( DEFAULT_DATABASE_NAME );
+            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
             try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
@@ -225,14 +224,14 @@ class IndexSamplingIntegrationTest
         }
     }
 
-    private DoubleLongRegister fetchIndexSizeValues( GraphDatabaseService db ) throws IndexNotFoundKernelException, TransactionFailureException
+    private DoubleLongRegister fetchIndexSizeValues() throws IndexNotFoundKernelException, TransactionFailureException
     {
         DatabaseManagementService managementService = null;
         try
         {
             // Then
             managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
-            db = managementService.database( DEFAULT_DATABASE_NAME );
+            GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
             try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )

@@ -520,9 +520,6 @@ abstract class Read implements TxStateHolder,
     abstract LabelScanReader labelScanReader();
 
     @Override
-    public abstract IndexDescriptor index( int label, int... properties );
-
-    @Override
     public TransactionState txState()
     {
         return ktx.txState();

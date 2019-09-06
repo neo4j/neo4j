@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -639,6 +640,32 @@ public final class Iterators
                 }
             }
         };
+    }
+
+    /**
+     * Produce a string of the form {@code [A, B, C, ...]} by consuming up to {@code maxItems} objects from the iterator,
+     * optionally appending an ellipsis if the iterator has more than {@code maxItems} in it.
+     *
+     * @param iterator the iterator to format as a string.
+     * @param toString the function that converts the iterator elements to strings.
+     * @param maxItems the maximum number of items to include in the string.
+     * @param <T> the type of objects in the iterator.
+     * @return a string of the form {@code [A, B, C]} or {@code [A, B, C, ...]}.
+     */
+    public static <T> String toString( Iterator<T> iterator, Function<T,String> toString, int maxItems )
+    {
+        StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
+        while ( iterator.hasNext() && maxItems > 0 )
+        {
+            String str = toString.apply( iterator.next() );
+            joiner.add( str );
+            maxItems--;
+        }
+        if ( iterator.hasNext() )
+        {
+            joiner.add( "..." );
+        }
+        return joiner.toString();
     }
 
     @SuppressWarnings( "unchecked" )

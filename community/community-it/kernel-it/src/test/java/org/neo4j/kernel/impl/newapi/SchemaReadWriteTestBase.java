@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Values;
 
@@ -48,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.schema.IndexDescriptor.NO_INDEX;
 
 @SuppressWarnings( "Duplicates" )
@@ -90,7 +92,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat( schemaRead.index( label, prop1 ), equalTo( NO_INDEX ) );
+            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ).hasNext() );
         }
     }
 
@@ -107,7 +109,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat( schemaRead.index( label, prop1 ), equalTo( index ) );
+            assertThat( single( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ) ), equalTo( index ) );
         }
     }
 
@@ -145,7 +147,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat( schemaRead.index( label, prop1 ), equalTo( NO_INDEX ) );
+            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ).hasNext() );
         }
     }
 
@@ -168,7 +170,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat( schemaRead.index( label, prop1 ), equalTo( NO_INDEX ) );
+            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ).hasNext() );
         }
     }
 
@@ -260,9 +262,10 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
+            LabelSchemaDescriptor schema = labelDescriptor( label, prop2 );
+            transaction.schemaWrite().indexCreate( schema );
             SchemaRead schemaRead = transaction.schemaRead();
-            IndexDescriptor index = schemaRead.index( label, prop2 );
+            IndexDescriptor index = single( schemaRead.index( schema ) );
             assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
             assertThat( 2, equalTo( Iterators.asList( schemaRead.indexesGetAll() ).size() ) );
         }
@@ -283,11 +286,11 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
             SchemaReadCore schemaReadAfter = transaction.schemaRead().snapshot();
 
-            IndexDescriptor index = schemaReadBefore.index( labelDescriptor( label, prop2 ) );
+            IndexDescriptor index = single( schemaReadBefore.index( labelDescriptor( label, prop2 ) ) );
             assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
             assertThat( 2, equalTo( Iterators.asList( schemaReadBefore.indexesGetAll() ).size() ) );
 
-            index = schemaReadAfter.index( labelDescriptor( label, prop2 ) );
+            index = single( schemaReadAfter.index( labelDescriptor( label, prop2 ) ) );
             assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
             assertThat( 2, equalTo( Iterators.asList( schemaReadAfter.indexesGetAll() ).size() ) );
         }
@@ -307,7 +310,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             transaction.schemaWrite().indexDrop( index );
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat( schemaRead.index( label, prop2 ), equalTo( NO_INDEX ) );
+            assertFalse( schemaRead.index( index.schema() ).hasNext() );
         }
     }
 
@@ -544,16 +547,17 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     void shouldFailToDropIndexIfExistingUniqueConstraint() throws Exception
     {
         //Given
+        String schemaName = "constraint name";
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ), "constraint name" );
+            transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ), schemaName );
             transaction.commit();
         }
 
         //When
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            IndexDescriptor index = transaction.schemaRead().index( label, prop1 );
+            IndexDescriptor index = transaction.schemaRead().indexGetForName( schemaName );
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index ) );
             transaction.commit();
@@ -564,16 +568,17 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     void shouldFailToDropIndexBySchemaIfExistingUniqueConstraint() throws Exception
     {
         //Given
+        String schemaName = "constraint name";
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ), "constraint name" );
+            transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ), schemaName );
             transaction.commit();
         }
 
         //When
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            IndexDescriptor index = transaction.schemaRead().index( label, prop1 );
+            IndexDescriptor index = transaction.schemaRead().indexGetForName( schemaName );
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index.schema() ) );
             transaction.commit();
@@ -869,7 +874,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( existing ) );
 
-            assertThat( schemaRead.index( label, prop2 ), equalTo( NO_INDEX ) );
+            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop2 ) ).hasNext() );
             assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
             assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), empty() );
             assertThat( asList( before.constraintsGetForLabel( label ) ), empty() );
@@ -985,7 +990,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( existing ) );
 
-            assertThat( schemaRead.index( type, prop2 ), equalTo( NO_INDEX ) );
+            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( type, prop2 ) ).hasNext() );
             assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
             assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), empty() );
             assertThat( asList( before.constraintsGetForLabel( label ) ), empty() );

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, symbols => types}
 import org.neo4j.exceptions.KernelException
-import org.neo4j.internal.kernel.api.{InternalIndexState, procs, _}
+import org.neo4j.internal.kernel.api.{InternalIndexState, procs}
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, IndexLimitation, IndexOrder, IndexValueCapability, SchemaDescriptor}
 import org.neo4j.kernel.api.KernelTransaction
@@ -108,7 +108,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     try {
       val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-      getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
+      val itr = tc.schemaRead.index(descriptor).asScala.flatMap(getOnlineIndex)
+      if (itr.hasNext) Some(itr.next) else None
     } catch {
       case _: KernelException => None
     }

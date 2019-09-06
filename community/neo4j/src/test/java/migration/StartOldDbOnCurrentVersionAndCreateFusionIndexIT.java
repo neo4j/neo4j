@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -75,6 +76,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.ArrayUtil.concat;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.test.Unzip.unzip;
 
 @TestDirectoryExtension
@@ -359,9 +361,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             int key1Id = tokenRead.propertyKey( KEY1 );
             int key2Id = tokenRead.propertyKey( KEY2 );
 
-            IndexDescriptor index = schemaRead.index( labelId, key1Id );
+            IndexDescriptor index = single( schemaRead.index( SchemaDescriptor.forLabel( labelId, key1Id ) ) );
             assertIndexHasExpectedProvider( expectedDescriptor, index );
-            index = schemaRead.index( labelId, key1Id, key2Id );
+            index = single( schemaRead.index( SchemaDescriptor.forLabel( labelId, key1Id, key2Id ) ) );
             assertIndexHasExpectedProvider( expectedDescriptor, index );
             tx.commit();
         }
@@ -505,7 +507,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             {
                 predicates[i] = IndexQuery.exists( propertyKeyIds[i] );
             }
-            IndexDescriptor index = ktx.schemaRead().index( labelId, propertyKeyIds );
+            IndexDescriptor index = single( ktx.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyKeyIds ) ) );
             IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
             int count = 0;
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )

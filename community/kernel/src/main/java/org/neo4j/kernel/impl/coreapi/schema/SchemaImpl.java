@@ -51,9 +51,10 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -225,16 +226,16 @@ public class SchemaImpl implements Schema
         long millisLeft = TimeUnit.MILLISECONDS.convert( duration, unit );
         Collection<IndexDefinition> onlineIndexes = new ArrayList<>();
 
-        for ( Iterator<IndexDefinition> iter = getIndexes().iterator(); iter.hasNext(); )
+        for ( Iterator<IndexDefinition> iterator = getIndexes().iterator(); iterator.hasNext(); )
         {
             if ( millisLeft < 0 )
             {
                 throw new IllegalStateException( "Expected all indexes to come online within a reasonable time."
                                                  + "Indexes brought online: " + onlineIndexes
-                                                 + ". Indexes not guaranteed to be online: " + asCollection( iter ) );
+                                                 + ". Indexes not guaranteed to be online: " + asCollection( iterator ) );
             }
 
-            IndexDefinition index = iter.next();
+            IndexDefinition index = iterator.next();
 
             Stopwatch stopWatch = Stopwatch.start();
             awaitIndexOnline( index, millisLeft, TimeUnit.MILLISECONDS );
@@ -308,7 +309,7 @@ public class SchemaImpl implements Schema
                 throw new IllegalArgumentException( String.format( "Illegal index state %s", indexState ) );
             }
         }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw newIndexNotFoundException( index, e );
         }
@@ -330,7 +331,7 @@ public class SchemaImpl implements Schema
             PopulationProgress progress = schemaRead.indexGetPopulationProgress( descriptor );
             return progress.toIndexPopulationProgress();
         }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw newIndexNotFoundException( index, e );
         }
@@ -346,7 +347,7 @@ public class SchemaImpl implements Schema
             IndexDescriptor descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             return schemaRead.indexGetFailure( descriptor );
         }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw newIndexNotFoundException( index, e );
         }
@@ -410,8 +411,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private static IndexDescriptor getIndexReference( SchemaRead schemaRead, TokenRead tokenRead, IndexDefinitionImpl index )
-            throws SchemaRuleNotFoundException
+    private static IndexDescriptor getIndexReference( SchemaRead schemaRead, TokenRead tokenRead, IndexDefinitionImpl index ) throws SchemaRuleException
     {
         // Use the precise embedded index reference when available.
         IndexDescriptor reference = index.getIndexReference();
@@ -456,10 +456,15 @@ public class SchemaImpl implements Schema
             throw new IllegalArgumentException( "The given index is neither a node index, nor a relationship index: " + index + "." );
         }
 
-        reference = schemaRead.index( schema );
-        if ( reference == IndexDescriptor.NO_INDEX )
+        Iterator<IndexDescriptor> iterator = schemaRead.index( schema );
+        if ( !iterator.hasNext() )
         {
             throw new SchemaRuleNotFoundException( schema );
+        }
+        reference = iterator.next();
+        if ( iterator.hasNext() )
+        {
+            throw new DuplicateSchemaRuleException( schema );
         }
 
         return reference;

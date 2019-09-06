@@ -36,21 +36,12 @@ import org.neo4j.values.storable.Value;
 public interface SchemaRead extends SchemaReadCore
 {
     /**
-     * Acquire a reference to the index mapping the given {@code label} and {@code properties}.
-     *
-     * @param label the index label
-     * @param properties the index properties
-     * @return the IndexDescriptor, or {@link IndexDescriptor#NO_INDEX} if such an index does not exist.
-     */
-    IndexDescriptor index( int label, int... properties );
-
-    /**
      * Acquire a reference to the index mapping the given {@code schema}, but without requiring a transaction to be open, and without taking any schema locks.
      *
      * @param schema The schema for which to look up an index.
      * @return An index matching the schema, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong.
      */
-    IndexDescriptor indexForSchemaNonTransactional( SchemaDescriptor schema );
+    Iterator<IndexDescriptor> indexForSchemaNonTransactional( SchemaDescriptor schema );
 
     /**
      * Returns the index with the given name.

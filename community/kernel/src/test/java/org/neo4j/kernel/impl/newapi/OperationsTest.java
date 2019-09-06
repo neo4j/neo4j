@@ -588,7 +588,7 @@ class OperationsTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
-        when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( index );
+        when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( Iterators.iterator( index ) );
         when( storageReader.indexExists( index ) ).thenReturn( true );
 
         // when
@@ -607,7 +607,7 @@ class OperationsTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
-        when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( index );
+        when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( Iterators.iterator( index ) );
         when( storageReader.indexExists( index ) ).thenReturn( true );
 
         // when
@@ -818,7 +818,7 @@ class OperationsTest
         IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).withName( "constraint" ).materialise( 13 );
         storageReaderWithConstraints( constraint );
         when( storageReader.indexExists( index ) ).thenReturn( true );
-        when( storageReader.indexGetForSchema( descriptor ) ).thenReturn( index );
+        when( storageReader.indexGetForName( "constraint" ) ).thenReturn( index );
 
         // when
         operations.constraintDrop( constraint );

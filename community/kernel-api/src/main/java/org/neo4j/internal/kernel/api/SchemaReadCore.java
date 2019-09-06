@@ -35,9 +35,9 @@ public interface SchemaReadCore
      * Acquire a reference to the index mapping the given {@code SchemaDescriptor}.
      *
      * @param schema {@link SchemaDescriptor} for the index
-     * @return the IndexReference, or {@link IndexDescriptor#NO_INDEX} if such an index does not exist.
+     * @return the {@link IndexDescriptor}s that match the given schema.
      */
-    IndexDescriptor index( SchemaDescriptor schema );
+    Iterator<IndexDescriptor> index( SchemaDescriptor schema );
 
     /**
      * Returns all indexes associated with the given label

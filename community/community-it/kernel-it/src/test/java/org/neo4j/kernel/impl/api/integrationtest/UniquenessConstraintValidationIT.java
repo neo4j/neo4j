@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -289,7 +290,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
     void unrelatedNodesWithSamePropertyShouldNotInterfereWithUniquenessCheck() throws Exception
     {
         // given
-        createConstraint( "Person", "id" );
+        ConstraintDescriptor constraint = createConstraint( "Person", "id" );
 
         long ourNode;
         {
@@ -301,9 +302,8 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         TokenRead tokenRead = transaction.tokenRead();
-        int person = tokenRead.nodeLabel( "Person" );
         int propId = tokenRead.propertyKey( "id" );
-        IndexDescriptor idx = transaction.schemaRead().index(  person, propId );
+        IndexDescriptor idx = transaction.schemaRead().indexGetForName( constraint.getName() );
 
         // when
         createLabeledNode( transaction, "Item", "id", 2 );
@@ -321,7 +321,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
     void addingUniqueNodeWithUnrelatedValueShouldNotAffectLookup() throws Exception
     {
         // given
-        createConstraint( "Person", "id" );
+        ConstraintDescriptor constraint = createConstraint( "Person", "id" );
 
         long ourNode;
         {
@@ -332,9 +332,8 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         TokenRead tokenRead = transaction.tokenRead();
-        int person = tokenRead.nodeLabel( "Person" );
         int propId = tokenRead.propertyKey( "id" );
-        IndexDescriptor idx = transaction.schemaRead().index( person, propId  );
+        IndexDescriptor idx = transaction.schemaRead().indexGetForName( constraint.getName() );
 
         // when
         createLabeledNode( transaction, "Person", "id", 2 );
@@ -395,7 +394,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         return node;
     }
 
-    private void createConstraint( String label, String propertyKey ) throws KernelException
+    private ConstraintDescriptor createConstraint( String label, String propertyKey ) throws KernelException
     {
         int labelId;
         int propertyKeyId;
@@ -405,7 +404,9 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         commit();
 
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-        schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId, propertyKeyId ), null );
+        ConstraintDescriptor constraint = schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId, propertyKeyId ), null );
         commit();
+
+        return constraint;
     }
 }

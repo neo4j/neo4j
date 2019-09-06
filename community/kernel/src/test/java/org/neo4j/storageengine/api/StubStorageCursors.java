@@ -227,7 +227,7 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
+    public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }

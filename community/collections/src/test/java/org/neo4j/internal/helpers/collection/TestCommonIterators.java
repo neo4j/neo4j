@@ -210,4 +210,10 @@ class TestCommonIterators
         assertEquals( characteristics, stream.spliterator().characteristics() );
     }
 
+    @Test
+    void iteratorsToString()
+    {
+        assertEquals( "[a, b, c]", Iterators.toString( Iterators.iterator( "a", "b", "c" ), Object::toString, 5 ) );
+        assertEquals( "[a, b, ...]", Iterators.toString( Iterators.iterator( "a", "b", "c" ), Object::toString, 2 ) );
+    }
 }

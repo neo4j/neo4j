@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
@@ -41,11 +42,11 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -66,6 +67,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -228,9 +230,9 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         }
 
         transaction = newTransaction();
-        IndexDescriptor personFooIndex = transaction.schemaRead().index( personFooDescriptor );
-        IndexDescriptor ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
-        IndexDescriptor personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
+        IndexDescriptor personFooIndex = single( transaction.schemaRead().index( personFooDescriptor ) );
+        IndexDescriptor ageFooIndex = single( transaction.schemaRead().index( ageFooDescriptor ) );
+        IndexDescriptor personFooBarIndex = single( transaction.schemaRead().index( personFooBarDescriptor ) );
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
@@ -333,12 +335,15 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
 
         CountDownLatch constraintLatch = new CountDownLatch( 1 );
         CountDownLatch commitLatch = new CountDownLatch( 1 );
+        AtomicLong personBazIndexId = new AtomicLong();
         FutureTask<Void> createConstraintTask = new FutureTask<>( () ->
         {
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             try ( Resource ignore = captureTransaction() )
             {
-                schemaWrite.uniquePropertyConstraintCreate( personBazDescriptor, "person baz constraint" );
+                ConstraintDescriptor personBazConstraint =
+                        schemaWrite.uniquePropertyConstraintCreate( personBazDescriptor, "person baz constraint" );
+                personBazIndexId.set( personBazConstraint.asIndexBackedConstraint().ownedIndexId() );
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();
                 commitLatch.await();
@@ -354,10 +359,10 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
 
         transaction = newTransaction();
         final SchemaReadCore schemaRead = transaction.schemaRead().snapshot();
-        IndexDescriptor personFooIndex = schemaRead.index( personFooDescriptor );
-        IndexDescriptor ageFooIndex = schemaRead.index( ageFooDescriptor );
-        IndexDescriptor personFooBarIndex = schemaRead.index( personFooBarDescriptor );
-        IndexDescriptor personBazIndex = schemaRead.index( personBazDescriptor );
+        IndexDescriptor personFooIndex = single( schemaRead.index( personFooDescriptor ) );
+        IndexDescriptor ageFooIndex = single( schemaRead.index( ageFooDescriptor ) );
+        IndexDescriptor personFooBarIndex = single( schemaRead.index( personFooBarDescriptor ) );
+        IndexDescriptor personBazIndex = single( schemaRead.index( personBazDescriptor ) );
         commit();
 
         RawIterator<AnyValue[],ProcedureException> stream =
@@ -374,8 +379,6 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         try
         {
             IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
-            IndexingService indexing = db.getDependencyResolver().resolveDependency( IndexingService.class );
-            IndexProvider provider = indexProviderMap.getDefaultProvider();
             assertThat( result, containsInAnyOrder(
                     dbIndexesResult(
                             ageFooIndex.getId(),

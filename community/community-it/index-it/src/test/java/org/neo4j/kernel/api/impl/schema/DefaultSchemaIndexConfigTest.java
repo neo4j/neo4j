@@ -55,6 +55,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 
 @RunWith( Parameterized.class )
 public class DefaultSchemaIndexConfigTest
@@ -197,7 +198,7 @@ public class DefaultSchemaIndexConfigTest
             TokenRead tokenRead = ktx.tokenRead();
             int labelId = tokenRead.nodeLabel( LABEL.name() );
             int propertyId = tokenRead.propertyKey( KEY );
-            IndexDescriptor index = ktx.schemaRead().index( labelId, propertyId );
+            IndexDescriptor index = single( ktx.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyId ) ) );
 
             assertEquals( "expected IndexProvider.Descriptor", expectedProviderIdentifier, index.getIndexProvider().name() );
             tx.commit();

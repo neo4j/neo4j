@@ -171,7 +171,7 @@ public class ConstraintIndexCreator
                     locks.acquireExclusive( transaction.lockTracer(), keyType, lockingKeys );
                 }
 
-                if ( indexStillExists( schemaRead, schema, index ) )
+                if ( indexStillExists( schemaRead, index ) )
                 {
                     dropUniquenessConstraintIndex( index );
                 }
@@ -179,9 +179,9 @@ public class ConstraintIndexCreator
         }
     }
 
-    private boolean indexStillExists( SchemaRead schemaRead, SchemaDescriptor descriptor, IndexDescriptor index )
+    private boolean indexStillExists( SchemaRead schemaRead, IndexDescriptor index )
     {
-        IndexDescriptor existingIndex = schemaRead.index( descriptor );
+        IndexDescriptor existingIndex = schemaRead.indexGetForName( index.getName() );
         return existingIndex != IndexDescriptor.NO_INDEX && existingIndex.equals( index );
     }
 
@@ -232,7 +232,7 @@ public class ConstraintIndexCreator
     private IndexDescriptor checkAndCreateConstraintIndex(
             SchemaRead schemaRead, TokenNameLookup tokenLookup, IndexBackedConstraintDescriptor constraint, String provider ) throws SchemaKernelException
     {
-        IndexDescriptor descriptor = schemaRead.index( constraint.schema() );
+        IndexDescriptor descriptor = schemaRead.indexGetForName( constraint.getName() );
         if ( descriptor != IndexDescriptor.NO_INDEX )
         {
             if ( descriptor.isUnique() )

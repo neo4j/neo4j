@@ -291,7 +291,7 @@ public class IndexStatisticsTest
         awaitIndexesOnline();
 
         // then
-        assertIndexedNodesMatchesStoreNodes();
+        assertIndexedNodesMatchesStoreNodes( index );
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation() - updatesTracker.deletedDuringPopulation();
         double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
@@ -314,7 +314,7 @@ public class IndexStatisticsTest
         awaitIndexesOnline();
 
         // then
-        assertIndexedNodesMatchesStoreNodes();
+        assertIndexedNodesMatchesStoreNodes( index );
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation();
         double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
@@ -337,7 +337,7 @@ public class IndexStatisticsTest
         awaitIndexesOnline();
 
         // then
-        assertIndexedNodesMatchesStoreNodes();
+        assertIndexedNodesMatchesStoreNodes( index );
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation() - updatesTracker.deletedDuringPopulation();
         double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         int expectedIndexUpdates = updatesTracker.deletedAfterPopulation() + updatesTracker.createdAfterPopulation() + updatesTracker.updatedAfterPopulation();
@@ -379,7 +379,7 @@ public class IndexStatisticsTest
         assertTrue( executorService.awaitTermination( 1, TimeUnit.MINUTES ) );
 
         // then
-        assertIndexedNodesMatchesStoreNodes();
+        assertIndexedNodesMatchesStoreNodes( index );
         int seenWhilePopulating = initialNodes + result.createdDuringPopulation() - result.deletedDuringPopulation();
         double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
@@ -388,7 +388,7 @@ public class IndexStatisticsTest
         assertCorrectIndexUpdates( "Tracker had " + result, expectedIndexUpdates, indexUpdates( index ) );
     }
 
-    private void assertIndexedNodesMatchesStoreNodes() throws Exception
+    private void assertIndexedNodesMatchesStoreNodes( IndexDescriptor index ) throws Exception
     {
         int nodesInStore = 0;
         Label label = Label.label( PERSON_LABEL );
@@ -396,9 +396,8 @@ public class IndexStatisticsTest
         {
             KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
             List<String> mismatches = new ArrayList<>();
-            int labelId = ktx.tokenRead().nodeLabel( PERSON_LABEL );
             int propertyKeyId = ktx.tokenRead().propertyKey( NAME_PROPERTY );
-            IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().index( labelId, propertyKeyId ) );
+            IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
                 // Node --> Index
@@ -406,7 +405,7 @@ public class IndexStatisticsTest
                 {
                     nodesInStore++;
                     String name = (String) node.getProperty( NAME_PROPERTY );
-                    ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, name ) );
+                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, name ) );
                     boolean found = false;
                     while ( cursor.next() )
                     {
@@ -430,7 +429,7 @@ public class IndexStatisticsTest
                     fail( join( mismatches.toArray(), format( "%n" ) ) );
                 }
                 // Node count == indexed node count
-                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exists( propertyKeyId ) );
+                ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.exists( propertyKeyId ) );
                 int nodesInIndex = 0;
                 while ( cursor.next() )
                 {

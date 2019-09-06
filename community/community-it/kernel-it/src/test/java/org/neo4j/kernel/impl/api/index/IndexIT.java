@@ -170,7 +170,7 @@ class IndexIT extends KernelIntegrationTest
         // THEN
         SchemaRead schemaRead = newTransaction().schemaRead();
         assertEquals( asSet( expectedRule ), asSet( schemaRead.indexesGetForLabel( labelId ) ) );
-        assertEquals( expectedRule, schemaRead.index( descriptor.getLabelId(), descriptor.getPropertyIds() ) );
+        assertEquals( expectedRule, Iterators.single( schemaRead.index( descriptor ) ) );
         commit();
     }
 
@@ -469,7 +469,7 @@ class IndexIT extends KernelIntegrationTest
 
         // then/when
         SchemaRead schemaRead = newTransaction().schemaRead();
-        IndexDescriptor index2 = schemaRead.index( constraint.schema() );
+        IndexDescriptor index2 = Iterators.single( schemaRead.index( constraint.schema() ) );
         List<IndexDescriptor> indexes = Iterators.asList( schemaRead.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
         commit();
