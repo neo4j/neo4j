@@ -20,8 +20,10 @@
 package org.neo4j.consistency.checking.full;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -61,6 +63,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -73,8 +76,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
@@ -85,32 +92,50 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
+@PageCacheExtension
+@ExtendWith( SuppressOutputExtension.class )
 public class ExecutionOrderIntegrationTest
 {
-    @Rule
-    public final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
-    {
-        @Override
-        protected void generateInitialData( GraphDatabaseService graphDb )
-        {
-            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-            {
-                Node node1 = set( tx.createNode( label( "Foo" ) ) );
-                Node node2 = set( tx.createNode( label( "Foo" ) ), property( "key", "value" ) );
-                node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
-                tx.commit();
-            }
-        }
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
 
-        @Override
-        protected Map<Setting<?>,Object> getConfig()
+    private GraphStoreFixture fixture;
+
+    @BeforeEach
+    void setUp()
+    {
+        fixture = new GraphStoreFixture( getRecordFormatName(), pageCache, testDirectory )
         {
-            return getSettings();
-        }
-    };
+            @Override
+            protected void generateInitialData( GraphDatabaseService graphDb )
+            {
+                try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+                {
+                    Node node1 = set( tx.createNode( label( "Foo" ) ) );
+                    Node node2 = set( tx.createNode( label( "Foo" ) ), property( "key", "value" ) );
+                    node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
+                    tx.commit();
+                }
+            }
+
+            @Override
+            protected Map<Setting<?>,Object> getConfig()
+            {
+                return getSettings();
+            }
+        };
+    }
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        fixture.close();
+    }
 
     @Test
-    public void shouldRunChecksInSingleThreadedPass() throws Exception
+    void shouldRunChecksInSingleThreadedPass() throws Exception
     {
         // given
         StoreAccess store = fixture.directStoreAccess().nativeStores();
@@ -130,8 +155,7 @@ public class ExecutionOrderIntegrationTest
 
         // then
         verifyZeroInteractions( logger );
-        assertEquals( "Expected no inconsistencies in single pass.",
-                0, singlePassSummary.getTotalInconsistencyCount() );
+        assertEquals( 0, singlePassSummary.getTotalInconsistencyCount(), "Expected no inconsistencies in single pass." );
     }
 
     private Config getTuningConfiguration()

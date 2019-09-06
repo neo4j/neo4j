@@ -19,8 +19,9 @@
  */
 package org.neo4j.tooling.procedure;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,29 +31,27 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.harness.junit.rule.Neo4jRule;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.harness.junit.extension.Neo4j;
+import org.neo4j.harness.junit.extension.Neo4jExtension;
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.tooling.procedure.procedures.valid.Procedures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
-public class ProcedureTest
+@ExtendWith( SuppressOutputExtension.class )
+class ProcedureTest
 {
     private static final Class<?> PROCEDURES_CLASS = Procedures.class;
 
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public Neo4jRule graphDb = new Neo4jRule()
-            .dumpLogsOnFailure( () -> System.out ) // Late-bind to System.out to work better with SuppressOutput rule.
-            .withProcedure( PROCEDURES_CLASS );
-    private String procedureNamespace = PROCEDURES_CLASS.getPackage().getName();
+    @RegisterExtension
+    static Neo4jExtension graphDb = Neo4jExtension.builder()
+            .withProcedure( PROCEDURES_CLASS ).build();
+    private static final String procedureNamespace = PROCEDURES_CLASS.getPackage().getName();
 
     @Test
-    public void calls_simplistic_procedure()
+    void callsSimplisticProcedure( Neo4j neo4j )
     {
-        try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() );
+        try ( Driver driver = GraphDatabase.driver( neo4j.boltURI(), configuration() );
                 Session session = driver.session() )
         {
 
@@ -63,9 +62,9 @@ public class ProcedureTest
     }
 
     @Test
-    public void calls_procedures_with_simple_input_type_returning_void()
+    void callsProceduresWithSimpleInputTypeReturningVoid( Neo4j neo4j )
     {
-        try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() );
+        try ( Driver driver = GraphDatabase.driver( neo4j.boltURI(), configuration() );
                 Session session = driver.session() )
         {
 
@@ -84,9 +83,9 @@ public class ProcedureTest
     }
 
     @Test
-    public void calls_procedures_with_different_modes_returning_void()
+    void callsProceduresWithDifferentModesReturningVoid( Neo4j neo4j )
     {
-        try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() );
+        try ( Driver driver = GraphDatabase.driver( neo4j.boltURI(), configuration() );
                 Session session = driver.session() )
         {
             session.run( "CALL " + procedureNamespace + ".defaultMode()" );
@@ -98,12 +97,11 @@ public class ProcedureTest
     }
 
     @Test
-    public void calls_procedures_with_simple_input_type_returning_record_with_primitive_fields()
+    void callsProceduresWithSimpleInputTypeReturningRecordWithPrimitiveFields( Neo4j neo4j )
     {
-        try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() );
+        try ( Driver driver = GraphDatabase.driver( neo4j.boltURI(), configuration() );
                 Session session = driver.session() )
         {
-
             assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput11('string') YIELD field04 AS p RETURN p" ).single() ).isNotNull();
             assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput12(42)" ).single() ).isNotNull();
             assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput13(42)" ).single() ).isNotNull();

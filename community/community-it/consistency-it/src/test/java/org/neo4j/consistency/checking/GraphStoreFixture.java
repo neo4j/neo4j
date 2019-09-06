@@ -20,11 +20,7 @@
 package org.neo4j.consistency.checking;
 
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +47,7 @@ import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -96,8 +93,8 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenCreator;
@@ -114,14 +111,13 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 import static org.neo4j.internal.recordstorage.StoreTokens.readOnlyTokenHolders;
 
-public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
+public abstract class GraphStoreFixture implements AutoCloseable
 {
     private DirectStoreAccess directStoreAccess;
     private Statistics statistics;
     private final boolean keepStatistics;
     private NeoStores neoStore;
     private StorageReader storeReader;
-    private TestDirectory directory;
     private long schemaId;
     private long nodeId;
     private int labelId;
@@ -141,37 +137,33 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
      * Record format used to generate initial database.
      */
     private String formatName;
+    private final PageCache pageCache;
+    private final TestDirectory testDirectory;
     private LabelScanStore labelScanStore;
     private ReadOnlyCountsTracker counts;
+    private ThreadPoolJobScheduler jobScheduler;
 
-    private GraphStoreFixture( boolean keepStatistics, String formatName )
+    private GraphStoreFixture( boolean keepStatistics, String formatName, PageCache pageCache, TestDirectory testDirectory )
     {
         this.keepStatistics = keepStatistics;
         this.formatName = formatName;
+        this.pageCache = pageCache;
+        this.testDirectory = testDirectory;
+        generateInitialData();
     }
 
-    protected GraphStoreFixture( String formatName )
+    protected GraphStoreFixture( String formatName, PageCache pageCache, TestDirectory testDirectory )
     {
-        this( false, formatName );
+        this( false, formatName, pageCache, testDirectory );
     }
 
     @Override
-    protected void after( boolean success )
+    public void close() throws Exception
     {
+        stop();
         storeLife.shutdown();
         fixtureLife.shutdown();
-        super.after( success );
-        if ( fileSystem != null )
-        {
-            try
-            {
-                fileSystem.close();
-            }
-            catch ( IOException e )
-            {
-                throw new AssertionError( "Failed to stop file system after test", e );
-            }
-        }
+        IOUtils.closeAllSilently( fileSystem );
     }
 
     public void apply( Transaction transaction ) throws KernelException
@@ -194,12 +186,12 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         if ( directStoreAccess == null )
         {
             fileSystem = new DefaultFileSystemAbstraction();
-            PageCache pageCache = getPageCache( fileSystem );
+            jobScheduler = new ThreadPoolJobScheduler( "Fixture-" );
             LogProvider logProvider = NullLogProvider.getInstance();
             Config config = Config.defaults( GraphDatabaseSettings.read_only, readOnly ? true : false );
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
             StoreFactory storeFactory = new StoreFactory(
-                    directory.databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider );
+                    testDirectory.databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider );
             neoStore = storeFactory.openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
@@ -278,7 +270,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     public DatabaseLayout databaseLayout()
     {
-        return directory.databaseLayout();
+        return testDirectory.databaseLayout();
     }
 
     public Statistics getAccessStatistics()
@@ -307,6 +299,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         }
     }
 
+    @FunctionalInterface
     interface TokenChange
     {
         int createToken( String name, boolean internal, TransactionDataBuilder tx, IdGenerator next );
@@ -614,12 +607,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     protected abstract void generateInitialData( GraphDatabaseService graphDb );
 
-    protected void start( @SuppressWarnings( "UnusedParameters" ) File storeDir )
-    {
-        // allow for override
-    }
-
-    protected void stop() throws Throwable
+    void stop() throws IOException
     {
         if ( directStoreAccess != null )
         {
@@ -627,6 +615,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             storeReader.close();
             neoStore.close();
             labelScanStore.shutdown();
+            jobScheduler.shutdown();
             directStoreAccess = null;
             if ( counts != null )
             {
@@ -656,7 +645,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
         Applier()
         {
-            managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfig( getConfig() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( getConfig() ).build();
             database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
@@ -704,7 +693,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     private void generateInitialData()
     {
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( directory.storeDir() );
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
         DatabaseManagementService managementService = builder
                 .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
@@ -740,35 +729,4 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     }
 
     protected abstract Map<Setting<?>, Object> getConfig();
-
-    @Override
-    public Statement apply( final Statement base, Description description )
-    {
-        final TestDirectory directory = TestDirectory.testDirectory( description.getTestClass() );
-        return directory.apply( super.apply( new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                GraphStoreFixture.this.directory = directory;
-                try
-                {
-                    generateInitialData();
-                    start( GraphStoreFixture.this.directory.storeDir() );
-                    try
-                    {
-                        base.evaluate();
-                    }
-                    finally
-                    {
-                        stop();
-                    }
-                }
-                finally
-                {
-                    GraphStoreFixture.this.directory = null;
-                }
-            }
-        }, description ), description );
-    }
 }

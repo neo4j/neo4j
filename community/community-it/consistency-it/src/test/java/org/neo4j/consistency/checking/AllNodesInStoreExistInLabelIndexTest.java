@@ -19,8 +19,8 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,23 +32,27 @@ import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyFile;
@@ -56,13 +60,18 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
 
-public class AllNodesInStoreExistInLabelIndexTest
+@DbmsExtension
+@ExtendWith( RandomExtension.class )
+class AllNodesInStoreExistInLabelIndexTest
 {
-    @Rule
-    public final EmbeddedDbmsRule db = new EmbeddedDbmsRule();
-
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private DatabaseManagementService managementService;
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private RandomRule random;
 
     private final AssertableLogProvider log = new AssertableLogProvider();
     private static final Label[] LABEL_ALPHABET = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};
@@ -72,25 +81,25 @@ public class AllNodesInStoreExistInLabelIndexTest
     private static final int NODE_COUNT_BASELINE = 10;
 
     @Test
-    public void mustReportSuccessfulForConsistentLabelScanStore() throws Exception
+    void mustReportSuccessfulForConsistentLabelScanStore() throws Exception
     {
         // given
         someData();
-        db.shutdown();
+        managementService.shutdown();
 
         // when
         ConsistencyCheckService.Result result = fullConsistencyCheck();
 
         // then
-        assertTrue( "Expected consistency check to succeed", result.isSuccessful() );
+        assertTrue( result.isSuccessful(), "Expected consistency check to succeed" );
     }
 
     @Test
-    public void reportNotCleanLabelIndex() throws IOException, ConsistencyCheckIncompleteException
+    void reportNotCleanLabelIndex() throws IOException, ConsistencyCheckIncompleteException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
-        db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
         copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
 
@@ -100,35 +109,35 @@ public class AllNodesInStoreExistInLabelIndexTest
             tx.commit();
         }
 
-        db.shutdown();
+        managementService.shutdown();
 
         copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
         assertThat( readReport( result ), containsString("WARN : Label index was not properly shutdown and rebuild is required.") );
     }
 
     @Test
-    public void reportNotCleanLabelIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
+    void reportNotCleanLabelIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
-        db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
         copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
 
-        db.shutdown();
+        managementService.shutdown();
 
         copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertTrue( "Expected consistency check to fail", result.isSuccessful() );
+        assertTrue( result.isSuccessful(), "Expected consistency check to fail" );
         assertThat( readReport( result ), containsString("WARN : Label index was not properly shutdown and rebuild is required.") );
     }
 
     @Test
-    public void mustReportMissingNode() throws Exception
+    void mustReportMissingNode() throws Exception
     {
         // given
         someData();
@@ -143,15 +152,14 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // and
         replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdown();
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
     }
 
     @Test
-    public void mustReportMissingLabel() throws Exception
+    void mustReportMissingLabel() throws Exception
     {
         // given
         List<Pair<Long,Label[]>> nodesInStore = someData();
@@ -166,15 +174,14 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // and
         replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdown();
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
     }
 
     @Test
-    public void mustReportExtraLabelsOnExistingNode() throws Exception
+    void mustReportExtraLabelsOnExistingNode() throws Exception
     {
         // given
         List<Pair<Long,Label[]>> nodesInStore = someData();
@@ -189,15 +196,14 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // and
         replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdown();
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
     }
 
     @Test
-    public void mustReportExtraNode() throws Exception
+    void mustReportExtraNode() throws Exception
     {
         // given
         List<Pair<Long,Label[]>> nodesInStore = someData();
@@ -212,11 +218,10 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // and
         replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdown();
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
     }
 
     private String readReport( ConsistencyCheckService.Result result ) throws IOException
@@ -263,20 +268,21 @@ public class AllNodesInStoreExistInLabelIndexTest
 
     private void replaceLabelIndexWithCopy( File labelIndexFileCopy ) throws IOException
     {
-        db.restartDatabase( ( fs, directory ) ->
-        {
-            DatabaseLayout databaseLayout = db.databaseLayout();
-            fs.deleteFile( databaseLayout.labelScanStore() );
-            fs.copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
-        } );
+        managementService.shutdown();
+
+        DatabaseLayout databaseLayout = db.databaseLayout();
+        fs.deleteFile( databaseLayout.labelScanStore() );
+        fs.copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
     }
 
     private File copyLabelIndexFile() throws IOException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
-        db.restartDatabase( ( fs, directory ) ->
-                fs.copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy ) );
+        var database = db.getDependencyResolver().resolveDependency( Database.class );
+        database.stop();
+        fs.copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
+        database.start();
         return labelIndexFileCopy;
     }
 
@@ -362,16 +368,11 @@ public class AllNodesInStoreExistInLabelIndexTest
         return labels.toArray( new Label[0] );
     }
 
-    private ConsistencyCheckService.Result fullConsistencyCheck()
-            throws ConsistencyCheckIncompleteException, IOException
+    private ConsistencyCheckService.Result fullConsistencyCheck() throws ConsistencyCheckIncompleteException
     {
-        try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )
-        {
-            ConsistencyCheckService service = new ConsistencyCheckService();
-            DatabaseLayout databaseLayout = db.databaseLayout();
-            Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory().toPath() );
-            return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, fsa, true,
-                    ConsistencyFlags.DEFAULT );
-        }
+        ConsistencyCheckService service = new ConsistencyCheckService();
+        DatabaseLayout databaseLayout = db.databaseLayout();
+        Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory().toPath() );
+        return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, true, ConsistencyFlags.DEFAULT );
     }
 }

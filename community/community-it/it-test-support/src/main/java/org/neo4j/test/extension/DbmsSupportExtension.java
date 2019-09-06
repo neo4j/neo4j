@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.extension;
 
+import org.apache.commons.lang3.ClassUtils;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -40,6 +41,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.stream;
+import static java.util.Collections.addAll;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -132,7 +134,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
             return; // Callback disabled
         }
 
-        for ( Method declaredMethod : testInstance.getClass().getDeclaredMethods() )
+        for ( Method declaredMethod : getAllMethods( testInstance.getClass() ) )
         {
             if ( declaredMethod.getName().equals( callback ) )
             {
@@ -179,6 +181,18 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
 
         // No method matching the provided name
         throw new IllegalArgumentException( "The method with name '" + callback + "' can not be found." );
+    }
+
+    private static Iterable<? extends Method> getAllMethods( Class clazz )
+    {
+        List<Method> methods = new ArrayList<>();
+        addAll( methods, clazz.getDeclaredMethods() );
+        var classes = ClassUtils.getAllSuperclasses( clazz );
+        for ( var aClass : classes )
+        {
+            addAll( methods, aClass.getDeclaredMethods() );
+        }
+        return methods;
     }
 
     protected static Store getStore( ExtensionContext context )

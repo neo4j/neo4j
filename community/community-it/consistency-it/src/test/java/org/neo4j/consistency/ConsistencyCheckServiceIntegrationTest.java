@@ -20,9 +20,10 @@
 package org.neo4j.consistency;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,9 +52,10 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -63,16 +65,19 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
@@ -80,37 +85,53 @@ import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
+@PageCacheExtension
+@ExtendWith( SuppressOutputExtension.class )
 public class ConsistencyCheckServiceIntegrationTest
 {
-    private final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
-    {
-        @Override
-        protected void generateInitialData( GraphDatabaseService graphDb )
-        {
-            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-            {
-                Node node1 = set( tx.createNode() );
-                Node node2 = set( tx.createNode(), property( "key", "exampleValue" ) );
-                node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
-                tx.commit();
-            }
-        }
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private FileSystemAbstraction fs;
 
-        @Override
-        protected Map<Setting<?>,Object> getConfig()
-        {
-            return settings();
-        }
-    };
-
-    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
-    @Rule
-    public final RuleChain chain = RuleChain.outerRule( testDirectory ).around( fixture );
+    private GraphStoreFixture fixture;
     private DatabaseManagementService managementService;
 
+    @BeforeEach
+    void setUp()
+    {
+        fixture = new GraphStoreFixture( getRecordFormatName(), pageCache, testDirectory )
+        {
+            @Override
+            protected void generateInitialData( GraphDatabaseService graphDb )
+            {
+                try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+                {
+                    Node node1 = set( tx.createNode() );
+                    Node node2 = set( tx.createNode(), property( "key", "exampleValue" ) );
+                    node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
+                    tx.commit();
+                }
+            }
+
+            @Override
+            protected Map<Setting<?>,Object> getConfig()
+            {
+                return settings();
+            }
+        };
+    }
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        fixture.close();
+    }
+
     @Test
-    public void reportNotUsedRelationshipReferencedInChain() throws Exception
+    void reportNotUsedRelationshipReferencedInChain() throws Exception
     {
         prepareDbWithDeletedRelationshipPartOfTheChain();
 
@@ -123,14 +144,14 @@ public class ConsistencyCheckServiceIntegrationTest
         assertFalse( result.isSuccessful() );
 
         File reportFile = result.reportFile();
-        assertTrue( "Consistency check report file should be generated.", reportFile.exists() );
+        assertTrue( reportFile.exists(), "Consistency check report file should be generated." );
         assertThat( "Expected to see report about not deleted relationship record present as part of a chain",
                 Files.readString( reportFile.toPath() ),
                 containsString( "The relationship record is not in use, but referenced from relationships chain.") );
     }
 
     @Test
-    public void shouldFailOnDatabaseInNeedOfRecovery() throws IOException
+    void shouldFailOnDatabaseInNeedOfRecovery() throws IOException
     {
         nonRecoveredDatabase();
         ConsistencyCheckService service = new ConsistencyCheckService();
@@ -149,7 +170,7 @@ public class ConsistencyCheckServiceIntegrationTest
     }
 
     @Test
-    public void ableToDeleteDatabaseDirectoryAfterConsistencyCheckRun() throws ConsistencyCheckIncompleteException, IOException
+    void ableToDeleteDatabaseDirectoryAfterConsistencyCheckRun() throws ConsistencyCheckIncompleteException, IOException
     {
         prepareDbWithDeletedRelationshipPartOfTheChain();
         ConsistencyCheckService service = new ConsistencyCheckService();
@@ -160,7 +181,7 @@ public class ConsistencyCheckServiceIntegrationTest
     }
 
     @Test
-    public void shouldSucceedIfStoreIsConsistent() throws Exception
+    void shouldSucceedIfStoreIsConsistent() throws Exception
     {
         // given
         Date timestamp = new Date();
@@ -173,11 +194,11 @@ public class ConsistencyCheckServiceIntegrationTest
         // then
         assertTrue( result.isSuccessful() );
         File reportFile = result.reportFile();
-        assertFalse( "Unexpected generation of consistency check report file: " + reportFile, reportFile.exists() );
+        assertFalse( reportFile.exists(), "Unexpected generation of consistency check report file: " + reportFile );
     }
 
     @Test
-    public void shouldFailIfTheStoreInNotConsistent() throws Exception
+    void shouldFailIfTheStoreInNotConsistent() throws Exception
     {
         // given
         breakNodeStore();
@@ -197,11 +218,11 @@ public class ConsistencyCheckServiceIntegrationTest
         String reportFile = format( "inconsistencies-%s.report",
                 new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( timestamp ) );
         assertEquals( new File( logsDir.toString(), reportFile ), result.reportFile() );
-        assertTrue( "Inconsistency report file not generated", result.reportFile().exists() );
+        assertTrue( result.reportFile().exists(), "Inconsistency report file not generated" );
     }
 
     @Test
-    public void shouldNotReportDuplicateForHugeLongValues() throws Exception
+    void shouldNotReportDuplicateForHugeLongValues() throws Exception
     {
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
@@ -232,7 +253,7 @@ public class ConsistencyCheckServiceIntegrationTest
     }
 
     @Test
-    public void shouldReportMissingSchemaIndex() throws Exception
+    void shouldReportMissingSchemaIndex() throws Exception
     {
         // given
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
@@ -255,7 +276,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // then
         assertTrue( result.isSuccessful() );
         File reportFile = result.reportFile();
-        assertTrue( "Consistency check report file should be generated.", reportFile.exists() );
+        assertTrue( reportFile.exists(), "Consistency check report file should be generated." );
         assertThat( "Expected to see report about schema index not being online",
                 Files.readString( reportFile.toPath() ), allOf(
                         containsString( "schema rule" ),
@@ -264,7 +285,7 @@ public class ConsistencyCheckServiceIntegrationTest
     }
 
     @Test
-    public void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
+    void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
     {
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 

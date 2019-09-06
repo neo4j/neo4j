@@ -19,31 +19,35 @@
  */
 package org.neo4j.lock;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.test.rule.concurrent.ThreadRepository;
+import org.neo4j.lock.ReentrantLockService.OwnerQueueElement;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static java.lang.Thread.currentThread;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.getBlocker;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.neo4j.lock.LockService.LockType.WRITE_LOCK;
 
-public class ReentrantLockServiceTest
+class ReentrantLockServiceTest
 {
-    @Rule
-    public final ThreadRepository threads = new ThreadRepository( 5, TimeUnit.SECONDS );
+    private final ReentrantLockService locks = new ReentrantLockService();
 
     @Test
-    public void shouldFormLinkedListOfWaitingLockOwners()
+    void shouldFormLinkedListOfWaitingLockOwners()
     {
         // given
-        ReentrantLockService.OwnerQueueElement<Integer> queue = new ReentrantLockService.OwnerQueueElement<>( 0 );
-        ReentrantLockService.OwnerQueueElement<Integer> element1 = new ReentrantLockService.OwnerQueueElement<>( 1 );
-        ReentrantLockService.OwnerQueueElement<Integer> element2 = new ReentrantLockService.OwnerQueueElement<>( 2 );
-        ReentrantLockService.OwnerQueueElement<Integer> element3 = new ReentrantLockService.OwnerQueueElement<>( 3 );
-        ReentrantLockService.OwnerQueueElement<Integer> element4 = new ReentrantLockService.OwnerQueueElement<>( 4 );
+        OwnerQueueElement<Integer> queue = new OwnerQueueElement<>( 0 );
+        OwnerQueueElement<Integer> element1 = new OwnerQueueElement<>( 1 );
+        OwnerQueueElement<Integer> element2 = new OwnerQueueElement<>( 2 );
+        OwnerQueueElement<Integer> element3 = new OwnerQueueElement<>( 3 );
+        OwnerQueueElement<Integer> element4 = new OwnerQueueElement<>( 4 );
 
         // when
         queue.enqueue( element1 );
@@ -58,147 +62,94 @@ public class ReentrantLockServiceTest
         assertEquals( 2, queue.dequeue().intValue() );
         assertEquals( 3, queue.dequeue().intValue() );
         assertEquals( 4, queue.dequeue().intValue() );
-        assertEquals( "should get the current element when dequeuing the current head", 4, queue.dequeue().intValue() );
-        assertNull( "should get null when dequeuing from a dead list", queue.dequeue() );
-        assertNull( "should get null continuously when dequeuing from a dead list", queue.dequeue() );
+        assertEquals( 4, queue.dequeue().intValue(), "should get the current element when dequeuing the current head" );
+        assertNull( queue.dequeue(), "should get null when dequeuing from a dead list" );
+        assertNull( queue.dequeue(), "should get null continuously when dequeuing from a dead list" );
     }
 
     @Test
-    public void shouldAllowReEntrance() throws Exception
+    void shouldAllowReEntrance()
     {
-        // given
-        LockService locks = new ReentrantLockService();
-
-        ThreadRepository.Events events = threads.events();
-        LockNode lock1once = new LockNode( locks, 1 );
-        LockNode lock1again = new LockNode( locks, 1 );
-        LockNode lock1inOtherThread = new LockNode( locks, 1 );
-
-        ThreadRepository.Signal lockedOnce = threads.signal();
-        ThreadRepository.Signal ready = threads.signal();
-
-        // when
-        threads.execute( lock1once, ready.await(), lockedOnce, lock1again,
-                         events.trigger( "Double Locked" ),
-                         lock1once.release, lock1again.release );
-        threads.execute( ready, lockedOnce.await(), lock1inOtherThread,
-                         events.trigger( "Other Thread" ),
-                         lock1inOtherThread.release );
-
-        // then
-        events.assertInOrder( "Double Locked", "Other Thread" );
+        var lock = locks.acquireNodeLock( 11, WRITE_LOCK );
+        var lock2 = locks.acquireNodeLock( 11, WRITE_LOCK );
+        var lock3 = locks.acquireNodeLock( 11, WRITE_LOCK );
     }
 
     @Test
-    public void shouldBlockOnLockedLock() throws Exception
+    @Timeout( 60 )
+    void shouldBlockOnLockedLock()
     {
         // given
-        LockService locks = new ReentrantLockService();
-        LockNode lockSameNode = new LockNode( locks, 17 );
-        ThreadRepository.Events events = threads.events();
-        ThreadRepository.Signal ready = threads.signal();
+        var executor = Executors.newSingleThreadExecutor();
 
-        // when
-        try ( Lock ignored = locks.acquireNodeLock( 17, LockService.LockType.WRITE_LOCK ) )
+        try
         {
-            ThreadRepository.ThreadInfo thread =
-                    threads.execute( ready, lockSameNode, events.trigger( "locked" ), lockSameNode.release );
-            ready.awaitNow();
+            var threadHolder = new AtomicReference<Thread>();
+            try ( var lock = locks.acquireNodeLock( 17, WRITE_LOCK ) )
+            {
+                executor.execute( () -> {
+                    threadHolder.set( currentThread() );
+                    locks.acquireNodeLock( 17, WRITE_LOCK );
+                } );
 
-            // then
-            assertTrue( awaitParked( thread, 5, TimeUnit.SECONDS ) );
-            assertTrue( events.snapshot().isEmpty() );
+                while ( true )
+                {
+                    if ( threadHolder.get() != null )
+                    {
+                        var blocker = getBlocker( threadHolder.get() );
+                        if ( blocker != null )
+                        {
+                            return;
+                        }
+                    }
+                    parkNanos( MILLISECONDS.toNanos( 10 ) );
+                }
+            }
         }
-        events.assertInOrder( "locked" );
+        finally
+        {
+            executor.shutdown();
+        }
     }
 
     @Test
-    public void shouldNotLeaveResidualLockStateAfterAllLocksHaveBeenReleased()
+    void shouldNotLeaveResidualLockStateAfterAllLocksHaveBeenReleased()
     {
-        // given
-        ReentrantLockService locks = new ReentrantLockService();
-
         // when
-        locks.acquireNodeLock( 42, LockService.LockType.WRITE_LOCK ).release();
+        locks.acquireNodeLock( 42, WRITE_LOCK ).release();
 
         // then
         assertEquals( 0, locks.lockCount() );
     }
 
     @Test
-    public void shouldPresentLockStateInStringRepresentationOfLock()
+    void shouldPresentLockStateInStringRepresentationOfLock()
     {
         // given
-        LockService locks = new ReentrantLockService();
         Lock first;
         Lock second;
 
         // when
-        try ( Lock lock = first = locks.acquireNodeLock( 666, LockService.LockType.WRITE_LOCK ) )
+        var currentThread = currentThread();
+        try ( Lock lock = first = locks.acquireNodeLock( 666, WRITE_LOCK ) )
         {
             // then
-            assertEquals( "LockedNode[id=666; HELD_BY=1*" + Thread.currentThread() + "]", lock.toString() );
+            assertEquals( "LockedNode[id=666; HELD_BY=1*" + currentThread + "]", lock.toString() );
 
             // when
-            try ( Lock inner = second = locks.acquireNodeLock( 666, LockService.LockType.WRITE_LOCK ) )
+            try ( Lock inner = second = locks.acquireNodeLock( 666, WRITE_LOCK ) )
             {
-                assertEquals( "LockedNode[id=666; HELD_BY=2*" + Thread.currentThread() + "]", lock.toString() );
+                assertEquals( "LockedNode[id=666; HELD_BY=2*" + currentThread + "]", lock.toString() );
                 assertEquals( lock.toString(), inner.toString() );
             }
 
             // then
-            assertEquals( "LockedNode[id=666; HELD_BY=1*" + Thread.currentThread() + "]", lock.toString() );
+            assertEquals( "LockedNode[id=666; HELD_BY=1*" + currentThread + "]", lock.toString() );
             assertEquals( "LockedNode[id=666; RELEASED]", second.toString() );
         }
 
         // then
         assertEquals( "LockedNode[id=666; RELEASED]", first.toString() );
         assertEquals( "LockedNode[id=666; RELEASED]", second.toString() );
-    }
-
-    private static class LockNode implements ThreadRepository.Task
-    {
-        private final LockService locks;
-        private final long nodeId;
-        private Lock lock;
-
-        LockNode( LockService locks, long nodeId )
-        {
-            this.locks = locks;
-            this.nodeId = nodeId;
-        }
-
-        private final ThreadRepository.Task release = new ThreadRepository.Task()
-        {
-            @Override
-            public void perform()
-            {
-                lock.release();
-            }
-        };
-
-        @Override
-        public void perform()
-        {
-            this.lock = locks.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK );
-        }
-    }
-
-    private static boolean awaitParked( ThreadRepository.ThreadInfo thread, long timeout, TimeUnit unit )
-    {
-        boolean parked = false;
-        for ( long end = System.currentTimeMillis() + unit.toMillis( timeout ); System.currentTimeMillis() < end; )
-        {
-            StackTraceElement frame = thread.getStackTrace()[0];
-            if ( "park".equals( frame.getMethodName() ) && frame.getClassName().endsWith( "Unsafe" ) )
-            {
-                if ( thread.getState().name().endsWith( "WAITING" ) )
-                {
-                    parked = true;
-                    break;
-                }
-            }
-        }
-        return parked;
     }
 }
