@@ -176,6 +176,7 @@ public class BuiltInDbmsProcedures
         public final String signature;
         public final String description;
         public final boolean aggregating;
+        public final List<String> roles = null; // this is just so that the community version has the same signature as in enterprise
 
         private FunctionResult( UserFunctionSignature signature, boolean isAggregation )
         {
@@ -200,6 +201,7 @@ public class BuiltInDbmsProcedures
         public final String signature;
         public final String description;
         public final String mode;
+        public final List<String> roles = null; // this is just so that the community version has the same signature as in enterprise
         public final boolean worksOnSystem;
 
         private ProcedureResult( ProcedureSignature signature )

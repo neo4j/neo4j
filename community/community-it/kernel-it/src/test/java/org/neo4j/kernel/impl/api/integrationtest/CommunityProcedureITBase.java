@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.StringValue;
+import org.neo4j.values.storable.TextArray;
 
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 abstract class CommunityProcedureITBase extends KernelIntegrationTest implements ProcedureITBase
 {
@@ -66,7 +68,20 @@ abstract class CommunityProcedureITBase extends KernelIntegrationTest implements
 
             for ( int i = 1; i < actualArray.length; i++ )
             {
-                Matcher matcher = (expectedArray[i] instanceof Matcher) ? (Matcher) expectedArray[i] : equalTo( expectedArray[i] );
+                Matcher matcher;
+                if ( expectedArray[i] instanceof TextArray )
+                {
+                    // this has to be a list of roles, we ignore those in community and expect a null here
+                    matcher = equalTo( NO_VALUE );
+                }
+                else if ( expectedArray[i] instanceof Matcher )
+                {
+                    matcher = (Matcher) expectedArray[i];
+                }
+                else
+                {
+                    matcher = equalTo( expectedArray[i] );
+                }
                 assertThat( "Column " + i + " for " + procName + " does not match", actualArray[i], matcher );
             }
         }
