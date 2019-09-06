@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions._
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
@@ -237,6 +238,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def ands(expressions: Expression*): Ands = Ands(expressions.toSet)(pos)
 
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
+
+  def patternExpression(nodeVar1: Variable, nodeVar2: Variable) =
+    PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(nodeVar1), Seq.empty, None)(pos),
+      RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
+      NodePattern(Some(nodeVar2), Seq.empty, None)(pos)
+    )(pos))(pos))
 
   def query(cs: Clause*): Query =
     Query(None, SingleQuery(cs)(pos))(pos)
