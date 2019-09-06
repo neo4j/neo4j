@@ -40,19 +40,16 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.TextValue;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
@@ -87,9 +84,9 @@ import static org.junit.Assert.assertThat;
  * <li>Single property unique number index</li>
  * <li>Single property unique string index</li>
  * <li>Composite property mixed index</li>
- * <li>{@link IndexQuery#stringPrefix(int, String)}</li>
- * <li>{@link IndexQuery#stringSuffix(int, String)}</li>
- * <li>{@link IndexQuery#stringContains(int, String)}</li>
+ * <li>{@link IndexQuery#stringSuffix(int, TextValue)}</li>
+ * <li>{@link IndexQuery#stringSuffix(int, TextValue)}</li>
+ * <li>{@link IndexQuery#stringContains(int, TextValue)}</li>
  * <li>Composite property node key index (due to it being enterprise feature)</li>
  * <li>Label index iterators</li>
  * <li>Concurrency</li>
@@ -143,9 +140,7 @@ public class MultipleOpenCursorsTest
     private IndexCoordinator indexCoordinator;
 
     @Before
-    public void setupDb() throws InvalidTransactionTypeKernelException, RepeatedPropertyInCompositeSchemaException,
-            AlreadyIndexedException,
-            AlreadyConstrainedException, IndexNotFoundKernelException, InterruptedException
+    public void setupDb()
     {
         indexCoordinator =
                 indexCoordinatorFactory.create( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );

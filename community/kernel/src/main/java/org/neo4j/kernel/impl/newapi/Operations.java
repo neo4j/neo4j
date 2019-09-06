@@ -69,7 +69,10 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
-import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedSchemaComponentException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
@@ -1319,12 +1322,25 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     private static void assertValidDescriptor( SchemaDescriptor descriptor, SchemaKernelException.OperationContext context )
-            throws RepeatedPropertyInCompositeSchemaException
+            throws RepeatedSchemaComponentException
     {
-        int numUnique = Arrays.stream( descriptor.getPropertyIds() ).distinct().toArray().length;
-        if ( numUnique != descriptor.getPropertyIds().length )
+        long numUniqueProp = Arrays.stream( descriptor.getPropertyIds() ).distinct().count();
+        long numUniqueEntityTokens = Arrays.stream( descriptor.getEntityTokenIds() ).distinct().count();
+
+        if ( numUniqueProp != descriptor.getPropertyIds().length )
         {
-            throw new RepeatedPropertyInCompositeSchemaException( descriptor, context );
+            throw new RepeatedPropertyInSchemaException( descriptor, context );
+        }
+        if ( numUniqueEntityTokens != descriptor.getEntityTokenIds().length )
+        {
+            if ( descriptor.entityType() == NODE )
+            {
+                throw new RepeatedLabelInSchemaException( descriptor, context );
+            }
+            else
+            {
+                throw new RepeatedRelationshipTypeInSchemaException( descriptor, context );
+            }
         }
     }
 

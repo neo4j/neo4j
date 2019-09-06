@@ -66,7 +66,7 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedSchemaComponentException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
@@ -623,7 +623,7 @@ public class SchemaImpl implements Schema
                     return new UniquenessConstraintDefinition( this, indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
-                        RepeatedPropertyInCompositeSchemaException e )
+                        RepeatedSchemaComponentException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
@@ -665,7 +665,7 @@ public class SchemaImpl implements Schema
                     return new NodeKeyConstraintDefinition( this, indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
-                        RepeatedPropertyInCompositeSchemaException e )
+                        RepeatedSchemaComponentException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
@@ -701,7 +701,7 @@ public class SchemaImpl implements Schema
                     return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
-                        RepeatedPropertyInCompositeSchemaException e )
+                        RepeatedSchemaComponentException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
@@ -737,7 +737,7 @@ public class SchemaImpl implements Schema
                     return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
-                        RepeatedPropertyInCompositeSchemaException e )
+                        RepeatedSchemaComponentException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
