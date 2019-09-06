@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
-import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
+import org.neo4j.cypher.internal.planning._
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}

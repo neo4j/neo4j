@@ -17,19 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility
+package org.neo4j.cypher.internal.planning
 
-import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
-import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, FunctionName}
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.frontend.phases.Monitors
+import org.neo4j.monitoring
 
-class simpleExpressionEvaluatorTest extends CypherFunSuite {
-  private val pos = DummyPosition(-1)
+import scala.reflect.ClassTag
 
-  test("isNonDeterministic should not care about capitalization") {
-    val evaluator = simpleExpressionEvaluator
-    evaluator.isDeterministic(
-      FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)) shouldBe false
+case class WrappedMonitors(kernelMonitors: monitoring.Monitors) extends Monitors {
+  def addMonitorListener[T](monitor: T, tags: String*) {
+    kernelMonitors.addMonitorListener(monitor, tags: _*)
+  }
+
+  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    kernelMonitors.newMonitor(clazz, tags: _*)
   }
 }

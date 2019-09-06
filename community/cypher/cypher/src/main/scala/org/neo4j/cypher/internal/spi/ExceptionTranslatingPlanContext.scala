@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslationSupport
+import org.neo4j.cypher.internal.planning.ExceptionTranslationSupport
 import org.neo4j.cypher.internal.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 import org.neo4j.cypher.internal.planner.spi.{IndexDescriptor, InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger

@@ -25,7 +25,7 @@ import java.{lang, util}
 
 import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
+import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.{InputDataStream, NoInput}
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent

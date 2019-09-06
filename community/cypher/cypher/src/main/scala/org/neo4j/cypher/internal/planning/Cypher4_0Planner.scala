@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0
+package org.neo4j.cypher.internal.planning
 
 import java.time.Clock
 import java.util.function.BiFunction
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.{CypherPlanner, _}
 import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}

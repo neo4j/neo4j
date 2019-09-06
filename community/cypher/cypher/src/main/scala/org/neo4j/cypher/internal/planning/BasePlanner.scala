@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility
+package org.neo4j.cypher.internal.planning
 
 import java.time.Clock
 
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compatibility.v4_0.{WrappedMonitors => WrappedMonitorsv4_0}
 import org.neo4j.cypher.internal.compiler.phases.{PlannerContext, PlannerContextCreator}
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.{CypherPlanner => CypherPlannerv4_0, _}
@@ -52,7 +51,7 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
                                                 txIdProvider: () => Long
                                                ) extends CachingPlanner[PARSED_STATE] {
 
-  protected val monitors: Monitors = WrappedMonitorsv4_0(kernelMonitors)
+  protected val monitors: Monitors = WrappedMonitors(kernelMonitors)
 
   protected val cacheTracer: CacheTracer[Pair[STATEMENT, ParameterTypeMap]] = monitors.newMonitor[CacheTracer[Pair[STATEMENT, ParameterTypeMap]]]("cypher4.0")
 

@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.cypher.internal.compatibility.CypherCacheHitMonitor;
+import org.neo4j.cypher.internal.planning.CypherCacheHitMonitor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
