@@ -194,8 +194,9 @@ public class Operations implements Write, SchemaWrite
         }
         Arrays.sort( lockingIds ); // Sort to ensure labels are locked and assigned in order.
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, lockingIds );
+        TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
-        ktx.txState().nodeDoCreate( nodeId );
+        txState.nodeDoCreate( nodeId );
         nodeCursor.single( nodeId, allStoreHolder );
         nodeCursor.next();
 
@@ -253,8 +254,9 @@ public class Operations implements Write, SchemaWrite
         assertNodeExists( sourceNode );
         assertNodeExists( targetNode );
 
+        TransactionState txState = ktx.txState();
         long id = commandCreationContext.reserveRelationship();
-        ktx.txState().relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
+        txState.relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
         return id;
     }
 

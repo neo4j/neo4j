@@ -41,6 +41,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -71,6 +72,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
@@ -90,6 +92,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -987,6 +990,105 @@ class OperationsTest
         operations.indexUniqueCreate( ConstraintDescriptorFactory.uniqueForLabel( 1, 1 ).withName( "My bla bla constraint" ), "provider-1.0" );
         IndexDescriptor indexDescriptor = single( txState.indexChanges().getAdded() );
         assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "My bla bla constraint" ) );
+    }
+
+    @Test
+    void shouldAcquireTxStateBeforeAllocatingNodeIdInBareCreateMethod()
+    {
+        // given
+        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
+        when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
+        CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
+        Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
+                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ) );
+
+        // when
+        operations.nodeCreate();
+
+        // then
+        InOrder inOrder = inOrder( ktx, commandCreationContext );
+        inOrder.verify( ktx ).txState();
+        inOrder.verify( commandCreationContext ).reserveNode();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldAcquireTxStateBeforeAllocatingNodeIdInCreateWithLabelsMethod() throws ConstraintValidationException
+    {
+        // given
+        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
+        when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
+        CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
+        Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
+                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ) );
+
+        // when
+        operations.nodeCreateWithLabels( new int[]{1} );
+
+        // then
+        InOrder inOrder = inOrder( ktx, commandCreationContext );
+        inOrder.verify( ktx ).txState();
+        inOrder.verify( commandCreationContext ).reserveNode();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldAcquireTxStateBeforeAllocatingRelationshipId() throws EntityNotFoundException
+    {
+        // given
+        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
+        when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
+        StatementLocks statementLocks = mock( StatementLocks.class );
+        when( ktx.statementLocks() ).thenReturn( statementLocks );
+        when( statementLocks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
+        when( statementLocks.pessimistic() ).thenReturn( mock( Locks.Client.class ) );
+        CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
+        AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
+        when( allStoreHolder.nodeExists( anyLong() ) ).thenReturn( true );
+        Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
+                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ) );
+
+        // when
+        operations.relationshipCreate( 0, 1, 2 );
+
+        // then
+        InOrder inOrder = inOrder( ktx, commandCreationContext );
+        inOrder.verify( ktx ).txState();
+        inOrder.verify( commandCreationContext ).reserveRelationship();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldAcquireTxStateBeforeAllocatingSchemaId() throws KernelException
+    {
+        // given
+        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
+        when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
+        StatementLocks statementLocks = mock( StatementLocks.class );
+        when( ktx.statementLocks() ).thenReturn( statementLocks );
+        when( statementLocks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
+        when( statementLocks.pessimistic() ).thenReturn( mock( Locks.Client.class ) );
+        CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
+        IndexingProvidersService indexingProvidersService = mock( IndexingProvidersService.class );
+        when( indexingProvidersService.indexProviderByName( anyString() ) ).thenReturn( mock( IndexProviderDescriptor.class ) );
+        AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
+        when( allStoreHolder.index( any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
+        when( allStoreHolder.indexGetForName( any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
+        Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
+                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
+                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults() );
+
+        // when
+        operations.indexCreate( IndexPrototype.forSchema( descriptor ).withName( "name" ) );
+
+        // then
+        InOrder inOrder = inOrder( ktx, commandCreationContext );
+        inOrder.verify( ktx ).txState();
+        inOrder.verify( commandCreationContext ).reserveSchema();
+        inOrder.verifyNoMoreInteractions();
     }
 
     private void setStoreRelationship( long relationshipId, long sourceNode, long targetNode, int relationshipLabel )

@@ -28,10 +28,11 @@ import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageReader;
@@ -71,8 +72,9 @@ public class KernelToken implements Token
     public int labelCreateForName( String labelName, boolean internal ) throws KernelException
     {
         ktx.assertOpen();
+        TransactionState txState = ktx.txState();
         int id = reserveTokenId( commandCreationContext::reserveLabelTokenId, TokenHolder.TYPE_LABEL );
-        ktx.txState().labelDoCreateForName( labelName, internal, id );
+        txState.labelDoCreateForName( labelName, internal, id );
         return id;
     }
 
@@ -80,8 +82,9 @@ public class KernelToken implements Token
     public int relationshipTypeCreateForName( String relationshipTypeName, boolean internal ) throws KernelException
     {
         ktx.assertOpen();
+        TransactionState txState = ktx.txState();
         int id = reserveTokenId( commandCreationContext::reserveRelationshipTypeTokenId, TokenHolder.TYPE_RELATIONSHIP_TYPE );
-        ktx.txState().relationshipTypeDoCreateForName( relationshipTypeName, internal, id );
+        txState.relationshipTypeDoCreateForName( relationshipTypeName, internal, id );
         return id;
     }
 
@@ -89,8 +92,9 @@ public class KernelToken implements Token
     public int propertyKeyCreateForName( String propertyKeyName, boolean internal ) throws KernelException
     {
         ktx.assertOpen();
+        TransactionState txState = ktx.txState();
         int id = reserveTokenId( commandCreationContext::reservePropertyKeyTokenId, TokenHolder.TYPE_PROPERTY_KEY );
-        ktx.txState().propertyKeyDoCreateForName( propertyKeyName, internal, id );
+        txState.propertyKeyDoCreateForName( propertyKeyName, internal, id );
         return id;
     }
 
