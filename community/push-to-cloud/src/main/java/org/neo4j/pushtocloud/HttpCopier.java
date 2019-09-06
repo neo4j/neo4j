@@ -515,9 +515,9 @@ public class HttpCopier implements PushToCloudCommand.Copier
     private CommandFailed updatePluginErrorResponse( HttpURLConnection connection ) throws IOException
     {
         debugErrorResponse( true, connection );
-        return new CommandFailed( "We realised a problem while communicating to the Neo4j cloud system. " +
-                "Please update your push-to-cloud plugin and contact support if this problem still happens after the update. " +
-                "Please also attached the logs shown below." );
+        return new CommandFailed( "We encountered a problem while communicating to the Neo4j cloud system. " +
+                "Please check that you are using the latest version of the push-to-cloud plugin and upgrade if necessary. " +
+                "If this problem persists after upgrading, please contact support and attach the logs shown below to your ticket in the support portal." );
     }
 
     private CommandFailed unexpectedResponse( boolean verbose, HttpURLConnection connection, String requestDescription ) throws IOException
