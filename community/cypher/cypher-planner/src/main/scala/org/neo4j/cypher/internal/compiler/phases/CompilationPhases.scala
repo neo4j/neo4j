@@ -43,8 +43,8 @@ object CompilationPhases {
              ): Transformer[BaseContext, BaseState, BaseState] = {
     if (compatibilityMode) {
       Parsing.adds(BaseContains[Statement]) andThen
-        SyntaxDeprecationWarnings(Deprecations.removedFeatures) andThen
-        PreparatoryRewriting(Deprecations.removedFeatures) andThen
+        SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_0) andThen
+        PreparatoryRewriting(Deprecations.removedFeaturesIn4_0) andThen
         SyntaxDeprecationWarnings(Deprecations.V2) andThen
         PreparatoryRewriting(Deprecations.V2) andThen
         SemanticAnalysis(warn = true, Cypher9Comparability, MultipleDatabases).adds(BaseContains[SemanticState]) andThen

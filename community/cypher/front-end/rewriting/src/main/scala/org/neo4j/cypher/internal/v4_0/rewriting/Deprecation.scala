@@ -79,7 +79,7 @@ object Deprecations {
   }
 
   // This is functionality that have been removed in 4.0 but still should work (but be deprecated) when using CYPHER 3.5
-  case object removedFeatures extends Deprecations {
+  case object removedFeaturesIn4_0 extends Deprecations {
     private val removedFunctionsRenames: Map[String, String] =
       TreeMap(
         "toInt" -> "toInteger",
