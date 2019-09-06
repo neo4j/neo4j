@@ -452,4 +452,40 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       consume(execute(logicalQuery, runtime, input))
     }
   }
+
+  test("should kill top n query before it runs out of memory, where n < Int.MaxValue") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(Seq(Ascending("x")), Int.MaxValue - 1)
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should kill top n query before it runs out of memory, where n > Int.MaxValue") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(Seq(Ascending("x")), Int.MaxValue + 1L)
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
 }

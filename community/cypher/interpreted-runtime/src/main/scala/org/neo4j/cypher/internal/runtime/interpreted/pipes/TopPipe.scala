@@ -66,7 +66,12 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
         // NOTE: If the _input size_ is larger than Int.MaxValue this will still fail, since an array cannot hold that many elements
         val buffer = new mutable.ArrayBuffer[ExecutionContext](initialFallbackSortArraySize)
         buffer += first
-        buffer ++= input
+        state.memoryTracker.allocated(first)
+        while (input.hasNext) {
+          val row = input.next()
+          buffer += row
+          state.memoryTracker.allocated(row)
+        }
         val array = buffer.toArray
         java.util.Arrays.sort(array, comparator)
         var c: Long = 0 // Counter to be used inside of stream
@@ -76,10 +81,19 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
         // The main case: allocate a table of size count to hold the top rows
         val count = limit.toInt
         val topTable = new DefaultComparatorTopTable(comparator, count)
-        topTable.add(first)
 
+        topTable.add(first)
+        state.memoryTracker.allocated(first)
+
+        var i = 1
         while (input.hasNext) {
-            topTable.add(input.next())
+          val row = input.next()
+          topTable.add(row)
+          if (i < count) {
+            // This makes the assumption that rows have more or less the same size, since we don't knwo which ones are actually kept in the TopTable here.
+            state.memoryTracker.allocated(row)
+          }
+          i += 1
         }
 
         topTable.sort()
