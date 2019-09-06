@@ -126,13 +126,13 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     void deprecatedUpper()
     {
-        assertNotifications( "CYPHER 3.5 EXPLAIN RETURN upper('foo') AS one", containsItem( deprecatedFeatureWarning ) );
+        assertNotifications( "CYPHER 3.5 EXPLAIN RETURN upper('foo') AS upper", containsItem( deprecatedFeatureWarning ) );
     }
 
     @Test
     void deprecatedLower()
     {
-       assertNotifications( "CYPHER 3.5 EXPLAIN RETURN lower('BAR') AS one", containsItem( deprecatedFeatureWarning ) );
+       assertNotifications( "CYPHER 3.5 EXPLAIN RETURN lower('BAR') AS lower", containsItem( deprecatedFeatureWarning ) );
     }
 
     @Test

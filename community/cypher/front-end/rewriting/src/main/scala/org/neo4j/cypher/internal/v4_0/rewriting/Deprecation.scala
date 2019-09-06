@@ -80,13 +80,13 @@ object Deprecations {
 
   // This is functionality that have been removed in 4.0 but still should work (but be deprecated) when using CYPHER 3.5
   case object removedFeaturesIn4_0 extends Deprecations {
-    private val removedFunctionsRenames: Map[String, String] =
+    val removedFunctionsRenames: Map[String, String] =
       TreeMap(
         "toInt" -> "toInteger",
         "upper" -> "toUpper",
         "lower" -> "toLower",
         "rels" -> "relationships"
-      )
+      )(CaseInsensitiveOrdered)
 
     override def find: PartialFunction[Any, Deprecation] = {
 
@@ -119,7 +119,7 @@ object Deprecations {
 
       // length of a string, collection or pattern expression
       case f@FunctionInvocation(_, FunctionName(name), _, args)
-        if name.equals("length") && args.nonEmpty &&
+        if name.toLowerCase.equals("length") && args.nonEmpty &&
           (args.head.isInstanceOf[StringLiteral] || args.head.isInstanceOf[ListLiteral] || args.head.isInstanceOf[PatternExpression]) =>
         Deprecation(
           () => renameFunctionTo("size")(f),
