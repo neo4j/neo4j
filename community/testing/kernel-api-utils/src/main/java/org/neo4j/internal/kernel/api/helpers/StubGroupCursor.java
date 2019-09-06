@@ -19,11 +19,12 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
-public class StubGroupCursor implements RelationshipGroupCursor
+public class StubGroupCursor extends DefaultCloseListenable implements RelationshipGroupCursor
 {
     private int offset;
     private final GroupData[] groups;
@@ -62,7 +63,7 @@ public class StubGroupCursor implements RelationshipGroupCursor
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         isClosed = true;
     }

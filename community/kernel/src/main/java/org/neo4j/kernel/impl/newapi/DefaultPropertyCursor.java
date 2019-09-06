@@ -156,7 +156,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( !isClosed() )
         {

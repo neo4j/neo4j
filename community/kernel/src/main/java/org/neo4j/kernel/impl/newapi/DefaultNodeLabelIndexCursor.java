@@ -137,7 +137,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( !isClosed() )
         {

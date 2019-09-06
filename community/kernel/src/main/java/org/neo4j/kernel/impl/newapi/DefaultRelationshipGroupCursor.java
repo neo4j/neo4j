@@ -158,7 +158,7 @@ class DefaultRelationshipGroupCursor extends TraceableCursor implements Relation
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( !isClosed() )
         {

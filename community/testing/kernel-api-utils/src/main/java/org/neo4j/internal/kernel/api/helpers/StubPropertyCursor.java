@@ -21,12 +21,13 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-public class StubPropertyCursor implements PropertyCursor
+public class StubPropertyCursor extends DefaultCloseListenable implements PropertyCursor
 {
     private int offset = -1;
     private Integer[] keys;
@@ -46,7 +47,7 @@ public class StubPropertyCursor implements PropertyCursor
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
 
     }

@@ -170,7 +170,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         }
         resources.trace(selectionCursor)
         new CursorIterator[RelationshipValue] {
-          override protected def close(): Unit = resources.release(selectionCursor)
+          override protected def close(): Unit = {}
 
           override protected def fetchNext(): RelationshipValue =
             if (selectionCursor.next())
@@ -315,7 +315,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         else null
       }
 
-      override protected def close(): Unit = resources.release(cursor)
+      override protected def close(): Unit = {}
     }
   }
 
@@ -353,7 +353,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
 
-      override protected def close(): Unit = resources.release(cursor)
+      override protected def close(): Unit = {}
     }
   }
 
@@ -517,7 +517,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           else null
         }
 
-        override protected def close(): Unit = resources.release(nodeCursor)
+        override protected def close(): Unit = {}
       }
     }
 
@@ -527,7 +527,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       new PrimitiveCursorIterator {
         override protected def fetchNext(): Long = if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
 
-        override protected def close(): Unit = resources.release(nodeCursor)
+        override protected def close(): Unit = {}
       }
     }
 
@@ -647,7 +647,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           else null
         }
 
-        override protected def close(): Unit = resources.release(relCursor)
+        override protected def close(): Unit = {}
       }
     }
 
@@ -657,7 +657,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       new PrimitiveCursorIterator {
         override protected def fetchNext(): Long = if (relCursor.next()) relCursor.relationshipReference() else -1L
 
-        override protected def close(): Unit = resources.release(relCursor)
+        override protected def close(): Unit = {}
       }
     }
 
@@ -1012,7 +1012,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       current
     }
 
-    override def close(): Unit = resources.release(selectionCursor)
+    override def close(): Unit = {}
   }
 
   object RelationshipCursorIterator {
@@ -1041,7 +1041,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  class ValuedNodeIndexCursor(inner: NodeValueIndexCursor, values: Array[Value]) extends NodeValueIndexCursor {
+  class ValuedNodeIndexCursor(inner: NodeValueIndexCursor, values: Array[Value]) extends DefaultCloseListenable with NodeValueIndexCursor {
 
     override def numberOfProperties(): Int = values.length
 
@@ -1057,7 +1057,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     override def next(): Boolean = inner.next()
 
-    override def close(): Unit = inner.close()
+    override def closeInternal(): Unit = inner.close()
 
     override def isClosed: Boolean = inner.isClosed
 

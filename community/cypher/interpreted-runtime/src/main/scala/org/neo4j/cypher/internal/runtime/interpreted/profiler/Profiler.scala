@@ -195,13 +195,23 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
       inner.next()
     }
 
-    override def close(): Unit = inner.close()
+    override def close(): Unit = {
+      closeInternal()
+      // We do not call getCloseListener.onClosed(inner) here since
+      // that will already happen in closeInternal.
+    }
+
+    override def closeInternal(): Unit = inner.close()
 
     override def isClosed: Boolean = inner.isClosed
 
     override def score(): Float = inner.score()
 
     override def setTracer(tracer: KernelReadTracer): Unit = inner.setTracer(tracer)
+
+    override def setCloseListener(closeListener: CloseListener): Unit = inner.setCloseListener(closeListener)
+
+    override def getCloseListener: CloseListener = inner.getCloseListener
   }
 
   class ProfilerOperations[T, CURSOR](inner: Operations[T, CURSOR]) extends DelegatingOperations[T, CURSOR](inner) {

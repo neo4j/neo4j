@@ -215,7 +215,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( !isClosed() )
         {

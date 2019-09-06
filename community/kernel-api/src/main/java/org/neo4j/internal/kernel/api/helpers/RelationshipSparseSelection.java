@@ -21,12 +21,13 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 /**
  * Helper for traversing specific types and directions of a sparse node.
  */
-abstract class RelationshipSparseSelection
+abstract class RelationshipSparseSelection extends DefaultCloseListenable
 {
     private enum Dir
     {
@@ -150,7 +151,7 @@ abstract class RelationshipSparseSelection
         return types == null || ArrayUtils.contains( types, cursor.type() );
     }
 
-    public void close()
+    public void closeInternal()
     {
         try
         {

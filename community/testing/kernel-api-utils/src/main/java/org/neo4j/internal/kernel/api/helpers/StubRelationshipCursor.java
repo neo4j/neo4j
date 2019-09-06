@@ -22,12 +22,13 @@ package org.neo4j.internal.kernel.api.helpers;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
-public class StubRelationshipCursor implements RelationshipTraversalCursor
+public class StubRelationshipCursor extends DefaultCloseListenable implements RelationshipTraversalCursor
 {
     private final List<TestRelationshipChain> store;
 
@@ -146,7 +147,7 @@ public class StubRelationshipCursor implements RelationshipTraversalCursor
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         isClosed = true;
     }

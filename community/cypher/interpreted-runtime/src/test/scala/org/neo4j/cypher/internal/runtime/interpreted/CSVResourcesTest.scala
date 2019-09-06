@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.CSVResources.DEFAULT_BUFFER
 import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, ResourceManager}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.LoadExternalResourceException
+import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.io.fs.FileUtils
 
 class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
@@ -137,7 +138,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
 
     // then
-    verify(cleaner).trace(any(classOf[AutoCloseable]))
+    verify(cleaner).trace(any(classOf[AutoCloseablePlus]))
   }
 
   test("should accept and use a custom field terminator") {

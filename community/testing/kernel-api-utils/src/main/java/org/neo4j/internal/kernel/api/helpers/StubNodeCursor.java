@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -32,7 +33,7 @@ import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.values.storable.Value;
 
-public class StubNodeCursor implements NodeCursor
+public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
 {
     private int offset = -1;
     private boolean dense;
@@ -168,7 +169,7 @@ public class StubNodeCursor implements NodeCursor
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
 
     }

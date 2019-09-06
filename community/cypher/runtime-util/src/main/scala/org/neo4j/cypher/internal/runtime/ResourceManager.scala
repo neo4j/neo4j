@@ -23,26 +23,32 @@ import java.util
 
 import org.neo4j.cypher.internal.runtime.ResourceManager.INITIAL_CAPACITY
 import org.neo4j.internal.helpers.Exceptions
+import org.neo4j.internal.kernel.api.{AutoCloseablePlus, CloseListener}
 
 import scala.collection.JavaConverters._
 
-class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource {
-  private val resources: util.Collection[AutoCloseable] = new util.ArrayList[AutoCloseable](INITIAL_CAPACITY)
+class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource with CloseListener {
+  private val resources: util.Collection[AutoCloseablePlus] = new util.ArrayList[AutoCloseablePlus](INITIAL_CAPACITY)
 
-  def trace(resource: AutoCloseable): Unit = {
+  /**
+   * Trace a resource
+   */
+  def trace(resource: AutoCloseablePlus): Unit = {
     monitor.trace(resource)
     resources.add(resource)
+    resource.setCloseListener(this)
   }
-
-  def release(resource: AutoCloseable): Unit = {
+  /**
+   * Called when the resource is closed.
+   */
+  override def onClosed(resource: AutoCloseablePlus): Unit = {
     monitor.close(resource)
-    resource.close()
     if (!resources.remove(resource)) {
       throw new IllegalStateException(s"$resource is not in the resource set $resources")
     }
   }
 
-  def allResources: Iterable[AutoCloseable] = resources.asScala
+  def allResources: Iterable[AutoCloseablePlus] = resources.asScala
 
   override def close(): Unit = {
     val iterator = resources.iterator()
@@ -51,6 +57,7 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
       try {
         val resource = iterator.next()
         monitor.close(resource)
+        resource.setCloseListener(null) // We don't want a call to onClosed any longer
         resource.close()
       }
       catch {
@@ -69,13 +76,13 @@ object ResourceManager {
 }
 
 trait ResourceMonitor {
-  def trace(resource: AutoCloseable): Unit
-  def close(resource: AutoCloseable): Unit
+  def trace(resource: AutoCloseablePlus): Unit
+  def close(resource: AutoCloseablePlus): Unit
 }
 
 object ResourceMonitor {
   val NOOP: ResourceMonitor = new ResourceMonitor {
-    def trace(resource: AutoCloseable): Unit = {}
-    def close(resource: AutoCloseable): Unit = {}
+    def trace(resource: AutoCloseablePlus): Unit = {}
+    def close(resource: AutoCloseablePlus): Unit = {}
   }
 }

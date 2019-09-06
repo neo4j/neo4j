@@ -353,7 +353,7 @@ object NodeValueHit {
   val EMPTY = new NodeValueHit(-1L, null)
 }
 
-class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends NodeValueIndexCursor {
+class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends DefaultCloseListenable with NodeValueIndexCursor {
 
   private var _next = nodeId != -1L
 
@@ -375,7 +375,7 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends NodeValue
     temp
   }
 
-  override def close(): Unit = _next = false
+  override def closeInternal(): Unit = _next = false
 
   override def isClosed: Boolean = _next
 

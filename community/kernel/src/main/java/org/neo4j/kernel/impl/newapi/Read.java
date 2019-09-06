@@ -25,6 +25,7 @@ import org.neo4j.internal.index.label.LabelScan;
 import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -338,7 +339,7 @@ abstract class Read implements TxStateHolder,
         return new FilteringNodeLabelClient( inner, accessMode );
     }
 
-    private class FilteringNodeLabelClient implements IndexProgressor.NodeLabelClient, AutoCloseablePlus
+    private class FilteringNodeLabelClient extends DefaultCloseListenable implements IndexProgressor.NodeLabelClient, AutoCloseablePlus
     {
         private FullAccessNodeCursor node;
         private IndexProgressor.NodeLabelClient inner;
@@ -367,7 +368,7 @@ abstract class Read implements TxStateHolder,
         }
 
         @Override
-        public void close()
+        public void closeInternal()
         {
             if ( !isClosed() )
             {

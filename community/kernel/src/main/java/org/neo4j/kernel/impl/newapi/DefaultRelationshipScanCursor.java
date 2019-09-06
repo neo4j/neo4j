@@ -124,7 +124,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
         if ( !isClosed() )
         {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, RelationshipScanCursor}
+import org.neo4j.internal.kernel.api.{AutoCloseablePlus, CursorFactory, DefaultCloseListenable, NodeCursor, PropertyCursor, RelationshipScanCursor}
 import org.neo4j.io.IOUtils
 
 /**
@@ -28,12 +28,16 @@ import org.neo4j.io.IOUtils
   *
   * @param cursorFactory cursor factor to allocate cursors with.
   */
-class ExpressionCursors(cursorFactory: CursorFactory) extends AutoCloseable {
+class ExpressionCursors(cursorFactory: CursorFactory) extends DefaultCloseListenable with AutoCloseablePlus {
   val nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor()
   val relationshipScanCursor: RelationshipScanCursor = cursorFactory.allocateRelationshipScanCursor()
   val propertyCursor: PropertyCursor = cursorFactory.allocatePropertyCursor()
 
-  override def close(): Unit = {
+  override def isClosed: Boolean = {
+    nodeCursor.isClosed && relationshipScanCursor.isClosed && propertyCursor.isClosed
+  }
+
+  override def closeInternal(): Unit = {
     IOUtils.closeAll(nodeCursor, relationshipScanCursor, propertyCursor)
   }
 }

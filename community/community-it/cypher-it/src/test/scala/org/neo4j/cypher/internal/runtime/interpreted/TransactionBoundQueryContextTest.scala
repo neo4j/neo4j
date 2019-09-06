@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
@@ -231,9 +232,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper, transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
-    val resource1 = mock[AutoCloseable]
-    val resource2 = mock[AutoCloseable]
-    val resource3 = mock[AutoCloseable]
+    val resource1 = mock[AutoCloseablePlus]
+    val resource2 = mock[AutoCloseablePlus]
+    val resource3 = mock[AutoCloseablePlus]
     context.resources.trace(resource1)
     context.resources.trace(resource2)
     context.resources.trace(resource3)

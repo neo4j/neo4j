@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -28,10 +29,10 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class ExtendedNodeValueIndexCursorAdapter implements NodeValueIndexCursor, EntityIndexSeekClient
+public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable implements NodeValueIndexCursor, EntityIndexSeekClient
 {
     @Override
-    public void close()
+    public void closeInternal()
     {
 
     }

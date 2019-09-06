@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.codegen;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -242,7 +243,7 @@ public abstract class CompiledExpandUtils
         return new RelationshipSelectionCursor()
         {
             @Override
-            public void close()
+            public void closeInternal()
             {
                 allRelationships.close();
             }
@@ -295,6 +296,24 @@ public abstract class CompiledExpandUtils
                 }
 
                 return false;
+            }
+
+            @Override
+            public boolean isClosed()
+            {
+                return allRelationships.isClosed();
+            }
+
+            @Override
+            public void setCloseListener( CloseListener closeListener )
+            {
+                allRelationships.setCloseListener( closeListener );
+            }
+
+            @Override
+            public CloseListener getCloseListener()
+            {
+                return allRelationships.getCloseListener();
             }
         };
     }

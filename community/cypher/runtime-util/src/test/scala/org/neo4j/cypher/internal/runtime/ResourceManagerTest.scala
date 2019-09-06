@@ -21,103 +21,104 @@ package org.neo4j.cypher.internal.runtime
 
 import org.mockito.Mockito.{verify, verifyNoMoreInteractions, when}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.kernel.api.AutoCloseablePlus
 
 import scala.util.Try
 
 class ResourceManagerTest extends CypherFunSuite {
 
   test("should be able to trace and release a resource") {
-    val resource = mock[AutoCloseable]
+    val resource = mock[AutoCloseablePlus]
     val monitor = mock[ResourceMonitor]
     val resources = new ResourceManager(monitor)
-    trace(resource, monitor, resources)
+    verifyTrace(resource, monitor, resources)
 
-    resources.release(resource)
-    close(resource, monitor)
+    resources.onClosed(resource)
+    verifyMonitorClose(resource, monitor)
 
     resources.close()
     verifyNoMoreInteractions(resource, monitor)
   }
 
   test("should close the unreleased resource when closed") {
-    val resource = mock[AutoCloseable]
+    val resource = mock[AutoCloseablePlus]
     val monitor = mock[ResourceMonitor]
     val resources = new ResourceManager(monitor)
-    trace(resource, monitor, resources)
+    verifyTrace(resource, monitor, resources)
 
     resources.close()
-    close(resource, monitor)
+    verifyClose(resource, monitor)
     verifyNoMoreInteractions(resource, monitor)
   }
 
   test("should not close resources multiple times when closed") {
-    val resource = mock[AutoCloseable]
+    val resource = mock[AutoCloseablePlus]
     val monitor = mock[ResourceMonitor]
     val resources = new ResourceManager(monitor)
-    trace(resource, monitor, resources)
+    verifyTrace(resource, monitor, resources)
 
     resources.close()
-    close(resource, monitor)
+    verifyClose(resource, monitor)
     resources.close()
     verifyNoMoreInteractions(resource, monitor)
   }
 
   test("should be able to trace and release multiple resources") {
-    val resource1 = mock[AutoCloseable]
-    val resource2 = mock[AutoCloseable]
+    val resource1 = mock[AutoCloseablePlus]
+    val resource2 = mock[AutoCloseablePlus]
     val monitor = mock[ResourceMonitor]
     val resources = new ResourceManager(monitor)
-    trace(resource1, monitor, resources)
-    trace(resource2, monitor, resources)
+    verifyTrace(resource1, monitor, resources)
+    verifyTrace(resource2, monitor, resources)
 
-    resources.release(resource1)
-    close(resource1, monitor)
-    resources.release(resource2)
-    close(resource2, monitor)
+    resources.onClosed(resource1)
+    verifyMonitorClose(resource1, monitor)
+    resources.onClosed(resource2)
+    verifyMonitorClose(resource2, monitor)
 
     resources.close()
     verifyNoMoreInteractions(resource1, resource2, monitor)
   }
 
   test("should close the unreleased resources when closed") {
-    val resource1 = mock[AutoCloseable]
-    val resource2 = mock[AutoCloseable]
+    val resource1 = mock[AutoCloseablePlus]
+    val resource2 = mock[AutoCloseablePlus]
     val monitor = mock[ResourceMonitor]
     val resources = new ResourceManager(monitor)
-    trace(resource1, monitor, resources)
-    trace(resource2, monitor, resources)
+    verifyTrace(resource1, monitor, resources)
+    verifyTrace(resource2, monitor, resources)
 
     resources.close()
-    close(resource1, monitor)
-    close(resource2, monitor)
+    verifyClose(resource1, monitor)
+    verifyClose(resource2, monitor)
     verifyNoMoreInteractions(resource1, resource2, monitor)
   }
 
   test("should close only the unreleased resources when closed") {
-    val resource1 = mock[AutoCloseable]
-    val resource2 = mock[AutoCloseable]
+    val resource1 = mock[AutoCloseablePlus]
+    val resource2 = mock[AutoCloseablePlus]
     val monitor = mock[ResourceMonitor]
     val resources = new ResourceManager(monitor)
-    trace(resource1, monitor, resources)
-    trace(resource2, monitor, resources)
+    verifyTrace(resource1, monitor, resources)
+    verifyTrace(resource2, monitor, resources)
 
-    resources.release(resource2)
-    close(resource2, monitor)
+    resources.onClosed(resource2)
+    verifyMonitorClose(resource2, monitor)
 
     resources.close()
-    close(resource1, monitor)
+    verifyClose(resource1, monitor)
     verifyNoMoreInteractions(resource1, resource2, monitor)
   }
 
   test("should close all the resources even in case of exceptions") {
-    val resource1 = mock[AutoCloseable]
-    val resource2 = mock[AutoCloseable]
-    val resource3 = mock[AutoCloseable]
+    val resource1 = mock[AutoCloseablePlus]
+    val resource2 = mock[AutoCloseablePlus]
+    val resource3 = mock[AutoCloseablePlus]
     val monitor = mock[ResourceMonitor]
     val resources = new ResourceManager(monitor)
-    trace(resource1, monitor, resources)
-    trace(resource2, monitor, resources)
-    trace(resource3, monitor, resources)
+    verifyTrace(resource1, monitor, resources)
+    verifyTrace(resource2, monitor, resources)
+    verifyTrace(resource3, monitor, resources)
 
     val exception1 = new RuntimeException
     when(resource1.close()).thenThrow(exception1)
@@ -125,20 +126,26 @@ class ResourceManagerTest extends CypherFunSuite {
     when(resource2.close()).thenThrow(exception2)
 
     val throwable = Try(resources.close()).failed.get
-    close(resource1, monitor)
-    close(resource2, monitor)
-    close(resource3, monitor)
+    verifyClose(resource1, monitor)
+    verifyClose(resource2, monitor)
+    verifyClose(resource3, monitor)
     verifyNoMoreInteractions(resource1, resource2, resource3, monitor)
     Set(throwable) ++ throwable.getSuppressed shouldBe Set(exception1, exception2)
   }
 
-  private def trace(resource: AutoCloseable, monitor: ResourceMonitor, resources: ResourceManager): Unit = {
+  private def verifyTrace(resource: AutoCloseablePlus, monitor: ResourceMonitor, resources: ResourceManager): Unit = {
     resources.trace(resource)
+    verify(resource).setCloseListener(resources)
     verify(monitor).trace(resource)
   }
 
-  private def close(resource: AutoCloseable, monitor: ResourceMonitor): Unit = {
+  private def verifyMonitorClose(resource: AutoCloseablePlus, monitor: ResourceMonitor): Unit = {
     verify(monitor).close(resource)
+  }
+
+  private def verifyClose(resource: AutoCloseablePlus, monitor: ResourceMonitor): Unit = {
+    verifyMonitorClose(resource, monitor)
+    verify(resource).setCloseListener(null)
     verify(resource).close()
   }
 }

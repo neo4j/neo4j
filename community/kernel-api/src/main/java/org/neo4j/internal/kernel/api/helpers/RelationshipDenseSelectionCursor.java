@@ -71,4 +71,23 @@ public final class RelationshipDenseSelectionCursor extends RelationshipDenseSel
     {
         return relationshipCursor.propertiesReference();
     }
+
+    @Override
+    public boolean isClosed()
+    {
+        return relationshipCursor == null || relationshipCursor.isClosed();
+    }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "RelationshipDenseSelectionCursor[closed state]";
+        }
+        else
+        {
+            return "RelationshipDenseSelectionCursor[relCursor=" + relationshipCursor.toString() + "]";
+        }
+    }
 }

@@ -55,7 +55,7 @@ class IndexCursorTest
         }
 
         @Override
-        public void close()
+        public void closeInternal()
         {
         }
 

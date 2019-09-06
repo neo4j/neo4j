@@ -21,12 +21,13 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 
-public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
+public class StubNodeLabelIndexCursor extends DefaultCloseListenable implements NodeLabelIndexCursor
 {
     private int offset = -1;
     private final Map<Integer,long[]> lookup;
@@ -81,7 +82,7 @@ public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
     }
 
     @Override
-    public void close()
+    public void closeInternal()
     {
 
     }

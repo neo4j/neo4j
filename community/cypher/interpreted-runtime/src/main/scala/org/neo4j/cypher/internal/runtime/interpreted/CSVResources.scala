@@ -29,6 +29,7 @@ import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
 import org.neo4j.exceptions.{CypherExecutionException, LoadExternalResourceException}
+import org.neo4j.internal.kernel.api.{AutoCloseablePlus, DefaultCloseListenable}
 import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer
@@ -49,8 +50,13 @@ object CSVResources {
     .build()
 }
 
-case class CSVResource(url: URL, resource: AutoCloseable) extends AutoCloseable {
-  override def close(): Unit = resource.close()
+case class CSVResource(url: URL, resource: AutoCloseable) extends DefaultCloseListenable with AutoCloseablePlus {
+  override def closeInternal(): Unit = resource.close()
+
+  // This is not correct, but hopefully the defensive answer. We don't expect this to be called,
+  // but splitting isClosed and setCloseListener into different interfaces leads to
+  // multiple inheritance problems instead.
+  override def isClosed: Boolean = false
 }
 
 class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource {

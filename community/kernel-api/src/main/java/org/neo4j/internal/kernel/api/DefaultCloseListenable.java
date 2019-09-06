@@ -17,31 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.DefaultCloseListenable;
-import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.util.Preconditions;
-
-abstract class TraceableCursor extends DefaultCloseListenable implements Cursor
+public abstract class DefaultCloseListenable
 {
-    private KernelReadTracer tracer;
+    private CloseListener closeListener;
 
-    TraceableCursor()
+    public void setCloseListener( CloseListener closeListener )
     {
-        this.tracer = KernelReadTracer.NONE;
+        this.closeListener = closeListener;
     }
 
-    @Override
-    public final void setTracer( KernelReadTracer tracer )
+    public CloseListener getCloseListener()
     {
-        Preconditions.checkArgument( tracer != null, "tracer cannot be null, use KernelReadTracer.NONE instead" );
-        this.tracer = tracer;
-    }
-
-    public KernelReadTracer getTracer()
-    {
-        return tracer;
+        return this.closeListener;
     }
 }

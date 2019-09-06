@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.storageengine.api.StorageNodeCursor;
 
-public class FullAccessNodeCursor extends DefaultNodeCursor
+class FullAccessNodeCursor extends DefaultNodeCursor
 {
     FullAccessNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor )
     {

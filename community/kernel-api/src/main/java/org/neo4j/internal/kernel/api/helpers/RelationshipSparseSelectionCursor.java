@@ -71,4 +71,23 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     {
         return cursor.propertiesReference();
     }
+
+    @Override
+    public boolean isClosed()
+    {
+        return cursor == null || cursor.isClosed();
+    }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "RelationshipSparseSelectionCursor[closed state]";
+        }
+        else
+        {
+            return "RelationshipSparseSelectionCursor[cursor=" + cursor.toString() + "]";
+        }
+    }
 }

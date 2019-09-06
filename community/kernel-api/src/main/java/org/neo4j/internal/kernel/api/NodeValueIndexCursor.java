@@ -68,7 +68,7 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
 
     Value propertyValue( int offset );
 
-    class Empty implements NodeValueIndexCursor
+    class Empty extends DefaultCloseListenable implements NodeValueIndexCursor
     {
 
         @Override
@@ -89,7 +89,7 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
         }
 
         @Override
-        public void close()
+        public void closeInternal()
         {
 
         }
