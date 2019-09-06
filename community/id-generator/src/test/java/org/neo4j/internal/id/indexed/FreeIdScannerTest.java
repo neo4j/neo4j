@@ -529,6 +529,29 @@ class FreeIdScannerTest
         assertEquals( -1, cache.takeOrDefault( -1 ) );
     }
 
+    @Test
+    void shouldEndCurrentScanInClearCache()
+    {
+        // given
+        long generation = 1;
+        int cacheSize = IDS_PER_ENTRY / 2;
+        int halfCacheSize = cacheSize / 2;
+        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cacheSize, generation );
+        forEachId( generation, range( 0, IDS_PER_ENTRY * 2 + 4 ) ).accept( ( marker, id ) ->
+        {
+            marker.markDeleted( id );
+            marker.markFree( id );
+        } );
+        scanner.tryLoadFreeIdsIntoCache();
+        assertCacheHasIdsNonExhaustive( range( 0, halfCacheSize ) );
+
+        // when
+        scanner.clearCache();
+        scanner.tryLoadFreeIdsIntoCache();
+        assertCacheHasIdsNonExhaustive( range( 0, halfCacheSize ) );
+        assertCacheHasIdsNonExhaustive( range( halfCacheSize, cacheSize ) );
+    }
+
     private void assertCacheHasIdsNonExhaustive( Range... ranges )
     {
         assertCacheHasIds( false, ranges );

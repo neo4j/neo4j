@@ -121,6 +121,19 @@ class FreeIdScanner implements Closeable
         lock.lock();
         try
         {
+            // Abort any ongoing scan
+            if ( scanner != null )
+            {
+                try
+                {
+                    endCurrentScan();
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            }
+
             // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache revert that by marking them as free again
             try ( ReservedMarker marker = markerSupplier.get() )
             {
@@ -197,8 +210,7 @@ class FreeIdScanner implements Closeable
         boolean somethingWasCached = pendingItemsToCacheCursor > 0;
         if ( seekerExhausted )
         {
-            scanner.close();
-            scanner = null;
+            endCurrentScan();
             if ( !somethingWasCached && startedNow )
             {
                 // chill a bit until at least one id gets freed
@@ -206,6 +218,12 @@ class FreeIdScanner implements Closeable
             }
         }
         return somethingWasCached;
+    }
+
+    private void endCurrentScan() throws IOException
+    {
+        scanner.close();
+        scanner = null;
     }
 
     private void queueIdsFromTreeItem( IdRangeKey key, IdRange range, int startPosInRange, int maxItemsToCache )
