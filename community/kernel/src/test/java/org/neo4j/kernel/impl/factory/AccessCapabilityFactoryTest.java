@@ -25,7 +25,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,8 +36,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 
 class AccessCapabilityFactoryTest
 {
-    private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final DatabaseId databaseId = databaseIdRepository.getByName( "foo" ).get();
+    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+    private final DatabaseId databaseId = databaseIdRepository.getRaw( "foo" );
 
     private final DatabaseConfig readWriteConfig = new DatabaseConfig( Config.defaults( read_only, false ), databaseId );
     private final DatabaseConfig readOnlyConfig = new DatabaseConfig( Config.defaults( read_only, true ), databaseId );

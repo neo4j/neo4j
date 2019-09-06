@@ -47,7 +47,6 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
@@ -106,7 +105,7 @@ import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.O
 public class DatabaseRule extends ExternalResource
 {
     private Database database;
-    private DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+    private TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     public Database getDatabase( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache )
     {
@@ -157,7 +156,7 @@ public class DatabaseRule extends ExternalResource
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
                 deps -> StorageEngineFactory.selectStorageEngine() );
-        DatabaseId databaseId = databaseIdRepository.getByName( databaseName ).get();
+        DatabaseId databaseId = databaseIdRepository.getRaw( databaseName );
 
         database = new Database( new TestDatabaseCreationContext( databaseId, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,

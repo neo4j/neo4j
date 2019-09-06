@@ -24,11 +24,13 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.Node;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -50,26 +52,23 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     @Override
     public Optional<DatabaseId> getByName( NormalizedDatabaseName normalizedDatabaseName )
     {
-        try
-        {
-            return CompletableFuture.supplyAsync( () -> get0( normalizedDatabaseName ), executor ).join();
-        }
-        catch ( CompletionException e )
-        {
-            if ( e.getCause() instanceof RuntimeException )
-            {
-                throw (RuntimeException) e.getCause();
-            }
-            throw e;
-        }
+        var databaseName = normalizedDatabaseName.name();
+        return runAsync(
+                () -> get0( DATABASE_NAME_PROPERTY, databaseName ),
+                executor );
     }
 
     @Override
     public Optional<DatabaseId> getByUuid( UUID uuid )
     {
+        return runAsync( () -> get0( DATABASE_UUID_PROPERTY, uuid.toString() ), executor );
+    }
+
+    private static <T> T runAsync( Supplier<T> supplier, Executor executor )
+    {
         try
         {
-            return CompletableFuture.supplyAsync( () -> get0( uuid ), executor ).join();
+            return CompletableFuture.supplyAsync( supplier, executor ).join();
         }
         catch ( CompletionException e )
         {
@@ -82,30 +81,25 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     }
 
     // Run on another thread to avoid running in an enclosing transaction on a different database
-    private Optional<DatabaseId> get0( UUID uuid )
+    private Optional<DatabaseId> get0( String propertyKey, String propertyValue )
     {
-        var context = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID )
-                .orElseThrow( () -> new DatabaseNotFoundException( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
+        var context = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
+                () -> new DatabaseNotFoundException( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
 
         var db = context.databaseFacade();
         try ( var tx = db.beginTx() )
         {
-            var node = tx.findNode( DATABASE_LABEL, DATABASE_UUID_PROPERTY, uuid.toString() );
+            var node = tx.findNode( DATABASE_LABEL, propertyKey, propertyValue );
 
             if ( node == null )
             {
                 return Optional.empty();
             }
-            var databaseName = node.getProperty( DATABASE_NAME_PROPERTY );
-            if ( databaseName == null )
-            {
-                throw new IllegalStateException( "Database has no name: " + uuid );
-            }
-            if ( !(databaseName instanceof String) )
-            {
-                throw new IllegalStateException( "Database has non String name: " + uuid );
-            }
-            return Optional.of( new DatabaseId( (String) databaseName, uuid ) );
+
+            var databaseName = getPropertyOnNode( node, DATABASE_NAME_PROPERTY, propertyValue );
+            var databaseUuid = getPropertyOnNode( node, DATABASE_UUID_PROPERTY, propertyValue );
+
+            return Optional.of( new DatabaseId( databaseName, UUID.fromString( databaseUuid ) ) );
         }
         catch ( RuntimeException e )
         {
@@ -117,40 +111,17 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
         }
     }
 
-    // Run on another thread to avoid running in an enclosing transaction on a different database
-    private Optional<DatabaseId> get0( NormalizedDatabaseName normalizedDatabaseName )
+    private String getPropertyOnNode( Node node, String key, String database )
     {
-        var databaseName = normalizedDatabaseName.name();
-        var context = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID )
-                .orElseThrow( () -> new DatabaseNotFoundException( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
-
-        var db = context.databaseFacade();
-        try ( var tx = db.beginTx() )
+        var value = node.getProperty( key );
+        if ( value == null )
         {
-            var node = tx.findNode( DATABASE_LABEL, DATABASE_NAME_PROPERTY, databaseName );
-
-            if ( node == null )
-            {
-                return Optional.empty();
-            }
-            var uuid = node.getProperty( DATABASE_UUID_PROPERTY );
-            if ( uuid == null )
-            {
-                throw new IllegalStateException( "Database has no uuid: " + databaseName );
-            }
-            if ( !(uuid instanceof String) )
-            {
-                throw new IllegalStateException( "Database has non String uuid: " + databaseName );
-            }
-            return Optional.of( new DatabaseId( databaseName, UUID.fromString( (String)uuid ) ) );
+            throw new IllegalStateException( String.format( "Database has no %s: %s.", key, database ) );
         }
-        catch ( RuntimeException e )
+        if ( !(value instanceof String) )
         {
-            throw e;
+            throw new IllegalStateException( String.format( "Database has non String %s: %s.", key, database ) );
         }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        return (String) value;
     }
 }

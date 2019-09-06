@@ -30,7 +30,6 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
@@ -61,8 +60,8 @@ class TransactionIdTrackerTest
 
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard = mock( DatabaseAvailabilityGuard.class );
-    private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final DatabaseId databaseId = databaseIdRepository.getByName( "foo" ).get();
+    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+    private final DatabaseId databaseId = databaseIdRepository.getRaw( "foo" );
     private final Database db = mock( Database.class );
     private final DatabaseManagementService managementService = mock( DatabaseManagementService.class );
     private final ReconciledTransactionTracker reconciledTransactionTracker = spy( new DefaultReconciledTransactionTracker( NullLogService.getInstance() ) );
@@ -281,7 +280,7 @@ class TransactionIdTrackerTest
     void shouldNotReturnNewestTransactionIdForDatabaseThatDoesNotExist()
     {
         // given
-        var unknownDatabaseId = databaseIdRepository.getByName( "bar" ).get();
+        var unknownDatabaseId = databaseIdRepository.getRaw( "bar" );
         when( managementService.database( unknownDatabaseId.name() ) ).thenThrow( DatabaseNotFoundException.class );
 
         // when
@@ -296,7 +295,7 @@ class TransactionIdTrackerTest
     void shouldNotAwaitForTransactionForDatabaseThatDoesNotExist()
     {
         // given
-        var unknownDatabaseId = databaseIdRepository.getByName( "bar" ).get();
+        var unknownDatabaseId = databaseIdRepository.getRaw( "bar" );
         when( managementService.database( unknownDatabaseId.name() ) ).thenThrow( DatabaseNotFoundException.class );
 
         // when

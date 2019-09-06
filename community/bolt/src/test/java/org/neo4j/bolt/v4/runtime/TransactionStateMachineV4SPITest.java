@@ -29,7 +29,6 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.time.SystemNanoClock;
 
@@ -42,14 +41,14 @@ import static org.mockito.Mockito.when;
 
 class TransactionStateMachineV4SPITest
 {
-    private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     @Test
     void shouldCheckDatabaseIdInBookmark() throws Throwable
     {
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var databaseId = databaseIdRepository.getByName( "molly" ).get();
+        var databaseId = databaseIdRepository.getRaw( "molly" );
         when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
 
         var bookmarkAwaitDuration = Duration.ofMinutes( 10 );
@@ -71,7 +70,7 @@ class TransactionStateMachineV4SPITest
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
         when( dbSpi.newestEncounteredTxId() ).thenReturn( 42L );
-        var databaseId = databaseIdRepository.getByName( "molly" ).get();
+        var databaseId = databaseIdRepository.getRaw( "molly" );
         when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
 
         var txDuration = Duration.ofMinutes( 10 );
