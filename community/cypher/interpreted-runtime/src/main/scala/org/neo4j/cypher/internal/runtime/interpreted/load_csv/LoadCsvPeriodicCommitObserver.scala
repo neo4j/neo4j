@@ -55,7 +55,9 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
     //the URL that we are reading the CSV from until we are all done
     queryContext.resources.allResources.foreach {
       case _: CSVResource => //ignore we should just close the csv resource when done
-      case e => e.close()
+        // We call closeInternal instead of close, so that the resources are not removed from the ResourceManager.
+        // We want that, because they are still traced by the RuntimeResult and will be closed from there as well.
+      case e => e.closeInternal()
     }
     queryContext.transactionalContext.commitAndRestartTx()
     outerLoadCSVIterator.foreach(_.notifyCommit())

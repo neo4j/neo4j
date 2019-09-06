@@ -38,6 +38,7 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
     resources.add(resource)
     resource.setCloseListener(this)
   }
+
   /**
    * Called when the resource is closed.
    */
