@@ -50,7 +50,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.TokenAccess;

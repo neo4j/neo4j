@@ -121,6 +121,7 @@ public class AuthProcedures
     public static class UserResult
     {
         public final String username;
+        public final List<String> roles = null; // this is just so that the community version has the same signature as in enterprise
         public final List<String> flags;
 
         UserResult( String username, Iterable<String> flags )
