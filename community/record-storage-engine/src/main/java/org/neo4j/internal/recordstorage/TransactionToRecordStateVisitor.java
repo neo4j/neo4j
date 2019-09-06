@@ -24,14 +24,12 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Iterator;
 import java.util.OptionalLong;
-import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -182,9 +180,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        SchemaDescriptor schema = uniqueConstraint.schema();
-        IndexDescriptor[] indexGetForSchema = schemaStorage.indexGetForSchema( schema );
-        IndexDescriptor indexRule = firstUniqueConstraintIndex( indexGetForSchema );
+        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId() );
         ConstraintDescriptor constraint = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraint );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
@@ -192,15 +188,10 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.schema() ) );
+        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId() );
         ConstraintDescriptor constraint = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraint );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
-    }
-
-    private IndexDescriptor firstUniqueConstraintIndex( IndexDescriptor[] indexGetForSchema )
-    {
-        return Stream.of( indexGetForSchema ).filter( IndexDescriptor::isUnique ).findFirst().orElse( null );
     }
 
     @Override
@@ -224,7 +215,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
                         visitRemovedIndex( index );
                     }
                     // Note that we _could_ also go through all the matching indexes that have isUnique == true and no owning constraint id, and remove those
-                    // as well. These might be oprhaned indexes from failed constraint creations. However, since we want to allow multiple indexes and
+                    // as well. These might be orphaned indexes from failed constraint creations. However, since we want to allow multiple indexes and
                     // constraints on the same schema, they could also be constraint indexes that are currently populating for other constraints, and if that's
                     // the case, then we cannot remove them, since that would ruin the constraint they are being built for.
                 }

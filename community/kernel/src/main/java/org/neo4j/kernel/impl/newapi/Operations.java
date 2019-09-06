@@ -106,7 +106,6 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.INDEX_CREATION;
@@ -1360,47 +1359,34 @@ public class Operations implements Write, SchemaWrite
     private <T extends IndexBackedConstraintDescriptor> T indexBackedConstraintCreate( T constraint, String provider )
             throws KernelException
     {
-        SchemaDescriptor descriptor = constraint.schema();
         try
         {
-            IndexDescriptor constraintIndex = single( allStoreHolder.indexForSchemaNonTransactional( descriptor ) ); // Ignore transaction state.
-            if ( constraintIndex.isUnique() && ktx.hasTxStateWithChanges() && ktx.txState().indexDoUnRemove( constraintIndex ) ) // ..., DROP, *CREATE*
-            { // creation is undoing a drop
-                if ( !ktx.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
-                { // ... the drop we are undoing did itself undo a prior create...
-                    ktx.txState().constraintDoAdd(
-                            constraint, ktx.txState().indexCreatedForConstraint( constraint ) );
-                }
+            if ( allStoreHolder.constraintExists( constraint ) )
+            {
+                throw new AlreadyConstrainedException( constraint, CONSTRAINT_CREATION, tokenNameLookup );
             }
-            else // *CREATE*
-            { // create from scratch
-                Iterator<ConstraintDescriptor> it = allStoreHolder.constraintsGetForSchema( descriptor );
-                while ( it.hasNext() )
-                {
-                    ConstraintDescriptor existing = it.next();
-                    if ( existing.equals( constraint ) )
-                    {
-                        return (T) existing;
-                    }
-                }
-                IndexDescriptor index = constraintIndexCreator.createUniquenessConstraintIndex( ktx, constraint, provider );
-                if ( !allStoreHolder.constraintExists( constraint ) )
-                {
-                    // This looks weird, but since we release the label lock while awaiting population of the index
-                    // backing this constraint there can be someone else getting ahead of us, creating this exact
-                    // constraint
-                    // before we do, so now getting out here under the lock we must check again and if it exists
-                    // we must at this point consider this an idempotent operation because we verified earlier
-                    // that it didn't exist and went on to create it.
-                    ktx.txState().constraintDoAdd( constraint, index );
-                }
+            IndexDescriptor index = constraintIndexCreator.createUniquenessConstraintIndex( ktx, constraint, provider );
+            if ( !allStoreHolder.constraintExists( constraint ) )
+            {
+                // This looks weird, but since we release the label lock while awaiting population of the index
+                // backing this constraint there can be someone else getting ahead of us, creating this exact
+                // constraint
+                // before we do, so now getting out here under the lock we must check again and if it exists
+                // we must at this point consider this an idempotent operation because we verified earlier
+                // that it didn't exist and went on to create it.
+                constraint = (T) constraint.withOwnedIndexId( index.getId() );
+                ktx.txState().constraintDoAdd( constraint, index );
             }
+            else
+            {
+                constraint = (T) allStoreHolder.constraintsGetForSchema( constraint.schema() );
+            }
+            return constraint;
         }
         catch ( UniquePropertyValueValidationException | TransactionFailureException | AlreadyConstrainedException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }
-        return constraint;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -1431,13 +1417,5 @@ public class Operations implements Write, SchemaWrite
         }
 
         return constraint;
-    }
-
-    private static void assertValidIndex( IndexDescriptor index ) throws NoSuchIndexException
-    {
-        if ( index == IndexDescriptor.NO_INDEX )
-        {
-            throw new NoSuchIndexException( index.schema() );
-        }
     }
 }
