@@ -30,7 +30,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
 
-  test("handle cached properties and cartesian product") {
+  test("handle cached properties and cartesian product on LHS of apply") {
     // given
     val nodes = nodePropertyGraph(sizeHint, {
       case i: Int => Map("prop" -> i)
