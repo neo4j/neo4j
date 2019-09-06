@@ -44,6 +44,8 @@ import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
@@ -137,6 +139,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
             int responseCode = connection.getResponseCode();
             switch ( responseCode )
             {
+            case HTTP_NOT_FOUND:
+                // fallthrough
+            case HTTP_MOVED_PERM:
+                throw updatePluginErrorResponse( connection );
             case HTTP_UNAUTHORIZED:
                 throw errorResponse( verbose, connection, "Invalid username/password credentials" );
             case HTTP_FORBIDDEN:
@@ -181,6 +187,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
             int responseCode = connection.getResponseCode();
             switch ( responseCode )
             {
+            case HTTP_NOT_FOUND:
+                // fallthrough
+            case HTTP_MOVED_PERM:
+                throw updatePluginErrorResponse( connection );
             case HTTP_UNAUTHORIZED:
                 throw errorResponse( verbose, connection, "The given authorization token is invalid or has expired" );
             case HTTP_CONFLICT:
@@ -300,6 +310,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
             int responseCode = connection.getResponseCode();
             switch ( responseCode )
             {
+            case HTTP_NOT_FOUND:
+                // fallthrough
+            case HTTP_MOVED_PERM:
+                throw updatePluginErrorResponse( connection );
             case HTTP_CONFLICT:
                 throw errorResponse( verbose, connection,
                         "A non-empty database already exists at the given location and overwrite consent not given, aborting" );
@@ -496,6 +510,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
     {
         debugErrorResponse( verbose, connection );
         return new CommandFailed( errorDescription );
+    }
+
+    private CommandFailed updatePluginErrorResponse( HttpURLConnection connection ) throws IOException
+    {
+        debugErrorResponse( true, connection );
+        return new CommandFailed( "We realised a problem while communicating to the Neo4j cloud system. " +
+                "Please update your push-to-cloud plugin and contact support if this problem still happens after the update. " +
+                "Please also attached the logs shown below." );
     }
 
     private CommandFailed unexpectedResponse( boolean verbose, HttpURLConnection connection, String requestDescription ) throws IOException
