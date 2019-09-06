@@ -52,6 +52,7 @@ import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -117,6 +118,48 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.equalTo( "Invalid username/password credentials" ),
+                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleAuthenticateMovedRoute() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        Path source = createDump();
+        wireMock.stubFor( authenticationRequest().willReturn( aResponse()
+                .withStatus( HTTP_MOVED_PERM ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
+                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleMoveUploadTargetdRoute() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        Path source = createDump();
+        wireMock.stubFor( initiateUploadTargetRequest( "abc", false ).willReturn( aResponse()
+                .withStatus( HTTP_MOVED_PERM ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
+                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleImportRequestestMovedRoute() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        Path source = createDump();
+        wireMock.stubFor( triggerImportRequest( "abc" ).willReturn( aResponse()
+                .withStatus( HTTP_MOVED_PERM ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
                 () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
     }
 
