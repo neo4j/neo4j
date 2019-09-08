@@ -1019,10 +1019,17 @@ class OperationsTest
         // given
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
+        StatementLocks statementLocks = mock( StatementLocks.class );
+        when( ktx.statementLocks() ).thenReturn( statementLocks );
+        when( statementLocks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
+        DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
+        when( cursors.allocateFullAccessNodeCursor() ).thenReturn( mock( FullAccessNodeCursor.class ) );
+        when( cursors.allocateFullAccessPropertyCursor() ).thenReturn( mock( FullAccessPropertyCursor.class ) );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
-                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
+                commandCreationContext, ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
                 mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), mock( Config.class ) );
+        operations.initialize();
 
         // when
         operations.nodeCreateWithLabels( new int[]{1} );
@@ -1031,6 +1038,7 @@ class OperationsTest
         InOrder inOrder = inOrder( ktx, commandCreationContext );
         inOrder.verify( ktx ).txState();
         inOrder.verify( commandCreationContext ).reserveNode();
+        inOrder.verify( ktx ).txState(); // for the constraints check for the label
         inOrder.verifyNoMoreInteractions();
     }
 
