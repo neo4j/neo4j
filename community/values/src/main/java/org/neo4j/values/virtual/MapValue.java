@@ -404,9 +404,8 @@ public abstract class MapValue extends VirtualValue
                        while ( internal.hasNext() )
                        {
                            String key = internal.next();
-                           if ( !seen.contains( key ) )
+                           if ( seen.add( key ) )
                            {
-                               seen.add( key );
                                return key;
                            }
                        }
