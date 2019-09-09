@@ -53,6 +53,7 @@ import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -128,11 +129,11 @@ public class HttpCopierTest
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
         Path source = createDump();
         wireMock.stubFor( authenticationRequest().willReturn( aResponse()
-                .withStatus( HTTP_MOVED_PERM ) ) );
+                .withStatus( HTTP_NOT_FOUND ) ) );
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> copier.copy( true, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -141,8 +142,16 @@ public class HttpCopierTest
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
         Path source = createDump();
+        long sourceLength = fs.getFileSize( source.toFile() );
+
+        String authorizationTokenResponse = "abc";
+        String signedURIPath = "/signed";
+        String uploadLocationPath = "/upload";
+
+        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( initiateUploadTargetRequest( "abc", false ).willReturn( aResponse()
-                .withStatus( HTTP_MOVED_PERM ) ) );
+                .withStatus( HTTP_NOT_FOUND ) ) );
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
@@ -155,8 +164,20 @@ public class HttpCopierTest
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
         Path source = createDump();
+        long sourceLength = fs.getFileSize( source.toFile() );
+
+        String authorizationTokenResponse = "abc";
+        String signedURIPath = "/signed";
+        String uploadLocationPath = "/upload";
+
+        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false )
+                .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
+        wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
+        wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
+
         wireMock.stubFor( triggerImportRequest( "abc" ).willReturn( aResponse()
-                .withStatus( HTTP_MOVED_PERM ) ) );
+                .withStatus( HTTP_NOT_FOUND ) ) );
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
