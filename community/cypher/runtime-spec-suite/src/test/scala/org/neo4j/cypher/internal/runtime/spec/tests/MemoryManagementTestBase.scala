@@ -36,6 +36,17 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   self: RuntimeTestSuite[CONTEXT] =>
 
   /**
+   * Finite iterator.
+   *
+   * @param limit the iterator will be exhausted after the given amount of rows
+   * @param rowSize the size of a row in Bytes
+   * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
+   */
+  protected def finiteInput(limit: Int, rowSize: Long, data: Any*): InputDataStream = {
+    iteratorInput(iterate(data.toArray, Some(limit), nodeInput = false, rowSize))
+  }
+
+  /**
     * Infinite iterator.
     *
     * @param rowSize the size of a row in Bytes
@@ -495,6 +506,22 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
  */
 trait TopSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
   self: MemoryManagementTestBase[CONTEXT] =>
+
+  test("should not kill top query with low limit") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(Seq(Ascending("x")), 10)
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = finiteInput(1000000, expectedRowSize)
+
+    // then no exception
+    consume(execute(logicalQuery, runtime, input))
+  }
 
   test("should kill top query before it runs out of memory") {
     // given
