@@ -178,6 +178,18 @@ Feature: MatchAcceptance
 
   Scenario: difficult to plan query number 2
     Given an empty graph
+    And having executed:
+      """
+      CREATE (ts: TS),
+             (k: K),
+             (sta: STA),
+             (p  {OtherId: 1}),
+             (f: F),
+             (d:A {Id: 1}),
+             (k)-[:M]->(sta),
+             (p)-[:N]->(sta),
+             (ts)-[:R]->(f)
+      """
     When executing query:
       """
       MATCH (ts)
@@ -189,7 +201,8 @@ Feature: MatchAcceptance
       RETURN k, ts, f, d
       """
     Then the result should be:
-      | k | ts | f | d |
+      | k    | ts    | f    | d           |
+      | (:K) | (:TS) | (:F) | (:A {Id: 1})|
     And no side effects
 
   Scenario: difficult to plan query number 3

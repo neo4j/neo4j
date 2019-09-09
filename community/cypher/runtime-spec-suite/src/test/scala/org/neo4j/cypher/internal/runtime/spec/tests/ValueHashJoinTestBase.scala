@@ -90,4 +90,36 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
     val expected = nodes.map(n => Array(n, n)). take(10)
     runtimeResult should beColumns("a", "b").withRows(expected)
   }
+
+  test("should handle multiple columns") {
+    // given
+    val nodes = nodePropertyGraph(sizeHint, {
+      case i => Map("prop" -> i)
+    })
+    val relTuples = (for (i <- 0 until sizeHint) yield {
+      Seq(
+        (i, (i + 1) % sizeHint, "R")
+        )
+    }).reduce(_ ++ _)
+
+    connect(nodes, relTuples)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .valueHashJoin("c.prop=e.prop")
+      .|.expand("(e)-->(f)")
+      .|.expand("(d)-->(e)")
+      .|.allNodeScan("d")
+      .expand("(b)-->(c)")
+      .expand("(a)-->(b)")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n))
+    runtimeResult should beColumns("c").withRows(expected)
+  }
 }
