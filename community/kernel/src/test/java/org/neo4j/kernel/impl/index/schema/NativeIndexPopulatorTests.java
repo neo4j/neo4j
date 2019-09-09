@@ -36,7 +36,7 @@ import java.util.Random;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -58,7 +58,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -700,8 +699,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     private void assertHeader( InternalIndexState expectedState, String failureMessage, boolean messageTruncated ) throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( NO_HEADER_READER );
-        try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, getIndexFile(), layout, 0, GBPTree.NO_MONITOR,
-                headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() ) )
+        try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, getIndexFile(), layout ).with( headerReader ).build() )
         {
             switch ( expectedState )
             {

@@ -19,59 +19,47 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.io.File;
+
 import org.neo4j.io.pagecache.PageCursor;
 
-import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 
 /**
  * Used to verify a chain of siblings starting with leftmost node.
- * Call {@link #assertNext(PageCursor, long, long, long, long, long)} with cursor pointing at sibling expected
+ * Call {@link #assertNext(PageCursor, long, long, long, long, long, GBPTreeConsistencyCheckVisitor)} with cursor pointing at sibling expected
  * to be right sibling to previous call to verify that they are indeed linked together correctly.
  * <p>
- * When assertNext has been called on node that is expected to be last in chain, use {@link #assertLast()} to verify.
+ * When assertNext has been called on node that is expected to be last in chain, use {@link #assertLast(GBPTreeConsistencyCheckVisitor)} to verify.
  */
 class RightmostInChain
 {
+    private final File file;
     private long currentRightmostNode = TreeNode.NO_NODE_FLAG;
     private long currentRightmostRightSiblingPointer = TreeNode.NO_NODE_FLAG;
     private long currentRightmostRightSiblingPointerGeneration;
     private long currentRightmostNodeGeneration;
 
+    RightmostInChain( File file )
+    {
+        this.file = file;
+    }
+
     void assertNext( PageCursor cursor, long newRightmostNodeGeneration,
             long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGeneration,
-            long newRightmostRightSiblingPointer, long newRightmostRightSiblingPointerGeneration )
+            long newRightmostRightSiblingPointer, long newRightmostRightSiblingPointerGeneration,
+            GBPTreeConsistencyCheckVisitor visitor )
     {
         long newRightmostNode = cursor.getCurrentPageId();
 
         // Assert we have reached expected node and that we agree about being siblings
-        StringBuilder errorMessageBuilder = new StringBuilder();
-        if ( newRightmostLeftSiblingPointer != currentRightmostNode )
-        {
-            errorMessageBuilder.append( format( "Sibling pointer does align with tree structure%n" ) );
-        }
-        if ( currentRightmostNodeGeneration > newRightmostLeftSiblingPointerGeneration && currentRightmostNode != NO_NODE_FLAG )
-        {
-            errorMessageBuilder.append( format( "Sibling pointer generation differs from expected%n" ) );
-        }
-        if ( newRightmostNode != currentRightmostRightSiblingPointer &&
-                (currentRightmostRightSiblingPointer != NO_NODE_FLAG || currentRightmostNode != NO_NODE_FLAG) )
-        {
-            errorMessageBuilder.append( format( "Sibling pointer does not align with tree structure%n" ) );
-        }
-        if ( currentRightmostRightSiblingPointerGeneration < newRightmostNodeGeneration &&
-                currentRightmostRightSiblingPointer != NO_NODE_FLAG )
-        {
-            errorMessageBuilder.append( format( "Sibling pointer generation differs from expected%n" ) );
-        }
-
-        String errorMessage = errorMessageBuilder.toString();
-        if ( !errorMessage.equals( "" ) )
-        {
-            errorMessage = addPatternToExceptionMessage( newRightmostNodeGeneration, newRightmostLeftSiblingPointer,
-                    newRightmostLeftSiblingPointerGeneration, newRightmostNode, errorMessage );
-            throw new TreeInconsistencyException( errorMessage );
-        }
+        assertSiblingsAgreeOnBeingSiblings( currentRightmostNode, currentRightmostNodeGeneration, currentRightmostRightSiblingPointer,
+                currentRightmostRightSiblingPointerGeneration, newRightmostNode, newRightmostNodeGeneration, newRightmostLeftSiblingPointer,
+                newRightmostLeftSiblingPointerGeneration, visitor );
+        // Assert that both sibling pointers have reasonable generations
+        assertSiblingPointerGeneration( currentRightmostNode, currentRightmostNodeGeneration, currentRightmostRightSiblingPointer,
+                currentRightmostRightSiblingPointerGeneration, newRightmostNode, newRightmostNodeGeneration, newRightmostLeftSiblingPointer,
+                newRightmostLeftSiblingPointerGeneration, visitor );
 
         // Update currentRightmostNode = newRightmostNode;
         currentRightmostNode = newRightmostNode;
@@ -80,35 +68,67 @@ class RightmostInChain
         currentRightmostRightSiblingPointerGeneration = newRightmostRightSiblingPointerGeneration;
     }
 
-    private String addPatternToExceptionMessage( long newRightmostGeneration, long leftSibling,
-            long leftSiblingGeneration, long newRightmost, String errorMessage )
+    private void assertSiblingPointerGeneration( long currentRightmostNode, long currentRightmostNodeGeneration,
+            long currentRightmostRightSiblingPointer, long currentRightmostRightSiblingPointerGeneration, long newRightmostNode,
+            long newRightmostNodeGeneration, long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGeneration,
+            GBPTreeConsistencyCheckVisitor visitor )
     {
-        return format( "%s" +
-                        "  Left siblings view:  %s%n" +
-                        "  Right siblings view: %s%n", errorMessage,
-                leftPattern( currentRightmostNode, currentRightmostNodeGeneration,
-                        currentRightmostRightSiblingPointerGeneration,
-                        currentRightmostRightSiblingPointer ),
-                rightPattern( newRightmost, newRightmostGeneration, leftSiblingGeneration, leftSibling ) );
+        if ( currentRightmostNodeGeneration > newRightmostLeftSiblingPointerGeneration && currentRightmostNode != NO_NODE_FLAG )
+        {
+            // Generation of left sibling is larger than that of the pointer from right sibling
+            // Left siblings view:  {_(9)}-(_)->{_}
+            // Right siblings view: {_}<-(5)-{_(_)}
+            visitor.pointerHasLowerGenerationThanNode( GBPTreePointerType.leftSibling(), newRightmostNode, newRightmostLeftSiblingPointerGeneration,
+                    newRightmostLeftSiblingPointer, currentRightmostNodeGeneration, file
+            );
+        }
+        if ( currentRightmostRightSiblingPointerGeneration < newRightmostNodeGeneration &&
+                currentRightmostRightSiblingPointer != NO_NODE_FLAG )
+        {
+            // Generation of right sibling is larger than that of the pointer from left sibling
+            // Left siblings view:  {_(_)}-(5)->{_}
+            // Right siblings view: {_}<-(_)-{_(9)}
+            visitor.pointerHasLowerGenerationThanNode( GBPTreePointerType.rightSibling(), currentRightmostNode, currentRightmostRightSiblingPointerGeneration,
+                    currentRightmostRightSiblingPointer, newRightmostNodeGeneration, file
+            );
+        }
     }
 
-    private String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,
-            long expectedRightSiblingGeneration, long expectedRightSibling )
+    private void assertSiblingsAgreeOnBeingSiblings( long currentRightmostNode, long currentRightmostNodeGeneration,
+            long currentRightmostRightSiblingPointer, long currentRightmostRightSiblingPointerGeneration, long newRightmostNode,
+            long newRightmostNodeGeneration, long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGeneration,
+            GBPTreeConsistencyCheckVisitor visitor )
     {
-        return format( "{%d(%d)}-(%d)->{%d}", actualLeftSibling, actualLeftSiblingGeneration, expectedRightSiblingGeneration,
-                expectedRightSibling );
+        boolean siblingsPointToEachOther = true;
+        if ( newRightmostLeftSiblingPointer != currentRightmostNode )
+        {
+            // Right sibling does not point to left sibling
+            // Left siblings view:  {2(_)}-(_)->{_}
+            // Right siblings view: {1}<-(_)-{_(_)}
+            siblingsPointToEachOther = false;
+        }
+        if ( newRightmostNode != currentRightmostRightSiblingPointer &&
+                (currentRightmostRightSiblingPointer != NO_NODE_FLAG || currentRightmostNode != NO_NODE_FLAG) )
+        {
+            // Left sibling does not point to right sibling
+            // Left siblings view:  {_(_)}-(_)->{1}
+            // Right siblings view: {_}<-(_)-{2(_)}
+            siblingsPointToEachOther = false;
+        }
+        if ( !siblingsPointToEachOther )
+        {
+            visitor.siblingsDontPointToEachOther( currentRightmostNode, currentRightmostNodeGeneration, currentRightmostRightSiblingPointerGeneration,
+                    currentRightmostRightSiblingPointer, newRightmostLeftSiblingPointer, newRightmostLeftSiblingPointerGeneration, newRightmostNode,
+                    newRightmostNodeGeneration, file
+            );
+        }
     }
 
-    private String rightPattern( long actualRightSibling, long actualRightSiblingGeneration,
-            long expectedLeftSiblingGeneration, long expectedLeftSibling )
+    void assertLast( GBPTreeConsistencyCheckVisitor visitor )
     {
-        return format( "{%d}<-(%d)-{%d(%d)}", expectedLeftSibling, expectedLeftSiblingGeneration, actualRightSibling,
-                actualRightSiblingGeneration );
-    }
-
-    void assertLast()
-    {
-        assert currentRightmostRightSiblingPointer == NO_NODE_FLAG : "Expected rightmost right sibling to be " + NO_NODE_FLAG
-                + " but was " + currentRightmostRightSiblingPointer + ". Current rightmost node is " + currentRightmostNode;
+        if ( currentRightmostRightSiblingPointer != NO_NODE_FLAG )
+        {
+            visitor.rightmostNodeHasRightSibling( currentRightmostRightSiblingPointer, currentRightmostNode, file );
+        }
     }
 }

@@ -86,7 +86,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
      */
     private static final int BYTE_POS_ALLOCOFFSET = BASE_HEADER_LENGTH;
     private static final int BYTE_POS_DEADSPACE = BYTE_POS_ALLOCOFFSET + bytesPageOffset();
-    private static final int HEADER_LENGTH_DYNAMIC = BYTE_POS_DEADSPACE + bytesPageOffset();
+    @VisibleForTesting
+    static final int HEADER_LENGTH_DYNAMIC = BYTE_POS_DEADSPACE + bytesPageOffset();
 
     private static final int LEAST_NUMBER_OF_ENTRIES_PER_PAGE = 2;
     private static final int MINIMUM_ENTRY_SIZE_CAP = Long.SIZE;
@@ -1173,7 +1174,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return bytesKeyOffset() + getOverhead( keySize, 0 ) + childSize() + keySize;
     }
 
-    private void setAllocOffset( PageCursor cursor, int allocOffset )
+    @VisibleForTesting
+    void setAllocOffset( PageCursor cursor, int allocOffset )
     {
         PageCursorUtil.putUnsignedShort( cursor, BYTE_POS_ALLOCOFFSET, allocOffset );
     }
@@ -1183,12 +1185,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return PageCursorUtil.getUnsignedShort( cursor, BYTE_POS_ALLOCOFFSET );
     }
 
-    private void setDeadSpace( PageCursor cursor, int deadSpace )
+    @VisibleForTesting
+    void setDeadSpace( PageCursor cursor, int deadSpace )
     {
         putUnsignedShort( cursor, BYTE_POS_DEADSPACE, deadSpace );
     }
 
-    private int getDeadSpace( PageCursor cursor )
+    @VisibleForTesting
+    int getDeadSpace( PageCursor cursor )
     {
         return PageCursorUtil.getUnsignedShort( cursor, BYTE_POS_DEADSPACE );
     }
@@ -1353,7 +1357,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void checkMetaConsistency( PageCursor cursor, int keyCount, Type type )
+    String checkMetaConsistency( PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         // Reminder: Header layout
         // TotalSpace  |----------------------------------------|
@@ -1364,19 +1368,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         //     [Header][OffsetArray]........[_________,XXXX,____] (_ = alive key, X = dead key)
 
         long nodeId = cursor.getCurrentPageId();
-        StringJoiner joiner = new StringJoiner( ", ", "Inconsistent node, id=" + nodeId + ": ", "" );
+        StringJoiner joiner = new StringJoiner( ", ", "Meta data for tree node is inconsistent, id=" + nodeId + ": ", "" );
         boolean hasInconsistency = false;
-
-        // Verify activeSpace + deadSpace + allocSpace == totalSpace
-        int activeSpace = totalActiveSpaceRaw( cursor, keyCount, type );
-        int deadSpace = getDeadSpace( cursor );
-        int allocSpace = getAllocSpace( cursor, keyCount, type );
-        if ( activeSpace + deadSpace + allocSpace != totalSpace )
-        {
-            hasInconsistency = true;
-            joiner.add( format( "Space areas did not sum to total space; activeSpace=%d, deadSpace=%d, allocSpace=%d, totalSpace=%d",
-                    activeSpace, deadSpace, allocSpace, totalSpace ) );
-        }
 
         // Verify allocOffset >= offsetArray
         int allocOffset = getAllocOffset( cursor );
@@ -1387,11 +1380,64 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             joiner.add( format( "Overlap between offsetArray and allocSpace, offsetArray=%d, allocOffset=%d", offsetArray, allocOffset ) );
         }
 
+        // If keyCount is unreasonable we will likely go out of bounds in those checks
+        if ( reasonableKeyCount( keyCount ) )
+        {
+            // Verify activeSpace + deadSpace + allocSpace == totalSpace
+            int activeSpace = totalActiveSpaceRaw( cursor, keyCount, type );
+            int deadSpace = getDeadSpace( cursor );
+            int allocSpace = getAllocSpace( cursor, keyCount, type );
+            if ( activeSpace + deadSpace + allocSpace != totalSpace )
+            {
+                hasInconsistency = true;
+                joiner.add( format( "Space areas did not sum to total space; activeSpace=%d, deadSpace=%d, allocSpace=%d, totalSpace=%d",
+                        activeSpace, deadSpace, allocSpace, totalSpace ) );
+            }
+
+            // Verify no overlap between alloc space and active keys
+            int lowestActiveKeyOffset = lowestActiveKeyOffset( cursor, keyCount, type );
+            if ( lowestActiveKeyOffset < allocOffset )
+            {
+                hasInconsistency = true;
+                joiner.add(
+                        format( "Overlap between allocSpace and active keys, allocOffset=%d, lowestActiveKeyOffset=%d", allocOffset, lowestActiveKeyOffset ) );
+            }
+        }
+
+        if ( allocOffset < pageSize && allocOffset >= 0 )
+        {
+            // Verify allocOffset point at start of key
+            cursor.setOffset( allocOffset );
+            long keyValueAtAllocOffset = readKeyValueSize( cursor );
+            if ( keyValueAtAllocOffset == 0 )
+            {
+                hasInconsistency = true;
+                joiner.add( format( "Pointer to allocSpace is misplaced, it should point to start of key, allocOffset=%d", allocOffset ) );
+            }
+        }
+
         // Report inconsistencies as cursor exception
         if ( hasInconsistency )
         {
-            cursor.setCursorException( joiner.toString() );
+            return joiner.toString();
         }
+        return "";
+    }
+
+    private int lowestActiveKeyOffset( PageCursor cursor, int keyCount, Type type )
+    {
+        int lowestOffsetSoFar = pageSize;
+        for ( int pos = 0; pos < keyCount; pos++ )
+        {
+            // Set cursor to correct place in offset array
+            int keyPosOffset = keyPosOffset( pos, type );
+            cursor.setOffset( keyPosOffset );
+
+            // Read actual offset to key
+            int keyOffset = readKeyOffset( cursor );
+            lowestOffsetSoFar = Math.min( lowestOffsetSoFar, keyOffset );
+        }
+        return lowestOffsetSoFar;
     }
 
     // Calculated by reading data instead of extrapolate from allocSpace and deadSpace

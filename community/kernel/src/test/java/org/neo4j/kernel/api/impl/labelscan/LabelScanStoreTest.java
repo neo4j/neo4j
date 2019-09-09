@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.hamcrest.Matcher;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,12 +47,12 @@ import java.util.TreeSet;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -58,6 +60,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -70,6 +73,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.single;
@@ -115,22 +119,33 @@ public abstract class LabelScanStoreTest
     }
 
     @Test
-    public void forceShouldNotForceWriterOnReadOnlyScanStore()
+    public void forceShouldNotCheckpointTreeOnReadOnlyScanStore()
     {
+        MutableBoolean ioLimiterCalled = new MutableBoolean();
         createAndStartReadOnly();
-        store.force( IOLimiter.UNLIMITED );
+        store.force( ( previousStamp, recentlyCompletedIOs, flushable ) -> {
+            ioLimiterCalled.setTrue();
+            return 0;
+        } );
+        assertFalse( ioLimiterCalled.getValue() );
     }
 
     @Test
-    public void shouldStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode() throws IOException
+    public void shouldNotStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode()
     {
-        // WHEN
-        start( false, true );
-
-        // THEN
-
-        // no exception
-        assertTrue( store.isEmpty() );
+        try
+        {
+            // WHEN
+            start( false, true );
+            fail( "Should have failed" );
+        }
+        catch ( LifecycleException e )
+        {
+            // THEN
+            Throwable rootCause = Exceptions.rootCause( e );
+            assertTrue( rootCause instanceof NoSuchFileException );
+            assertTrue( e.getMessage().contains( "Cannot map non-existing file" ) );
+        }
     }
 
     @Test

@@ -91,7 +91,7 @@ public class SpatialIndexProvider extends IndexProvider
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
-        return new SpatialIndexAccessor( descriptor, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
+        return new SpatialIndexAccessor( descriptor, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration, readOnly );
     }
 
     @Override

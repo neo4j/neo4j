@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -45,7 +46,7 @@ import org.neo4j.values.storable.Value;
  * @param <VALUE> type of {@link NativeIndexValue}
  */
 class WorkSyncedNativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        implements IndexPopulator, ConsistencyCheckableIndexPopulator
+        implements IndexPopulator, ConsistencyCheckable
 {
     private final NativeIndexPopulator<KEY,VALUE> actual;
     private final WorkSync<IndexUpdateApply,IndexUpdateWork> workSync = new WorkSync<>( new IndexUpdateApply() );
@@ -135,9 +136,9 @@ class WorkSyncedNativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE exte
     }
 
     @Override
-    public void consistencyCheck()
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
     {
-        actual.consistencyCheck();
+        return actual.consistencyCheck( reporterFactory );
     }
 
     @Override

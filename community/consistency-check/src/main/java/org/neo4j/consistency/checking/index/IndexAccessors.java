@@ -91,8 +91,7 @@ public class IndexAccessors implements Closeable
         for ( StoreIndexDescriptor indexRule : onlineIndexRules )
         {
             long indexId = indexRule.getId();
-            accessors.put( indexId, provider( providers, indexRule )
-                    .getOnlineAccessor( indexRule, samplingConfig ) );
+            accessors.put( indexId, provider( providers, indexRule ).getOnlineAccessor( indexRule, samplingConfig ) );
         }
     }
 
@@ -114,6 +113,17 @@ public class IndexAccessors implements Closeable
     public Iterable<StoreIndexDescriptor> onlineRules()
     {
         return onlineIndexRules;
+    }
+
+    public void remove( StoreIndexDescriptor descriptor )
+    {
+        IndexAccessor remove = accessors.remove( descriptor.getId() );
+        if ( remove != null )
+        {
+            remove.close();
+        }
+        onlineIndexRules.remove( descriptor );
+        notOnlineIndexRules.remove( descriptor );
     }
 
     @Override

@@ -25,17 +25,19 @@ import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
-abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements ConsistencyCheckable
 {
     final PageCache pageCache;
     final File storeFile;
@@ -43,11 +45,12 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     final FileSystemAbstraction fileSystem;
     final StoreIndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
+    private final boolean readOnly;
 
     protected GBPTree<KEY,VALUE> tree;
 
     NativeIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StoreIndexDescriptor descriptor )
+            StoreIndexDescriptor descriptor, boolean readOnly )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;
@@ -55,13 +58,14 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         this.fileSystem = fs;
         this.descriptor = descriptor;
         this.monitor = monitor;
+        this.readOnly = readOnly;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
     {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
-        tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector );
+        tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnly );
         afterTreeInstantiation( tree );
     }
 
@@ -100,11 +104,17 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         }
     }
 
-    public void consistencyCheck()
+    @Override
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    {
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
+    }
+
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         try
         {
-            tree.consistencyCheck();
+            return tree.consistencyCheck( visitor );
         }
         catch ( IOException e )
         {

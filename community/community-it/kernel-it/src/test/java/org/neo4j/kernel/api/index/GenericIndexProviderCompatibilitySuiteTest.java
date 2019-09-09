@@ -25,10 +25,10 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.annotations.ReporterFactories;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.ConsistencyCheckableIndexPopulator;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.NativeIndexAccessor;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
@@ -65,14 +65,8 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     }
 
     @Override
-    public void consistencyCheck( IndexAccessor accessor )
-    {
-        ((NativeIndexAccessor) accessor).consistencyCheck();
-    }
-
-    @Override
     public void consistencyCheck( IndexPopulator populator )
     {
-        ((ConsistencyCheckableIndexPopulator) populator).consistencyCheck();
+        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory() );
     }
 }

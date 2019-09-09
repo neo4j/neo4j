@@ -21,26 +21,32 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -48,18 +54,18 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class TestReadOnlyNeo4j
 {
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void testSimple()
     {
-        DbRepresentation someData = createSomeData();
+        File databaseDir = testDirectory.databaseDir();
+        FileSystemAbstraction fs = testDirectory.getFileSystem();
+        DbRepresentation someData = createSomeData( databaseDir, fs );
         GraphDatabaseService readGraphDb = new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
-                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+                .setFileSystem( fs )
+                .newEmbeddedDatabaseBuilder( databaseDir )
                 .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE )
                 .newGraphDatabase();
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
@@ -67,8 +73,8 @@ public class TestReadOnlyNeo4j
         try ( Transaction tx = readGraphDb.beginTx() )
         {
             readGraphDb.createNode();
-
             tx.success();
+            fail( "Should have failed" );
         }
         catch ( WriteOperationsNotAllowedException e )
         {
@@ -77,33 +83,46 @@ public class TestReadOnlyNeo4j
         readGraphDb.shutdown();
     }
 
-    private DbRepresentation createSomeData()
+    @Test
+    public void databaseNotStartInReadOnlyModeWithMissingIndex() throws IOException
     {
-        RelationshipType type = withName( "KNOWS" );
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
-                .newImpermanentDatabase( testDirectory.databaseDir() );
-        try ( Transaction tx = db.beginTx() )
+        File databaseDir = testDirectory.databaseDir();
+        FileSystemAbstraction fs = testDirectory.getFileSystem();
+        createIndex( databaseDir, fs );
+        deleteIndexFolder( databaseDir, fs );
+        GraphDatabaseService readGraphDb = null;
+        try
         {
-            Node prevNode = db.createNode();
-            for ( int i = 0; i < 100; i++ )
-            {
-                Node node = db.createNode();
-                Relationship rel = prevNode.createRelationshipTo( node, type );
-                node.setProperty( "someKey" + i % 10, i % 15 );
-                rel.setProperty( "since", System.currentTimeMillis() );
-            }
-            tx.success();
+            readGraphDb = new TestGraphDatabaseFactory()
+                    .setFileSystem( fs )
+                    .newImpermanentDatabaseBuilder( databaseDir )
+                    .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE )
+                    .newGraphDatabase();
+            fail( "Should have failed" );
         }
-        DbRepresentation result = DbRepresentation.of( db );
-        db.shutdown();
-        return result;
+        catch ( RuntimeException e )
+        {
+            Throwable rootCause = Exceptions.rootCause( e );
+            assertTrue( rootCause instanceof IllegalStateException );
+            assertTrue( rootCause.getMessage().contains(
+                    "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in writable mode to rebuild indexes. Indexes " +
+                            "needing rebuild:" ) );
+        }
+        finally
+        {
+            if ( readGraphDb != null )
+            {
+                readGraphDb.shutdown();
+            }
+        }
     }
 
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( testDirectory.databaseDir() );
+        FileSystemAbstraction fs = testDirectory.getFileSystem();
+        File databaseDir = testDirectory.databaseDir();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( databaseDir );
 
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
@@ -160,5 +179,51 @@ public class TestReadOnlyNeo4j
         assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
         transaction.close();
         db.shutdown();
+    }
+
+    private void deleteIndexFolder( File databaseDir, FileSystemAbstraction fs ) throws IOException
+    {
+        fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ) );
+    }
+
+    private void createIndex( File databaseDir, FileSystemAbstraction fs )
+    {
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                .setFileSystem( fs )
+                .newEmbeddedDatabase( databaseDir );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( Label.label( "label" ) ).on( "prop" ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+        db.shutdown();
+    }
+
+    private DbRepresentation createSomeData( File databaseDir, FileSystemAbstraction fs )
+    {
+        RelationshipType type = withName( "KNOWS" );
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                .setFileSystem( fs )
+                .newImpermanentDatabase( databaseDir );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node prevNode = db.createNode();
+            for ( int i = 0; i < 100; i++ )
+            {
+                Node node = db.createNode();
+                Relationship rel = prevNode.createRelationshipTo( node, type );
+                node.setProperty( "someKey" + i % 10, i % 15 );
+                rel.setProperty( "since", System.currentTimeMillis() );
+            }
+            tx.success();
+        }
+        DbRepresentation result = DbRepresentation.of( db );
+        db.shutdown();
+        return result;
     }
 }

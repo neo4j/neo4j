@@ -57,7 +57,7 @@ import static org.neo4j.storageengine.api.schema.IndexDescriptor.Type.UNIQUE;
  * @param <VALUE> type of {@link NativeIndexValue}.
  */
 public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        extends NativeIndex<KEY,VALUE> implements IndexPopulator, ConsistencyCheckableIndexPopulator
+        extends NativeIndex<KEY,VALUE> implements IndexPopulator, ConsistencyCheckable
 {
     public static final byte BYTE_FAILED = 0;
     static final byte BYTE_ONLINE = 1;
@@ -78,7 +78,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, false );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;

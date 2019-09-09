@@ -78,7 +78,7 @@ public class TemporalIndexProvider extends IndexProvider
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
-        return new TemporalIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files );
+        return new TemporalIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, readOnly );
     }
 
     @Override

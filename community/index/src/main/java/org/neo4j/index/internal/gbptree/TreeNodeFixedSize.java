@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;
@@ -559,6 +562,20 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         setKeyCount( rightCursor, rightKeyCount + leftKeyCount );
     }
 
+    @Override
+    void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration )
+    {
+        PrintingGBPTreeVisitor<KEY,VALUE> visitor = new PrintingGBPTreeVisitor<>( System.out, includeValue, false, false, false, false );
+        try
+        {
+            new GBPTreeStructure<>( this, layout, stableGeneration, unstableGeneration ).visitTreeNode( cursor, visitor );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
     private void copyKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
     {
         fromCursor.copyTo( keyOffset( fromPos ), toCursor, keyOffset( toPos ), count * keySize() );
@@ -566,8 +583,9 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void checkMetaConsistency( PageCursor cursor, int keyCount, Type type )
-    {   // no-op
+    String checkMetaConsistency( PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor<KEY> visitor )
+    {
+        return "";
     }
 
     @Override

@@ -32,6 +32,7 @@ public class PrintingGBPTreeVisitor<KEY,VALUE> extends GBPTreeVisitor.Adaptor<KE
     private final boolean printPosition;
     private final boolean printState;
     private final boolean printHeader;
+    private final boolean printFreelist;
 
     /**
      * Prints a {@link GBPTree} in human readable form, very useful for debugging.
@@ -41,8 +42,9 @@ public class PrintingGBPTreeVisitor<KEY,VALUE> extends GBPTreeVisitor.Adaptor<KE
      * @param printPosition whether or not to include positional (slot number) information.
      * @param printState whether or not to also print state pages
      * @param printHeader whether or not to also print header (type, generation, keyCount) of every node
+     * @param printFreelist whether or not to also print freelist
      */
-    public PrintingGBPTreeVisitor( PrintStream out, boolean printValues, boolean printPosition, boolean printState, boolean printHeader )
+    public PrintingGBPTreeVisitor( PrintStream out, boolean printValues, boolean printPosition, boolean printState, boolean printHeader, boolean printFreelist )
     {
 
         this.out = out;
@@ -50,6 +52,7 @@ public class PrintingGBPTreeVisitor<KEY,VALUE> extends GBPTreeVisitor.Adaptor<KE
         this.printPosition = printPosition;
         this.printState = printState;
         this.printHeader = printHeader;
+        this.printFreelist = printFreelist;
     }
 
     @Override
@@ -118,5 +121,32 @@ public class PrintingGBPTreeVisitor<KEY,VALUE> extends GBPTreeVisitor.Adaptor<KE
     public void endNode( long pageId )
     {
         out.println();
+    }
+
+    @Override
+    public void beginFreelistPage( long pageId )
+    {
+        if ( printFreelist )
+        {
+            out.print( "Freelist{" + pageId + "} " );
+        }
+    }
+
+    @Override
+    public void endFreelistPage( long pageId )
+    {
+        if ( printFreelist )
+        {
+            out.println();
+        }
+    }
+
+    @Override
+    public void freelistEntry( long pageId, long generation, int pos )
+    {
+        if ( printFreelist )
+        {
+            out.print( "[" + generation + "," + pageId + "] " );
+        }
     }
 }

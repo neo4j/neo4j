@@ -28,7 +28,6 @@ import org.junit.runners.Parameterized.Parameters;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.index.internal.gbptree.GenerationSafePointerPair.GenerationTarget;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -369,7 +368,7 @@ public class GenerationSafePointerPairTest
     {
         /**
          * @param cursor {@link PageCursor} to read actual result from.
-         * @param result read-result from {@link GenerationSafePointerPair#read(PageCursor, long, long, GenerationTarget)}.
+         * @param result read-result from {@link GenerationSafePointerPair#read(PageCursor, long, long, GBPTreeGenerationTarget)}.
          * @param stateA state of pointer A when read.
          * @param stateB state of pointer B when read.
          * @param preStatePointerA pointer A as it looked like in pre-state.

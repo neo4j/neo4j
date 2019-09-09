@@ -32,6 +32,7 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -60,6 +61,8 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
+import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -1714,6 +1717,77 @@ public class GBPTreeTest
             assertFutureFailsWithTreeInconsistencyException( execute1 );
             assertFutureFailsWithTreeInconsistencyException( execute2 );
         }
+    }
+
+    /* ReadOnly */
+
+    @Test
+    public void mustNotMakeAnyChangesInReadOnlyMode() throws IOException
+    {
+        // given
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {
+            for ( int i = 0; i < 10; i++ )
+            {
+                for ( int j = 0; j < 100; j++ )
+                {
+                    insert( tree, random.nextLong(), random.nextLong() );
+                }
+                tree.checkpoint( UNLIMITED );
+            }
+        }
+        byte[] before = fileContent( indexFile );
+
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).withReadOnly( true ).build() )
+        {
+            try
+            {
+                tree.writer();
+                fail( "Should have failed" );
+            }
+            catch ( UnsupportedOperationException e )
+            {
+                assertThat( e.getMessage(), containsString( "GBPTree was opened in read only mode and can not finish operation: " ) );
+            }
+
+            MutableBoolean ioLimitChecked = new MutableBoolean();
+            tree.checkpoint( ( previousStamp, recentlyCompletedIOs, flushable ) -> {
+                ioLimitChecked.setTrue();
+                return 0;
+            } );
+            assertFalse( "Expected checkpoint to be a no-op in read only mode.", ioLimitChecked.getValue() );
+        }
+        byte[] after = fileContent( indexFile );
+        assertArrayEquals( "Expected file content to be identical before and after opening GBPTree in read only mode.", before, after );
+    }
+
+    @Test
+    public void mustFailGracefullyIfFileNotExistInReadOnlyMode() throws IOException
+    {
+        // given
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> ignore = index( pageCache ).withReadOnly( true ).build() )
+        {
+            fail( "Expected constructor to fail when trying to initialize with no index file in readOnly mode." );
+        }
+        catch ( TreeFileNotFoundException e )
+        {
+            assertThat( e.getMessage(), containsString( "Can not create new tree file in read only mode" ) );
+            assertThat( e.getMessage(), containsString( indexFile.getAbsolutePath() ) );
+        }
+    }
+
+    private byte[] fileContent( File indexFile ) throws IOException
+    {
+        StoreChannel storeChannel = fs.open( indexFile, OpenMode.READ );
+        int fileSize = (int) storeChannel.size();
+        ByteBuffer expectedContent = ByteBuffer.allocate( fileSize );
+        storeChannel.readAll( expectedContent );
+        expectedContent.flip();
+        byte[] bytes = new byte[fileSize];
+        expectedContent.get( bytes );
+        return bytes;
     }
 
     private DefaultPageCursorTracer trackingPageCursorTracer( List<Long> trace, MutableBoolean onOffSwitch )

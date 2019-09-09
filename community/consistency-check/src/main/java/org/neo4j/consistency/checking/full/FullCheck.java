@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking.full;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.consistency.RecordType;
@@ -39,7 +40,9 @@ import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -51,6 +54,7 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -164,6 +168,9 @@ public class FullCheck
             ConsistencyCheckTasks taskCreator = new ConsistencyCheckTasks( progress, processEverything,
                     nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes, directStoreAccess.tokenHolders(),
                     multiPass, reporter, threads );
+
+            consistencyCheckIndexes( indexes, reporter );
+
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
             TaskExecutor.execute( tasks, decorator::prepare );
@@ -181,6 +188,26 @@ public class FullCheck
                 readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore() ),
                 readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore() ),
                 readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
+    }
+
+    private static void consistencyCheckIndexes( IndexAccessors indexes, ConsistencyReporter report )
+    {
+        List<StoreIndexDescriptor> rulesToRemove = new ArrayList<>();
+        for ( StoreIndexDescriptor onlineRule : indexes.onlineRules() )
+        {
+            ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.INDEX );
+            ReporterFactory reporterFactory = new ReporterFactory( handler );
+            IndexAccessor accessor = indexes.accessorFor( onlineRule );
+            if ( !accessor.consistencyCheck( reporterFactory ) )
+            {
+                rulesToRemove.add( onlineRule );
+            }
+            handler.updateSummary();
+        }
+        for ( StoreIndexDescriptor toRemove : rulesToRemove )
+        {
+            indexes.remove( toRemove );
+        }
     }
 
     private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )

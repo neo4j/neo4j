@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
@@ -980,6 +981,12 @@ public class RecoveryIT
         public Collection<IndexEntryUpdate<?>> snapshot()
         {
             return new ArrayList<>( updates );
+        }
+
+        @Override
+        public boolean consistencyCheck( ReporterFactory reporterFactory )
+        {
+            return actual.consistencyCheck( reporterFactory );
         }
     }
 

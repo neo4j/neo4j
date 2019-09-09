@@ -39,15 +39,16 @@ public class IndexingServiceFactory
     }
 
     public static IndexingService createIndexingService( Config config,
-                                          JobScheduler scheduler,
-                                          IndexProviderMap providerMap,
-                                          IndexStoreView storeView,
-                                          TokenNameLookup tokenNameLookup,
-                                          Iterable<SchemaRule> schemaRules,
-                                          LogProvider internalLogProvider,
-                                          LogProvider userLogProvider,
-                                          IndexingService.Monitor monitor,
-                                          SchemaState schemaState )
+            JobScheduler scheduler,
+            IndexProviderMap providerMap,
+            IndexStoreView storeView,
+            TokenNameLookup tokenNameLookup,
+            Iterable<SchemaRule> schemaRules,
+            LogProvider internalLogProvider,
+            LogProvider userLogProvider,
+            IndexingService.Monitor monitor,
+            SchemaState schemaState,
+            boolean readOnly )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         MultiPopulatorFactory multiPopulatorFactory = MultiPopulatorFactory.forConfig( config );
@@ -60,6 +61,6 @@ public class IndexingServiceFactory
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, schemaRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor );
+                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor, readOnly );
     }
 }

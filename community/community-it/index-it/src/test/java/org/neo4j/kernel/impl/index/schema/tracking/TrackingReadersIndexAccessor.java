@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.annotations.ReporterFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -119,5 +120,11 @@ public class TrackingReadersIndexAccessor implements IndexAccessor
     public void validateBeforeCommit( Value[] tuple )
     {
         accessor.validateBeforeCommit( tuple );
+    }
+
+    @Override
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    {
+        return accessor.consistencyCheck( reporterFactory );
     }
 }

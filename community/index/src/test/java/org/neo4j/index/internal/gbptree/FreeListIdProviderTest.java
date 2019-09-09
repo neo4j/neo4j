@@ -219,7 +219,14 @@ class FreeListIdProviderTest
         }
 
         // WHEN/THEN
-        freelist.visitUnacquiredIds( unacquiredId -> assertTrue( expected.remove( unacquiredId ) ), GENERATION_THREE );
+        freelist.visitFreelist( new IdProvider.IdProviderVisitor.Adaptor()
+        {
+            @Override
+            public void freelistEntry( long pageId, long generation, int pos )
+            {
+                assertTrue( expected.remove( pageId ) );
+            }
+        } );
         assertTrue( expected.isEmpty() );
     }
 
@@ -246,7 +253,14 @@ class FreeListIdProviderTest
         assertTrue( expected.size() > 0 );
 
         // WHEN/THEN
-        freelist.visitFreelistPageIds( id -> assertTrue( expected.remove( id ) ) );
+        freelist.visitFreelist( new IdProvider.IdProviderVisitor.Adaptor()
+        {
+            @Override
+            public void beginFreelistPage( long pageId )
+            {
+                assertTrue( expected.remove( pageId ) );
+            }
+        });
         assertTrue( expected.isEmpty() );
     }
 
