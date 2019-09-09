@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.{RuntimeJavaValueConverter, isGraphKernelResultValue}
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.schema.{ConstraintDefinition, IndexDefinition}
+import org.neo4j.graphdb.schema.{ConstraintDefinition, ConstraintType, IndexDefinition}
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -136,10 +136,31 @@ trait GraphIcing {
       getIndex(label, properties)
     }
 
+    def awaitIndexesOnline(): Unit = {
+      inTx {
+        graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      }
+    }
+
     def getIndex(label: String, properties: Seq[String]): IndexDefinition = {
       withTx( tx => {
         tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get
       } )
+    }
+
+    def getMaybeIndex(label: String, properties: Seq[String]): Option[IndexDefinition] = {
+      inTx {
+        graph.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
+      }
+    }
+
+    def getIndexSchemaByName(name: String): (String, Seq[String]) = {
+      inTx {
+        val index = graph.schema().getIndexByName(name)
+        val label = index.getLabel.name()
+        val properties = index.getPropertyKeys.asScala.toList
+        (label, properties)
+      }
     }
 
     def getNodeConstraint(label: String, properties: Seq[String]): ConstraintDefinition = {
@@ -148,10 +169,32 @@ trait GraphIcing {
       }
     }
 
+    def getMaybeNodeConstraint(label: String, properties: Seq[String]): Option[ConstraintDefinition] = {
+      inTx {
+        graph.schema().getConstraints(Label.label(label)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == properties.toList)
+      }
+    }
+
     def getRelationshipConstraint(relType: String, property: String): ConstraintDefinition = {
       inTx {
         graph.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == List(property)).get
       }
+    }
+
+    def getMaybeRelationshipConstraint(relType: String, property: String): Option[ConstraintDefinition] = {
+      inTx {
+        graph.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == List(property))
+      }
+    }
+
+    def getConstraintSchemaByName(name: String): (String, Seq[String])  = inTx {
+      val constraint = graph.schema().getConstraintByName(name)
+      val properties = constraint.getPropertyKeys.asScala.toList
+      val labelOrRelType = constraint.getConstraintType match {
+        case ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE => constraint.getRelationshipType.name()
+        case _ => constraint.getLabel.name()
+      }
+      (labelOrRelType, properties)
     }
 
     def createUniqueIndex(label: String, property: String): Unit = {
