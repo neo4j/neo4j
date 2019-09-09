@@ -28,6 +28,11 @@ import org.neo4j.values.AnyValue
 trait QueryMemoryTracker {
 
   /**
+   * Returns true if memory tracking is enabled, false otherwise
+   */
+  def isEnabled: Boolean
+
+  /**
     * Record allocation of bytes
     *
     * @param bytes number of allocated bytes
@@ -94,6 +99,8 @@ object QueryMemoryTracker {
 }
 
 case object NoMemoryTracker extends QueryMemoryTracker {
+  override val isEnabled: Boolean = false
+
   override def memoryTrackingIterator[T](input: Iterator[T]): Iterator[T] = input
 
   override def allocated(bytes: Long): Unit = {}
@@ -114,6 +121,8 @@ case object NoMemoryTracker extends QueryMemoryTracker {
 class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
   private var allocatedBytes = 0L
   private var highWaterMark = 0L
+
+  override val isEnabled: Boolean = true
 
   override def allocated(bytes: Long): Unit = {
     allocatedBytes += bytes
