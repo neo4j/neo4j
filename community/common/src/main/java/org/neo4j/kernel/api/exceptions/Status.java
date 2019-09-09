@@ -408,6 +408,8 @@ public interface Status
                 "Expected set of files not found on disk. Please restore from backup." ),
         UnknownError( DatabaseError,
                 "An unknown error occurred." ),
+
+        // transient errors
         OutOfMemoryError( TransientError,
                 "There is not enough memory to perform the current task. Please try increasing " +
                 "'dbms.memory.heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you " +
@@ -420,12 +422,9 @@ public interface Status
                 "in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you are using " +
                 "Neo4j Desktop, found through the user interface) or if you are running an embedded installation " +
                 "just add -Xss2M as command line flag." ),
-
-        // transient errors
         DatabaseUnavailable( TransientError,
                 "The database is not currently available to serve your request, refer to the database logs for more " +
                 "details. Retrying your request at a later time may succeed." ),
-
         TransactionOutOfMemoryError( TransientError,
                                      "There transaction used more memory than was allowed. The maximum allowed size for a " +
                                              "transaction can be configured with 'unsupported.dbms.transaction.memory.max' in the neo4j configuration " +
