@@ -90,7 +90,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
           val row = input.next()
           topTable.add(row)
           if (i < count) {
-            // This makes the assumption that rows have more or less the same size, since we don't knwo which ones are actually kept in the TopTable here.
+            // This makes the assumption that rows have more or less the same size, since we don't know which ones are actually kept in the TopTable here.
             state.memoryTracker.allocated(row)
           }
           i += 1
