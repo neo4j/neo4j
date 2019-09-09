@@ -29,6 +29,8 @@ import org.neo4j.values.AnyValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.neo4j.values.storable.Values.numberValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.map;
@@ -137,6 +139,26 @@ class MapValueTest
     }
 
     @Test
+    void shouldUpdateWithOtherMapValueWithSeveralNewKeys()
+    {
+        // Given
+        MapValue a = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", stringValue( "v3" ) );
+        MapValue b = mapValue( "k1", stringValue( "version1" ), "k4", stringValue( "version4" ), "k5", stringValue( "version5" ) );
+
+        // When
+        MapValue updated = a.updatedWith( b );
+
+        // Then
+        assertMapValueEquals( updated, mapValue(
+                "k1", stringValue( "version1" ),
+                "k2", stringValue( "v2" ),
+                "k3", stringValue( "v3" ),
+                "k4", stringValue( "version4" ),
+                "k5", stringValue( "version5" )
+        ) );
+    }
+
+    @Test
     void shouldUpdateMultipleTimesMapValue()
     {
         // Given
@@ -154,6 +176,21 @@ class MapValueTest
                 "k3", stringValue( "v3" ),
                 "k4", stringValue( "version4" )
         ) );
+    }
+
+    @Test
+    void shouldCompareTwoCombinedMapValues()
+    {
+        // Given
+        MapValue a = mapValue("note", stringValue("test"), "Id", numberValue( 8 ) );
+        MapValue b = mapValue("note", stringValue("test"), "Id", numberValue( 14 ) );
+
+        // When
+        MapValue x = mapValue().updatedWith( a );
+        MapValue y = mapValue().updatedWith( b );
+
+        assertThat("Two simple maps should be different", a, not( equalTo( b ) ));
+        assertThat("Two combined maps should be different", x, not( equalTo( y ) ));
     }
 
     private void assertMapValueEquals( MapValue a, MapValue b )
