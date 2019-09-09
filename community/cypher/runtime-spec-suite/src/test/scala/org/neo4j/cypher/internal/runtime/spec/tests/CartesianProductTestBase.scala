@@ -52,4 +52,36 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n").withRows(singleColumn(nodes))
   }
 
+  test("should handle multiple columns ") {
+    // given
+    val size = 10 //sizehint is a bit too big here
+    val nodes = nodePropertyGraph(size, {
+      case _ => Map("prop" -> "foo")
+    })
+    val relTuples = (for (i <- 0 until size) yield {
+      Seq(
+        (i, (i + 1) % size, "R")
+        )
+    }).reduce(_ ++ _)
+    connect(nodes, relTuples)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .cartesianProduct()
+      .|.expand("(e)-->(f)")
+      .|.expand("(d)-->(e)")
+      .|.allNodeScan("d")
+      .expand("(b)-->(c)")
+      .expand("(a)-->(b)")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(c => (1 to size).map(_ => Array(c)))
+    runtimeResult should beColumns("c").withRows(expected)
+  }
+
 }
