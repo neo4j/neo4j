@@ -49,7 +49,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val nodes = select(nodeGraph(sizeHint), nullProbability = 0.52)
     val input = inputValues(nodes.map(n => Array[Any](n)): _*)
-    val limit = nodes.size - 1;
+    val limit = nodes.size - 1
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -66,7 +66,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
   test("should top many columns") {
     val input = inputValues((0 until sizeHint).map(i => Array[Any](i % 2, i % 4, i)): _*)
-    val limit = sizeHint - 10;
+    val limit = sizeHint - 10
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -85,7 +85,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
   test("should top under apply") {
     val nodesPerLabel = 100
     val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
-    val limit = nodesPerLabel - 10;
+    val limit = nodesPerLabel - 10
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -100,11 +100,83 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for{
+    val expected = for {
       x <- aNodes
       y <- bNodes.sortBy(_.getId).take(limit)
     } yield Array[Any](x, y)
 
     runtimeResult should beColumns("a", "b").withRows(expected)
+  }
+
+  test("should return all rows when top is larger than input") {
+    val input = inputValues((0 until sizeHint).map(i => Array[Any](i)): _*)
+    val limit = sizeHint + 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .top(Seq(Ascending("a")), limit)
+      .input(variables = Seq("a"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = input.flatten.sortBy(arr => arr(0).asInstanceOf[Int])
+    runtimeResult should beColumns("a").withRows(inOrder(expected))
+  }
+
+  test("should handle limit 0") {
+    val input = inputValues((0 until sizeHint).map(i => Array[Any](i)): _*)
+    val limit = 0
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .top(Seq(Ascending("a")), limit)
+      .input(variables = Seq("a"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = input.flatten.sortBy(arr => arr(0).asInstanceOf[Int])
+    runtimeResult should beColumns("a").withNoRows()
+  }
+
+  test("should handle limit of Int.MaxValue") {
+    val input = inputValues((0 until sizeHint).map(i => Array[Any](i)): _*)
+    val limit = Int.MaxValue
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .top(Seq(Ascending("a")), limit)
+      .input(variables = Seq("a"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = input.flatten.sortBy(arr => arr(0).asInstanceOf[Int])
+    runtimeResult should beColumns("a").withRows(inOrder(expected))
+  }
+
+  test("should handle limit larger than Int.MaxValue") {
+    val input = inputValues((0 until sizeHint).map(i => Array[Any](i)): _*)
+    val limit: Long = Int.MaxValue + 1L
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .top(Seq(Ascending("a")), limit)
+      .input(variables = Seq("a"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected = input.flatten.sortBy(arr => arr(0).asInstanceOf[Int])
+    runtimeResult should beColumns("a").withRows(inOrder(expected))
   }
 }
