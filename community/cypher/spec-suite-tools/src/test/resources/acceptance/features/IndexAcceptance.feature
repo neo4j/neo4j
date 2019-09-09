@@ -301,6 +301,56 @@ Feature: IndexAcceptance
       | (:User {prop: '11_val'})  |
     And no side effects
 
+  Scenario: Should allow OR with index and incoming scope
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :Person(name)
+      """
+    And having executed:
+      """
+      CREATE INDEX ON :Person(number)
+      """
+    And having executed:
+      """
+      CREATE (:Person   {name: 'x', number: 0}),
+             (:Person   {name: 'y', number: 1}),
+             (:Person   {name: 'z', number: 2})
+      """
+    When executing query:
+      """
+      WITH 100 as variable
+      MATCH (n:Person)
+      WHERE n.name STARTS WITH 'x' OR n.number = 1
+      RETURN variable, n.name, n.number
+      """
+    Then the result should be:
+      | variable | n.name | n.number |
+      | 100      | 'x'    | 0        |
+      | 100      | 'y'    | 1        |
+    And no side effects
+
+  Scenario: Should allow OR with index and incoming scope to OPTIONAL
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:Person   {name: 'x', number: 0}),
+             (:Person   {name: 'y', number: 1}),
+             (:Person   {name: 'z', number: 2})
+      """
+    When executing query:
+      """
+      WITH 100 as variable
+      OPTIONAL MATCH (n:Person)
+      WHERE n.name STARTS WITH 'x' OR n.number = 1
+      RETURN variable, n.name, n.number
+      """
+    Then the result should be:
+      | variable | n.name | n.number |
+      | 100      | 'x'    | 0        |
+      | 100      | 'y'    | 1        |
+    And no side effects
+
   Scenario: STARTS WITH should handle null prefix
     Given an empty graph
     And having executed:
