@@ -36,7 +36,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
@@ -476,14 +475,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void ensureEpochAcquired()
     {
-        try
-        {
-            epoch.ensureHoldingToken();
-        }
-        catch ( EpochException e )
-        {
-            throw new TransientTransactionFailureException( "This transaction got invalidated due to a new epoch started after this transaction started", e );
-        }
+        epoch.ensureHoldingToken();
     }
 
     void upgradeToDataWrites() throws InvalidTransactionTypeKernelException

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class EpochException extends Exception implements Status.HasStatus
+public class EpochException extends RuntimeException implements Status.HasStatus
 {
     private final Status status;
 
