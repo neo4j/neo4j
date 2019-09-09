@@ -141,6 +141,7 @@ class ResourceManagerTest extends CypherFunSuite {
 
   private def verifyMonitorClose(resource: AutoCloseablePlus, monitor: ResourceMonitor): Unit = {
     verify(monitor).close(resource)
+    verify(resource).setCloseListener(null)
   }
 
   private def verifyClose(resource: AutoCloseablePlus, monitor: ResourceMonitor): Unit = {
