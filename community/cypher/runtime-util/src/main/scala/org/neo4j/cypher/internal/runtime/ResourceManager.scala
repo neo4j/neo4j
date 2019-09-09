@@ -44,6 +44,8 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
    */
   override def onClosed(resource: AutoCloseablePlus): Unit = {
     monitor.close(resource)
+    // close is idempotent and can be called multiple times, but we want to get here only once.
+    resource.setCloseListener(null)
     if (!resources.remove(resource)) {
       throw new IllegalStateException(s"$resource is not in the resource set $resources")
     }

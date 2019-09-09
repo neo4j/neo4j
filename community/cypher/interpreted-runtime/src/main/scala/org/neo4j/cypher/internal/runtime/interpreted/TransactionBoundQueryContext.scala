@@ -1059,6 +1059,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     override def closeInternal(): Unit = inner.close()
 
+    // We do not call getCloseListener.onClosed(inner) here since
+    // that will already happen in closeInternal.
+    override def close(): Unit = closeInternal()
+
     override def isClosed: Boolean = inner.isClosed
 
     override def score(): Float = inner.score()
