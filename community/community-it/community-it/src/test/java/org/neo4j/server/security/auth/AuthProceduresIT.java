@@ -305,7 +305,7 @@ public class AuthProceduresIT
     {
         try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.implicit, subject ) )
         {
-            Result result = systemDb.execute( query );
+            Result result = tx.execute( query );
             resultConsumer.accept( result );
             tx.commit();
         }
@@ -319,7 +319,7 @@ public class AuthProceduresIT
         };
         try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.implicit, subject ) )
         {
-            Result result = systemDb.execute( query );
+            Result result = tx.execute( query );
             resultConsumer.accept( result );
             tx.commit();
             fail( "Expected query to fail" );

@@ -623,7 +623,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     the[QueryExecutionException] thrownBy { // the ParameterWrongTypeException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $password TO 'bar'", parameter)
+      executeOnSystem("foo", "123", "ALTER CURRENT USER SET PASSWORD FROM $password TO 'bar'", parameter)
       // THEN
     } should have message "Only string values are accepted as password, got: Integer"
 
