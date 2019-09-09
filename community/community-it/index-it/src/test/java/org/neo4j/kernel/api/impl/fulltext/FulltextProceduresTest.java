@@ -317,6 +317,74 @@ public class FulltextProceduresTest
     }
 
     @Test
+    public void mustNotBeAbleToCreateNormalIndexWithSameNameAndSchemaAsExistingFulltextIndex()
+    {
+        db = createDatabase();
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1" ), array( "prop1" ) ) ).close();
+            transaction.commit();
+        }
+        expectedException.expectMessage( "already exists" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.execute( "CREATE INDEX `node` ON :Label1(prop1)" ).close();
+            transaction.commit();
+        }
+    }
+
+    @Test
+    public void mustNotBeAbleToCreateNormalIndexWithSameNameDifferentSchemaAsExistingFulltextIndex()
+    {
+        db = createDatabase();
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.commit();
+        }
+        expectedException.expectMessage( "There already exists an index called 'node'." );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.execute( "CREATE INDEX `node` ON :Label1(prop1)" ).close();
+            transaction.commit();
+        }
+    }
+
+    @Test
+    public void mustNotBeAbleToCreateFulltextIndexWithSameNameAndSchemaAsExistingNormalIndex()
+    {
+        db = createDatabase();
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.execute( "CREATE INDEX `node` ON :Label1(prop1)" ).close();
+            transaction.commit();
+        }
+        expectedException.expectMessage( "already exists" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1" ), array( "prop1" ) ) ).close();
+            transaction.commit();
+        }
+    }
+
+    @Test
+    public void mustNotBeAbleToCreateFulltextIndexWithSameNameDifferentSchemaAsExistingNormalIndex()
+    {
+        db = createDatabase();
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.execute( "CREATE INDEX `node` ON :Label1(prop1)" ).close();
+            transaction.commit();
+        }
+        expectedException.expectMessage( "already exists" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.commit();
+        }
+    }
+
+    @Test
     public void nodeIndexesMustHaveLabels()
     {
         db = createDatabase();
