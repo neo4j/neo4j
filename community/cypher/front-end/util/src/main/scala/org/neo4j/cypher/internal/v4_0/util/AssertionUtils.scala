@@ -16,14 +16,10 @@
  */
 package org.neo4j.cypher.internal.v4_0.util
 
-import org.neo4j.cypher.internal.v4_0.util.AssertionRunner.Thunk
-
 object AssertionUtils {
   def ifAssertionsEnabled(f: => Unit): Unit = {
-    AssertionRunner.runUnderAssertion(new Thunk {
-      override def apply() = f
-    })
+    AssertionRunner.runUnderAssertion(() => f)
   }
 
-  def assertionsEnabled = AssertionRunner.isAssertionsEnabled
+  def assertionsEnabled: Boolean = AssertionRunner.isAssertionsEnabled
 }
