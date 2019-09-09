@@ -19,6 +19,7 @@
  */
 package org.neo4j.ssl;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 
@@ -31,6 +32,8 @@ import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -46,7 +49,13 @@ import java.util.LinkedList;
 public final class PkiUtils
 {
     public static final String CERTIFICATE_TYPE = "X.509";
-    static final String DEFAULT_ENCRYPTION = "RSA";
+    private static final String DEFAULT_ENCRYPTION = "RSA";
+
+    private static final Provider PROVIDER = new BouncyCastleProvider();
+    static
+    {
+        Security.addProvider( PROVIDER );
+    }
 
     private PkiUtils()
     {
@@ -63,8 +72,8 @@ public final class PkiUtils
             for ( PemObject pemObject = r.readPemObject(); pemObject != null; pemObject = r.readPemObject() )
             {
                 byte[] encodedCert = pemObject.getContent();
-                Collection<? extends X509Certificate> loadedCertificates = (Collection<X509Certificate>)
-                        certFactory.generateCertificates( new ByteArrayInputStream( encodedCert ) );
+                Collection<X509Certificate> loadedCertificates =
+                        (Collection<X509Certificate>) certFactory.generateCertificates( new ByteArrayInputStream( encodedCert ) );
                 certificates.addAll( loadedCertificates );
             }
         }
