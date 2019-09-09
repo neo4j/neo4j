@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import java.util
-import java.util.Objects
 import java.{lang, util}
 import java.util.Optional
 
