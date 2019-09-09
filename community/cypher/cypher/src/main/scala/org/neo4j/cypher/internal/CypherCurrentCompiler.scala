@@ -223,7 +223,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         executionPlan.metadata)
 
     private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: Set[String]) = {
-      val txContextWrapper = TransactionalContextWrapper(transactionalContext, executionPlan.threadSafeCursorFactory(debugOptions).orNull)
+      val txContextWrapper = TransactionalContextWrapper(transactionalContext, executionPlan.threadSafeCursorFactory().orNull)
       val ctx = new TransactionBoundQueryContext(txContextWrapper,
                                                  new ResourceManager(resourceMonitor)
                                                )(searchMonitor)

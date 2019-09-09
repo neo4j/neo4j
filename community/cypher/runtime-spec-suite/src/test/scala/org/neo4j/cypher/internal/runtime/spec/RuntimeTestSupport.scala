@@ -87,7 +87,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     txHolder.set(transaction)
     try {
       val txContext = beginTx(transaction)
-      val queryContext = newQueryContext(txContext, executableQuery.threadSafeCursorFactory(Set.empty))
+      val queryContext = newQueryContext(txContext, executableQuery.threadSafeCursorFactory())
       val runtimeContext = newRuntimeContext(txContext, queryContext)
 
       val result = executableQuery.run(queryContext, doProfile = profile, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)

@@ -395,6 +395,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> enable_morsel_runtime_trace =
             newBuilder( "unsupported.cypher.enable_morsel_runtime_trace", BOOL, false ).build();
 
+    @Description( "Path to the morsel runtime scheduler trace. If 'stdOut' and tracing is on, will print to std out." )
+    @Internal
+    public static final Setting<Path> morsel_scheduler_trace_filename =
+            newBuilder( "unsupported.cypher.morsel_runtime_trace_path", PATH, Path.of( "stdOut" ) ).setDependency( neo4j_home ).immutable().build();
+
     @Description( "The size of small query morsels" )
     @Internal
     public static final Setting<Integer> cypher_morsel_size_small =
@@ -405,26 +410,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> cypher_morsel_size_big =
             newBuilder( "unsupported.cypher.morsel_size_big", INT, 1024 ).addConstraint( min( 1 ) ).build();
 
-    @Description( "Duration in milliseconds that parallel runtime waits on a task before trying another task" )
-    @Internal
-    public static final Setting<Integer> cypher_task_wait =
-            newBuilder( "unsupported.cypher.task_wait", INT, 30000 ).build();
-
     @Description( "Number of threads to allocate to Cypher worker threads. If set to 0, two workers will be started" +
             " for every physical core in the system." )
     @Internal
     public static final Setting<Integer> cypher_worker_count = newBuilder( "unsupported.cypher.number_of_workers", INT, 0 ).build();
-
-    public enum CypherMorselRuntimeScheduler
-    {
-        SIMPLE, SINGLE_THREADED, LOCK_FREE
-    }
-    @Description( "The scheduler to use to coordinate Cypher workers in the morsel runtime. " +
-            "Allowed values: 'simple', 'single_threaded', 'lock_free'." )
-    @Internal
-    public static final Setting<CypherMorselRuntimeScheduler> cypher_morsel_runtime_scheduler =
-            newBuilder( "unsupported.cypher.morsel_runtime_scheduler", ofEnum( CypherMorselRuntimeScheduler.class ), CypherMorselRuntimeScheduler.SIMPLE )
-                    .build();
 
     @Description( "Operator fusing means that multiple operators such as for example " +
             "AllNodesScan -> Filter -> ProduceResult can be fused into a single specialized operator. " +
@@ -862,11 +851,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .setDependency( logs_directory )
             .immutable()
             .build();
-
-    @Description( "Path to the morsel runtime scheduler trace. If 'stdOut' and tracing is on, will print to std out." )
-    @Internal
-    public static final Setting<Path> morsel_scheduler_trace_filename =
-            newBuilder( "unsupported.cypher.morsel_runtime_trace_path", PATH, Path.of( "stdOut" ) ).setDependency( neo4j_home ).immutable().build();
 
     @Description( "Path to the user log file." )
     public static final Setting<Path> store_user_log_path = newBuilder( "dbms.logs.user.path", PATH, Path.of( "neo4j.log" ) )

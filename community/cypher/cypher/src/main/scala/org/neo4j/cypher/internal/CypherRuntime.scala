@@ -189,11 +189,9 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
 }
 
 case class CypherRuntimeConfiguration(workers: Int,
-                                      scheduler: CypherMorselRuntimeSchedulerOption,
                                       morselSizeSmall: Int,
                                       morselSizeBig: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
-                                      waitTimeout: Duration,
                                       lenientCreateRelationship: Boolean,
                                       fuseOperators: Boolean,
                                       memoryTrackingController: MemoryTrackingController) {
