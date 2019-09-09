@@ -409,6 +409,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((left, right) => NodeHashJoin(nodes.toSet, left, right)(_)))
   }
 
+  def valueHashJoin(predicate: String): IMPL = {
+    val expression = ExpressionParser.parseExpression(predicate)
+    expression match {
+      case e: Equals =>
+        appendAtCurrentIndent(BinaryOperator((left, right) => ValueHashJoin(left, right, e)(_)))
+      case _ => throw new IllegalArgumentException(s"can't join on $expression")
+    }
+  }
+
   def argument(): IMPL =
     appendAtCurrentIndent(LeafOperator(Argument()(_)))
 
