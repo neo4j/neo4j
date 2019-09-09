@@ -389,20 +389,25 @@ public abstract class MapValue extends VirtualValue
            {
                private int mapIndex;
                private Iterator<String> internal;
+               private HashSet<String> seen = new HashSet<>();
 
                @Override
                protected String fetchNextOrNull()
                {
-                   while ( mapIndex < maps.length )
+                   while ( mapIndex < maps.length || internal != null && internal.hasNext() )
                    {
                        if ( internal == null || !internal.hasNext() )
                        {
                            internal = maps[mapIndex++].keySet().iterator();
                        }
 
-                       if ( internal.hasNext() )
+                       while ( internal.hasNext() )
                        {
-                           return internal.next();
+                           String key = internal.next();
+                           if ( seen.add( key ) )
+                           {
+                               return key;
+                           }
                        }
                    }
                    return null;
