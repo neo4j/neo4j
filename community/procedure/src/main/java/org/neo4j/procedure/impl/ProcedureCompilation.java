@@ -524,6 +524,10 @@ public final class ProcedureCompilation
      */
     public static ProcedureException rethrowProcedureException( Throwable throwable, String typeAndName )
     {
+        if ( throwable instanceof ProcedureException )
+        {
+            return (ProcedureException) throwable;
+        }
         if ( throwable instanceof Status.HasStatus )
         {
             return new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
