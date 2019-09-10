@@ -177,23 +177,48 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
         s"""
            |MATCH (node:$label {name: $$name})
+           |SET node.ignore = 0 // need to be a write query to trigger error on follower in a cluster
            |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))), QueryHandler.ignoreNoResult())
+        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
+        QueryHandler
+          .ignoreNoResult()
+          .handleError {
+            case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
+              new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
+            case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
+          }
+      )
 
     case DoNothingIfExists(label, name) => (_, _, _) =>
       UpdatingSystemCommandExecutionPlan("DoNothingIfExists", normalExecutionEngine,
         s"""
            |MATCH (node:$label {name: $$name})
+           |SET node.ignore = 0 // need to be a write query to trigger error on follower in a cluster
            |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))), QueryHandler.ignoreOnResult())
+        """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
+        QueryHandler
+          .ignoreOnResult()
+          .handleError {
+            case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
+              new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '$name': $followerError", error)
+            case error => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
+          }
+      )
 
     // Ensure that the role or user exists before being dropped
     case EnsureNodeExists(label, name) => (_, _, _) =>
       UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
         s"""MATCH (node:$label {name: $$name})
+           |SET node.ignore = 0 // need to be a write query to trigger error on follower in a cluster
            |RETURN node""".stripMargin,
         VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
-        QueryHandler.handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to delete the specified ${label.toLowerCase} '$name': $label does not exist.")))
+        QueryHandler
+          .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to delete the specified ${label.toLowerCase} '$name': $label does not exist.")))
+          .handleError {
+            case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
+              new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
+            case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
+          }
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)
