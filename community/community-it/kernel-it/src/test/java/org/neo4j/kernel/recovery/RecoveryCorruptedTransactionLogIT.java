@@ -35,9 +35,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -172,10 +171,9 @@ class RecoveryCorruptedTransactionLogIT
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            DatabaseManager<?> databaseManager = db.getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get();
-            assertTrue( databaseContext.isFailed() );
-            assertThat( databaseContext.failureCause(), new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
+            DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+            assertTrue( dbStateService.databaseHasFailed( db.databaseId() ).isPresent() );
+            assertThat( dbStateService.databaseHasFailed( db.databaseId() ).get(), new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
         }
         finally
         {
@@ -404,10 +402,10 @@ class RecoveryCorruptedTransactionLogIT
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            DatabaseManager<?> databaseManager = db.getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get();
-            assertTrue( databaseContext.isFailed() );
-            assertThat( databaseContext.failureCause(), new RootCauseMatcher<>( NegativeArraySizeException.class ) );
+
+            DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+            assertTrue( dbStateService.databaseHasFailed( db.databaseId() ).isPresent() );
+            assertThat( dbStateService.databaseHasFailed( db.databaseId() ).get(), new RootCauseMatcher<>( NegativeArraySizeException.class ) );
         }
         finally
         {

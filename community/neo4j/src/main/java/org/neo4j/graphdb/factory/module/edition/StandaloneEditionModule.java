@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory.module.edition;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.dbms.DefaultDatabaseStateService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -77,9 +78,11 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     public DatabaseManager<?> createDatabaseManager( GlobalModule globalModule )
     {
         var databaseManager = new DefaultDatabaseManager( globalModule, this );
+        var databaseStateService = new DefaultDatabaseStateService( databaseManager );
 
         globalModule.getGlobalLife().add( databaseManager );
         globalModule.getGlobalDependencies().satisfyDependency( databaseManager );
+        globalModule.getGlobalDependencies().satisfyDependencies( databaseStateService );
 
         return databaseManager;
     }

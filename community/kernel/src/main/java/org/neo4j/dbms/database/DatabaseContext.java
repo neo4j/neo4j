@@ -42,10 +42,4 @@ public interface DatabaseContext
     }
 
     GraphDatabaseFacade databaseFacade();
-
-    void fail( Throwable t );
-
-    boolean isFailed();
-
-    Throwable failureCause();
 }

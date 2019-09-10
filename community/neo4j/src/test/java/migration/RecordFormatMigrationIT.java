@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
@@ -42,6 +44,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,7 +71,7 @@ class RecordFormatMigrationIT
     void failToDowngradeFormatWhenUpgradeNotAllowed()
     {
         DatabaseManagementService managementService = startManagementService( StandardV3_4.NAME );
-        GraphDatabaseService database = getDefaultDatabase( managementService );
+        GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = transaction.createNode();
@@ -77,11 +80,10 @@ class RecordFormatMigrationIT
         }
         managementService.shutdown();
         managementService = startManagementService( StandardV4_0.NAME );
-        GraphDatabaseService databaseService = getDefaultDatabase( managementService );
+        database = getDefaultDatabase( managementService );
         try
         {
-            DatabaseContext databaseContext = assertDefaultDatabaseFailed( databaseService );
-            Throwable throwable = databaseContext.failureCause();
+            Throwable throwable = assertDefaultDatabaseFailed( database );
             assertSame( UpgradeNotAllowedException.class, rootCause( throwable ).getClass() );
         }
         finally
@@ -94,7 +96,7 @@ class RecordFormatMigrationIT
     void failToDowngradeFormatWheUpgradeAllowed()
     {
         DatabaseManagementService managementService = startManagementService( StandardV4_0.NAME );
-        GraphDatabaseService database = getDefaultDatabase( managementService );
+        GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = transaction.createNode();
@@ -104,11 +106,10 @@ class RecordFormatMigrationIT
         managementService.shutdown();
 
         managementService = startDatabaseServiceWithUpgrade( databaseDirectory, StandardV3_4.NAME );
-        GraphDatabaseService databaseService = getDefaultDatabase( managementService );
+        database = getDefaultDatabase( managementService );
         try
         {
-            DatabaseContext databaseContext = assertDefaultDatabaseFailed( databaseService );
-            Throwable throwable = databaseContext.failureCause();
+            Throwable throwable = assertDefaultDatabaseFailed( database );
             assertSame( StoreUpgrader.AttemptedDowngradeException.class, rootCause( throwable ).getClass() );
         }
         finally
@@ -121,7 +122,7 @@ class RecordFormatMigrationIT
     void skipMigrationIfFormatSpecifiedInConfig()
     {
         DatabaseManagementService managementService = startManagementService( StandardV3_4.NAME );
-        GraphDatabaseService database = getDefaultDatabase( managementService );
+        GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = transaction.createNode();
@@ -131,7 +132,7 @@ class RecordFormatMigrationIT
         managementService.shutdown();
 
         managementService = startManagementService( StandardV3_4.NAME );
-        GraphDatabaseAPI nonUpgradedStore = (GraphDatabaseAPI) getDefaultDatabase( managementService );
+        GraphDatabaseAPI nonUpgradedStore = getDefaultDatabase( managementService );
         RecordStorageEngine storageEngine = nonUpgradedStore.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         assertEquals( StandardV3_4.NAME, storageEngine.testAccessNeoStores().getRecordFormats().name() );
         managementService.shutdown();
@@ -141,7 +142,7 @@ class RecordFormatMigrationIT
     void requestMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime()
     {
         DatabaseManagementService managementService = startManagementService( StandardV3_4.NAME );
-        GraphDatabaseService database = getDefaultDatabase( managementService );
+        GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = transaction.createNode();
@@ -151,10 +152,10 @@ class RecordFormatMigrationIT
         managementService.shutdown();
 
         managementService = new DatabaseManagementServiceBuilder( databaseDirectory ).build();
-        GraphDatabaseService databaseService = getDefaultDatabase( managementService );
+        database = getDefaultDatabase( managementService );
         try
         {
-            assertDefaultDatabaseFailed( databaseService );
+            assertDefaultDatabaseFailed( database );
         }
         finally
         {
@@ -166,7 +167,7 @@ class RecordFormatMigrationIT
     void latestRecordNotMigratedWhenFormatBumped()
     {
         DatabaseManagementService managementService = startManagementService( StandardV3_4.NAME );
-        GraphDatabaseService database = getDefaultDatabase( managementService );
+        GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = transaction.createNode();
@@ -176,11 +177,10 @@ class RecordFormatMigrationIT
         managementService.shutdown();
 
         managementService = startManagementService( Standard.LATEST_NAME );
-        GraphDatabaseService databaseService = getDefaultDatabase( managementService );
+        database = getDefaultDatabase( managementService );
         try
         {
-            DatabaseContext databaseContext = assertDefaultDatabaseFailed( databaseService );
-            Throwable exception = databaseContext.failureCause();
+            Throwable exception = assertDefaultDatabaseFailed( database );
             assertSame( UpgradeNotAllowedException.class, rootCause( exception ).getClass() );
         }
         finally
@@ -189,23 +189,22 @@ class RecordFormatMigrationIT
         }
     }
 
-    private DatabaseContext assertDefaultDatabaseFailed( GraphDatabaseService databaseService )
+    private Throwable assertDefaultDatabaseFailed( GraphDatabaseAPI database )
     {
-        assertThrows( Throwable.class, databaseService::beginTx );
-        DatabaseManager<?> databaseManager = getDatabaseManager( (GraphDatabaseAPI) databaseService );
-        DatabaseContext databaseContext = databaseManager.getDatabaseContext( testDirectory.databaseLayout().getDatabaseName() ).get();
-        assertTrue( databaseContext.isFailed() );
-        return databaseContext;
+        assertThrows( Throwable.class, database::beginTx );
+        DatabaseStateService dbStateService = getDatabaseStateService( database );
+        var failure = dbStateService.databaseHasFailed( database.databaseId() );
+        return failure.orElseThrow( () -> new AssertionError( format( "No failure found for database %s", database.databaseId().name() ) ) );
     }
 
-    private static DatabaseManager<?> getDatabaseManager( GraphDatabaseAPI databaseService )
+    private static DatabaseStateService getDatabaseStateService( GraphDatabaseAPI databaseService )
     {
-        return databaseService.getDependencyResolver().resolveDependency( DatabaseManager.class );
+        return databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
     }
 
-    private static GraphDatabaseService getDefaultDatabase( DatabaseManagementService managementService )
+    private static GraphDatabaseAPI getDefaultDatabase( DatabaseManagementService managementService )
     {
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private DatabaseManagementService startManagementService( String name )

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -93,9 +94,8 @@ class MissingStoreFilesRecoveryIT
         fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
 
         managementService = serviceBuilder.build();
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
-        assertTrue( databaseContext.isFailed() );
+        var dbStateService = getDatabaseStateService();
+        assertTrue( dbStateService.databaseHasFailed( defaultDatabaseId ).isPresent() );
     }
 
     @Test
@@ -106,9 +106,9 @@ class MissingStoreFilesRecoveryIT
         fileSystem.deleteFile( logFiles.getLogFileForVersion( 0 ) );
         fileSystem.deleteFile( databaseLayout.nodeStore() );
 
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
-        assertFalse( databaseContext.isFailed() );
+        var dbStateService = getDatabaseStateService();
+        var failure = dbStateService.databaseHasFailed( defaultDatabaseId );
+        assertFalse( failure.isPresent() );
         assertFalse( fileSystem.fileExists( databaseLayout.nodeStore() ) );
     }
 
@@ -126,6 +126,11 @@ class MissingStoreFilesRecoveryIT
     private DatabaseManager getDatabaseManager()
     {
         return defaultDatabase( managementService ).getDependencyResolver().resolveDependency( DatabaseManager.class );
+    }
+
+    private DatabaseStateService getDatabaseStateService()
+    {
+        return defaultDatabase( managementService ).getDependencyResolver().resolveDependency( DatabaseStateService.class );
     }
 
     private GraphDatabaseAPI defaultDatabase( DatabaseManagementService managementService )

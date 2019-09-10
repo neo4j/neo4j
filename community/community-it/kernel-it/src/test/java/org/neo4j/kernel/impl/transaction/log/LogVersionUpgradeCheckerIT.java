@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -45,7 +46,9 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.matchers.NestedThrowableMatcher;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
@@ -88,13 +91,14 @@ class LogVersionUpgradeCheckerIT
                 .impermanent()
                 .setConfig( allow_upgrade, false )
                 .build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get();
-            assertTrue( databaseContext.isFailed() );
-            assertThat( databaseContext.failureCause() , new NestedThrowableMatcher( UpgradeNotAllowedException.class ) );
+            DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+
+            var failure = dbStateService.databaseHasFailed( db.databaseId() );
+            assertTrue( failure.isPresent() );
+            assertThat( getRootCause( failure.get() ), new NestedThrowableMatcher( UpgradeNotAllowedException.class ) );
         }
         finally
         {

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -75,13 +76,11 @@ class DatabaseShutdownTest
         TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush factory =
                 new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory(), fs );
         DatabaseManagementService managementService = factory.build();
-        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
-        DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) databaseService).getDependencyResolver().resolveDependency( DatabaseManager.class );
-        var databaseContext = databaseManager.getDatabaseContext( databaseLayout.getDatabaseName() );
+        GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
         factory.setFailFlush( true );
         managementService.shutdown();
-        DatabaseContext context = databaseContext.get();
-        assertTrue( context.isFailed() );
+        assertTrue( dbStateService.databaseHasFailed( databaseService.databaseId() ).isPresent() );
         assertEquals( LifecycleStatus.SHUTDOWN, factory.getDatabaseStatus() );
     }
 

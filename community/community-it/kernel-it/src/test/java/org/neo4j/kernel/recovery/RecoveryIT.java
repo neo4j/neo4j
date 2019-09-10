@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -295,20 +296,20 @@ class RecoveryIT
     @Test
     void failToStartDatabaseWithRemovedTransactionLogs() throws Exception
     {
-        GraphDatabaseService database = createDatabase();
+        GraphDatabaseAPI database = createDatabase();
         generateSomeData( database );
         managementService.shutdown();
 
         removeTransactionLogs();
 
-        GraphDatabaseService restartedDb = createDatabase();
+        GraphDatabaseAPI restartedDb = createDatabase();
         try
         {
-            DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) restartedDb).getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get();
-            assertTrue( databaseContext.isFailed() );
-            assertThat( getRootCause( databaseContext.failureCause() ).getMessage(),
-                    containsString( "Transaction logs are missing and recovery is not possible." ) );
+            DatabaseStateService dbStateService = restartedDb.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+
+            var failure = dbStateService.databaseHasFailed( restartedDb.databaseId() );
+            assertTrue( failure.isPresent() );
+            assertThat( getRootCause( failure.get() ).getMessage(), containsString( "Transaction logs are missing and recovery is not possible." ) );
         }
         finally
         {

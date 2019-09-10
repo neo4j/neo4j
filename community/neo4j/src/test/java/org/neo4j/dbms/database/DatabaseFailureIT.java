@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -70,9 +71,9 @@ class DatabaseFailureIT
         deleteDirectory( testDirectory.databaseLayout().getTransactionLogsDirectory() );
 
         database = startDatabase();
-        DatabaseManager<?> databaseManager = database.getDependencyResolver().resolveDependency( DatabaseManager.class );
-        assertTrue( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get().isFailed() );
-        assertFalse( databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).get().isFailed() );
+        DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+        assertTrue( databaseStateService.databaseHasFailed( database.databaseId() ).isPresent() );
+        assertFalse( databaseStateService.databaseHasFailed( SYSTEM_DATABASE_ID ).isPresent() );
     }
 
     @Test

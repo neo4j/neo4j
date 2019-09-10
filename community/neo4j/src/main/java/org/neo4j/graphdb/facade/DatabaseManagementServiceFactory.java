@@ -31,6 +31,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
@@ -173,7 +174,9 @@ public class DatabaseManagementServiceFactory
             databaseManager.initialiseSystemDatabase();
             globalLife.start();
 
-            verifySystemDatabaseStart( databaseManager );
+            DatabaseStateService databaseStateService = globalModule.getGlobalDependencies().resolveDependency( DatabaseStateService.class );
+
+            verifySystemDatabaseStart( databaseManager, databaseStateService );
         }
         catch ( Throwable throwable )
         {
@@ -203,7 +206,7 @@ public class DatabaseManagementServiceFactory
         }
     }
 
-    private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager )
+    private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager, DatabaseStateService dbStateService )
     {
         Optional<? extends DatabaseContext> databaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID );
         if ( databaseContext.isEmpty() )
@@ -211,10 +214,10 @@ public class DatabaseManagementServiceFactory
             throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " not found." );
         }
 
-        DatabaseContext systemContext = databaseContext.get();
-        if ( databaseContext.get().isFailed() )
+        Optional<Throwable> failure = dbStateService.databaseHasFailed( SYSTEM_DATABASE_ID );
+        if ( failure.isPresent() )
         {
-            throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " failed to start.", systemContext.failureCause() );
+            throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " failed to start.", failure.get() );
         }
     }
 

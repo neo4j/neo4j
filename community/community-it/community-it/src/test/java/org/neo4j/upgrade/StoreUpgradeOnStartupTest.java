@@ -35,6 +35,7 @@ import java.util.Collections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -118,13 +119,12 @@ public class StoreUpgradeOnStartupTest
     {
         // given
         removeCheckPointFromTxLog( fileSystem, workingDatabaseLayout.databaseDirectory() );
-        GraphDatabaseService database = createGraphDatabaseService();
+        GraphDatabaseAPI database = createGraphDatabaseService();
         try
         {
-            DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get();
-            assertTrue( databaseContext.isFailed() );
-            assertThat( rootCause( databaseContext.failureCause() ),
+            DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+            assertTrue( databaseStateService.databaseHasFailed( database.databaseId() ).isPresent() );
+            assertThat( rootCause( databaseStateService.databaseHasFailed( database.databaseId() ).get() ),
                     Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );
         }
         finally
@@ -133,11 +133,11 @@ public class StoreUpgradeOnStartupTest
         }
     }
 
-    private GraphDatabaseService createGraphDatabaseService()
+    private GraphDatabaseAPI createGraphDatabaseService()
     {
         managementService = new TestDatabaseManagementServiceBuilder( workingStoreDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true )
                 .build();
-        return managementService.database( DEFAULT_DATABASE_NAME );
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

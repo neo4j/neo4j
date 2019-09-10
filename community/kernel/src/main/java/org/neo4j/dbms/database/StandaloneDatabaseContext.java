@@ -49,19 +49,16 @@ public class StandaloneDatabaseContext implements DatabaseContext
         return databaseFacade;
     }
 
-    @Override
     public void fail( Throwable failureCause )
     {
         this.failureCause = failureCause;
     }
 
-    @Override
     public boolean isFailed()
     {
         return failureCause != null;
     }
 
-    @Override
     public Throwable failureCause()
     {
         return failureCause;

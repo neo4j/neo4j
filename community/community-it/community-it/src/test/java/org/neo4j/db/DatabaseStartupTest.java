@@ -26,6 +26,7 @@ import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -45,14 +46,17 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -76,7 +80,7 @@ class DatabaseStartupTest
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         File storeDirectory = testDirectory.storeDir();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
             tx.createNode();
@@ -94,14 +98,15 @@ class DatabaseStartupTest
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
-        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
+
             assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
-            DatabaseManager<?> databaseManager = getDatabaseManager( (GraphDatabaseAPI) databaseService );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseLayout.getDatabaseName() ).get();
-            assertTrue( databaseContext.isFailed() );
-            Throwable throwable = findCauseOrSuppressed( databaseContext.failureCause(), e -> e instanceof IllegalArgumentException ).get();
+            DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+            assertTrue( dbStateService.databaseHasFailed( databaseService.databaseId() ).isPresent() );
+            Throwable throwable = findCauseOrSuppressed( dbStateService.databaseHasFailed( databaseService.databaseId() ).get(),
+                    e -> e instanceof IllegalArgumentException ).get();
             assertEquals( "Unknown store version 'bad'", throwable.getMessage() );
         }
         finally
@@ -139,15 +144,14 @@ class DatabaseStartupTest
         managementService = new TestDatabaseManagementServiceBuilder( storeDirectory )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true )
                 .build();
-        GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
             assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
-            DatabaseManager<?> databaseManager = getDatabaseManager( (GraphDatabaseAPI) databaseService );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseLayout.getDatabaseName() ).get();
-            assertTrue( databaseContext.isFailed() );
-            Optional<Throwable> upgradeException =
-                    findCauseOrSuppressed( databaseContext.failureCause(), e -> e instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
+            DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+            assertTrue( dbStateService.databaseHasFailed( databaseService.databaseId() ).isPresent() );
+            Optional<Throwable> upgradeException = findCauseOrSuppressed( dbStateService.databaseHasFailed( databaseService.databaseId() ).get(),
+                    e -> e instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
             assertTrue( upgradeException.isPresent() );
         }
         finally

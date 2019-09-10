@@ -154,15 +154,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         {
             DatabaseId databaseId = entry.getKey();
             DB context = entry.getValue();
-            try
-            {
-                consumer.accept( databaseId, context );
-            }
-            catch ( Throwable t )
-            {
-                context.fail( t );
-                log.error( "Failed to perform operation with database " + databaseId.name(), t );
-            }
+            consumer.accept( databaseId, context );
         }
     }
 

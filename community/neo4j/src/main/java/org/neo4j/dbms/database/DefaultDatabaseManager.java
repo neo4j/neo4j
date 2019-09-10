@@ -62,15 +62,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         StandaloneDatabaseContext context = createDatabase( databaseId );
         if ( manageDatabasesOnStartAndStop )
         {
-            try
-            {
-                context.database().start();
-            }
-            catch ( Throwable t )
-            {
-                log.error( "Failed to start default database: " + databaseId.name(), t );
-                context.fail( t );
-            }
+            this.startDatabase( databaseId, context );
         }
     }
 
@@ -117,6 +109,36 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     public void startDatabase( DatabaseId databaseId )
     {
         throw new DatabaseManagementException( "Default database manager does not support starting databases." );
+    }
+
+    @Override
+    protected StandaloneDatabaseContext stopDatabase( DatabaseId databaseId, StandaloneDatabaseContext context )
+    {
+        try
+        {
+            return super.stopDatabase( databaseId, context );
+        }
+        catch ( Throwable t )
+        {
+            log.error( "Failed to stop database: " + databaseId.name(), t );
+            context.fail( t );
+        }
+        return context;
+    }
+
+    @Override
+    protected StandaloneDatabaseContext startDatabase( DatabaseId databaseId, StandaloneDatabaseContext context )
+    {
+        try
+        {
+            return super.startDatabase( databaseId, context );
+        }
+        catch ( Throwable t )
+        {
+            log.error( "Failed to start database: " + databaseId.name(), t );
+            context.fail( t );
+        }
+        return context;
     }
 
     private void checkDatabaseLimit( DatabaseId databaseId )
