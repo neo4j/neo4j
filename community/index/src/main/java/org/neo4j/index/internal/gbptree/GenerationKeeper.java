@@ -19,12 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.index.internal.gbptree.GenerationSafePointerPair.GenerationTarget;
-
 /**
- * {@link GenerationTarget} which has its own generation field.
+ * {@link GBPTreeGenerationTarget} which has its own generation field.
  */
-class GenerationKeeper implements GenerationTarget
+class GenerationKeeper implements GBPTreeGenerationTarget
 {
     long generation;
 

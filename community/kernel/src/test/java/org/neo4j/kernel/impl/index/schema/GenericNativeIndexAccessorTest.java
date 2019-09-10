@@ -61,7 +61,7 @@ class GenericNativeIndexAccessorTest
         IndexSpecificSpaceFillingCurveSettings spatialSettings = mock( IndexSpecificSpaceFillingCurveSettings.class );
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
         GenericNativeIndexAccessor accessor = new GenericNativeIndexAccessor( pageCache, fs, indexFiles, new GenericLayout( 1, spatialSettings ),
-                immediate(), EMPTY, descriptor, spatialSettings, mock( SpaceFillingCurveConfiguration.class ) );
+                immediate(), EMPTY, descriptor, spatialSettings, mock( SpaceFillingCurveConfiguration.class ), false );
 
         // when
         accessor.drop();

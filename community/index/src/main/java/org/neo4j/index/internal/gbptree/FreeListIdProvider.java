@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-import java.util.function.LongConsumer;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -238,87 +237,53 @@ class FreeListIdProvider implements IdProvider
         }
     }
 
-    /**
-     * Visits all page ids currently in use as free-list pages.
-     *
-     * @param visitor {@link LongConsumer} getting calls about free-list page ids.
-     * @throws IOException on {@link PageCursor} error.
-     */
-    void visitFreelistPageIds( LongConsumer visitor ) throws IOException
+    @Override
+    public void visitFreelist( IdProviderVisitor visitor ) throws IOException
     {
         if ( readPageId == FreelistNode.NO_PAGE_ID )
         {
             return;
         }
 
-        long pageId = readPageId;
-        visitor.accept( pageId );
-        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            while ( pageId != writePageId )
+            GenerationKeeper generation = new GenerationKeeper();
+            long prevPage;
+            long pageId = readPageId;
+            int pos = readPos;
+            do
             {
                 PageCursorUtil.goTo( cursor, "free-list", pageId );
-                long nextFreelistPageId;
+                visitor.beginFreelistPage( pageId );
+                int targetPos = pageId == writePageId ? writePos : freelistNode.maxEntries();
+                while ( pos < targetPos )
+                {
+                    // Read next un-acquired id
+                    long unacquiredId;
+                    do
+                    {
+                        unacquiredId = freelistNode.read( cursor, Long.MAX_VALUE, pos, generation );
+                    }
+                    while ( cursor.shouldRetry() );
+                    visitor.freelistEntry( unacquiredId, generation.generation, pos );
+                    pos++;
+                }
+                visitor.endFreelistPage( pageId );
+
+                prevPage = pageId;
+                pos = 0;
                 do
                 {
-                    nextFreelistPageId = FreelistNode.next( cursor );
+                    pageId = FreelistNode.next( cursor );
                 }
                 while ( cursor.shouldRetry() );
-                visitor.accept( nextFreelistPageId );
-                pageId = nextFreelistPageId;
             }
+            while ( prevPage != writePageId );
         }
     }
 
-    /**
-     * Visits all unacquired ids, i.e. ids that have been {@link #releaseId(long, long, long) released},
-     * but not yet {@link #acquireNewId(long, long) acquired}.
-     * Calling this method will not change the free-list.
-     * All released ids will be visited, even ones released in unstable generation.
-     *
-     * @param visitor {@link LongConsumer} getting calls about unacquired ids.
-     * @throws IOException on {@link PageCursor} error.
-     */
-    void visitUnacquiredIds( LongConsumer visitor, long stableGeneration ) throws IOException
-    {
-        if ( readPageId == FreelistNode.NO_PAGE_ID )
-        {
-            return;
-        }
-
-        long pageId = readPageId;
-        int pos = readPos;
-        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
-        {
-            while ( pageId != writePageId || pos < writePos )
-            {
-                PageCursorUtil.goTo( cursor, "free-list", pageId );
-
-                // Read next un-acquired id
-                long unacquiredId;
-                long nextFreelistPageId;
-                do
-                {
-                    unacquiredId = freelistNode.read( cursor, stableGeneration, pos );
-                    nextFreelistPageId = FreelistNode.next( cursor );
-                }
-                while ( cursor.shouldRetry() );
-
-                // Tell visitor
-                visitor.accept( unacquiredId );
-
-                // Go to next id
-                if ( ++pos == freelistNode.maxEntries() )
-                {
-                    // Go to next free-list page
-                    pos = 0;
-                    pageId = nextFreelistPageId;
-                }
-            }
-        }
-    }
-
-    long lastId()
+    @Override
+    public long lastId()
     {
         return lastId;
     }

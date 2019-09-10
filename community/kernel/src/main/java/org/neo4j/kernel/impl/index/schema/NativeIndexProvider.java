@@ -96,10 +96,10 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
-        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor );
+        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor, readOnly );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor, boolean readOnly ) throws IOException;
 
     @Override
     public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException

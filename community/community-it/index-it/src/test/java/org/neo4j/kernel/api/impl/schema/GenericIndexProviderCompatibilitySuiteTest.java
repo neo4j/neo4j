@@ -21,18 +21,17 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
+import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.ConsistencyCheckableIndexPopulator;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.NativeIndexAccessor;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -68,14 +67,8 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     }
 
     @Override
-    public void consistencyCheck( IndexAccessor accessor )
-    {
-        ((NativeIndexAccessor) accessor).consistencyCheck();
-    }
-
-    @Override
     public void consistencyCheck( IndexPopulator populator )
     {
-        ((ConsistencyCheckableIndexPopulator) populator).consistencyCheck();
+        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory() );
     }
 }

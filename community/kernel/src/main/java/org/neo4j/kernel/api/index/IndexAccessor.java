@@ -25,12 +25,14 @@ import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
@@ -40,7 +42,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
 /**
  * Used for online operation of an index.
  */
-public interface IndexAccessor extends Closeable, IndexConfigProvider
+public interface IndexAccessor extends Closeable, IndexConfigProvider, ConsistencyCheckable
 {
     IndexAccessor EMPTY = new Adapter();
 
@@ -204,6 +206,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider
         {
             return false;
         }
+
+        @Override
+        public boolean consistencyCheck( ReporterFactory reporterFactory )
+        {
+            return true;
+        }
     }
 
     class Delegating implements IndexAccessor
@@ -291,6 +299,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider
         public void validateBeforeCommit( Value[] tuple )
         {
             delegate.validateBeforeCommit( tuple );
+        }
+
+        @Override
+        public boolean consistencyCheck( ReporterFactory reporterFactory )
+        {
+            return delegate.consistencyCheck( reporterFactory );
         }
     }
 }

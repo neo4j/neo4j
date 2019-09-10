@@ -136,7 +136,7 @@ class GenerationSafePointerPair
      * @param generationTarget target to write the generation of the selected pointer.
      * @return most recent readable pointer, or failure. Check result using {@link #isSuccess(long)}.
      */
-    public static long read( PageCursor cursor, long stableGeneration, long unstableGeneration, GenerationTarget generationTarget )
+    public static long read( PageCursor cursor, long stableGeneration, long unstableGeneration, GBPTreeGenerationTarget generationTarget )
     {
         // Try A
         long generationA = readGeneration( cursor );
@@ -195,7 +195,7 @@ class GenerationSafePointerPair
                ((long) pointerStateA) << SHIFT_STATE_A | ((long) pointerStateB) << SHIFT_STATE_B;
     }
 
-    private static long buildSuccessfulReadResult( long slot, long generation, long pointer, GenerationTarget generationTarget )
+    private static long buildSuccessfulReadResult( long slot, long generation, long pointer, GBPTreeGenerationTarget generationTarget )
     {
         generationTarget.accept( generation );
         return FLAG_SUCCESS | FLAG_READ | slot | pointer;
@@ -355,7 +355,7 @@ class GenerationSafePointerPair
      * Checks to see if a result from read/write was successful. If not more failure information can be extracted
      * using {@link #failureDescription(long)}.
      *
-     * @param result result from {@link #read(PageCursor, long, long, GenerationTarget)} or {@link #write(PageCursor, long, long, long)}.
+     * @param result result from {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)} or {@link #write(PageCursor, long, long, long)}.
      * @return {@code true} if successful read/write, otherwise {@code false}.
      */
     static boolean isSuccess( long result )
@@ -364,7 +364,7 @@ class GenerationSafePointerPair
     }
 
     /**
-     * @param readResult whole read result from {@link #read(PageCursor, long, long, GenerationTarget)}, containing both
+     * @param readResult whole read result from {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)}, containing both
      * pointer as well as header information about the pointer.
      * @return the pointer-part of {@code readResult}.
      */
@@ -374,7 +374,7 @@ class GenerationSafePointerPair
     }
 
     /**
-     * Calling {@link #read(PageCursor, long, long, GenerationTarget)} (potentially also {@link #write(PageCursor, long, long, long)})
+     * Calling {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)} (potentially also {@link #write(PageCursor, long, long, long)})
      * can fail due to seeing an unexpected state of the two GSPs. Failing right there and then isn't an option
      * due to how the page cache works and that something read from a {@link PageCursor} must not be interpreted
      * until after passing a {@link PageCursor#shouldRetry()} returning {@code false}. This creates a need for
@@ -382,7 +382,7 @@ class GenerationSafePointerPair
      * the caller which interprets the result fail in a proper place. That place can make use of this method
      * by getting a human-friendly description about the failure.
      *
-     * @param result result from {@link #read(PageCursor, long, long, GenerationTarget)} or
+     * @param result result from {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)} or
      * {@link #write(PageCursor, long, long, long)}.
      * @return a human-friendly description of the failure.
      */
@@ -399,7 +399,7 @@ class GenerationSafePointerPair
     /**
      * Asserts that a result is {@link #isSuccess(long) successful}, otherwise throws {@link IllegalStateException}.
      *
-     * @param result result returned from {@link #read(PageCursor, long, long, GenerationTarget)} or
+     * @param result result returned from {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)} or
      * {@link #write(PageCursor, long, long, long)}
      * @return {@code true} if {@link #isSuccess(long) successful}, for interoperability with {@code assert}.
      */
@@ -466,12 +466,4 @@ class GenerationSafePointerPair
     {
         return (result & SLOT_MASK) == FLAG_SLOT_A;
     }
-
-    @FunctionalInterface
-    interface GenerationTarget
-    {
-        void accept( long generation );
-    }
-
-    static final GenerationTarget NO_GENERATION_TARGET = generation -> {};
 }

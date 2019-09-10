@@ -32,15 +32,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -61,6 +64,7 @@ import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -1716,6 +1720,69 @@ class GBPTreeTest
                     }
                 }
             } );
+        }
+    }
+
+    /* ReadOnly */
+
+    @Test
+    void mustNotMakeAnyChangesInReadOnlyMode() throws IOException
+    {
+        // given
+        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {
+            for ( int i = 0; i < 10; i++ )
+            {
+                for ( int j = 0; j < 100; j++ )
+                {
+                    insert( tree, random.nextLong(), random.nextLong() );
+                }
+                tree.checkpoint( UNLIMITED );
+            }
+        }
+        byte[] before = fileContent( indexFile );
+
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).withReadOnly( true ).build() )
+        {
+            UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, tree::writer );
+            assertThat( e.getMessage(), containsString( "GBPTree was opened in read only mode and can not finish operation: " ) );
+
+            MutableBoolean ioLimitChecked = new MutableBoolean();
+            tree.checkpoint( ( previousStamp, recentlyCompletedIOs, flushable ) -> {
+                ioLimitChecked.setTrue();
+                return 0;
+            } );
+            assertFalse( ioLimitChecked.getValue(), "Expected checkpoint to be a no-op in read only mode." );
+        }
+        byte[] after = fileContent( indexFile );
+        assertArrayEquals( before, after, "Expected file content to be identical before and after opening GBPTree in read only mode." );
+    }
+
+    @Test
+    void mustFailGracefullyIfFileNotExistInReadOnlyMode() throws IOException
+    {
+        // given
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        TreeFileNotFoundException e = assertThrows( TreeFileNotFoundException.class, () -> index( pageCache ).withReadOnly( true ).build() );
+        assertThat( e.getMessage(), containsString( "Can not create new tree file in read only mode" ) );
+        assertThat( e.getMessage(), containsString( indexFile.getAbsolutePath() ) );
+    }
+
+    private byte[] fileContent( File indexFile ) throws IOException
+    {
+        Set<OpenOption> options = new HashSet<>();
+        options.add( StandardOpenOption.READ );
+        try ( StoreChannel storeChannel = fileSystem.open( indexFile, options ) )
+        {
+            int fileSize = (int) storeChannel.size();
+            ByteBuffer expectedContent = ByteBuffer.allocate( fileSize );
+            storeChannel.readAll( expectedContent );
+            expectedContent.flip();
+            byte[] bytes = new byte[fileSize];
+            expectedContent.get( bytes );
+            return bytes;
         }
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -408,7 +409,7 @@ class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), nameLookup, asList( onlineIndex, populatingIndex, failedIndex ),
-                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore ) );
+                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, false ) );
 
         when( provider.getInitialState( onlineIndex ) )
                 .thenReturn( ONLINE );
@@ -449,7 +450,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore );
+                schemaState, indexStatisticsStore, false );
 
         when( provider.getInitialState( onlineIndex ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex ) ).thenReturn( POPULATING );
@@ -500,7 +501,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 Collections.singletonList( nativeBtree10Index ),internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore );
+                schemaState, indexStatisticsStore, false );
 
         // when
         indexingService.init();
@@ -535,7 +536,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 Collections.singletonList( nativeBtree10Index ), internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore );
+                schemaState, indexStatisticsStore, false );
 
         // when
         indexingService.init();
@@ -547,6 +548,53 @@ class IndexingServiceTest
         onBothLogProviders( logProvider -> messageMatcher.assertNotContains( "IndexingService.start: Deprecated index providers in use:" ) );
         onBothLogProviders( logProvider -> messageMatcher.assertNotContains( nativeBtree10Descriptor.name() ) );
         onBothLogProviders( logProvider -> messageMatcher.assertNotContains( fulltextDescriptor.name() ) );
+    }
+
+    @Test
+    void shouldLogDeprecatedIndexesOnStart() throws Exception
+    {
+        // given
+        IndexDescriptor native30Index1      = storeIndex( 3, 1, 3, native30Descriptor );
+        IndexDescriptor native30Index2      = storeIndex( 4, 1, 4, native30Descriptor );
+        IndexDescriptor nativeBtree10Index  = storeIndex( 5, 1, 5, nativeBtree10Descriptor );
+        IndexDescriptor fulltextIndex  = storeIndex( 6, 1, 6, fulltextDescriptor );
+
+        IndexProvider native30Provider = mockIndexProviderWithAccessor( native30Descriptor );
+        IndexProvider nativeBtree10Provider = mockIndexProviderWithAccessor( nativeBtree10Descriptor );
+        IndexProvider fulltextProvider = mockIndexProviderWithAccessor( fulltextDescriptor );
+
+        when( native30Provider.getInitialState( native30Index1 ) ).thenReturn( ONLINE );
+        when( native30Provider.getInitialState( native30Index2 ) ).thenReturn( ONLINE );
+        when( nativeBtree10Provider.getInitialState( nativeBtree10Index ) ).thenReturn( ONLINE );
+        when( fulltextProvider.getInitialState( fulltextIndex ) ).thenReturn( ONLINE );
+
+        Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
+        DependencyResolver dependencies = buildIndexDependencies( native30Provider, nativeBtree10Provider );
+        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
+        providerMap.init();
+        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
+
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
+                mock( JobScheduler.class ), providerMap, storeView, mockLookup,
+                asList( native30Index1, native30Index2, nativeBtree10Index ), internalLogProvider, userLogProvider,
+                IndexingService.NO_MONITOR, schemaState, mock( IndexStatisticsStore.class),false );
+
+        // when
+        indexingService.init();
+        userLogProvider.clear();
+        indexingService.start();
+
+        // then
+        userLogProvider.rawMessageMatcher().assertContainsSingle(
+                Matchers.allOf(
+                        Matchers.containsString( "Deprecated index providers in use:" ),
+                        Matchers.containsString( native30Descriptor.name() + " (2 indexes)" ),
+                        Matchers.containsString( "Use procedure 'db.indexes()' to see what indexes use which index provider." )
+                )
+        );
+        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
+        onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
+        userLogProvider.print( System.out );
     }
 
     @Test
@@ -1073,7 +1121,7 @@ class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), nameLookup, indexes, internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore ) );
+                schemaState, indexStatisticsStore, false ) );
 
         nameLookup.property( 1, "prop" );
 
@@ -1119,7 +1167,7 @@ class IndexingServiceTest
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup, indexes,
-                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore );
+                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, false );
         when( indexStatisticsStore.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( newDoubleLongRegister( 32L, 32L ) );
         nameLookup.property( 1, "prop" );
@@ -1269,7 +1317,8 @@ class IndexingServiceTest
         IndexingService.Monitor monitor = mock( IndexingService.Monitor.class );
         IndexingService indexingService =
                 new IndexingService( indexProxyCreator, indexProviderMap, indexMapReference, mock( IndexStoreView.class ), schemaRules, samplingController,
-                        idTokenNameLookup, scheduler, null, multiPopulatorFactory, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ) );
+                        idTokenNameLookup, scheduler, null, multiPopulatorFactory, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ),
+                        false );
         // and where index population starts
         indexingService.init();
 
@@ -1415,7 +1464,8 @@ class IndexingServiceTest
                         userLogProvider,
                         monitor,
                         schemaState,
-                        indexStatisticsStore )
+                        indexStatisticsStore,
+                        false )
         );
     }
 
@@ -1562,7 +1612,7 @@ class IndexingServiceTest
                 indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
                 mock( IndexSamplingController.class ), nameLookup,
                 mock( JobScheduler.class ), mock( SchemaState.class ), mock( MultiPopulatorFactory.class ),
-                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, mock( IndexStatisticsStore.class ) );
+                internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, mock( IndexStatisticsStore.class ), false );
     }
 
     private static DependencyResolver buildIndexDependencies( IndexProvider provider )

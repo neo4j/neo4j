@@ -90,8 +90,8 @@ class GenericAccessorPointsTest
         GenericLayout layout = new GenericLayout( 1, indexSettings );
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
         descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 );
-        accessor =
-            new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration() );
+        accessor = new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration(),
+                false );
     }
 
     @AfterEach

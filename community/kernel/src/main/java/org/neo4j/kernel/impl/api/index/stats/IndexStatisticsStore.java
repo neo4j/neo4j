@@ -78,7 +78,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public void init() throws IOException
     {
         tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                recoveryCleanupWorkCollector );
+                recoveryCleanupWorkCollector, false );
         scanTree( cache::put );
     }
 

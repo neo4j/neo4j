@@ -45,9 +45,10 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
 
     GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, IndexDescriptor descriptor,
-            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration )
+            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration,
+            boolean readOnly )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER, readOnly );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );

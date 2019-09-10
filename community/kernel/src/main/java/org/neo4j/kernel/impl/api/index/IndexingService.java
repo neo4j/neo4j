@@ -116,6 +116,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final Log internalLog;
     private final Log userLog;
     private final IndexStatisticsStore indexStatisticsStore;
+    private final boolean readOnly;
     private final TokenNameLookup tokenNameLookup;
     private final MultiPopulatorFactory multiPopulatorFactory;
     private final LogProvider internalLogProvider;
@@ -209,7 +210,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             LogProvider internalLogProvider,
             LogProvider userLogProvider,
             Monitor monitor,
-            IndexStatisticsStore indexStatisticsStore )
+            IndexStatisticsStore indexStatisticsStore,
+            boolean readOnly )
     {
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
@@ -226,6 +228,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.internalLog = internalLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
         this.indexStatisticsStore = indexStatisticsStore;
+        this.readOnly = readOnly;
     }
 
     /**
@@ -338,6 +341,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             logIndexStateSummary( "start", indexStates );
             logIndexProviderSummary( indexProviders );
 
+            dontRebuildIndexesInReadOnlyMode( rebuildingDescriptors );
             // Drop placeholder proxies for indexes that need to be rebuilt
             dropRecoveringIndexes( indexMap, rebuildingDescriptors.keySet() );
             // Rebuild indexes by recreating and repopulating them
@@ -384,6 +388,19 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 } );
 
         state = State.RUNNING;
+    }
+
+    private void dontRebuildIndexesInReadOnlyMode( MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors )
+    {
+        if ( readOnly && rebuildingDescriptors.notEmpty() )
+        {
+            String indexString = rebuildingDescriptors.values().stream()
+                    .map( String::valueOf )
+                    .collect( Collectors.joining( ", ", "{", "}" ) );
+            throw new IllegalStateException(
+                    "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in writable mode to rebuild indexes. " +
+                            "Indexes needing rebuild: " + indexString );
+        }
     }
 
     private void populateIndexesOfAllTypes( MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors, IndexMap indexMap )

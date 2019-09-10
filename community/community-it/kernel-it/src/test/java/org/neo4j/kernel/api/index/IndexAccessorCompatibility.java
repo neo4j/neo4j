@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
@@ -79,7 +80,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     {
         try
         {
-            testSuite.consistencyCheck( accessor );
+            accessor.consistencyCheck( ReporterFactories.throwingReporterFactory() );
         }
         finally
         {

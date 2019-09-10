@@ -510,7 +510,8 @@ public class Database extends LifecycleAdapter
             IndexStatisticsStore indexStatisticsStore )
     {
         return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, databaseConfig, scheduler,
-                indexProviderMap, tokenNameLookup, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ) ) );
+                indexProviderMap, tokenNameLookup, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ),
+                readOnly ) );
     }
 
     /**
@@ -527,11 +528,12 @@ public class Database extends LifecycleAdapter
             TokenNameLookup tokenNameLookup,
             LogProvider internalLogProvider,
             LogProvider userLogProvider,
-            IndexingService.Monitor indexingServiceMonitor )
+            IndexingService.Monitor indexingServiceMonitor,
+            boolean readOnly )
     {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView,
                 tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, userLogProvider, indexingServiceMonitor,
-                databaseSchemaState, indexStatisticsStore );
+                databaseSchemaState, indexStatisticsStore, readOnly );
         storageEngine.addIndexUpdateListener( indexingService );
         return indexingService;
     }

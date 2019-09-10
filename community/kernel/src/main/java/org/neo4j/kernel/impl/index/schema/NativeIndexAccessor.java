@@ -49,9 +49,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     final NativeIndexHeaderWriter headerWriter;
 
     NativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
+            IndexProvider.Monitor monitor, IndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, boolean readOnly )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, readOnly );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter );
     }

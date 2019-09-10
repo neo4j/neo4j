@@ -323,7 +323,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
                     providerMap, storeView, tokenNameLookup, initialSchemaRulesLoader( storageEngine ),
                     nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
-                    mock( IndexStatisticsStore.class ) );
+                    mock( IndexStatisticsStore.class ), false );
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );

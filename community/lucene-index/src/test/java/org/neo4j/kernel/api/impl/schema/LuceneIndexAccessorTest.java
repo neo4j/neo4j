@@ -19,9 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationHandler;
+
+import org.neo4j.annotations.documented.ReporterFactories;
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
@@ -54,5 +59,32 @@ class LuceneIndexAccessorTest
     {
         when( schemaIndex.isValid() ).thenReturn( true );
         assertFalse( accessor.isDirty() );
+    }
+
+    @Test
+    void indexIsNotConsistentWhenIndexIsNotValid()
+    {
+        when( schemaIndex.isValid() ).thenReturn( false );
+        assertFalse( accessor.consistencyCheck( ReporterFactories.noopReporterFactory() ) );
+    }
+
+    @Test
+    void indexIsConsistentWhenIndexIsValid()
+    {
+        when( schemaIndex.isValid() ).thenReturn( true );
+        assertTrue( accessor.consistencyCheck( ReporterFactories.noopReporterFactory() ) );
+    }
+
+    @Test
+    void indexReportInconsistencyToVisitor()
+    {
+        when( schemaIndex.isValid() ).thenReturn( false );
+        MutableBoolean called = new MutableBoolean();
+        final InvocationHandler handler = ( proxy, method, args ) -> {
+            called.setTrue();
+            return null;
+        };
+        assertFalse( accessor.consistencyCheck( new ReporterFactory( handler ) ), "Expected index to be inconsistent" );
+        assertTrue( called.booleanValue(), "Expected visitor to be called" );
     }
 }

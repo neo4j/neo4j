@@ -26,6 +26,8 @@ import java.lang.annotation.Target;
 
 /**
  * Defines documentation for a class, interface, field or method.
+ *
+ * Use {@link DocumentedUtils} to extract message from method annotated with {@link Documented}.
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( { ElementType.TYPE, ElementType.FIELD, ElementType.METHOD } )

@@ -48,6 +48,7 @@ public class GBPTreeBuilder<KEY,VALUE>
     private Layout<KEY,VALUE> layout;
     private Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
+    private boolean readOnly;
     private OpenOption[] openOptions = {};
 
     public GBPTreeBuilder( PageCache pageCache, File file, Layout<KEY,VALUE> layout )
@@ -105,6 +106,12 @@ public class GBPTreeBuilder<KEY,VALUE>
         return this;
     }
 
+    public GBPTreeBuilder<KEY,VALUE> withReadOnly( boolean readOnly )
+    {
+        this.readOnly = readOnly;
+        return this;
+    }
+
     public GBPTreeBuilder<KEY,VALUE> with( OpenOption... openOptions )
     {
         this.openOptions = openOptions;
@@ -114,6 +121,6 @@ public class GBPTreeBuilder<KEY,VALUE>
     public GBPTree<KEY,VALUE> build()
     {
         return new GBPTree<>( pageCache, file, layout, tentativeIndexPageSize, monitor, headerReader, headerWriter,
-                recoveryCleanupWorkCollector, openOptions );
+                recoveryCleanupWorkCollector, readOnly, openOptions );
     }
 }

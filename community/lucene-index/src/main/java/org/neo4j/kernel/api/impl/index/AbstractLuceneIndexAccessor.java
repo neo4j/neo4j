@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.ToLongFunction;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -155,6 +156,18 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     public boolean isDirty()
     {
         return !luceneIndex.isValid();
+    }
+
+    @Override
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    {
+        final LuceneIndexConsistencyCheckVisitor visitor = reporterFactory.getClass( LuceneIndexConsistencyCheckVisitor.class );
+        final boolean isConsistent = !isDirty();
+        if ( !isConsistent )
+        {
+            visitor.isInconsistent( descriptor );
+        }
+        return isConsistent;
     }
 
     protected abstract class AbstractLuceneIndexUpdater implements IndexUpdater

@@ -178,6 +178,12 @@ public class ConsistencyReporterTest
                 }
 
                 @Override
+                public void error( String message )
+                {
+                    assertTrue( loggedError.compareAndSet( null, message ) );
+                }
+
+                @Override
                 public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object[] args )
                 {
                 }
@@ -185,6 +191,11 @@ public class ConsistencyReporterTest
                 @Override
                 public void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
                         String message, Object[] args )
+                {
+                }
+
+                @Override
+                public void warning( String message )
                 {
                 }
             };

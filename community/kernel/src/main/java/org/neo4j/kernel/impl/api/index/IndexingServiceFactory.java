@@ -49,7 +49,8 @@ public class IndexingServiceFactory
                                           LogProvider userLogProvider,
                                           IndexingService.Monitor monitor,
                                           SchemaState schemaState,
-                                          IndexStatisticsStore indexStatisticsStore )
+                                          IndexStatisticsStore indexStatisticsStore,
+                                          boolean readOnly )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         MultiPopulatorFactory multiPopulatorFactory = MultiPopulatorFactory.forConfig( config );
@@ -62,6 +63,6 @@ public class IndexingServiceFactory
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor, indexStatisticsStore );
+                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor, indexStatisticsStore, readOnly );
     }
 }

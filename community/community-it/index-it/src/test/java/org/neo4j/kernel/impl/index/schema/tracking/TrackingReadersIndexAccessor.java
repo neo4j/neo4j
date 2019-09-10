@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema.tracking;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -119,5 +120,11 @@ public class TrackingReadersIndexAccessor implements IndexAccessor
     public void validateBeforeCommit( Value[] tuple )
     {
         accessor.validateBeforeCommit( tuple );
+    }
+
+    @Override
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    {
+        return accessor.consistencyCheck( reporterFactory );
     }
 }

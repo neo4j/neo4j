@@ -26,7 +26,7 @@ import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.annotations.documented.Documented;
+import org.neo4j.annotations.documented.DocumentedUtils;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
@@ -170,6 +170,47 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         return handler.report();
     }
 
+    public FormattingDocumentedHandler formattingHandler( RecordType type )
+    {
+        return new FormattingDocumentedHandler( report, type );
+    }
+
+    public static class FormattingDocumentedHandler implements InvocationHandler
+    {
+        private final InconsistencyReport report;
+        private final RecordType type;
+        private short errors;
+        private short warnings;
+
+        FormattingDocumentedHandler( InconsistencyReport report, RecordType type )
+        {
+            this.report = report;
+            this.type = type;
+        }
+
+        @Override
+        public Object invoke( Object proxy, Method method, Object[] args )
+        {
+            String message = DocumentedUtils.extractFormattedMessage( method, args );
+            if ( method.getAnnotation( ConsistencyReport.Warning.class ) == null )
+            {
+                errors++;
+                report.error( message );
+            }
+            else
+            {
+                warnings++;
+                report.warning( message );
+            }
+            return null;
+        }
+
+        public void updateSummary()
+        {
+            report.updateSummary( type, errors, warnings );
+        }
+    }
+
     public abstract static class ReportInvocationHandler
             <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
             implements CheckerEngine<RECORD, REPORT>, InvocationHandler
@@ -250,16 +291,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         @Override
         public Object invoke( Object proxy, Method method, Object[] args )
         {
-            String message;
-            Documented annotation = method.getAnnotation( Documented.class );
-            if ( annotation != null && !"".equals( annotation.value() ) )
-            {
-               message = annotation.value();
-            }
-            else
-            {
-                message = method.getName();
-            }
+            String message = DocumentedUtils.extractMessage( method );
             if ( method.getAnnotation( ConsistencyReport.Warning.class ) == null )
             {
                 errors++;

@@ -74,7 +74,20 @@ class SimpleIdProvider implements IdProvider
         return unacquiredIds.longIterator();
     }
 
-    long lastId()
+    @Override
+    public void visitFreelist( IdProviderVisitor visitor )
+    {
+        int pos = 0;
+        visitor.beginFreelistPage( 0 );
+        for ( Pair<Long,Long> releasedId : releasedIds )
+        {
+            visitor.freelistEntry( releasedId.getRight(), releasedId.getLeft(), pos++ );
+        }
+        visitor.endFreelistPage( 0 );
+    }
+
+    @Override
+    public long lastId()
     {
         return lastId;
     }

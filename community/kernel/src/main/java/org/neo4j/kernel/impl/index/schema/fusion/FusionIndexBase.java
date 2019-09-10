@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.Arrays;
 import java.util.function.Function;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -93,5 +95,15 @@ public abstract class FusionIndexBase<T>
     public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T[] subjects ) throws E
     {
         forAll( consumer, Arrays.asList( subjects ) );
+    }
+
+    public static <T extends ConsistencyCheckable> boolean consistencyCheck( Iterable<T> checkables, ReporterFactory reporterFactory )
+    {
+        boolean result = true;
+        for ( ConsistencyCheckable part : checkables )
+        {
+            result &= part.consistencyCheck( reporterFactory );
+        }
+        return result;
     }
 }

@@ -21,8 +21,10 @@ package org.neo4j.consistency.checking.full;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
@@ -43,6 +45,8 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -150,6 +154,9 @@ public class FullCheck
             ConsistencyCheckTasks taskCreator =
                     new ConsistencyCheckTasks( progress, processEverything, nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes,
                             multiPass, reporter, threads );
+
+            consistencyCheckIndexes( indexes, reporter );
+
             List<ConsistencyCheckerTask> tasks =
                     taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
             TaskExecutor.execute( tasks, decorator::prepare );
@@ -167,6 +174,26 @@ public class FullCheck
                 readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore() ),
                 readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore() ),
                 readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
+    }
+
+    private static void consistencyCheckIndexes( IndexAccessors indexes, ConsistencyReporter report )
+    {
+        List<IndexDescriptor> rulesToRemove = new ArrayList<>();
+        for ( IndexDescriptor onlineRule : indexes.onlineRules() )
+        {
+            ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.INDEX );
+            ReporterFactory reporterFactory = new ReporterFactory( handler );
+            IndexAccessor accessor = indexes.accessorFor( onlineRule );
+            if ( !accessor.consistencyCheck( reporterFactory ) )
+            {
+                rulesToRemove.add( onlineRule );
+            }
+            handler.updateSummary();
+        }
+        for ( IndexDescriptor toRemove : rulesToRemove )
+        {
+            indexes.remove( toRemove );
+        }
     }
 
     private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )

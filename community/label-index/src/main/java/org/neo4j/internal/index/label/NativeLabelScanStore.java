@@ -36,6 +36,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -384,9 +385,17 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         MutableBoolean isRebuilding = new MutableBoolean();
         Header.Reader readRebuilding =
                 headerData -> isRebuilding.setValue( headerData.get() == NEEDS_REBUILDING );
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
-                needsRebuildingWriter, recoveryCleanupWorkCollector );
-        return isRebuilding.getValue();
+        try
+        {
+            index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
+                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly );
+            return isRebuilding.getValue();
+        }
+        catch ( TreeFileNotFoundException e )
+        {
+            throw new IllegalStateException(
+                    "Label scan store file could not be found, most likely this database needs to be recovered, file:" + storeFile, e );
+        }
     }
 
     private GBPTree.Monitor treeMonitor()

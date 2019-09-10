@@ -232,7 +232,7 @@ public class IndexedIdGenerator implements IdGenerator
 
         this.layout = new IdRangeLayout( idsPerEntry );
         this.tree = new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER_READER,
-                new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry ), recoveryCleanupWorkCollector, openOptions );
+                new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry ), recoveryCleanupWorkCollector, false, openOptions );
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
         this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
@@ -503,7 +503,7 @@ public class IndexedIdGenerator implements IdGenerator
         HeaderReader header = readHeader( pageCache, file ).orElseThrow( () -> new NoSuchFileException( file.getAbsolutePath() ) );
         IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
         try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
-                immediate() ) )
+                immediate(), true ) )
         {
             tree.visit( new GBPTreeVisitor.Adaptor<>()
             {

@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertOnTreeNode;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
@@ -69,10 +68,17 @@ public class GBPTreeStructure<KEY, VALUE>
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK ) )
             {
-                // TODO add printing of meta information here when that abstraction has been merged.
+                visitMeta( cursor, visitor );
                 visitTreeState( cursor, visitor );
             }
         }
+    }
+
+    private static void visitMeta( PageCursor cursor, GBPTreeVisitor visitor ) throws IOException
+    {
+        PageCursorUtil.goTo( cursor, "meta page", IdSpace.META_PAGE_ID );
+        Meta meta = Meta.read( cursor, null );
+        visitor.meta( meta );
     }
 
     static void visitTreeState( PageCursor cursor, GBPTreeVisitor visitor ) throws IOException
@@ -122,7 +128,32 @@ public class GBPTreeStructure<KEY, VALUE>
         while ( goToLeftmostChild( cursor, writeCursor ) );
     }
 
-    private void visitTreeNode( PageCursor cursor, GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
+    private static void assertOnTreeNode( PageCursor cursor ) throws IOException
+    {
+        byte nodeType;
+        boolean isInternal;
+        boolean isLeaf;
+        do
+        {
+            nodeType = TreeNode.nodeType( cursor );
+            isInternal = TreeNode.isInternal( cursor );
+            isLeaf = TreeNode.isLeaf( cursor );
+        }
+        while ( cursor.shouldRetry() );
+
+        if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
+        {
+            throw new IllegalArgumentException( "Cursor is not pinned to a tree node page. pageId:" +
+                    cursor.getCurrentPageId() );
+        }
+        if ( !isInternal && !isLeaf )
+        {
+            throw new IllegalArgumentException( "Cursor is not pinned to a page containing a tree node. pageId:" +
+                    cursor.getCurrentPageId() );
+        }
+    }
+
+    void visitTreeNode( PageCursor cursor, GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
     {
         //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]))
         boolean isLeaf;

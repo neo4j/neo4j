@@ -22,18 +22,25 @@ package org.neo4j.kernel.impl.core;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -43,6 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -89,6 +97,26 @@ class TestReadOnlyNeo4j
     }
 
     @Test
+    void databaseNotStartInReadOnlyModeWithMissingIndex()
+    {
+        FileSystemAbstraction fs = testDirectory.getFileSystem();
+        createIndex();
+        deleteIndexFolder();
+
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .impermanent()
+                .setConfig( GraphDatabaseSettings.read_only, true )
+                .build();
+        final RuntimeException e = assertThrows( RuntimeException.class, () -> managementService.database( DEFAULT_DATABASE_NAME ) );
+        Throwable rootCause = Exceptions.rootCause( e );
+        assertTrue( rootCause instanceof IllegalStateException );
+        assertTrue( rootCause.getMessage().contains(
+                "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in writable mode to rebuild indexes. Indexes " +
+                        "needing rebuild:" ) );
+    }
+
+    @Test
     void testReadOnlyOperationsAndNoTransaction()
     {
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
@@ -122,6 +150,32 @@ class TestReadOnlyNeo4j
             assertEquals( rel, loadedRel );
             assertThat( loadedRel, hasProperty( "key1" ).withValue( "value1" ) );
         }
+    }
+
+    private void createIndex()
+    {
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .impermanent()
+                .build();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( Label.label( "label" ) ).on( "prop" ).create();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.commit();
+        }
+        managementService.shutdown();
+    }
+
+    private void deleteIndexFolder()
+    {
+        File databaseDir = testDirectory.databaseDir();
+        fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ) );
     }
 
     private DbRepresentation createSomeData()

@@ -50,7 +50,7 @@ class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
     @Override
     NativeIndexAccessor<KEY, VALUE> makeAccessor() throws IOException
     {
-        return accessorFactory.create( pageCache, fs, indexFiles, layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor );
+        return accessorFactory.create( pageCache, fs, indexFiles, layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor, false );
     }
 
     @Override
@@ -74,14 +74,16 @@ class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
     /* Helpers */
     private static AccessorFactory<GenericKey, NativeIndexValue> genericAccessorFactory()
     {
-        return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor ) ->
-            new GenericNativeIndexAccessor( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration );
+        return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, readOnly ) ->
+                new GenericNativeIndexAccessor( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration,
+                        readOnly );
     }
 
     @FunctionalInterface
     private interface AccessorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
         NativeIndexAccessor<KEY, VALUE> create( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY, VALUE> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, IndexDescriptor descriptor ) throws IOException;
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, IndexDescriptor descriptor, boolean readOnly )
+                throws IOException;
     }
 }

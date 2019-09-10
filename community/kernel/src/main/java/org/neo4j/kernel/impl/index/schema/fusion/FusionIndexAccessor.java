@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -167,5 +168,11 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public void validateBeforeCommit( Value[] tuple )
     {
         instanceSelector.select( slotSelector.selectSlot( tuple, CATEGORY_OF ) ).validateBeforeCommit( tuple );
+    }
+
+    @Override
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    {
+        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), reporterFactory );
     }
 }
