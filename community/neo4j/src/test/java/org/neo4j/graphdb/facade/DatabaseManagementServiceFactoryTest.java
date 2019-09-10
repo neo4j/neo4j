@@ -22,10 +22,8 @@ package org.neo4j.graphdb.facade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.util.Collections;
-
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -71,31 +69,35 @@ class DatabaseManagementServiceFactoryTest
     @Test
     void shouldThrowAppropriateExceptionIfStartFails()
     {
+        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().toPath() );
         RuntimeException startupError = new RuntimeException();
-        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupError, null );
+        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( config, startupError, null );
         RuntimeException startException =
-                assertThrows( RuntimeException.class, () -> factory.build( testDirectory.storeDir(), Collections.emptyMap(), deps ) );
+                assertThrows( RuntimeException.class, () -> factory.build( config, deps ) );
         assertEquals( startupError, rootCause( startException ) );
     }
 
     @Test
     void shouldThrowAppropriateExceptionIfBothStartAndShutdownFail()
     {
+        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().toPath() );
         RuntimeException startupError = new RuntimeException();
         RuntimeException shutdownError = new RuntimeException();
 
-        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupError, shutdownError );
+        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( config, startupError, shutdownError );
         RuntimeException initException =
-                assertThrows( RuntimeException.class, () -> factory.build( testDirectory.storeDir(), Collections.emptyMap(), deps ) );
+                assertThrows( RuntimeException.class, () -> factory.build( config, deps ) );
 
         assertTrue( initException.getMessage().startsWith( "Error starting " ) );
         assertEquals( startupError, initException.getCause() );
         assertEquals( shutdownError, initException.getSuppressed()[0].getCause() );
     }
 
-    private DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError, RuntimeException shutdownError )
+    private DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( Config config, final RuntimeException startupError,
+            RuntimeException shutdownError )
     {
-        GlobalModule globalModule = new GlobalModule( testDirectory.storeDir(), Config.defaults(), COMMUNITY, newDependencies() );
+
+        GlobalModule globalModule = new GlobalModule( config, COMMUNITY, newDependencies() );
         AbstractEditionModule editionModule = new CommunityEditionModule( globalModule )
         {
         };
@@ -103,7 +105,7 @@ class DatabaseManagementServiceFactoryTest
         return new DatabaseManagementServiceFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
         {
             @Override
-            protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
+            protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();
@@ -113,7 +115,7 @@ class DatabaseManagementServiceFactoryTest
                 }
                 doAnswer( invocation -> invocation.getArgument( 0 ) ).when( lifeMock ).add( any( Lifecycle.class ) );
 
-                return new GlobalModule( storeDir, config, databaseInfo, dependencies )
+                return new GlobalModule( config, databaseInfo, dependencies )
                 {
                     @Override
                     public LifeSupport createLife()

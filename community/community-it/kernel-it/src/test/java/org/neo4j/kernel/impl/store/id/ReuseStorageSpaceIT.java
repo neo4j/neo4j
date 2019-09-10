@@ -132,7 +132,7 @@ class ReuseStorageSpaceIT
     private void shouldReuseStorageSpace( Operation initialState, Operation operation, Launcher launcher ) throws Exception
     {
         // given the data inserted into a db and knowledge about its size
-        File storeDirectory = directory.storeDir();
+        File storeDirectory = directory.homeDir();
         long seed = random.seed();
         Sizes initialStoreSizes = withDb( storeDirectory, db -> initialState.perform( db, seed ) );
 

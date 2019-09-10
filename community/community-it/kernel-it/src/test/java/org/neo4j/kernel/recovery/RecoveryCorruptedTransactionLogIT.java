@@ -122,7 +122,7 @@ class RecoveryCorruptedTransactionLogIT
     @BeforeEach
     void setUp() throws Exception
     {
-        databaseDirectory = directory.storeDir();
+        databaseDirectory = directory.homeDir();
         monitors.addMonitorListener( recoveryMonitor );
         databaseFactory = new TestDatabaseManagementServiceBuilder( databaseDirectory )
                 .setInternalLogProvider( logProvider )

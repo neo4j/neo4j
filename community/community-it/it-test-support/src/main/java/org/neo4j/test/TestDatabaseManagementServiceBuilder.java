@@ -44,7 +44,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.util.Preconditions;
 
 /**
  * Test factory for graph databases.
@@ -87,15 +86,14 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
             dependencies = TestDatabaseIdRepository.noOpSystemGraphInitializer( dependencies, cfg );
         }
 
-        return newDatabaseManagementService( homeDirectory, cfg, databaseDependencies() );
+        return newDatabaseManagementService( cfg, databaseDependencies() );
     }
 
     @Override
-    protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
+    protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
-        Preconditions.checkArgument( storeDir != null || impermanent, "Database must have a root path or be impermanent." );
         return new TestDatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory(), impermanent, fileSystem, clock, internalLogProvider )
-                .build( storeDir, augmentConfig( config ), GraphDatabaseDependencies.newDependencies( dependencies ) );
+                .build( augmentConfig( config ), GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 
     @Override

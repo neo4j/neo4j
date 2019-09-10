@@ -94,7 +94,7 @@ class DatabaseFailureIT
 
     private void startDatabaseServer()
     {
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setExternalDependencies( noOpSystemGraphInitializer() )
                 .build();
     }

@@ -321,7 +321,7 @@ public class BasicSystemGraphRealmIT
     public static void simulateSetInitialPasswordCommand( TestDirectory testDirectory )
     {
         SetInitialPasswordCommand command =
-                new SetInitialPasswordCommand( new ExecutionContext( testDirectory.directory().toPath(), testDirectory.directory( "conf" ).toPath(),
+                new SetInitialPasswordCommand( new ExecutionContext( testDirectory.homeDir().toPath(), testDirectory.directory( "conf" ).toPath(),
                         mock( PrintStream.class ), mock( PrintStream.class ), testDirectory.getFileSystem() ) );
 
         CommandLine.populateCommand( command, SIMULATED_INITIAL_PASSWORD );

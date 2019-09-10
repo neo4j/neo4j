@@ -39,8 +39,8 @@ class UtilTest
     @Test
     void correctlyIdentifySameOrChildFile()
     {
-        assertTrue( isSameOrChildFile( directory.directory(), directory.directory( "a" ) ) );
-        assertTrue( isSameOrChildFile( directory.directory(), directory.directory() ) );
+        assertTrue( isSameOrChildFile( directory.homeDir(), directory.directory( "a" ) ) );
+        assertTrue( isSameOrChildFile( directory.homeDir(), directory.homeDir() ) );
         assertTrue( isSameOrChildFile( directory.directory( "/a/./b" ), directory.directory( "a/b" ) ) );
         assertTrue( isSameOrChildFile( directory.directory( "a/b" ), directory.directory( "/a/./b" ) ) );
 
@@ -50,8 +50,8 @@ class UtilTest
     @Test
     void correctlyIdentifySameOrChildPath()
     {
-        assertTrue( isSameOrChildPath( directory.directory().toPath(), directory.directory( "a" ).toPath() ) );
-        assertTrue( isSameOrChildPath( directory.directory().toPath(), directory.directory().toPath() ) );
+        assertTrue( isSameOrChildPath( directory.homeDir().toPath(), directory.directory( "a" ).toPath() ) );
+        assertTrue( isSameOrChildPath( directory.homeDir().toPath(), directory.homeDir().toPath() ) );
         assertTrue( isSameOrChildPath( directory.directory( "/a/./b" ).toPath(), directory.directory( "a/b" ).toPath() ) );
         assertTrue( isSameOrChildPath( directory.directory( "a/b" ).toPath(), directory.directory( "/a/./b" ).toPath() ) );
 

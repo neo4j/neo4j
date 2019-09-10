@@ -69,7 +69,7 @@ class TestReadOnlyNeo4j
     void testSimple()
     {
         DbRepresentation someData = createSomeData();
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
                 .setConfig( GraphDatabaseSettings.read_only, true )
@@ -91,7 +91,7 @@ class TestReadOnlyNeo4j
     @Test
     void testReadOnlyOperationsAndNoTransaction()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fs )
                 .impermanent()
                 .build();
@@ -126,7 +126,7 @@ class TestReadOnlyNeo4j
     private DbRepresentation createSomeData()
     {
         RelationshipType type = withName( "KNOWS" );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
                 .build();

@@ -100,7 +100,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
@@ -1697,7 +1697,7 @@ class ImportCommandTest
         int stringBlockSize = 12;
         File dbConfig = file( "neo4j.properties" );
         store( stringMap(
-                databases_root_path.name(), testDirectory.databaseLayout().getStoreLayout().storeDirectory().getAbsolutePath(),
+                databases_root_path.name(), testDirectory.databaseLayout().getNeo4jLayout().storeDirectory().getAbsolutePath(),
                 GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
                 GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ),
                 transaction_logs_root_path.name(), getTransactionLogsRoot() ), dbConfig );
@@ -1899,17 +1899,11 @@ class ImportCommandTest
     @Test
     void shouldCreateDebugLogInExpectedPlace() throws Exception
     {
-        // The ImportTool is more embedded-db-focused where typically the debug.log ends up in in a `logs/debug.log` next to the db directory,
-        // i.e. in <dbDir>/../logs/debug.log
-
         // given
-        String dbDir = getDatabaseDirectory();
         runImport( "--nodes", nodeData( true, Configuration.COMMAS, nodeIds(), TRUE ).getAbsolutePath() );
 
         // THEN go and read the debug.log where it's expected to be and see if there's an IMPORT DONE line in it
-        File dbDirParent = new File( dbDir ).getParentFile();
-        File logsDir = new File( dbDirParent, logs_directory.defaultValue().toString() );
-        File internalLogFile = new File( logsDir, Config.defaults().get( store_internal_log_path ).toFile().getName() );
+        File internalLogFile = Config.defaults( neo4j_home, testDirectory.homeDir().toPath() ).get( store_internal_log_path ).toFile();
         assertTrue( internalLogFile.exists() );
         List<String> lines = Files.readAllLines( internalLogFile.toPath() );
         assertTrue( lines.stream().anyMatch( line -> line.contains( "Import completed successfully" ) ) );
@@ -2513,10 +2507,9 @@ class ImportCommandTest
     {
         File dbConfig = file( "neo4j.properties" );
         store( Map.of(
-                transaction_logs_root_path.name(), getTransactionLogsRoot(),
-                databases_root_path.name(), testDirectory.databaseLayout().getStoreLayout().storeDirectory().getAbsolutePath(),
-                logs_directory.name(), testDirectory.storeDir().getAbsolutePath()
+                neo4j_home.name(), testDirectory.homeDir().getAbsolutePath()
         ), dbConfig );
+
         return dbConfig;
     }
 
@@ -2524,19 +2517,14 @@ class ImportCommandTest
     {
         if ( managementService == null )
         {
-            managementService = new TestDatabaseManagementServiceBuilder().setDatabaseRootDirectory( testDirectory.storeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         }
         return (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 
-    private String getDatabaseDirectory()
-    {
-        return testDirectory.databaseLayout().databaseDirectory().getAbsolutePath();
-    }
-
     private void runImport( String... arguments )
     {
-        runImport( testDirectory.storeDir().toPath().toAbsolutePath(), arguments );
+        runImport( testDirectory.homeDir().toPath().toAbsolutePath(), arguments );
     }
 
     private void runImport( Path homeDir, String... arguments )

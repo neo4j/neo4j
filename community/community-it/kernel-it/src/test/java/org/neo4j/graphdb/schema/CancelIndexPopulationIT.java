@@ -54,7 +54,7 @@ class CancelIndexPopulationIT
     @Test
     void shouldKeepIndexInPopulatingStateBetweenRestarts() throws InterruptedException, IOException
     {
-        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).build();
+        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
         try
         {
             GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
@@ -75,7 +75,7 @@ class CancelIndexPopulationIT
             dbms.shutdown();
         }
 
-        dbms = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).build();
+        dbms = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
         try
         {
             GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );

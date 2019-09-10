@@ -50,7 +50,7 @@ class DatabaseLayoutTest
     @Test
     void databaseLayoutForAbsoluteFile()
     {
-        File databaseDir = testDirectory.storeDir();
+        File databaseDir = testDirectory.homeDir();
         DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDir );
         assertEquals( databaseLayout.databaseDirectory(), databaseDir );
     }
@@ -58,7 +58,7 @@ class DatabaseLayoutTest
     @Test
     void databaseLayoutResolvesLinks() throws IOException
     {
-        Path basePath = testDirectory.directory().toPath();
+        Path basePath = testDirectory.homeDir().toPath();
         File databaseDir = testDirectory.databaseDir("notAbsolute");
         Path linkPath = basePath.resolve( "link" );
         Path symbolicLink = Files.createSymbolicLink( linkPath, databaseDir.toPath() );
@@ -69,11 +69,11 @@ class DatabaseLayoutTest
     @Test
     void databaseLayoutUseCanonicalRepresentation()
     {
-        File storeDir = testDirectory.storeDir( "notCanonical" );
+        File storeDir = testDirectory.homeDir( "notCanonical" );
         Path basePath = testDirectory.databaseDir( storeDir ).toPath();
         Path notCanonicalPath = basePath.resolve( "../anotherDatabase" );
         DatabaseLayout databaseLayout = DatabaseLayout.of( notCanonicalPath.toFile() );
-        File expectedDirectory = StoreLayout.of( storeDir ).databaseLayout( "anotherDatabase" ).databaseDirectory();
+        File expectedDirectory = Neo4jLayout.of( testDirectory.homeDir(), storeDir ).databaseLayout( "anotherDatabase" ).databaseDirectory();
         assertEquals( expectedDirectory, databaseLayout.databaseDirectory() );
     }
 
@@ -81,7 +81,7 @@ class DatabaseLayoutTest
     void databaseLayoutForName()
     {
         String databaseName = "testDatabase";
-        StoreLayout storeLayout = testDirectory.storeLayout();
+        Neo4jLayout storeLayout = testDirectory.neo4jLayout();
         DatabaseLayout testDatabase = DatabaseLayout.of( storeLayout, databaseName );
         assertEquals( new File( storeLayout.storeDirectory(), databaseName ), testDatabase.databaseDirectory() );
     }
@@ -90,7 +90,7 @@ class DatabaseLayoutTest
     void databaseLayoutForFolderAndName()
     {
         String database = "database";
-        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.storeDir(), database );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.homeDir(), testDirectory.storeDir(), database );
         assertEquals( testDirectory.databaseLayout( database ).databaseDirectory(), databaseLayout.databaseDirectory() );
     }
 

@@ -34,10 +34,12 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASES_ROOT_DIR_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATA_DIR_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
 @TestDirectoryExtension
-class StoreLayoutTest
+class Neo4jLayoutTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -45,45 +47,47 @@ class StoreLayoutTest
     @Test
     void storeLayoutForAbsoluteFile()
     {
-        File storeDir = testDirectory.storeDir();
-        StoreLayout storeLayout = StoreLayout.of( storeDir );
+        File storeDir = testDirectory.homeDir();
+        File homeDir = testDirectory.homeDir();
+        Neo4jLayout storeLayout = Neo4jLayout.of( homeDir, storeDir );
         assertEquals( storeDir, storeLayout.storeDirectory() );
     }
 
     @Test
     void storeLayoutResolvesLinks() throws IOException
     {
-        Path basePath = testDirectory.directory().toPath();
-        File storeDir = testDirectory.storeDir("notAbsolute");
+        Path basePath = testDirectory.homeDir().toPath();
+        File storeDir = testDirectory.homeDir("notAbsolute");
         Path linkPath = basePath.resolve( "link" );
         Path symbolicLink = Files.createSymbolicLink( linkPath, storeDir.toPath() );
-        StoreLayout storeLayout = StoreLayout.of( symbolicLink.toFile() );
+        Neo4jLayout storeLayout = Neo4jLayout.of( testDirectory.homeDir(), symbolicLink.toFile() );
         assertEquals( storeDir, storeLayout.storeDirectory() );
     }
 
     @Test
     void storeLayoutUseCanonicalRepresentation()
     {
-        Path basePath = testDirectory.storeDir("notCanonical").toPath();
+        Path basePath = testDirectory.homeDir("notCanonical").toPath();
         Path notCanonicalPath = basePath.resolve( "../anotherLocation" );
-        StoreLayout storeLayout = StoreLayout.of( notCanonicalPath.toFile() );
+        Neo4jLayout storeLayout = Neo4jLayout.of( testDirectory.homeDir(), notCanonicalPath.toFile() );
         assertEquals( testDirectory.directory( "anotherLocation" ), storeLayout.storeDirectory() );
     }
 
     @Test
     void storeLockFileLocation()
     {
-        StoreLayout storeLayout = testDirectory.storeLayout();
-        File storeLockFile = storeLayout.storeLockFile();
+        Neo4jLayout layout = testDirectory.neo4jLayout();
+        File storeLockFile = layout.storeLockFile();
         assertEquals( "store_lock", storeLockFile.getName() );
-        assertEquals( storeLayout.storeDirectory(), storeLockFile.getParentFile() );
+        assertEquals( layout.storeDirectory(), storeLockFile.getParentFile() );
     }
 
     @Test
     void emptyStoreLayoutDatabasesCollection()
     {
-        File storeDir = testDirectory.storeDir();
-        StoreLayout storeLayout = StoreLayout.of( storeDir );
+        File storeDir = testDirectory.homeDir();
+        File homeDir = testDirectory.homeDir();
+        Neo4jLayout storeLayout = Neo4jLayout.of( homeDir, storeDir );
         assertTrue( storeLayout.databaseLayouts().isEmpty() );
     }
 
@@ -91,11 +95,12 @@ class StoreLayoutTest
     void storeLayoutDatabasesOnlyBasedOnSubfolders()
     {
         File storeDir = testDirectory.storeDir();
-        StoreLayout storeLayout = StoreLayout.of( storeDir );
+        File homeDir = testDirectory.homeDir();
+        Neo4jLayout storeLayout = Neo4jLayout.of( homeDir, storeDir );
 
-        testDirectory.directory( "a" );
-        testDirectory.directory( "b" );
-        testDirectory.file( "c" );
+        testDirectory.directory( "a", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
+        testDirectory.directory( "b", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
+        testDirectory.createFile( "c", DEFAULT_DATA_DIR_NAME, DEFAULT_DATABASES_ROOT_DIR_NAME );
 
         Collection<DatabaseLayout> layouts = storeLayout.databaseLayouts();
         assertEquals( 2, layouts.size() );

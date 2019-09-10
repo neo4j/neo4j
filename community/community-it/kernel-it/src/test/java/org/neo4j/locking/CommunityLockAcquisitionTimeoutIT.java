@@ -87,7 +87,7 @@ public class CommunityLockAcquisitionTimeoutIT
 
     protected TestDatabaseManagementServiceBuilder getDbmsb( TestDirectory directory )
     {
-        return new TestDatabaseManagementServiceBuilder( directory.storeDir() );
+        return new TestDatabaseManagementServiceBuilder( directory.homeDir() );
     }
 
     @AfterEach

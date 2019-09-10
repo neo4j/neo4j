@@ -57,6 +57,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.eclipse.collections.impl.tuple.Tuples.pair;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.importer.CsvImporter.DEFAULT_REPORT_FILE_NAME;
@@ -211,7 +212,12 @@ public class ImportCommand extends AbstractCommand
         try
         {
             final var databaseConfig = loadNeo4jConfig();
-            final var databaseLayout = DatabaseLayout.of( databaseConfig.get( databases_root_path ).toFile(), LayoutConfig.of( databaseConfig ), database );
+            final var databaseLayout = DatabaseLayout.of(
+                    databaseConfig.get( neo4j_home ).toFile(),
+                    databaseConfig.get( databases_root_path ).toFile(),
+                    LayoutConfig.of( databaseConfig ),
+                    database
+            );
             final var csvConfig = csvConfiguration();
             final var importConfig = importConfiguration();
 

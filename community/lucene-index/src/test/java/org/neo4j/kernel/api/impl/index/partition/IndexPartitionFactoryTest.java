@@ -49,7 +49,7 @@ class IndexPartitionFactoryTest
     @BeforeEach
     void setUp() throws IOException
     {
-        directory = DirectoryFactory.PERSISTENT.open( testDirectory.directory() );
+        directory = DirectoryFactory.PERSISTENT.open( testDirectory.homeDir() );
     }
 
     @Test
@@ -57,7 +57,7 @@ class IndexPartitionFactoryTest
     {
         prepareIndex();
         try ( AbstractIndexPartition indexPartition =
-                new ReadOnlyIndexPartitionFactory().createPartition( testDirectory.directory(), directory ) )
+                new ReadOnlyIndexPartitionFactory().createPartition( testDirectory.homeDir(), directory ) )
         {
             assertThrows(UnsupportedOperationException.class, indexPartition::getIndexWriter );
         }
@@ -68,7 +68,7 @@ class IndexPartitionFactoryTest
     {
         try ( AbstractIndexPartition indexPartition =
                       new WritableIndexPartitionFactory( IndexWriterConfigs::standard )
-                              .createPartition( testDirectory.directory(), directory ) )
+                              .createPartition( testDirectory.homeDir(), directory ) )
         {
 
             try ( IndexWriter indexWriter = indexPartition.getIndexWriter() )
@@ -86,7 +86,7 @@ class IndexPartitionFactoryTest
 
     private void prepareIndex() throws IOException
     {
-        File location = testDirectory.directory();
+        File location = testDirectory.homeDir();
         try ( AbstractIndexPartition ignored =
                       new WritableIndexPartitionFactory( IndexWriterConfigs::standard )
                               .createPartition( location, DirectoryFactory.PERSISTENT.open( location ) ) )

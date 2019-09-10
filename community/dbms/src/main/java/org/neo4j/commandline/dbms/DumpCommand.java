@@ -45,6 +45,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.LayoutConfig.of;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -80,7 +81,7 @@ public class DumpCommand extends AbstractCommand
 
         Config config = buildConfig();
         Path storeDirectory = getDatabaseDirectory( config );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( storeDirectory.toFile(), of( config ), database );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( neo4j_home ).toFile(), storeDirectory.toFile(), of( config ), database );
 
         try
         {

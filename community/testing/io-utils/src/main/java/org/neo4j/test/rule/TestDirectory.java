@@ -38,7 +38,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.StoreLayoutConfig;
 import org.neo4j.util.VisibleForTesting;
 
@@ -61,11 +61,17 @@ import static java.lang.String.format;
  *     }
  *   }
  * </pre>
+ *
+ * Be aware that all functionality regarding directory layout provided by this class,
+ * i.e Neo4JLayout, DatabaseLayout, StoreDir, HomeDir, DatabaseDir etc.. is reflecting a default setup.
+ * The configuration passed to the DatabaseManagementService is the source of truth,
+ * and any custom configuration may cause a mismatch.
  */
 public class TestDirectory extends ExternalResource
 {
     private static final String DEFAULT_DATABASE_DIRECTORY = "neo4j";
     private static final Path DEFAULT_TX_LOGS_LOCATION = Path.of( "data", "tx-logs" );
+    private static final Path DEFAULT_DATABASES_LOCATION = Path.of( "data", "databases" );
 
     /**
      * This value is mixed into the hash string, along with the test name,
@@ -84,7 +90,7 @@ public class TestDirectory extends ExternalResource
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
     private File testDirectory;
-    private StoreLayout storeLayout;
+    private Neo4jLayout defaultNeo4jLayout;
     private DatabaseLayout defaultDatabaseLayout;
 
     private TestDirectory( FileSystemAbstraction fileSystem )
@@ -161,10 +167,10 @@ public class TestDirectory extends ExternalResource
 
     public File absolutePath()
     {
-        return directory().getAbsoluteFile();
+        return homeDir().getAbsoluteFile();
     }
 
-    public File directory()
+    public File homeDir()
     {
         if ( !isInitialised() )
         {
@@ -180,19 +186,19 @@ public class TestDirectory extends ExternalResource
 
     public File directory( String name, String... path )
     {
-        File dir = FileUtils.path( new File( directory(), name ), path );
+        File dir = new File( FileUtils.path( homeDir(), path ), name );
         createDirectory( dir );
         return dir;
     }
 
-    public File file( String name )
+    public File file( String name, String... path )
     {
-        return new File( directory(), name );
+        return new File( FileUtils.path( homeDir(), path ), name );
     }
 
-    public File createFile( String name )
+    public File createFile( String name, String... path )
     {
-        File file = file( name );
+        File file = file( name, path );
         ensureFileExists( file );
         return file;
     }
@@ -202,16 +208,18 @@ public class TestDirectory extends ExternalResource
         return databaseLayout().databaseDirectory();
     }
 
-    public StoreLayout storeLayout()
+    public Neo4jLayout neo4jLayout()
     {
-        return storeLayout;
+        return defaultNeo4jLayout;
     }
 
-    public StoreLayout storeLayout( String name )
+    public Neo4jLayout neo4jLayout( String name )
     {
-        File storeDirectory = new File( testDirectory, name );
-        createDirectory( storeDirectory );
-        return StoreLayout.of( storeDirectory, createTestStoreLayout( storeDirectory ) );
+        File home = directory( name );
+        File storeDirectory = home.toPath().resolve( DEFAULT_DATABASES_LOCATION ).toFile();
+        Neo4jLayout layout = Neo4jLayout.of( home, storeDirectory, createTestStoreLayout( home ) );
+        createDirectory( layout.databaseLayout( DEFAULT_DATABASE_DIRECTORY ) );
+        return layout;
     }
 
     public DatabaseLayout databaseLayout()
@@ -227,52 +235,46 @@ public class TestDirectory extends ExternalResource
 
     public DatabaseLayout databaseLayout( String databaseName, StoreLayoutConfig storeLayoutConfig )
     {
-        DatabaseLayout databaseLayout = StoreLayout.of( testDirectory, storeLayoutConfig ).databaseLayout( databaseName );
-        createDirectory( databaseLayout );
-        return databaseLayout;
-    }
-
-    public DatabaseLayout databaseLayout( File storeDir )
-    {
-        DatabaseLayout databaseLayout = StoreLayout.of( storeDir, createTestStoreLayout( storeDir ) ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
+        File storeDirectory = testDirectory.toPath().resolve( DEFAULT_DATABASES_LOCATION ).toFile();
+        DatabaseLayout databaseLayout = Neo4jLayout.of( testDirectory, storeDirectory, storeLayoutConfig ).databaseLayout( databaseName );
         createDirectory( databaseLayout );
         return databaseLayout;
     }
 
     public DatabaseLayout databaseLayout( File storeDir, StoreLayoutConfig storeLayoutConfig )
     {
-        DatabaseLayout databaseLayout = StoreLayout.of( storeDir, storeLayoutConfig ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
+        DatabaseLayout databaseLayout = Neo4jLayout.of( testDirectory, storeDir, storeLayoutConfig ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
         createDirectory( databaseLayout );
         return databaseLayout;
     }
 
     public DatabaseLayout databaseLayout( String name )
     {
-        DatabaseLayout databaseLayout = storeLayout.databaseLayout( name );
+        DatabaseLayout databaseLayout = defaultNeo4jLayout.databaseLayout( name );
         createDirectory( databaseLayout );
         return databaseLayout;
     }
 
     public File storeDir()
     {
-        return storeLayout.storeDirectory();
+        return defaultNeo4jLayout.storeDirectory();
     }
 
-    public File storeDir( String storeDirName )
+    public File homeDir( String homeDirName )
     {
-        return directory( storeDirName );
+        return directory( homeDirName );
     }
 
     public File databaseDir( File storeDirectory )
     {
-        File databaseDirectory = databaseLayout( storeDirectory ).databaseDirectory();
+        File databaseDirectory = databaseLayout( storeDirectory, createTestStoreLayout( testDirectory ) ).databaseDirectory();
         createDirectory( databaseDirectory );
         return databaseDirectory;
     }
 
     public File databaseDir( String customStoreDirectoryName )
     {
-        return databaseDir( storeDir( customStoreDirectoryName ) );
+        return databaseDir( homeDir( customStoreDirectoryName ) );
     }
 
     public void cleanup() throws IOException
@@ -301,7 +303,7 @@ public class TestDirectory extends ExternalResource
                 fileSystem.deleteRecursively( testDirectory );
             }
             testDirectory = null;
-            storeLayout = null;
+            defaultNeo4jLayout = null;
             defaultDatabaseLayout = null;
         }
         finally
@@ -321,8 +323,9 @@ public class TestDirectory extends ExternalResource
             test = "static";
         }
         testDirectory = prepareDirectoryForTest( test );
-        storeLayout = StoreLayout.of( testDirectory, createTestStoreLayout( testDirectory ) );
-        defaultDatabaseLayout = storeLayout.databaseLayout( DEFAULT_DATABASE_DIRECTORY );
+        defaultNeo4jLayout =
+                Neo4jLayout.of( testDirectory, testDirectory.toPath().resolve( DEFAULT_DATABASES_LOCATION ).toFile(), createTestStoreLayout( testDirectory ) );
+        defaultDatabaseLayout = defaultNeo4jLayout.databaseLayout( DEFAULT_DATABASE_DIRECTORY );
     }
 
     public File prepareDirectoryForTest( String test ) throws IOException

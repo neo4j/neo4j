@@ -657,7 +657,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
         Applier()
         {
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( getConfig() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setConfig( getConfig() ).build();
             database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
@@ -705,7 +705,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     private void generateInitialData()
     {
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
         DatabaseManagementService managementService = builder
                 .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded

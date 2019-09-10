@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -42,7 +42,7 @@ class GlobalStoreLockerTest
     @Test
     void failToLockSameFolderAcrossIndependentLockers() throws Exception
     {
-        StoreLayout storeLayout = testDirectory.storeLayout();
+        Neo4jLayout storeLayout = testDirectory.neo4jLayout();
         try ( GlobalLocker storeLocker = new GlobalLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();
@@ -68,7 +68,7 @@ class GlobalStoreLockerTest
     @Test
     void allowToLockSameDirectoryIfItWasUnlocked() throws IOException
     {
-        StoreLayout storeLayout = testDirectory.storeLayout();
+        Neo4jLayout storeLayout = testDirectory.neo4jLayout();
         try ( GlobalLocker storeLocker = new GlobalLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();
@@ -82,7 +82,7 @@ class GlobalStoreLockerTest
     @Test
     void allowMultipleCallstoActuallyStoreLocker() throws IOException
     {
-        StoreLayout storeLayout = testDirectory.storeLayout();
+        Neo4jLayout storeLayout = testDirectory.neo4jLayout();
         try ( GlobalLocker storeLocker = new GlobalLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();

@@ -86,7 +86,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     @Test
     void shouldFailGracefullyWhenPathCannotBeCreated()
     {
-        path = new File( testDirectory.directory(), String.valueOf( UUID.randomUUID() ) )
+        path = new File( testDirectory.homeDir(), String.valueOf( UUID.randomUUID() ) )
         {
             @Override
             public boolean mkdirs()

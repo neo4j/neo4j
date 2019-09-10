@@ -69,7 +69,7 @@ public class FileSystemAbstractionInterruptionTest
     public void createWorkingDirectoryAndTestFile() throws IOException
     {
         Thread.interrupted();
-        fs.mkdirs( testdir.directory() );
+        fs.mkdirs( testdir.homeDir() );
         file = testdir.file( "a" );
         fs.write( file ).close();
         channel = null;

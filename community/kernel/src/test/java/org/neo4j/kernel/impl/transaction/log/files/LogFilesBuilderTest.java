@@ -63,7 +63,7 @@ class LogFilesBuilderTest
     @BeforeEach
     void setUp()
     {
-        storeDirectory = testDirectory.directory();
+        storeDirectory = testDirectory.homeDir();
     }
 
     @Test

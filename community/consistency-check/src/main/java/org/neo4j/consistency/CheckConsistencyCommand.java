@@ -51,6 +51,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.ArgGroup;
@@ -119,7 +120,12 @@ public class CheckConsistencyCommand extends AbstractCommand
         {
             DatabaseLayout databaseLayout = Optional.ofNullable( target.backup )
                     .map( Path::toFile ).map( DatabaseLayout::of )
-                    .orElseGet( () -> DatabaseLayout.of( config.get( databases_root_path ).toFile(), LayoutConfig.of( config ), target.database ) );
+                    .orElseGet( () -> DatabaseLayout.of(
+                            config.get( neo4j_home ).toFile(),
+                            config.get( databases_root_path ).toFile(),
+                            LayoutConfig.of( config ),
+                            target.database )
+                    );
             checkDatabaseExistence( databaseLayout );
             try ( Closeable lock = DatabaseLockChecker.check( databaseLayout ) )
             {

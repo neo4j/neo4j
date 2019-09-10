@@ -129,7 +129,7 @@ class LuceneSchemaIndexCorruptionTest
     private LuceneIndexProvider newFaultyIndexProvider( long faultyIndexId, Exception error )
     {
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
-        File indexRootFolder = testDirectory.storeDir();
+        File indexRootFolder = testDirectory.homeDir();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
         return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( indexRootFolder ), monitor,
                 Config.defaults(), OperationalMode.SINGLE )

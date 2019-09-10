@@ -80,7 +80,7 @@ class CheckPointerIntegrationTest
     @BeforeEach
     void setup()
     {
-        builder = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent();
     }

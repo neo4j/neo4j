@@ -121,7 +121,7 @@ class GenericConfigExtractorTest
     void shouldLogFailureToExtractIndexConfigFromGenericBecauseOfIndexInFailedState() throws IOException
     {
         // given
-        unzip( getClass(), ZIP_FAILED_GENERIC_35_FILE, directory.directory() );
+        unzip( getClass(), ZIP_FAILED_GENERIC_35_FILE, directory.homeDir() );
         File genericFile = directory.file( FAILED_GENERIC_35_FILE );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( "myLog" );
@@ -160,7 +160,7 @@ class GenericConfigExtractorTest
     void shouldBeAbleToExtractConfigFromHealthy35File() throws IOException
     {
         // given
-        unzip( getClass(), ZIP_HEALTHY_GENERIC_35_FILE, directory.directory() );
+        unzip( getClass(), ZIP_HEALTHY_GENERIC_35_FILE, directory.homeDir() );
         File genericFile = directory.file( HEALTHY_GENERIC_35_FILE );
 
         // and

@@ -202,7 +202,7 @@ class UniqueSpatialIndexIT
 
     private void setupDb( GraphDatabaseSettings.SchemaIndex schemaIndex )
     {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );

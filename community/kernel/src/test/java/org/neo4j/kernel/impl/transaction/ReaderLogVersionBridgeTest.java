@@ -137,7 +137,7 @@ class ReaderLogVersionBridgeTest
 
     private LogFiles prepareLogFiles() throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.directory(), fs )
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.homeDir(), fs )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
                 .build();
     }

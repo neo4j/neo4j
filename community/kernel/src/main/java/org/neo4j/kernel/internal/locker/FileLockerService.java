@@ -21,7 +21,7 @@ package org.neo4j.kernel.internal.locker;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 
 /**
  * Service to provide DBMS and individual databases file lockers
@@ -34,7 +34,7 @@ public interface FileLockerService
      * @param storeLayout dbms store layout
      * @return DBMS locker
      */
-    Locker createStoreLocker( FileSystemAbstraction fileSystem, StoreLayout storeLayout );
+    Locker createStoreLocker( FileSystemAbstraction fileSystem, Neo4jLayout storeLayout );
 
     /**
      * Create database lever file locker

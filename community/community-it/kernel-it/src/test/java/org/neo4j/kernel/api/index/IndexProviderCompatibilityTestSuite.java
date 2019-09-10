@@ -151,7 +151,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         public void setup()
         {
             fs = pageCacheAndDependenciesRule.fileSystem();
-            graphDbDir = pageCacheAndDependenciesRule.directory().storeDir();
+            graphDbDir = pageCacheAndDependenciesRule.directory().homeDir();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
             indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
             descriptor = indexProvider.completeConfiguration( incompleteIndexPrototype.withName( "index_17" ).materialise( 17 ) );

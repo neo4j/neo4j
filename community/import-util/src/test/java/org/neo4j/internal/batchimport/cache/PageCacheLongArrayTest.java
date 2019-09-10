@@ -62,7 +62,7 @@ class PageCacheLongArrayTest
     @Test
     void verifyChunkingArrayWithPageCacheLongArray()
     {
-        File directory = testDirectory.directory();
+        File directory = testDirectory.homeDir();
         NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, directory, false, NumberArrayFactory.NO_MONITOR );
         try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0 ) )
         {

@@ -84,7 +84,7 @@ class DatabaseShutdownTest
     @Test
     void invokeDatabaseShutdownListenersOnShutdown()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setFileSystem( fs ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setFileSystem( fs ).build();
         ShutdownListenerDatabaseEventListener shutdownHandler = new ShutdownListenerDatabaseEventListener();
         managementService.registerDatabaseEventListener( shutdownHandler );
         managementService.shutdown();
@@ -98,22 +98,22 @@ class DatabaseShutdownTest
         private LifeSupport globalLife;
         private volatile boolean failFlush;
 
-        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( File databaseRootDir, FileSystemAbstraction fs )
+        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( File homeDirectory, FileSystemAbstraction fs )
         {
-            super( databaseRootDir );
+            super( homeDirectory );
             this.fs = fs;
         }
 
         @Override
-        protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
+        protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
         {
             return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
 
                 @Override
-                protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
+                protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
                 {
-                    GlobalModule globalModule = new GlobalModule( storeDir, config, databaseInfo, dependencies )
+                    GlobalModule globalModule = new GlobalModule( config, databaseInfo, dependencies )
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
@@ -153,7 +153,7 @@ class DatabaseShutdownTest
                     globalLife = globalModule.getGlobalLife();
                     return globalModule;
                 }
-            }.build( storeDir, config, dependencies );
+            }.build( config, dependencies );
         }
 
         LifecycleStatus getDatabaseStatus()

@@ -85,7 +85,7 @@ class ServerUserLogTest
     {
         // given
         ServerBootstrapper serverBootstrapper = getServerBootstrapper();
-        File dir = homeDir.directory();
+        File dir = homeDir.homeDir();
         Log logBeforeStart = serverBootstrapper.getLog();
 
         // when
@@ -118,7 +118,7 @@ class ServerUserLogTest
     {
         // given
         ServerBootstrapper serverBootstrapper = getServerBootstrapper();
-        File dir = homeDir.directory();
+        File dir = homeDir.homeDir();
         Log logBeforeStart = serverBootstrapper.getLog();
 
         // when
@@ -149,7 +149,7 @@ class ServerUserLogTest
     {
         // given
         ServerBootstrapper serverBootstrapper = getServerBootstrapper();
-        File dir = homeDir.directory();
+        File dir = homeDir.homeDir();
         Log logBeforeStart = serverBootstrapper.getLog();
         int maxArchives = 4;
 

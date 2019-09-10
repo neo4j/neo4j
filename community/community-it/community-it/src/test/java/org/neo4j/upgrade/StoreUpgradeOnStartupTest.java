@@ -39,6 +39,7 @@ import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
@@ -77,7 +78,7 @@ public class StoreUpgradeOnStartupTest
     private FileSystemAbstraction fileSystem;
     private DatabaseLayout workingDatabaseLayout;
     private StoreVersionCheck check;
-    private File workingStoreDir;
+    private File workingHomeDir;
     private DatabaseManagementService managementService;
 
     @Parameterized.Parameters( name = "{0}" )
@@ -91,8 +92,9 @@ public class StoreUpgradeOnStartupTest
     {
         fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        workingStoreDir = testDir.storeDir( "working_" + version );
-        workingDatabaseLayout = testDir.databaseLayout( workingStoreDir );
+        Neo4jLayout layout = testDir.neo4jLayout( "working_" + version );
+        workingHomeDir = layout.homeDirectory();
+        workingDatabaseLayout = layout.databaseLayout( DEFAULT_DATABASE_NAME );
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(), Config.defaults() );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
@@ -132,7 +134,7 @@ public class StoreUpgradeOnStartupTest
 
     private GraphDatabaseAPI createGraphDatabaseService()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( workingStoreDir )
+        managementService = new TestDatabaseManagementServiceBuilder( workingHomeDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true )
                 .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

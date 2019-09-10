@@ -182,7 +182,7 @@ class MemoryRecommendationsCommandTest
     void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
     {
         PrintStream output = mock( PrintStream.class );
-        Path homeDir = directory.directory().toPath();
+        Path homeDir = directory.homeDir().toPath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         configDir.toFile().mkdirs();
@@ -225,7 +225,7 @@ class MemoryRecommendationsCommandTest
     void mustPrintMinimalPageCacheMemorySettingForConfiguredDb() throws Exception
     {
         // given
-        Path homeDir = directory.directory().toPath();
+        Path homeDir = directory.homeDir().toPath();
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
@@ -235,8 +235,8 @@ class MemoryRecommendationsCommandTest
                 .fromFile( configFile.toFile() )
                 .set( GraphDatabaseSettings.neo4j_home, homeDir ).build();
         File rootPath = config.get( databases_root_path ).toFile();
-        DatabaseLayout databaseLayout = DatabaseLayout.of( rootPath, databaseName );
-        DatabaseLayout systemLayout = DatabaseLayout.of( rootPath, SYSTEM_DATABASE_NAME );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), rootPath, databaseName );
+        DatabaseLayout systemLayout = DatabaseLayout.of( homeDir.toFile(), rootPath, SYSTEM_DATABASE_NAME );
         createDatabaseWithNativeIndexes( databaseLayout );
         PrintStream output = mock( PrintStream.class );
         MemoryRecommendationsCommand command =
@@ -266,7 +266,7 @@ class MemoryRecommendationsCommandTest
     void includeAllDatabasesToMemoryRecommendations() throws IOException
     {
         PrintStream output = mock( PrintStream.class );
-        Path homeDir = directory.directory().toPath();
+        Path homeDir = directory.homeDir().toPath();
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
@@ -281,13 +281,13 @@ class MemoryRecommendationsCommandTest
         File rootDirectory = config.get( databases_root_path ).toFile();
         for ( int i = 0; i < 5; i++ )
         {
-            DatabaseLayout databaseLayout = DatabaseLayout.of( rootDirectory, "db" + i );
+            DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), rootDirectory, "db" + i );
             createDatabaseWithNativeIndexes( databaseLayout );
             long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
             totalPageCacheSize += expectedSizes[0];
             totalLuceneIndexesSize += expectedSizes[1];
         }
-        DatabaseLayout systemLayout = DatabaseLayout.of( rootDirectory, SYSTEM_DATABASE_NAME );
+        DatabaseLayout systemLayout = DatabaseLayout.of( homeDir.toFile(), rootDirectory, SYSTEM_DATABASE_NAME );
         long[] expectedSizes = calculatePageCacheFileSize( systemLayout );
         totalPageCacheSize += expectedSizes[0];
         totalLuceneIndexesSize += expectedSizes[1];

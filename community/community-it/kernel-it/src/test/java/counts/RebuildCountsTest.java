@@ -84,7 +84,7 @@ class RebuildCountsTest
     @BeforeEach
     void before() throws IOException
     {
-        storeDir = testDirectory.storeDir();
+        storeDir = testDirectory.homeDir();
         restart( fileSystem );
     }
 

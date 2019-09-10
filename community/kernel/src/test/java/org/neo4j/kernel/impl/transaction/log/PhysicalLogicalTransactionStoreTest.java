@@ -84,7 +84,7 @@ class PhysicalLogicalTransactionStoreTest
     @BeforeEach
     void setup()
     {
-        databaseDirectory = directory.storeDir();
+        databaseDirectory = directory.homeDir();
     }
 
     @Test

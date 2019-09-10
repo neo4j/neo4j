@@ -60,7 +60,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         TestConfiguration configuration = getConfigurationFromAnnotations( context );
 
         // Make service
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDir.storeDir() ).setFileSystem( testDir.getFileSystem() );
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDir.homeDir() ).setFileSystem( testDir.getFileSystem() );
         for ( Object testInstance : testInstances.getAllInstances() )
         {
             maybeInvokeCallback( testInstance, builder, configuration.configurationCallback );

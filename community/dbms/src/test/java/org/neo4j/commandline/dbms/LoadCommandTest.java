@@ -70,6 +70,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 @TestDirectoryExtension
@@ -95,7 +96,7 @@ class LoadCommandTest
     private void prepareFooDatabaseDirectory() throws IOException
     {
         Config config = Config.newBuilder().set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() ).build();
-        File databaseDirectory = DatabaseLayout.of( config.get( databases_root_path ).toFile(), "foo" ).databaseDirectory();
+        File databaseDirectory = DatabaseLayout.of( config.get( neo4j_home ).toFile(), config.get( databases_root_path ).toFile(), "foo" ).databaseDirectory();
         testDirectory.getFileSystem().mkdirs( databaseDirectory );
     }
 
@@ -290,14 +291,14 @@ class LoadCommandTest
         assertThat( commandFailed.getMessage(), containsString( "valid Neo4j archive" ) );
     }
 
-    private static DatabaseLayout createDatabaseLayout( Path storePath, String databaseName, Path transactionLogsPath )
+    private DatabaseLayout createDatabaseLayout( Path storePath, String databaseName, Path transactionLogsPath )
     {
-        return DatabaseLayout.of( storePath.toFile(), () -> Optional.of( transactionLogsPath.toFile() ), databaseName );
+        return DatabaseLayout.of( testDirectory.homeDir(), storePath.toFile(), () -> Optional.of( transactionLogsPath.toFile() ), databaseName );
     }
 
-    private static DatabaseLayout createDatabaseLayout( Path databasePath, Path transactionLogsPath )
+    private DatabaseLayout createDatabaseLayout( Path databasePath, Path transactionLogsPath )
     {
-        return DatabaseLayout.of( databasePath.toFile(), () -> Optional.of( transactionLogsPath.toFile() ) );
+        return DatabaseLayout.of( testDirectory.homeDir(), databasePath.toFile(), () -> Optional.of( transactionLogsPath.toFile() ) );
     }
 
     private void execute( String database, Path archive )

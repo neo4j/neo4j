@@ -121,7 +121,7 @@ class DatabaseManagementServiceFactoryIT
         DatabaseManagementServiceFactory databaseManagementServiceFactory =
                 new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         Config cfg = Config.defaults( neo4j_home, testDirectory.absolutePath().toPath() );
-        return databaseManagementServiceFactory.build( testDirectory.storeDir(), cfg, GraphDatabaseDependencies.newDependencies() );
+        return databaseManagementServiceFactory.build( cfg, GraphDatabaseDependencies.newDependencies() );
     }
 
     private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter

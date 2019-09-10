@@ -75,6 +75,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.valueOf;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
@@ -137,7 +138,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.initialIds = initialIds;
         this.logProvider = logService.getInternalLogProvider();
         this.databaseLayout = databaseLayout;
-        this.temporaryDatabaseLayout = DatabaseLayout.of( databaseLayout.file( TEMP_STORE_NAME ), TEMP_STORE_NAME );
+        this.temporaryDatabaseLayout = DatabaseLayout.of( neo4jConfig.get( neo4j_home ).toFile(), databaseLayout.file( TEMP_STORE_NAME ), TEMP_STORE_NAME );
         this.neo4jConfig = neo4jConfig;
         this.pageCache = pageCache;
         this.ioTracer = ioTracer;
@@ -402,7 +403,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void cleanup() throws IOException
     {
-        File tempStoreDirectory = temporaryDatabaseLayout.getStoreLayout().storeDirectory();
+        File tempStoreDirectory = temporaryDatabaseLayout.getNeo4jLayout().storeDirectory();
         if ( !tempStoreDirectory.getParentFile().equals( databaseLayout.databaseDirectory() ) )
         {
             throw new IllegalStateException( "Temporary store is dislocated. It should be located under current database directory but instead located in: " +

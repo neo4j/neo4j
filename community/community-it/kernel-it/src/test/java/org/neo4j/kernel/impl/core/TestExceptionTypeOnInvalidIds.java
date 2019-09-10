@@ -26,7 +26,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,6 +37,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 
 public class TestExceptionTypeOnInvalidIds
 {
@@ -61,15 +61,13 @@ public class TestExceptionTypeOnInvalidIds
     @BeforeClass
     public static void createDatabase()
     {
-        var writableLayout = testDirectory.databaseLayout( testDirectory.storeDir( "writable" ) );
-        var readOnlyLayout = testDirectory.databaseLayout( testDirectory.storeDir( "readOnly" ) );
-        managementService = new TestDatabaseManagementServiceBuilder( writableLayout.databaseDirectory() ).build();
+        var writableLayout = testDirectory.neo4jLayout( "writable" );
+        var readOnlyLayout = testDirectory.neo4jLayout( "readOnly" );
+        managementService = new TestDatabaseManagementServiceBuilder( writableLayout.homeDirectory() ).build();
         graphdb = managementService.database( DEFAULT_DATABASE_NAME );
-        DatabaseManagementService managementService1 =
-                new TestDatabaseManagementServiceBuilder( readOnlyLayout.databaseDirectory() ).build();
+        DatabaseManagementService managementService1 = new TestDatabaseManagementServiceBuilder( readOnlyLayout.homeDirectory() ).build();
         managementService1.shutdown();
-        readOnlyService = new TestDatabaseManagementServiceBuilder( readOnlyLayout.databaseDirectory() ).
-                setConfig( GraphDatabaseSettings.read_only, true ).build();
+        readOnlyService = new TestDatabaseManagementServiceBuilder( readOnlyLayout.homeDirectory() ).setConfig( read_only, true ).build();
         graphDbReadOnly = readOnlyService.database( DEFAULT_DATABASE_NAME );
     }
 

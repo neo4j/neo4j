@@ -42,7 +42,7 @@ class TestDatabaseManagementServiceBuilderTest
     @Test
     void databaseStartsWithSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -58,7 +58,7 @@ class TestDatabaseManagementServiceBuilderTest
     void impermanentDatabaseStartsWithSystemAndDefaultDatabase()
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).impermanent().build();
+                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).impermanent().build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

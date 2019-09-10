@@ -25,59 +25,71 @@ import java.io.File;
 import java.util.Collection;
 import java.util.Objects;
 
+import org.neo4j.io.fs.FileUtils;
+
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
 
 /**
- * File layout representation of neo4j store that provides the ability to reference any store
+ * File layout representation of neo4j instance that provides the ability to reference any store
  * specific file that can be created by particular store implementation.
  * <br/>
- * <b>Any file lookup should use provided store layout or particular {@link DatabaseLayout database layout}.</b>
+ * <b>Any file lookup should use provided layout or particular {@link DatabaseLayout database layout}.</b>
  * <br/>
- * Store layout represent layout of whole neo4j store while particular {@link DatabaseLayout database layout} represent single database.
- * Store layout should be used as a factory of any layouts for particular database.
+ * Neo4J layout represent layout of whole neo4j instance while particular {@link DatabaseLayout database layout} represent single database.
+ * Neo4J layout should be used as a factory of any layouts for particular database.
  * <br/>
- * Any user-provided store directory will be transformed to canonical file form and any subsequent store layout file
+ * Any user-provided home or store directory will be transformed to canonical file form and any subsequent layout file
  * lookup should be considered as operations that provide canonical file form.
  * <br/>
  * Store lock file is global per store and should be looked from specific store layout.
  * <br/>
- * Example of store layout for store with 2 databases:
+ * Example of Neo4j layout for store with 2 databases:
  * <pre>
- *  store directory
- *  | \ database directory (neo4j, represented by separate database layout)
- *  |    \ particular database files
- *  | \ database directory (other represented by separate database layout)
- *  |    \ particular database files
- *  store_lock
+ *  home directory
+ *  | \ data directory
+ *  | | \ store directory
+ *  | | | \ database directory (neo4j, represented by separate database layout)
+ *  | | | | \ particular database files
+ *  | | | \ database directory (other represented by separate database layout)
+ *  | | | | \ particular database files
+ *  | | | \ store_lock
+ *  | | \ transaction logs directory
+ *  | | | \ database tx-logs directory (neo4j, represented by separate database layout)
+ *  | | | | \ particular database tx-logs files
+ *  | | | \ database tx-logs directory (other represented by separate database layout)
+ *  | | | | \ particular database tx-logs files
  * </pre>
  * The current implementation does not keep references to all requested and provided files and requested layouts but can be easily enhanced to do so.
+ * <br/>
+ * Most file & directory locations of the layout can be individually configured using their corresponding setting.
  *
  * @see DatabaseLayout
  */
-public class StoreLayout
+public class Neo4jLayout
 {
     private static final String STORE_LOCK_FILENAME = "store_lock";
 
+    private final File homeDirectory;
     private final File storeDirectory;
     private final StoreLayoutConfig layoutConfig;
 
-    public static StoreLayout of( File storeDirectory, StoreLayoutConfig config )
+    public static Neo4jLayout of( File homeDirectory, File storeDirectory )
     {
-        return new StoreLayout( getCanonicalFile( storeDirectory ), config );
+        return of( homeDirectory, storeDirectory, NOT_CONFIGURED  );
     }
 
-    public static StoreLayout of( File storeDirectory )
+    public static Neo4jLayout of( File homeDirectory, File storeDirectory, StoreLayoutConfig config )
     {
-        return new StoreLayout( getCanonicalFile( storeDirectory ), NOT_CONFIGURED  );
+        return new Neo4jLayout( homeDirectory, storeDirectory, config );
     }
 
-    private StoreLayout( File rootStoreDirectory, StoreLayoutConfig layoutConfig )
+    private Neo4jLayout( File homeDirectory, File rootStoreDirectory, StoreLayoutConfig layoutConfig )
     {
-        this.storeDirectory = rootStoreDirectory;
+        this.homeDirectory = FileUtils.getCanonicalFile( homeDirectory );
+        this.storeDirectory = FileUtils.getCanonicalFile( rootStoreDirectory );
         this.layoutConfig = layoutConfig;
     }
 
@@ -119,12 +131,26 @@ public class StoreLayout
     }
 
     /**
+     * Neo4J root directory.
+     * @return the root of the Neo4j instance
+     */
+    public File homeDirectory()
+    {
+        return homeDirectory;
+    }
+
+    /**
      * Configuration of store layout
      * @return layout config
      */
     StoreLayoutConfig getLayoutConfig()
     {
         return layoutConfig;
+    }
+
+    public File transactionLogsRootDirectory()
+    {
+        return getLayoutConfig().getTransactionLogsRootDirectory().orElse( storeDirectory() );
     }
 
     public File storeLockFile()
@@ -143,7 +169,7 @@ public class StoreLayout
         {
             return false;
         }
-        StoreLayout that = (StoreLayout) o;
+        Neo4jLayout that = (Neo4jLayout) o;
         return Objects.equals( storeDirectory, that.storeDirectory );
     }
 

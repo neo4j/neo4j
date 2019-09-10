@@ -172,7 +172,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         unzip( getClass(), zippedDbName, targetDirectory );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         // when
-        File storeDir = directory.storeDir();
+        File storeDir = directory.homeDir();
         managementService = setupDb( storeDir, indexRecoveryTracker );
         GraphDatabaseAPI db = getDefaultDatabase();
         // then

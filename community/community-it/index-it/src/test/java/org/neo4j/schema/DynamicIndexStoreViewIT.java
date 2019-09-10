@@ -59,7 +59,7 @@ public class DynamicIndexStoreViewIT
     @Test
     public void populateDbWithConcurrentUpdates() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

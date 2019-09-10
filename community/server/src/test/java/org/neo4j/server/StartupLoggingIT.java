@@ -60,7 +60,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         CommunityBootstrapper boot = new CommunityBootstrapper();
         Map<String,String> propertyPairs = getPropertyPairs();
 
-        boot.start( testDir.directory(), Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
+        boot.start( testDir.homeDir(), Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
         URI uri = boot.getServer().baseUri();
         boot.stop();
 
@@ -80,8 +80,8 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     {
         Map<String,String> properties = new HashMap<>();
 
-        properties.put( GraphDatabaseSettings.data_directory.name(), testDir.storeDir().toString() );
-        properties.put( GraphDatabaseSettings.logs_directory.name(), testDir.storeDir().toString() );
+        properties.put( GraphDatabaseSettings.data_directory.name(), testDir.homeDir().toString() );
+        properties.put( GraphDatabaseSettings.logs_directory.name(), testDir.homeDir().toString() );
         properties.put( GraphDatabaseSettings.allow_upgrade.name(), TRUE );
 
         properties.put( HttpConnector.listen_address.name(), "localhost:0" );

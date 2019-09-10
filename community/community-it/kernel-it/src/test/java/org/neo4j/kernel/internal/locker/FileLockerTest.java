@@ -60,7 +60,7 @@ class FileLockerTest
 
     static Stream<LockerFactory> lockerFactories()
     {
-        return Stream.of( ( fs, directory ) -> new GlobalLocker( fs, directory.storeLayout() ),
+        return Stream.of( ( fs, directory ) -> new GlobalLocker( fs, directory.neo4jLayout() ),
                 ( fs, directory ) -> new DatabaseLocker( fs, directory.databaseLayout() ) );
     }
 
@@ -132,7 +132,7 @@ class FileLockerTest
             @Override
             public boolean fileExists( File file )
             {
-                return true;
+                return fileSystem.fileExists( file );
             }
         };
 
@@ -261,7 +261,7 @@ class FileLockerTest
     @Test
     void mustPreventMultipleInstancesFromStartingOnSameStore()
     {
-        File storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.homeDir();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();
         try
         {

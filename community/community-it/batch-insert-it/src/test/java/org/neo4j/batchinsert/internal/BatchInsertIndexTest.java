@@ -185,7 +185,7 @@ class BatchInsertIndexTest
 
     private GraphDatabaseService graphDatabaseService( Config config )
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fs )
                 .setConfig( config )
                 .build();

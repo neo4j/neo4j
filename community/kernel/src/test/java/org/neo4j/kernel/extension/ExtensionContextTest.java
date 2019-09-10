@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
@@ -101,7 +101,7 @@ class ExtensionContextTest
     @Test
     void globalContextRootDirectoryEqualToStoreDirectory()
     {
-        StoreLayout storeLayout = testDirectory.storeLayout();
+        Neo4jLayout storeLayout = testDirectory.neo4jLayout();
         GlobalExtensionContext context = new GlobalExtensionContext( storeLayout, DatabaseInfo.TOOL, new Dependencies() );
         assertSame( storeLayout.storeDirectory(), context.directory() );
     }

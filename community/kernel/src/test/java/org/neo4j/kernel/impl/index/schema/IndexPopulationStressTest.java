@@ -128,7 +128,7 @@ abstract class IndexPopulationStressTest
 
     IndexDirectoryStructure.Factory directory()
     {
-        File storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.homeDir();
         return directoriesBySubProvider( directoriesByProvider( storeDir ).forProvider( PROVIDER ) );
     }
 

@@ -20,12 +20,12 @@
 package org.neo4j.kernel.extension.context;
 
 import org.neo4j.common.DependencySatisfier;
-import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 
 public class GlobalExtensionContext extends BaseExtensionContext
 {
-    public GlobalExtensionContext( StoreLayout storeLayout, DatabaseInfo databaseInfo, DependencySatisfier satisfier )
+    public GlobalExtensionContext( Neo4jLayout storeLayout, DatabaseInfo databaseInfo, DependencySatisfier satisfier )
     {
         super( storeLayout.storeDirectory(), databaseInfo, satisfier );
     }

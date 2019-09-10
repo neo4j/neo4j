@@ -112,7 +112,7 @@ class TransactionLogsRecoveryTest
     @BeforeEach
     void setUp() throws Exception
     {
-        storeDir = directory.storeDir();
+        storeDir = directory.homeDir();
         DatabaseLayout databaseLayout = directory.databaseLayout();
         logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( logVersionRepository )

@@ -68,7 +68,7 @@ class LogVersionUpgradeCheckerIT
         createGraphDbAndKillIt();
 
         // Try to start with upgrading disabled
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .setConfig( allow_upgrade, false )
@@ -83,7 +83,7 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         // Try to start with upgrading disabled
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .setConfig( allow_upgrade, false )
@@ -109,7 +109,7 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         // Try to start with upgrading enabled
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .setConfig( allow_upgrade, true )
@@ -120,7 +120,7 @@ class LogVersionUpgradeCheckerIT
 
     private void createGraphDbAndKillIt()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .build();

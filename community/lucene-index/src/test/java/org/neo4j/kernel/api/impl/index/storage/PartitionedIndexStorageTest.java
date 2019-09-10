@@ -69,13 +69,13 @@ class PartitionedIndexStorageTest
     @BeforeEach
     void createIndexStorage()
     {
-        storage = new PartitionedIndexStorage( directoryFactory, fs, testDir.storeDir() );
+        storage = new PartitionedIndexStorage( directoryFactory, fs, testDir.homeDir() );
     }
 
     @Test
     void prepareFolderCreatesFolder() throws IOException
     {
-        File folder = createRandomFolder( testDir.storeDir() );
+        File folder = createRandomFolder( testDir.homeDir() );
 
         storage.prepareFolder( folder );
 
@@ -85,7 +85,7 @@ class PartitionedIndexStorageTest
     @Test
     void prepareFolderRemovesFromFileSystem() throws IOException
     {
-        File folder = createRandomFolder( testDir.storeDir() );
+        File folder = createRandomFolder( testDir.homeDir() );
         createRandomFilesAndFolders( folder );
 
         storage.prepareFolder( folder );
@@ -97,7 +97,7 @@ class PartitionedIndexStorageTest
     @Test
     void prepareFolderRemovesFromLucene() throws IOException
     {
-        File folder = createRandomFolder( testDir.storeDir() );
+        File folder = createRandomFolder( testDir.homeDir() );
         Directory dir = createRandomLuceneDir( folder );
 
         assertFalse( ArrayUtil.isEmpty( dir.listAll() ) );
@@ -183,7 +183,7 @@ class PartitionedIndexStorageTest
                 } )
         {
             PartitionedIndexStorage myStorage = new PartitionedIndexStorage( directoryFactory,
-                    scramblingFs, testDir.storeDir() );
+                    scramblingFs, testDir.homeDir() );
             File parent = myStorage.getIndexFolder();
             int directoryCount = 10;
             for ( int i = 0; i < directoryCount; i++ )

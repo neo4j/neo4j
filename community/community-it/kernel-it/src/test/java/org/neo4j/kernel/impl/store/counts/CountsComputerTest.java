@@ -82,7 +82,7 @@ class CountsComputerTest
     @BeforeEach
     void setup()
     {
-        dbBuilder = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        dbBuilder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                 .impermanent();
     }

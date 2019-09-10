@@ -135,7 +135,7 @@ class BatchInserterImplTest
 
         // when/then
         DatabaseManagementService dbms =
-                new TestDatabaseManagementServiceBuilder( layout.getStoreLayout().storeDirectory() ).setFileSystem( fileSystem ).build();
+                new TestDatabaseManagementServiceBuilder( layout.getNeo4jLayout().homeDirectory() ).setFileSystem( fileSystem ).build();
         try
         {
             GraphDatabaseService db = dbms.database( DEFAULT_DATABASE_NAME );

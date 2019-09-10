@@ -75,7 +75,7 @@ class DatabaseStartupTest
         // given
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        File storeDirectory = testDirectory.storeDir();
+        File storeDirectory = testDirectory.homeDir();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
@@ -91,7 +91,7 @@ class DatabaseStartupTest
               PageCache pageCache = createPageCache( fileSystem, scheduler ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
-                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
+                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ) );
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
@@ -118,7 +118,7 @@ class DatabaseStartupTest
         // given
         // create a store
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        File storeDirectory = testDirectory.storeDir();
+        File storeDirectory = testDirectory.homeDir();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
@@ -180,7 +180,7 @@ class DatabaseStartupTest
     void dumpSystemDiagnosticLoggingOnStartup()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setInternalLogProvider( logProvider )
                 .build();
         managementService.database( DEFAULT_DATABASE_NAME );
@@ -217,9 +217,9 @@ class DatabaseStartupTest
         }
 
         @Override
-        protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
+        protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
         {
-            return new GlobalModule( storeDir, config, databaseInfo, dependencies )
+            return new GlobalModule( config, databaseInfo, dependencies )
             {
                 @Override
                 protected FileSystemAbstraction createFileSystemAbstraction()
@@ -234,16 +234,16 @@ class DatabaseStartupTest
     {
         private final EphemeralCommunityManagementServiceFactory factory;
 
-        EphemeralDatabaseManagementServiceBuilder( File databaseRootDir, EphemeralCommunityManagementServiceFactory factory )
+        EphemeralDatabaseManagementServiceBuilder( File homeDirectory, EphemeralCommunityManagementServiceFactory factory )
         {
-            super( databaseRootDir );
+            super( homeDirectory );
             this.factory = factory;
         }
 
         @Override
-        protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
+        protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
         {
-            return factory.build( storeDir, augmentConfig( config ), dependencies );
+            return factory.build( augmentConfig( config ), dependencies );
         }
     }
 }

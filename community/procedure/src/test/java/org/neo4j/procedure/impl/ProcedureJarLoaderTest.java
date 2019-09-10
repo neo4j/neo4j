@@ -189,7 +189,7 @@ public class ProcedureJarLoaderTest
         createJarFor( ClassWithAnotherProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( testDirectory.directory() ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( testDirectory.homeDir() ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );

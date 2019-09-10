@@ -47,6 +47,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
@@ -79,10 +80,10 @@ class FileWatchIT
     @BeforeEach
     void setUp()
     {
-        File customStoreRoot = testDirectory.storeDir( "customStore" );
-        databaseLayout = testDirectory.databaseLayout( customStoreRoot );
+        Neo4jLayout customLayout = testDirectory.neo4jLayout( "customStore" );
+        databaseLayout = customLayout.databaseLayout( DEFAULT_DATABASE_NAME );
         logProvider = new AssertableLogProvider();
-        managementService = new TestDatabaseManagementServiceBuilder( customStoreRoot ).setInternalLogProvider( logProvider ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( customLayout.homeDirectory() ).setInternalLogProvider( logProvider ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -129,7 +130,7 @@ class FileWatchIT
             DatabaseManagementService service = null;
             try
             {
-                service = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir( "failed-start-db" ) )
+                service = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir( "failed-start-db" ) )
                         .setInternalLogProvider( logProvider )
                         .setFileSystem( new NonWatchableFileSystemAbstraction() )
                         .build();

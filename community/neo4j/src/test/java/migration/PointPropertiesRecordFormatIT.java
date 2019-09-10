@@ -54,7 +54,7 @@ class PointPropertiesRecordFormatIT
     @Test
     void createPointPropertyOnLatestDatabase()
     {
-        File storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.homeDir();
         Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
         PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
@@ -81,7 +81,7 @@ class PointPropertiesRecordFormatIT
     @Test
     void createPointArrayPropertyOnLatestDatabase()
     {
-        File storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.homeDir();
         Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
         PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );

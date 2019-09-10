@@ -82,10 +82,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
@@ -136,7 +132,7 @@ class InProcessServerBuilderIT
         new File( certificates, "trusted" ).mkdir();
         new File( certificates, "revoked" ).mkdir();
 
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() )
                 .withConfig( HttpConnector.enabled, true )
                 .withConfig( HttpConnector.listen_address, new SocketAddress( "localhost", 0 ) )
                 .withConfig( HttpsConnector.enabled, true )
@@ -162,7 +158,7 @@ class InProcessServerBuilderIT
     void shouldMountUnmanagedExtensionsByClass()
     {
         // When
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() )
                 .withUnmanagedExtension( "/path/to/my/extension", MyUnmanagedExtension.class )
                 .build() )
         {
@@ -176,7 +172,7 @@ class InProcessServerBuilderIT
     void shouldMountUnmanagedExtensionsByPackage()
     {
         // When
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() )
                 .withUnmanagedExtension( "/path/to/my/extension", "org.neo4j.harness.extensionpackage" )
                 .build() )
         {
@@ -189,7 +185,7 @@ class InProcessServerBuilderIT
     @Test
     void startWithCustomExtension()
     {
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() )
                 .withExtensionFactories( asIterable( new TestExtensionFactory() ) ).build() )
         {
             assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
@@ -200,7 +196,7 @@ class InProcessServerBuilderIT
     @Test
     void startWithDisabledServer()
     {
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() ).withDisabledServer().build() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() ).withDisabledServer().build() )
         {
             assertThrows( IllegalStateException.class, neo4j::httpURI );
             assertThrows( IllegalStateException.class, neo4j::httpsURI );
@@ -221,10 +217,10 @@ class InProcessServerBuilderIT
     void shouldFindFreePort()
     {
         // Given one server is running
-        try ( InProcessNeo4j firstServer = getTestBuilder( directory.directory() ).build() )
+        try ( InProcessNeo4j firstServer = getTestBuilder( directory.homeDir() ).build() )
         {
             // When I build a second server
-            try ( InProcessNeo4j secondServer = getTestBuilder( directory.directory() ).build() )
+            try ( InProcessNeo4j secondServer = getTestBuilder( directory.homeDir() ).build() )
             {
                 // Then
                 assertThat( secondServer.httpURI().getPort(), not( firstServer.httpURI().getPort() ) );
@@ -237,11 +233,9 @@ class InProcessServerBuilderIT
     {
         // When
         // create graph db with one node upfront
-        File existingStoreDir = directory.directory( "existingStore" );
-        Config config = Config.defaults( data_directory, existingStoreDir.toPath() );
-        File rootDirectory = config.get( databases_root_path ).toFile();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( rootDirectory )
-                .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).toPath().toAbsolutePath() ).build();
+        File existingHomeDir = directory.homeDir( "existingStore" );
+
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( existingHomeDir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction transaction = db.beginTx() )
         {
@@ -253,7 +247,7 @@ class InProcessServerBuilderIT
             managementService.shutdown();
         }
 
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.storeDir() ).copyFrom( existingStoreDir ).build() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( existingHomeDir ).copyFrom( existingHomeDir ).build() )
         {
             // Then
             GraphDatabaseService graphDatabaseService = neo4j.defaultDatabaseService();
@@ -270,8 +264,7 @@ class InProcessServerBuilderIT
         }
 
         // Then: we still only have one node since the server is supposed to work on a copy
-        managementService = new TestDatabaseManagementServiceBuilder( rootDirectory )
-                .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).toPath().toAbsolutePath() ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( existingHomeDir ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -291,7 +284,7 @@ class InProcessServerBuilderIT
     void shouldOpenBoltPort()
     {
         // given
-        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() ).build() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.homeDir() ).build() )
         {
             URI uri = neo4j.boltURI();
 
@@ -308,7 +301,7 @@ class InProcessServerBuilderIT
         assertFalse( notADirectory.isDirectory() );
 
         RuntimeException exception =
-                assertThrows( RuntimeException.class, () -> getTestBuilder( directory.directory() ).copyFrom( notADirectory ).build() );
+                assertThrows( RuntimeException.class, () -> getTestBuilder( directory.homeDir() ).copyFrom( notADirectory ).build() );
         Throwable cause = exception.getCause();
         assertTrue( cause instanceof IOException );
         assertTrue( cause.getMessage().contains( "exists but is not a directory" ) );
@@ -359,7 +352,7 @@ class InProcessServerBuilderIT
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
     {
         var certificates = directory.directory( "certificates" );
-        Neo4jBuilder serverBuilder = newInProcessBuilder( directory.directory() )
+        Neo4jBuilder serverBuilder = newInProcessBuilder( directory.homeDir() )
                 .withConfig( HttpConnector.enabled, httpEnabled )
                 .withConfig( HttpConnector.listen_address, new SocketAddress( 0 ) )
                 .withConfig( HttpsConnector.enabled, httpsEnabled )

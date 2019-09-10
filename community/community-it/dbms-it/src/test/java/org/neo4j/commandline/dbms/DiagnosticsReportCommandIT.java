@@ -66,7 +66,7 @@ class DiagnosticsReportCommandIT
     @BeforeEach
     void setUp()
     {
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -93,7 +93,7 @@ class DiagnosticsReportCommandIT
         try
         {
             String[] args = {"threads", "--to=" + testDirectory.absolutePath().getAbsolutePath() + "/reports"};
-            Path homeDir = testDirectory.directory().toPath();
+            Path homeDir = testDirectory.homeDir().toPath();
             var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
             DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
             CommandLine.populateCommand( diagnosticsReportCommand, args );

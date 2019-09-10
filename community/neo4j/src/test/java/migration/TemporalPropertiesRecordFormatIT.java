@@ -53,7 +53,7 @@ class TemporalPropertiesRecordFormatIT
     @Test
     void createDatePropertyOnLatestDatabase()
     {
-        File storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.homeDir();
         Label label = Label.label( "DateNode" );
         String propertyKey = "a";
         LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
@@ -80,7 +80,7 @@ class TemporalPropertiesRecordFormatIT
     @Test
     void createDateArrayOnLatestDatabase()
     {
-        File storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.homeDir();
         Label label = Label.label( "DateNode" );
         String propertyKey = "a";
         LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();

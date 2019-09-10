@@ -55,7 +55,7 @@ class TestRecoveryRelationshipTypes
     void recoverNeoAndHavingAllRelationshipTypesAfterRecovery() throws Exception
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
-        File storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.homeDir();
         assertEquals( 0, getRuntime().exec( new String[]{
                 getJavaExecutable().toString(), "-Djava.awt.headless=true", "-cp",
                 getClassPath(), getClass().getName(), storeDir.getAbsolutePath()} ).waitFor() );

@@ -65,7 +65,7 @@ class TestStoreAccess
 
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fs )
                 .impermanent()
                 .build();

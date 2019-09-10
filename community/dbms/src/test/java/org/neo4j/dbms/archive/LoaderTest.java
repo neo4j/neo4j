@@ -129,7 +129,8 @@ class LoaderTest
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Path txLogsDestination = Paths.get( testDirectory.absolutePath().getAbsolutePath(), "subdir", "txLogs" );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.file("destination"), () -> Optional.of( txLogsDestination.toFile() ) );
+        DatabaseLayout databaseLayout =
+                DatabaseLayout.of( testDirectory.homeDir(), testDirectory.file( "destination" ), () -> Optional.of( txLogsDestination.toFile() ) );
 
         NoSuchFileException noSuchFileException = assertThrows( NoSuchFileException.class, () -> new Loader().load( archive, databaseLayout ) );
         assertEquals( txLogsDestination.toString(), noSuchFileException.getMessage() );
@@ -172,7 +173,8 @@ class LoaderTest
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         File txLogsDirectory = testDirectory.directory( "subdir/txLogs" );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.file( "destination" ) , () -> Optional.of( txLogsDirectory ) );
+        DatabaseLayout databaseLayout =
+                DatabaseLayout.of( testDirectory.homeDir(), testDirectory.file( "destination" ), () -> Optional.of( txLogsDirectory ) );
 
         Path txLogsRoot = databaseLayout.getTransactionLogsDirectory().getParentFile().toPath();
         try ( Closeable ignored = withPermissions( txLogsRoot, emptySet() ) )

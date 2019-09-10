@@ -201,7 +201,7 @@ public abstract class KernelIntegrationTest
 
     protected DatabaseManagementService createDatabaseService()
     {
-        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = configure( createGraphDatabaseFactory( testDir.storeDir() ) )
+        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = configure( createGraphDatabaseFactory( testDir.homeDir() ) )
                 .setFileSystem( testDir.getFileSystem() );
         return configure( databaseManagementServiceBuilder ).build();
     }

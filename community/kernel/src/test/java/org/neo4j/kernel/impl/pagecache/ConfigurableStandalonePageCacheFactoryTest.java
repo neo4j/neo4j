@@ -48,7 +48,7 @@ class ConfigurableStandalonePageCacheFactoryTest
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            File file = new File( testDirectory.directory(), "a" ).getCanonicalFile();
+            File file = new File( testDirectory.homeDir(), "a" ).getCanonicalFile();
             fs.write( file ).close();
 
             try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, jobScheduler );

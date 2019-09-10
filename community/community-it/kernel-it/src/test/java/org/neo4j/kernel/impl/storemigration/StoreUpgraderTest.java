@@ -92,6 +92,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
@@ -339,7 +340,7 @@ public class StoreUpgraderTest
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
             .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() ).build();
-        DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
+        DatabaseLayout migrationLayout = DatabaseLayout.of( config.get( neo4j_home ).toFile(), databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
         newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
             .migrateIfNeeded( migrationLayout );
 
@@ -366,7 +367,7 @@ public class StoreUpgraderTest
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
             .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() ).build();
-        DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
+        DatabaseLayout migrationLayout = DatabaseLayout.of(  config.get( neo4j_home ).toFile(), databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
 
         File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
         assertTrue( fileSystem.mkdir( databaseTransactionLogsHome ) );

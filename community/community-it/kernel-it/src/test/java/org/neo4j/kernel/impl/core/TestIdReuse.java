@@ -74,7 +74,7 @@ class TestIdReuse
 
     private void makeSureIdsGetsReused( File storeFile, Object value, int iterations )
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .build();
@@ -85,7 +85,7 @@ class TestIdReuse
         }
         managementService.shutdown();
         long sizeBefore = storeFile.length();
-        DatabaseManagementService impermanentManagement = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        DatabaseManagementService impermanentManagement = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .build();

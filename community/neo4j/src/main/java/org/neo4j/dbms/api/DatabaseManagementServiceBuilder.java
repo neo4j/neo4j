@@ -75,14 +75,14 @@ public class DatabaseManagementServiceBuilder
     public DatabaseManagementService build()
     {
         config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() );
-        return newDatabaseManagementService( homeDirectory, config.build(), databaseDependencies() );
+        return newDatabaseManagementService( config.build(), databaseDependencies() );
     }
 
-    protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
+    protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
         config.set( GraphDatabaseSettings.ephemeral_lucene, false );
         return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory() )
-                .build( storeDir, augmentConfig( config ), dependencies );
+                .build( augmentConfig( config ), dependencies );
     }
 
     protected DatabaseInfo getDatabaseInfo()

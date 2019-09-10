@@ -60,7 +60,7 @@ class FixturesTestIT
     void shouldAccepSingleCypherFileAsFixture() throws Exception
     {
         // Given
-        File targetFolder = testDir.directory();
+        File targetFolder = testDir.homeDir();
         File fixture = new File( targetFolder, "fixture.cyp" );
         FileUtils.writeToFile(fixture,
                 "CREATE (u:User)" +
@@ -82,7 +82,7 @@ class FixturesTestIT
     void shouldAcceptFolderWithCypFilesAsFixtures() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.directory();
+        File targetFolder = testDir.homeDir();
         FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
                 false );
         FileUtils.writeToFile( new File( targetFolder, "fixture2.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
@@ -109,7 +109,7 @@ class FixturesTestIT
     void shouldHandleMultipleFixtures() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.directory();
+        File targetFolder = testDir.homeDir();
         File fixture1 = new File( targetFolder, "fixture1.cyp" );
         FileUtils.writeToFile( fixture1,
                 "CREATE (u:User)\n" +
@@ -137,7 +137,7 @@ class FixturesTestIT
     void shouldHandleStringFixtures() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.directory();
+        File targetFolder = testDir.homeDir();
 
         // When
         try ( InProcessNeo4j server = getServerBuilder( targetFolder )
@@ -156,7 +156,7 @@ class FixturesTestIT
     void shouldIgnoreEmptyFixtureFiles() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.directory();
+        File targetFolder = testDir.homeDir();
         FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
                 false );
         FileUtils.writeToFile( new File( targetFolder, "fixture2.cyp" ), "", false );
@@ -177,7 +177,7 @@ class FixturesTestIT
     void shouldHandleFixturesWithSyntaxErrorsGracefully() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.directory();
+        File targetFolder = testDir.homeDir();
         FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "this is not a valid cypher statement", false );
 
         // When
@@ -198,7 +198,7 @@ class FixturesTestIT
     void shouldHandleFunctionFixtures() throws Exception
     {
         // Given two files in the root folder
-        File targetFolder = testDir.directory();
+        File targetFolder = testDir.homeDir();
 
         // When
         try ( InProcessNeo4j server = getServerBuilder( targetFolder )
@@ -223,10 +223,10 @@ class FixturesTestIT
 
     private Neo4jBuilder getServerBuilder( File targetFolder )
     {
-        SelfSignedCertificateFactory.create( testDir.directory() );
+        SelfSignedCertificateFactory.create( testDir.homeDir() );
         return newInProcessBuilder( targetFolder )
-                .withConfig( PemSslPolicyConfig.forScope( BOLT ).base_directory, testDir.directory().toPath() )
-                .withConfig( PemSslPolicyConfig.forScope( HTTPS ).base_directory, testDir.directory().toPath() );
+                .withConfig( PemSslPolicyConfig.forScope( BOLT ).base_directory, testDir.homeDir().toPath() )
+                .withConfig( PemSslPolicyConfig.forScope( HTTPS ).base_directory, testDir.homeDir().toPath() );
     }
 
 }

@@ -131,7 +131,7 @@ class CommitContentionTest
             {
                 return new SkipTransactionDatabaseStats();
             }
-        } ).build( testDirectory.storeDir(), cfg, GraphDatabaseDependencies.newDependencies().dependencies( noOpSystemGraphInitializer( cfg ) ) );
+        } ).build( cfg, GraphDatabaseDependencies.newDependencies().dependencies( noOpSystemGraphInitializer( cfg ) ) );
         return managementService
                 .database( Config.defaults().get( GraphDatabaseSettings.default_database ));
     }

@@ -44,7 +44,7 @@ class ChannelOutputStreamTest
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
             File workFile = testDirectory.file( "a" );
-            fs.mkdirs( testDirectory.directory() );
+            fs.mkdirs( testDirectory.homeDir() );
             OutputStream out = fs.openAsOutputStream( workFile, false );
 
             // When I write a byte[] that is larger than the internal buffer in

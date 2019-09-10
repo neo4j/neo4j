@@ -110,7 +110,7 @@ class RotatingFileOutputStreamSupplierTest
     @BeforeEach
     void setup()
     {
-        File logDir = testDirectory.directory();
+        File logDir = testDirectory.homeDir();
         logFile = new File( logDir, "logfile.log" );
         archiveLogFile1 = new File( logDir, "logfile.log.1" );
         archiveLogFile2 = new File( logDir, "logfile.log.2" );

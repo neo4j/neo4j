@@ -59,7 +59,7 @@ public class ConstraintIndexFailureIT
     public void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
     {
         // given a perfectly normal constraint
-        File dir = directory.storeDir();
+        File dir = directory.homeDir();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( dir ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )

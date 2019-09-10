@@ -41,7 +41,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.GuardVersionContextSupplier;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
@@ -92,6 +92,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -108,7 +109,7 @@ public class GlobalModule
     private final Dependencies globalDependencies;
     private final LogService logService;
     private final LifeSupport globalLife;
-    private final StoreLayout storeLayout;
+    private final Neo4jLayout neo4jLayout;
     private final DatabaseInfo databaseInfo;
     private final DbmsDiagnosticsManager dbmsDiagnosticsManager;
     private final Tracers tracers;
@@ -131,8 +132,7 @@ public class GlobalModule
     private final DependencyResolver externalDependencyResolver;
     private final FileLockerService fileLockerService;
 
-    public GlobalModule( File providedStoreDir, Config globalConfig, DatabaseInfo databaseInfo,
-            ExternalDependencies externalDependencies )
+    public GlobalModule( Config globalConfig, DatabaseInfo databaseInfo, ExternalDependencies externalDependencies )
     {
         externalDependencyResolver = externalDependencies.dependencies() != null ? externalDependencies.dependencies() : new Dependencies();
 
@@ -144,8 +144,8 @@ public class GlobalModule
         globalClock = globalDependencies.satisfyDependency( createClock() );
         globalLife = createLife();
 
-        File storeDirectory = globalConfig.isExplicitlySet( databases_root_path ) ? globalConfig.get( databases_root_path ).toFile() : providedStoreDir;
-        this.storeLayout = StoreLayout.of( storeDirectory, of( globalConfig ) );
+        File storeDirectory = globalConfig.get( databases_root_path ).toFile();
+        this.neo4jLayout = Neo4jLayout.of( globalConfig.get( neo4j_home ).toFile(), storeDirectory, of( globalConfig ) );
 
         this.globalConfig = globalDependencies.satisfyDependency( globalConfig );
 
@@ -167,7 +167,7 @@ public class GlobalModule
         globalConfig.setLogger( logService.getInternalLog( Config.class ) );
 
         fileLockerService = createFileLockerService();
-        Locker storeLocker = fileLockerService.createStoreLocker( fileSystem, storeLayout );
+        Locker storeLocker = fileLockerService.createStoreLocker( fileSystem, neo4jLayout );
         globalLife.add( globalDependencies.satisfyDependency( new LockerLifecycleAdapter( storeLocker ) ) );
 
         new JvmChecker( logService.getInternalLog( JvmChecker.class ),
@@ -205,7 +205,7 @@ public class GlobalModule
 
         extensionFactories = externalDependencies.extensions();
         globalExtensions = globalDependencies.satisfyDependency(
-                new GlobalExtensions( new GlobalExtensionContext( storeLayout, databaseInfo, globalDependencies ), extensionFactories, globalDependencies,
+                new GlobalExtensions( new GlobalExtensionContext( neo4jLayout, databaseInfo, globalDependencies ), extensionFactories, globalDependencies,
                         ExtensionFailureStrategies.fail() ) );
 
         globalDependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
@@ -249,13 +249,13 @@ public class GlobalModule
     {
         if ( !globalConfig.isExplicitlySet( default_database ) )
         {
-            DatabaseLayout defaultDatabaseLayout = storeLayout.databaseLayout( globalConfig.get( default_database ) );
+            DatabaseLayout defaultDatabaseLayout = neo4jLayout.databaseLayout( globalConfig.get( default_database ) );
             if ( storageEngineFactory.storageExists( fileSystem, defaultDatabaseLayout, pageCache ) )
             {
                 return;
             }
             final String legacyDatabaseName = "graph.db";
-            DatabaseLayout legacyDatabaseLayout = storeLayout.databaseLayout( legacyDatabaseName );
+            DatabaseLayout legacyDatabaseLayout = neo4jLayout.databaseLayout( legacyDatabaseName );
             if ( storageEngineFactory.storageExists( fileSystem, legacyDatabaseLayout, pageCache ) )
             {
                 Log internalLog = logService.getInternalLog( getClass() );
@@ -467,9 +467,9 @@ public class GlobalModule
         return tracers;
     }
 
-    public StoreLayout getStoreLayout()
+    public Neo4jLayout getNeo4jLayout()
     {
-        return storeLayout;
+        return neo4jLayout;
     }
 
     public DatabaseInfo getDatabaseInfo()

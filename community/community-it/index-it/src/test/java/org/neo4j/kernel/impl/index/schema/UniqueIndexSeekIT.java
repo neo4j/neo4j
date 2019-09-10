@@ -116,7 +116,7 @@ class UniqueIndexSeekIT
 
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory, IndexProviderDescriptor descriptor )
     {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                 .setExtensions( singletonList( indexExtensionFactory ) )
                 .setConfig( default_schema_provider, descriptor.name() )
                 .build();

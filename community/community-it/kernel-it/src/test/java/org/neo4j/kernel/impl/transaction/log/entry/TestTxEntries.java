@@ -49,7 +49,7 @@ class TestTxEntries
     @Test
     void testStartEntryWrittenOnceOnRollback()
     {
-        File storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.homeDir();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setFileSystem( fs )
                 .impermanent()

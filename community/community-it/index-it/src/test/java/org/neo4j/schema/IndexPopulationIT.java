@@ -68,7 +68,7 @@ public class IndexPopulationIT
     public static void setUp()
     {
         logProvider = new AssertableLogProvider( true );
-        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                 .setInternalLogProvider( logProvider )
                 .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );

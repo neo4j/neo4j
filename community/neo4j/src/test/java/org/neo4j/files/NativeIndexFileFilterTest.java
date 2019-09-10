@@ -68,7 +68,7 @@ class NativeIndexFileFilterTest
     @BeforeEach
     void before()
     {
-        storeDir = directory.directory();
+        storeDir = directory.homeDir();
         filter = new NativeIndexFileFilter( storeDir );
     }
 

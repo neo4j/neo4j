@@ -23,7 +23,7 @@ import java.io.File;
 import java.util.Optional;
 
 /**
- * {@link StoreLayout} configuration object.
+ * {@link Neo4jLayout} configuration object.
  */
 @FunctionalInterface
 public interface StoreLayoutConfig

@@ -77,7 +77,7 @@ class CommunitySystemDatabaseIT
     @BeforeEach
     void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .noOpSystemGraphInitializer()
                 .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );

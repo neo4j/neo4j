@@ -72,7 +72,7 @@ public class SimpleIndexReaderDistinctValuesTest
     {
         index = LuceneSchemaIndexBuilder.create( IndexPrototype.forSchema( forLabel( 1, 1 ) ).withName( "index_42" ).materialise( 42 ), Config.defaults() )
                 .withFileSystem( fs )
-                .withIndexRootFolder( directory.directory() )
+                .withIndexRootFolder( directory.homeDir() )
                 .build();
         index.create();
         index.open();

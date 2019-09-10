@@ -27,7 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -78,7 +78,7 @@ public class DatabaseMigratorFactory
         {
             // we should not use provided database layout here since transaction log location is different compare to previous versions
             // and that's why we need to use custom transaction logs locator and database layout
-            DatabaseLayout oldDatabaseLayout = new LegacyDatabaseLayout( databaseLayout.getStoreLayout(), databaseLayout.getDatabaseName(),
+            DatabaseLayout oldDatabaseLayout = new LegacyDatabaseLayout( databaseLayout.getNeo4jLayout(), databaseLayout.getDatabaseName(),
                     logsLocator );
             logFiles = LogFilesBuilder.builder( oldDatabaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
@@ -99,7 +99,7 @@ public class DatabaseMigratorFactory
     {
         private final LegacyTransactionLogsLocator logsLocator;
 
-        LegacyDatabaseLayout( StoreLayout storeLayout, String databaseName, LegacyTransactionLogsLocator logsLocator )
+        LegacyDatabaseLayout( Neo4jLayout storeLayout, String databaseName, LegacyTransactionLogsLocator logsLocator )
         {
             super( storeLayout, databaseName );
             this.logsLocator = logsLocator;

@@ -74,7 +74,7 @@ class TestDirectoryExtensionTestSupport
     @Test
     void testDirectoryInitialisedForUsage()
     {
-        File directory = testDirectory.directory();
+        File directory = testDirectory.homeDir();
         assertNotNull( directory );
         assertTrue( directory.exists() );
         Path targetTestData = Paths.get( "target", "test data" );

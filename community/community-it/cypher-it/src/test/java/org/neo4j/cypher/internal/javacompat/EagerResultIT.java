@@ -77,7 +77,7 @@ class EagerResultIT
     @BeforeEach
     void setUp()
     {
-        storeDir = testDirectory.directory();
+        storeDir = testDirectory.homeDir();
         testContextSupplier = new TestTransactionVersionContextSupplier();
         database = startRestartableDatabase();
         prepareData();

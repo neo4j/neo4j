@@ -37,7 +37,7 @@ import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
  * <br/>
  * No assumption should be made about where and how files of a particular database are positioned and all those details should be encapsulated inside.
  *
- * @see StoreLayout
+ * @see Neo4jLayout
  * @see DatabaseFile
  */
 public class DatabaseLayout
@@ -46,45 +46,50 @@ public class DatabaseLayout
 
     private static final File[] EMPTY_FILES_ARRAY = new File[0];
     private final File databaseDirectory;
-    private final StoreLayout storeLayout;
+    private final Neo4jLayout neo4jLayout;
     private final String databaseName;
 
-    public static DatabaseLayout of( StoreLayout storeLayout, String databaseName )
+    public static DatabaseLayout of( Neo4jLayout storeLayout, String databaseName )
     {
         return new DatabaseLayout( storeLayout, databaseName );
     }
 
     public static DatabaseLayout of( File databaseDirectory )
     {
-        return of( databaseDirectory, NOT_CONFIGURED );
+        return of( getCanonicalFile( databaseDirectory ).getParentFile().getParentFile().getParentFile(), databaseDirectory, NOT_CONFIGURED );
     }
 
-    public static DatabaseLayout of( File databaseDirectory, StoreLayoutConfig config )
+    public static DatabaseLayout of( File homeDirectory, File databaseDirectory )
+    {
+        return of( homeDirectory, databaseDirectory, NOT_CONFIGURED );
+    }
+
+    public static DatabaseLayout of( File homeDirectory, File databaseDirectory, StoreLayoutConfig config )
     {
         File canonicalFile = getCanonicalFile( databaseDirectory );
-        return of( canonicalFile.getParentFile(), config, canonicalFile.getName() );
+        return of( homeDirectory, canonicalFile.getParentFile(), config, canonicalFile.getName() );
     }
 
-    public static DatabaseLayout of( File rootDirectory, String databaseName )
+    public static DatabaseLayout of( File homeDirectory, File rootDirectory, String databaseName )
     {
-        return of( rootDirectory, NOT_CONFIGURED, databaseName );
+        return of( homeDirectory, rootDirectory, NOT_CONFIGURED, databaseName );
     }
 
-    public static DatabaseLayout of( File storeDirectory, StoreLayoutConfig config, String databaseName )
+    public static DatabaseLayout of( File homeDirectory, File storeDirectory, StoreLayoutConfig config, String databaseName )
     {
-        return new DatabaseLayout( StoreLayout.of( storeDirectory, config ), databaseName );
+        return new DatabaseLayout( Neo4jLayout.of( homeDirectory, storeDirectory, config ), databaseName );
     }
 
-    protected DatabaseLayout( StoreLayout storeLayout, String databaseName )
+    protected DatabaseLayout( Neo4jLayout neo4jLayout, String databaseName )
     {
-        this.storeLayout = storeLayout;
-        this.databaseDirectory = getCanonicalFile( new File( storeLayout.storeDirectory(), databaseName ) );
+        this.neo4jLayout = neo4jLayout;
+        this.databaseDirectory = getCanonicalFile( new File( neo4jLayout.storeDirectory(), databaseName ) );
         this.databaseName = databaseName;
     }
 
     public File getTransactionLogsDirectory()
     {
-        return storeLayout.getLayoutConfig().getTransactionLogsRootDirectory()
+        return neo4jLayout.getLayoutConfig().getTransactionLogsRootDirectory()
                 .map( root -> new File( root, getDatabaseName() ) )
                 .orElse( databaseDirectory() );
     }
@@ -99,9 +104,9 @@ public class DatabaseLayout
         return databaseName;
     }
 
-    public StoreLayout getStoreLayout()
+    public Neo4jLayout getNeo4jLayout()
     {
-        return storeLayout;
+        return neo4jLayout;
     }
 
     public File databaseDirectory()
@@ -328,7 +333,7 @@ public class DatabaseLayout
     @Override
     public int hashCode()
     {
-        return Objects.hash( databaseDirectory, storeLayout );
+        return Objects.hash( databaseDirectory, neo4jLayout );
     }
 
     @Override
@@ -350,7 +355,7 @@ public class DatabaseLayout
         }
         DatabaseLayout that = (DatabaseLayout) o;
         return Objects.equals( databaseDirectory, that.databaseDirectory ) &&
-               Objects.equals( storeLayout, that.storeLayout ) &&
+               Objects.equals( neo4jLayout, that.neo4jLayout ) &&
                getTransactionLogsDirectory().equals( that.getTransactionLogsDirectory() );
     }
 }

@@ -70,7 +70,7 @@ class LockerLifecycleAdapterTest
         DatabaseManagementService embeddedService = null;
         try
         {
-            embeddedService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfig( config ).build();
+            embeddedService = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).setConfig( config ).build();
             fail();
         }
         catch ( RuntimeException e )
@@ -92,6 +92,6 @@ class LockerLifecycleAdapterTest
 
     private DatabaseManagementService newDb()
     {
-        return new TestDatabaseManagementServiceBuilder( directory.storeDir() ).build();
+        return new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
     }
 }

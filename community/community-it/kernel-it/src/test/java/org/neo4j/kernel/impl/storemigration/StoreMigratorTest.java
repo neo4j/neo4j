@@ -241,7 +241,7 @@ class StoreMigratorTest
         File neoStore = databaseLayout.metadataStore();
 
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                         .setConfig( transaction_logs_root_path, customLogsLocation )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );

@@ -105,12 +105,12 @@ class SpatialConfigExtractorTest
     void shouldLogFailureToExtractIndexConfigFromGenericBecauseOfIndexInFailedState() throws IOException
     {
         // given
-        unzip( getClass(), ZIP_FAILED_SPATIAL_35_DIR, directory.directory() );
+        unzip( getClass(), ZIP_FAILED_SPATIAL_35_DIR, directory.homeDir() );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log myLog = logProvider.getLog( "myLog" );
 
         // and
-        File spatialDirectory = new File( directory.directory(), FAILED_SPATIAL_35_DIR );
+        File spatialDirectory = new File( directory.homeDir(), FAILED_SPATIAL_35_DIR );
         assertTrue( fs.fileExists( spatialDirectory ) );
         assertTrue( fs.isDirectory( spatialDirectory ) );
 
@@ -146,7 +146,7 @@ class SpatialConfigExtractorTest
     void shouldBeAbleToExtractConfigFromHealthy35File() throws IOException
     {
         // given
-        unzip( getClass(), ZIP_HEALTHY_SPATIAL_35_DIR, directory.directory() );
+        unzip( getClass(), ZIP_HEALTHY_SPATIAL_35_DIR, directory.homeDir() );
         File spatialDir = directory.file( HEALTHY_SPATIAL_35_DIR );
 
         // and

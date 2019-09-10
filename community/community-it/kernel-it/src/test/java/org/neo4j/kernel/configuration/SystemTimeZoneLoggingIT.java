@@ -64,7 +64,7 @@ class SystemTimeZoneLoggingIT
     private void checkStartLogLine( int hoursShift, String timeZoneSuffix ) throws IOException
     {
         TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
-        File storeDir = testDirectory.storeDir( String.valueOf( hoursShift ) );
+        File storeDir = testDirectory.homeDir( String.valueOf( hoursShift ) );
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( storeDir )
                         .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM )

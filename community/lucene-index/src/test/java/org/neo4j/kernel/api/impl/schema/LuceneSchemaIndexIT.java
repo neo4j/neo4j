@@ -259,7 +259,7 @@ class LuceneSchemaIndexIT
 
     private List<String> asFileInsidePartitionNames( ResourceIterator<File> resources )
     {
-        int testDirectoryPathLength = testDir.directory().getAbsolutePath().length();
+        int testDirectoryPathLength = testDir.homeDir().getAbsolutePath().length();
         return asList( resources ).stream()
                 .map( file -> file.getAbsolutePath().substring( testDirectoryPathLength ) )
                 .collect( Collectors.toList() );

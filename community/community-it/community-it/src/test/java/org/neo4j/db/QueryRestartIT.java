@@ -63,7 +63,7 @@ class QueryRestartIT
     @BeforeEach
     void setUp() throws IOException
     {
-        storeDir = testDirectory.directory();
+        storeDir = testDirectory.homeDir();
         testContextSupplier = new TestTransactionVersionContextSupplier();
         database = startSnapshotQueryDb();
         createData();

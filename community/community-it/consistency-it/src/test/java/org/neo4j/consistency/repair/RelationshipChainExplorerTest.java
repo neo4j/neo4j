@@ -130,7 +130,7 @@ public class RelationshipChainExplorerTest
 
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
-        File storeDirectory = testDirectory.storeDir();
+        File storeDirectory = testDirectory.homeDir();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).setConfig( getConfig() ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
 

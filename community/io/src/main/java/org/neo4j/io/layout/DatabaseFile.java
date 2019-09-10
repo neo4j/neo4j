@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
  * Any database file that represented here can have internal details like several actual file names, other internal characteristic that are store specific.
  *
  * @see DatabaseLayout
- * @see StoreLayout
+ * @see Neo4jLayout
  */
 public enum DatabaseFile
 {

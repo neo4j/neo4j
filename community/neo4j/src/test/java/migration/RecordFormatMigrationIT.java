@@ -60,7 +60,7 @@ class RecordFormatMigrationIT
     @BeforeEach
     void setUp()
     {
-        databaseDirectory = testDirectory.storeDir();
+        databaseDirectory = testDirectory.homeDir();
     }
 
     @Test

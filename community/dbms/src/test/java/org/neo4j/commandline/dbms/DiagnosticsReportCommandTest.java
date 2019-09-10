@@ -248,7 +248,7 @@ public class DiagnosticsReportCommandTest
         assertThat( ctx.fs().listFiles( other ).length, is( 1 ) );
 
         // Default should be empty
-        File reports = new File( testDirectory.directory(), "reports" );
+        File reports = new File( testDirectory.homeDir(), "reports" );
         assertThat( ctx.fs().fileExists( reports ), is( false ) );
     }
 }

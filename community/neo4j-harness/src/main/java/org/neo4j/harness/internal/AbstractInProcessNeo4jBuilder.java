@@ -61,8 +61,8 @@ import org.neo4j.server.database.GraphFactory;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
-import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
@@ -285,7 +285,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     private Neo4jBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
-        config.set( data_directory, serverFolder.toPath().toAbsolutePath() );
+        config.set( neo4j_home, serverFolder.toPath().toAbsolutePath() );
         return this;
     }
 

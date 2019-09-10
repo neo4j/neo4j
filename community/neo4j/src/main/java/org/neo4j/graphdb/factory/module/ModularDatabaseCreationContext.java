@@ -127,7 +127,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         DatabaseIdContext idContext = editionComponents.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
-        this.databaseLayout = globalModule.getStoreLayout().databaseLayout( databaseId.name() );
+        this.databaseLayout = globalModule.getNeo4jLayout().databaseLayout( databaseId.name() );
         this.databaseLogService = new DatabaseLogService( new DatabaseNameLogContext( databaseId ), globalModule.getLogService() );
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;

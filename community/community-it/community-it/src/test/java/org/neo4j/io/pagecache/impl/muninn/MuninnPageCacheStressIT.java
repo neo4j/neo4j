@@ -50,7 +50,7 @@ class MuninnPageCacheStressIT
         Condition condition = numberOfEvictions( monitor, 100_000 );
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
-                .withWorkingDirectory( testDirectory.directory() )
+                .withWorkingDirectory( testDirectory.homeDir() )
                 .with( monitor )
                 .with( condition )
                 .build();

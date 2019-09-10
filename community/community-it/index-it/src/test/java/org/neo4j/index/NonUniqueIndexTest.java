@@ -120,7 +120,7 @@ class NonUniqueIndexTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( createJobScheduler() );
 
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setExternalDependencies( dependencies )
                 .build();
 

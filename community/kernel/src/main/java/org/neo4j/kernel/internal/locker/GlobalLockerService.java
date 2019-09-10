@@ -21,7 +21,7 @@ package org.neo4j.kernel.internal.locker;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 
 /**
  * Locker service implementation that provide dbms and database level locks that are globally
@@ -31,7 +31,7 @@ import org.neo4j.io.layout.StoreLayout;
 public class GlobalLockerService implements FileLockerService
 {
     @Override
-    public Locker createStoreLocker( FileSystemAbstraction fileSystem, StoreLayout storeLayout )
+    public Locker createStoreLocker( FileSystemAbstraction fileSystem, Neo4jLayout storeLayout )
     {
         return new GlobalLocker( fileSystem, storeLayout );
     }

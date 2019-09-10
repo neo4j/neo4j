@@ -193,7 +193,7 @@ public class ParallelBatchImporterTest
                     NODE_COUNT * TOKENS.length / 2 ), groups ) );
 
             // THEN
-            DatabaseManagementService managementService = getDBMSBuilder( directory.storeDir() ).build();
+            DatabaseManagementService managementService = getDBMSBuilder( directory.homeDir() ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {

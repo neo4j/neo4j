@@ -65,7 +65,7 @@ class RecoveryLogIT
         //Create database with forced recovery
         File tmpLogDir = testDirectory.directory("logs");
         var databaseLayout = testDirectory.databaseLayout();
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction tx = db.beginTx() )
@@ -95,7 +95,7 @@ class RecoveryLogIT
         }
 
         AssertableLogProvider provider = new AssertableLogProvider();
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setInternalLogProvider( provider )
                 .build();
         managementService.database( DEFAULT_DATABASE_NAME );

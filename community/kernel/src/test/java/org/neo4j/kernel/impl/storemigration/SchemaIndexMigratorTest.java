@@ -45,10 +45,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 class SchemaIndexMigratorTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+    private final File home = mock( File.class );
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
-    private final DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "store" ), DEFAULT_DATABASE_NAME );
-    private final DatabaseLayout migrationLayout = DatabaseLayout.of( new File( "migrationDir" ), DEFAULT_DATABASE_NAME );
+    private final DatabaseLayout databaseLayout = DatabaseLayout.of( home, new File( "store" ), DEFAULT_DATABASE_NAME );
+    private final DatabaseLayout migrationLayout = DatabaseLayout.of( home, new File( "migrationDir" ), DEFAULT_DATABASE_NAME );
 
     @Test
     void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException

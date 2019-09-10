@@ -150,7 +150,7 @@ class CheckConsistencyCommandIT
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
         Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, LayoutConfig.of( config ), "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -176,7 +176,7 @@ class CheckConsistencyCommandIT
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
         Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, LayoutConfig.of( config ), "mydb" );
         testDir.getFileSystem().mkdirs( databaseLayout.databaseDirectory() );
 
         try ( Closeable lock = DatabaseLockChecker.check( databaseLayout ) )
@@ -198,7 +198,7 @@ class CheckConsistencyCommandIT
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
         Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, LayoutConfig.of( config ), "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -370,7 +370,7 @@ class CheckConsistencyCommandIT
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         File databasesFolder = getDatabasesFolder( homeDir );
-        DatabaseLayout backupLayout = DatabaseLayout.of( databasesFolder, NOT_CONFIGURED, "backup" );
+        DatabaseLayout backupLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, NOT_CONFIGURED, "backup" );
         prepareBackupDatabase( backupLayout );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
@@ -395,7 +395,7 @@ class CheckConsistencyCommandIT
     private void prepareBackupDatabase( DatabaseLayout backupLayout ) throws IOException
     {
         testDir.getFileSystem().deleteRecursively( homeDir.toFile() );
-        prepareDatabase( backupLayout, Config.defaults( transaction_logs_root_path, backupLayout.getStoreLayout().storeDirectory().toPath() ) );
+        prepareDatabase( backupLayout, Config.defaults( transaction_logs_root_path, backupLayout.getNeo4jLayout().storeDirectory().toPath() ) );
     }
 
     private static File getDatabasesFolder( Path homeDir )
@@ -406,7 +406,7 @@ class CheckConsistencyCommandIT
     private void prepareDatabase( Path homeDir, Config config )
     {
         File databasesFolder = getDatabasesFolder( homeDir );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, LayoutConfig.of( config ), "mydb" );
         prepareDatabase( databaseLayout, config );
     }
 

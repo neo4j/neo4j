@@ -238,7 +238,7 @@ class BlockStorageTest
             storage.merge( 2, NOT_CANCELLABLE );
 
             // then
-            File[] files = fileSystem.listFiles( directory.directory() );
+            File[] files = fileSystem.listFiles( directory.homeDir() );
             assertEquals( 1, files.length, "Expected only a single file to exist after merge." );
         }
     }

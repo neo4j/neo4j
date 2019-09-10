@@ -154,6 +154,6 @@ class ReadAheadLogChannelTest
 
     private File file( int index )
     {
-        return new File( directory.directory(), "" + index );
+        return new File( directory.homeDir(), "" + index );
     }
 }

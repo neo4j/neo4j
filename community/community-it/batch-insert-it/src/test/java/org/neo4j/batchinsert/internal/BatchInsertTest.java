@@ -1409,7 +1409,7 @@ class BatchInsertTest
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter, int denseNodeThreshold )
     {
         inserter.shutdown();
-        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
+        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
         factory.setFileSystem( fs );
         managementService = factory.impermanent()
             // Shouldn't be necessary to set dense node threshold since it's a stick config

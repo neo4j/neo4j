@@ -45,7 +45,9 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.IoPrimitiveUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
@@ -128,18 +130,22 @@ public class DbRepresentation
 
     public static DbRepresentation of( DatabaseLayout databaseLayout )
     {
+        Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         return of( databaseLayout.databaseDirectory(),
                 Config.newBuilder()
-                        .set( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().toPath().toAbsolutePath() )
+                        .set( transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath().toAbsolutePath() )
+                        .set( databases_root_path, layout.storeDirectory().toPath().toAbsolutePath() )
                         .set( default_database, databaseLayout.getDatabaseName() )
                         .build());
     }
 
     public static DbRepresentation of( DatabaseLayout databaseLayout, Config config )
     {
+        Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         Config cfg = Config.newBuilder().fromConfig( config )
-                .set( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().toPath().toAbsolutePath() )
-                .set( default_database, databaseLayout.getDatabaseName() )
+                .setDefault( transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath().toAbsolutePath() )
+                .setDefault( databases_root_path, layout.storeDirectory().toPath().toAbsolutePath() )
+                .setDefault( default_database, databaseLayout.getDatabaseName() )
                 .build();
         return of( databaseLayout.databaseDirectory(), cfg );
     }

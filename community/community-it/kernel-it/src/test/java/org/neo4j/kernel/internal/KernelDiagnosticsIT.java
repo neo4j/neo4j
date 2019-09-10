@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.Logger;
@@ -71,11 +72,11 @@ class KernelDiagnosticsIT
         for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
         {
             // given
-            File storeDir = directory.storeDir( String.valueOf( i++ ) );
-            createIndexInIsolatedDbInstance( storeDir, schemaIndex );
+            Neo4jLayout layout = directory.neo4jLayout( String.valueOf( i++ ) );
+            createIndexInIsolatedDbInstance( layout.homeDirectory(), schemaIndex );
 
             // when
-            DatabaseLayout databaseLayout = DatabaseLayout.of( storeDir, DEFAULT_DATABASE_NAME );
+            DatabaseLayout databaseLayout = layout.databaseLayout( DEFAULT_DATABASE_NAME );
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
             StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
             SizeCapture capture = new SizeCapture();
@@ -88,10 +89,9 @@ class KernelDiagnosticsIT
         }
     }
 
-    private static void createIndexInIsolatedDbInstance( File storeDir, GraphDatabaseSettings.SchemaIndex index )
+    private static void createIndexInIsolatedDbInstance( File homeDir, GraphDatabaseSettings.SchemaIndex index )
     {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( storeDir )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDir )
                         .setConfig( GraphDatabaseSettings.default_schema_provider, index.providerName() )
                         .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );

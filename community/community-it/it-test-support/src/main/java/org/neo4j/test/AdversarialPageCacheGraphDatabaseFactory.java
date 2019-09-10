@@ -44,20 +44,21 @@ public class AdversarialPageCacheGraphDatabaseFactory
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static DatabaseManagementServiceBuilder create( File databaseRootDir, FileSystemAbstraction fs, Adversary adversary )
+    public static DatabaseManagementServiceBuilder create( File homeDir, FileSystemAbstraction fs, Adversary adversary )
     {
-        return new TestDatabaseManagementServiceBuilder( databaseRootDir )
+        return new TestDatabaseManagementServiceBuilder( homeDir )
         {
             @Override
-            protected DatabaseManagementService newDatabaseManagementService( File dir, Config config, ExternalDependencies dependencies )
+            protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
             {
+
                 return new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
 
                     @Override
-                    protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
+                    protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
                     {
-                        return new GlobalModule( storeDir, config, databaseInfo, dependencies )
+                        return new GlobalModule( config, databaseInfo, dependencies )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()
@@ -74,7 +75,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                             }
                         };
                     }
-                }.build( dir, config, dependencies );
+                }.build( config, dependencies );
             }
         };
     }

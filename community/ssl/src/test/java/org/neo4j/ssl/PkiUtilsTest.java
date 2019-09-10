@@ -54,8 +54,8 @@ class PkiUtilsTest
     {
         // Given
         var sslFactory = new SelfSignedCertificateFactory();
-        var cPath = new File( testDirectory.directory(), "certificate" );
-        var pkPath = new File( testDirectory.directory(), "key" );
+        var cPath = new File( testDirectory.homeDir(), "certificate" );
+        var pkPath = new File( testDirectory.homeDir(), "key" );
 
         // When
         sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );

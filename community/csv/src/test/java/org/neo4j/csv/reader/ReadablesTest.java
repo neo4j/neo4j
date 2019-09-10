@@ -283,7 +283,7 @@ class ReadablesTest
 
     private File writeToFile( String data, Charset charset ) throws IOException
     {
-        File file = new File( directory.directory(), "text-" + charset.name() );
+        File file = new File( directory.homeDir(), "text-" + charset.name() );
         try ( Writer writer = new OutputStreamWriter( new FileOutputStream( file ), charset ) )
         {
             writer.append( data );
@@ -293,7 +293,7 @@ class ReadablesTest
 
     private File writeToFile( byte[] header, String data, Charset charset ) throws IOException
     {
-        File file = new File( directory.directory(), "text-" + charset.name() );
+        File file = new File( directory.homeDir(), "text-" + charset.name() );
         try ( OutputStream out = new FileOutputStream( file );
             Writer writer = new OutputStreamWriter( out, charset ) )
         {

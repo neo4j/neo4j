@@ -96,7 +96,7 @@ class DatabaseIndexIntegrationTest
     void setUp() throws IOException
     {
         directoryFactory = new SyncNotifierDirectoryFactory( raceSignal );
-        luceneIndex = createTestLuceneIndex( directoryFactory, testDirectory.directory() );
+        luceneIndex = createTestLuceneIndex( directoryFactory, testDirectory.homeDir() );
     }
 
     @AfterEach

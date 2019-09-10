@@ -55,7 +55,7 @@ class DatabaseManagementServiceBuilderIT
     @Test
     void startSystemAndDefaultDatabase()
     {
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -73,15 +73,17 @@ class DatabaseManagementServiceBuilderIT
     @Test
     void configuredDatabasesRootPath()
     {
-        File factoryDir = testDirectory.storeDir();
+        File homeDir = testDirectory.homeDir();
+        File storeDir = testDirectory.homeDir();
         File databasesDir = testDirectory.directory( "my_databases" );
 
-        DatabaseManagementService managementService =
-                new DatabaseManagementServiceBuilder( factoryDir ).setConfig( databases_root_path, databasesDir.toPath() ).build();
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( homeDir )
+                .setConfig( databases_root_path, databasesDir.toPath() )
+                .build();
         try
         {
-            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );
-            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, SYSTEM_DATABASE_NAME ) ) );
+            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( storeDir, DEFAULT_DATABASE_NAME ) ) );
+            assertTrue( isEmptyOrNonExistingDirectory( fs, new File( storeDir, SYSTEM_DATABASE_NAME ) ) );
 
             assertFalse( isEmptyOrNonExistingDirectory( fs, new File( databasesDir, DEFAULT_DATABASE_NAME ) ) );
             assertFalse( isEmptyOrNonExistingDirectory( fs, new File( databasesDir, SYSTEM_DATABASE_NAME ) ) );
@@ -95,13 +97,14 @@ class DatabaseManagementServiceBuilderIT
     @Test
     void notConfiguredDatabasesRootPath()
     {
-        File factoryDir = testDirectory.storeDir();
+        File homeDir = testDirectory.homeDir();
+        File storeDir = testDirectory.storeDir();
 
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( factoryDir ).build();
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( homeDir ).build();
         try
         {
-            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );
-            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, SYSTEM_DATABASE_NAME ) ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( storeDir, DEFAULT_DATABASE_NAME ) ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( storeDir, SYSTEM_DATABASE_NAME ) ) );
         }
         finally
         {

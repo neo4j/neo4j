@@ -56,7 +56,7 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
     @BeforeEach
     void createDb()
     {
-        managementService = createGraphDatabaseFactory( dir.storeDir() )
+        managementService = createGraphDatabaseFactory( dir.homeDir() )
                 .setFileSystem( fs )
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );

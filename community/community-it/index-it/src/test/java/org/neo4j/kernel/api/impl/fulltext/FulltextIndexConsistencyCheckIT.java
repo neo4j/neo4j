@@ -102,7 +102,7 @@ class FulltextIndexConsistencyCheckIT
     @BeforeEach
     void before()
     {
-        builder = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
+        builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
     }
 
     @AfterEach
@@ -542,7 +542,7 @@ class FulltextIndexConsistencyCheckIT
         // Remove the property without updating the index
         managementService.shutdown();
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                         .setFileSystem( fs )
                         .removeExtensions( INDEX_PROVIDERS_FILTER )
                         .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )

@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.facade;
 
 import java.io.File;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -44,7 +43,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.spatial.Geometry;
@@ -109,28 +107,13 @@ public class DatabaseManagementServiceFactory
      * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
      * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
      *
-     * @param storeDir the directory where the Neo4j data store is located
-     * @param params configuration parameters
-     * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
-     * @return the initialised {@link GraphDatabaseFacade}
-     */
-    public DatabaseManagementService build( File storeDir, Map<Setting<?>,Object> params, final ExternalDependencies dependencies )
-    {
-        return build( storeDir, Config.defaults( params ), dependencies );
-    }
-
-    /**
-     * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
-     * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
-     *
-     * @param storeDir the directory where the Neo4j data store is located
      * @param config configuration
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public DatabaseManagementService build( File storeDir, Config config, final ExternalDependencies dependencies )
+    public DatabaseManagementService build( Config config, final ExternalDependencies dependencies )
     {
-        GlobalModule globalModule = createGlobalModule( storeDir, config, dependencies );
+        GlobalModule globalModule = createGlobalModule( config, dependencies );
         AbstractEditionModule edition = editionFactory.apply( globalModule );
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
         LifeSupport globalLife = globalModule.getGlobalLife();
@@ -180,7 +163,7 @@ public class DatabaseManagementServiceFactory
         }
         catch ( Throwable throwable )
         {
-            String message = "Error starting database server at " + globalModule.getStoreLayout().storeDirectory();
+            String message = "Error starting database server at " + globalModule.getNeo4jLayout().storeDirectory();
             startupException = new RuntimeException( message, throwable );
             internalLog.error( message, throwable );
         }
@@ -224,9 +207,9 @@ public class DatabaseManagementServiceFactory
     /**
      * Create the platform module. Override to replace with custom module.
      */
-    protected GlobalModule createGlobalModule( File storeDir, Config config, final ExternalDependencies dependencies )
+    protected GlobalModule createGlobalModule( Config config, final ExternalDependencies dependencies )
     {
-        return new GlobalModule( storeDir, config, databaseInfo, dependencies );
+        return new GlobalModule( config, databaseInfo, dependencies );
     }
 
     /**

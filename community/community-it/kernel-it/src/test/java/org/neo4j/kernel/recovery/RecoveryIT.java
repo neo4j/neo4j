@@ -341,7 +341,7 @@ class RecoveryIT
     void startDatabaseWithRemovedMultipleTransactionLogFiles() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -364,7 +364,7 @@ class RecoveryIT
     void killAndStartDatabaseAfterTransactionLogsRemoval() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -398,7 +398,7 @@ class RecoveryIT
     void killAndStartDatabaseAfterTransactionLogsRemovalWithSeveralFilesWithoutCheckpoint() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -430,7 +430,7 @@ class RecoveryIT
     void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -637,7 +637,7 @@ class RecoveryIT
 
     private GraphDatabaseAPI createDatabase()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                 .setConfig( logical_log_rotation_threshold, logical_log_rotation_threshold.defaultValue() )
                 .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -651,7 +651,7 @@ class RecoveryIT
 
     private DatabaseManagementService forcedRecoveryManagement()
     {
-        return new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfig( fail_on_missing_files, false ).build();
+        return new TestDatabaseManagementServiceBuilder( directory.homeDir() ).setConfig( fail_on_missing_files, false ).build();
     }
 
     private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )

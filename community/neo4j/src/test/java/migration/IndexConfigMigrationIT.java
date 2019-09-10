@@ -221,7 +221,7 @@ class IndexConfigMigrationIT
         File databaseDir = directory.databaseDir();
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
-        DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( directory.storeDir() )
+        DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( directory.homeDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true );
         DatabaseManagementService dbms = builder.build();
         try

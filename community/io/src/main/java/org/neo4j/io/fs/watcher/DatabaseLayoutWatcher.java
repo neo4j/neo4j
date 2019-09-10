@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.Objects.requireNonNull;
@@ -75,12 +76,12 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
 
     private void watchDirectories()
     {
-        File databaseDirectory = databaseLayout.databaseDirectory();
-        File transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
-        watch( databaseDirectory );
-        watch( databaseDirectory.getParentFile() );
-        watch( transactionLogsDirectory );
-        watch( transactionLogsDirectory.getParentFile() );
+        Neo4jLayout layout = databaseLayout.getNeo4jLayout();
+        watch( databaseLayout.databaseDirectory() );
+        watch( databaseLayout.getTransactionLogsDirectory() );
+        watch( layout.storeDirectory() );
+        watch( layout.transactionLogsRootDirectory() );
+        watch( layout.homeDirectory() );
         startWatching();
     }
 

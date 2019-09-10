@@ -82,7 +82,7 @@ class PartialTransactionFailureIT
                 Command.RelationshipCommand.class );
         adversary.disable();
 
-        File storeDir = testDirectory.storeDir();
+        File storeDir = testDirectory.homeDir();
         final Map<Setting<?>,Object> params = Map.of( GraphDatabaseSettings.pagecache_memory, "8m" );
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setFileSystem( new AdversarialFileSystemAbstraction( adversary ) )

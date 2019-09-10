@@ -158,7 +158,7 @@ class DatabaseRecoveryIT
     @Test
     void idGeneratorsRebuildAfterRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.storeDir() );
+        GraphDatabaseService database = startDatabase( directory.homeDir() );
         int numberOfNodes = 10;
         try ( Transaction transaction = database.beginTx() )
         {
@@ -171,7 +171,7 @@ class DatabaseRecoveryIT
 
         var restoreDbLayout = copyStore();
 
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getStoreLayout().storeDirectory() );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbLayout.getNeo4jLayout().homeDirectory() );
         try ( Transaction tx = recoveredDatabase.beginTx() )
         {
             assertEquals( numberOfNodes, count( tx.getAllNodes() ) );
@@ -184,7 +184,7 @@ class DatabaseRecoveryIT
     @Test
     void reportProgressOnRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.storeDir() );
+        GraphDatabaseService database = startDatabase( directory.homeDir() );
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
@@ -195,7 +195,7 @@ class DatabaseRecoveryIT
         }
 
         var restoreDbLayout = copyStore();
-        DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getStoreLayout().storeDirectory() );
+        DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getNeo4jLayout().homeDirectory() );
         GraphDatabaseService recoveredDatabase = recoveredService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = recoveredDatabase.beginTx() )
         {
@@ -210,7 +210,7 @@ class DatabaseRecoveryIT
     @Test
     void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.storeDir() );
+        GraphDatabaseService database = startDatabase( directory.homeDir() );
         Label testLabel = Label.label( "testLabel" );
         final String propertyToDelete = "propertyToDelete";
         final String validPropertyName = "validProperty";
@@ -241,7 +241,7 @@ class DatabaseRecoveryIT
         var restoreDbLayout = copyStore();
 
         // database should be restored and node should have expected properties
-        DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getStoreLayout().storeDirectory() );
+        DatabaseManagementService recoveredService = getManagementService( restoreDbLayout.getNeo4jLayout().homeDirectory() );
         GraphDatabaseService recoveredDatabase = recoveredService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
@@ -265,7 +265,7 @@ class DatabaseRecoveryIT
             ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ), Command.RelationshipCommand.class );
             adversary.disable();
 
-            File storeDir = directory.storeDir();
+            File storeDir = directory.homeDir();
             DatabaseManagementService managementService =
                     AdversarialPageCacheGraphDatabaseFactory.create( storeDir, fileSystem, adversary ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -393,7 +393,7 @@ class DatabaseRecoveryIT
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
                 .setFileSystem( fs )
                 .impermanent()
                 .build();
@@ -436,7 +436,7 @@ class DatabaseRecoveryIT
             }
         } );
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setFileSystem( crashedFs ).setExternalDependencies( dependencies ).setMonitors(
+                new TestDatabaseManagementServiceBuilder( directory.homeDir() ).setFileSystem( crashedFs ).setExternalDependencies( dependencies ).setMonitors(
                         monitors ).impermanent().build();
 
         managementService.shutdown();
@@ -787,8 +787,7 @@ class DatabaseRecoveryIT
 
     private DatabaseLayout copyStore() throws IOException
     {
-        File restoreDbStore = directory.storeDir( "restore-db" );
-        DatabaseLayout restoreDbLayout = directory.databaseLayout( restoreDbStore );
+        DatabaseLayout restoreDbLayout = directory.neo4jLayout( "restore-db" ).databaseLayout( DEFAULT_DATABASE_NAME );
         copy( fileSystem, directory.databaseLayout().getTransactionLogsDirectory(), restoreDbLayout.getTransactionLogsDirectory() );
         copy( fileSystem, directory.databaseLayout().databaseDirectory(), restoreDbLayout.databaseDirectory() );
         return restoreDbLayout;

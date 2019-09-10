@@ -73,7 +73,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Given
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
@@ -143,7 +143,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Given
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
@@ -207,7 +207,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Then
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
@@ -231,7 +231,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Then
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );

@@ -19,7 +19,6 @@
  */
 package org.neo4j.test;
 
-import java.io.File;
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -32,7 +31,7 @@ import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.internal.locker.Locker;
@@ -60,25 +59,25 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
     }
 
     @Override
-    protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
+    protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
     {
         config.setIfNotSet( GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ZERO );
         if ( impermanent )
         {
             config.set( GraphDatabaseSettings.ephemeral_lucene, true );
             config.setIfNotSet( GraphDatabaseSettings.keep_logical_logs, "1 files" );
-            return new ImpermanentTestDatabaseGlobalModule( storeDir, config, dependencies, this.databaseInfo );
+            return new ImpermanentTestDatabaseGlobalModule( config, dependencies, this.databaseInfo );
         }
 
-        return new TestDatabaseGlobalModule( storeDir, config, dependencies, this.databaseInfo );
+        return new TestDatabaseGlobalModule( config, dependencies, this.databaseInfo );
     }
 
     class TestDatabaseGlobalModule extends GlobalModule
     {
 
-        TestDatabaseGlobalModule( File storeDir, Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
+        TestDatabaseGlobalModule( Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
         {
-            super( storeDir, config, databaseInfo, dependencies );
+            super( config, databaseInfo, dependencies );
         }
 
         @Override
@@ -123,9 +122,9 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
     private class ImpermanentTestDatabaseGlobalModule extends TestDatabaseGlobalModule
     {
 
-        ImpermanentTestDatabaseGlobalModule( File storeDir, Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
+        ImpermanentTestDatabaseGlobalModule( Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
         {
-            super( storeDir, config, dependencies, databaseInfo );
+            super( config, dependencies, databaseInfo );
         }
 
         @Override
@@ -148,7 +147,7 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
     private static class ImpermanentLockerService implements FileLockerService
     {
         @Override
-        public Locker createStoreLocker( FileSystemAbstraction fileSystem, StoreLayout storeLayout )
+        public Locker createStoreLocker( FileSystemAbstraction fileSystem, Neo4jLayout storeLayout )
         {
             return new Locker( fileSystem, storeLayout.storeLockFile() );
         }

@@ -105,7 +105,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         if ( testSupport == null )
         {
             testSupport = newTestSupport();
-            testSupport.setup( testDirectory.storeDir(), this::createTestGraph );
+            testSupport.setup( testDirectory.homeDir(), this::createTestGraph );
         }
         Kernel kernel = testSupport.kernelToTest();
         tx = beginTransaction( kernel );

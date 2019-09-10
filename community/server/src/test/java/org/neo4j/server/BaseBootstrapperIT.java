@@ -27,8 +27,14 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
@@ -37,6 +43,8 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -46,9 +54,11 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.forced_kernel_id;
@@ -73,7 +83,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     public void before() throws IOException
     {
         bootstrapper = newBootstrapper();
-        SelfSignedCertificateFactory.create( testDirectory.storeDir() );
+        SelfSignedCertificateFactory.create( testDirectory.homeDir() );
     }
 
     @After
@@ -101,8 +111,8 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     protected String[] getAdditionalArguments() throws IOException
     {
         return new String[]{"--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
-                "-c", configOption( data_directory, testDirectory.storeDir().getAbsolutePath() ),
-                "-c", configOption( logs_directory, testDirectory.storeDir().getAbsolutePath() )};
+                "-c", configOption( data_directory, testDirectory.homeDir().getAbsolutePath() ),
+                "-c", configOption( logs_directory, testDirectory.homeDir().getAbsolutePath() )};
     }
 
     @Test
@@ -112,7 +122,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
         File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
-        properties.putAll( getDefaultRelativeProperties( testDirectory.storeDir() ) );
+        properties.putAll( getDefaultRelativeProperties( testDirectory.homeDir() ) );
         properties.putAll( connectorsOnRandomPortsConfig() );
 
         store( properties, configFile );
@@ -133,7 +143,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
         File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
-        properties.putAll( getDefaultRelativeProperties( testDirectory.storeDir() ) );
+        properties.putAll( getDefaultRelativeProperties( testDirectory.homeDir() ) );
         properties.putAll( connectorsOnRandomPortsConfig() );
 
         store( properties, configFile );
@@ -190,16 +200,57 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
         testStartupWithConnectors( false, true, true );
     }
 
+    @Test
+    public void shouldHaveSameLayoutAsEmbedded() throws IOException
+    {
+        File serverDir = testDirectory.directory( "server-dir" );
+        ServerBootstrapper.start( bootstrapper, "--home-dir", serverDir.getAbsolutePath() );
+        bootstrapper.stop();
+
+        File embeddedDir = testDirectory.directory( "embedded-dir" );
+        DatabaseManagementService dbms = newEmbeddedDbms( embeddedDir );
+        dbms.shutdown();
+
+        Predicate<Path> filter = path -> !path.toString().contains( "index" ); //indexes may differ
+        Set<Path> serverPathsWithoutRoot = getAllDirectoryWithPathsStrippedFromRoot( serverDir.toPath(), filter );
+        Set<Path> embeddedPathsWithoutRoot = getAllDirectoryWithPathsStrippedFromRoot( embeddedDir.toPath(), filter );
+
+        Set<Path> directoriesInServerButNotEmbedded = new HashSet<>( serverPathsWithoutRoot );
+        directoriesInServerButNotEmbedded.removeAll( embeddedPathsWithoutRoot );
+
+        Set<Path> directoriesInEmbeddedButNotServer = new HashSet<>( embeddedPathsWithoutRoot );
+        directoriesInEmbeddedButNotServer.removeAll( serverPathsWithoutRoot );
+
+        assertFalse( serverPathsWithoutRoot.isEmpty() );
+        assertFalse( embeddedPathsWithoutRoot.isEmpty() );
+        assertThat( directoriesInServerButNotEmbedded, empty() );
+        assertThat( directoriesInEmbeddedButNotServer, empty() );
+    }
+
+    protected DatabaseManagementService newEmbeddedDbms( File homeDir )
+    {
+        return new DatabaseManagementServiceBuilder( homeDir ).build();
+    }
+
+    private Set<Path> getAllDirectoryWithPathsStrippedFromRoot( Path root, Predicate<Path> filter ) throws IOException
+    {
+        return Files.walk( root )
+                .filter( Files::isDirectory )
+                .filter( filter )
+                .map( root::relativize )
+                .collect( Collectors.toSet() );
+    }
+
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled ) throws Exception
     {
         PemSslPolicyConfig httpsPolicy = PemSslPolicyConfig.forScope( SslPolicyScope.HTTPS );
         if ( httpsEnabled )
         {
             //create self signed
-            SelfSignedCertificateFactory.create( testDirectory.storeDir().getAbsoluteFile() );
+            SelfSignedCertificateFactory.create( testDirectory.homeDir().getAbsoluteFile() );
         }
 
-        String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.storeDir().getAbsolutePath() ) : "",
+        String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.homeDir().getAbsolutePath() ) : "",
 
                 "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
                 "-c", HttpConnector.listen_address.name() + "=localhost:0",

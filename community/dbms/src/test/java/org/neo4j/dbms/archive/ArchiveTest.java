@@ -139,7 +139,7 @@ class ArchiveTest
         new Dumper().dump( directory, directory, archive, compressionFormat, path -> path.getFileName().toString().equals( "another-file" ) );
         File newDirectory = testDirectory.file( "the-new-directory" );
         File txRootDirectory = testDirectory.directory( "tx-root_directory" );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( newDirectory, () -> of( txRootDirectory ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.homeDir(), newDirectory, () -> of( txRootDirectory ) );
         new Loader().load( archive, databaseLayout );
 
         Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
@@ -162,7 +162,7 @@ class ArchiveTest
         new Dumper().dump( directory, directory, archive, compressionFormat, path -> path.getFileName().toString().equals( "subdir" ) );
         File newDirectory = testDirectory.file( "the-new-directory" );
         File txLogsRoot = testDirectory.directory( "txLogsRoot" );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( newDirectory, () -> of( txLogsRoot ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.homeDir(), newDirectory, () -> of( txLogsRoot ) );
         new Loader().load( archive, databaseLayout );
 
         Path expectedOutput = testDirectory.directory( "expected-output" ).toPath();
@@ -186,7 +186,7 @@ class ArchiveTest
 
         File newDirectory = testDirectory.file( "the-new-database" );
         File newTxLogsRoot = testDirectory.directory( "newTxLogsRoot" );
-        DatabaseLayout newDatabaseLayout = DatabaseLayout.of( newDirectory, () -> of( newTxLogsRoot ) );
+        DatabaseLayout newDatabaseLayout = DatabaseLayout.of( testDirectory.homeDir(), newDirectory, () -> of( newTxLogsRoot ) );
 
         new Loader().load( archive, newDatabaseLayout );
 

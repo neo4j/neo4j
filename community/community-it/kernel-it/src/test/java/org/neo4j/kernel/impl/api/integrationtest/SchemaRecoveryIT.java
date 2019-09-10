@@ -130,7 +130,7 @@ class SchemaRecoveryIT
             managementService.shutdown();
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setFileSystem( fs )
                 .impermanent()
                 .build();

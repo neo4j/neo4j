@@ -82,7 +82,7 @@ public abstract class FileSystemAbstractionTest
     void before()
     {
         fsa = buildFileSystemAbstraction();
-        path = new File( testDirectory.directory(), UUID.randomUUID().toString() );
+        path = new File( testDirectory.homeDir(), UUID.randomUUID().toString() );
     }
 
     @AfterEach

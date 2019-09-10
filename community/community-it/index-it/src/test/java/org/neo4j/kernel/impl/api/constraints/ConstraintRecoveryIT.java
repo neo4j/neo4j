@@ -66,7 +66,7 @@ class ConstraintRecoveryIT
     void shouldHaveAvailableOrphanedConstraintIndexIfUniqueConstraintCreationFails()
     {
         // given
-        File pathToDb = testDirectory.storeDir();
+        File pathToDb = testDirectory.homeDir();
 
         TestDatabaseManagementServiceBuilder dbFactory = new TestDatabaseManagementServiceBuilder( pathToDb );
         dbFactory.setFileSystem( fs );
