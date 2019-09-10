@@ -43,6 +43,7 @@ object IndexSeek {
   // predicates
   private val EXACT = s"$ID ?= ?$VALUE".r
   private val EXACT_TWO = s"$ID = ?$VALUE OR ?$VALUE".r
+  private val IN = s"$ID IN \\?\\?\\?".r
   private val EXISTS = s"$ID".r
   private val LESS_THAN = s"$ID ?< ?$VALUE".r
   private val LESS_THAN_OR_EQ = s"$ID ?<= ?$VALUE".r
@@ -121,6 +122,12 @@ object IndexSeek {
       predicates.head match {
         case EXACT_TWO(propStr, valueAStr, valueBStr) =>
           val valueExpr = ManyQueryExpression(ListLiteral(Seq(value(valueAStr), value(valueBStr)))(pos))
+          createSeek(List(prop(propStr)), valueExpr)
+
+        case IN(propStr) =>
+          val expression = paramExpr.getOrElse(throw new IllegalArgumentException(
+            "Cannot use parameter syntax '???' without providing parameter expression 'paramExpr' to IndexSeek()"))
+          val valueExpr = ManyQueryExpression(expression)
           createSeek(List(prop(propStr)), valueExpr)
 
         case EXACT(propStr, valueStr) =>
