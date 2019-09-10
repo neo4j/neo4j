@@ -131,7 +131,7 @@ public class CheckConsistencyCommand extends AbstractCommand
                     progressMonitorFactory = ProgressMonitorFactory.textual( System.out );
                 }
 
-                LogProvider logProvider = Util.logProviderRespectingConfig( config, System.out );
+                LogProvider logProvider = Util.configuredLogProvider( config, System.out );
                 ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                         .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory, logProvider, fileSystem,
                             verbose, options.getReportDir().toFile().getCanonicalFile(),

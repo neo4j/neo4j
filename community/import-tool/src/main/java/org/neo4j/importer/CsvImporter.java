@@ -63,8 +63,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -84,7 +82,7 @@ import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultForm
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.ByteUnit.bytesToString;
-import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 class CsvImporter implements Importer
 {
@@ -155,44 +153,35 @@ class CsvImporter implements Importer
         }
     }
 
-    private void doImport( Input input, Collector badCollector ) throws IOException
+    private void doImport( Input input, Collector badCollector )
     {
-        boolean success;
-        LifeSupport life = new LifeSupport();
+        boolean success = false;
 
         File internalLogFile = databaseConfig.get( store_internal_log_path ).toFile();
-        OutputStream outputStream = FileSystemUtils.createOrOpenAsOutputStream( fileSystem, internalLogFile, true );
-        LogProvider logProvider = Util.logProviderRespectingConfig( databaseConfig, outputStream );
-
-        final JobScheduler jobScheduler = life.add( createScheduler() );
-        life.add( new LifecycleAdapter()
+        try ( JobScheduler jobScheduler = createInitialisedScheduler();
+                OutputStream outputStream = FileSystemUtils.createOrOpenAsOutputStream( fileSystem, internalLogFile, true ) )
         {
-            @Override
-            public void stop() throws Exception
-            {
-                outputStream.close();
-            }
-        });
+            LogProvider logProvider = Util.configuredLogProvider( databaseConfig, outputStream );
 
-        life.start();
-        ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, stdOut,
-            SpectrumExecutionMonitor.DEFAULT_WIDTH ) : ExecutionMonitors.defaultVisible();
-        BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( databaseLayout,
-            fileSystem,
-            null, // no external page cache
-            importConfig,
-            new SimpleLogService( NullLogProvider.getInstance(), logProvider ),
-            executionMonitor,
-            EMPTY,
-            databaseConfig,
-            RecordFormatSelector.selectForConfig( databaseConfig, logProvider ),
-            new PrintingImportLogicMonitor( stdOut, stdErr ),
-            jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE );
-        printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );
-        success = false;
-        try
-        {
+            ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, stdOut,
+                    SpectrumExecutionMonitor.DEFAULT_WIDTH ) : ExecutionMonitors.defaultVisible();
+
+            BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( databaseLayout,
+                    fileSystem,
+                    null, // no external page cache
+                    importConfig,
+                    new SimpleLogService( NullLogProvider.getInstance(), logProvider ),
+                    executionMonitor,
+                    EMPTY,
+                    databaseConfig,
+                    RecordFormatSelector.selectForConfig( databaseConfig, logProvider ),
+                    new PrintingImportLogicMonitor( stdOut, stdErr ),
+                    jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE );
+
+            printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );
+
             importer.doImport( input );
+
             success = true;
         }
         catch ( Exception e )
@@ -210,8 +199,6 @@ class CsvImporter implements Importer
                     stdOut.println( "There were bad entries which were skipped and logged into " + reportFile.getAbsolutePath() );
                 }
             }
-
-            life.shutdown();
 
             if ( !success )
             {

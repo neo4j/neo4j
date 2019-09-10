@@ -59,7 +59,7 @@ public class Util
                 format( "Unable to load database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
     }
 
-    public static LogProvider logProviderRespectingConfig( Config config, OutputStream out )
+    public static LogProvider configuredLogProvider( Config config, OutputStream out )
     {
         return FormattedLogProvider
                 .withZoneId( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
