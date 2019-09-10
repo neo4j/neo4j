@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -67,7 +67,7 @@ class Neo4jTransactionalContextTest
     private ConfiguredExecutionStatistics statistics;
     private final GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
     private final KernelTransactionFactory transactionFactory = mock( KernelTransactionFactory.class );
-    private final DatabaseId databaseId = TestDatabaseIdRepository.randomDatabaseId();
+    private final NamedDatabaseId namedDatabaseId = TestDatabaseIdRepository.randomNamedDatabaseId();
 
     @BeforeEach
     void setUp()
@@ -96,7 +96,7 @@ class Neo4jTransactionalContextTest
     void checkKernelStatementOnCheck()
     {
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
-        when( executingQuery.databaseId() ).thenReturn( databaseId );
+        when( executingQuery.databaseId() ).thenReturn( namedDatabaseId );
         InternalTransaction initialTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
         KernelTransaction kernelTransaction = mockTransaction( statement );
         when( initialTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
@@ -131,7 +131,7 @@ class Neo4jTransactionalContextTest
 
         when( transactionFactory.beginKernelTransaction( transactionType, securityContext, connectionInfo ) ).thenReturn( secondKTX );
         when( executingQuery.queryText() ).thenReturn( "X" );
-        when( executingQuery.databaseId() ).thenReturn( databaseId );
+        when( executingQuery.databaseId() ).thenReturn( namedDatabaseId );
         when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
         when( statement.queryRegistration() ).thenReturn( initialQueryRegistry );
         when( userTransaction.kernelTransaction() ).thenReturn( initialKTX, initialKTX, secondKTX );
@@ -192,7 +192,7 @@ class Neo4jTransactionalContextTest
 
         when( transactionFactory.beginKernelTransaction( transactionType, securityContext, connectionInfo ) ).thenReturn( secondKTX );
         when( executingQuery.queryText() ).thenReturn( "X" );
-        when( executingQuery.databaseId() ).thenReturn( databaseId );
+        when( executingQuery.databaseId() ).thenReturn( namedDatabaseId );
         when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
         Mockito.doThrow( RuntimeException.class ).when( initialKTX ).commit();
         when( initialStatement.queryRegistration() ).thenReturn( initialQueryRegistry );
@@ -239,7 +239,7 @@ class Neo4jTransactionalContextTest
         when( userTransaction.kernelTransaction() ).thenReturn( transaction );
         when( transactionFactory.beginKernelTransaction( any(), any(), any() ) ).thenReturn( transaction );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
-        when( executingQuery.databaseId() ).thenReturn( databaseId );
+        when( executingQuery.databaseId() ).thenReturn( namedDatabaseId );
         Neo4jTransactionalContext transactionalContext = new Neo4jTransactionalContext( queryService,
                 userTransaction, statement, executingQuery, transactionFactory );
 
@@ -407,7 +407,7 @@ class Neo4jTransactionalContextTest
     private Neo4jTransactionalContext newContext( InternalTransaction initialTx )
     {
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
-        when( executingQuery.databaseId() ).thenReturn( databaseId );
+        when( executingQuery.databaseId() ).thenReturn( namedDatabaseId );
         return new Neo4jTransactionalContext( queryService, initialTx, statement, executingQuery, transactionFactory );
     }
 

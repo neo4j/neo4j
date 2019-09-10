@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -167,9 +167,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public DatabaseId databaseId()
+    public NamedDatabaseId databaseId()
     {
-        return database.getDatabaseId();
+        return database.getNamedDatabaseId();
     }
 
     @Override

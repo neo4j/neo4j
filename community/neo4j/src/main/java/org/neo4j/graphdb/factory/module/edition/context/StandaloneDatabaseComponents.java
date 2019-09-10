@@ -26,8 +26,8 @@ import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
@@ -52,14 +52,14 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final DatabaseStartupController startupController;
 
-    public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, DatabaseId databaseId )
+    public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, NamedDatabaseId namedDatabaseId )
     {
         this.commitProcessFactory = editionModule.getCommitProcessFactory();
         this.constraintSemantics = editionModule.getConstraintSemantics();
         this.ioLimiter = editionModule.getIoLimiter();
         this.watcherServiceFactory = editionModule.getWatcherServiceFactory();
-        this.idContext = editionModule.getIdContextFactory().createIdContext( databaseId );
-        this.tokenHolders = editionModule.getTokenHoldersProvider().apply( databaseId );
+        this.idContext = editionModule.getIdContextFactory().createIdContext( namedDatabaseId );
+        this.tokenHolders = editionModule.getTokenHoldersProvider().apply( namedDatabaseId );
         this.locks = editionModule.getLocksSupplier().get();
         this.statementLocksFactory = editionModule.getStatementLocksFactoryProvider().apply( locks );
         this.transactionMonitor = editionModule.createTransactionMonitor();

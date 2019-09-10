@@ -24,13 +24,13 @@ import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.SortedMap;
-import java.util.UUID;
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,7 +40,7 @@ class DatabaseManagerTest
 {
     private static final String KNOWN_DATABASE_NAME = "known";
     private static final String UNKNOWN_DATABASE_NAME = "unknown";
-    private static final DatabaseId DATABASE_ID = TestDatabaseIdRepository.randomDatabaseId();
+    private static final NamedDatabaseId DATABASE_ID_NAMED = TestDatabaseIdRepository.randomNamedDatabaseId();
 
     private DatabaseManager<?> databaseManager = new TestDatabaseManager();
 
@@ -59,7 +59,7 @@ class DatabaseManagerTest
     private static class TestDatabaseManager implements DatabaseManager<DatabaseContext>
     {
         @Override
-        public Optional<DatabaseContext> getDatabaseContext( DatabaseId databaseId )
+        public Optional<DatabaseContext> getDatabaseContext( NamedDatabaseId namedDatabaseId )
         {
             return Optional.of( Mockito.mock( DatabaseContext.class ) );
         }
@@ -70,23 +70,23 @@ class DatabaseManagerTest
             return new DatabaseIdRepository.Caching()
             {
                 @Override
-                public void invalidate( DatabaseId databaseId )
+                public void invalidate( NamedDatabaseId namedDatabaseId )
                 {
 
                 }
 
                 @Override
-                public void cache( DatabaseId databaseId )
+                public void cache( NamedDatabaseId namedDatabaseId )
                 {
 
                 }
 
                 @Override
-                public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
+                public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
                 {
                     if ( KNOWN_DATABASE_NAME.equals( databaseName.name() ) )
                     {
-                        return Optional.of( DATABASE_ID );
+                        return Optional.of( DATABASE_ID_NAMED );
                     }
                     else
                     {
@@ -95,11 +95,11 @@ class DatabaseManagerTest
                 }
 
                 @Override
-                public Optional<DatabaseId> getByUuid( UUID uuid )
+                public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
                 {
-                    if ( DATABASE_ID.uuid().equals( uuid ) )
+                    if ( DATABASE_ID_NAMED.databaseId().equals( databaseId ) )
                     {
-                        return Optional.of( DATABASE_ID );
+                        return Optional.of( DATABASE_ID_NAMED );
                     }
                     else
                     {
@@ -110,31 +110,31 @@ class DatabaseManagerTest
         }
 
         @Override
-        public DatabaseContext createDatabase( DatabaseId databaseId ) throws DatabaseExistsException
+        public DatabaseContext createDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseExistsException
         {
             return null;
         }
 
         @Override
-        public void dropDatabase( DatabaseId databaseId ) throws DatabaseNotFoundException
+        public void dropDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException
         {
 
         }
 
         @Override
-        public void stopDatabase( DatabaseId databaseId ) throws DatabaseNotFoundException
+        public void stopDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException
         {
 
         }
 
         @Override
-        public void startDatabase( DatabaseId databaseId ) throws DatabaseNotFoundException
+        public void startDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException
         {
 
         }
 
         @Override
-        public SortedMap<DatabaseId,DatabaseContext> registeredDatabases()
+        public SortedMap<NamedDatabaseId,DatabaseContext> registeredDatabases()
         {
             return null;
         }

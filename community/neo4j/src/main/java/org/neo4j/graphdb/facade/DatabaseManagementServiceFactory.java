@@ -82,7 +82,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 /**
  * This is the main factory for creating database instances. It delegates creation to two different modules
@@ -191,13 +191,13 @@ public class DatabaseManagementServiceFactory
 
     private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager, DatabaseStateService dbStateService )
     {
-        Optional<? extends DatabaseContext> databaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID );
+        Optional<? extends DatabaseContext> databaseContext = databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID );
         if ( databaseContext.isEmpty() )
         {
             throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " not found." );
         }
 
-        Optional<Throwable> failure = dbStateService.causeOfFailure( SYSTEM_DATABASE_ID );
+        Optional<Throwable> failure = dbStateService.causeOfFailure( NAMED_SYSTEM_DATABASE_ID );
         if ( failure.isPresent() )
         {
             throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " failed to start.", failure.get() );

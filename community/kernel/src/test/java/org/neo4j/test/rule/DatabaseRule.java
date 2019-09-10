@@ -46,9 +46,9 @@ import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -156,9 +156,9 @@ public class DatabaseRule extends ExternalResource
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
                 deps -> StorageEngineFactory.selectStorageEngine() );
-        DatabaseId databaseId = databaseIdRepository.getRaw( databaseName );
+        NamedDatabaseId namedDatabaseId = databaseIdRepository.getRaw( databaseName );
 
-        database = new Database( new TestDatabaseCreationContext( databaseId, databaseLayout, config, idGeneratorFactory, logService,
+        database = new Database( new TestDatabaseCreationContext( namedDatabaseId, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
                 mock( GlobalTransactionEventListeners.class ), fs, transactionStats, databaseHealth,
                 new CommunityCommitProcessFactory(),
@@ -201,7 +201,7 @@ public class DatabaseRule extends ExternalResource
 
     private static class TestDatabaseCreationContext implements DatabaseCreationContext
     {
-        private final DatabaseId databaseId;
+        private final NamedDatabaseId namedDatabaseId;
         private final DatabaseLayout databaseLayout;
         private final Config config;
         private final LeaseService leaseService;
@@ -238,7 +238,7 @@ public class DatabaseRule extends ExternalResource
         private final StorageEngineFactory storageEngineFactory;
         private final FileLockerService fileLockerService;
 
-        TestDatabaseCreationContext( DatabaseId databaseId, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
+        TestDatabaseCreationContext( NamedDatabaseId namedDatabaseId, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
                 TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory, GlobalTransactionEventListeners globalTransactionEventListeners,
                 FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats, DatabaseHealth databaseHealth,
@@ -250,14 +250,14 @@ public class DatabaseRule extends ExternalResource
                 QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory,
                 FileLockerService fileLockerService, LeaseService leaseService, DatabaseStartupController startupController )
         {
-            this.databaseId = databaseId;
+            this.namedDatabaseId = namedDatabaseId;
             this.databaseLayout = databaseLayout;
             this.config = config;
             this.leaseService = leaseService;
             this.startupController = startupController;
-            this.databaseConfig = new DatabaseConfig( config, databaseId );
+            this.databaseConfig = new DatabaseConfig( config, namedDatabaseId );
             this.idGeneratorFactory = idGeneratorFactory;
-            this.logService = new DatabaseLogService( new DatabaseNameLogContext( databaseId ), logService );
+            this.logService = new DatabaseLogService( new DatabaseNameLogContext( namedDatabaseId ), logService );
             this.scheduler = scheduler;
             this.tokenNameLookup = tokenNameLookup;
             this.dependencyResolver = dependencyResolver;
@@ -289,9 +289,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public DatabaseId getDatabaseId()
+        public NamedDatabaseId getNamedDatabaseId()
         {
-            return databaseId;
+            return namedDatabaseId;
         }
 
         @Override
@@ -434,8 +434,7 @@ public class DatabaseRule extends ExternalResource
         @Override
         public LongFunction<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
         {
-            return timeout -> new DatabaseAvailabilityGuard(
-                    databaseId,
+            return timeout -> new DatabaseAvailabilityGuard( namedDatabaseId,
                     clock,
                     NullLog.getInstance(),
                     timeout,

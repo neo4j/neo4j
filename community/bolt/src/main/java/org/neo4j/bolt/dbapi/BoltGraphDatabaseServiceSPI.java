@@ -28,7 +28,7 @@ import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
  * A database representation as seen and used by Bolt.
@@ -40,5 +40,5 @@ public interface BoltGraphDatabaseServiceSPI
 
     boolean isPeriodicCommit( String query );
 
-    DatabaseId getDatabaseId();
+    NamedDatabaseId getNamedDatabaseId();
 }

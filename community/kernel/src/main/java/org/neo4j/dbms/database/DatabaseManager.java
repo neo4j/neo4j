@@ -27,6 +27,7 @@ import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
@@ -54,10 +55,10 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
     /**
      * Returns a given {@link DatabaseContext} object by identifier, or `Optional.empty()` if the database does not exist
      *
-     * @param databaseId the ID of the database to be returned
+     * @param namedDatabaseId the ID of the database to be returned
      * @return optionally, the database context instance with ID databaseId
      */
-    Optional<DB> getDatabaseContext( DatabaseId databaseId );
+    Optional<DB> getDatabaseContext( NamedDatabaseId namedDatabaseId );
 
     /**
      * Returns a given {@link DatabaseContext} object by name, or `Optional.empty()` if the database does not exist
@@ -71,36 +72,47 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
     }
 
     /**
+     * Returns a given {@link DatabaseContext} object by name, or `Optional.empty()` if the database does not exist
+     *
+     * @param databaseId the identifier of the database to be returned
+     * @return optionally, the database context instance with identifier databaseId
+     */
+    default Optional<DB> getDatabaseContext( DatabaseId databaseId )
+    {
+        return databaseIdRepository().getById( databaseId ).flatMap( this::getDatabaseContext );
+    }
+
+    /**
      * Create database with specified name.
      * Database name should be unique.
      * By default a database is in a started state when it is initially created.
-     * @param databaseId ID of database to create
+     * @param namedDatabaseId ID of database to create
      * @throws DatabaseManagementException if database with specified name already exists, or the limited number of databases has been reached.
      * @return database context for newly created database
      */
-    DB createDatabase( DatabaseId databaseId ) throws DatabaseManagementException;
+    DB createDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseManagementException;
 
     /**
      * Drop database with specified name.
      * Database that was requested to be dropped will be stopped first, and then completely removed.
      * If database with requested name does not exist exception will be thrown.
-     * @param databaseId ID of database to drop.
+     * @param namedDatabaseId ID of database to drop.
      */
-    void dropDatabase( DatabaseId databaseId ) throws DatabaseNotFoundException;
+    void dropDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException;
 
     /**
      * Stop database with specified name.
      * Stopping already stopped database does not have any effect.
-     * @param databaseId database ID to stop
+     * @param namedDatabaseId database ID to stop
      */
-    void stopDatabase( DatabaseId databaseId ) throws DatabaseNotFoundException;
+    void stopDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException;
 
     /**
      * Start database with specified name.
      * Starting already started database does not have any effect.
-     * @param databaseId database ID to start
+     * @param namedDatabaseId database ID to start
      */
-    void startDatabase( DatabaseId databaseId ) throws DatabaseNotFoundException;
+    void startDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException;
 
     /**
      * Return all {@link DatabaseContext} instances created by this service, associated with their database names.
@@ -109,11 +121,11 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      *
      * @return a Map from database names to database objects.
      */
-    SortedMap<DatabaseId,DB> registeredDatabases();
+    SortedMap<NamedDatabaseId,DB> registeredDatabases();
 
     /**
      * Return the {@link DatabaseIdRepository.Caching} constructed with this database manager. Use this to retrieve a
-     * {@link DatabaseId} for a given database name.
+     * {@link NamedDatabaseId} for a given database name.
      *
      * @return database ID repository for use with this database manager
      */

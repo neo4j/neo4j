@@ -21,28 +21,27 @@ package org.neo4j.dbms;
 
 import java.util.Optional;
 
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 final class CommunityDatabaseState implements DatabaseState
 {
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
     private final boolean isStarted;
     private final boolean hasFailed;
     private final Throwable failureCause;
 
-    CommunityDatabaseState( DatabaseId databaseId, boolean isStarted, boolean hasFailed, Throwable failureCause )
+    CommunityDatabaseState( NamedDatabaseId namedDatabaseId, boolean isStarted, boolean hasFailed, Throwable failureCause )
     {
-        this.databaseId = databaseId;
+        this.namedDatabaseId = namedDatabaseId;
         this.isStarted = isStarted;
         this.hasFailed = hasFailed;
         this.failureCause = failureCause;
     }
 
     @Override
-    public DatabaseId databaseId()
+    public NamedDatabaseId databaseId()
     {
-        return databaseId;
+        return namedDatabaseId;
     }
 
     @Override

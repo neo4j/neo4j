@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -48,7 +48,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     private final GraphDatabaseAPI databaseAPI;
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionalContextFactory transactionalContextFactory;
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
     private final Duration perBookmarkTimeout;
 
     public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, TransactionIdTracker transactionIdTracker, Duration perBookmarkTimeout )
@@ -57,7 +57,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         this.queryExecutionEngine = resolveDependency( databaseAPI, QueryExecutionEngine.class );
         this.transactionIdTracker = transactionIdTracker;
         this.transactionalContextFactory = newTransactionalContextFactory( databaseAPI );
-        this.databaseId = resolveDependency( databaseAPI, Database.class ).getDatabaseId();
+        this.namedDatabaseId = resolveDependency( databaseAPI, Database.class ).getNamedDatabaseId();
         this.perBookmarkTimeout = perBookmarkTimeout;
     }
 
@@ -83,7 +83,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
 
     private BookmarkMetadata bookmarkWithTxId()
     {
-        return new BookmarkMetadata( transactionIdTracker.newestTransactionId( databaseId ), databaseId );
+        return new BookmarkMetadata( transactionIdTracker.newestTransactionId( namedDatabaseId ), namedDatabaseId );
     }
 
     @Override
@@ -109,9 +109,9 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     }
 
     @Override
-    public DatabaseId getDatabaseId()
+    public NamedDatabaseId getNamedDatabaseId()
     {
-        return databaseId;
+        return namedDatabaseId;
     }
 
     private InternalTransaction beginInternalTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo,
@@ -135,13 +135,13 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         return internalTransaction;
     }
 
-    private DatabaseId databaseIdFromBookmarkOrCurrent( Bookmark bookmark )
+    private NamedDatabaseId databaseIdFromBookmarkOrCurrent( Bookmark bookmark )
     {
         var specifiedDatabaseId = bookmark.databaseId();
         if ( specifiedDatabaseId == null )
         {
             // bookmark does not contain a database ID so it's an old bookmark and the current database ID should be used
-            return databaseId;
+            return namedDatabaseId;
         }
         return specifiedDatabaseId;
     }

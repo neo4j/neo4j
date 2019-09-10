@@ -22,27 +22,28 @@ package org.neo4j.kernel.recovery;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomNamedDatabaseId;
 
 class RecoveryStartupCheckerTest
 {
     private final DatabaseStartupController startupController = mock( DatabaseStartupController.class );
-    private final DatabaseId databaseId = mock( DatabaseId.class );
+    private final NamedDatabaseId namedDatabaseId = randomNamedDatabaseId();
 
     @Test
     void throwAboutExceptionOnShouldAbort()
     {
-        var recoveryStartupChecker = new RecoveryStartupChecker( startupController, databaseId );
+        var recoveryStartupChecker = new RecoveryStartupChecker( startupController, namedDatabaseId );
 
         assertDoesNotThrow( recoveryStartupChecker::checkIfCanceled );
 
-        when( startupController.shouldAbort( databaseId ) ).thenReturn( true );
+        when( startupController.shouldAbort( namedDatabaseId ) ).thenReturn( true );
         assertThrows( DatabaseStartAbortedException.class, recoveryStartupChecker::checkIfCanceled );
     }
 }

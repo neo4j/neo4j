@@ -23,34 +23,34 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static org.neo4j.dbms.DefaultOperatorState.UNKNOWN;
 
 public class StubDatabaseStateService implements DatabaseStateService
 {
-    private final Map<DatabaseId,DatabaseState> databaseStates;
+    private final Map<NamedDatabaseId,DatabaseState> databaseStates;
 
     public StubDatabaseStateService()
     {
         this.databaseStates = Collections.emptyMap();
     }
 
-    public StubDatabaseStateService( Map<DatabaseId,DatabaseState> databaseStates )
+    public StubDatabaseStateService( Map<NamedDatabaseId,DatabaseState> databaseStates )
     {
         this.databaseStates = databaseStates;
     }
 
     @Override
-    public OperatorState stateOfDatabase( DatabaseId databaseId )
+    public OperatorState stateOfDatabase( NamedDatabaseId namedDatabaseId )
     {
-        var state = databaseStates.get( databaseId  );
+        var state = databaseStates.get( namedDatabaseId );
         return state == null ? UNKNOWN : state.operatorState();
     }
 
     @Override
-    public Optional<Throwable> causeOfFailure( DatabaseId databaseId )
+    public Optional<Throwable> causeOfFailure( NamedDatabaseId namedDatabaseId )
     {
-        return Optional.ofNullable( databaseStates.get( databaseId ) ).flatMap( DatabaseState::failure );
+        return Optional.ofNullable( databaseStates.get( namedDatabaseId ) ).flatMap( DatabaseState::failure );
     }
 }

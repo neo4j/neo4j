@@ -59,7 +59,7 @@ import org.neo4j.server.security.auth.ShiroAuthToken;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 /**
  * Shiro realm using a Neo4j graph to store users
@@ -333,7 +333,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
 
     protected GraphDatabaseService getSystemDb()
     {
-        return databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
+        return databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
                 () -> new AuthProviderFailedException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
     }
 }

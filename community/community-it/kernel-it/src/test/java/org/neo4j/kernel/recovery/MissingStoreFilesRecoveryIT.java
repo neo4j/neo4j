@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -61,7 +61,7 @@ class MissingStoreFilesRecoveryIT
     private DatabaseManagementService managementService;
     private DatabaseLayout databaseLayout;
     private DatabaseManagementServiceBuilder serviceBuilder;
-    private DatabaseId defaultDatabaseId;
+    private NamedDatabaseId defaultNamedDatabaseId;
     private static final Label testNodes = Label.label( "testNodes" );
 
     @BeforeEach
@@ -73,7 +73,7 @@ class MissingStoreFilesRecoveryIT
         createSomeData( databaseApi );
         databaseLayout = databaseApi.databaseLayout();
 
-        defaultDatabaseId = getDatabaseManager().databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();
+        defaultNamedDatabaseId = getDatabaseManager().databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();
 
         managementService.shutdown();
     }
@@ -95,7 +95,7 @@ class MissingStoreFilesRecoveryIT
 
         managementService = serviceBuilder.build();
         var dbStateService = getDatabaseStateService();
-        assertTrue( dbStateService.causeOfFailure( defaultDatabaseId ).isPresent() );
+        assertTrue( dbStateService.causeOfFailure( defaultNamedDatabaseId ).isPresent() );
     }
 
     @Test
@@ -107,7 +107,7 @@ class MissingStoreFilesRecoveryIT
         fileSystem.deleteFile( databaseLayout.nodeStore() );
 
         var dbStateService = getDatabaseStateService();
-        var failure = dbStateService.causeOfFailure( defaultDatabaseId );
+        var failure = dbStateService.causeOfFailure( defaultNamedDatabaseId );
         assertFalse( failure.isPresent() );
         assertFalse( fileSystem.fileExists( databaseLayout.nodeStore() ) );
     }

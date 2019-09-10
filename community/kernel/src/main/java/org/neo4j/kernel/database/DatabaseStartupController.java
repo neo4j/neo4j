@@ -27,5 +27,5 @@ public interface DatabaseStartupController
 {
     DatabaseStartupController NEVER_ABORT = id -> false;
 
-    boolean shouldAbort( DatabaseId databaseId );
+    boolean shouldAbort( NamedDatabaseId namedDatabaseId );
 }

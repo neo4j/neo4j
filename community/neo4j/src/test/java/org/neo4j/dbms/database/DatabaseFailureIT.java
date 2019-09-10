@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.noOpSystemGraphInitializer;
 
 @Neo4jLayoutExtension
@@ -79,7 +79,7 @@ class DatabaseFailureIT
         database = startDatabase();
         DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
         assertTrue( databaseStateService.causeOfFailure( database.databaseId() ).isPresent() );
-        assertFalse( databaseStateService.causeOfFailure( SYSTEM_DATABASE_ID ).isPresent() );
+        assertFalse( databaseStateService.causeOfFailure( NAMED_SYSTEM_DATABASE_ID ).isPresent() );
     }
 
     @Test

@@ -31,7 +31,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 @TestDirectoryExtension
 class TestDatabaseManagementServiceBuilderTest
@@ -75,7 +75,7 @@ class TestDatabaseManagementServiceBuilderTest
         DependencyResolver resolver = database.getDependencyResolver();
         DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
 
-        assertTrue( databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).isPresent() );
+        assertTrue( databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).isPresent() );
         assertTrue( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).isPresent() );
     }
 }

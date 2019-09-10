@@ -57,7 +57,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -132,7 +132,7 @@ import static org.neo4j.util.concurrent.Futures.combine;
 
 class KernelTransactionsTest
 {
-    private static final DatabaseId DEFAULT_DATABASE_ID = new TestDatabaseIdRepository().defaultDatabase();
+    private static final NamedDatabaseId DEFAULT_DATABASE_ID = new TestDatabaseIdRepository().defaultDatabase();
     private static final SystemNanoClock clock = Clocks.nanoClock();
     private final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
     private final ExecutorService executorService = Executors.newCachedThreadPool();

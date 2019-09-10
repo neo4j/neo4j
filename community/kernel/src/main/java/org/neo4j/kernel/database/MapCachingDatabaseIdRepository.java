@@ -21,18 +21,17 @@ package org.neo4j.kernel.database;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 
 public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Caching
 {
-    private static final Optional<DatabaseId> OPT_SYS_DB = Optional.of( SYSTEM_DATABASE_ID );
+    private static final Optional<NamedDatabaseId> OPT_SYS_DB = Optional.of( NAMED_SYSTEM_DATABASE_ID );
 
     private final DatabaseIdRepository delegate;
-    private final Map<String,DatabaseId> databaseIdsByName;
-    private final Map<UUID,DatabaseId> databaseIdsByUuid;
+    private final Map<String,NamedDatabaseId> databaseIdsByName;
+    private final Map<DatabaseId,NamedDatabaseId> databaseIdsByUuid;
 
     public MapCachingDatabaseIdRepository( DatabaseIdRepository delegate )
     {
@@ -42,9 +41,9 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
     }
 
     @Override
-    public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
+    public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
     {
-        if ( SYSTEM_DATABASE_ID.name().equals( databaseName.name() ) )
+        if ( NAMED_SYSTEM_DATABASE_ID.name().equals( databaseName.name() ) )
         {
             return OPT_SYS_DB;
         }
@@ -54,28 +53,28 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
     }
 
     @Override
-    public Optional<DatabaseId> getByUuid( UUID uuid )
+    public Optional<NamedDatabaseId> getById( DatabaseId uuid )
     {
-        if ( SYSTEM_DATABASE_ID.uuid().equals( uuid ) )
+        if ( NAMED_SYSTEM_DATABASE_ID.databaseId().equals( uuid ) )
         {
             return OPT_SYS_DB;
         }
         return Optional.ofNullable(
-                databaseIdsByUuid.computeIfAbsent( uuid, id -> delegate.getByUuid( id ).orElse( null ) )
+                databaseIdsByUuid.computeIfAbsent( uuid, id -> delegate.getById( id ).orElse( null ) )
         );
     }
 
     @Override
-    public void invalidate( DatabaseId databaseId )
+    public void invalidate( NamedDatabaseId namedDatabaseId )
     {
-        databaseIdsByName.remove( databaseId.name() );
-        databaseIdsByUuid.remove( databaseId.uuid() );
+        databaseIdsByName.remove( namedDatabaseId.name() );
+        databaseIdsByUuid.remove( namedDatabaseId.databaseId() );
     }
 
     @Override
-    public void cache( DatabaseId databaseId )
+    public void cache( NamedDatabaseId namedDatabaseId )
     {
-        this.databaseIdsByName.put( databaseId.name(), databaseId );
-        this.databaseIdsByUuid.put( databaseId.uuid(), databaseId );
+        this.databaseIdsByName.put( namedDatabaseId.name(), namedDatabaseId );
+        this.databaseIdsByUuid.put( namedDatabaseId.databaseId(), namedDatabaseId );
     }
 }

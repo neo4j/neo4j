@@ -38,7 +38,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.logging.AssertableLogProvider;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 
 class DbmsDiagnosticsManagerTest
 {
-    private static final DatabaseId DEFAULT_DATABASE_ID = TestDatabaseIdRepository.randomDatabaseId();
+    private static final NamedDatabaseId DEFAULT_DATABASE_ID = TestDatabaseIdRepository.randomNamedDatabaseId();
     private static final String DEFAULT_DATABASE_NAME = DEFAULT_DATABASE_ID.name();
 
     private DbmsDiagnosticsManager diagnosticsManager;
@@ -123,14 +123,14 @@ class DbmsDiagnosticsManagerTest
     @Test
     void dumpDiagnosticsInConciseForm()
     {
-        Map<DatabaseId,StandaloneDatabaseContext> databaseMap = new HashMap<>();
+        Map<NamedDatabaseId,StandaloneDatabaseContext> databaseMap = new HashMap<>();
         int numberOfDatabases = 1000;
         for ( int i = 0; i < numberOfDatabases; i++ )
         {
             Database database = mock( Database.class );
-            DatabaseId databaseId = TestDatabaseIdRepository.randomDatabaseId();
-            when( database.getDatabaseId() ).thenReturn( databaseId );
-            databaseMap.put( databaseId, new StandaloneDatabaseContext( database ) );
+            NamedDatabaseId namedDatabaseId = TestDatabaseIdRepository.randomNamedDatabaseId();
+            when( database.getNamedDatabaseId() ).thenReturn( namedDatabaseId );
+            databaseMap.put( namedDatabaseId, new StandaloneDatabaseContext( database ) );
         }
         when( databaseManager.registeredDatabases() ).thenReturn( new TreeMap<>( databaseMap ) );
 
@@ -200,7 +200,7 @@ class DbmsDiagnosticsManagerTest
         databaseDependencies.satisfyDependency( storageEngineFactory );
         databaseDependencies.satisfyDependency( new DefaultFileSystemAbstraction() );
         when( database.getDependencyResolver() ).thenReturn( databaseDependencies );
-        when( database.getDatabaseId() ).thenReturn( DEFAULT_DATABASE_ID );
+        when( database.getNamedDatabaseId() ).thenReturn( DEFAULT_DATABASE_ID );
         when( database.isStarted() ).thenReturn( true );
         return database;
     }

@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
@@ -93,7 +93,7 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     @Override
     public List<String> listDatabases()
     {
-        return databaseManager.registeredDatabases().keySet().stream().map( DatabaseId::name ).sorted().collect( Collectors.toList() );
+        return databaseManager.registeredDatabases().keySet().stream().map( NamedDatabaseId::name ).sorted().collect( Collectors.toList() );
     }
 
     @Override

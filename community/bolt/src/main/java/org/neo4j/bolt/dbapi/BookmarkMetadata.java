@@ -22,7 +22,7 @@ package org.neo4j.bolt.dbapi;
 import java.util.function.BiFunction;
 
 import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
  * A serialization-format-independent representation of data carried by a bookmark.
@@ -30,12 +30,12 @@ import org.neo4j.kernel.database.DatabaseId;
  */
 public class BookmarkMetadata
 {
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
     private final long txId;
 
-    public BookmarkMetadata( long txId, DatabaseId databaseId )
+    public BookmarkMetadata( long txId, NamedDatabaseId namedDatabaseId )
     {
-        this.databaseId = databaseId;
+        this.namedDatabaseId = namedDatabaseId;
         this.txId = txId;
     }
 
@@ -47,14 +47,14 @@ public class BookmarkMetadata
     /**
      * Converts this serialization-format-independent representation of a bookmark into a serialization-format-dependent one.
      */
-    public Bookmark toBookmark( BiFunction<Long,DatabaseId,Bookmark> defaultBookmarkFormat )
+    public Bookmark toBookmark( BiFunction<Long,NamedDatabaseId,Bookmark> defaultBookmarkFormat )
     {
-        return defaultBookmarkFormat.apply( txId, databaseId );
+        return defaultBookmarkFormat.apply( txId, namedDatabaseId );
     }
 
-    public DatabaseId getDatabaseId()
+    public NamedDatabaseId getNamedDatabaseId()
     {
-        return databaseId;
+        return namedDatabaseId;
     }
 
     public long getTxId()

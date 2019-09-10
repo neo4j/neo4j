@@ -50,7 +50,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -102,7 +102,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final TokenHolders tokenHolders;
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
@@ -151,7 +151,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
-            SchemaState schemaState, TokenHolders tokenHolders, DatabaseId databaseId, IndexingService indexingService, LabelScanStore labelScanStore,
+            SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
             IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, TransactionTracer transactionTracer,
             PageCursorTracerSupplier pageCursorTracerSupplier, LockTracer lockTracer, LeaseService leaseService )
     {
@@ -170,7 +170,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.accessCapability = accessCapability;
         this.tokenHolders = tokenHolders;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders );
-        this.databaseId = databaseId;
+        this.namedDatabaseId = namedDatabaseId;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
@@ -196,7 +196,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         SecurityContext securityContext;
         try
         {
-            securityContext = loginContext.authorize( tokenHoldersIdLookup, databaseId.name() );
+            securityContext = loginContext.authorize( tokenHoldersIdLookup, namedDatabaseId.name() );
         }
         catch ( KernelException ke )
         {
@@ -405,8 +405,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
                             transactionTracer, lockTracer, pageCursorTracerSupplier, storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies,
-                            databaseId, leaseService, () -> stopped );
+                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore,
+                            databaseDependendies, namedDatabaseId, leaseService, () -> stopped );
             this.transactions.add( tx );
             return tx;
         }

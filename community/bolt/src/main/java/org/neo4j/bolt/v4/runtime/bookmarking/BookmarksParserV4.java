@@ -27,8 +27,9 @@ import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BookmarksParser;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -36,10 +37,10 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkError;
-import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidSingleBookmarkError;
-import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkMixtureError;
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkForUnknownDatabaseError;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkMixtureError;
+import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidSingleBookmarkError;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 public final class BookmarksParserV4 implements BookmarksParser
 {
@@ -78,7 +79,7 @@ public final class BookmarksParserV4 implements BookmarksParser
     {
         var maxSystemDbTxId = ABSENT_BOOKMARK_ID;
 
-        DatabaseId userDbId = null;
+        NamedDatabaseId userDbId = null;
         var maxUserDbTxId = ABSENT_BOOKMARK_ID;
 
         List<String> customBookmarkStrings = new ArrayList<>();
@@ -97,7 +98,7 @@ public final class BookmarksParserV4 implements BookmarksParser
                 {
                     var parsedBookmark = parse( bookmarkString );
 
-                    if ( SYSTEM_DATABASE_ID.equals( parsedBookmark.databaseId ) )
+                    if ( NAMED_SYSTEM_DATABASE_ID.equals( parsedBookmark.namedDatabaseId ) )
                     {
                         maxSystemDbTxId = Math.max( maxSystemDbTxId, parsedBookmark.txId );
                     }
@@ -105,11 +106,11 @@ public final class BookmarksParserV4 implements BookmarksParser
                     {
                         if ( userDbId == null )
                         {
-                            userDbId = parsedBookmark.databaseId;
+                            userDbId = parsedBookmark.namedDatabaseId;
                         }
                         else
                         {
-                            assertSameDatabaseId( userDbId, parsedBookmark.databaseId, bookmarks );
+                            assertSameDatabaseId( userDbId, parsedBookmark.namedDatabaseId, bookmarks );
                         }
                         maxUserDbTxId = Math.max( maxUserDbTxId, parsedBookmark.txId );
                     }
@@ -119,7 +120,7 @@ public final class BookmarksParserV4 implements BookmarksParser
 
         if ( customBookmarkStrings.isEmpty() )
         {
-            return buildBookmarks( SYSTEM_DATABASE_ID, maxSystemDbTxId, userDbId, maxUserDbTxId );
+            return buildBookmarks( NAMED_SYSTEM_DATABASE_ID, maxSystemDbTxId, userDbId, maxUserDbTxId );
         }
 
         if ( maxUserDbTxId != ABSENT_BOOKMARK_ID )
@@ -131,7 +132,7 @@ public final class BookmarksParserV4 implements BookmarksParser
 
         if ( maxSystemDbTxId != ABSENT_BOOKMARK_ID )
         {
-            customBookmarks.add( new BookmarkWithDatabaseId( maxSystemDbTxId, SYSTEM_DATABASE_ID ) );
+            customBookmarks.add( new BookmarkWithDatabaseId( maxSystemDbTxId, NAMED_SYSTEM_DATABASE_ID ) );
         }
 
         return customBookmarks;
@@ -146,7 +147,7 @@ public final class BookmarksParserV4 implements BookmarksParser
         }
 
         UUID databaseUuid = parseDatabaseId( split[0], bookmarkString );
-        var databaseId = databaseIdRepository.getByUuid( databaseUuid ).orElseThrow(
+        var databaseId = databaseIdRepository.getById( DatabaseIdFactory.from( databaseUuid ) ).orElseThrow(
                 () -> newInvalidBookmarkForUnknownDatabaseError( databaseUuid ) );
         var txId = parseTxId( split[1], bookmarkString );
 
@@ -186,7 +187,7 @@ public final class BookmarksParserV4 implements BookmarksParser
         }
     }
 
-    private static void assertSameDatabaseId( DatabaseId id1, DatabaseId id2, ListValue bookmarks ) throws BookmarkParsingException
+    private static void assertSameDatabaseId( NamedDatabaseId id1, NamedDatabaseId id2, ListValue bookmarks ) throws BookmarkParsingException
     {
         if ( !id1.equals( id2 ) )
         {
@@ -194,7 +195,7 @@ public final class BookmarksParserV4 implements BookmarksParser
         }
     }
 
-    private static List<Bookmark> buildBookmarks( DatabaseId systemDbId, long maxSystemDbTxId, DatabaseId userDbId, long maxUserDbTxId )
+    private static List<Bookmark> buildBookmarks( NamedDatabaseId systemDbId, long maxSystemDbTxId, NamedDatabaseId userDbId, long maxUserDbTxId )
     {
         if ( maxSystemDbTxId != ABSENT_BOOKMARK_ID && maxUserDbTxId != ABSENT_BOOKMARK_ID )
         {
@@ -216,12 +217,12 @@ public final class BookmarksParserV4 implements BookmarksParser
 
     private static class ParsedBookmark
     {
-        final DatabaseId databaseId;
+        final NamedDatabaseId namedDatabaseId;
         final long txId;
 
-        ParsedBookmark( DatabaseId databaseId, long txId )
+        ParsedBookmark( NamedDatabaseId namedDatabaseId, long txId )
         {
-            this.databaseId = databaseId;
+            this.namedDatabaseId = namedDatabaseId;
             this.txId = txId;
         }
     }

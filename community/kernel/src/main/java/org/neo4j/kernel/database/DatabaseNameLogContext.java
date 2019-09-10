@@ -23,16 +23,16 @@ import org.neo4j.logging.internal.DatabaseLogContext;
 
 public class DatabaseNameLogContext implements DatabaseLogContext
 {
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
 
-    public DatabaseNameLogContext( DatabaseId databaseId )
+    public DatabaseNameLogContext( NamedDatabaseId namedDatabaseId )
     {
-        this.databaseId = databaseId;
+        this.namedDatabaseId = namedDatabaseId;
     }
 
     @Override
     public String formatMessage( String message )
     {
-        return "[" + databaseId.name() + "] " + message;
+        return "[" + namedDatabaseId.name() + "] " + message;
     }
 }

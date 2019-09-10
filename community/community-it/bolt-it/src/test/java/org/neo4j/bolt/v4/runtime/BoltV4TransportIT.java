@@ -44,7 +44,7 @@ import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -293,10 +293,10 @@ public class BoltV4TransportIT
         return txIdStore.getLastClosedTransactionId();
     }
 
-    private DatabaseId getDatabaseId()
+    private NamedDatabaseId getDatabaseId()
     {
         var resolver = ((GraphDatabaseAPI) server.graphDatabaseService()).getDependencyResolver();
         var database = resolver.resolveDependency( Database.class );
-        return database.getDatabaseId();
+        return database.getNamedDatabaseId();
     }
 }

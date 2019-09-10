@@ -41,9 +41,9 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseCreationContext;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.LeaseService;
@@ -73,7 +73,7 @@ import org.neo4j.token.TokenHolders;
 
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
 {
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
     private final Config globalConfig;
     private final DatabaseConfig databaseConfig;
     private final QueryEngineProvider queryEngineProvider;
@@ -113,11 +113,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final LeaseService leaseService;
     private final DatabaseStartupController startupController;
 
-    public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
+    public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
                                            VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, LeaseService leaseService )
     {
-        this.databaseId = databaseId;
+        this.namedDatabaseId = namedDatabaseId;
         this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = databaseConfig;
         this.versionContextSupplier = versionContextSupplier;
@@ -125,8 +125,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         DatabaseIdContext idContext = editionComponents.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
-        this.databaseLayout = globalModule.getNeo4jLayout().databaseLayout( databaseId.name() );
-        this.databaseLogService = new DatabaseLogService( new DatabaseNameLogContext( databaseId ), globalModule.getLogService() );
+        this.databaseLayout = globalModule.getNeo4jLayout().databaseLayout( namedDatabaseId.name() );
+        this.databaseLogService = new DatabaseLogService( new DatabaseNameLogContext( namedDatabaseId ), globalModule.getLogService() );
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
         this.tokenHolders = editionComponents.getTokenHolders();
@@ -139,7 +139,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.transactionStats = editionComponents.getTransactionMonitor();
         this.eventListeners = globalModule.getDatabaseEventListeners();
         this.databaseHealthFactory = () -> globalModule.getGlobalHealthService()
-                .createDatabaseHealth( new DatabasePanicEventGenerator( eventListeners, databaseId.name() ),
+                .createDatabaseHealth( new DatabasePanicEventGenerator( eventListeners, namedDatabaseId.name() ),
                         databaseLogService.getInternalLog( DatabaseHealth.class ) );
         this.commitProcessFactory = editionComponents.getCommitProcessFactory();
         this.pageCache = globalModule.getPageCache();
@@ -153,7 +153,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
         this.extensionFactories = globalModule.getExtensionFactories();
         this.watcherServiceFactory = editionComponents.getWatcherServiceFactory();
-        this.databaseAvailabilityGuardFactory = databaseTimeoutMillis -> databaseAvailabilityGuardFactory( databaseId, globalModule, databaseTimeoutMillis );
+        this.databaseAvailabilityGuardFactory =
+                databaseTimeoutMillis -> databaseAvailabilityGuardFactory( namedDatabaseId, globalModule, databaseTimeoutMillis );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
@@ -162,9 +163,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DatabaseId getDatabaseId()
+    public NamedDatabaseId getNamedDatabaseId()
     {
-        return databaseId;
+        return namedDatabaseId;
     }
 
     @Override
@@ -395,9 +396,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         return startupController;
     }
 
-    private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( DatabaseId databaseId, GlobalModule globalModule, long databaseTimeoutMillis  )
+    private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, long databaseTimeoutMillis )
     {
         Log guardLog = databaseLogService.getInternalLog( DatabaseAvailabilityGuard.class );
-        return new DatabaseAvailabilityGuard( databaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard() );
+        return new DatabaseAvailabilityGuard( namedDatabaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard() );
     }
 }

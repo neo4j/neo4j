@@ -30,7 +30,7 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -41,14 +41,14 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     protected CommitProcessFactory commitProcessFactory;
     protected DatabaseStateService databaseStateService;
     IdContextFactory idContextFactory;
-    Function<DatabaseId,TokenHolders> tokenHoldersProvider;
+    Function<NamedDatabaseId,TokenHolders> tokenHoldersProvider;
     Supplier<Locks> locksSupplier;
     Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
 
     @Override
-    public EditionDatabaseComponents createDatabaseComponents( DatabaseId databaseId )
+    public EditionDatabaseComponents createDatabaseComponents( NamedDatabaseId namedDatabaseId )
     {
-        return new StandaloneDatabaseComponents( this, databaseId );
+        return new StandaloneDatabaseComponents( this, namedDatabaseId );
     }
 
     public CommitProcessFactory getCommitProcessFactory()
@@ -61,7 +61,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
         return idContextFactory;
     }
 
-    public Function<DatabaseId,TokenHolders> getTokenHoldersProvider()
+    public Function<NamedDatabaseId,TokenHolders> getTokenHoldersProvider()
     {
         return tokenHoldersProvider;
     }

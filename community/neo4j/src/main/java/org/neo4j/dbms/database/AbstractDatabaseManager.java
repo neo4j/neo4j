@@ -41,9 +41,9 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.SystemDbDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
@@ -57,7 +57,7 @@ import static java.util.Collections.unmodifiableNavigableMap;
 
 public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<DB>
 {
-    protected final Map<DatabaseId,DB> databaseMap;
+    protected final Map<NamedDatabaseId,DB> databaseMap;
     protected final GlobalModule globalModule;
     protected final AbstractEditionModule edition;
     protected final Log log;
@@ -127,46 +127,47 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     }
 
     @Override
-    public final SortedMap<DatabaseId,DB> registeredDatabases()
+    public final SortedMap<NamedDatabaseId,DB> registeredDatabases()
     {
         return databasesSnapshot();
     }
 
-    private NavigableMap<DatabaseId,DB> databasesSnapshot()
+    private NavigableMap<NamedDatabaseId,DB> databasesSnapshot()
     {
         return unmodifiableNavigableMap( new TreeMap<>( databaseMap ) );
     }
 
-    protected abstract DB createDatabaseContext( DatabaseId databaseId ) throws Exception;
+    protected abstract DB createDatabaseContext( NamedDatabaseId namedDatabaseId ) throws Exception;
 
-    protected ModularDatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId, Dependencies parentDependencies, Monitors parentMonitors )
+    protected ModularDatabaseCreationContext newDatabaseCreationContext( NamedDatabaseId namedDatabaseId, Dependencies parentDependencies,
+            Monitors parentMonitors )
     {
-        EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
+        EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( namedDatabaseId );
         GlobalProcedures globalProcedures = edition.getGlobalProcedures();
-        var databaseConfig = new DatabaseConfig( config, databaseId );
+        var databaseConfig = new DatabaseConfig( config, namedDatabaseId );
 
-        return new ModularDatabaseCreationContext( databaseId, globalModule, parentDependencies, parentMonitors,
+        return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors,
                                                    editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ),
                                                    databaseConfig, LeaseService.NO_LEASES );
     }
 
-    private void forEachDatabase( BiConsumer<DatabaseId,DB> consumer, boolean systemDatabaseLast, String operationName )
+    private void forEachDatabase( BiConsumer<NamedDatabaseId,DB> consumer, boolean systemDatabaseLast, String operationName )
     {
         var snapshot = systemDatabaseLast ? databasesSnapshot().descendingMap().entrySet() : databasesSnapshot().entrySet();
         DatabaseManagementException dbmsExceptions = null;
 
         for ( var entry : snapshot )
         {
-            DatabaseId databaseId = entry.getKey();
+            NamedDatabaseId namedDatabaseId = entry.getKey();
             DB context = entry.getValue();
             try
             {
-                consumer.accept( databaseId, context );
+                consumer.accept( namedDatabaseId, context );
             }
             catch ( Throwable t )
             {
                 var dbmsException = new DatabaseManagementException( format( "An error occurred! Unable to %s the database `%s`.",
-                        operationName, databaseId.name() ), t );
+                        operationName, namedDatabaseId.name() ), t );
                 dbmsExceptions = Exceptions.chain( dbmsExceptions, dbmsException );
             }
         }
@@ -177,31 +178,31 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         }
     }
 
-    protected void startDatabase( DatabaseId databaseId, DB context )
+    protected void startDatabase( NamedDatabaseId namedDatabaseId, DB context )
     {
         try
         {
-            log.info( "Starting '%s' database.", databaseId.name() );
+            log.info( "Starting '%s' database.", namedDatabaseId.name() );
             Database database = context.database();
             database.start();
         }
         catch ( Throwable t )
         {
-            throw new DatabaseManagementException( format( "An error occurred! Unable to start database with name `%s`.", databaseId.name() ), t );
+            throw new DatabaseManagementException( format( "An error occurred! Unable to start database with name `%s`.", namedDatabaseId.name() ), t );
         }
     }
 
-    protected void stopDatabase( DatabaseId databaseId, DB context )
+    protected void stopDatabase( NamedDatabaseId namedDatabaseId, DB context )
     {
         try
         {
-            log.info( "Stop '%s' database.", databaseId.name() );
+            log.info( "Stop '%s' database.", namedDatabaseId.name() );
             Database database = context.database();
             database.stop();
         }
         catch ( Throwable t )
         {
-            throw new DatabaseManagementException( format( "An error occurred! Unable to stop database with name `%s`.", databaseId.name() ), t );
+            throw new DatabaseManagementException( format( "An error occurred! Unable to stop database with name `%s`.", namedDatabaseId.name() ), t );
         }
     }
 

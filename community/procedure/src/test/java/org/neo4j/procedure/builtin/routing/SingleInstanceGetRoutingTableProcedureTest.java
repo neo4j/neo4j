@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
@@ -64,8 +64,8 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class SingleInstanceGetRoutingTableProcedureTest
 {
     private static final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private static final DatabaseId ID = databaseIdRepository.defaultDatabase();
-    private static final DatabaseId UNKNOWN_ID = databaseIdRepository.getRaw( "unknown_database_name" );
+    private static final NamedDatabaseId ID = databaseIdRepository.defaultDatabase();
+    private static final NamedDatabaseId UNKNOWN_ID = databaseIdRepository.getRaw( "unknown_database_name" );
 
     @Test
     void shouldHaveCorrectSignature()

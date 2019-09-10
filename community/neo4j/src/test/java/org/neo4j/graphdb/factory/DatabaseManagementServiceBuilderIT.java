@@ -43,7 +43,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.io.fs.FileSystemUtils.isEmptyOrNonExistingDirectory;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 @Neo4jLayoutExtension
 class DatabaseManagementServiceBuilderIT
@@ -65,7 +65,7 @@ class DatabaseManagementServiceBuilderIT
             DependencyResolver dependencyResolver = database.getDependencyResolver();
             DatabaseManager<?> databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
             assertThat( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ), not( empty() ) );
-            assertThat( databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ), not( empty() ) );
+            assertThat( databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ), not( empty() ) );
         }
         finally
         {

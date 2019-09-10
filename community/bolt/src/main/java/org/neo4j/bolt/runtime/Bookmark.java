@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface Bookmark
 {
@@ -27,7 +27,7 @@ public interface Bookmark
 
     long txId();
 
-    DatabaseId databaseId();
+    NamedDatabaseId databaseId();
 
     void attachTo( BoltResponseHandler state );
 
@@ -40,7 +40,7 @@ public interface Bookmark
         }
 
         @Override
-        public DatabaseId databaseId()
+        public NamedDatabaseId databaseId()
         {
             throw new UnsupportedOperationException( "Empty bookmark does not have a database ID" );
         }

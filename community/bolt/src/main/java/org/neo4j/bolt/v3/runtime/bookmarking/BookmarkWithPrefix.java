@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -50,7 +50,7 @@ public class BookmarkWithPrefix implements Bookmark
     }
 
     @Override
-    public DatabaseId databaseId()
+    public NamedDatabaseId databaseId()
     {
         return null;
     }

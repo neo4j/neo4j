@@ -50,9 +50,9 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
@@ -128,7 +128,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         globalAvailabilityGuard = globalModule.getGlobalAvailabilityGuard();
     }
 
-    protected Function<DatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
+    protected Function<NamedDatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
     {
         Config globalConfig = platform.getGlobalConfig();
         return databaseId -> {
@@ -171,19 +171,19 @@ public class CommunityEditionModule extends StandaloneEditionModule
         return new SimpleStatementLocksFactory( locks );
     }
 
-    protected static TokenCreator createRelationshipTypeCreator( Config config, DatabaseId databaseId, Supplier<Kernel> kernelSupplier )
+    protected static TokenCreator createRelationshipTypeCreator( Config config, NamedDatabaseId namedDatabaseId, Supplier<Kernel> kernelSupplier )
     {
-        return createReadOnlyTokens( config, databaseId ) ? new ReadOnlyTokenCreator() : new DefaultRelationshipTypeCreator( kernelSupplier );
+        return createReadOnlyTokens( config, namedDatabaseId ) ? new ReadOnlyTokenCreator() : new DefaultRelationshipTypeCreator( kernelSupplier );
     }
 
-    protected static TokenCreator createPropertyKeyCreator( Config config, DatabaseId databaseId, Supplier<Kernel> kernelSupplier )
+    protected static TokenCreator createPropertyKeyCreator( Config config, NamedDatabaseId namedDatabaseId, Supplier<Kernel> kernelSupplier )
     {
-        return createReadOnlyTokens( config, databaseId ) ? new ReadOnlyTokenCreator() : new DefaultPropertyTokenCreator( kernelSupplier );
+        return createReadOnlyTokens( config, namedDatabaseId ) ? new ReadOnlyTokenCreator() : new DefaultPropertyTokenCreator( kernelSupplier );
     }
 
-    protected static TokenCreator createLabelIdCreator( Config config, DatabaseId databaseId, Supplier<Kernel> kernelSupplier )
+    protected static TokenCreator createLabelIdCreator( Config config, NamedDatabaseId namedDatabaseId, Supplier<Kernel> kernelSupplier )
     {
-        return createReadOnlyTokens( config, databaseId ) ? new ReadOnlyTokenCreator() : new DefaultLabelIdCreator( kernelSupplier );
+        return createReadOnlyTokens( config, namedDatabaseId ) ? new ReadOnlyTokenCreator() : new DefaultLabelIdCreator( kernelSupplier );
     }
 
     @Override
@@ -259,9 +259,9 @@ public class CommunityEditionModule extends StandaloneEditionModule
         }
     }
 
-    private static boolean createReadOnlyTokens( Config config, DatabaseId databaseId )
+    private static boolean createReadOnlyTokens( Config config, NamedDatabaseId namedDatabaseId )
     {
-        return !databaseId.isSystemDatabase() && config.get( GraphDatabaseSettings.read_only );
+        return !namedDatabaseId.isSystemDatabase() && config.get( GraphDatabaseSettings.read_only );
     }
 
     @Override

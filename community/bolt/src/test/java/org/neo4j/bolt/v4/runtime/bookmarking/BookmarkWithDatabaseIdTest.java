@@ -50,25 +50,25 @@ class BookmarkWithDatabaseIdTest
     void shouldAttachToMetadata()
     {
         var txId = 42;
-        var databaseId = databaseIdRepository.getRaw( "foo" );
+        var namedDatabaseId = databaseIdRepository.getRaw( "foo" );
         var responseHandler = mock( BoltResponseHandler.class );
-        var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
+        var bookmark = new BookmarkWithDatabaseId( txId, namedDatabaseId );
 
         bookmark.attachTo( responseHandler );
 
         verify( responseHandler ).onMetadata( "bookmark",
-                stringValue( String.format( "%s:42", databaseId.uuid() ) ) );
+                stringValue( String.format( "%s:42", namedDatabaseId.databaseId().uuid() ) ) );
     }
 
     @Test
     void shouldFormatAsString()
     {
         var txId = 424242;
-        var databaseId = databaseIdRepository.getRaw( "bar" );
+        var namedDatabaseId = databaseIdRepository.getRaw( "bar" );
 
-        var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
+        var bookmark = new BookmarkWithDatabaseId( txId, namedDatabaseId );
 
-        assertEquals( String.format( "%s:424242", databaseId.uuid() ), bookmark.toString() );
+        assertEquals( String.format( "%s:424242", namedDatabaseId.databaseId().uuid() ), bookmark.toString() );
     }
 }
 

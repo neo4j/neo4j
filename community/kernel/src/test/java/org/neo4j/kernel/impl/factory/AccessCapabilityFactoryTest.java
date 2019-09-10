@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,10 +37,10 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 class AccessCapabilityFactoryTest
 {
     private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final DatabaseId databaseId = databaseIdRepository.getRaw( "foo" );
+    private final NamedDatabaseId namedDatabaseId = databaseIdRepository.getRaw( "foo" );
 
-    private final DatabaseConfig readWriteConfig = new DatabaseConfig( Config.defaults( read_only, false ), databaseId );
-    private final DatabaseConfig readOnlyConfig = new DatabaseConfig( Config.defaults( read_only, true ), databaseId );
+    private final DatabaseConfig readWriteConfig = new DatabaseConfig( Config.defaults( read_only, false ), namedDatabaseId );
+    private final DatabaseConfig readOnlyConfig = new DatabaseConfig( Config.defaults( read_only, true ), namedDatabaseId );
 
     @Test
     void shouldCreateConfigDependentFactoryForReadWriteConfig()

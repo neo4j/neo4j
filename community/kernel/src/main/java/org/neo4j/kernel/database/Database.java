@@ -69,9 +69,9 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -216,7 +216,7 @@ public class Database extends LifecycleAdapter
     private DatabaseHealth databaseHealth;
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final DatabaseConfig databaseConfig;
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
     private final DatabaseLayout databaseLayout;
     private final boolean readOnly;
     private final IdController idController;
@@ -243,7 +243,7 @@ public class Database extends LifecycleAdapter
 
     public Database( DatabaseCreationContext context )
     {
-        this.databaseId = context.getDatabaseId();
+        this.namedDatabaseId = context.getNamedDatabaseId();
         this.databaseLayout = context.getDatabaseLayout();
         this.databaseConfig = context.getDatabaseConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
@@ -378,7 +378,7 @@ public class Database extends LifecycleAdapter
             }
 
             performRecovery( fs, databasePageCache, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
-                    extensionFactories, Optional.of( tailScanner ), new RecoveryStartupChecker( startupController, databaseId ) );
+                    extensionFactories, Optional.of( tailScanner ), new RecoveryStartupChecker( startupController, namedDatabaseId ) );
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
@@ -460,7 +460,7 @@ public class Database extends LifecycleAdapter
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
             life.start();
-            eventListeners.databaseStart( databaseId.name() );
+            eventListeners.databaseStart( namedDatabaseId.name() );
         }
         catch ( Throwable e )
         {
@@ -502,7 +502,7 @@ public class Database extends LifecycleAdapter
 
     private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache ) throws IOException
     {
-        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, databaseId )
+        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId )
                 .createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
     }
 
@@ -546,7 +546,7 @@ public class Database extends LifecycleAdapter
 
     public boolean isSystem()
     {
-        return databaseId.isSystemDatabase();
+        return namedDatabaseId.isSystemDatabase();
     }
 
     /**
@@ -638,14 +638,14 @@ public class Database extends LifecycleAdapter
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, internalLogProvider );
 
         DatabaseTransactionEventListeners databaseTransactionEventListeners =
-                new DatabaseTransactionEventListeners( facade, transactionEventListeners, databaseId );
+                new DatabaseTransactionEventListeners( facade, transactionEventListeners, namedDatabaseId );
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( databaseConfig, statementLocksFactory, constraintIndexCreator,
                         transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
                         databaseAvailabilityGuard,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
-                        constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
+                        constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
                         databaseDependencies, databaseTracer, pageCursorTracerSupplier, lockTracer, leaseService ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
@@ -717,7 +717,7 @@ public class Database extends LifecycleAdapter
             return;
         }
 
-        eventListeners.databaseShutdown( databaseId.name() );
+        eventListeners.databaseShutdown( namedDatabaseId.name() );
         life.stop();
         awaitAllClosingTransactions();
         life.shutdown();
@@ -771,7 +771,7 @@ public class Database extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            internalLogProvider.getLog( Database.class ).error( format( "Failed to delete database '%s' files.", databaseId.name() ), e );
+            internalLogProvider.getLog( Database.class ).error( format( "Failed to delete database '%s' files.", namedDatabaseId.name() ), e );
             throw new UncheckedIOException( e );
         }
     }
@@ -863,9 +863,9 @@ public class Database extends LifecycleAdapter
         return storeCopyCheckPointMutex;
     }
 
-    public DatabaseId getDatabaseId()
+    public NamedDatabaseId getNamedDatabaseId()
     {
-        return databaseId;
+        return namedDatabaseId;
     }
 
     public TokenHolders getTokenHolders()

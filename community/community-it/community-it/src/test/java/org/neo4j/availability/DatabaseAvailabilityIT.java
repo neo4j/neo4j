@@ -37,7 +37,7 @@ import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -48,12 +48,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 @TestDirectoryExtension
 class DatabaseAvailabilityIT
 {
-    private DatabaseId defaultDatabaseId;
+    private NamedDatabaseId defaultNamedDatabaseId;
 
     @Inject
     private TestDirectory testDirectory;
@@ -66,7 +66,7 @@ class DatabaseAvailabilityIT
         managementService = new DatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         var databaseManager = database.getDependencyResolver().resolveDependency( DatabaseManager.class );
-        defaultDatabaseId = databaseManager.databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();
+        defaultNamedDatabaseId = databaseManager.databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();
     }
 
     @AfterEach
@@ -87,8 +87,8 @@ class DatabaseAvailabilityIT
         CompositeDatabaseAvailabilityGuard compositeGuard = dependencyResolver.resolveDependency( CompositeDatabaseAvailabilityGuard.class );
         assertTrue( compositeGuard.isAvailable() );
 
-        DatabaseContext systemContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).get();
-        DatabaseContext defaultContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
+        DatabaseContext systemContext = databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).get();
+        DatabaseContext defaultContext = databaseManager.getDatabaseContext( defaultNamedDatabaseId ).get();
 
         AvailabilityGuard systemGuard = systemContext.dependencies().resolveDependency( DatabaseAvailabilityGuard.class );
         systemGuard.require( outerSpaceRequirement );
@@ -110,7 +110,7 @@ class DatabaseAvailabilityIT
     {
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         DatabaseManager<?> databaseManager = getDatabaseManager( dependencyResolver );
-        DatabaseContext databaseContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
+        DatabaseContext databaseContext = databaseManager.getDatabaseContext( defaultNamedDatabaseId ).get();
         databaseContext.database().stop();
 
         assertThrows( DatabaseShutdownException.class, () -> database.beginTx() );
@@ -121,7 +121,7 @@ class DatabaseAvailabilityIT
     {
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         DatabaseManager<?> databaseManager = getDatabaseManager( dependencyResolver );
-        DatabaseContext databaseContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
+        DatabaseContext databaseContext = databaseManager.getDatabaseContext( defaultNamedDatabaseId ).get();
         DatabaseAvailability databaseAvailability = databaseContext.database().getDependencyResolver().resolveDependency( DatabaseAvailability.class );
         databaseAvailability.stop();
 
@@ -135,7 +135,7 @@ class DatabaseAvailabilityIT
     {
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         DatabaseManager<?> databaseManager = getDatabaseManager( dependencyResolver );
-        DatabaseContext databaseContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
+        DatabaseContext databaseContext = databaseManager.getDatabaseContext( defaultNamedDatabaseId ).get();
         Database database = databaseContext.database();
 
         executeTransactionOnDefaultDatabase();

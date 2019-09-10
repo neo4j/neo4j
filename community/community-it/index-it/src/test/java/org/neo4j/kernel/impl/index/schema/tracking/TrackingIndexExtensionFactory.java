@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -48,8 +48,8 @@ public class TrackingIndexExtensionFactory extends ExtensionFactory<TrackingInde
     @Override
     public synchronized IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
     {
-        DatabaseId databaseId = dependencies.database().getDatabaseId();
-        return indexProvider.computeIfAbsent( databaseId.name(), s ->
+        NamedDatabaseId namedDatabaseId = dependencies.database().getNamedDatabaseId();
+        return indexProvider.computeIfAbsent( namedDatabaseId.name(), s ->
         {
             IndexProvider indexProvider = delegate.newInstance( context, dependencies );
             return new TrackingReadersIndexProvider( indexProvider );

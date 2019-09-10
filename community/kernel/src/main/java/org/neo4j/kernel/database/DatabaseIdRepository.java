@@ -26,24 +26,24 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 
 /**
- * Encapsulates the retrieval of a persistent {@link DatabaseId} for a database of a given name.
+ * Encapsulates the retrieval of a persistent {@link NamedDatabaseId} for a database of a given name.
  */
 public interface DatabaseIdRepository
 {
-    DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, new UUID( 0L, 1L ) );
+    NamedDatabaseId NAMED_SYSTEM_DATABASE_ID = new NamedDatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, new UUID( 0L, 1L ) );
 
-    Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName );
-    Optional<DatabaseId> getByUuid( UUID uuid );
+    Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName );
+    Optional<NamedDatabaseId> getById( DatabaseId databaseId );
 
-    default Optional<DatabaseId> getByName( String databaseName )
+    default Optional<NamedDatabaseId> getByName( String databaseName )
     {
         return getByName( new NormalizedDatabaseName( databaseName ) );
     }
 
     interface Caching extends DatabaseIdRepository
     {
-        void invalidate( DatabaseId databaseId );
+        void invalidate( NamedDatabaseId namedDatabaseId );
 
-        void cache( DatabaseId databaseId );
+        void cache( NamedDatabaseId namedDatabaseId );
     }
 }

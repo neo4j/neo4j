@@ -20,7 +20,6 @@
 package org.neo4j.dbms.procedures;
 
 import java.util.Arrays;
-import java.util.UUID;
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.DatabaseStateService;
@@ -28,8 +27,8 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -62,7 +61,7 @@ public abstract class DatabaseStateProcedure extends CallableProcedure.BasicProc
         this.idRepository = idRepository;
     }
 
-    protected DatabaseId extractDatabaseId( AnyValue[] input ) throws ProcedureException
+    protected NamedDatabaseId extractDatabaseId( AnyValue[] input ) throws ProcedureException
     {
         if ( input.length != 1 )
         {
@@ -79,11 +78,11 @@ public abstract class DatabaseStateProcedure extends CallableProcedure.BasicProc
                         "for database with name %s because no database with this name exists!", name ) ) );
     }
 
-    protected AnyValue[] resultRowFactory( DatabaseId databaseId, String role, String address, DatabaseStateService stateService )
+    protected AnyValue[] resultRowFactory( NamedDatabaseId namedDatabaseId, String role, String address, DatabaseStateService stateService )
     {
-        var status = stateService.stateOfDatabase( databaseId );
+        var status = stateService.stateOfDatabase( namedDatabaseId );
         var formattedStatus = stringValue( status.description() );
-        var error = stateService.causeOfFailure( databaseId ).map( Throwable::getMessage );
+        var error = stateService.causeOfFailure( namedDatabaseId ).map( Throwable::getMessage );
         var formattedError = error.map( Values::stringValue ).orElse( stringValue( "" ) );
         return new AnyValue[]{ stringValue( role ), stringValue( address ), formattedStatus, formattedError };
     }

@@ -27,12 +27,11 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
@@ -42,27 +41,27 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     }
 
     @Override
-    public Optional<StandaloneDatabaseContext> getDatabaseContext( DatabaseId databaseId )
+    public Optional<StandaloneDatabaseContext> getDatabaseContext( NamedDatabaseId namedDatabaseId )
     {
-        return Optional.ofNullable( databaseMap.get( databaseId ) );
+        return Optional.ofNullable( databaseMap.get( namedDatabaseId ) );
     }
 
     @Override
     public void initialiseSystemDatabase()
     {
-        createDatabase( SYSTEM_DATABASE_ID );
+        createDatabase( NAMED_SYSTEM_DATABASE_ID );
     }
 
     @Override
     public void initialiseDefaultDatabase()
     {
         String databaseName = config.get( default_database );
-        DatabaseId databaseId = databaseIdRepository().getByName( databaseName )
+        NamedDatabaseId namedDatabaseId = databaseIdRepository().getByName( databaseName )
                 .orElseThrow( () -> new DatabaseNotFoundException( "Default database not found: " + databaseName ) );
-        StandaloneDatabaseContext context = createDatabase( databaseId );
+        StandaloneDatabaseContext context = createDatabase( namedDatabaseId );
         if ( manageDatabasesOnStartAndStop )
         {
-            this.startDatabase( databaseId, context );
+            this.startDatabase( namedDatabaseId, context );
         }
     }
 
@@ -70,80 +69,80 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
      * Create database with specified name.
      * Database name should be unique.
      * By default a database is in a started state when it is initially created.
-     * @param databaseId ID of database to create
+     * @param namedDatabaseId ID of database to create
      * @throws DatabaseExistsException In case if database with specified name already exists
      * @return database context for newly created database
      */
     @Override
-    public synchronized StandaloneDatabaseContext createDatabase( DatabaseId databaseId )
+    public synchronized StandaloneDatabaseContext createDatabase( NamedDatabaseId namedDatabaseId )
     {
-        requireNonNull( databaseId );
-        log.info( "Creating '%s' database.", databaseId.name() );
-        checkDatabaseLimit( databaseId );
-        StandaloneDatabaseContext databaseContext = createDatabaseContext( databaseId );
-        databaseMap.put( databaseId, databaseContext );
+        requireNonNull( namedDatabaseId );
+        log.info( "Creating '%s' database.", namedDatabaseId.name() );
+        checkDatabaseLimit( namedDatabaseId );
+        StandaloneDatabaseContext databaseContext = createDatabaseContext( namedDatabaseId );
+        databaseMap.put( namedDatabaseId, databaseContext );
         return databaseContext;
     }
 
     @Override
-    protected StandaloneDatabaseContext createDatabaseContext( DatabaseId databaseId )
+    protected StandaloneDatabaseContext createDatabaseContext( NamedDatabaseId namedDatabaseId )
     {
-        var databaseCreationContext = newDatabaseCreationContext( databaseId, globalModule.getGlobalDependencies(), globalModule.getGlobalMonitors() );
+        var databaseCreationContext = newDatabaseCreationContext( namedDatabaseId, globalModule.getGlobalDependencies(), globalModule.getGlobalMonitors() );
         var kernelDatabase = new Database( databaseCreationContext );
         return new StandaloneDatabaseContext( kernelDatabase );
     }
 
     @Override
-    public void dropDatabase( DatabaseId ignore )
+    public void dropDatabase( NamedDatabaseId ignore )
     {
         throw new DatabaseManagementException( "Default database manager does not support database drop." );
     }
 
     @Override
-    public void stopDatabase( DatabaseId ignore )
+    public void stopDatabase( NamedDatabaseId ignore )
     {
         throw new DatabaseManagementException( "Default database manager does not support database stop." );
     }
 
     @Override
-    public void startDatabase( DatabaseId databaseId )
+    public void startDatabase( NamedDatabaseId namedDatabaseId )
     {
         throw new DatabaseManagementException( "Default database manager does not support starting databases." );
     }
 
     @Override
-    protected void stopDatabase( DatabaseId databaseId, StandaloneDatabaseContext context )
+    protected void stopDatabase( NamedDatabaseId namedDatabaseId, StandaloneDatabaseContext context )
     {
         try
         {
-            super.stopDatabase( databaseId, context );
+            super.stopDatabase( namedDatabaseId, context );
         }
         catch ( Throwable t )
         {
-            log.error( "Failed to stop database: " + databaseId.name(), t );
+            log.error( "Failed to stop database: " + namedDatabaseId.name(), t );
             context.fail( t );
         }
     }
 
     @Override
-    protected void startDatabase( DatabaseId databaseId, StandaloneDatabaseContext context )
+    protected void startDatabase( NamedDatabaseId namedDatabaseId, StandaloneDatabaseContext context )
     {
         try
         {
-            super.startDatabase( databaseId, context );
+            super.startDatabase( namedDatabaseId, context );
         }
         catch ( Throwable t )
         {
-            log.error( "Failed to start database: " + databaseId.name(), t );
+            log.error( "Failed to start database: " + namedDatabaseId.name(), t );
             context.fail( t );
         }
     }
 
-    private void checkDatabaseLimit( DatabaseId databaseId )
+    private void checkDatabaseLimit( NamedDatabaseId namedDatabaseId )
     {
         if ( databaseMap.size() >= 2 )
         {
-            throw new DatabaseManagementException( "Default database already exists. Fail to create another database: " + databaseId.name() );
+            throw new DatabaseManagementException( "Default database already exists. Fail to create another database: " + namedDatabaseId.name() );
         }
     }
 }

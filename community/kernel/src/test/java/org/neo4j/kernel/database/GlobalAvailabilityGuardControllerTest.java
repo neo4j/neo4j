@@ -38,13 +38,13 @@ class GlobalAvailabilityGuardControllerTest
     void doNotAbortOnRunning()
     {
         when( guard.isShutdown() ).thenReturn( false );
-        assertFalse( guardController.shouldAbort( new DatabaseId( "any", randomUUID() ) ) );
+        assertFalse( guardController.shouldAbort( new NamedDatabaseId( "any", randomUUID() ) ) );
     }
 
     @Test
     void abortOnShutdown()
     {
         when( guard.isShutdown() ).thenReturn( true );
-        assertTrue( guardController.shouldAbort( new DatabaseId( "any", randomUUID() ) ) );
+        assertTrue( guardController.shouldAbort( new NamedDatabaseId( "any", randomUUID() ) ) );
     }
 }

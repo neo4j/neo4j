@@ -43,7 +43,7 @@ import org.neo4j.string.UTF8;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 {
@@ -259,7 +259,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 
     protected GraphDatabaseService getSystemDb()
     {
-        return databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
+        return databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
                 () -> new AuthProviderFailedException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
     }
 }

@@ -20,8 +20,8 @@
 package org.neo4j.kernel.recovery;
 
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.database.DatabaseStartupController.NEVER_ABORT;
@@ -31,19 +31,19 @@ public class RecoveryStartupChecker
     public static final RecoveryStartupChecker EMPTY_CHECKER = new NeverCanceledChecker();
 
     private final DatabaseStartupController databaseStartupController;
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
 
-    public RecoveryStartupChecker( DatabaseStartupController databaseStartupController, DatabaseId databaseId )
+    public RecoveryStartupChecker( DatabaseStartupController databaseStartupController, NamedDatabaseId namedDatabaseId )
     {
         this.databaseStartupController = requireNonNull( databaseStartupController );
-        this.databaseId = databaseId;
+        this.namedDatabaseId = namedDatabaseId;
     }
 
     void checkIfCanceled() throws DatabaseStartAbortedException
     {
-        if ( databaseStartupController.shouldAbort( databaseId ) )
+        if ( databaseStartupController.shouldAbort( namedDatabaseId ) )
         {
-            throw new DatabaseStartAbortedException( databaseId );
+            throw new DatabaseStartAbortedException( namedDatabaseId );
         }
     }
 

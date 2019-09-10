@@ -52,7 +52,7 @@ class TransactionStateMachineV4SPITest
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
         var databaseId = databaseIdRepository.getRaw( "molly" );
-        when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
+        when( dbSpi.getNamedDatabaseId() ).thenReturn( databaseId );
 
         var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
                 mock( StatementProcessorReleaseManager.class ) );
@@ -75,7 +75,7 @@ class TransactionStateMachineV4SPITest
 
         var databaseId = databaseIdRepository.getRaw( "molly" );
         when( tx.getBookmarkMetadata() ).thenReturn( new BookmarkMetadata( 42L, databaseId ));
-        when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
+        when( dbSpi.getNamedDatabaseId() ).thenReturn( databaseId );
 
         var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
                 mock( StatementProcessorReleaseManager.class ) );

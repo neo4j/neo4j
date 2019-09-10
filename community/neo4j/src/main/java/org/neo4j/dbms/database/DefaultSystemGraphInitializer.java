@@ -40,7 +40,7 @@ import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERT
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_STATUS_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_UUID_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DELETED_DATABASE_LABEL;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 public class DefaultSystemGraphInitializer extends SystemGraphInitializer
 {
@@ -64,7 +64,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
     public void initializeSystemGraph() throws Exception
     {
         // First get a recent handle on the database representing the system graph
-        GraphDatabaseFacade system = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
+        GraphDatabaseFacade system = databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
                 () -> new IllegalStateException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
         initializeSystemGraph( system );
     }
@@ -119,7 +119,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         }
 
         newDb( system, defaultDbName, true, UUID.randomUUID() );
-        newDb( system, new NormalizedDatabaseName( SYSTEM_DATABASE_NAME ), false, SYSTEM_DATABASE_ID.uuid() );
+        newDb( system, new NormalizedDatabaseName( SYSTEM_DATABASE_NAME ), false, NAMED_SYSTEM_DATABASE_ID.databaseId().uuid() );
     }
 
     private void updateDefaultDatabase( GraphDatabaseService system, boolean stopOld ) throws InvalidArgumentsException

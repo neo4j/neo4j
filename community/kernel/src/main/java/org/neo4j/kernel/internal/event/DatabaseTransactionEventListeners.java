@@ -24,7 +24,7 @@ import java.util.Collection;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.event.TransactionListenersState.ListenerState;
 import org.neo4j.storageengine.api.StorageReader;
@@ -44,11 +44,11 @@ public class DatabaseTransactionEventListeners
     private final String databaseName;
 
     public DatabaseTransactionEventListeners( GraphDatabaseFacade databaseFacade, GlobalTransactionEventListeners globalTransactionEventListeners,
-            DatabaseId databaseId )
+            NamedDatabaseId namedDatabaseId )
     {
         this.databaseFacade = databaseFacade;
         this.globalTransactionEventListeners = globalTransactionEventListeners;
-        this.databaseName = databaseId.name();
+        this.databaseName = namedDatabaseId.name();
     }
 
     public TransactionListenersState beforeCommit( ReadableTransactionState state, KernelTransaction transaction, StorageReader storageReader )

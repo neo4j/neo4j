@@ -24,7 +24,7 @@ import java.util.Optional;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
  * Database State Service for the community edition of the dbms
@@ -39,11 +39,11 @@ public final class DefaultDatabaseStateService implements DatabaseStateService
     }
 
     @Override
-    public OperatorState stateOfDatabase( DatabaseId databaseId )
+    public OperatorState stateOfDatabase( NamedDatabaseId namedDatabaseId )
     {
-        return databaseManager.getDatabaseContext( databaseId )
+        return databaseManager.getDatabaseContext( namedDatabaseId )
                 .map( ctx ->
-                        new CommunityDatabaseState( ctx.database().getDatabaseId(),
+                        new CommunityDatabaseState( ctx.database().getNamedDatabaseId(),
                                 ctx.database().isStarted(),
                                 ctx.isFailed(),
                                 ctx.failureCause() ).operatorState() )
@@ -51,8 +51,8 @@ public final class DefaultDatabaseStateService implements DatabaseStateService
     }
 
     @Override
-    public Optional<Throwable> causeOfFailure( DatabaseId databaseId )
+    public Optional<Throwable> causeOfFailure( NamedDatabaseId namedDatabaseId )
     {
-        return databaseManager.getDatabaseContext( databaseId ).map( StandaloneDatabaseContext::failureCause );
+        return databaseManager.getDatabaseContext( namedDatabaseId ).map( StandaloneDatabaseContext::failureCause );
     }
 }

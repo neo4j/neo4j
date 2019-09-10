@@ -39,7 +39,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -67,7 +67,7 @@ import static org.neo4j.internal.helpers.NamedThreadFactory.daemon;
 
 class DatabaseServiceBookmarkTest
 {
-    private static final DatabaseId DATABASE_ID = new TestDatabaseIdRepository().defaultDatabase();
+    private static final NamedDatabaseId DATABASE_ID = new TestDatabaseIdRepository().defaultDatabase();
 
     private final ExecutorService executor = newSingleThreadExecutor( daemon( getClass() + "-thread" ) );
 
@@ -152,7 +152,7 @@ class DatabaseServiceBookmarkTest
         var queryExecutionEngine = mock( QueryExecutionEngine.class );
 
         var db = mock( Database.class );
-        when( db.getDatabaseId() ).thenReturn( DATABASE_ID );
+        when( db.getNamedDatabaseId() ).thenReturn( DATABASE_ID );
         when( db.getDatabaseAvailabilityGuard() ).thenReturn( availabilityGuard );
 
         var dependencyResolver = mock( Dependencies.class );

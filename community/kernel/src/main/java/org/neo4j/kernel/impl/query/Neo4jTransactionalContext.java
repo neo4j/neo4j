@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
@@ -46,7 +46,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public final SecurityContext securityContext;
     private final ExecutingQuery executingQuery;
     private final ClientConnectionInfo clientInfo;
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
 
     private final InternalTransaction transaction;
     private KernelTransaction kernelTransaction;
@@ -68,7 +68,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.executingQuery = executingQuery;
 
         this.transaction = transaction;
-        this.databaseId = executingQuery.databaseId();
+        this.namedDatabaseId = executingQuery.databaseId();
         this.kernelTransaction = transaction.kernelTransaction();
         this.statement = initialStatement;
         this.valueMapper = new DefaultValueMapper( transaction );
@@ -231,9 +231,9 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public DatabaseId databaseId()
+    public NamedDatabaseId databaseId()
     {
-        return databaseId;
+        return namedDatabaseId;
     }
 
     @Override

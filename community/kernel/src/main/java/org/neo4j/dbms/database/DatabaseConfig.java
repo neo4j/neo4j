@@ -30,7 +30,7 @@ import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.configuration.SettingObserver;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
@@ -40,19 +40,19 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 public class DatabaseConfig extends Config implements Lifecycle
 {
     private final Config globalConfig;
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
     private Map<Setting<Object>,Collection<SettingChangeListener<Object>>> registeredListeners = new ConcurrentHashMap<>();
 
-    public DatabaseConfig( Config globalConfig, DatabaseId databaseId )
+    public DatabaseConfig( Config globalConfig, NamedDatabaseId namedDatabaseId )
     {
         this.globalConfig = globalConfig;
-        this.databaseId = databaseId;
+        this.namedDatabaseId = namedDatabaseId;
     }
 
     @Override
     public <T> T get( Setting<T> setting )
     {
-        if ( read_only.equals( setting ) && databaseId.isSystemDatabase() )
+        if ( read_only.equals( setting ) && namedDatabaseId.isSystemDatabase() )
         {
             return (T) FALSE;
         }

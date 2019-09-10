@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
@@ -86,10 +86,10 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
     private final VersionContextSupplier versionContextSupplier;
 
     public KernelStatement( KernelTransactionImplementation transaction, LockTracer systemLockTracer, ClockContext clockContext,
-            VersionContextSupplier versionContextSupplier, AtomicReference<CpuClock> cpuClockRef, DatabaseId databaseId )
+            VersionContextSupplier versionContextSupplier, AtomicReference<CpuClock> cpuClockRef, NamedDatabaseId namedDatabaseId )
     {
         this.transaction = transaction;
-        this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef, databaseId );
+        this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef, namedDatabaseId );
         this.systemLockTracer = systemLockTracer;
         this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
         this.clockContext = clockContext;

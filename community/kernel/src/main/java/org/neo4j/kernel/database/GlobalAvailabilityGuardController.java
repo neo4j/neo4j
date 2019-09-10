@@ -31,7 +31,7 @@ public class GlobalAvailabilityGuardController implements DatabaseStartupControl
     }
 
     @Override
-    public boolean shouldAbort( DatabaseId databaseId )
+    public boolean shouldAbort( NamedDatabaseId namedDatabaseId )
     {
         return globalAvailabilityGuard.isShutdown();
     }

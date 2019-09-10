@@ -41,7 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 @TestDirectoryExtension
 class CommunityGlobalTransactionStatsIT
@@ -74,7 +74,7 @@ class CommunityGlobalTransactionStatsIT
         ExecutorService transactionExecutor = Executors.newSingleThreadExecutor();
         DatabaseManager<?> databaseManager = getDatabaseManager();
         var defaultDatabase = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
-        var systemDatabase = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID );
+        var systemDatabase = databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID );
 
         assertTrue( defaultDatabase.isPresent() );
         assertTrue( systemDatabase.isPresent() );

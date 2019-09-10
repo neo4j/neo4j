@@ -50,7 +50,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     }
 
     @Override
-    public Optional<DatabaseId> getByName( NormalizedDatabaseName normalizedDatabaseName )
+    public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName normalizedDatabaseName )
     {
         var databaseName = normalizedDatabaseName.name();
         return runAsync(
@@ -59,9 +59,9 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     }
 
     @Override
-    public Optional<DatabaseId> getByUuid( UUID uuid )
+    public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
     {
-        return runAsync( () -> get0( DATABASE_UUID_PROPERTY, uuid.toString() ), executor );
+        return runAsync( () -> get0( DATABASE_UUID_PROPERTY, databaseId.uuid().toString() ), executor );
     }
 
     private static <T> T runAsync( Supplier<T> supplier, Executor executor )
@@ -81,9 +81,9 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     }
 
     // Run on another thread to avoid running in an enclosing transaction on a different database
-    private Optional<DatabaseId> get0( String propertyKey, String propertyValue )
+    private Optional<NamedDatabaseId> get0( String propertyKey, String propertyValue )
     {
-        var context = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
+        var context = databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
                 () -> new DatabaseNotFoundException( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
 
         var db = context.databaseFacade();
@@ -99,7 +99,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
             var databaseName = getPropertyOnNode( node, DATABASE_NAME_PROPERTY, propertyValue );
             var databaseUuid = getPropertyOnNode( node, DATABASE_UUID_PROPERTY, propertyValue );
 
-            return Optional.of( new DatabaseId( databaseName, UUID.fromString( databaseUuid ) ) );
+            return Optional.of( new NamedDatabaseId( databaseName, UUID.fromString( databaseUuid ) ) );
         }
         catch ( RuntimeException e )
         {

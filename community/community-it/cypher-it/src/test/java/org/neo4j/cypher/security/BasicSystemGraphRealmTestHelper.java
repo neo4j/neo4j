@@ -35,8 +35,8 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.security.User;
@@ -80,9 +80,9 @@ public class BasicSystemGraphRealmTestHelper
         }
 
         @Override
-        public Optional<StandaloneDatabaseContext> getDatabaseContext( DatabaseId databaseId )
+        public Optional<StandaloneDatabaseContext> getDatabaseContext( NamedDatabaseId namedDatabaseId )
         {
-            if ( databaseId.isSystemDatabase() )
+            if ( namedDatabaseId.isSystemDatabase() )
             {
                 DependencyResolver dependencyResolver = testSystemDb.getDependencyResolver();
                 Database database = dependencyResolver.resolveDependency( Database.class );
@@ -92,23 +92,23 @@ public class BasicSystemGraphRealmTestHelper
         }
 
         @Override
-        public StandaloneDatabaseContext createDatabase( DatabaseId databaseId )
+        public StandaloneDatabaseContext createDatabase( NamedDatabaseId namedDatabaseId )
         {
             throw new UnsupportedOperationException( "Call to createDatabase not expected" );
         }
 
         @Override
-        public void dropDatabase( DatabaseId databaseId )
+        public void dropDatabase( NamedDatabaseId namedDatabaseId )
         {
         }
 
         @Override
-        public void stopDatabase( DatabaseId databaseId )
+        public void stopDatabase( NamedDatabaseId namedDatabaseId )
         {
         }
 
         @Override
-        public void startDatabase( DatabaseId databaseId )
+        public void startDatabase( NamedDatabaseId namedDatabaseId )
         {
         }
 
@@ -119,7 +119,7 @@ public class BasicSystemGraphRealmTestHelper
         }
 
         @Override
-        public SortedMap<DatabaseId,StandaloneDatabaseContext> registeredDatabases()
+        public SortedMap<NamedDatabaseId,StandaloneDatabaseContext> registeredDatabases()
         {
             return Collections.emptySortedMap();
         }

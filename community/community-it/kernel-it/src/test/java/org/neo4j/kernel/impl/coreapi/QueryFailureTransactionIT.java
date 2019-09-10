@@ -133,7 +133,7 @@ class QueryFailureTransactionIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
         {
-            if ( DEFAULT_DATABASE_NAME.equals( dependencies.database().getDatabaseId().name() ) )
+            if ( DEFAULT_DATABASE_NAME.equals( dependencies.database().getNamedDatabaseId().name() ) )
             {
                 return new LifecycleAdapter()
                 {

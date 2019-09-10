@@ -26,7 +26,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;
@@ -37,7 +37,7 @@ public class IdContextFactoryBuilder
 {
     private FileSystemAbstraction fileSystemAbstraction;
     private JobScheduler jobScheduler;
-    private Function<DatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider;
+    private Function<NamedDatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider;
     private Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
     private Config config;
 
@@ -54,7 +54,7 @@ public class IdContextFactoryBuilder
         return builder;
     }
 
-    public IdContextFactoryBuilder withIdGenerationFactoryProvider( Function<DatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider )
+    public IdContextFactoryBuilder withIdGenerationFactoryProvider( Function<NamedDatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider )
     {
         this.idGeneratorFactoryProvider = idGeneratorFactoryProvider;
         return this;
@@ -82,7 +82,7 @@ public class IdContextFactoryBuilder
         return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, factoryWrapper );
     }
 
-    public static Function<DatabaseId,IdGeneratorFactory> defaultIdGeneratorFactoryProvider( FileSystemAbstraction fs, Config config )
+    public static Function<NamedDatabaseId,IdGeneratorFactory> defaultIdGeneratorFactoryProvider( FileSystemAbstraction fs, Config config )
     {
         return databaseId ->
         {

@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
-import org.neo4j.kernel.database.DatabaseId
+import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -65,7 +65,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
 
   override def databaseInfo: DatabaseInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DatabaseInfo])
 
-  override def databaseId: DatabaseId = tc.databaseId()
+  override def databaseId: NamedDatabaseId = tc.databaseId()
 
   def getOrCreateFromSchemaState[T](key: SchemaStateKey, f: => T): T = {
     val javaCreator = new java.util.function.Function[SchemaStateKey, T]() {

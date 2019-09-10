@@ -28,7 +28,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.virtual.MapValue;
 
@@ -54,7 +54,7 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     }
 
     @Override
-    protected RoutingResult invoke( DatabaseId databaseId, MapValue routingContext )
+    protected RoutingResult invoke( NamedDatabaseId namedDatabaseId, MapValue routingContext )
     {
         if ( config.get( BoltConnector.enabled ) )
         {

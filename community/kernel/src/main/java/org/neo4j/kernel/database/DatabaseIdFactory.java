@@ -24,10 +24,19 @@ import java.util.UUID;
 public class DatabaseIdFactory
 {
     /**
-     * To create a {@link DatabaseId} from known name and UUID. Only intended for use where UUID is definitively known.
+     * To create a {@link NamedDatabaseId} from known name and UUID. Only intended for use where UUID is definitively known.
      */
-    public static DatabaseId from( String name, UUID uuid )
+    public static NamedDatabaseId from( String name, UUID uuid )
     {
-        return new DatabaseId( name, uuid );
+        return new NamedDatabaseId( name, uuid );
+    }
+
+    /**
+     * To create a {@link DatabaseId} from known UUID. Only intended for use where UUID is definitively known.
+     */
+
+    public static DatabaseId from( UUID uuid )
+    {
+        return new DatabaseId( uuid );
     }
 }

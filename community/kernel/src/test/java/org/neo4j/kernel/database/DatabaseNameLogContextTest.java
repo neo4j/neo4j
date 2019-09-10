@@ -28,7 +28,7 @@ class DatabaseNameLogContextTest
     @Test
     void shouldFormatMessage()
     {
-        var databaseId = TestDatabaseIdRepository.randomDatabaseId();
+        var databaseId = TestDatabaseIdRepository.randomNamedDatabaseId();
         var context = new DatabaseNameLogContext( databaseId );
 
         var formattedMessage = context.formatMessage( "Hello there" );

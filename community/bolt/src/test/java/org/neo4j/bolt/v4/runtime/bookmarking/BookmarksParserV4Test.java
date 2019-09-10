@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
@@ -37,6 +36,7 @@ import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.MapValue;
@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmark;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmarkMixture;
-import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 class BookmarksParserV4Test
 {
@@ -154,13 +154,13 @@ class BookmarksParserV4Test
         var unknownDatabaseIdRepo = new DatabaseIdRepository()
         {
             @Override
-            public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
+            public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
             {
                 return Optional.empty();
             }
 
             @Override
-            public Optional<DatabaseId> getByUuid( UUID uuid )
+            public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
             {
                 return Optional.empty();
             }
@@ -229,7 +229,7 @@ class BookmarksParserV4Test
     @Test
     void shouldParseSingleSystemDbBookmark() throws Exception
     {
-        var systemDbId = SYSTEM_DATABASE_ID;
+        var systemDbId = NAMED_SYSTEM_DATABASE_ID;
         var metadata = metadata( List.of( bookmarkString( 42, systemDbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
@@ -240,7 +240,7 @@ class BookmarksParserV4Test
     @Test
     void shouldParseMultipleSystemDbBookmarks() throws Exception
     {
-        var systemDbId = SYSTEM_DATABASE_ID;
+        var systemDbId = NAMED_SYSTEM_DATABASE_ID;
         var metadata = metadata( List.of( bookmarkString( 42, systemDbId ), bookmarkString( 1, systemDbId ), bookmarkString( 39, systemDbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
@@ -251,7 +251,7 @@ class BookmarksParserV4Test
     @Test
     void shouldParseSingleSystemAndSingleUserDbBookmarks() throws Exception
     {
-        var systemDbId = SYSTEM_DATABASE_ID;
+        var systemDbId = NAMED_SYSTEM_DATABASE_ID;
         var userDbId = databaseIdRepository.getRaw( "foo" );
         var metadata = metadata( List.of( bookmarkString( 33, systemDbId ), bookmarkString( 22, userDbId ) ) );
 
@@ -263,7 +263,7 @@ class BookmarksParserV4Test
     @Test
     void shouldParseMultipleSystemAndSingleUserDbBookmarks() throws Exception
     {
-        var systemDbId = SYSTEM_DATABASE_ID;
+        var systemDbId = NAMED_SYSTEM_DATABASE_ID;
         var userDbId = databaseIdRepository.getRaw( "foo" );
         var metadata = metadata( List.of( bookmarkString( 33, systemDbId ), bookmarkString( 9, userDbId ), bookmarkString( 44, systemDbId ) ) );
 
@@ -275,7 +275,7 @@ class BookmarksParserV4Test
     @Test
     void shouldParseMultipleSystemAndMultipleUserDbBookmarks() throws Exception
     {
-        var systemDbId = SYSTEM_DATABASE_ID;
+        var systemDbId = NAMED_SYSTEM_DATABASE_ID;
         var userDbId = databaseIdRepository.getRaw( "foo" );
         var metadata = metadata( List.of(
                 bookmarkString( 12, systemDbId ), bookmarkString( 69, userDbId ), bookmarkString( 83, systemDbId ), bookmarkString( 17, userDbId ) ) );
@@ -300,8 +300,8 @@ class BookmarksParserV4Test
     @Test
     void shouldErrorWhenDatabaseIdContainsInvalidTxId() throws Exception
     {
-        var databaseId = databaseIdRepository.getRaw( "foo" );
-        var wrongBookmarkString = String.format( "%s:neo4j", databaseId.uuid() );
+        var namedDatabaseId = databaseIdRepository.getRaw( "foo" );
+        var wrongBookmarkString = String.format( "%s:neo4j", namedDatabaseId.databaseId().uuid() );
 
         var error = assertThrows( BookmarkParsingException.class,
                 () -> parser.parseBookmarks( metadata( List.of( wrongBookmarkString ) ) ) );
@@ -329,7 +329,7 @@ class BookmarksParserV4Test
 
         var metadata = metadata( List.of(
                 customBookmarkString( "text1" ),
-                bookmarkString( 1234, SYSTEM_DATABASE_ID ),
+                bookmarkString( 1234, NAMED_SYSTEM_DATABASE_ID ),
                 customBookmarkString( "text2" )
                 ) );
 
@@ -338,7 +338,7 @@ class BookmarksParserV4Test
         assertEquals( List.of(
                 new CustomBookmark( "text1" ),
                 new CustomBookmark( "text2" ),
-                new BookmarkWithDatabaseId( 1234, SYSTEM_DATABASE_ID )
+                new BookmarkWithDatabaseId( 1234, NAMED_SYSTEM_DATABASE_ID )
         ), bookmarks );
     }
 
@@ -380,9 +380,9 @@ class BookmarksParserV4Test
         return builder.build();
     }
 
-    private static String bookmarkString( long txId, DatabaseId databaseId )
+    private static String bookmarkString( long txId, NamedDatabaseId namedDatabaseId )
     {
-        return new BookmarkWithDatabaseId( txId, databaseId ).toString();
+        return new BookmarkWithDatabaseId( txId, namedDatabaseId ).toString();
     }
 
     private static String customBookmarkString( String text )
@@ -435,7 +435,7 @@ class BookmarksParserV4Test
         }
 
         @Override
-        public DatabaseId databaseId()
+        public NamedDatabaseId databaseId()
         {
             throw new IllegalStateException( "Database ID requested on a custom bookmark" );
         }

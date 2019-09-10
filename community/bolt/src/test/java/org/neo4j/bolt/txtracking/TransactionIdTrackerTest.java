@@ -29,7 +29,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
@@ -61,7 +61,7 @@ class TransactionIdTrackerTest
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard = mock( DatabaseAvailabilityGuard.class );
     private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final DatabaseId databaseId = databaseIdRepository.getRaw( "foo" );
+    private final NamedDatabaseId namedDatabaseId = databaseIdRepository.getRaw( "foo" );
     private final Database db = mock( Database.class );
     private final DatabaseManagementService managementService = mock( DatabaseManagementService.class );
     private final ReconciledTransactionTracker reconciledTransactionTracker = spy( new DefaultReconciledTransactionTracker( NullLogService.getInstance() ) );
@@ -74,10 +74,10 @@ class TransactionIdTrackerTest
         var dbApi = mock( GraphDatabaseAPI.class );
         var resolver = mock( Dependencies.class );
 
-        when( managementService.database( databaseId.name() ) ).thenReturn( dbApi );
+        when( managementService.database( namedDatabaseId.name() ) ).thenReturn( dbApi );
         when( dbApi.getDependencyResolver() ).thenReturn( resolver );
 
-        when( db.getDatabaseId() ).thenReturn( databaseId );
+        when( db.getNamedDatabaseId() ).thenReturn( namedDatabaseId );
         when( db.isSystem() ).thenReturn( false );
         when( db.getDependencyResolver() ).thenReturn( resolver );
         when( db.getDatabaseAvailabilityGuard() ).thenReturn( databaseAvailabilityGuard );
@@ -93,7 +93,7 @@ class TransactionIdTrackerTest
     void shouldReturnImmediatelyForBaseTxIdOrLess() throws Exception
     {
         // when
-        transactionIdTracker.awaitUpToDate( databaseId, BASE_TX_ID, ofSeconds( 5 ) );
+        transactionIdTracker.awaitUpToDate( namedDatabaseId, BASE_TX_ID, ofSeconds( 5 ) );
 
         // then
         verify( transactionIdStore, never() ).getLastClosedTransactionId();
@@ -107,7 +107,7 @@ class TransactionIdTrackerTest
         when( db.isSystem() ).thenReturn( true );
 
         // when
-        transactionIdTracker.awaitUpToDate( databaseId, BASE_TX_ID, ofSeconds( 5 ) );
+        transactionIdTracker.awaitUpToDate( namedDatabaseId, BASE_TX_ID, ofSeconds( 5 ) );
 
         // then
         verify( reconciledTransactionTracker, never() ).getLastReconciledTransactionId();
@@ -123,7 +123,7 @@ class TransactionIdTrackerTest
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 1L ).thenReturn( 2L ).thenReturn( 6L );
 
         // when
-        transactionIdTracker.awaitUpToDate( databaseId, version, DEFAULT_DURATION );
+        transactionIdTracker.awaitUpToDate( namedDatabaseId, version, DEFAULT_DURATION );
 
         // then
         verify( transactionIdStore, times( 3 ) ).getLastClosedTransactionId();
@@ -139,7 +139,7 @@ class TransactionIdTrackerTest
         when( reconciledTransactionTracker.getLastReconciledTransactionId() ).thenReturn( 1L ).thenReturn( 2L ).thenReturn( 41L ).thenReturn( 44L );
 
         // when
-        transactionIdTracker.awaitUpToDate( databaseId, version, DEFAULT_DURATION );
+        transactionIdTracker.awaitUpToDate( namedDatabaseId, version, DEFAULT_DURATION );
 
         // then
         verify( reconciledTransactionTracker, times( 4 ) ).getLastReconciledTransactionId();
@@ -156,7 +156,7 @@ class TransactionIdTrackerTest
 
         // when
         var exception = assertThrows( TransactionIdTrackerException.class,
-                () -> transactionIdTracker.awaitUpToDate( databaseId, version + 1, ofMillis( 50 ) ) );
+                () -> transactionIdTracker.awaitUpToDate( namedDatabaseId, version + 1, ofMillis( 50 ) ) );
 
         // then
         assertEquals( BookmarkTimeout, exception.status() );
@@ -174,7 +174,7 @@ class TransactionIdTrackerTest
 
         // when
         var exception = assertThrows( TransactionIdTrackerException.class,
-                () -> transactionIdTracker.awaitUpToDate( databaseId, version + 1, ofMillis( 50 ) ) );
+                () -> transactionIdTracker.awaitUpToDate( namedDatabaseId, version + 1, ofMillis( 50 ) ) );
 
         // then
         assertEquals( BookmarkTimeout, exception.status() );
@@ -193,7 +193,7 @@ class TransactionIdTrackerTest
 
         // when
         var exception = assertThrows( TransactionIdTrackerException.class,
-                () -> transactionIdTracker.awaitUpToDate( databaseId, version + 1, ofMillis( 50 ) ) );
+                () -> transactionIdTracker.awaitUpToDate( namedDatabaseId, version + 1, ofMillis( 50 ) ) );
 
         // then
         assertEquals( DatabaseUnavailable, exception.status() );
@@ -212,7 +212,7 @@ class TransactionIdTrackerTest
 
         // when
         var exception = assertThrows( TransactionIdTrackerException.class,
-                () -> transactionIdTracker.awaitUpToDate( databaseId, version + 1, ofMillis( 50 ) ) );
+                () -> transactionIdTracker.awaitUpToDate( namedDatabaseId, version + 1, ofMillis( 50 ) ) );
 
         // then
         assertEquals( DatabaseUnavailable, exception.status() );
@@ -228,7 +228,7 @@ class TransactionIdTrackerTest
 
         // when
         var exception = assertThrows( TransactionIdTrackerException.class,
-                () -> transactionIdTracker.awaitUpToDate( databaseId, 1000, ofMillis( 60_000 ) ) );
+                () -> transactionIdTracker.awaitUpToDate( namedDatabaseId, 1000, ofMillis( 60_000 ) ) );
 
         // then
         assertEquals( DatabaseUnavailable, exception.status() );
@@ -244,7 +244,7 @@ class TransactionIdTrackerTest
 
         // when
         var exception = assertThrows( TransactionIdTrackerException.class,
-                () -> transactionIdTracker.awaitUpToDate( databaseId, 1000, ofMillis( 60_000 ) ) );
+                () -> transactionIdTracker.awaitUpToDate( namedDatabaseId, 1000, ofMillis( 60_000 ) ) );
 
         // then
         assertEquals( DatabaseUnavailable, exception.status() );
@@ -260,7 +260,7 @@ class TransactionIdTrackerTest
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 4242L );
 
         // then
-        assertEquals( 4242L, transactionIdTracker.newestTransactionId( databaseId ) );
+        assertEquals( 4242L, transactionIdTracker.newestTransactionId( namedDatabaseId ) );
     }
 
     @Test
@@ -272,7 +272,7 @@ class TransactionIdTrackerTest
         when( reconciledTransactionTracker.getLastReconciledTransactionId() ).thenReturn( 4242L );
 
         // then
-        assertEquals( 42L, transactionIdTracker.newestTransactionId( databaseId ) );
+        assertEquals( 42L, transactionIdTracker.newestTransactionId( namedDatabaseId ) );
         verifyZeroInteractions( reconciledTransactionTracker );
     }
 

@@ -32,20 +32,20 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractTransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.BoltAdapterSubscriber;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachineSPI
 {
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
 
     public TransactionStateMachineV4SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
             StatementProcessorReleaseManager resourceReleaseManger )
     {
         super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManger );
-        this.databaseId = boltGraphDatabaseServiceSPI.getDatabaseId();
+        this.namedDatabaseId = boltGraphDatabaseServiceSPI.getNamedDatabaseId();
     }
 
     @Override
@@ -78,7 +78,7 @@ public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachin
         @Override
         protected BoltResult newBoltResult( QueryExecution result, BoltAdapterSubscriber subscriber, Clock clock )
         {
-            return new CypherAdapterStreamV4( result, subscriber, clock, databaseId.name() );
+            return new CypherAdapterStreamV4( result, subscriber, clock, namedDatabaseId.name() );
         }
     }
 }

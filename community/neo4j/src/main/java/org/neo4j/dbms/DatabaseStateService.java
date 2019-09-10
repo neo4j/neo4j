@@ -21,7 +21,7 @@ package org.neo4j.dbms;
 
 import java.util.Optional;
 
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
  * Simple api for retrieving a human readable state for a given database, by id.
@@ -35,17 +35,17 @@ public interface DatabaseStateService
      * Note that if a database with the given name does not exist, the state
      * "UNKNOWN" will be returned.
      *
-     * @param databaseId the database whose state to return
+     * @param namedDatabaseId the database whose state to return
      * @return state of database with name
      */
-    OperatorState stateOfDatabase( DatabaseId databaseId );
+    OperatorState stateOfDatabase( NamedDatabaseId namedDatabaseId );
 
     /**
      * Note that if a database with the given name does not exist, {@code Optional.empty()}
      * will be returned.
      *
-     * @param databaseId the database to check for failure
+     * @param namedDatabaseId the database to check for failure
      * @return the cause of the database failure, if there is one.
      */
-    Optional<Throwable> causeOfFailure( DatabaseId databaseId );
+    Optional<Throwable> causeOfFailure( NamedDatabaseId namedDatabaseId );
 }

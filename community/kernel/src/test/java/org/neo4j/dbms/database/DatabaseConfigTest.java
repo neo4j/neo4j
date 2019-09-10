@@ -25,7 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.test.Race;
 
@@ -37,8 +37,8 @@ class DatabaseConfigTest
     void shouldHandleRegisterDynamicUpdateListenersConcurrently() throws Throwable
     {
         // given
-        DatabaseId databaseId = new TestDatabaseIdRepository().defaultDatabase();
-        DatabaseConfig dbConfig = new DatabaseConfig( Config.defaults(), databaseId );
+        NamedDatabaseId namedDatabaseId = new TestDatabaseIdRepository().defaultDatabase();
+        DatabaseConfig dbConfig = new DatabaseConfig( Config.defaults(), namedDatabaseId );
         Setting<GraphDatabaseSettings.TransactionTracingLevel> setting = GraphDatabaseSettings.transaction_tracing_level;
         int threads = 100; // big because we want to exercise what happens when the potentially backing List wants to grow
         Listener[] listeners = new Listener[threads];

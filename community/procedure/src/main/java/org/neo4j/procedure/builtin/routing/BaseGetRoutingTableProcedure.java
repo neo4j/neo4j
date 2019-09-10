@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.procedure.Mode;
@@ -92,9 +92,9 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
 
     protected abstract String description();
 
-    protected abstract RoutingResult invoke( DatabaseId databaseId, MapValue routingContext ) throws ProcedureException;
+    protected abstract RoutingResult invoke( NamedDatabaseId namedDatabaseId, MapValue routingContext ) throws ProcedureException;
 
-    private DatabaseId extractDatabaseId( AnyValue[] input ) throws ProcedureException
+    private NamedDatabaseId extractDatabaseId( AnyValue[] input ) throws ProcedureException
     {
         var arg = input[1];
         final String databaseName;
@@ -115,27 +115,27 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
                 .orElseThrow( () -> databaseNotFoundException( databaseName ) );
     }
 
-    private void assertDatabaseOperational( DatabaseId databaseId ) throws ProcedureException
+    private void assertDatabaseOperational( NamedDatabaseId namedDatabaseId ) throws ProcedureException
     {
-        var databaseContext = databaseManager.getDatabaseContext( databaseId );
+        var databaseContext = databaseManager.getDatabaseContext( namedDatabaseId );
         if ( databaseContext.isEmpty() )
         {
-            throw databaseNotFoundException( databaseId.name() );
+            throw databaseNotFoundException( namedDatabaseId.name() );
         }
 
         var db = databaseContext.get().database();
         if ( !db.getDatabaseAvailabilityGuard().isAvailable() )
         {
-            throw databaseUnavailableException( databaseId.name() );
+            throw databaseUnavailableException( namedDatabaseId.name() );
         }
     }
 
-    private void assertRoutingResultNotEmpty( RoutingResult result, DatabaseId databaseId ) throws ProcedureException
+    private void assertRoutingResultNotEmpty( RoutingResult result, NamedDatabaseId namedDatabaseId ) throws ProcedureException
     {
         if ( result.containsNoEndpoints() )
         {
-            assertDatabaseOperational( databaseId );
-            throw new ProcedureException( ProcedureCallFailed, "Routing table for database " + databaseId.name() + " is empty" );
+            assertDatabaseOperational( namedDatabaseId );
+            throw new ProcedureException( ProcedureCallFailed, "Routing table for database " + namedDatabaseId.name() + " is empty" );
         }
     }
 

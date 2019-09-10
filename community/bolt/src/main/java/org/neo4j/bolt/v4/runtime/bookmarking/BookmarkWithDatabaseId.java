@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -34,12 +34,12 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class BookmarkWithDatabaseId implements Bookmark
 {
     private final long txId;
-    private final DatabaseId databaseId;
+    private final NamedDatabaseId namedDatabaseId;
 
-    public BookmarkWithDatabaseId( long txId, DatabaseId databaseId )
+    public BookmarkWithDatabaseId( long txId, NamedDatabaseId namedDatabaseId )
     {
         this.txId = txId;
-        this.databaseId = databaseId;
+        this.namedDatabaseId = namedDatabaseId;
     }
 
     @Override
@@ -49,9 +49,9 @@ public class BookmarkWithDatabaseId implements Bookmark
     }
 
     @Override
-    public DatabaseId databaseId()
+    public NamedDatabaseId databaseId()
     {
-        return databaseId;
+        return namedDatabaseId;
     }
 
     @Override
@@ -72,18 +72,18 @@ public class BookmarkWithDatabaseId implements Bookmark
             return false;
         }
         var that = (BookmarkWithDatabaseId) o;
-        return txId == that.txId && Objects.equals( databaseId, that.databaseId );
+        return txId == that.txId && Objects.equals( namedDatabaseId, that.namedDatabaseId );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( txId, databaseId );
+        return Objects.hash( txId, namedDatabaseId );
     }
 
     @Override
     public String toString()
     {
-        return format( "%s:%d", databaseId.uuid(), txId );
+        return format( "%s:%d", namedDatabaseId.databaseId().uuid(), txId );
     }
 }

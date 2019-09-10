@@ -21,12 +21,10 @@ package org.neo4j.kernel.database;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -41,7 +39,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
 {
     private final String defaultDatabaseName;
-    private final Set<DatabaseId> filterSet;
+    private final Set<NamedDatabaseId> filterSet;
 
     public TestDatabaseIdRepository()
     {
@@ -60,37 +58,39 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
         this.defaultDatabaseName = defaultDbName;
     }
 
-    public DatabaseId defaultDatabase()
+    public NamedDatabaseId defaultDatabase()
     {
         return getRaw( defaultDatabaseName );
     }
 
-    public DatabaseId getRaw( String databaseName )
+    public NamedDatabaseId getRaw( String databaseName )
     {
         var databaseIdOpt = getByName( databaseName );
         Preconditions.checkState( databaseIdOpt.isPresent(),
-                getClass().getSimpleName() + " should always produce a " + DatabaseId.class.getSimpleName() + " for any database name" );
-        return databaseIdOpt.get();
+                getClass().getSimpleName() + " should always produce a " + NamedDatabaseId.class.getSimpleName() + " for any database name" );
+        var databaseId = databaseIdOpt.get();
+        cache( databaseId );
+        return databaseId;
     }
 
     /**
      * Add a database to appear "not found" by the id repository
      */
-    public void filter( DatabaseId databaseId )
+    public void filter( NamedDatabaseId namedDatabaseId )
     {
-        filterSet.add( databaseId );
+        filterSet.add( namedDatabaseId );
     }
 
     /**
      * Remove a database from the filter set, allowing it to be found by the "always found" default implementation of TestDatabaseIdRepository
      */
-    public void unfilter( DatabaseId databaseId )
+    public void unfilter( NamedDatabaseId namedDatabaseId )
     {
-        filterSet.remove( databaseId );
+        filterSet.remove( namedDatabaseId );
     }
 
     @Override
-    public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
+    public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
     {
         var id = super.getByName( databaseName );
         var nameIsFiltered = id.map( filterSet::contains ).orElse( false );
@@ -98,9 +98,9 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
     }
 
     @Override
-    public Optional<DatabaseId> getByUuid( UUID uuid )
+    public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
     {
-        var id = super.getByUuid( uuid );
+        var id = super.getById( databaseId );
         var uuidIsFiltered = id.map( filterSet::contains ).orElse( false );
         return uuidIsFiltered ? Optional.empty() : id;
     }
@@ -108,29 +108,34 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
     /**
      * @return a DatabaseId with a random name and UUID. It is not stored, so subsequent calls will return different DatabaseIds.
      */
+    public static NamedDatabaseId randomNamedDatabaseId()
+    {
+        return new NamedDatabaseId( RandomStringUtils.randomAlphabetic( 20 ), UUID.randomUUID() );
+    }
+
     public static DatabaseId randomDatabaseId()
     {
-        return new DatabaseId( RandomStringUtils.randomAlphabetic( 20 ), UUID.randomUUID() );
+        return new DatabaseId( UUID.randomUUID() );
     }
 
     private static class RandomDatabaseIdRepository implements DatabaseIdRepository
     {
         @Override
-        public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
+        public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
         {
-            return Optional.of( new DatabaseId( databaseName.name(), UUID.randomUUID() ) );
+            return Optional.of( new NamedDatabaseId( databaseName.name(), UUID.randomUUID() ) );
         }
 
         @Override
-        public Optional<DatabaseId> getByUuid( UUID uuid )
+        public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
         {
-            return Optional.of( new DatabaseId( "db" + uuid.hashCode(), uuid ) );
+            return Optional.of( new NamedDatabaseId( "db" + databaseId.hashCode(), databaseId.uuid() ) );
         }
     }
 
     /**
      * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
-     * be possible to read {@link DatabaseId} from system database.
+     * be possible to read {@link NamedDatabaseId} from system database.
      * Assumes default database name is {@link GraphDatabaseSettings#DEFAULT_DATABASE_NAME}
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
      */
@@ -141,7 +146,7 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
 
     /**
      * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
-     * be possible to read {@link DatabaseId} from system database.
+     * be possible to read {@link NamedDatabaseId} from system database.
      * @param config Used for default database name
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
      */
@@ -152,7 +157,7 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
 
     /**
      * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
-     * be possible to read {@link DatabaseId} from system database.
+     * be possible to read {@link NamedDatabaseId} from system database.
      * @param dependencies to include in returned {@link DependencyResolver}
      * @param config Used for default database name
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder

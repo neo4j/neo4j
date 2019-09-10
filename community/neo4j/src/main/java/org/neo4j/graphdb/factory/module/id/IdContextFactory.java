@@ -26,7 +26,7 @@ import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.FeatureToggles;
 
@@ -35,10 +35,10 @@ public class IdContextFactory
      private static final boolean ID_BUFFERING_FLAG = FeatureToggles.flag( IdContextFactory.class, "safeIdBuffering", true );
 
     private final JobScheduler jobScheduler;
-    private final Function<DatabaseId,IdGeneratorFactory> idFactoryProvider;
+    private final Function<NamedDatabaseId,IdGeneratorFactory> idFactoryProvider;
     private final Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
 
-    IdContextFactory( JobScheduler jobScheduler, Function<DatabaseId,IdGeneratorFactory> idFactoryProvider,
+    IdContextFactory( JobScheduler jobScheduler, Function<NamedDatabaseId,IdGeneratorFactory> idFactoryProvider,
             Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper )
     {
         this.jobScheduler = jobScheduler;
@@ -46,22 +46,22 @@ public class IdContextFactory
         this.factoryWrapper = factoryWrapper;
     }
 
-    public DatabaseIdContext createIdContext( DatabaseId databaseId )
+    public DatabaseIdContext createIdContext( NamedDatabaseId namedDatabaseId )
     {
-        return ID_BUFFERING_FLAG ? createBufferingIdContext( idFactoryProvider, jobScheduler, databaseId )
-                                 : createDefaultIdContext( idFactoryProvider, databaseId );
+        return ID_BUFFERING_FLAG ? createBufferingIdContext( idFactoryProvider, jobScheduler, namedDatabaseId )
+                                 : createDefaultIdContext( idFactoryProvider, namedDatabaseId );
     }
 
-    private DatabaseIdContext createDefaultIdContext( Function<DatabaseId,? extends IdGeneratorFactory> idGeneratorFactoryProvider,
-            DatabaseId databaseId )
+    private DatabaseIdContext createDefaultIdContext( Function<NamedDatabaseId,? extends IdGeneratorFactory> idGeneratorFactoryProvider,
+            NamedDatabaseId namedDatabaseId )
     {
-        return createIdContext( idGeneratorFactoryProvider.apply( databaseId ), createDefaultIdController() );
+        return createIdContext( idGeneratorFactoryProvider.apply( namedDatabaseId ), createDefaultIdController() );
     }
 
-    private DatabaseIdContext createBufferingIdContext( Function<DatabaseId,? extends IdGeneratorFactory> idGeneratorFactoryProvider, JobScheduler jobScheduler,
-            DatabaseId databaseId )
+    private DatabaseIdContext createBufferingIdContext( Function<NamedDatabaseId,? extends IdGeneratorFactory> idGeneratorFactoryProvider,
+            JobScheduler jobScheduler, NamedDatabaseId namedDatabaseId )
     {
-        IdGeneratorFactory idGeneratorFactory = idGeneratorFactoryProvider.apply( databaseId );
+        IdGeneratorFactory idGeneratorFactory = idGeneratorFactoryProvider.apply( namedDatabaseId );
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory );
         BufferedIdController bufferingController = createBufferedIdController( bufferingIdGeneratorFactory, jobScheduler );
         return createIdContext( bufferingIdGeneratorFactory, bufferingController );
