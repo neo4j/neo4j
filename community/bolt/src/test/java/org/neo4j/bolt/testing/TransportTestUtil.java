@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -35,18 +36,25 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
+import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.testing.MessageMatchers.responseMessage;
 import static org.neo4j.bolt.testing.MessageMatchers.serialize;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.DB_NAME_KEY;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public class TransportTestUtil
 {
@@ -168,6 +176,12 @@ public class TransportTestUtil
     public byte[] defaultRunAutoCommitTx( String statement, MapValue params ) throws IOException
     {
         return chunk( BoltV4Messages.run( statement, params ), BoltV4Messages.pullAll() );
+    }
+
+    public byte[] defaultRunAutoCommitTx( String statement, MapValue params, String database ) throws IOException
+    {
+        var meta = VirtualValues.map( new String[]{DB_NAME_KEY}, new AnyValue[]{Values.stringValue( database )} );
+        return chunk( new RunMessage( statement, params, meta, List.of(), null, AccessMode.WRITE, Map.of(), SYSTEM_DATABASE_NAME ), BoltV4Messages.pullAll() );
     }
 
     public byte[] defaultRunAutoCommitTxWithoutResult( String statement, MapValue params ) throws IOException

@@ -74,6 +74,7 @@ import static org.neo4j.bolt.testing.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.testing.TransportTestUtil.ResponseMatcherOptionality.OPTIONAL;
 import static org.neo4j.bolt.testing.TransportTestUtil.ResponseMatcherOptionality.REQUIRED;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyDisconnects;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -369,7 +370,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     }
 
     @Test
-    public void shouldBeAbleToChangePasswordUsingBuiltInProcedure() throws Throwable
+    public void shouldBeAbleToChangePasswordUsingSystemCommand() throws Throwable
     {
         // When
         connection.connect( address )
@@ -382,7 +383,8 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 allOf( hasEntry( Matchers.is( "credentials_expired" ), Matchers.equalTo( true ) ), hasKey( "server" ), hasKey( "connection_id" ) ) ) ) );
 
         // When
-        connection.send( util.defaultRunAutoCommitTx( "CALL dbms.security.changePassword", singletonMap( "password", "secret" ) ) );
+        connection.send( util.defaultRunAutoCommitTx( "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", singletonMap( "password", "secret" ),
+                SYSTEM_DATABASE_NAME ) );
 
         // Then
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
@@ -406,32 +408,6 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     }
 
     @Test
-    public void shouldBeAuthenticatedAfterChangePasswordUsingBuiltInProcedure() throws Throwable
-    {
-        // When
-        connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
-                .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
-
-        // Then
-        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives( msgSuccess(
-                allOf( hasEntry( Matchers.is( "credentials_expired" ), Matchers.equalTo( true ) ), hasKey( "server" ), hasKey( "connection_id" ) ) ) ) );
-
-        // When
-        connection.send( util.defaultRunAutoCommitTx( "CALL dbms.security.changePassword", singletonMap( "password", "secret" ) ) );
-
-        // Then
-        assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
-
-        // When
-        connection.send( util.defaultRunAutoCommitTx( "MATCH (n) RETURN n" ) );
-
-        // Then
-        assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    @Test
     public void shouldFailWhenReusingTheSamePassword() throws Throwable
     {
         // When
@@ -445,7 +421,8 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 allOf( hasEntry( Matchers.is( "credentials_expired" ), Matchers.equalTo( true ) ), hasKey( "server" ), hasKey( "connection_id" ) ) ) ) );
 
         // When
-        connection.send( util.defaultRunAutoCommitTx( "CALL dbms.security.changePassword", singletonMap( "password", "neo4j" ) ) );
+        connection.send( util.defaultRunAutoCommitTx( "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", singletonMap( "password", "neo4j" ),
+                SYSTEM_DATABASE_NAME ) );
 
         // Then
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.General.InvalidArguments,
@@ -453,7 +430,8 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
         // However you should also be able to recover
         connection.send( util.defaultReset() )
-                .send( util.defaultRunAutoCommitTx( "CALL dbms.security.changePassword", singletonMap( "password", "abc" ) ) );
+                .send( util.defaultRunAutoCommitTx( "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", singletonMap( "password", "abc" ),
+                        SYSTEM_DATABASE_NAME ) );
         assertThat( connection, util.eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
 
@@ -471,7 +449,8 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 allOf( hasEntry( Matchers.is( "credentials_expired" ), Matchers.equalTo( true ) ), hasKey( "server" ), hasKey( "connection_id" ) ) ) ) );
 
         // When
-        connection.send( util.defaultRunAutoCommitTx( "CALL dbms.security.changePassword", singletonMap( "password", "" ) ) );
+        connection.send( util.defaultRunAutoCommitTx( "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", singletonMap( "password", "" ),
+                SYSTEM_DATABASE_NAME ) );
 
         // Then
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.General.InvalidArguments,
@@ -479,7 +458,8 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
         // However you should also be able to recover
         connection.send( util.defaultReset() )
-                .send( util.defaultRunAutoCommitTx( "CALL dbms.security.changePassword", singletonMap( "password", "abc" ) ) );
+                .send( util.defaultRunAutoCommitTx( "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", singletonMap( "password", "abc" ),
+                        SYSTEM_DATABASE_NAME ) );
         assertThat( connection, util.eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
 

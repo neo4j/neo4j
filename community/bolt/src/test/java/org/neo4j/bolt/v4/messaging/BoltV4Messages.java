@@ -122,6 +122,11 @@ public class BoltV4Messages
         return new RunMessage( statement, params );
     }
 
+    public static RequestMessage run( String statement, MapValue params, MapValue meta )
+    {
+        return new RunMessage( statement, params, meta );
+    }
+
     public static RequestMessage rollback()
     {
         return ROLLBACK_MESSAGE;
