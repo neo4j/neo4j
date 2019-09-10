@@ -34,6 +34,11 @@
         </license>
     </licenses>
 
+    <build>
+        <!-- This idea behind this jar naming is that the 3.x (Neo4j version) jar(s) are all compatible and interchangeable with each other -->
+        <finalName>${project.artifactId}-3</finalName>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
