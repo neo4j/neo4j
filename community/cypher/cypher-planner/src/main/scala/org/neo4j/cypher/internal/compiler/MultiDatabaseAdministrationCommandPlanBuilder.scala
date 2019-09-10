@@ -298,7 +298,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         val normalizedName = new NormalizedDatabaseName(dbName)
         val source = if (ifExists) Some(plans.DoNothingIfNotExists("Database", normalizedName.name())) else None
         Some(plans.DropDatabase(
-          Some(plans.EnsureValidNonSystemDatabase(source, normalizedName, "drop")),
+          Some(plans.EnsureValidNonSystemDatabase(source, normalizedName, "delete")),
           normalizedName))
 
       // START DATABASE foo
