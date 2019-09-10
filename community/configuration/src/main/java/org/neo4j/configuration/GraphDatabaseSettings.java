@@ -433,6 +433,17 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<CypherOperatorEngine> cypher_operator_engine =
             newBuilder( "unsupported.cypher.morsel.operator_engine", ofEnum( CypherOperatorEngine.class ), CypherOperatorEngine.COMPILED ).build();
 
+    @Description( "Use interpreted pipes as a fallback for operators that do not have a specialized implementation in the morsel runtime." )
+    @Internal
+    public static final Setting<CypherMorselUseInterpretedPipes> cypher_morsel_use_interpreted_pipes =
+            newBuilder( "unsupported.cypher.morsel_use_interpreted_pipes", ofEnum( CypherMorselUseInterpretedPipes.class ),
+                    CypherMorselUseInterpretedPipes.WHITELISTED_PLANS_ONLY ).build();
+
+    public enum CypherMorselUseInterpretedPipes
+    {
+        DISABLED, WHITELISTED_PLANS_ONLY, ALL_POSSIBLE_PLANS
+    }
+
     @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +
             " nearest power of two. The default number (8192 query invocations) " +
             " was chosen as a trade-off between getting a useful amount of queries, and not" +
