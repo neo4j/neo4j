@@ -56,6 +56,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
@@ -249,7 +250,7 @@ public class BatchInserterImpl implements BatchInserter
         this.config = Config.newBuilder()
                 .setDefaults( getDefaultParams() )
                 .set( neo4j_home, databaseLayout.databaseDirectory().toPath().toAbsolutePath() )
-                .set( logs_directory, Path.of("" ) )
+                .set( logs_directory, Path.of( "" ) )
                 .fromConfig( fromConfig )
                 .build();
         this.fileSystem = fileSystem;
@@ -1055,6 +1056,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             NativeLabelScanStore labelIndex = buildLabelIndex();
             repopulateAllIndexes( labelIndex );
+            idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( IOLimiter.UNLIMITED );
         }
         catch ( IOException e )

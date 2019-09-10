@@ -19,12 +19,21 @@
  */
 package org.neo4j.batchinsert.internal;
 
+import org.eclipse.collections.api.factory.set.primitive.MutableLongSetFactory;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -34,6 +43,8 @@ import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.test.ReflectionUtil;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -44,9 +55,11 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
@@ -99,6 +112,63 @@ class BatchInserterImplTest
             var e = assertThrows( FileLockException.class,
                 () -> BatchInserters.inserter( databaseLayout, fileSystem ) );
             assertThat( e.getMessage(), startsWith( "Unable to obtain lock on file" ) );
+        }
+    }
+
+    @Test
+    void shouldCorrectlyMarkHighIds() throws Exception
+    {
+        // given
+        DatabaseLayout layout = testDirectory.databaseLayout();
+        BatchInserter inserter = BatchInserters.inserter( layout, fileSystem, defaults( pagecache_memory, "8m" ) );
+        Map<String,Object> properties = new HashMap<>();
+        properties.put( "name", "Just some name" );
+        properties.put( "some_array", new String[]{"this", "is", "a", "string", "which", "really", "is", "an", "array"} );
+        long[] nodeIds = new long[10];
+        for ( int i = 0; i < nodeIds.length; i++ )
+        {
+            nodeIds[i] = inserter.createNode( properties );
+        }
+        MutableLongSetFactory mutable;
+        MutableLongSet nodeIdsSet = LongSets.mutable.of( nodeIds );
+        inserter.shutdown();
+
+        // when/then
+        DatabaseManagementService dbms =
+                new TestDatabaseManagementServiceBuilder( layout.getStoreLayout().storeDirectory() ).setFileSystem( fileSystem ).build();
+        try
+        {
+            GraphDatabaseService db = dbms.database( DEFAULT_DATABASE_NAME );
+            for ( long nodeId : nodeIds )
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    tx.getNodeById( nodeId ).addLabel( TestLabels.LABEL_ONE );
+                    tx.commit();
+                }
+            }
+            for ( int i = 0; i < 5; i++ )
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Node node = tx.createNode();
+                    assertFalse( nodeIdsSet.contains( node.getId() ) );
+                    tx.commit();
+                }
+            }
+
+            for ( long nodeId : nodeIds )
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    tx.getNodeById( nodeId ).delete();
+                    tx.commit();
+                }
+            }
+        }
+        finally
+        {
+            dbms.shutdown();
         }
     }
 }
