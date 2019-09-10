@@ -29,6 +29,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.procedure.Context;
@@ -85,6 +86,7 @@ public class AuthProcedures
         securityContext.subject().setPasswordChangeNoLongerRequired();
     }
 
+    @SystemProcedure
     @Description( "Show the current user." )
     @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser()

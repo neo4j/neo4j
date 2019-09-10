@@ -112,28 +112,9 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     }
 
     @Test
-    void failWhenCallingNonExistingProcedures()
+    void listAllComponentsShouldWork() throws Throwable
     {
-        assertThrows( ProcedureException.class,
-            () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver, AnonymousContext.none().authorize(
-                LoginContext.IdLookup.EMPTY, getDatabaseName() ), EMPTY_RESOURCE_MANAGER, valueMapper ) );
-    }
-
-    @Test
-    void failWhenCallingNonSystemProcedures()
-    {
-        assertThrows( RuntimeException.class, () -> {
-            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-            {
-                tx.execute( "CALL db.createLabel('foo')" );
-            }
-        } );
-    }
-
-    @Test
-    void listAllComponents() throws Throwable
-    {
-        // Given a running database
+        // its NOT a dummy procedure on system
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
@@ -320,6 +301,18 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     }
 
     @Test
+    void queryRelationships() throws Throwable
+    {
+        // Don't need any setup because creating those indexes is also faked on system so we cannot test against it
+
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            // When & Then
+            assertFalse( tx.execute( "CALL db.index.fulltext.queryRelationships('businessNameIndex', 'pizza')" ).hasNext());
+        }
+    }
+
+    @Test
     void nodeTypeProperties() throws Throwable
     {
         Transaction transaction = newTransaction( AUTH_DISABLED );
@@ -406,6 +399,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             // When & Then
+            // this will always be true because that procedure returns void BUT it proves that it runs on system
             assertFalse( tx.execute( "CALL db.prepareForReplanning" ).hasNext());
         }
     }
@@ -421,6 +415,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
                 "CALL db.createUniquePropertyConstraint(':Person(name)', 'lucene+native-2.0')",
                 "CALL db.index.fulltext.createNodeIndex('businessNameIndex', ['Business'],['name'])",
                 "CALL db.index.fulltext.createRelationshipIndex('businessNameIndex', ['Business'],['name'])",
+                "CALL dbms.setTXMetaData( { User: 'Sascha' } )",
                 "CALL db.index.fulltext.drop('businessNameIndex')");
 
         for ( String q : queries )
@@ -433,5 +428,24 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
                         "Wrong error message for '" + q + "' => " + exception.getMessage() );
             }
         }
+    }
+
+    @Test
+    void failWhenCallingNonExistingProcedures()
+    {
+        assertThrows( ProcedureException.class,
+                () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver, AnonymousContext.none().authorize(
+                        LoginContext.IdLookup.EMPTY, getDatabaseName() ), EMPTY_RESOURCE_MANAGER, valueMapper ) );
+    }
+
+    @Test
+    void failWhenCallingNonSystemProcedures()
+    {
+        assertThrows( RuntimeException.class, () -> {
+            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+            {
+                tx.execute( "CALL db.createLabel('foo')" );
+            }
+        } );
     }
 }

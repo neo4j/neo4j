@@ -175,12 +175,17 @@ public class BuiltInProcedures
             return result.stream();
         }
     }
-//TODO: System?
+
     @SystemProcedure
     @Description( "Detailed description of specific index." )
     @Procedure( name = "db.indexDetails", mode = READ )
     public Stream<IndexDetailResult> indexDetails( @Name( "indexName" ) String indexName ) throws ProcedureException
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return Stream.empty();
+        }
+
         try ( Statement ignore = tx.acquireStatement() )
         {
             TokenRead tokenRead = tx.tokenRead();
@@ -351,6 +356,11 @@ public class BuiltInProcedures
     public void prepareForReplanning( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeOutSeconds )
             throws ProcedureException
     {
+        if ( callContext.isSystemDatabase() )
+        {
+            return;
+        }
+
         //Resample indexes
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
