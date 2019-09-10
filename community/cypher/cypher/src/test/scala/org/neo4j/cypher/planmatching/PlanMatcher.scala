@@ -20,6 +20,7 @@
 package org.neo4j.cypher.planmatching
 
 import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.plandescription.Arguments.{DbHits, EstimatedRows, Order, Rows}
 import org.neo4j.cypher.internal.plandescription.{Arguments, _}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
@@ -226,7 +227,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
                      other: Option[StringArgumentsMatcher] = None,
                      lhs: Option[PlanMatcher] = None,
                      rhs: Option[PlanMatcher] = None,
-                     children: Option[(PlanMatcher, PlanMatcher)] = None) extends PlanMatcher {
+                     children: Option[(PlanMatcher, PlanMatcher)] = None,
+                     skipCachingPlans: Boolean = false) extends PlanMatcher {
 
   override def apply(plan: InternalPlanDescription): MatchResult = {
     val nameResult = name.map(_ (plan))
@@ -238,7 +240,15 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     val variablesResult = variables.map(_ (plan))
     val otherResult = other.map(_ (plan))
 
-    val maybeLhsPlan = plan.children.toIndexedSeq.headOption
+    val maybeLhsPlan = {
+      val maybeLhsChildPlan = plan.children.toIndexedSeq.headOption
+      maybeLhsChildPlan match {
+        case Some(lhsPlan) if skipCachingPlans && lhsPlan.name == CacheProperties.toString =>
+          lhsPlan.children.toIndexedSeq.headOption
+        case _ =>
+          maybeLhsChildPlan
+      }
+    }
     val maybeRhsPlan = plan.children match {
       case TwoChildren(_, rhsPlan) => Some(rhsPlan)
       case _ => None

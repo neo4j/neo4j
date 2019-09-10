@@ -33,6 +33,10 @@ trait QueryPlanTestSupport {
     def aPlan: PlanMatcher = ExactPlan()
 
     def aPlan(name: String): PlanMatcher = ExactPlan().withName(name)
+
+    def aSourcePlan: PlanMatcher = ExactPlan(skipCachingPlans = true)
+
+    def aSourcePlan(name: String): PlanMatcher = ExactPlan(skipCachingPlans = true).withName(name)
   }
 
   /**
@@ -64,6 +68,19 @@ trait QueryPlanTestSupport {
     def apply(): PlanMatcher = haveAsRoot.aPlan
 
     def apply(name: String): PlanMatcher = haveAsRoot.aPlan(name)
+  }
+
+  /**
+    * Same as `aPlan`, but skips over plans that may be sporadically inserted by optimization passes
+    * that is of no interest to the test assertion,
+    * e.g. CacheProperties.
+    * This can make a test more resilient to changes in how those optimizations are applied, that
+    * are irrelevant to what is being tested.
+    */
+  object aSourcePlan {
+    def apply(): PlanMatcher = haveAsRoot.aSourcePlan
+
+    def apply(name: String): PlanMatcher = haveAsRoot.aSourcePlan(name)
   }
 
   def haveCount(count: Int): Matcher[RewindableExecutionResult] = new Matcher[RewindableExecutionResult] {
