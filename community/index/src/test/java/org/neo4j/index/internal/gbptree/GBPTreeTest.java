@@ -1780,14 +1780,16 @@ public class GBPTreeTest
 
     private byte[] fileContent( File indexFile ) throws IOException
     {
-        StoreChannel storeChannel = fs.open( indexFile, OpenMode.READ );
-        int fileSize = (int) storeChannel.size();
-        ByteBuffer expectedContent = ByteBuffer.allocate( fileSize );
-        storeChannel.readAll( expectedContent );
-        expectedContent.flip();
-        byte[] bytes = new byte[fileSize];
-        expectedContent.get( bytes );
-        return bytes;
+        try ( StoreChannel storeChannel = fs.open( indexFile, OpenMode.READ ) )
+        {
+            int fileSize = (int) storeChannel.size();
+            ByteBuffer expectedContent = ByteBuffer.allocate( fileSize );
+            storeChannel.readAll( expectedContent );
+            expectedContent.flip();
+            byte[] bytes = new byte[fileSize];
+            expectedContent.get( bytes );
+            return bytes;
+        }
     }
 
     private DefaultPageCursorTracer trackingPageCursorTracer( List<Long> trace, MutableBoolean onOffSwitch )
