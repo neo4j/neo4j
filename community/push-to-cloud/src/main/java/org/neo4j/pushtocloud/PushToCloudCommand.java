@@ -57,9 +57,9 @@ public class PushToCloudCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( ARG_VERBOSE, "true/false", null,
                     "Whether or not to be verbose about internal details and errors." ) )
             .withArgument( new OptionalNamedArg( ARG_USERNAME, "neo4j", null,
-                "Username of the target database to push this database to." ) )
+                    "Username of the target database to push this database to." ) )
             .withArgument( new OptionalNamedArg( ARG_PASSWORD, "true/false", null,
-                "Password of the target database to push this database to." ) );
+                    "Password of the target database to push this database to." ) );
 
     private final Path homeDir;
     private final Path configDir;
