@@ -355,6 +355,76 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("should not kill top query with low limit") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(Seq(Ascending("x")), 10)
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = finiteInput(1000000, expectedRowSize)
+
+    // then no exception
+    consume(execute(logicalQuery, runtime, input))
+  }
+
+  test("should kill top query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(Seq(Ascending("x")), Int.MaxValue)
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should kill top n query before it runs out of memory, where n < Int.MaxValue") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(Seq(Ascending("x")), Int.MaxValue - 1)
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should kill top n query before it runs out of memory, where n > Int.MaxValue") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(Seq(Ascending("x")), Int.MaxValue + 1L)
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
   protected def assertTotalAllocatedMemory(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
     val expectedRowSize = estimateSize(valueToEstimate)
     val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
@@ -457,83 +527,6 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     // when
     val (nodes, _) = circleGraph(1) // Just for size estimation
     val input = infiniteNodeInput(estimateSize(E_NODE_VALUE))
-
-    // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill top n query before it runs out of memory, where n < Int.MaxValue") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue - 1)
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill top n query before it runs out of memory, where n > Int.MaxValue") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue + 1L)
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[TransactionOutOfMemoryException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-}
-
-/**
- * Tests for runtimes with Top support
- */
-trait TopSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
-  self: MemoryManagementTestBase[CONTEXT] =>
-
-  test("should not kill top query with low limit") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .top(Seq(Ascending("x")), 10)
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
-    val input = finiteInput(1000000, expectedRowSize)
-
-    // then no exception
-    consume(execute(logicalQuery, runtime, input))
-  }
-
-  test("should kill top query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .top(Seq(Ascending("x")), Int.MaxValue)
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
