@@ -106,12 +106,14 @@ public class DebugUtil
         PrintWriter writer = new PrintWriter( stringWriter );
         try
         {
-            BufferedReader reader = new BufferedReader( new StringReader( string ) );
-            String line = null;
-            for ( int count = 0; ( line = reader.readLine() ) != null && count < maxNumberOfLines;
-                    count++ )
+            try ( BufferedReader reader = new BufferedReader( new StringReader( string ) ) )
             {
-                writer.println( line );
+                String line = null;
+                for ( int count = 0; (line = reader.readLine()) != null && count < maxNumberOfLines;
+                      count++ )
+                {
+                    writer.println( line );
+                }
             }
             writer.close();
             return stringWriter.getBuffer().toString();
