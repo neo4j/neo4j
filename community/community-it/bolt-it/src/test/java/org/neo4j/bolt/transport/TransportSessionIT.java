@@ -360,7 +360,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Schema.IndexDropFailed,
-                        "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)." ),
+                        "Unable to drop index on :Movie12345(id): No such index :Movie12345(id)." ),
                 msgIgnored() ) );
     }
 }

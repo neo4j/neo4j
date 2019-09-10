@@ -257,7 +257,7 @@ class IndexIT extends KernelIntegrationTest
             statement.indexDrop( index );
         } );
         assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
-            "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
+            "No such index :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
         commit();
     }
 
@@ -289,7 +289,7 @@ class IndexIT extends KernelIntegrationTest
         catch ( SchemaKernelException e )
         {
             assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
-                          "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
+                          "No such index :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
         }
         commit();
     }

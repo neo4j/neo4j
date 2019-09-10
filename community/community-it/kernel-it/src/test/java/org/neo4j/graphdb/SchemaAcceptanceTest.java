@@ -319,7 +319,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             }
             catch ( ConstraintViolationException e )
             {
-                assertThat( e.getMessage(), containsString( "No such INDEX ON :MY_LABEL(my_property_key)." ) );
+                assertThat( e.getMessage(), containsString( "No such index :MY_LABEL(my_property_key)." ) );
             }
             tx.commit();
         }
@@ -346,7 +346,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
         catch ( Exception e )
         {
-            assertThat( e.getMessage(), containsString( "Index on :MY_LABEL (my_property_key)" ) );
+            assertThat( e.getMessage(), containsString( "No such index :MY_LABEL(my_property_key)." ) );
         }
 
         // THEN
@@ -825,7 +825,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ConstraintCreator constraintCreator = db.schema().constraintFor( relType ).assertPropertyExists( propertyKey );
+            ConstraintCreator constraintCreator = tx.schema().constraintFor( relType ).assertPropertyExists( propertyKey );
             ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, constraintCreator::create );
             assertThat( exception.getMessage(), containsString( "Enterprise Edition" ) );
             tx.commit();

@@ -196,7 +196,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("trying to drop non existent index") {
     expectError(
       "DROP INDEX ON :Person(name)",
-      "Unable to drop index on :Person(name): No such INDEX ON :Person(name)."
+      "Unable to drop index on :Person(name): No such index :Person(name)."
     )
   }
 

@@ -31,11 +31,11 @@ public class NoSuchIndexException extends SchemaKernelException
 {
     private final SchemaDescriptor descriptor;
     private final String name;
-    private static final String message = "No such INDEX %s.";
+    private static final String message = "No such index %s.";
 
     public NoSuchIndexException( SchemaDescriptor descriptor )
     {
-        super( Status.Schema.IndexNotFound, format( message, "ON " + descriptor.userDescription( idTokenNameLookup ) ) );
+        super( Status.Schema.IndexNotFound, format( message, descriptor.userDescription( idTokenNameLookup ) ) );
         this.descriptor = descriptor;
         this.name = "";
     }
@@ -56,7 +56,7 @@ public class NoSuchIndexException extends SchemaKernelException
         }
         else
         {
-            return format( message, "ON " + descriptor.userDescription( tokenNameLookup ) );
+            return format( message, descriptor.userDescription( tokenNameLookup ) );
         }
     }
 }
