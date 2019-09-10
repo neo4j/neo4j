@@ -19,8 +19,6 @@
  */
 package org.neo4j.annotations.service;
 
-import org.neo4j.annotations.service.Service;
-
 @Service
 public interface FooService
 {

@@ -19,15 +19,12 @@
  */
 package org.neo4j.annotations.service;
 
-import org.neo4j.annotations.service.Service;
-import org.neo4j.annotations.service.ServiceProvider;
-
 @Service
 @ServiceProvider
 public class ClassIsServiceAndProvider
 {
     @ServiceProvider
-    public static class AnotherImpl extends ClassIsServiceAndProvider{
-
+    public static class AnotherImpl extends ClassIsServiceAndProvider
+    {
     }
 }

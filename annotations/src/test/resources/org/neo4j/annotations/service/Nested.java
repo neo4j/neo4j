@@ -19,9 +19,6 @@
  */
 package org.neo4j.annotations.service;
 
-import org.neo4j.annotations.service.Service;
-import org.neo4j.annotations.service.ServiceProvider;
-
 public interface Nested
 {
     @Service
