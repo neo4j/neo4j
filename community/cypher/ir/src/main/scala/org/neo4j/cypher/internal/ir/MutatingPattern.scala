@@ -69,6 +69,12 @@ case class SetRelationshipPropertiesFromMapPattern(idName: String, expression: E
   override def mapExpressions(f: Expression => Expression): SetRelationshipPropertiesFromMapPattern = copy(expression = f(expression))
 }
 
+case class SetPropertiesFromMapPattern(entityExpression: Expression, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
+  with HasMappableExpressions[SetPropertiesFromMapPattern]{
+  override def dependencies: Set[String] = (entityExpression.dependencies ++ expression.dependencies).map(_.name)
+  override def mapExpressions(f: Expression => Expression): SetPropertiesFromMapPattern = copy(f(entityExpression), f(expression))
+}
+
 case class SetNodePropertyPattern(idName: String, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
   with HasMappableExpressions[SetNodePropertyPattern] {
   override def dependencies: Set[String] = deps(expression) + idName

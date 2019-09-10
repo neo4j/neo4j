@@ -110,6 +110,10 @@ case object PlanUpdates extends UpdatesPlanner {
       case pattern:SetRelationshipPropertiesFromMapPattern =>
         context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern, interestingOrder, context)
 
+      //SET x += {p1: ..., p2: ...}
+      case pattern:SetPropertiesFromMapPattern =>
+        context.logicalPlanProducer.planSetPropertiesFromMap(source, pattern,  interestingOrder, context)
+
       //REMOVE n:Foo:Bar
       case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern, context)
 
