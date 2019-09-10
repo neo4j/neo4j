@@ -294,6 +294,10 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
         SetPipe(source,
           SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps, needsExclusiveLock))(id = id)
 
+      case SetPropertiesFromMap(_, entityExpr, expression, removeOtherProps) =>
+        SetPipe(source,
+          SetPropertyFromMapOperation(buildExpression(entityExpr), buildExpression(expression), removeOtherProps))(id = id)
+
       case SetRelationshipProperty(_, name, propertyKey, expression) =>
         val needsExclusiveLock = ASTExpression.hasPropertyReadDependency(name, expression, propertyKey)
         SetPipe(source,

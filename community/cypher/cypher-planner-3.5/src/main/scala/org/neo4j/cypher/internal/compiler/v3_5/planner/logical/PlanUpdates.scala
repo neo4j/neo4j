@@ -125,6 +125,12 @@ case object PlanUpdates extends UpdatesPlanner {
         val updatedPattern = pattern.copy(expression = newExpression)
         context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(updatedSource, updatedPattern, pattern, context)
 
+      //SET x += {p1: ..., p2: ...}
+      case pattern@SetPropertiesFromMapPattern(_, expression, _) =>
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, expression, interestingOrder, context)
+        val updatedPattern = pattern.copy(expression = newExpression)
+        context.logicalPlanProducer.planSetPropertiesFromMap(updatedSource, updatedPattern, pattern, context)
+
       //REMOVE n:Foo:Bar
       case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern, context)
 

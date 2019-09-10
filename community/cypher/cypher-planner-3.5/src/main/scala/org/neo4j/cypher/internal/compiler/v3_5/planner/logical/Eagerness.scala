@@ -331,8 +331,32 @@ object Eagerness {
         solveds.copy(apply.id, res.id)
         res
 
+      // L Ax (Sp R) => Sp Ax (L R)
+      case apply@Apply(lhs, set@SetRelationshipProperty(rhs, idName, key, value)) =>
+        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, key, value)(attributes.copy(set.id))
+        solveds.copy(apply.id, res.id)
+        res
+
+      // L Ax (Sp R) => Sp Ax (L R)
+      case apply@Apply(lhs, set@SetProperty(rhs, idName, key, value)) =>
+        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, key, value)(attributes.copy(set.id))
+        solveds.copy(apply.id, res.id)
+        res
+
       // L Ax (Sm R) => Sm Ax (L R)
       case apply@Apply(lhs, set@SetNodePropertiesFromMap(rhs, idName, expr, removes)) =>
+        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, expr, removes)(attributes.copy(set.id))
+        solveds.copy(apply.id, res.id)
+        res
+
+      // L Ax (Sm R) => Sm Ax (L R)
+      case apply@Apply(lhs, set@SetRelationshipPropertiesFromMap(rhs, idName, expr, removes)) =>
+        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, expr, removes)(attributes.copy(set.id))
+        solveds.copy(apply.id, res.id)
+        res
+
+      // L Ax (Sm R) => Sm Ax (L R)
+      case apply@Apply(lhs, set@SetPropertiesFromMap(rhs, idName, expr, removes)) =>
         val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, expr, removes)(attributes.copy(set.id))
         solveds.copy(apply.id, res.id)
         res

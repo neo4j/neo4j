@@ -286,7 +286,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "SetLabels", children, Seq.empty, variables)
 
       case _: SetNodePropertiesFromMap =>
-        PlanDescriptionImpl(id, "SetNodePropertyFromMap", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "SetNodePropertiesFromMap", children, Seq.empty, variables)
+
+      case _: SetPropertiesFromMap =>
+        PlanDescriptionImpl(id, "SetPropertiesFromMap", children, Seq.empty, variables)
 
       case _: SetProperty |
            _: SetNodeProperty |
@@ -294,7 +297,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "SetProperty", children, Seq.empty, variables)
 
       case _: SetRelationshipPropertiesFromMap =>
-        PlanDescriptionImpl(id, "SetRelationshipPropertyFromMap", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "SetRelationshipPropertiesFromMap", children, Seq.empty, variables)
 
       case Sort(_, orderBy) =>
         PlanDescriptionImpl(id, "Sort", children, Seq(KeyNames(orderBy.map(_.id))), variables)

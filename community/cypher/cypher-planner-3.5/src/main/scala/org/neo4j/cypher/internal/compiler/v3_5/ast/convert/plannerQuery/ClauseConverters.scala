@@ -333,11 +333,17 @@ object ClauseConverters {
     case SetExactPropertiesFromMapItem(rel, expression) if semanticTable.isRelationship(rel) =>
       SetRelationshipPropertiesFromMapPattern(rel.name, expression, removeOtherProps = true)
 
+    case SetExactPropertiesFromMapItem(vr, expression) =>
+      SetPropertiesFromMapPattern(vr, expression, removeOtherProps = true)
+
     case SetIncludingPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>
       SetNodePropertiesFromMapPattern(node.name, expression, removeOtherProps = false)
 
     case SetIncludingPropertiesFromMapItem(rel, expression) if semanticTable.isRelationship(rel) =>
       SetRelationshipPropertiesFromMapPattern(rel.name, expression, removeOtherProps = false)
+
+    case SetIncludingPropertiesFromMapItem(vr, expression) =>
+      SetPropertiesFromMapPattern(vr, expression, removeOtherProps = false)
   }
 
   private def addMergeToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Merge): PlannerQueryBuilder = {

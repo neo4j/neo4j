@@ -61,6 +61,10 @@ case class SetRelationshipPropertiesFromMapPattern(idName: String, expression: E
   override def dependencies: Set[String] = deps(expression) + idName
 }
 
+case class SetPropertiesFromMapPattern(entityExpression: Expression, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern {
+  override def dependencies: Set[String] = (entityExpression.dependencies ++ expression.dependencies).map(_.name)
+}
+
 case class SetNodePropertyPattern(idName: String, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
   override def dependencies: Set[String] = deps(expression) + idName
 }

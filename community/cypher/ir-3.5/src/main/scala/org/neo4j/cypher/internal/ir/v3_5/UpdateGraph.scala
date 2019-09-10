@@ -347,11 +347,13 @@ trait UpdateGraph {
       def extractPropertyKey(patterns: Seq[SetMutatingPattern]): CreatesPropertyKeys = patterns.collect {
         case SetNodePropertyPattern(_, key, _) => CreatesKnownPropertyKeys(key)
         case SetNodePropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+        case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
       }.foldLeft[CreatesPropertyKeys](CreatesNoPropertyKeys)(_ + _)
 
       if (patterns.isEmpty) acc
       else patterns.head match {
         case SetNodePropertiesFromMapPattern(_, expression, _)  => CreatesPropertyKeys(expression)
+        case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
         case SetNodePropertyPattern(_, key, _)  => toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
         case MergeNodePattern(_, _, onCreate, onMatch) =>
           toNodePropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
@@ -377,11 +379,13 @@ trait UpdateGraph {
       def extractPropertyKey(patterns: Seq[SetMutatingPattern]): CreatesPropertyKeys = patterns.collect {
         case SetRelationshipPropertyPattern(_, key, _) => CreatesKnownPropertyKeys(key)
         case SetRelationshipPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+        case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
       }.foldLeft[CreatesPropertyKeys](CreatesNoPropertyKeys)(_ + _)
 
       if (patterns.isEmpty) acc
       else patterns.head match {
         case SetRelationshipPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+        case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
         case SetRelationshipPropertyPattern(_, key, _) =>
           toRelPropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
         case MergeNodePattern(_, _, onCreate, onMatch) =>
