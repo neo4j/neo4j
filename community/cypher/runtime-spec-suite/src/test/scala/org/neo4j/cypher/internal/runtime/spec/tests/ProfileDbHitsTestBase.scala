@@ -346,7 +346,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // projection
-    queryProfile.operatorProfile(2).dbHits() shouldBe (sizeHint * costOfProperty) // cacheProperties
+    queryProfile.operatorProfile(2).dbHits() shouldBe (sizeHint * (costOfGetPropertyChain + costOfProperty)) // cacheProperties
   }
 
   test("should profile dbHits with apply") {
