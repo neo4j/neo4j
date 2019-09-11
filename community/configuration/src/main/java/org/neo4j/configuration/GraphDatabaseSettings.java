@@ -400,12 +400,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Path> morsel_scheduler_trace_filename =
             newBuilder( "unsupported.cypher.morsel.runtime_trace_path", PATH, Path.of( "stdOut" ) ).setDependency( neo4j_home ).immutable().build();
 
-    @Description( "The size of small query morsels" )
+    @Description( "The size of batches in the morsel runtime for queries which work with few rows." )
     @Internal
     public static final Setting<Integer> cypher_morsel_size_small =
             newBuilder( "unsupported.cypher.morsel.batch_size_small", INT, 128 ).addConstraint( min( 1 ) ).build();
 
-    @Description( "The size of big query morsels" )
+    @Description( "The size of batches in the morsel runtime for queries which work with many rows." )
     @Internal
     public static final Setting<Integer> cypher_morsel_size_big =
             newBuilder( "unsupported.cypher.morsel.batch_size_big", INT, 1024 ).addConstraint( min( 1 ) ).build();
@@ -425,9 +425,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "More optimizations such as operator fusing may apply. " +
                   "Operator fusing means that multiple operators such as for example " +
                   "AllNodesScan -> Filter -> ProduceResult can be compiled into a single specialized operator. " +
-                  "This setting only applied to the morsel and parallel runtime. " +
-                  "Allowed values are \"COMPILED\" (default) and \"INTERPRETED\"." +
-                  "Changing this setting might cause performance degradations." )
+                  "This setting only applies to the morsel and parallel runtime. " +
+                  "Allowed values are \"COMPILED\" (default) and \"INTERPRETED\"." )
     @Internal
     public static final Setting<OperatorExecutionMode> cypher_operator_execution_mode =
             newBuilder( "unsupported.cypher.morsel.operator_execution_mode", ofEnum( OperatorExecutionMode.class ), OperatorExecutionMode.COMPILED ).build();
