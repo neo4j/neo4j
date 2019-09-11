@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.codehaus.jackson.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
 
@@ -681,20 +681,20 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         JsonNode results = json.get( "results" ).get( 0 );
         for ( JsonNode column : results.get( "columns" ) )
         {
-            columns.put( column.getTextValue(), col++ );
+            columns.put( column.asText(), col++ );
         }
         JsonNode row = results.get( "data" ).get( 0 ).get( "rest" );
         JsonNode jsonNode = row.get( columns.get( "node" ) );
         JsonNode jsonRel = row.get( columns.get( "rel" ) );
         JsonNode jsonPath = row.get( columns.get( "path" ) );
         JsonNode jsonMap = row.get( columns.get( "map" ) );
-        assertEquals( "http://base.uri/node/0", jsonNode.get( "self" ).getTextValue() );
-        assertEquals( "http://base.uri/relationship/0", jsonRel.get( "self" ).getTextValue() );
-        assertEquals( 2, jsonPath.get( "length" ).getNumberValue() );
-        assertEquals( "http://base.uri/node/0", jsonPath.get( "start" ).getTextValue() );
-        assertEquals( "http://base.uri/node/2", jsonPath.get( "end" ).getTextValue() );
-        assertEquals( "http://base.uri/node/1", jsonMap.get( "n1" ).get( "self" ).getTextValue() );
-        assertEquals( "http://base.uri/relationship/1", jsonMap.get( "r1" ).get( "self" ).getTextValue() );
+        assertEquals( "http://base.uri/node/0", jsonNode.get( "self" ).asText() );
+        assertEquals( "http://base.uri/relationship/0", jsonRel.get( "self" ).asText() );
+        assertEquals( 2, jsonPath.get( "length" ).asInt() );
+        assertEquals( "http://base.uri/node/0", jsonPath.get( "start" ).asText() );
+        assertEquals( "http://base.uri/node/2", jsonPath.get( "end" ).asText() );
+        assertEquals( "http://base.uri/node/1", jsonMap.get( "n1" ).get( "self" ).asText() );
+        assertEquals( "http://base.uri/relationship/1", jsonMap.get( "r1" ).get( "self" ).asText() );
     }
 
     @Test
@@ -719,7 +719,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         JsonNode results = json.get( "results" ).get( 0 );
         for ( JsonNode column : results.get( "columns" ) )
         {
-            columns.put( column.getTextValue(), col++ );
+            columns.put( column.asText(), col++ );
         }
         JsonNode row = results.get( "data" ).get( 0 ).get( "rest" );
         JsonNode jsonMap = row.get( columns.get( "map" ) );
@@ -823,7 +823,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         String result = output.toString( UTF_8.name() );
         JsonNode root = assertIsPlanRoot( result );
 
-        assertEquals( "parent", root.get( "operatorType" ).getTextValue() );
+        assertEquals( "parent", root.get( "operatorType" ).asText() );
         assertEquals( 0, root.get( "id" ).asLong() );
         assertEquals( asSet( parentId ), identifiersOf( root ) );
 
@@ -832,7 +832,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         for ( JsonNode child : root.get( "children" ) )
         {
             assertTrue( "Expected object", child.isObject() );
-            assertEquals( "child", child.get( "operatorType" ).getTextValue() );
+            assertEquals( "child", child.get( "operatorType" ).asText() );
             identifiers.add( identifiersOf( child ) );
             childIds.add( child.get( "id" ).asInt() );
         }

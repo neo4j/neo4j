@@ -393,7 +393,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class,
-                allOf( containsString( "No content to map to Object due to end of input" ),
+                allOf( containsString( "No content to map due to end-of-input" ),
                         not( containsString( "null" ) ),
                         not( containsString( ".." ) ) ),
                 () -> authenticateAndCopy( copier, source, true, "user", "pass".toCharArray() ) );

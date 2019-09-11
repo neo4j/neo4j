@@ -46,9 +46,6 @@
     <artifact id="org.scala-lang:scala-library:">
       <license>BSD - Scala License</license>
     </artifact>
-    <artifact id="org.codehaus.jackson:jackson-jaxrs:">
-      <license>ASL2.0</license>
-    </artifact>
     <artifact id="org.eclipse.jetty:jetty-server:">
       <license>ASL2.0</license>
     </artifact>

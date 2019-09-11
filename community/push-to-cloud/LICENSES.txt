@@ -7,8 +7,9 @@ Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Lang
   Apache Commons Text
-  Data Mapper for Jackson
-  Jackson
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
   jPowerShell
   jProcesses
   Lucene codecs

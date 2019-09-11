@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.codehaus.jackson.JsonGenerator;
+import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.IOException;
 import java.util.HashSet;

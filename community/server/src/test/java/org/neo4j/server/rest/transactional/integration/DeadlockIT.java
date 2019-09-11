@@ -74,7 +74,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
                 quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ));
 
         // Then
-        assertThat( deadlock.get( "errors" ).get( 0 ).get( "code" ).getTextValue(),
+        assertThat( deadlock.get( "errors" ).get( 0 ).get( "code" ).asText(),
                 equalTo( DeadlockDetected.code().serialize() ) );
     }
 

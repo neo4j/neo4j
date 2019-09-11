@@ -19,12 +19,11 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.impl.Utf8Generator;
-import org.codehaus.jackson.io.IOContext;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.io.IOContext;
+import com.fasterxml.jackson.core.json.UTF8JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,6 +45,7 @@ import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.RepresentationFormat;
 import org.neo4j.server.rest.repr.StreamingFormat;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.FLUSH_AFTER_WRITE_VALUE;
 import static org.neo4j.server.rest.domain.JsonHelper.assertSupportedPropertyValue;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
@@ -64,14 +64,14 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     private JsonFactory createJsonFactory()
     {
         final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.getSerializationConfig().disable( SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE );
+        objectMapper.disable( FLUSH_AFTER_WRITE_VALUE );
         JsonFactory factory = new JsonFactory( objectMapper )
         {
             @Override
-            protected JsonGenerator _createUTF8JsonGenerator( OutputStream out, IOContext ctxt )
+            protected JsonGenerator _createUTF8Generator( OutputStream out, IOContext ctxt )
             {
                 final int bufferSize = 1024 * 8;
-                Utf8Generator gen = new Utf8Generator( ctxt, _generatorFeatures, _objectCodec, out,
+                UTF8JsonGenerator gen = new UTF8JsonGenerator( ctxt, _generatorFeatures, _objectCodec, out,
                         new byte[bufferSize], 0, true );
                 if ( _characterEscapes != null )
                 {

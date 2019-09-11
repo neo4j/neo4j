@@ -19,13 +19,13 @@
  */
 package org.neo4j.test.server;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.HTTPSProperties;
-import org.codehaus.jackson.JsonNode;
 
 import java.net.URI;
 import java.util.Base64;

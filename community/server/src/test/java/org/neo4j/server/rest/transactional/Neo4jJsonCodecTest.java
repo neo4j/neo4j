@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.codehaus.jackson.JsonGenerator;
+import com.fasterxml.jackson.core.JsonGenerator;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;

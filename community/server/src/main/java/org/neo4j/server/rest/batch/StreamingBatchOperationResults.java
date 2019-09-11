@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.batch;
 
-import org.codehaus.jackson.JsonGenerator;
+import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

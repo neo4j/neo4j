@@ -16,12 +16,12 @@
  */
 package org.neo4j.pushtocloud;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -58,8 +58,8 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.compress.utils.IOUtils.toByteArray;
-import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
+import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
 
 public class HttpCopier implements PushToCloudCommand.Copier
 {
