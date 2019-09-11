@@ -32,10 +32,13 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.LongFunction;
 import java.util.zip.CRC32;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 
 import static java.lang.Long.min;
 import static java.lang.String.format;
@@ -44,6 +47,8 @@ import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
@@ -59,16 +64,18 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     private final OutsideWorld outsideWorld;
     private final Sleeper sleeper;
+    private final LongFunction<ProgressListener> progressListenerFactory;
 
     HttpCopier( OutsideWorld outsideWorld )
     {
-        this( outsideWorld, Thread::sleep );
+        this( outsideWorld, Thread::sleep, length -> ProgressMonitorFactory.textual( outsideWorld.outStream() ).singlePart( "Upload", length ) );
     }
 
-    HttpCopier( OutsideWorld outsideWorld, Sleeper sleeper )
+    HttpCopier( OutsideWorld outsideWorld, Sleeper sleeper, LongFunction<ProgressListener> progressListenerFactory )
     {
         this.outsideWorld = outsideWorld;
         this.sleeper = sleeper;
+        this.progressListenerFactory = progressListenerFactory;
     }
 
     /**
@@ -101,7 +108,9 @@ public class HttpCopier implements PushToCloudCommand.Copier
         long position = 0;
         int retries = 0;
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        while ( !resumeUpload( verbose, source, sourceLength, position, uploadLocation ) )
+        ProgressTrackingOutputStream.Progress
+                uploadProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.apply( sourceLength ), position );
+        while ( !resumeUpload( verbose, source, sourceLength, position, uploadLocation, uploadProgress ) )
         {
             position = getResumablePosition( verbose, sourceLength, uploadLocation );
             if ( position == POSITION_UPLOAD_COMPLETED )
@@ -119,6 +128,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             long backoffFromRetryCount = SECONDS.toMillis( 1 << retries++ ) + random.nextInt( 1_000 );
             sleeper.sleep( min( backoffFromRetryCount, MAXIMUM_RETRY_BACKOFF ) );
         }
+        uploadProgress.done();
 
         triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), crc32Sum, bearerTokenHeader, consentConfirmed.booleanValue() );
 
@@ -137,6 +147,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
             int responseCode = connection.getResponseCode();
             switch ( responseCode )
             {
+            case HTTP_NOT_FOUND:
+                // fallthrough
+            case HTTP_MOVED_PERM:
+                throw updatePluginErrorResponse( connection );
             case HTTP_UNAUTHORIZED:
                 throw errorResponse( verbose, connection, "Invalid username/password credentials" );
             case HTTP_FORBIDDEN:
@@ -181,6 +195,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
             int responseCode = connection.getResponseCode();
             switch ( responseCode )
             {
+            case HTTP_NOT_FOUND:
+                // fallthrough
+            case HTTP_MOVED_PERM:
+                throw updatePluginErrorResponse( connection );
             case HTTP_UNAUTHORIZED:
                 throw errorResponse( verbose, connection, "The given authorization token is invalid or has expired" );
             case HTTP_CONFLICT:
@@ -242,7 +260,9 @@ public class HttpCopier implements PushToCloudCommand.Copier
     /**
      * Uploads source from the given position to the upload location.
      */
-    private boolean resumeUpload( boolean verbose, Path source, long sourceLength, long position, URL uploadLocation ) throws IOException, CommandFailed
+    private boolean resumeUpload( boolean verbose, Path source, long sourceLength, long position, URL uploadLocation,
+            ProgressTrackingOutputStream.Progress uploadProgress )
+            throws IOException, CommandFailed
     {
         HttpURLConnection connection = (HttpURLConnection) uploadLocation.openConnection();
         try
@@ -257,11 +277,12 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 connection.setRequestProperty( "Content-Range", format( "bytes %d-%d/%d", position, sourceLength - 1, sourceLength ) );
             }
             connection.setDoOutput( true );
+            uploadProgress.rewindTo( position );
             try ( InputStream sourceStream = new FileInputStream( source.toFile() );
                   OutputStream targetStream = connection.getOutputStream() )
             {
                 safeSkip( sourceStream, position );
-                IOUtils.copy( new BufferedInputStream( sourceStream ), targetStream );
+                IOUtils.copy( new BufferedInputStream( sourceStream ), new ProgressTrackingOutputStream( targetStream, uploadProgress ) );
             }
             int responseCode = connection.getResponseCode();
             switch ( responseCode )
@@ -300,6 +321,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
             int responseCode = connection.getResponseCode();
             switch ( responseCode )
             {
+            case HTTP_NOT_FOUND:
+                // fallthrough
+            case HTTP_MOVED_PERM:
+                throw updatePluginErrorResponse( connection );
             case HTTP_CONFLICT:
                 throw errorResponse( verbose, connection,
                         "A non-empty database already exists at the given location and overwrite consent not given, aborting" );
@@ -318,7 +343,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     /**
      * Asks about how far the upload has gone so far, typically after being interrupted one way or another. The result of this method
-     * can be fed into {@link #resumeUpload(boolean, Path, long, long, URL)} to resume an upload.
+     * can be fed into {@link #resumeUpload(boolean, Path, long, long, URL, ProgressTrackingOutputStream.Progress)} to resume an upload.
      */
     private long getResumablePosition( boolean verbose, long sourceLength, URL uploadLocation ) throws IOException, CommandFailed
     {
@@ -496,6 +521,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
     {
         debugErrorResponse( verbose, connection );
         return new CommandFailed( errorDescription );
+    }
+
+    private CommandFailed updatePluginErrorResponse( HttpURLConnection connection ) throws IOException
+    {
+        debugErrorResponse( true, connection );
+        return new CommandFailed( "We encountered a problem while communicating to the Neo4j cloud system. " +
+                "Please check that you are using the latest version of the push-to-cloud plugin and upgrade if necessary. " +
+                "If this problem persists after upgrading, please contact support and attach the logs shown below to your ticket in the support portal." );
     }
 
     private CommandFailed unexpectedResponse( boolean verbose, HttpURLConnection connection, String requestDescription ) throws IOException

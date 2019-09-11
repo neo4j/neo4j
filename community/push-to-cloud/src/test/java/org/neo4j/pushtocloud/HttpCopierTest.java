@@ -29,8 +29,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.LongFunction;
 
 import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -52,11 +54,14 @@ import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
@@ -66,6 +71,8 @@ import static org.neo4j.pushtocloud.HttpCopier.HTTP_RESUME_INCOMPLETE;
 
 public class HttpCopierTest
 {
+    private static final LongFunction<ProgressListener> NO_OP_PROGRESS = progress -> ProgressListener.NONE;
+
     private static final int TEST_PORT = 8080;
     private static final String TEST_CONSOLE_URL = "http://localhost:" + TEST_PORT;
 
@@ -79,7 +86,8 @@ public class HttpCopierTest
     public void shouldHandleSuccessfulHappyCaseRunThroughOfTheWholeProcess() throws Exception
     {
         // given
-        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        ControlledProgressListener progressListener = new ControlledProgressListener();
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, length -> progressListener );
         Path source = createDump();
         long sourceLength = fs.getFileSize( source.toFile() );
 
@@ -104,6 +112,8 @@ public class HttpCopierTest
         verify( postRequestedFor( urlEqualTo( signedURIPath ) ) );
         verify( putRequestedFor( urlEqualTo( uploadLocationPath ) ) );
         verify( postRequestedFor( urlEqualTo( "/import/upload-complete" ) ) );
+        assertTrue( progressListener.doneCalled );
+        assertEquals( sourceLength, progressListener.progress );
     }
 
     @Test
@@ -117,6 +127,68 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.equalTo( "Invalid username/password credentials" ),
+                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleAuthenticateMovedRoute() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        Path source = createDump();
+        wireMock.stubFor( authenticationRequest().willReturn( aResponse()
+                .withStatus( HTTP_NOT_FOUND ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
+                () -> copier.copy( true, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleMoveUploadTargetdRoute() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        Path source = createDump();
+        long sourceLength = fs.getFileSize( source.toFile() );
+
+        String authorizationTokenResponse = "abc";
+        String signedURIPath = "/signed";
+        String uploadLocationPath = "/upload";
+
+        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( "abc", false ).willReturn( aResponse()
+                .withStatus( HTTP_NOT_FOUND ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
+                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleImportRequestestMovedRoute() throws IOException
+    {
+        // given
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
+        Path source = createDump();
+        long sourceLength = fs.getFileSize( source.toFile() );
+
+        String authorizationTokenResponse = "abc";
+        String signedURIPath = "/signed";
+        String uploadLocationPath = "/upload";
+
+        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false )
+                .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
+        wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
+        wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
+
+        wireMock.stubFor( triggerImportRequest( "abc" ).willReturn( aResponse()
+                .withStatus( HTTP_NOT_FOUND ) ) );
+
+        // when/then
+        assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
                 () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
     }
 
@@ -257,7 +329,8 @@ public class HttpCopierTest
     @Test
     public void shouldHandleUploadInACoupleOfRounds() throws IOException, CommandFailed
     {
-        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {} );
+        ControlledProgressListener progressListener = new ControlledProgressListener();
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, length -> progressListener );
         Path source = createDump();
         long sourceLength = fs.getFileSize( source.toFile() );
         long firstUploadLength = sourceLength / 3;
@@ -289,12 +362,14 @@ public class HttpCopierTest
         verify( putRequestedFor( urlEqualTo( uploadLocationPath ) )
                 .withHeader( "Content-Length", equalTo( "0" ) )
                 .withHeader( "Content-Range", equalTo( "bytes */" + sourceLength ) ) );
+        assertTrue( progressListener.doneCalled );
+        assertEquals( sourceLength, progressListener.progress );
     }
 
     @Test
     public void shouldHandleIncompleteUploadButPositionSaysComplete() throws IOException, CommandFailed
     {
-        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {} );
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, NO_OP_PROGRESS );
         Path source = createDump();
         long sourceLength = fs.getFileSize( source.toFile() );
         String authorizationTokenResponse = "abc";
@@ -350,7 +425,7 @@ public class HttpCopierTest
     {
         // given
         HttpCopier.Sleeper sleeper = mock( HttpCopier.Sleeper.class );
-        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), sleeper );
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), sleeper, NO_OP_PROGRESS );
         Path source = createDump();
         long sourceLength = fs.getFileSize( source.toFile() );
         String authorizationTokenResponse = "abc";
@@ -496,5 +571,45 @@ public class HttpCopierTest
     private interface ThrowingRunnable
     {
         void run() throws Exception;
+    }
+
+    private static class ControlledProgressListener implements ProgressListener
+    {
+        long progress;
+        boolean doneCalled;
+
+        @Override
+        public void started( String task )
+        {
+        }
+
+        @Override
+        public void started()
+        {
+        }
+
+        @Override
+        public void set( long progress )
+        {
+            throw new UnsupportedOperationException( "Should not be called" );
+        }
+
+        @Override
+        public void add( long progress )
+        {
+            this.progress += progress;
+        }
+
+        @Override
+        public void done()
+        {
+            doneCalled = true;
+        }
+
+        @Override
+        public void failed( Throwable e )
+        {
+            throw new UnsupportedOperationException( "Should not be called" );
+        }
     }
 }
