@@ -608,7 +608,6 @@ public class IndexingServiceTest
         );
         onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
         onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
-        userLogProvider.print( System.out );
     }
 
     @Test
