@@ -37,8 +37,6 @@ import java.util.Set;
 
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -50,7 +48,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
@@ -62,7 +59,6 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     private final RandomRule random = new RandomRule();
     private RandomValues randomValues;
     private TestLayout<KEY,VALUE> layout;
-    private TreeNode<KEY,VALUE> node;
     private File indexFile;
     private PageCache pageCache;
     private boolean isDynamic;
@@ -76,9 +72,8 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         indexFile = directory.file( "index" );
         pageCache = createPageCache();
         layout = getLayout();
-        node = TreeNodeSelector.selectByLayout( layout ).create( PAGE_SIZE, layout, null );
         randomValues = random.randomValues();
-        isDynamic = node instanceof TreeNodeDynamicSize;
+        isDynamic = !layout.fixedSize();
     }
 
     protected abstract TestLayout<KEY,VALUE> getLayout();
@@ -732,14 +727,13 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 
             GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             LongList internalNodesWithSiblings = inspection.getNodesPerLevel().get( 1 );
-            long internalNode = randomAmong( internalNodesWithSiblings );
-            long otherInternalNode = randomFromExcluding( internalNodesWithSiblings, internalNode );
+            long targetInternalNode = randomAmong( internalNodesWithSiblings );
+            long otherInternalNode = randomFromExcluding( internalNodesWithSiblings, targetInternalNode );
             int otherChildPos = randomChildPos( inspection, otherInternalNode );
-            long childInOtherInternal = childAt( otherInternalNode, otherChildPos, inspection.getTreeState() );
-            int childPos = randomChildPos( inspection, internalNode );
+            int targetChildPos = randomChildPos( inspection, targetInternalNode );
 
-            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, childInOtherInternal );
-            index.unsafe( page( internalNode, corruption ) );
+            GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.copyChildPointerFromOther( targetInternalNode, otherInternalNode, targetChildPos, otherChildPos );
+            index.unsafe( corruption );
 
             assertReportAnyStructuralInconsistency( index );
         }
@@ -878,16 +872,6 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     private GBPTreePointerType randomSiblingPointerType()
     {
         return randomValues.among( Arrays.asList( GBPTreePointerType.leftSibling(), GBPTreePointerType.rightSibling() ) );
-    }
-
-    private long childAt( long internalNode, int childPos, TreeState treeState ) throws IOException
-    {
-        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
-              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
-        {
-            PageCursorUtil.goTo( cursor, "", internalNode );
-            return pointer( node.childAt( cursor, childPos, treeState.stableGeneration(), treeState.unstableGeneration() ) );
-        }
     }
 
     private GBPTreeBuilder<KEY,VALUE> index()

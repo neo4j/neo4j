@@ -306,6 +306,22 @@ public final class GBPTreeCorruption
         };
     }
 
+    public static <VALUE, KEY> IndexCorruption<KEY,VALUE> copyChildPointerFromOther( long targetInternalNode, long otherInternalNode, int targetChildPos,
+            int otherChildPos )
+    {
+        return ( pagedFile, layout, node, treeState ) -> {
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            {
+                goTo( cursor, "", otherInternalNode );
+                final GenerationKeeper generationKeeper = new GenerationKeeper();
+                final long child = node.childAt( cursor, otherChildPos, treeState.stableGeneration(), treeState.unstableGeneration(), generationKeeper );
+
+                goTo( cursor, "", targetInternalNode );
+                overwriteGSPP( cursor, GBPTreePointerType.child( targetChildPos ).offset( node ), generationKeeper.generation, child );
+            }
+        };
+    }
+
     public static <KEY, VALUE> PageCorruption<KEY,VALUE> setKeyCount( int keyCount )
     {
         return ( cursor, layout, node, treeState ) -> {
