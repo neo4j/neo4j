@@ -73,6 +73,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[EmbeddedProxySPI])
   private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(entityAccessor)
 
+  // We don't need to unregister this anywhere since the TransactionBoundQueryContext will be closed together with the Statement
+  transactionalContext.tc.statement().registerCloseableResource(resources)
+
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count
   }

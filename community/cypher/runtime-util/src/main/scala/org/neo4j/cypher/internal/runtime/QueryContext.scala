@@ -345,8 +345,8 @@ trait UserDefinedAggregator {
   def result: AnyValue
 }
 
-trait CloseableResource {
-  def close()
+trait CloseableResource extends AutoCloseable {
+  def close(): Unit
 }
 
 object NodeValueHit {
