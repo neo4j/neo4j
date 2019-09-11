@@ -41,6 +41,8 @@ public class PushToCloudCommand implements AdminCommand
     static final String ARG_DUMP = "dump";
     static final String ARG_DUMP_TO = "dump-to";
     static final String ARG_VERBOSE = "v";
+    static final String ARG_USERNAME = "username";
+    static final String ARG_PASSWORD = "password";
 
     static final Arguments arguments = new Arguments()
             // Provide a (potentially running?) database
@@ -78,8 +80,29 @@ public class PushToCloudCommand implements AdminCommand
         try
         {
             Path source = initiateSource( arguments );
-            String username = outsideWorld.promptLine( "Neo4j cloud database user name: " );
-            char[] password = outsideWorld.promptPassword( "Neo4j cloud database password: " );
+
+            String passwordFromArg = arguments.get( ARG_PASSWORD );
+            String username = arguments.get( ARG_USERNAME );
+
+            if ( ( username == null && passwordFromArg != null ) || ( username != null && passwordFromArg == null ) )
+            {
+                throw new IncorrectUsage( "Provide either 'username' and 'password' or none" );
+            }
+
+            if ( username == null )
+            {
+                username = outsideWorld.promptLine("Neo4j cloud database user name: ");
+            }
+            char[] password;
+            if ( passwordFromArg != null )
+            {
+                password = passwordFromArg.toCharArray();
+            }
+            else
+            {
+                password = outsideWorld.promptPassword( "Neo4j cloud database password: " );
+            }
+
             String boltURI = arguments.get( ARG_BOLT_URI );
             String consoleURL = buildConsoleURI( boltURI );
             copier.copy( verbose, consoleURL, source, username, password );

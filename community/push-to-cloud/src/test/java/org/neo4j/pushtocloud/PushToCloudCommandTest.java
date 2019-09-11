@@ -49,6 +49,8 @@ import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DATABASE;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP_TO;
+import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_USERNAME;
+import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_PASSWORD;
 
 public class PushToCloudCommandTest
 {
@@ -186,6 +188,49 @@ public class PushToCloudCommandTest
             command.execute( array(
                     arg( ARG_DUMP, directory.file( "some-dump-file" ).toPath().toString() ),
                     arg( ARG_DATABASE, "neo4j" ),
+                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
+            fail( "Should have failed" );
+        }
+        catch ( IncorrectUsage incorrectUsage )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void shouldNotAcceptOnlyUsernameOrPasswordFromArgument() throws IOException, CommandFailed
+    {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String username = "neo4j";
+        char[] password = {'a', 'b', 'c'};
+        OutsideWorld outsideWorld = new ControlledOutsideWorld( new DefaultFileSystemAbstraction() )
+                .withPromptResponse( username )
+                .withPasswordResponse( password );
+        PushToCloudCommand command = command()
+                .copier( targetCommunicator )
+                .outsideWorld( outsideWorld )
+                .build();
+
+        // when
+        try
+        {
+            command.execute( array(
+                    arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                    arg( ARG_USERNAME, "user" ),
+                    arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
+            fail( "Should have failed" );
+        }
+        catch ( IncorrectUsage incorrectUsage )
+        {
+            // then good
+        }
+
+        try
+        {
+            command.execute( array(
+                    arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                    arg( ARG_PASSWORD, "pass" ),
                     arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
             fail( "Should have failed" );
         }

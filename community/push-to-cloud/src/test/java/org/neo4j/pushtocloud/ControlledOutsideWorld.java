@@ -16,17 +16,21 @@
  */
 package org.neo4j.pushtocloud;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.commandline.admin.NullOutsideWorld;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
+import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
+
 class ControlledOutsideWorld extends NullOutsideWorld
 {
     private final List<String> promptResponses = new ArrayList<>();
     private final List<char[]> passwordResponses = new ArrayList<>();
     private final FileSystemAbstraction fs;
+    private final PrintStream nullOutputStream = new PrintStream( NULL_OUTPUT_STREAM );
     private int promptResponseCursor;
     private int passwordResponseCursor;
 
@@ -71,5 +75,11 @@ class ControlledOutsideWorld extends NullOutsideWorld
     public FileSystemAbstraction fileSystem()
     {
         return fs;
+    }
+
+    @Override
+    public PrintStream outStream()
+    {
+        return nullOutputStream;
     }
 }
