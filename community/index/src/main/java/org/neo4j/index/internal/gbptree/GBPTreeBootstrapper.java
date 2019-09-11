@@ -64,10 +64,9 @@ public class GBPTreeBootstrapper
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta, targetLayout );
             TreeNodeSelector.Factory factory = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
-            TreeNode<?,?> treeNode = factory.create( meta.getPageSize(), layout, null );
             GBPTree<?,?> tree =
                     new GBPTree<>( pageCache, file, layout, meta.getPageSize(), NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly );
-            return new SuccessfulBootstrap( tree, layout, treeNode, state, meta );
+            return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )
         {
@@ -89,7 +88,6 @@ public class GBPTreeBootstrapper
         boolean isTree();
         GBPTree<?,?> getTree();
         Layout<?,?> getLayout();
-        TreeNode<?,?> getTreeNode();
         TreeState getState();
         Meta getMeta();
     }
@@ -115,12 +113,6 @@ public class GBPTreeBootstrapper
         }
 
         @Override
-        public TreeNode<?,?> getTreeNode()
-        {
-            throw new IllegalStateException( "Bootstrap failed" );
-        }
-
-        @Override
         public TreeState getState()
         {
             throw new IllegalStateException( "Bootstrap failed" );
@@ -137,15 +129,13 @@ public class GBPTreeBootstrapper
     {
         private final GBPTree<?,?> tree;
         private final Layout<?,?> layout;
-        private final TreeNode<?,?> treeNode;
         private final TreeState state;
         private final Meta meta;
 
-        SuccessfulBootstrap( GBPTree<?,?> tree, Layout<?,?> layout, TreeNode<?,?> treeNode, TreeState state, Meta meta )
+        SuccessfulBootstrap( GBPTree<?,?> tree, Layout<?,?> layout, TreeState state, Meta meta )
         {
             this.tree = tree;
             this.layout = layout;
-            this.treeNode = treeNode;
             this.state = state;
             this.meta = meta;
         }
@@ -166,12 +156,6 @@ public class GBPTreeBootstrapper
         public Layout<?,?> getLayout()
         {
             return layout;
-        }
-
-        @Override
-        public TreeNode<?,?> getTreeNode()
-        {
-            return treeNode;
         }
 
         @Override

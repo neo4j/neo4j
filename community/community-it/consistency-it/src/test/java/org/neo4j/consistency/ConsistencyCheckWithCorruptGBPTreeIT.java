@@ -69,6 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
@@ -377,7 +378,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         MutableObject<Long> internalNode = new MutableObject<>();
         corruptIndexes( ( tree, inspection ) -> {
             long leafNode = inspection.getLeafNodes().get( 0 );
-            internalNode.setValue( inspection.getNodesPerLevel().get( 1 ).get( 1 ) );
+            internalNode.setValue( inspection.getNodesPerLevel().get( 1 ).get( 0 ) );
             final Integer internalNodeKeyCount = inspection.getKeyCounts().get( internalNode.getValue() );
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( leafNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ) );
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( internalNode.getValue(), GBPTreeCorruption.swapChildOrder( 0, 1, internalNodeKeyCount ) ) );
@@ -390,8 +391,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         assertResultContainsMessage( result,
                 "Index inconsistency: Broken pointer found in tree node " + internalNode.getValue() + ", pointerType='left sibling'" );
         assertResultContainsMessage( result,
-                "Index inconsistency: Pointer (left sibling) in tree node " + internalNode.getValue() +
-                        " has pointer generation 0, but target node 0 has a higher generation 4." );
+                "Index inconsistency: Pointer (left sibling) in tree node " );
     }
 
     @Test
@@ -449,8 +449,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider ) throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
-        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.storeDir() );
-        Config config = Config.defaults();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        Config config = Config.defaults( neo4j_home, testDirectory.directory().toPath().toAbsolutePath() );
         ProgressMonitorFactory progressFactory = NONE;
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false );
     }
@@ -462,8 +462,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
     private void setup( GraphDatabaseSettings.SchemaIndex schemaIndex, Consumer<GraphDatabaseService> additionalSetup )
     {
-        final File storeDir = testDirectory.storeDir();
-        final DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( storeDir )
+        final File homeDir = testDirectory.directory();
+        final DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( homeDir )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
                 .build();
         try
@@ -520,7 +520,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            for ( int i = 0; i < 40; i++ )
+            for ( int i = 0; i < 60; i++ )
             {
                 Node node = tx.createNode( label );
                 // Using long string that only differ in the end make sure index tree will be higher which we need to mess up internal pointers
