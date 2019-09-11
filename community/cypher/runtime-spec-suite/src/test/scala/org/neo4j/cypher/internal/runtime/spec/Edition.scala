@@ -56,9 +56,13 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
   def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport): RuntimeContextManager[CONTEXT] =
     newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport)
 
-  private def runtimeConfig() = {
+  private def runtimeConfig(): CypherRuntimeConfiguration = {
+    cypherConfig.toCypherRuntimeConfiguration
+  }
+
+  def cypherConfig(): CypherConfiguration = {
     val config = Config.defaults(configs.toMap.asJava)
-    CypherConfiguration.fromConfig(config).toCypherRuntimeConfiguration
+    CypherConfiguration.fromConfig(config)
   }
 }
 

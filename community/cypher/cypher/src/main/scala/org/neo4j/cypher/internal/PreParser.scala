@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.cache.LFUCache
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.exceptions.{InvalidArgumentException, SyntaxException}
+import org.neo4j.cypher.internal.PreParser._
 
 import scala.util.matching.Regex
 
@@ -49,18 +51,6 @@ class PreParser(configuredVersion: CypherVersion,
                 configuredExpressionEngine: CypherExpressionEngineOption,
                 configuredOperatorExecutionMode: CypherOperatorExecutionModeOption,
                 planCacheSize: Int) {
-
-  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlannerOption, CypherRuntimeOption)] = Set.empty
-  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlannerOption, CypherVersion)] = Set.empty
-  private final val ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
-    Set(
-      (CypherExpressionEngineOption.compiled, CypherRuntimeOption.compiled),
-      (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted))
-  private final val ILLEGAL_OPERATOR_EXECUTION_MODE_RUNTIME_COMBINATIONS: Set[(CypherOperatorExecutionModeOption, CypherRuntimeOption)] =
-    Set(
-      (CypherOperatorExecutionModeOption.compiled, CypherRuntimeOption.compiled),
-      (CypherOperatorExecutionModeOption.compiled, CypherRuntimeOption.slotted),
-      (CypherOperatorExecutionModeOption.compiled, CypherRuntimeOption.interpreted))
 
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](planCacheSize)
 
@@ -90,7 +80,61 @@ class PreParser(configuredVersion: CypherVersion,
 
   private def actuallyPreParse(queryText: String): PreParsedQuery = {
     val preParsedStatement = CypherPreParser(queryText)
+    val isPeriodicCommit = PreParser.periodicCommitHintRegex.findFirstIn(preParsedStatement.statement.toUpperCase).nonEmpty
 
+    val options = queryOptions(preParsedStatement.options,
+      preParsedStatement.offset,
+      isPeriodicCommit,
+      configuredVersion,
+      configuredPlanner,
+      configuredRuntime,
+      configuredExpressionEngine,
+      configuredOperatorExecutionMode)
+
+    PreParsedQuery(preParsedStatement.statement, queryText, options)
+  }
+
+
+}
+
+object PreParser {
+  private val periodicCommitHintRegex: Regex = "^\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
+
+  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlannerOption, CypherRuntimeOption)] = Set.empty
+  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlannerOption, CypherVersion)] = Set.empty
+  private final val ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherExpressionEngineOption, CypherRuntimeOption)] =
+    Set(
+      (CypherExpressionEngineOption.compiled, CypherRuntimeOption.compiled),
+      (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted))
+  private final val ILLEGAL_OPERATOR_EXECUTION_MODE_RUNTIME_COMBINATIONS: Set[(CypherOperatorExecutionModeOption, CypherRuntimeOption)] =
+    Set(
+      (CypherOperatorExecutionModeOption.compiled, CypherRuntimeOption.compiled),
+      (CypherOperatorExecutionModeOption.compiled, CypherRuntimeOption.slotted),
+      (CypherOperatorExecutionModeOption.compiled, CypherRuntimeOption.interpreted))
+
+
+  private class PPOption[T](val default: T) {
+    var selected: Option[T] = None
+
+    def pick: T = selected.getOrElse(default)
+    def isSelected: Boolean = selected.nonEmpty
+    def selectOrThrow(t: T, errorMsg: String): Unit =
+      selected match {
+        case Some(previous) => if (previous != t) throw new InvalidPreparserOption(errorMsg)
+        case None => selected = Some(t)
+      }
+  }
+
+  class InvalidPreparserOption(msg: String) extends InvalidArgumentException(msg)
+
+  def queryOptions(options: Seq[PreParserOption],
+                   offset: InputPosition,
+                   isPeriodicCommit: Boolean,
+                   configuredVersion: CypherVersion,
+                   configuredPlanner: CypherPlannerOption,
+                   configuredRuntime: CypherRuntimeOption,
+                   configuredExpressionEngine: CypherExpressionEngineOption,
+                   configuredOperatorExecutionMode: CypherOperatorExecutionModeOption): QueryOptions = {
     val executionMode: PPOption[CypherExecutionMode] = new PPOption(CypherExecutionMode.default)
     val version: PPOption[CypherVersion] = new PPOption(configuredVersion)
     val planner: PPOption[CypherPlannerOption] = new PPOption(configuredPlanner)
@@ -129,7 +173,7 @@ class PreParser(configuredVersion: CypherVersion,
         }
       }
 
-    parseOptions(preParsedStatement.options)
+    parseOptions(options)
 
     if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((planner.pick, runtime.pick)))
       throw new InvalidPreparserOption(s"Unsupported PLANNER - RUNTIME combination: ${planner.pick.name} - ${runtime.pick.name}")
@@ -145,37 +189,15 @@ class PreParser(configuredVersion: CypherVersion,
       throw new InvalidPreparserOption(s"Cannot combine OPERATOR EXECUTION MODE '${operatorExecutionMode.pick.name}' with RUNTIME '${runtime.pick.name}'")
     }
 
-    val isPeriodicCommit = PeriodicCommitHint.r.findFirstIn(preParsedStatement.statement.toUpperCase).nonEmpty
-
-    PreParsedQuery(preParsedStatement.statement,
-                   queryText,
-                   QueryOptions(preParsedStatement.offset,
-                                isPeriodicCommit,
-                                version.pick,
-                                executionMode.pick,
-                                planner.pick,
-                                runtime.pick,
-                                updateStrategy.pick,
-                                expressionEngine.pick,
-                                operatorExecutionMode.pick,
-                                debugOptions))
+    QueryOptions(offset,
+      isPeriodicCommit,
+      version.pick,
+      executionMode.pick,
+      planner.pick,
+      runtime.pick,
+      updateStrategy.pick,
+      expressionEngine.pick,
+      operatorExecutionMode.pick,
+      debugOptions)
   }
-
-  private class PPOption[T](val default: T) {
-    var selected: Option[T] = None
-
-    def pick: T = selected.getOrElse(default)
-    def isSelected: Boolean = selected.nonEmpty
-    def selectOrThrow(t: T, errorMsg: String): Unit =
-      selected match {
-        case Some(previous) => if (previous != t) throw new InvalidPreparserOption(errorMsg)
-        case None => selected = Some(t)
-      }
-  }
-
-  class InvalidPreparserOption(msg: String) extends InvalidArgumentException(msg)
-}
-
-object PeriodicCommitHint {
-  val r: Regex = "^\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
 }

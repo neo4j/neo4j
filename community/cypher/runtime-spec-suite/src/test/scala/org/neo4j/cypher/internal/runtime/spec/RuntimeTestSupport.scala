@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
-import org.neo4j.cypher.CypherOperatorExecutionModeOption
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
@@ -104,7 +104,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   def compile(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
-    var transaction = cypherGraphDb.beginTransaction(KernelTransaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    val transaction = cypherGraphDb.beginTransaction(KernelTransaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     val txContext = beginTx(transaction)
     val runtimeContext = newRuntimeContext(txContext, newQueryContext(txContext))
     try {
@@ -120,13 +120,25 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   }
 
   protected def newRuntimeContext(txContext: TransactionalContext, queryContext: QueryContext): CONTEXT = {
+
+    val cypherConfiguration: CypherConfiguration = edition.cypherConfig()
+
+    val queryOptions = PreParser.queryOptions(Seq.empty,
+      InputPosition.NONE,
+      isPeriodicCommit = false,
+      cypherConfiguration.version,
+      cypherConfiguration.planner,
+      cypherConfiguration.runtime,
+      cypherConfiguration.expressionEngineOption,
+      cypherConfiguration.operatorExecutionMode)
+
     runtimeContextManager.create(queryContext,
                                  txContext.kernelTransaction().schemaRead(),
                                  MasterCompiler.CLOCK,
                                  Set.empty,
-                                 compileExpressions = false, 
-                                 materializedEntitiesMode = false,
-                                 operatorExecutionMode = CypherOperatorExecutionModeOption.default) // TODO what influence does this have?
+                                 compileExpressions = queryOptions.useCompiledExpressions,
+                                 materializedEntitiesMode = queryOptions.materializedEntitiesMode,
+                                 operatorExecutionMode = queryOptions.operatorExecutionMode)
   }
 
   private def newQueryContext(txContext: TransactionalContext, maybeCursorFactory: Option[CursorFactory] = None): QueryContext = {
