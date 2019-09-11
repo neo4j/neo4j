@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.{PreParsedQuery, PreParser}
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.{CypherExpressionEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
+import org.neo4j.cypher.{CypherExpressionEngineOption, CypherOperatorExecutionModeOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable.ArrayBuffer
@@ -35,7 +35,12 @@ import scala.reflect.Manifest
   */
 object DataCollectorMatchers {
 
-  private val preParser = new PreParser(CypherVersion.default, CypherPlannerOption.default, CypherRuntimeOption.default, CypherExpressionEngineOption.default, 0)
+  private val preParser = new PreParser(CypherVersion.default,
+    CypherPlannerOption.default,
+    CypherRuntimeOption.default,
+    CypherExpressionEngineOption.default,
+    CypherOperatorExecutionModeOption.default,
+    0)
 
   /**
     * Matches a ZonedDateTime if it occurs between (inclusive) to given points in time.

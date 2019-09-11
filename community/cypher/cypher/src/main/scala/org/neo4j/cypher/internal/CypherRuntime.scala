@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import java.io.File
 import java.time.Clock
 
+import org.neo4j.cypher.{CypherOperatorExecutionModeOption, CypherRuntimeOption}
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -30,14 +31,11 @@ import org.neo4j.cypher.internal.runtime.MemoryTrackingController
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.{CypherMorselRuntimeSchedulerOption, CypherRuntimeOption}
 import org.neo4j.exceptions.{CantCompileQueryException, RuntimeUnsupportedException}
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.{Cursor, SchemaRead}
 import org.neo4j.logging.Log
 import org.neo4j.util.Preconditions
-
-import scala.concurrent.duration.Duration
 
 /**
   * A cypher runtime. Compiles logical plans into a executable form, which can
@@ -108,7 +106,8 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
              clock: Clock,
              debugOptions: Set[String],
              compileExpressions: Boolean,
-             materializedEntitiesMode: Boolean
+             materializedEntitiesMode: Boolean,
+            operatorExecutionMode: CypherOperatorExecutionModeOption
             ): CONTEXT
 
   /**
@@ -193,7 +192,6 @@ case class CypherRuntimeConfiguration(workers: Int,
                                       morselSizeBig: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
                                       lenientCreateRelationship: Boolean,
-                                      fuseOperators: Boolean,
                                       memoryTrackingController: MemoryTrackingController) {
 
   Preconditions.checkArgument(morselSizeSmall <= morselSizeBig, s"morselSizeSmall (got $morselSizeSmall) must be <= morselSizeBig (got $morselSizeBig)")

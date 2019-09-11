@@ -45,7 +45,7 @@ case class PreParsedQuery(statement: String, rawStatement: String, options: Quer
 
   val statementWithVersionAndPlanner: String = {
     val f = options.cacheKey
-    s"CYPHER ${f.version} ${f.plannerInfo} ${f.runtimeInfo} ${f.updateStrategyInfo} ${f.expressionEngineInfo} ${f.debugFlags} $statement"
+    s"CYPHER ${f.version} ${f.plannerInfo} ${f.runtimeInfo} ${f.updateStrategyInfo} ${f.expressionEngineInfo} ${f.operatorExecutionModeInfo} ${f.debugFlags} $statement"
   }
 
   override def cacheKey: String = statementWithVersionAndPlanner
@@ -91,6 +91,7 @@ case class QueryOptions(offset: InputPosition,
                         runtime: CypherRuntimeOption,
                         updateStrategy: CypherUpdateStrategy,
                         expressionEngine: CypherExpressionEngineOption,
+                        operatorExecutionMode: CypherOperatorExecutionModeOption,
                         debugOptions: Set[String],
                         recompilationLimitReached: Boolean = false,
                         materializedEntitiesMode: Boolean = false) {
@@ -120,6 +121,10 @@ case class QueryOptions(offset: InputPosition,
            CypherExpressionEngineOption.onlyWhenHot => ""
       case _ => s"expressionEngine=${expressionEngine.name}"
     },
+    operatorExecutionModeInfo = operatorExecutionMode match {
+      case CypherOperatorExecutionModeOption.default => ""
+      case _ => s"operatorExecutionMode=${operatorExecutionMode.name}"
+    },
     debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
   )
 
@@ -131,6 +136,7 @@ object QueryOptions {
                       runtimeInfo: String,
                       updateStrategyInfo: String,
                       expressionEngineInfo: String,
+                      operatorExecutionModeInfo: String,
                       debugFlags: String)
 
   val default: QueryOptions = QueryOptions(InputPosition.NONE,
@@ -141,5 +147,6 @@ object QueryOptions {
     CypherRuntimeOption.default,
     CypherUpdateStrategy.default,
     CypherExpressionEngineOption.default,
+    CypherOperatorExecutionModeOption.default,
     Set())
 }

@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher
 
-sealed abstract class CypherMorselRuntimeSchedulerOption(schedulerName: String) extends CypherOption(schedulerName)
+sealed abstract class CypherOperatorExecutionModeOption(mode: String) extends CypherOption(mode)
 
-case object CypherMorselRuntimeSchedulerOption extends CypherOptionCompanion[CypherMorselRuntimeSchedulerOption] {
-  case object SingleThreaded extends CypherMorselRuntimeSchedulerOption("single_threaded")
-  case object Simple extends CypherMorselRuntimeSchedulerOption("simple")
-  case object LockFree extends CypherMorselRuntimeSchedulerOption("lock_free")
+case object CypherOperatorExecutionModeOption extends CypherOptionCompanion[CypherOperatorExecutionModeOption] {
+  case object compiled extends CypherOperatorExecutionModeOption("compiled")
+  case object interpreted extends CypherOperatorExecutionModeOption("interpreted")
 
-  override def default: CypherMorselRuntimeSchedulerOption = Simple
-  override def all: Set[CypherMorselRuntimeSchedulerOption] = Set(SingleThreaded, Simple, LockFree)
+  val all: Set[CypherOperatorExecutionModeOption] = Set(compiled, interpreted)
+  override val default: CypherOperatorExecutionModeOption = compiled
 }

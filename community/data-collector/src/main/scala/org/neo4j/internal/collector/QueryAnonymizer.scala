@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Pre
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.anonymizeQuery
-import org.neo4j.cypher.{CypherExpressionEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
+import org.neo4j.cypher.{CypherExpressionEngineOption, CypherOperatorExecutionModeOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.MapValue
@@ -44,7 +44,12 @@ case class PlainText(valueMapper: ValueMapper.JavaMapper) extends QueryAnonymize
 }
 
 object IdAnonymizer {
-  private val preParser = new PreParser(CypherVersion.default, CypherPlannerOption.default, CypherRuntimeOption.default, CypherExpressionEngineOption.default, 0)
+  private val preParser = new PreParser(CypherVersion.default,
+    CypherPlannerOption.default,
+    CypherRuntimeOption.default,
+    CypherExpressionEngineOption.default,
+    CypherOperatorExecutionModeOption.default,
+    0)
 }
 
 case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {

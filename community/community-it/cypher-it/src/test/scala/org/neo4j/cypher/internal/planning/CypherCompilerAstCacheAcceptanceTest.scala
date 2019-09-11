@@ -121,24 +121,24 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     kernelMonitors.addMonitorListener(counter)
   }
 
-  private def runQuery(query: String, debugOptions: Set[String] = Set.empty, params: scala.Predef.Map[String, AnyRef] = Map.empty,
+  private def runQuery(query: String,
+                       params: scala.Predef.Map[String, AnyRef] = Map.empty,
                        cypherCompiler: Compiler = compiler): Unit = {
     import collection.JavaConverters._
+
+    val preParser = new PreParser(CypherVersion.default,
+      CypherPlannerOption.default,
+      CypherRuntimeOption.default,
+      CypherExpressionEngineOption.default,
+      CypherOperatorExecutionModeOption.default ,
+      1)
+
+    val preParsedQuery = preParser.preParseQuery(query)
 
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
       val context = graph.transactionalContext(tx, query = query -> params)
-      cypherCompiler.compile(PreParsedQuery(query, query, QueryOptions(
-        DummyPosition(0),
-        isPeriodicCommit = false,
-        CypherVersion.default,
-        CypherExecutionMode.default,
-        CypherPlannerOption.default,
-        CypherRuntimeOption.default,
-        CypherUpdateStrategy.default,
-        CypherExpressionEngineOption.default,
-        debugOptions
-      )), noTracing, Set.empty, context, ValueUtils.asParameterMapValue(params.asJava))
+      cypherCompiler.compile(preParsedQuery, noTracing, Set.empty, context, ValueUtils.asParameterMapValue(params.asJava))
       context.close()
     }
   }
@@ -308,8 +308,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("when running queries with debug options - never cache") {
-    runQuery("return 42", Set("debug"))
-    runQuery("return 42", Set("debug"))
+    runQuery("CYPHER debug=foo RETURN 42")
+    runQuery("CYPHER debug=foo RETURN 42")
 
     counter.counts.hits should equal(0)
   }

@@ -42,7 +42,7 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   def Cypher: Rule1[ConfigurationOptions] = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption | RuntimeOption | ExpressionEngineOption | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
+      zeroOrMore(PlannerOption | RuntimeOption | ExpressionEngineOption | OperatorExecutionMode | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
@@ -75,6 +75,11 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   def ExpressionEngineOption: Rule1[ExpressionEnginePreParserOption] = rule("expression engine option") (
     option("expressionEngine", "interpreted") ~ push(InterpretedExpressionOption)
       | option("expressionEngine", "compiled") ~ push(CompiledExpressionOption)
+  )
+
+  def OperatorExecutionMode: Rule1[OperatorExecutionModePreParserOption] = rule("operator exeuction mode options") (
+    option("operatorExecutionMode", "compiled") ~ push(CompiledOperatorExecutionModeOption)
+    | option("operatorExecutionMode", "interpreted") ~ push(InterpretedOperatorExecutionModeOption)
   )
 
   def Digits: Rule0 = oneOrMore("0" - "9")

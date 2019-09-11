@@ -393,34 +393,44 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Enable tracing of morsel runtime scheduler." )
     @Internal
     public static final Setting<Boolean> enable_morsel_runtime_trace =
-            newBuilder( "unsupported.cypher.enable_morsel_runtime_trace", BOOL, false ).build();
+            newBuilder( "unsupported.cypher.morsel.enable_runtime_trace", BOOL, false ).build();
 
     @Description( "Path to the morsel runtime scheduler trace. If 'stdOut' and tracing is on, will print to std out." )
     @Internal
     public static final Setting<Path> morsel_scheduler_trace_filename =
-            newBuilder( "unsupported.cypher.morsel_runtime_trace_path", PATH, Path.of( "stdOut" ) ).setDependency( neo4j_home ).immutable().build();
+            newBuilder( "unsupported.cypher.morsel.runtime_trace_path", PATH, Path.of( "stdOut" ) ).setDependency( neo4j_home ).immutable().build();
 
     @Description( "The size of small query morsels" )
     @Internal
     public static final Setting<Integer> cypher_morsel_size_small =
-            newBuilder( "unsupported.cypher.morsel_size_small", INT, 128 ).addConstraint( min( 1 ) ).build();
+            newBuilder( "unsupported.cypher.morsel.batch_size_small", INT, 128 ).addConstraint( min( 1 ) ).build();
 
     @Description( "The size of big query morsels" )
     @Internal
     public static final Setting<Integer> cypher_morsel_size_big =
-            newBuilder( "unsupported.cypher.morsel_size_big", INT, 1024 ).addConstraint( min( 1 ) ).build();
+            newBuilder( "unsupported.cypher.morsel.batch_size_big", INT, 1024 ).addConstraint( min( 1 ) ).build();
 
     @Description( "Number of threads to allocate to Cypher worker threads. If set to 0, two workers will be started" +
             " for every physical core in the system." )
     @Internal
     public static final Setting<Integer> cypher_worker_count = newBuilder( "unsupported.cypher.number_of_workers", INT, 0 ).build();
 
-    @Description( "Operator fusing means that multiple operators such as for example " +
-            "AllNodesScan -> Filter -> ProduceResult can be fused into a single specialized operator. " +
-            "Disabling this option might cause performance degradations." )
+    public enum OperatorExecutionMode
+    {
+        COMPILED,
+        INTERPRETED
+    }
+
+    @Description( "For compiled execution, specialized code is generated and then executed. " +
+                  "More optimizations such as operator fusing may apply. " +
+                  "Operator fusing means that multiple operators such as for example " +
+                  "AllNodesScan -> Filter -> ProduceResult can be compiled into a single specialized operator. " +
+                  "This setting only applied to the morsel and parallel runtime. " +
+                  "Allowed values are \"COMPILED\" (default) and \"INTERPRETED\"." +
+                  "Changing this setting might cause performance degradations." )
     @Internal
-    public static final Setting<Boolean> cypher_morsel_fuse_operators =
-            newBuilder( "unsupported.cypher.morsel_fuse_operators", BOOL, true ).build();
+    public static final Setting<OperatorExecutionMode> cypher_operator_execution_mode =
+            newBuilder( "unsupported.cypher.morsel.operator_execution_mode", ofEnum( OperatorExecutionMode.class ), OperatorExecutionMode.COMPILED ).build();
 
     @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +
             " nearest power of two. The default number (8192 query invocations) " +

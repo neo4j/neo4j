@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
+import org.neo4j.cypher.CypherOperatorExecutionModeOption
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
@@ -124,7 +125,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  MasterCompiler.CLOCK,
                                  Set.empty,
                                  compileExpressions = false, 
-                                 materializedEntitiesMode = false)
+                                 materializedEntitiesMode = false,
+                                 operatorExecutionMode = CypherOperatorExecutionModeOption.default) // TODO what influence does this have?
   }
 
   private def newQueryContext(txContext: TransactionalContext, maybeCursorFactory: Option[CursorFactory] = None): QueryContext = {

@@ -25,8 +25,12 @@ import org.neo4j.exceptions.InvalidArgumentException
 
 class PreParserTest extends CypherFunSuite {
 
-  val preParser = new PreParser(CypherVersion.default, CypherPlannerOption.default, CypherRuntimeOption.default,
-                                CypherExpressionEngineOption.default,  0)
+  val preParser = new PreParser(CypherVersion.default,
+    CypherPlannerOption.default,
+    CypherRuntimeOption.default,
+    CypherExpressionEngineOption.default,
+    CypherOperatorExecutionModeOption.default,
+    0)
 
   test("should not allow inconsistent runtime options") {
     intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=compiled runtime=interpreted RETURN 42"))
@@ -39,6 +43,10 @@ class PreParserTest extends CypherFunSuite {
   test("should not allow both EXPLAIN and PROFILE") {
     intercept[InvalidArgumentException](preParser.preParseQuery("EXPLAIN PROFILE RETURN 42"))
     intercept[InvalidArgumentException](preParser.preParseQuery("PROFILE EXPLAIN RETURN 42"))
+  }
+
+  test("should accept just one operator execution mode") {
+    preParser.preParseQuery("CYPHER operatorExecutionMode=interpreted RETURN 42").options.executionMode
   }
 
   test("should parse all variants of periodic commit") {

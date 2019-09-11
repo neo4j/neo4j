@@ -39,6 +39,10 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   override def databaseConfig(): Map[Setting[_], Object] = Map(GraphDatabaseSettings.cypher_expression_engine -> ONLY_WHEN_HOT,
                                                                GraphDatabaseSettings.cypher_expression_recompilation_limit -> Integer.valueOf(1))
 
+  // The reason we _always_ get a hit after a miss is that ExecuteEngine, on a cache miss,
+  // asks the cache again. This protects against schema changes that may have invalidated
+  // the plan in the meantime.
+
   test("re-uses cached plan across different execution modes") {
     // ensure label exists
     graph.withTx( tx => tx.createNode(Label.label("Person")) )
@@ -223,6 +227,69 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 4.0 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
+    )
+
+    actual should equal(expected)
+  }
+
+  test("Different expressionEngine in query should not use same plan") {
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    graph.withTx { tx =>
+      tx.execute("CYPHER expressionEngine=interpreted RETURN 42 AS a")
+      tx.execute("CYPHER expressionEngine=compiled RETURN 42 AS a")
+    }
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      "cacheMiss: (CYPHER 4.0 expressionEngine=interpreted RETURN 42 AS a, Map())",
+      "cacheHit: (CYPHER 4.0 expressionEngine=interpreted RETURN 42 AS a, Map())",
+      "cacheMiss: (CYPHER 4.0 expressionEngine=compiled RETURN 42 AS a, Map())",
+      "cacheHit: (CYPHER 4.0 expressionEngine=compiled RETURN 42 AS a, Map())"
+    )
+
+    actual should equal(expected)
+  }
+
+  test("Different operatorExecutionMode in query should not use same plan") {
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    graph.withTx { tx =>
+      tx.execute("CYPHER operatorExecutionMode=interpreted RETURN 42 AS a")
+      tx.execute("CYPHER operatorExecutionMode=compiled RETURN 42 AS a")
+    }
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      "cacheMiss: (CYPHER 4.0 operatorExecutionMode=interpreted RETURN 42 AS a, Map())",
+      "cacheHit: (CYPHER 4.0 operatorExecutionMode=interpreted RETURN 42 AS a, Map())",
+      "cacheMiss: (CYPHER 4.0 RETURN 42 AS a, Map())",
+      "cacheHit: (CYPHER 4.0 RETURN 42 AS a, Map())"
+    )
+
+    actual should equal(expected)
+  }
+
+  test("Different runtime in query should not use same plan") {
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    graph.withTx { tx =>
+      tx.execute("CYPHER runtime=interpreted RETURN 42 AS a")
+      tx.execute("CYPHER runtime=compiled RETURN 42 AS a")
+    }
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      "cacheMiss: (CYPHER 4.0 runtime=interpreted RETURN 42 AS a, Map())",
+      "cacheHit: (CYPHER 4.0 runtime=interpreted RETURN 42 AS a, Map())",
+      "cacheMiss: (CYPHER 4.0 runtime=compiled RETURN 42 AS a, Map())",
+      "cacheHit: (CYPHER 4.0 runtime=compiled RETURN 42 AS a, Map())"
     )
 
     actual should equal(expected)
