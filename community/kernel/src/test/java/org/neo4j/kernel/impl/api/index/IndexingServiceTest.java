@@ -572,12 +572,11 @@ class IndexingServiceTest
         DependencyResolver dependencies = buildIndexDependencies( native30Provider, nativeBtree10Provider );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         providerMap.init();
-        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
-                mock( JobScheduler.class ), providerMap, storeView, mockLookup,
+                mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 asList( native30Index1, native30Index2, nativeBtree10Index ), internalLogProvider, userLogProvider,
-                IndexingService.NO_MONITOR, schemaState, mock( IndexStatisticsStore.class),false );
+                IndexingService.NO_MONITOR, schemaState, indexStatisticsStore,false );
 
         // when
         indexingService.init();
@@ -594,7 +593,6 @@ class IndexingServiceTest
         );
         onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( nativeBtree10Descriptor.name() ) );
         onBothLogProviders( logProvider -> internalLogProvider.rawMessageMatcher().assertNotContains( fulltextDescriptor.name() ) );
-        userLogProvider.print( System.out );
     }
 
     @Test
