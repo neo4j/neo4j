@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.test.DbRepresentation;
@@ -77,11 +76,7 @@ class TestReadOnlyNeo4j
     void testSimple()
     {
         DbRepresentation someData = createSomeData();
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .impermanent()
-                .setConfig( GraphDatabaseSettings.read_only, true )
-                .build();
+        managementService = dbmsReadOnly();
         GraphDatabaseService readGraphDb = managementService.database( DEFAULT_DATABASE_NAME );
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
@@ -99,15 +94,10 @@ class TestReadOnlyNeo4j
     @Test
     void databaseNotStartInReadOnlyModeWithMissingIndex()
     {
-        FileSystemAbstraction fs = testDirectory.getFileSystem();
         createIndex();
         deleteIndexFolder();
 
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .impermanent()
-                .setConfig( GraphDatabaseSettings.read_only, true )
-                .build();
+        managementService = dbmsReadOnly();
         final RuntimeException e = assertThrows( RuntimeException.class, () -> managementService.database( DEFAULT_DATABASE_NAME ) );
         Throwable rootCause = Exceptions.rootCause( e );
         assertTrue( rootCause instanceof IllegalStateException );
@@ -119,10 +109,7 @@ class TestReadOnlyNeo4j
     @Test
     void testReadOnlyOperationsAndNoTransaction()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
-                .setFileSystem( fs )
-                .impermanent()
-                .build();
+        managementService = dbms();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         Transaction tx = db.beginTx();
@@ -201,5 +188,22 @@ class TestReadOnlyNeo4j
         DbRepresentation result = DbRepresentation.of( db );
         managementService.shutdown();
         return result;
+    }
+
+    private DatabaseManagementService dbmsReadOnly()
+    {
+        return new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .impermanent()
+                .setConfig( GraphDatabaseSettings.read_only, true )
+                .build();
+    }
+
+    private DatabaseManagementService dbms()
+    {
+        return new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+                .setFileSystem( fs )
+                .impermanent()
+                .build();
     }
 }
