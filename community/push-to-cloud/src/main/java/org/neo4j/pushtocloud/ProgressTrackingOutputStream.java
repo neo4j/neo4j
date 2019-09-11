@@ -67,6 +67,7 @@ class ProgressTrackingOutputStream extends OutputStream
         // we won't report until we're caught up with it.
         private long highestReportedProgress;
         private long progress;
+        private boolean done;
 
         /**
          * @param progressListener {@link ProgressListener} to report upload progress to.
@@ -103,7 +104,13 @@ class ProgressTrackingOutputStream extends OutputStream
 
         void done()
         {
+            done = true;
             uploadProgress.done();
+        }
+
+        boolean isDone()
+        {
+            return done;
         }
     }
 }

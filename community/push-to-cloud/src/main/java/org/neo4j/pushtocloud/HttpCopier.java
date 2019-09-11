@@ -88,11 +88,55 @@ public class HttpCopier implements PushToCloudCommand.Copier
         {
             String bearerToken = authenticate( verbose, consoleURL, username, password );
             copy( verbose, consoleURL, source, bearerToken );
+            doStatusPolling( verbose, consoleURL, source, bearerToken );
         }
         catch ( IOException | InterruptedException e )
         {
             throw new CommandFailed( e.getMessage(), e );
         }
+    }
+
+    private void doStatusPolling( boolean verbose, String consoleURL, Path source, String bearerToken ) throws IOException, InterruptedException, CommandFailed
+    {
+        outsideWorld.stdOutLine( "We got the dump and are now loading it in your cloud database." );
+        outsideWorld.stdOutLine( "You can abort this command now and close your terminal if you want." );
+        outsideWorld.stdOutLine( "Or you just stay and wait see when it's done ¯\\\\_(ツ)_/¯." );
+        String bearerTokenHeader = "Bearer " + bearerToken;
+        ProgressTrackingOutputStream.Progress
+                statusProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.apply( 3 ), 0 );
+        boolean firstRunning = true;
+        while ( !statusProgress.isDone() )
+        {
+            String status = getDatabaseStatus( verbose, safeUrl( consoleURL + "/import/status" ), bearerTokenHeader );
+            switch ( status )
+            {
+                case "running":
+                    // It could happen that the very first call of this method is so fast, that the database is still in state
+                    // "running". So we need to check if this is the case and ignore the result in that case and only
+                    // take this result as valid, once the status loading or restoring was seen before.
+                    if ( !firstRunning )
+                    {
+                        statusProgress.rewindTo( 0);
+                        statusProgress.add( 3 );
+                        statusProgress.done();
+                        break;
+                    }
+                case "loading":
+                    firstRunning = false;
+                    statusProgress.rewindTo( 0);
+                    statusProgress.add( 1 );
+                    break;
+                case "restoring":
+                    firstRunning = false;
+                    statusProgress.rewindTo( 0 );
+                    statusProgress.add( 2 );
+                    break;
+                default:
+                    throw new CommandFailed( String.format( "Unexpected database status while polling status: %s", status ) );
+            }
+            sleeper.sleep( 2000 );
+        }
+        outsideWorld.stdOutLine( "Your data was successfully pushed to cloud and is now running." );
     }
 
     private void copy( boolean verbose, String consoleURL, Path source, String bearerToken ) throws IOException, InterruptedException, CommandFailed
@@ -341,6 +385,39 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
+    private String getDatabaseStatus( boolean verbose, URL statusURL, String bearerToken )
+            throws IOException, CommandFailed
+    {
+        HttpURLConnection connection = (HttpURLConnection) statusURL.openConnection();
+        try
+        {
+            connection.setRequestMethod( "GET" );
+            connection.setRequestProperty( "Authorization", bearerToken );
+            connection.setDoOutput( true );
+
+            int responseCode = connection.getResponseCode();
+            switch ( responseCode )
+            {
+                case HTTP_NOT_FOUND:
+                    // fallthrough
+                case HTTP_MOVED_PERM:
+                    throw updatePluginErrorResponse( connection );
+                case HTTP_OK:
+                    try ( InputStream responseData = connection.getInputStream() )
+                    {
+                        String json = new String( toByteArray( responseData ), UTF_8 );
+                        return parseJsonUsingJacksonParser( json, StatusBody.class ).Status;
+                    }
+                default:
+                    throw unexpectedResponse( verbose, connection, "Trigger import/restore after successful upload" );
+            }
+        }
+        finally
+        {
+            connection.disconnect();
+        }
+    }
+
     /**
      * Asks about how far the upload has gone so far, typically after being interrupted one way or another. The result of this method
      * can be fed into {@link #resumeUpload(boolean, Path, long, long, URL, ProgressTrackingOutputStream.Progress)} to resume an upload.
@@ -547,6 +624,12 @@ public class HttpCopier implements PushToCloudCommand.Copier
     private static class TokenBody
     {
         public String Token;
+    }
+
+    @JsonIgnoreProperties( ignoreUnknown = true )
+    private static class StatusBody
+    {
+        public String Status;
     }
 
     interface Sleeper

@@ -42,6 +42,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
@@ -54,7 +55,6 @@ import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -100,6 +100,7 @@ public class HttpCopierTest
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
+        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
 
         // TODO there will be some pinging the console about status here in the future
 
@@ -113,7 +114,8 @@ public class HttpCopierTest
         verify( putRequestedFor( urlEqualTo( uploadLocationPath ) ) );
         verify( postRequestedFor( urlEqualTo( "/import/upload-complete" ) ) );
         assertTrue( progressListener.doneCalled );
-        assertEquals( sourceLength, progressListener.progress );
+        // we need to add 3 to the progress listener because of the database phases
+        assertEquals( sourceLength + 3, progressListener.progress );
     }
 
     @Test
@@ -256,6 +258,7 @@ public class HttpCopierTest
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
+        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
 
         // when
         copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() );
@@ -348,6 +351,7 @@ public class HttpCopierTest
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, firstUploadLength, sourceLength )
                 .willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
+        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
 
         // when
         copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() );
@@ -363,7 +367,8 @@ public class HttpCopierTest
                 .withHeader( "Content-Length", equalTo( "0" ) )
                 .withHeader( "Content-Range", equalTo( "bytes */" + sourceLength ) ) );
         assertTrue( progressListener.doneCalled );
-        assertEquals( sourceLength, progressListener.progress );
+        // we need to add 3 to the progress listener because of the database phases
+        assertEquals( sourceLength + 3, progressListener.progress );
     }
 
     @Test
@@ -384,6 +389,7 @@ public class HttpCopierTest
         wireMock.stubFor( getResumablePositionRequest( sourceLength, uploadLocationPath )
                 .willReturn( uploadCompleteGetResumablePositionResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
+        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
 
         // when
         copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() );
@@ -509,6 +515,19 @@ public class HttpCopierTest
     private ResponseDefinitionBuilder successfulResumeUploadResponse()
     {
         return aResponse()
+                .withStatus( HTTP_OK );
+    }
+
+    private MappingBuilder statusPollingRequest( String authorizationTokenResponse )
+    {
+        return get( urlEqualTo( "/import/status" ) )
+                .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) );
+    }
+
+    private ResponseDefinitionBuilder successfulDatabaseRunningResponse()
+    {
+        return aResponse()
+                .withBody( "{\"Status\":\"running\"}" )
                 .withStatus( HTTP_OK );
     }
 
