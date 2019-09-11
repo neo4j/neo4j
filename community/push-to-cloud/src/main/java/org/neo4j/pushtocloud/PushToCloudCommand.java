@@ -43,6 +43,8 @@ public class PushToCloudCommand implements AdminCommand
     static final String ARG_VERBOSE = "v";
     static final String ARG_USERNAME = "username";
     static final String ARG_PASSWORD = "password";
+    static final String ENV_USERNAME = "NEO4J_USERNAME";
+    static final String ENV_PASSWORD = "NEO4J_PASSWORD";
 
     static final Arguments arguments = new Arguments()
             // Provide a (potentially running?) database
@@ -57,9 +59,11 @@ public class PushToCloudCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( ARG_VERBOSE, "true/false", null,
                     "Whether or not to be verbose about internal details and errors." ) )
             .withArgument( new OptionalNamedArg( ARG_USERNAME, "neo4j", null,
-                    "Username of the target database to push this database to." ) )
+                    "Optional: Username of the target database to push this database to. Prompt will ask for username if not provided. " +
+                            "Alternatively NEO4J_USERNAME environment variable can be used." ) )
             .withArgument( new OptionalNamedArg( ARG_PASSWORD, "true/false", null,
-                    "Password of the target database to push this database to." ) );
+                    "Optional: Password of the target database to push this database to. Prompt will ask for password if not provided. " +
+                            "Alternatively NEO4J_PASSWORD environment variable can be used." ) );
 
     private final Path homeDir;
     private final Path configDir;
@@ -88,14 +92,32 @@ public class PushToCloudCommand implements AdminCommand
             String passwordFromArg = arguments.get( ARG_PASSWORD );
             String username = arguments.get( ARG_USERNAME );
 
+            String usernameFromEnv = System.getenv( ENV_USERNAME );
+            String passwordFromEnv = System.getenv( ENV_PASSWORD );
+
             if ( ( username == null && passwordFromArg != null ) || ( username != null && passwordFromArg == null ) )
             {
-                throw new IncorrectUsage( "Provide either 'username' and 'password' or none" );
+                throw new IncorrectUsage( "Provide either 'username' and 'password' as argument or none." );
+            }
+            if ( ( usernameFromEnv == null && passwordFromEnv != null ) || ( usernameFromEnv != null && passwordFromEnv == null ) )
+            {
+                throw new IncorrectUsage( "Provide either 'ENV_USERNAME' and 'ENV_PASSWORD' as environment variable or none." );
+            }
+            if ( passwordFromEnv != null && passwordFromArg != null )
+            {
+                throw new IncorrectUsage( "It is not allowed to provide 'username' and 'password' as argument and environment variable." );
             }
 
             if ( username == null )
             {
-                username = outsideWorld.promptLine("Neo4j cloud database user name: ");
+                if ( usernameFromEnv != null )
+                {
+                    username = usernameFromEnv;
+                }
+                else
+                {
+                    username = outsideWorld.promptLine("Neo4j cloud database user name: ");
+                }
             }
             char[] password;
             if ( passwordFromArg != null )
@@ -104,7 +126,14 @@ public class PushToCloudCommand implements AdminCommand
             }
             else
             {
-                password = outsideWorld.promptPassword( "Neo4j cloud database password: " );
+                if ( passwordFromEnv != null )
+                {
+                    password = passwordFromEnv.toCharArray();
+                }
+                else
+                {
+                    password = outsideWorld.promptPassword("Neo4j cloud database password: ");
+                }
             }
 
             String boltURI = arguments.get( ARG_BOLT_URI );
