@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,6 +47,8 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
@@ -186,15 +189,13 @@ public class NativeLabelScanStoreTest
     }
 
     @Test
-    void shouldStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode() throws IOException
+    void shouldNotStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode()
     {
         // WHEN
-        start( true );
-
-        // THEN
-
-        // no exception
-        assertTrue( store.isEmpty() );
+        final Exception exception = assertThrows( Exception.class, () -> start( true ) );
+        assertTrue( Exceptions.contains( exception, NoSuchFileException.class ) );
+        assertTrue( Exceptions.contains( exception, TreeFileNotFoundException.class ) );
+        assertTrue( Exceptions.contains( exception, IllegalStateException.class ) );
     }
 
     @Test
