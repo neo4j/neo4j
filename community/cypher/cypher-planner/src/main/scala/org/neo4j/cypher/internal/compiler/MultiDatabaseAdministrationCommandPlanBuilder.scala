@@ -220,11 +220,10 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           roleName -> (segment, resource)
         }
         val plan = privilege match {
-          case ReadPrivilege() => Option.empty[plans.PrivilegePlan]
-          case MatchPrivilege()  if !resources.isInstanceOf[AllResource] => Option.empty[plans.PrivilegePlan]
-          case MatchPrivilege() => combos.foldLeft(Option.empty[plans.PrivilegePlan]) {
+          case MatchPrivilege()  if resources.isInstanceOf[AllResource] => combos.foldLeft(Option.empty[plans.PrivilegePlan]) {
             case (source, (roleName, (segment, _))) => Some(plans.DenyTraverse(source, database, segment, roleName))
           }
+          case _ => Option.empty[plans.PrivilegePlan]
         }
         combos.foldLeft(plan) {
           case (source, (roleName, (segment, resource))) => Some(plans.DenyRead(source, resource, database, segment, roleName))
