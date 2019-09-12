@@ -380,7 +380,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "If enabled, the maximum allocated bytes of a query can be limited using `dbms.query_memory_max`. " +
                   "This can also be logged in the query log by using `dbms.logs.query.allocation_logging_enabled`." )
     public static final Setting<Boolean> track_query_allocation =
-            newBuilder( "dbms.track_query_allocation", BOOL, false ).dynamic().build();
+            newBuilder( "dbms.track_query_allocation", BOOL, true ).dynamic().build();
 
     @Description( "The maximum amount of heap memory to use in a transaction, in bytes (or kilobytes with the 'k' " +
                   "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'. If a transaction exceeds this limit, it will " +
