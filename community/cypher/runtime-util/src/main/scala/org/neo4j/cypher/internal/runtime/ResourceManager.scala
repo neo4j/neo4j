@@ -40,6 +40,15 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
   }
 
   /**
+   * Stop tracing a resource, don't close it.
+   */
+  def untrace(resource: AutoCloseablePlus): Unit = {
+    monitor.untrace(resource)
+    resources.remove(resource)
+    resource.setCloseListener(null)
+  }
+
+  /**
    * Called when the resource is closed.
    */
   override def onClosed(resource: AutoCloseablePlus): Unit = {
@@ -80,12 +89,14 @@ object ResourceManager {
 
 trait ResourceMonitor {
   def trace(resource: AutoCloseablePlus): Unit
+  def untrace(resource: AutoCloseablePlus): Unit
   def close(resource: AutoCloseablePlus): Unit
 }
 
 object ResourceMonitor {
   val NOOP: ResourceMonitor = new ResourceMonitor {
     def trace(resource: AutoCloseablePlus): Unit = {}
+    def untrace(resource: AutoCloseablePlus): Unit = {}
     def close(resource: AutoCloseablePlus): Unit = {}
   }
 }

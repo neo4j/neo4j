@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
 
+import scala.collection.mutable.ArrayBuffer
+
 class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVResource, queryContext: QueryContext)
   extends ExternalCSVResource {
 
@@ -51,15 +53,25 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
   }
 
   private def commitAndRestartTx() {
-    //This is a little horrible, we need to close things such as expression cursors but we don't want to close
+    //This is horrible, we need to close things such as expression cursors but we don't want to close
     //the URL that we are reading the CSV from until we are all done
+
+    val csvResources = new ArrayBuffer[CSVResource]()
     queryContext.resources.allResources.foreach {
-      case _: CSVResource => //ignore we should just close the csv resource when done
+      case csvResource: CSVResource =>
+        //save so that we can remove and re-add them
+        csvResources += csvResource
+      case e =>
         // We call closeInternal instead of close, so that the resources are not removed from the ResourceManager.
         // We want that, because they are still traced by the RuntimeResult and will be closed from there as well.
-      case e => e.closeInternal()
+        e.closeInternal()
     }
+    // Remove before we restart the tx
+    csvResources.foreach(queryContext.resources.untrace)
+    // Restart TX
     queryContext.transactionalContext.commitAndRestartTx()
+    // Add back
+    csvResources.foreach(queryContext.resources.trace)
     outerLoadCSVIterator.foreach(_.notifyCommit())
   }
 }
