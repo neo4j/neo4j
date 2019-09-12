@@ -54,7 +54,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -89,6 +88,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
@@ -116,6 +116,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -132,9 +133,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.configuration.GraphDatabaseSettings.multi_threaded_schema_index_population_enabled;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -147,6 +150,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
+import static org.neo4j.kernel.impl.api.index.MultiPopulatorFactory.forConfig;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -983,7 +987,8 @@ class IndexingServiceTest
     {
         // given
         long indexId = 1;
-        IndexDescriptor indexRule = uniqueIndex.materialise( indexId );
+        long constraintId = 2;
+        IndexDescriptor indexRule = uniqueIndex.materialise( indexId ).withOwningConstraintId( constraintId );
         Barrier.Control barrier = new Barrier.Control();
         CountDownLatch exceptionBarrier = new CountDownLatch( 1 );
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), new IndexingService.MonitorAdapter()
@@ -1236,6 +1241,48 @@ class IndexingServiceTest
         verify( accessor, never() ).drop();
     }
 
+    @Test
+    void shouldNotHaveToWaitForOrphanedUniquenessIndexInRecovery() throws Exception
+    {
+        // given that we have a uniqueness index that needs to be recovered and that doesn't have a constraint attached to it
+        IndexDescriptor descriptor = uniqueIndex.materialise( 10 );
+        Iterable<IndexDescriptor> schemaRules = Collections.singletonList( descriptor );
+        IndexProvider indexProvider = mock( IndexProvider.class );
+        when( indexProvider.getInitialState( any() ) ).thenReturn( POPULATING );
+        IndexProviderMap indexProviderMap = mock( IndexProviderMap.class );
+        when( indexProviderMap.lookup( anyString() ) ).thenReturn( indexProvider );
+        when( indexProviderMap.lookup( any( IndexProviderDescriptor.class ) ) ).thenReturn( indexProvider );
+        when( indexProviderMap.getDefaultProvider() ).thenReturn( indexProvider );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        IndexMapReference indexMapReference = new IndexMapReference();
+        IndexProxyCreator indexProxyCreator = mock( IndexProxyCreator.class );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
+        // Eventually return ONLINE so that this test won't hang if the product code changes in this regard.
+        // This test should still fail below when verifying interactions with the proxy and monitor tho.
+        when( indexProxy.getState() ).thenReturn( POPULATING, POPULATING, POPULATING, POPULATING, ONLINE );
+        when( indexProxyCreator.createRecoveringIndexProxy( any() ) ).thenReturn( indexProxy );
+        when( indexProxyCreator.createPopulatingIndexProxy( any(), anyBoolean(), any(), any() ) ).thenReturn( indexProxy );
+        MultiPopulatorFactory multiPopulatorFactory = forConfig( Config.defaults( multi_threaded_schema_index_population_enabled, false ) );
+        JobScheduler scheduler = mock( JobScheduler.class );
+        IndexSamplingController samplingController = mock( IndexSamplingController.class );
+        IndexingService.Monitor monitor = mock( IndexingService.Monitor.class );
+        IndexingService indexingService =
+                new IndexingService( indexProxyCreator, indexProviderMap, indexMapReference, mock( IndexStoreView.class ), schemaRules, samplingController,
+                        idTokenNameLookup, scheduler, null, multiPopulatorFactory, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ) );
+        // and where index population starts
+        indexingService.init();
+
+        // when starting the indexing service
+        indexingService.start();
+
+        // then it should be able to start without awaiting the completion of the population of the index
+        verify( indexProxyCreator, times( 1 ) ).createRecoveringIndexProxy( any() );
+        verify( indexProxyCreator, times( 1 ) ).createPopulatingIndexProxy( any(), anyBoolean(), any(), any() );
+        verify( indexProxy, never() ).awaitStoreScanCompleted( anyLong(), any() );
+        verify( monitor, never() ).awaitingPopulationOfRecoveredIndex( any() );
+    }
+
     private static IndexProxy createIndexProxyMock( long indexId )
     {
         IndexProxy proxy = mock( IndexProxy.class );
@@ -1355,8 +1402,8 @@ class IndexingServiceTest
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
         Config config = Config.newBuilder()
-                .set( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, false )
-                .set(default_schema_provider, PROVIDER_DESCRIPTOR.name() ).build();
+                .set( multi_threaded_schema_index_population_enabled, false )
+                .set( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).build();
 
         DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider ), config ) );
         return life.add( IndexingServiceFactory.createIndexingService( config,
