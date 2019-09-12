@@ -379,6 +379,13 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                                 "What? This index was seen during recovery just now, why isn't it available now?", e );
                     }
 
+                    if ( proxy.getDescriptor().getOwningConstraint() == null )
+                    {
+                        // Even though this is an index backing a uniqueness constraint, the uniqueness constraint wasn't created
+                        // so there's no gain in waiting for this index.
+                        return;
+                    }
+
                     monitor.awaitingPopulationOfRecoveredIndex( descriptor );
                     awaitOnline( proxy );
                 } );
