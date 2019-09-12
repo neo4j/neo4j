@@ -25,7 +25,7 @@ import org.neo4j.annotations.api.PublicApi;
  * A node in the graph with properties and relationships to other entities.
  * Along with {@link Relationship relationships}, nodes are the core building
  * blocks of the Neo4j data representation model. Nodes are created by invoking
- * the {@link GraphDatabaseService#createNode} method.
+ * the {@link Transaction#createNode} method.
  * <p>
  * Node has three major groups of operations: operations that deal with
  * relationships, operations that deal with properties (see

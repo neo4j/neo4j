@@ -28,12 +28,8 @@ import org.neo4j.graphdb.schema.Schema;
 
 /**
  * <p>
- * GraphDatabaseService provides operations to {@link #createNode() create
- * nodes}, {@link #getNodeById(long) get nodes given an id}
- * <p>
- * Please note that all operations on the graph must be invoked in a
- * {@link Transaction transactional context}. Failure to do so will result in a
- * {@link NotInTransactionException} being thrown.
+ * GraphDatabaseService represents a graph database and is used to create
+ * new transactions with {@link #beginTx()}.
  */
 @PublicApi
 public interface GraphDatabaseService

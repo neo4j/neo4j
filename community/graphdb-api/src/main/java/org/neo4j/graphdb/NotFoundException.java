@@ -22,7 +22,7 @@ package org.neo4j.graphdb;
 /**
  * This exception will be thrown if a request is made to a node, relationship or
  * property that does not exist. As an example, using
- * {@link GraphDatabaseService#getNodeById} passing in an id that does not exist
+ * {@link Transaction#getNodeById} passing in an id that does not exist
  * will cause this exception to be thrown.
  * {@link PropertyContainer#getProperty(String)} will also throw this exception
  * if the given key does not exist.

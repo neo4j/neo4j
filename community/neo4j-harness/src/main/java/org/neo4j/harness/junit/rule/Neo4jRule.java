@@ -108,6 +108,7 @@ public class Neo4jRule implements TestRule
      *
      * @param key the config key
      * @param value the config value
+     * @param <T> the type of the setting
      * @return this configurator instance
      */
     public <T> Neo4jRule withConfig( Setting<T> key, T value )
@@ -280,14 +281,20 @@ public class Neo4jRule implements TestRule
         return this;
     }
 
-    /** Returns the URI to the Bolt Protocol connector of the instance. */
+    /**
+     * Returns the URI to the Bolt Protocol connector of the instance.
+     * @return the bolt address.
+     */
     public URI boltURI()
     {
         assertInitialised();
         return neo4j.boltURI();
     }
 
-    /** Returns the URI to the root resource of the instance. For example, http://localhost:7474/ */
+    /**
+     * Returns the URI to the root resource of the instance. For example, http://localhost:7474/
+     * @return the http address to the root resource.
+     */
     public URI httpURI()
     {
         assertInitialised();
@@ -297,6 +304,7 @@ public class Neo4jRule implements TestRule
     /**
      * Returns ths URI to the root resource of the instance using the https protocol.
      * For example, https://localhost:7475/.
+     * @return the https address to the root resource.
      */
     public URI httpsURI()
     {
@@ -304,7 +312,10 @@ public class Neo4jRule implements TestRule
         return neo4j.httpsURI();
     }
 
-    /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} */
+    /**
+     * Access the {@link DatabaseManagementService} used by the server.
+     * @return the database management service backing this instance.
+     */
     public DatabaseManagementService databaseManagementService()
     {
         assertInitialised();
@@ -321,7 +332,10 @@ public class Neo4jRule implements TestRule
         return neo4j.defaultDatabaseService();
     }
 
-    /** Returns the neo4j's configuration */
+    /**
+     * Returns the server's configuration.
+     * @return the current configuration of the instance.
+     */
     public Configuration config()
     {
         assertInitialised();

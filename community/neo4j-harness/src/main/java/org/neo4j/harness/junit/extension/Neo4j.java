@@ -33,19 +33,29 @@ import org.neo4j.graphdb.config.Configuration;
 @PublicApi
 public interface Neo4j
 {
-    /** Returns the URI to the Bolt Protocol connector of the instance. */
+    /**
+     * Returns the URI to the Bolt Protocol connector of the instance.
+     * @return the bolt address.
+     */
     URI boltURI();
 
-    /** Returns the URI to the root resource of the instance. For example, http://localhost:7474/ */
+    /**
+     * Returns the URI to the root resource of the instance. For example, http://localhost:7474/
+     * @return the http address to the root resource.
+     */
     URI httpURI();
 
     /**
      * Returns ths URI to the root resource of the instance using the https protocol.
      * For example, https://localhost:7475/.
+     * @return the https address to the root resource.
      */
     URI httpsURI();
 
-    /** Access the {@link DatabaseManagementService} used by the server */
+    /**
+     * Access the {@link DatabaseManagementService} used by the server.
+     * @return the database management service backing this instance.
+     */
     DatabaseManagementService databaseManagementService();
 
     /**
@@ -54,9 +64,15 @@ public interface Neo4j
      */
     GraphDatabaseService defaultDatabaseService();
 
-    /** Returns the server's configuration */
+    /**
+     * Returns the server's configuration.
+     * @return the current configuration of the instance.
+     */
     Configuration config();
 
-    /** Prints logs to the specified print stream if log is available */
+    /**
+     * Prints logs to the specified print stream if log is available.
+     * @param out the stream to print to.
+     */
     void printLogs( PrintStream out );
 }

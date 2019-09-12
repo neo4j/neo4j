@@ -135,6 +135,7 @@ public interface IndexDefinition
     /**
      * Get the name given to this index when it was created.
      * Indexes that were not explicitly given a name at creation, will have an auto-generated name.
+     * @return the unique name of the index.
      */
     String getName();
 }

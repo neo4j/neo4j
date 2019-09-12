@@ -69,6 +69,7 @@ public class Neo4jExtensionBuilder
      *
      * @param key the config key
      * @param value the config value
+     * @param <T> the setting type
      * @return this configurator instance
      */
     public <T> Neo4jExtensionBuilder withConfig( Setting<T> key, T value )

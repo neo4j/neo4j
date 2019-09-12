@@ -45,8 +45,8 @@ import org.neo4j.annotations.api.PublicApi;
  *
  * <pre>
  * <code>
- * {@link Node} a = graphDb.{@link GraphDatabaseService#createNode() createNode}();
- * {@link Node} b = graphDb.{@link GraphDatabaseService#createNode() createNode}();
+ * {@link Node} a = tx.{@link Transaction#createNode() createNode}();
+ * {@link Node} b = tx.{@link Transaction#createNode() createNode}();
  * {@link Relationship} rel = a.{@link Node#createRelationshipTo(Node, RelationshipType)
  * createRelationshipTo}( b, {@link RelationshipType MyRels.REL_TYPE} );
  * // Now we have: (a) --- REL_TYPE ---&gt; (b)

@@ -75,6 +75,7 @@ public interface ConstraintDefinition
     /**
      * Get the name given to this constraint when it was created.
      * Constraints that were not explicitly given a name at creation, will have an auto-generated name.
+     * @return the unique name of the constraint.
      */
     String getName();
 }

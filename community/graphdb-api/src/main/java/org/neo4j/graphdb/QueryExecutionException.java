@@ -20,7 +20,7 @@
 package org.neo4j.graphdb;
 
 /**
- * This exception is thrown from the {@link GraphDatabaseService#execute(String, java.util.Map) execute method}
+ * This exception is thrown from the {@link Transaction#execute(String, java.util.Map) execute method}
  * when there is an error during the execution of a query.
  */
 public class QueryExecutionException extends RuntimeException

@@ -30,16 +30,19 @@ public interface DatabaseEventListener
 {
     /**
      * This method is invoked after start of a specific database. Database is completely operational on the moment of notification.
+     * @param eventContext context of the event, can be used to get metadata.
      */
     void databaseStart( DatabaseEventContext eventContext );
 
     /**
      * This method is invoked before shutdown process of a specific database. Database is still completely operational on the moment of notification.
+     * @param eventContext context of the event, can be used to get metadata.
      */
     void databaseShutdown( DatabaseEventContext eventContext );
 
     /**
      * This method is invoked when the particular database enters a state from which it cannot recover and continue.
+     * @param eventContext context of the event, can be used to get metadata.
      */
     void databasePanic( DatabaseEventContext eventContext );
 }

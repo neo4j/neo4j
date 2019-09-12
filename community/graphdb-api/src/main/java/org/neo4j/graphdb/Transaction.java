@@ -65,7 +65,6 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * Read operations inside of a transaction will also read uncommitted data from
  * the same transaction.
  * <p>
- * <p>
  * All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside a transaction
  * will be automatically closed when the transaction is committed or rolled back.
  * Note however, that the {@link ResourceIterator} should be {@link ResourceIterator#close() closed} as soon as
@@ -218,7 +217,7 @@ public interface Transaction extends AutoCloseable
      * The search mode and value template are used to select nodes of interest. The search mode can
      * be one of
      * <ul>
-     *   <li>EXACT: The value has to match the template exactly. This is the same behavior as {@link GraphDatabaseService#findNode(Label, String, Object)}.</li>
+     *   <li>EXACT: The value has to match the template exactly. This is the same behavior as {@link Transaction#findNode(Label, String, Object)}.</li>
      *   <li>PREFIX: The value must have a prefix matching the template.</li>
      *   <li>SUFFIX: The value must have a suffix matching the template.</li>
      *   <li>CONTAINS: The value must contain the template. Only exact matches are supported.</li>
