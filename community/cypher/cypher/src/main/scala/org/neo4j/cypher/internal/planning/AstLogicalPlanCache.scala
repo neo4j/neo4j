@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.internal.helpers.collection.Pair
+import org.neo4j.logging.Log
 
 /**
   * Cache which stores logical plans indexed by an AST statement.
@@ -45,7 +46,24 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val maximumSize: Int,
                                                lastCommittedTxIdProvider: () => Long
 ) extends QueryCache[STATEMENT,Pair[STATEMENT,ParameterTypeMap], CacheableLogicalPlan](maximumSize,
                                                   AstLogicalPlanCache.stalenessCaller(clock, divergence, lastCommittedTxIdProvider),
-                                                  tracer)
+                                                  tracer) {
+
+  def logStalePlanRemovalMonitor(log: Log): CacheTracer[STATEMENT] =
+    new CacheTracer[STATEMENT] {
+      override def queryCacheStale(key: STATEMENT, secondsSinceReplan: Int, metaData: String) {
+        log.debug(s"Discarded stale plan from the plan cache after $secondsSinceReplan seconds: $metaData")
+      }
+
+      override def queryCacheHit(queryKey: STATEMENT, metaData: String): Unit = {}
+
+      override def queryCacheMiss(queryKey: STATEMENT, metaData: String): Unit = {}
+
+      override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {}
+
+      override def queryCacheRecompile(queryKey: STATEMENT, metaData: String): Unit = {}
+    }
+}
+
 object AstLogicalPlanCache {
   def stalenessCaller(clock: Clock,
                       divergence: StatsDivergenceCalculator,

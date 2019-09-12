@@ -73,7 +73,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
   private val parsedQueries = new LFUCache[String, BaseState](config.queryCacheSize)
 
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
-  monitors.addMonitorListener(logStalePlanRemovalMonitor(log), "cypher")
 
   private val cacheTracer: CacheTracer[Pair[Statement, ParameterTypeMap]] = monitors.newMonitor[CacheTracer[Pair[Statement, ParameterTypeMap]]]("cypher")
 
@@ -83,6 +82,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       clock,
       config.statsDivergenceCalculator,
       txIdProvider)
+
+  monitors.addMonitorListener(planCache.logStalePlanRemovalMonitor(log), "cypher")
 
   private val contextCreator: PlannerContextCreator.type = PlannerContextCreator
 
@@ -319,21 +320,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
         val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
         IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-    }
-
-  private def logStalePlanRemovalMonitor(log: Log): CacheTracer[Statement] =
-    new CacheTracer[Statement] {
-      override def queryCacheStale(key: Statement, secondsSinceReplan: Int, metaData: String) {
-        log.debug(s"Discarded stale plan from the plan cache after $secondsSinceReplan seconds: $metaData")
-      }
-
-      override def queryCacheHit(queryKey: Statement, metaData: String): Unit = {}
-
-      override def queryCacheMiss(queryKey: Statement, metaData: String): Unit = {}
-
-      override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {}
-
-      override def queryCacheRecompile(queryKey: Statement, metaData: String): Unit = {}
     }
 }
 
