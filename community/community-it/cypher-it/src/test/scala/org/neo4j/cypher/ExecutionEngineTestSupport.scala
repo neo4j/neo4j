@@ -149,13 +149,14 @@ trait ExecutionEngineHelper {
     val subscriber = new RecordingQuerySubscriber
     graph.withTx { tx =>
       val context = graph.transactionalContext(tx, query = q -> params.toMap)
+      val tbqc = new TransactionBoundQueryContext(TransactionalContextWrapper(context))
       RewindableExecutionResult(eengine.execute(q,
         ExecutionEngineHelper.asMapValue(params),
         context,
         profile = false,
         prePopulate = false,
         subscriber),
-        new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
+        tbqc,
         subscriber)
     }
   }
@@ -164,6 +165,7 @@ trait ExecutionEngineHelper {
     val subscriber = new RecordingQuerySubscriber
     graph.withTx { tx =>
       val context = graph.transactionalContext(tx, query = fpq.description -> params.toMap)
+      val tbqc = new TransactionBoundQueryContext(TransactionalContextWrapper(context))
       RewindableExecutionResult(
         eengine.execute(
           query = fpq,
@@ -174,7 +176,7 @@ trait ExecutionEngineHelper {
           input = input,
           subscriber = subscriber
         ),
-        new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
+        tbqc,
         subscriber
       )
     }
