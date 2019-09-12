@@ -67,12 +67,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
+      .produceResults("e")
       .cartesianProduct()
-      .|.expand("(e)-->(f)")
-      .|.expand("(d)-->(e)")
-      .|.allNodeScan("d")
-      .expand("(b)-->(c)")
+      .|.expand("(b)-->(f)")
+      .|.expand("(c)-->(b)")
+      .|.allNodeScan("c")
+      .expand("(b)-->(e)")
       .expand("(a)-->(b)")
       .allNodeScan("a")
       .build()
@@ -81,7 +81,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = nodes.flatMap(c => (1 to size).map(_ => Array(c)))
-    runtimeResult should beColumns("c").withRows(expected)
+    runtimeResult should beColumns("e").withRows(expected)
   }
 
 }

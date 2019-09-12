@@ -106,12 +106,12 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .valueHashJoin("c.prop=e.prop")
-      .|.expand("(e)-->(f)")
-      .|.expand("(d)-->(e)")
-      .|.allNodeScan("d")
-      .expand("(b)-->(c)")
+      .produceResults("e")
+      .valueHashJoin("e.prop=f.prop")
+      .|.expand("(b)-->(f)")
+      .|.expand("(c)-->(b)")
+      .|.allNodeScan("c")
+      .expand("(b)-->(e)")
       .expand("(a)-->(b)")
       .allNodeScan("a")
       .build()
@@ -120,6 +120,6 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     // then
     val expected = nodes.map(n => Array(n))
-    runtimeResult should beColumns("c").withRows(expected)
+    runtimeResult should beColumns("e").withRows(expected)
   }
 }
