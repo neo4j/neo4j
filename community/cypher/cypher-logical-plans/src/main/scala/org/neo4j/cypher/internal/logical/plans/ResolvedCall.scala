@@ -130,7 +130,7 @@ case class ResolvedCall(signature: ProcedureSignature,
              |meaning that it expects $expectedNumArgs $msg""".stripMargin, position))
       }
     } else {
-      error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)", position))
+      error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support passing arguments implicitly. Pass arguments explicitly after the procedure name, within parentheses.", position))
     }
   }
 

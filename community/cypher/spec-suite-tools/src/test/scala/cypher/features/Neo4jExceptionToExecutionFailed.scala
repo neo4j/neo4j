@@ -192,7 +192,7 @@ object Neo4jExceptionToExecutionFailed {
       MISSING_PARAMETER
     else if (msg.startsWith("Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement."))
       INVALID_AGGREGATION
-    else if (msg.startsWith("Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)"))
+    else if (msg.startsWith("Procedure call inside a query does not support passing arguments implicitly. Pass arguments explicitly after the procedure name, within parentheses."))
       INVALID_ARGUMENT_PASSING_MODE
     else if (msg.matches("There is no procedure with the name `.+` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."))
       PROCEDURE_NOT_FOUND
