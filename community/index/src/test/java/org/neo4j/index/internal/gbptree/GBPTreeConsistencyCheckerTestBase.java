@@ -293,8 +293,8 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             boolean isLeaf = inspection.getLeafNodes().contains( targetNode );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> swapKeyOrder = isLeaf ?
-                                                                                     GBPTreeCorruption.swapKeyOrderLeaf( firstKey, secondKey, keyCount ) :
-                                                                                     GBPTreeCorruption.swapKeyOrderInternal( firstKey, secondKey, keyCount );
+                                                                       GBPTreeCorruption.swapKeyOrderLeaf( firstKey, secondKey, keyCount ) :
+                                                                       GBPTreeCorruption.swapKeyOrderInternal( firstKey, secondKey, keyCount );
             index.unsafe( page( targetNode, swapKeyOrder ) );
 
             assertReportKeysOutOfOrderInNode( index, targetNode );
@@ -316,8 +316,8 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             boolean isLeaf = inspection.getLeafNodes().contains( targetNode );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> swapKeyOrder = isLeaf ?
-                                                                                     GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
-                                                                                     GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
+                                                                       GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
+                                                                       GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
             index.unsafe( page( targetNode, swapKeyOrder ) );
 
             assertReportKeysLocatedInWrongNode( index, targetNode );
@@ -339,8 +339,8 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             boolean isLeaf = inspection.getLeafNodes().contains( targetNode );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> swapKeyOrder = isLeaf ?
-                                                                                     GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
-                                                                                     GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
+                                                                       GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
+                                                                       GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
             index.unsafe( page( targetNode, swapKeyOrder ) );
 
             assertReportKeysLocatedInWrongNode( index, targetNode );
@@ -732,7 +732,8 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             int otherChildPos = randomChildPos( inspection, otherInternalNode );
             int targetChildPos = randomChildPos( inspection, targetInternalNode );
 
-            GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.copyChildPointerFromOther( targetInternalNode, otherInternalNode, targetChildPos, otherChildPos );
+            GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption =
+                    GBPTreeCorruption.copyChildPointerFromOther( targetInternalNode, otherInternalNode, targetChildPos, otherChildPos );
             index.unsafe( corruption );
 
             assertReportAnyStructuralInconsistency( index );
