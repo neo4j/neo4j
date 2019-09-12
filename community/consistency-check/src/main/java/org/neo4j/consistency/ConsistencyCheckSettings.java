@@ -57,6 +57,14 @@ public class ConsistencyCheckSettings implements LoadableConfig
             setting( "tools.consistency_checker.check_indexes", BOOLEAN, TRUE );
 
     @Description( "This setting is deprecated. See commandline arguments for neoj4-admin check-consistency " +
+            "instead. Perform structural checks on indexes. This is done in separate step before consistency " +
+            "check on store starts. Checking indexes is more expensive than checking the native stores, so " +
+            "it may be useful to turn off this check for very large databases." )
+    @Deprecated
+    public static final Setting<Boolean> consistency_check_index_structure =
+            setting( "tools.consistency_checker.check_index_structure", BOOLEAN, FALSE );
+
+    @Description( "This setting is deprecated. See commandline arguments for neoj4-admin check-consistency " +
             "instead. Perform checks between nodes, relationships, properties, types and tokens." )
     @Deprecated
     public static final Setting<Boolean> consistency_check_graph =

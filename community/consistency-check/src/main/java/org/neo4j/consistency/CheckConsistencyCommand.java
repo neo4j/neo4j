@@ -34,7 +34,6 @@ import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -57,6 +56,7 @@ public class CheckConsistencyCommand implements AdminCommand
 {
     public static final String CHECK_GRAPH = "check-graph";
     public static final String CHECK_INDEXES = "check-indexes";
+    public static final String CHECK_INDEX_STRUCTURE = "check-index-structure";
     public static final String CHECK_LABEL_SCAN_STORE = "check-label-scan-store";
     public static final String CHECK_PROPERTY_OWNERS = "check-property-owners";
     private static final Arguments arguments = new Arguments()
@@ -72,6 +72,8 @@ public class CheckConsistencyCommand implements AdminCommand
                     "Perform checks between nodes, relationships, properties, types and tokens." ) )
             .withArgument( new OptionalBooleanArg( CHECK_INDEXES, true,
                     "Perform checks on indexes." ) )
+            .withArgument( new OptionalBooleanArg( CHECK_INDEX_STRUCTURE, false,
+                    "Perform structure checks on indexes." ) )
             .withArgument( new OptionalBooleanArg( CHECK_LABEL_SCAN_STORE, true,
                     "Perform checks on the label scan store." ) )
             .withArgument( new OptionalBooleanArg( CHECK_PROPERTY_OWNERS, false,
@@ -104,6 +106,7 @@ public class CheckConsistencyCommand implements AdminCommand
         final Optional<Path> backupPath;
         final boolean checkGraph;
         final boolean checkIndexes;
+        final boolean checkIndexStructure;
         final boolean checkLabelScanStore;
         final boolean checkPropertyOwners;
 
@@ -154,6 +157,14 @@ public class CheckConsistencyCommand implements AdminCommand
             {
                 checkIndexes = config.get( ConsistencyCheckSettings.consistency_check_indexes );
             }
+            if ( arguments.has( CHECK_INDEX_STRUCTURE ) )
+            {
+                checkIndexStructure = arguments.getBoolean( CHECK_INDEX_STRUCTURE );
+            }
+            else
+            {
+                checkIndexStructure = config.get( ConsistencyCheckSettings.consistency_check_index_structure );
+            }
             if ( arguments.has( CHECK_LABEL_SCAN_STORE ) )
             {
                 checkLabelScanStore = arguments.getBoolean( CHECK_LABEL_SCAN_STORE );
@@ -193,7 +204,7 @@ public class CheckConsistencyCommand implements AdminCommand
                     .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory,
                             FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.out ), fileSystem,
                             verbose, reportDir.toFile(),
-                            new ConsistencyFlags( checkGraph, checkIndexes, checkLabelScanStore, checkPropertyOwners ) );
+                            new ConsistencyFlags( checkGraph, checkIndexes, checkIndexStructure, checkLabelScanStore, checkPropertyOwners ) );
 
             if ( !consistencyCheckResult.isSuccessful() )
             {

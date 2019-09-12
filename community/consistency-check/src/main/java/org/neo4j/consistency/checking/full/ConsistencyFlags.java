@@ -29,6 +29,7 @@ public class ConsistencyFlags
 {
     private final boolean checkGraph;
     private final boolean checkIndexes;
+    private final boolean checkIndexStructure;
     private final boolean checkLabelScanStore;
     private final boolean checkPropertyOwners;
 
@@ -36,17 +37,20 @@ public class ConsistencyFlags
     {
         this( tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_graph ),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes ),
+                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_index_structure ),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_label_scan_store ),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
     public ConsistencyFlags( boolean checkGraph,
                              boolean checkIndexes,
+                             boolean checkIndexStructure,
                              boolean checkLabelScanStore,
                              boolean checkPropertyOwners )
     {
         this.checkGraph = checkGraph;
         this.checkIndexes = checkIndexes;
+        this.checkIndexStructure = checkIndexStructure;
         this.checkLabelScanStore = checkLabelScanStore;
         this.checkPropertyOwners = checkPropertyOwners;
     }
@@ -59,6 +63,11 @@ public class ConsistencyFlags
     public boolean isCheckIndexes()
     {
         return checkIndexes;
+    }
+
+    public boolean isCheckIndexStructure()
+    {
+        return checkIndexStructure;
     }
 
     public boolean isCheckLabelScanStore()

@@ -217,11 +217,11 @@ class CheckConsistencyCommandTest
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--check-graph=false",
-                "--check-indexes=false", "--check-label-scan-store=false", "--check-property-owners=true"} );
+                "--check-indexes=false", "--check-index-structure=false", "--check-label-scan-store=false", "--check-property-owners=true"} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                        any(), eq( new ConsistencyFlags( false, false, false, true ) ) );
+                        any(), eq( new ConsistencyFlags( false, false, false, false, true ) ) );
     }
 
     @Test
@@ -300,6 +300,7 @@ class CheckConsistencyCommandTest
                             "                                     [--additional-config=<config-file-path>]%n" +
                             "                                     [--check-graph[=<true|false>]]%n" +
                             "                                     [--check-indexes[=<true|false>]]%n" +
+                            "                                     [--check-index-structure[=<true|false>]]%n" +
                             "                                     [--check-label-scan-store[=<true|false>]]%n" +
                             "                                     [--check-property-owners[=<true|false>]]%n" +
                             "%n" +
@@ -334,6 +335,8 @@ class CheckConsistencyCommandTest
                             "                                           tokens. [default:true]%n" +
                             "  --check-indexes=<true|false>             Perform checks on indexes.%n" +
                             "                                           [default:true]%n" +
+                            "  --check-index-structure=<true|false>     Perform structure checks on indexes.%n" +
+                            "                                           [default:false]%n" +
                             "  --check-label-scan-store=<true|false>    Perform checks on the label scan%n" +
                             "                                           store. [default:true]%n" +
                             "  --check-property-owners=<true|false>     Perform additional checks on property%n" +

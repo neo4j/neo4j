@@ -21,6 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.File;
 
+import org.neo4j.helpers.Exceptions;
+
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 
@@ -30,6 +32,7 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     private static final String keyOrderInconsistency = "Key order inconsistency: ";
     private static final String nodeMetaInconsistency = "Node meta inconsistency: ";
     private static final String treeMetaInconsistency = "Tree meta inconsistency: ";
+    private static final String unexpectedExceptionInconsistency = "Unexpected exception inconsistency: ";
 
     @Override
     public void notATreeNode( long pageId, File file )
@@ -147,6 +150,12 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
                 parentRange, level, pageId );
     }
 
+    @Override
+    public void exception( Exception e )
+    {
+        throwUnexpectedExceptionInconsistency( "%s", Exceptions.stringify( e ) );
+    }
+
     private static String stateToString( long generation, long readPointer, long pointer, byte stateA )
     {
         return format( "generation=%d, readPointer=%d, pointer=%d, state=%s",
@@ -185,6 +194,11 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     private void throwTreeMetaInconsistency( String format, Object... args )
     {
         throwWithPrefix( treeMetaInconsistency, format, args );
+    }
+
+    private void throwUnexpectedExceptionInconsistency( String format, Object... args )
+    {
+        throwWithPrefix( unexpectedExceptionInconsistency, format, args );
     }
 
     private void throwWithPrefix( String prefix, String format, Object[] args )
