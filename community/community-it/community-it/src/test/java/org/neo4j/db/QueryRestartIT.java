@@ -89,6 +89,12 @@ class QueryRestartIT
             {
                 assertEquals( "d", result.next().get( "n.c" ) );
             }
+            // This extra printing is here to investigate flakiness of this test
+            if ( testCursorContext.getAdditionalAttempts() > 0 )
+            {
+                System.err.println( "Unexpected call to markAsDirty/isDirty:" );
+                testCursorContext.printDirtyCalls( System.err );
+            }
             assertEquals( 0, testCursorContext.getAdditionalAttempts() );
             transaction.commit();
         }

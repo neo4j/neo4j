@@ -19,6 +19,7 @@
  */
 package org.neo4j.snapshot;
 
+import java.io.PrintStream;
 import java.util.function.LongSupplier;
 
 import org.neo4j.common.DependencyResolver;
@@ -37,6 +38,8 @@ public class TestVersionContext extends TransactionVersionContext
     private boolean wrongLastClosedTxId = true;
     private int additionalAttempts;
     private boolean stayDirty;
+    private Exception lastMarkAsDirtyCall;
+    private Exception additionalAttemptsCall;
 
     private TestVersionContext( LongSupplier transactionIdSupplier )
     {
@@ -57,6 +60,7 @@ public class TestVersionContext extends TransactionVersionContext
         {
             wrongLastClosedTxId = false;
         }
+        lastMarkAsDirtyCall = new Exception( "markAsDirty" );
     }
 
     @Override
@@ -66,8 +70,30 @@ public class TestVersionContext extends TransactionVersionContext
         if ( dirty )
         {
             additionalAttempts++;
+            additionalAttemptsCall = new Exception( "isDirty" );
         }
         return dirty;
+    }
+
+    public void printDirtyCalls( PrintStream printStream )
+    {
+        if ( lastMarkAsDirtyCall != null )
+        {
+            lastMarkAsDirtyCall.printStackTrace( printStream );
+        }
+        else
+        {
+            printStream.println( "No last markAsDirty call" );
+        }
+
+        if ( additionalAttemptsCall != null )
+        {
+            additionalAttemptsCall.printStackTrace( printStream );
+        }
+        else
+        {
+            printStream.println( "No additionalAttempts call" );
+        }
     }
 
     public int getAdditionalAttempts()
