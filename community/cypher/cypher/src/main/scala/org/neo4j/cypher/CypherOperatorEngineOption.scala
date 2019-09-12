@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher
 
-sealed abstract class CypherOperatorExecutionModeOption(mode: String) extends CypherOption(mode)
+sealed abstract class CypherOperatorEngineOption(mode: String) extends CypherOption(mode)
 
-case object CypherOperatorExecutionModeOption extends CypherOptionCompanion[CypherOperatorExecutionModeOption] {
-  case object compiled extends CypherOperatorExecutionModeOption("compiled")
-  case object interpreted extends CypherOperatorExecutionModeOption("interpreted")
+case object CypherOperatorEngineOption extends CypherOptionCompanion[CypherOperatorEngineOption] {
+  case object compiled extends CypherOperatorEngineOption("compiled")
+  case object interpreted extends CypherOperatorEngineOption("interpreted")
 
-  val all: Set[CypherOperatorExecutionModeOption] = Set(compiled, interpreted)
-  override val default: CypherOperatorExecutionModeOption = compiled
+  val all: Set[CypherOperatorEngineOption] = Set(compiled, interpreted)
+  override val default: CypherOperatorEngineOption = compiled
 }

@@ -49,7 +49,7 @@ class PreParser(configuredVersion: CypherVersion,
                 configuredPlanner: CypherPlannerOption,
                 configuredRuntime: CypherRuntimeOption,
                 configuredExpressionEngine: CypherExpressionEngineOption,
-                configuredOperatorExecutionMode: CypherOperatorExecutionModeOption,
+                configuredOperatorEngine: CypherOperatorEngineOption,
                 planCacheSize: Int) {
 
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](planCacheSize)
@@ -89,7 +89,7 @@ class PreParser(configuredVersion: CypherVersion,
       configuredPlanner,
       configuredRuntime,
       configuredExpressionEngine,
-      configuredOperatorExecutionMode)
+      configuredOperatorEngine)
 
     PreParsedQuery(preParsedStatement.statement, queryText, options)
   }
@@ -106,11 +106,11 @@ object PreParser {
     Set(
       (CypherExpressionEngineOption.compiled, CypherRuntimeOption.compiled),
       (CypherExpressionEngineOption.compiled, CypherRuntimeOption.interpreted))
-  private final val ILLEGAL_OPERATOR_EXECUTION_MODE_RUNTIME_COMBINATIONS: Set[(CypherOperatorExecutionModeOption, CypherRuntimeOption)] =
+  private final val ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS: Set[(CypherOperatorEngineOption, CypherRuntimeOption)] =
     Set(
-      (CypherOperatorExecutionModeOption.compiled, CypherRuntimeOption.compiled),
-      (CypherOperatorExecutionModeOption.compiled, CypherRuntimeOption.slotted),
-      (CypherOperatorExecutionModeOption.compiled, CypherRuntimeOption.interpreted))
+      (CypherOperatorEngineOption.compiled, CypherRuntimeOption.compiled),
+      (CypherOperatorEngineOption.compiled, CypherRuntimeOption.slotted),
+      (CypherOperatorEngineOption.compiled, CypherRuntimeOption.interpreted))
 
 
   private class PPOption[T](val default: T) {
@@ -134,13 +134,13 @@ object PreParser {
                    configuredPlanner: CypherPlannerOption,
                    configuredRuntime: CypherRuntimeOption,
                    configuredExpressionEngine: CypherExpressionEngineOption,
-                   configuredOperatorExecutionMode: CypherOperatorExecutionModeOption): QueryOptions = {
+                   configuredOperatorEngine: CypherOperatorEngineOption): QueryOptions = {
     val executionMode: PPOption[CypherExecutionMode] = new PPOption(CypherExecutionMode.default)
     val version: PPOption[CypherVersion] = new PPOption(configuredVersion)
     val planner: PPOption[CypherPlannerOption] = new PPOption(configuredPlanner)
     val runtime: PPOption[CypherRuntimeOption] = new PPOption(configuredRuntime)
     val expressionEngine: PPOption[CypherExpressionEngineOption] = new PPOption(configuredExpressionEngine)
-    val operatorExecutionMode: PPOption[CypherOperatorExecutionModeOption] = new PPOption(configuredOperatorExecutionMode)
+    val operatorEngine: PPOption[CypherOperatorEngineOption] = new PPOption(configuredOperatorEngine)
     val updateStrategy: PPOption[CypherUpdateStrategy] = new PPOption(CypherUpdateStrategy.default)
     var debugOptions: Set[String] = Set()
 
@@ -163,8 +163,8 @@ object PreParser {
             debugOptions = debugOptions + debug.toLowerCase()
           case engine: ExpressionEnginePreParserOption =>
             expressionEngine.selectOrThrow(CypherExpressionEngineOption(engine.name), "Can't specify multiple conflicting expression engines")
-          case o: OperatorExecutionModePreParserOption =>
-            operatorExecutionMode.selectOrThrow(CypherOperatorExecutionModeOption(o.name), "Can't specify multiple conflicting operator execution modes")
+          case o: OperatorEnginePreParserOption =>
+            operatorEngine.selectOrThrow(CypherOperatorEngineOption(o.name), "Can't specify multiple conflicting operator execution modes")
 
           case ConfigurationOptions(versionOpt, innerOptions) =>
             for (v <- versionOpt)
@@ -185,8 +185,8 @@ object PreParser {
     if (runtime.isSelected && expressionEngine.isSelected && ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine.pick, runtime.pick)))
       throw new InvalidPreparserOption(s"Cannot combine EXPRESSION ENGINE '${expressionEngine.pick.name}' with RUNTIME '${runtime.pick.name}'")
 
-    if (runtime.isSelected && operatorExecutionMode.isSelected && ILLEGAL_OPERATOR_EXECUTION_MODE_RUNTIME_COMBINATIONS(operatorExecutionMode.pick, runtime.pick)) {
-      throw new InvalidPreparserOption(s"Cannot combine OPERATOR EXECUTION MODE '${operatorExecutionMode.pick.name}' with RUNTIME '${runtime.pick.name}'")
+    if (runtime.isSelected && operatorEngine.isSelected && ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS(operatorEngine.pick, runtime.pick)) {
+      throw new InvalidPreparserOption(s"Cannot combine OPERATOR ENGINE '${operatorEngine.pick.name}' with RUNTIME '${runtime.pick.name}'")
     }
 
     QueryOptions(offset,
@@ -197,7 +197,7 @@ object PreParser {
       runtime.pick,
       updateStrategy.pick,
       expressionEngine.pick,
-      operatorExecutionMode.pick,
+      operatorEngine.pick,
       debugOptions)
   }
 }

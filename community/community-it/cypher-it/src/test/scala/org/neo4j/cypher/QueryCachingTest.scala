@@ -253,20 +253,20 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     actual should equal(expected)
   }
 
-  test("Different operatorExecutionMode in query should not use same plan") {
+  test("Different operatorEngine in query should not use same plan") {
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
     graph.withTx { tx =>
-      tx.execute("CYPHER operatorExecutionMode=interpreted RETURN 42 AS a")
-      tx.execute("CYPHER operatorExecutionMode=compiled RETURN 42 AS a")
+      tx.execute("CYPHER operatorEngine=interpreted RETURN 42 AS a")
+      tx.execute("CYPHER operatorEngine=compiled RETURN 42 AS a")
     }
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      "cacheMiss: (CYPHER 4.0 operatorExecutionMode=interpreted RETURN 42 AS a, Map())",
-      "cacheHit: (CYPHER 4.0 operatorExecutionMode=interpreted RETURN 42 AS a, Map())",
+      "cacheMiss: (CYPHER 4.0 operatorEngine=interpreted RETURN 42 AS a, Map())",
+      "cacheHit: (CYPHER 4.0 operatorEngine=interpreted RETURN 42 AS a, Map())",
       "cacheMiss: (CYPHER 4.0 RETURN 42 AS a, Map())",
       "cacheHit: (CYPHER 4.0 RETURN 42 AS a, Map())"
     )

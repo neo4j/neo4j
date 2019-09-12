@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.Collections
 
-import org.neo4j.cypher.CypherOperatorExecutionModeOption
+import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.{CypherRuntime, MasterCompiler, RuntimeContext}
 import org.neo4j.cypher.internal.runtime.spec._
@@ -217,7 +217,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
           Set.empty,
           compileExpressions = false,
           materializedEntitiesMode = true,
-          operatorExecutionMode = CypherOperatorExecutionModeOption.default)
+          operatorEngine = CypherOperatorEngineOption.default)
       }
     }
   }

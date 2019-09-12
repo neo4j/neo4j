@@ -130,7 +130,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       CypherPlannerOption.default,
       CypherRuntimeOption.default,
       CypherExpressionEngineOption.default,
-      CypherOperatorExecutionModeOption.default ,
+      CypherOperatorEngineOption.default ,
       1)
 
     val preParsedQuery = preParser.preParseQuery(query)

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.CypherOperatorExecutionModeOption
+import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.Log
@@ -44,7 +44,7 @@ case class CommunityRuntimeContextManager(log: Log, config: CypherRuntimeConfigu
                       debugOptions: Set[String],
                       ignore: Boolean,
                       ignore2: Boolean,
-                      ignore3: CypherOperatorExecutionModeOption
+                      ignore3: CypherOperatorEngineOption
                      ): CommunityRuntimeContext =
     CommunityRuntimeContext(tokenContext, schemaRead, log, config)
 

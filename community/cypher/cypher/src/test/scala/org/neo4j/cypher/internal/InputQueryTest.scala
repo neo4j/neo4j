@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{CypherExpressionEngineOption, CypherOperatorExecutionModeOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
+import org.neo4j.cypher.{CypherExpressionEngineOption, CypherOperatorEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -35,7 +35,7 @@ class InputQueryTest extends CypherFunSuite {
       CypherPlannerOption.default,
       CypherRuntimeOption.default,
       CypherExpressionEngineOption.default,
-      CypherOperatorExecutionModeOption.default,
+      CypherOperatorEngineOption.default,
       0)
 
   private def parser =

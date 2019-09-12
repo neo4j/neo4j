@@ -25,7 +25,7 @@ sealed abstract class PlannerPreParserOption(val name: String) extends PreParser
 sealed abstract class RuntimePreParserOption(val name: String) extends PreParserOption
 sealed abstract class ExpressionEnginePreParserOption(val name: String) extends PreParserOption
 sealed abstract class UpdateStrategyOption(val name: String) extends PreParserOption
-sealed abstract class OperatorExecutionModePreParserOption(val name: String) extends PreParserOption
+sealed abstract class OperatorEnginePreParserOption(val name: String) extends PreParserOption
 
 case class VersionOption(version: String) extends PreParserOption
 case object ProfileOption extends ExecutionModePreParserOption("profile")
@@ -43,7 +43,7 @@ case object EagerOption extends UpdateStrategyOption("eager")
 case class DebugOption(key: String) extends PreParserOption
 case object CompiledExpressionOption extends ExpressionEnginePreParserOption("compiled")
 case object InterpretedExpressionOption extends ExpressionEnginePreParserOption("interpreted")
-case object CompiledOperatorExecutionModeOption extends OperatorExecutionModePreParserOption("compiled")
-case object InterpretedOperatorExecutionModeOption extends OperatorExecutionModePreParserOption("interpreted")
+case object CompiledOperatorEngineOption extends OperatorEnginePreParserOption("compiled")
+case object InterpretedOperatorEngineOption extends OperatorEnginePreParserOption("interpreted")
 
 case class ConfigurationOptions(version: Option[VersionOption], options: Seq[PreParserOption]) extends PreParserOption

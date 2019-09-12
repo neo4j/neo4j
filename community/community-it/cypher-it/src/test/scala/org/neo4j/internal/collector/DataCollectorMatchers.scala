@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.{PreParsedQuery, PreParser}
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.{CypherExpressionEngineOption, CypherOperatorExecutionModeOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
+import org.neo4j.cypher.{CypherExpressionEngineOption, CypherOperatorEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable.ArrayBuffer
@@ -39,7 +39,7 @@ object DataCollectorMatchers {
     CypherPlannerOption.default,
     CypherRuntimeOption.default,
     CypherExpressionEngineOption.default,
-    CypherOperatorExecutionModeOption.default,
+    CypherOperatorEngineOption.default,
     0)
 
   /**

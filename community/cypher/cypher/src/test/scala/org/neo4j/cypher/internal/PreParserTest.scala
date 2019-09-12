@@ -29,7 +29,7 @@ class PreParserTest extends CypherFunSuite {
     CypherPlannerOption.default,
     CypherRuntimeOption.default,
     CypherExpressionEngineOption.default,
-    CypherOperatorExecutionModeOption.default,
+    CypherOperatorEngineOption.default,
     0)
 
   test("should not allow inconsistent runtime options") {
@@ -46,7 +46,7 @@ class PreParserTest extends CypherFunSuite {
   }
 
   test("should accept just one operator execution mode") {
-    preParser.preParseQuery("CYPHER operatorExecutionMode=interpreted RETURN 42").options.executionMode
+    preParser.preParseQuery("CYPHER operatorEngine=interpreted RETURN 42").options.operatorEngine should equal(CypherOperatorEngineOption.interpreted)
   }
 
   test("should parse all variants of periodic commit") {

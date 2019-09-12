@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import java.io.File
 import java.time.Clock
 
-import org.neo4j.cypher.{CypherOperatorExecutionModeOption, CypherRuntimeOption}
+import org.neo4j.cypher.{CypherOperatorEngineOption, CypherRuntimeOption}
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -107,7 +107,7 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
              debugOptions: Set[String],
              compileExpressions: Boolean,
              materializedEntitiesMode: Boolean,
-            operatorExecutionMode: CypherOperatorExecutionModeOption
+             operatorEngine: CypherOperatorEngineOption
             ): CONTEXT
 
   /**

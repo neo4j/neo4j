@@ -415,21 +415,21 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Internal
     public static final Setting<Integer> cypher_worker_count = newBuilder( "unsupported.cypher.number_of_workers", INT, 0 ).build();
 
-    public enum CypherOperatorExecutionMode
+    public enum CypherOperatorEngine
     {
         COMPILED,
         INTERPRETED
     }
 
     @Description( "For compiled execution, specialized code is generated and then executed. " +
-                  "More optimizations such as operator fusing may apply. " +
+                  "More optimizations such as operator fusion may apply. " +
                   "Operator fusion means that multiple operators such as for example " +
                   "AllNodesScan -> Filter -> ProduceResult can be compiled into a single specialized operator. " +
                   "This setting only applies to the morsel and parallel runtime. " +
                   "Allowed values are \"COMPILED\" (default) and \"INTERPRETED\"." )
     @Internal
-    public static final Setting<CypherOperatorExecutionMode> cypher_operator_execution_mode =
-            newBuilder( "unsupported.cypher.morsel.operator_execution_mode", ofEnum( CypherOperatorExecutionMode.class ), CypherOperatorExecutionMode.COMPILED ).build();
+    public static final Setting<CypherOperatorEngine> cypher_operator_engine =
+            newBuilder( "unsupported.cypher.morsel.operator_engine", ofEnum( CypherOperatorEngine.class ), CypherOperatorEngine.COMPILED ).build();
 
     @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +
             " nearest power of two. The default number (8192 query invocations) " +

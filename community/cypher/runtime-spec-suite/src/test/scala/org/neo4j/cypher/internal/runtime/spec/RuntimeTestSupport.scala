@@ -130,7 +130,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
       cypherConfiguration.planner,
       cypherConfiguration.runtime,
       cypherConfiguration.expressionEngineOption,
-      cypherConfiguration.operatorExecutionMode)
+      cypherConfiguration.operatorEngine)
 
     runtimeContextManager.create(queryContext,
                                  txContext.kernelTransaction().schemaRead(),
@@ -138,7 +138,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  Set.empty,
                                  compileExpressions = queryOptions.useCompiledExpressions,
                                  materializedEntitiesMode = queryOptions.materializedEntitiesMode,
-                                 operatorExecutionMode = queryOptions.operatorExecutionMode)
+                                 operatorEngine = queryOptions.operatorEngine)
   }
 
   private def newQueryContext(txContext: TransactionalContext, maybeCursorFactory: Option[CursorFactory] = None): QueryContext = {

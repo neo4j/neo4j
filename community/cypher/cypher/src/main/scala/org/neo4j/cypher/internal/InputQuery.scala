@@ -45,7 +45,7 @@ case class PreParsedQuery(statement: String, rawStatement: String, options: Quer
 
   val statementWithVersionAndPlanner: String = {
     val f = options.cacheKey
-    s"CYPHER ${f.version} ${f.plannerInfo} ${f.runtimeInfo} ${f.updateStrategyInfo} ${f.expressionEngineInfo} ${f.operatorExecutionModeInfo} ${f.debugFlags} $statement"
+    s"CYPHER ${f.version} ${f.plannerInfo} ${f.runtimeInfo} ${f.updateStrategyInfo} ${f.expressionEngineInfo} ${f.operatorEngineInfo} ${f.debugFlags} $statement"
   }
 
   override def cacheKey: String = statementWithVersionAndPlanner
@@ -91,7 +91,7 @@ case class QueryOptions(offset: InputPosition,
                         runtime: CypherRuntimeOption,
                         updateStrategy: CypherUpdateStrategy,
                         expressionEngine: CypherExpressionEngineOption,
-                        operatorExecutionMode: CypherOperatorExecutionModeOption,
+                        operatorEngine: CypherOperatorEngineOption,
                         debugOptions: Set[String],
                         recompilationLimitReached: Boolean = false,
                         materializedEntitiesMode: Boolean = false) {
@@ -121,9 +121,9 @@ case class QueryOptions(offset: InputPosition,
            CypherExpressionEngineOption.onlyWhenHot => ""
       case _ => s"expressionEngine=${expressionEngine.name}"
     },
-    operatorExecutionModeInfo = operatorExecutionMode match {
-      case CypherOperatorExecutionModeOption.default => ""
-      case _ => s"operatorExecutionMode=${operatorExecutionMode.name}"
+    operatorEngineInfo = operatorEngine match {
+      case CypherOperatorEngineOption.default => ""
+      case _ => s"operatorEngine=${operatorEngine.name}"
     },
     debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
   )
@@ -136,7 +136,7 @@ object QueryOptions {
                       runtimeInfo: String,
                       updateStrategyInfo: String,
                       expressionEngineInfo: String,
-                      operatorExecutionModeInfo: String,
+                      operatorEngineInfo: String,
                       debugFlags: String)
 
   val default: QueryOptions = QueryOptions(InputPosition.NONE,
@@ -147,6 +147,6 @@ object QueryOptions {
     CypherRuntimeOption.default,
     CypherUpdateStrategy.default,
     CypherExpressionEngineOption.default,
-    CypherOperatorExecutionModeOption.default,
+    CypherOperatorEngineOption.default,
     Set())
 }

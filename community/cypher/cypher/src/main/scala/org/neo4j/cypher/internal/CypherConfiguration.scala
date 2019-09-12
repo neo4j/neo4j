@@ -55,7 +55,7 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.enable_morsel_runtime_trace),
       config.get(GraphDatabaseSettings.morsel_scheduler_trace_filename).toFile,
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
-      CypherOperatorExecutionModeOption(config.get(GraphDatabaseSettings.cypher_operator_execution_mode).toString),
+      CypherOperatorEngineOption(config.get(GraphDatabaseSettings.cypher_operator_engine).toString),
       new ConfigMemoryTrackingController(config)
     )
   }
@@ -121,7 +121,7 @@ case class CypherConfiguration(version: CypherVersion,
                                doSchedulerTracing: Boolean,
                                schedulerTracingFile: File,
                                recompilationLimit: Int,
-                               operatorExecutionMode: CypherOperatorExecutionModeOption,
+                               operatorEngine: CypherOperatorEngineOption,
                                memoryTrackingController: MemoryTrackingController) {
 
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
