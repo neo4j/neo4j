@@ -53,6 +53,25 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("c").withRows(singleRow(sizeHint))
   }
 
+  test("should count(*) with limit") {
+    // given
+    nodeGraph(sizeHint, "Honey")
+    val limit = sizeHint / 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(*) AS c"))
+      .limit(limit)
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withRows(singleRow(limit))
+  }
+
   test("should count(*) on single grouping column") {
     // given
     nodePropertyGraph(sizeHint, {
@@ -71,6 +90,29 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("name", "c").withRows(for (i <- 0 until 10) yield {
       Array(s"bob$i", sizeHint / 10)
+    })
+  }
+
+  test("should count(*) on single grouping column with limit") {
+    // given
+    val groupSize = 10
+    val groupCount = 2
+    val input = inputValues((0 until sizeHint).map(i => Array[Any](s"bob${i / groupSize}")): _*)
+    val limit = groupSize * groupCount
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("key", "count")
+      .aggregation(Seq("name AS key"), Seq("count(*) AS count"))
+      .limit(limit)
+      .input(variables = Seq("name"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("key", "count").withRows(for (i <- 0 until groupCount) yield {
+      Array(s"bob$i", groupSize)
     })
   }
 
