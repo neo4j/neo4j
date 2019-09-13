@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -156,8 +157,10 @@ public interface Transaction extends AutoCloseable
     /**
      * Allow acquisition and releasing of locks on this transaction. Thaws one nesting of {@link Transaction#freezeLocks()},
      * which restores the Transaction to normal operation if there has been the same number of freeze and thaw calls.
+     *
+     * @throws LocksNotFrozenException if the locks were not frozen.
      */
-    void thawLocks();
+    void thawLocks() throws LocksNotFrozenException;
 
     /**
      * @return The cursor factory

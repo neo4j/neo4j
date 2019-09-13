@@ -85,6 +85,7 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.FrozenStatementLocks;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
@@ -915,7 +916,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         else
         {
-            throw new IllegalStateException( "Attempted to thaw Transaction locks that were not frozen." );
+            throw new LocksNotFrozenException();
         }
     }
 

@@ -24,11 +24,13 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
+import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.test.assertion.Assert;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -120,6 +122,31 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             // WHEN
             tx.freezeLocks();
             tx.thawLocks();
+
+            // THEN
+            assertAllowedLocks( label, propertyKey, tx );
+        }
+    }
+
+    @Test
+    void shouldThrowOnThawOfNotFrozenLocks() throws Exception
+    {
+        // GIVEN
+        int label;
+        int propertyKey;
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
+            propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
+            tx.commit();
+        }
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            // WHEN
+            assertThrows( LocksNotFrozenException.class, tx::thawLocks );
 
             // THEN
             assertAllowedLocks( label, propertyKey, tx );
