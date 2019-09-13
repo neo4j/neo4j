@@ -2429,14 +2429,14 @@ public class FulltextProceduresTest
     }
 
     @Test
-    public void shouldNotBePossibleToCreateIndexWithDuplicatePropery()
+    public void shouldNotBePossibleToCreateIndexWithDuplicateProperty()
     {
         db = createDatabase();
 
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id", "id" ) ) );
-            fail( "Expected to fail when trying to create index with duplicate labels" );
+            fail( "Expected to fail when trying to create index with duplicate properties" );
         }
         catch ( Exception e )
         {
@@ -2470,7 +2470,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( RELATIONSHIP_CREATE, "myindex", array( "RelType", "RelType" ), array( "id" ) ) );
-            fail( "Expected to fail when trying to create index with duplicate labels" );
+            fail( "Expected to fail when trying to create index with duplicate relationship types" );
         }
         catch ( Exception e )
         {

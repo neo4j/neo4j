@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class RepeatedSchemaComponentException extends SchemaKernelException
+public abstract class RepeatedSchemaComponentException extends SchemaKernelException
 {
     private final SchemaDescriptor schema;
     private final OperationContext context;
@@ -43,6 +43,20 @@ public class RepeatedSchemaComponentException extends SchemaKernelException
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
         return format( schema, context, tokenNameLookup, component );
+    }
+
+    enum SchemaComponent
+    {
+        PROPERTY( "property" ),
+        LABEL( "label" ),
+        RELATIONSHIP_TYPE( "relationship type" );
+
+        private final String name;
+
+        SchemaComponent( String name )
+        {
+            this.name = name;
+        }
     }
 
     private static String format( SchemaDescriptor schema, OperationContext context, TokenNameLookup tokenNameLookup, SchemaComponent component )
@@ -65,19 +79,5 @@ public class RepeatedSchemaComponentException extends SchemaKernelException
         return String.format( "%s on %s includes a %s more than once.",
                 schemaName, schema.userDescription( tokenNameLookup ), component.name );
 
-    }
-
-    enum SchemaComponent
-    {
-        PROPERTY( "property" ),
-        LABEL( "label" ),
-        RELATIONSHIP_TYPE( "relationship type" );
-
-        private final String name;
-
-        SchemaComponent( String name )
-        {
-            this.name = name;
-        }
     }
 }
