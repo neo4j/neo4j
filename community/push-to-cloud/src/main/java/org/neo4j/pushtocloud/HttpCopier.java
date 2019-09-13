@@ -64,14 +64,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     private final OutsideWorld outsideWorld;
     private final Sleeper sleeper;
-    private final LongFunction<ProgressListener> progressListenerFactory;
+    private final ProgressListenerFactory progressListenerFactory;
 
     HttpCopier( OutsideWorld outsideWorld )
     {
-        this( outsideWorld, Thread::sleep, length -> ProgressMonitorFactory.textual( outsideWorld.outStream() ).singlePart( "Upload", length ) );
+        this( outsideWorld, Thread::sleep, ( text, length ) -> ProgressMonitorFactory.textual( outsideWorld.outStream() ).singlePart( text, length ) );
     }
 
-    HttpCopier( OutsideWorld outsideWorld, Sleeper sleeper, LongFunction<ProgressListener> progressListenerFactory )
+    HttpCopier( OutsideWorld outsideWorld, Sleeper sleeper, ProgressListenerFactory progressListenerFactory )
     {
         this.outsideWorld = outsideWorld;
         this.sleeper = sleeper;
@@ -88,7 +88,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         {
             String bearerToken = authenticate( verbose, consoleURL, username, password );
             copy( verbose, consoleURL, source, bearerToken );
-            doStatusPolling( verbose, consoleURL, source, bearerToken );
+            doStatusPolling( verbose, consoleURL, bearerToken );
         }
         catch ( IOException | InterruptedException e )
         {
@@ -96,14 +96,13 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private void doStatusPolling( boolean verbose, String consoleURL, Path source, String bearerToken ) throws IOException, InterruptedException, CommandFailed
+    private void doStatusPolling( boolean verbose, String consoleURL, String bearerToken ) throws IOException, InterruptedException, CommandFailed
     {
-        outsideWorld.stdOutLine( "We got the dump and are now loading it in your cloud database." );
-        outsideWorld.stdOutLine( "You can abort this command now and close your terminal if you want." );
-        outsideWorld.stdOutLine( "Or you just stay and wait see when it's done ¯\\\\_(ツ)_/¯." );
+        outsideWorld.stdOutLine( "We have received your export and it is currently being loaded into your cloud instance." );
+        outsideWorld.stdOutLine( "You can wait here, or abort this command and head over to the console to be notified of when your database is running." );
         String bearerTokenHeader = "Bearer " + bearerToken;
         ProgressTrackingOutputStream.Progress
-                statusProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.apply( 3 ), 0 );
+                statusProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.create("Import status", 3L), 0 );
         boolean firstRunning = true;
         while ( !statusProgress.isDone() )
         {
@@ -153,7 +152,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         int retries = 0;
         ThreadLocalRandom random = ThreadLocalRandom.current();
         ProgressTrackingOutputStream.Progress
-                uploadProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.apply( sourceLength ), position );
+                uploadProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Upload", sourceLength ), position );
         while ( !resumeUpload( verbose, source, sourceLength, position, uploadLocation, uploadProgress ) )
         {
             position = getResumablePosition( verbose, sourceLength, uploadLocation );
@@ -635,5 +634,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
     interface Sleeper
     {
         void sleep( long millis ) throws InterruptedException;
+    }
+
+    public interface ProgressListenerFactory
+    {
+        ProgressListener create( String text, Long length );
     }
 }

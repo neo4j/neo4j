@@ -71,7 +71,7 @@ import static org.neo4j.pushtocloud.HttpCopier.HTTP_RESUME_INCOMPLETE;
 
 public class HttpCopierTest
 {
-    private static final LongFunction<ProgressListener> NO_OP_PROGRESS = progress -> ProgressListener.NONE;
+    private static final HttpCopier.ProgressListenerFactory NO_OP_PROGRESS = ( name, length ) -> ProgressListener.NONE;
 
     private static final int TEST_PORT = 8080;
     private static final String TEST_CONSOLE_URL = "http://localhost:" + TEST_PORT;
@@ -87,7 +87,7 @@ public class HttpCopierTest
     {
         // given
         ControlledProgressListener progressListener = new ControlledProgressListener();
-        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, length -> progressListener );
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, ( name, length ) -> progressListener );
         Path source = createDump();
         long sourceLength = fs.getFileSize( source.toFile() );
 
@@ -333,7 +333,7 @@ public class HttpCopierTest
     public void shouldHandleUploadInACoupleOfRounds() throws IOException, CommandFailed
     {
         ControlledProgressListener progressListener = new ControlledProgressListener();
-        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, length -> progressListener );
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, ( name, length ) -> progressListener );
         Path source = createDump();
         long sourceLength = fs.getFileSize( source.toFile() );
         long firstUploadLength = sourceLength / 3;
