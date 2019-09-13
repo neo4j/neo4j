@@ -247,7 +247,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         innerExecute(transactionalContext, queryOptions, taskCloser, queryContext, params, prePopulateResults, input, subscriber)
       } catch {
         case e: Throwable =>
-          subscriber.onError(e)
+          QuerySubscriber.safelyOnError(subscriber, e)
           taskCloser.close(false)
           new FailedExecutionResult(columnNames(logicalPlan), internalQueryType, subscriber)
       }

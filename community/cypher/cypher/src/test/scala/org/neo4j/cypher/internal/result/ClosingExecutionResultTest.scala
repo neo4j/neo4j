@@ -85,6 +85,14 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     assertCloseOnExplodingMethod(_.notifications, "notifications")
   }
 
+  test("should close on exploding request") {
+    assertCloseOnExplodingMethod(x => {x.request(1); x.await()}, "request")
+  }
+
+  test("should close on exploding cancel") {
+    assertCloseOnExplodingMethod(x => {x.cancel(); x.await()}, "cancel")
+  }
+
   private def assertCloseOnExplodingMethod(f: ClosingExecutionResult => Unit,
                                            errorMsg: String,
                                            iteratorMode: IteratorMode = DIRECT_EXPLODE): Unit = {
@@ -119,7 +127,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
   // HELPERS
   private def throwingSubscriber = new QuerySubscriberAdapter {
-    override def onError(throwable: Throwable): Unit = throw throwable
+    override def onError(throwable: Throwable): Unit = throw TestSubscriberException()
   }
 
   abstract class ClosingInner extends InternalExecutionResult {
@@ -238,3 +246,4 @@ abstract class TestException(msg: String) extends Neo4jException(msg, null) {
 }
 
 case class TestClosingException(msg: String) extends TestException(msg)
+case class TestSubscriberException() extends TestException("")

@@ -63,7 +63,7 @@ class ClosingRuntimeResult(inner: RuntimeResult,
     } catch {
       case t: Throwable =>
         this.error = t
-        subscriber.onError(t)
+        QuerySubscriber.safelyOnError(subscriber, t)
         close()
     }
   }

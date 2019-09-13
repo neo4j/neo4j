@@ -103,7 +103,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   private def closeAndCallOnError(t: Throwable): Unit = {
     try {
-      subscriber.onError(t)
+      QuerySubscriber.safelyOnError(subscriber, t)
       close(Error(t))
       this.error = t
     } catch {
@@ -137,8 +137,8 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
   }
 
   override def cancel(): Unit =  try {
-    monitor.endSuccess(query)
     inner.cancel()
+    monitor.endSuccess(query)
   } catch {
     case e: Throwable => closeAndCallOnError(e)
   }

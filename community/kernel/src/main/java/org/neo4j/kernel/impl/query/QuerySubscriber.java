@@ -83,6 +83,21 @@ public interface QuerySubscriber
     void onError( Throwable throwable );
 
     /**
+     * Call onError while suppressing any new exception.
+     */
+    static void safelyOnError( QuerySubscriber subscriber, Throwable t )
+    {
+        try
+        {
+            subscriber.onError( t );
+        }
+        catch ( Throwable onErrorException )
+        {
+            t.addSuppressed( onErrorException );
+        }
+    }
+
+    /**
      * The result stream is done, no more data to stream.
      *
      * This means that further calls {@link QuerySubscription#request(long)} will not result in more data being
