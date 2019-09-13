@@ -29,6 +29,7 @@ import java.util.Map;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.pushtocloud.PushToCloudCommand.Copier;
@@ -50,8 +51,8 @@ import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DATABASE;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP_TO;
-import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_USERNAME;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_PASSWORD;
+import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_USERNAME;
 
 public class PushToCloudCommandTest
 {
@@ -324,21 +325,21 @@ public class PushToCloudCommandTest
     }
 
     @Test
-    public void shouldNotAcceptNeitherDumpNorDatabaseNameAsSource() throws IOException, CommandFailed
+    public void shouldChooseToDumpDefaultDatabaseIfNeitherDumpNorDatabaseIsGiven() throws IOException, CommandFailed, IncorrectUsage
     {
         // given
-        PushToCloudCommand command = command().build();
+        DumpCreator dumpCreator = mock( DumpCreator.class );
+        Copier copier = mock( Copier.class );
+        PushToCloudCommand command = command().dumpCreator( dumpCreator ).copier( copier ).build();
 
         // when
-        try
-        {
-            command.execute( array( arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
-            fail( "Should have failed" );
-        }
-        catch ( IncorrectUsage incorrectUsage )
-        {
-            // then good
-        }
+        command.execute( array(
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
+
+        // then
+        String defaultDatabase = new Database().defaultValue();
+        verify( dumpCreator ).dumpDatabase( eq( defaultDatabase ), any() );
+        verify( copier ).copy( anyBoolean(), any(), any(), any(), any() );
     }
 
     @Test

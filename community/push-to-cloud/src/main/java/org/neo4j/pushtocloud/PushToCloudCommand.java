@@ -29,6 +29,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.helpers.Args;
 
 import static java.lang.String.format;
@@ -198,8 +199,14 @@ public class PushToCloudCommand implements AdminCommand
             }
             return path;
         }
-        else if ( database != null )
+        else
         {
+            if ( database == null )
+            {
+                database = new Database().defaultValue();
+                outsideWorld.stdOutLine( "Selecting default database '" + database + "'" );
+            }
+
             String to = arguments.get( ARG_DUMP_TO );
             Path dumpFile = to != null ? Paths.get( to ) : homeDir.resolve( "dump-of-" + database + "-" + currentTimeMillis() );
             if ( Files.exists( dumpFile ) )
@@ -208,10 +215,6 @@ public class PushToCloudCommand implements AdminCommand
             }
             dumpCreator.dumpDatabase( database, dumpFile );
             return dumpFile;
-        }
-        else
-        {
-            throw new IncorrectUsage( "Provide either a dump or database name" );
         }
     }
 
