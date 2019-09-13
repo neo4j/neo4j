@@ -25,10 +25,15 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   private val clean =
     SemanticState.clean
       .withFeature(SemanticFeature.CorrelatedSubQueries)
-        .withFeature(SemanticFeature.MultipleGraphs)
+      .withFeature(SemanticFeature.MultipleGraphs)
 
   test("returned variables are added to scope after subquery") {
-
+    // WITH 1 AS a
+    // CALL {
+    //   WITH 1 AS b
+    //   RETURN b, 1 AS c
+    // }
+    // RETURN a, b, c
     query(
       with_(literal(1).as("a")),
       subQuery(
@@ -44,7 +49,11 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("outer scope is not seen in uncorrelated subquery") {
-
+    // WITH 1 AS a
+    // CALL {
+    //   RETURN a AS b
+    // }
+    // RETURN a
     query(
       with_(literal(1).as("a")),
       subQuery(
@@ -58,7 +67,12 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery scoping works with order by") {
-
+    // WITH 1 AS a
+    // CALL {
+    //   WITH 1 AS b
+    //   RETURN b, 1 AS c ORDER BY b, c
+    // }
+    // RETURN a, b, b AS c ORDER BY a, b, c
     query(
       with_(literal(1).as("a")),
       subQuery(
@@ -76,7 +90,11 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery can't return variable that already exists outside") {
-
+    // WITH 1 AS x
+    // CALL {
+    //   RETURN 2 AS x
+    // }
+    // RETURN 1 AS y
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -91,7 +109,12 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery allows union with valid return statements at the end") {
-
+    // CALL {
+    //   RETURN 2 AS x
+    //     UNION
+    //   RETURN 2 AS x
+    // }
+    // RETURN x
     singleQuery(
       subQuery(
         union(
@@ -106,7 +129,12 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery allows union with valid return columns in different order at the end") {
-
+    // CALL {
+    //   RETURN 2 AS x, 2 AS y
+    //     UNION
+    //   RETURN 2 AS y, 2 AS x
+    // }
+    // RETURN x, y
     singleQuery(
       subQuery(
         union(
@@ -121,7 +149,12 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery allows union without return statement at the end") {
-
+    // CALL {
+    //   CREATE (a)
+    //     UNION
+    //   CREATE (a)
+    // }
+    // RETURN count(*) AS count
     singleQuery(
       subQuery(
         union(
@@ -136,7 +169,12 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery disallows union with different return columns at the end") {
-
+    // CALL {
+    //   RETURN 2 AS x, 2 AS y, 2 AS z
+    //     UNION
+    //   RETURN 2 AS y, 2 AS x
+    // }
+    // RETURN x, y
     singleQuery(
       subQuery(
         union(
@@ -152,7 +190,12 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("correlated subquery importing variables using leading WITH") {
-
+    // WITH 1 AS x
+    // CALL {
+    //   WITH x
+    //   RETURN x AS y
+    // }
+    // RETURN x, y
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -166,7 +209,12 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("correlated subquery may only reference imported variables") {
-
+    // WITH 1 AS x, 1 AS y
+    // CALL {
+    //   WITH x
+    //   RETURN y AS z
+    // }
+    // RETURN x
     singleQuery(
       with_(literal(1).as("x"), literal(1).as("y")),
       subQuery(
@@ -181,22 +229,35 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("correlated subqueries require semantic feature") {
-
-      query(
-        with_(literal(1).as("a")),
-        subQuery(
-          with_(varFor("a").aliased),
-          return_(literal(1).as("b"))
-        ),
-        return_(varFor("a").as("a"))
-      )
-        .semanticCheck(SemanticState.clean)
-        .tap(_.errors.size.shouldEqual(1))
-        .tap(_.errors.head.msg.should(include("Importing") and include("correlated subqueries")))
+    // WITH 1 AS a
+    // CALL {
+    //   WITH a
+    //   RETURN 1 AS b
+    // }
+    // RETURN a
+    query(
+      with_(literal(1).as("a")),
+      subQuery(
+        with_(varFor("a").aliased),
+        return_(literal(1).as("b"))
+      ),
+      return_(varFor("a").as("a"))
+    )
+      .semanticCheck(SemanticState.clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.should(include("Importing") and include("correlated subqueries")))
   }
 
   test("correlated subquery with union") {
-
+    // WITH 1 AS a
+    // CALL {
+    //   WITH a
+    //   RETURN a AS b
+    //     UNION
+    //   WITH a
+    //   RETURN a AS b
+    // }
+    // RETURN a, b
     query(
       with_(literal(1).as("a")),
       subQuery(unionDistinct(
@@ -216,7 +277,18 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("correlated subquery with union with different imports") {
-
+    // WITH 1 AS a, 1 AS b, 1 AS c
+    // CALL {
+    //   WITH a
+    //   RETURN a AS x
+    //     UNION
+    //   WITH b
+    //   RETURN b AS x
+    //     UNION
+    //   WITH c
+    //   RETURN c AS x
+    // }
+    // RETURN a, b, c, x
     query(
       with_(literal(1).as("a"), literal(1).as("b"), literal(1).as("c")),
       subQuery(unionDistinct(
@@ -240,7 +312,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("importing WITH without FROM must be first clause") {
-
+    // WITH 1 AS x
+    // CALL {
+    //   UNWIND [1] AS a
+    //   WITH x
+    //   RETURN x AS y
+    // }
+    // RETURN x, y
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -256,7 +334,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("importing WITH may appear after FROM") {
-
+    // WITH 1 AS x
+    // CALL {
+    //   FROM g
+    //   WITH x
+    //   RETURN x AS y
+    // }
+    // RETURN x, y
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -271,7 +355,12 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("importing WITH must be clean pass-through") {
-
+    // WITH 1 AS x
+    // CALL {
+    //   WITH x, 2 AS y
+    //   RETURN x AS z
+    // }
+    // RETURN x, z
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -286,7 +375,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("importing variables using pass-through WITH and then introducing more") {
-
+    // WITH 1 AS x
+    // CALL {
+    //   WITH x
+    //   WITH x, 2 AS y
+    //   RETURN x AS z, y
+    // }
+    // RETURN x, y
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -301,7 +396,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery leading FROM may reference outer variables") {
-
+    // WITH 1 AS x, 2 AS y
+    // CALL {
+    //   FROM g(x, y)
+    //   WITH x
+    //   RETURN 1 AS z
+    // }
+    // RETURN x, y
     singleQuery(
       with_(literal(1).as("x"), literal(2).as("y")),
       subQuery(
@@ -316,7 +417,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery FROM after imports may only reference imported variables") {
-
+    // WITH 1 AS x, 2 AS y
+    // CALL {
+    //   WITH x
+    //   FROM g(x, y)
+    //   RETURN 3 AS z
+    // }
+    // RETURN x, y
     singleQuery(
       with_(literal(1).as("x"), literal(2).as("y")),
       subQuery(
@@ -332,7 +439,16 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("nested uncorrelated subquery") {
-
+    // WITH 1 AS x
+    // CALL {
+    //   WITH 1 AS y
+    //   CALL {
+    //     WITH 1 AS z
+    //     RETURN z
+    //   }
+    //   RETURN y, z
+    // }
+    // RETURN x, y, z
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -350,7 +466,17 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("nested uncorrelated subquery can't access any outer scopes") {
-
+    // WITH 1 AS x
+    // CALL {
+    //   WITH 1 AS y
+    //   CALL {
+    //     WITH 1 AS z
+    //     WITH x AS a, y AS b, z
+    //     RETURN z
+    //   }
+    //   RETURN y, z
+    // }
+    // RETURN x, y, z
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -371,7 +497,18 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("nested correlated subquery") {
-
+    // WITH 1 AS x
+    // CALL {
+    //   WITH x
+    //   WITH x AS y
+    //   CALL {
+    //     WITH y
+    //     WITH y AS z
+    //     RETURN z
+    //   }
+    //   RETURN y, z
+    // }
+    // RETURN x, y, z
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
@@ -391,7 +528,17 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery inside correlated subquery can't import from outer scope") {
-
+    // WITH 1 AS x, 2 AS y
+    // CALL {
+    //   WITH x
+    //   CALL {
+    //     WITH y
+    //     WITH y AS z
+    //     RETURN 3 AS z
+    //   }
+    //   RETURN z
+    // }
+    // RETURN x, y, z
     singleQuery(
       with_(literal(1).as("x"), literal(2).as("y")),
       subQuery(
@@ -410,7 +557,12 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("subquery ending in update exports nothing") {
-
+    // WITH 1 AS x, 2 AS y
+    // CALL {
+    //   WITH 2 AS y
+    //   CREATE (n)
+    // }
+    // RETURN x, n, y
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
