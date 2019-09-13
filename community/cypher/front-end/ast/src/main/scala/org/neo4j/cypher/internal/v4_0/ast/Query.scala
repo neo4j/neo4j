@@ -56,7 +56,6 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def semanticCheckWithImports(outer: SemanticState): SemanticCheck
 }
 
-
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart with SemanticAnalysisTooling {
   assert(clauses.nonEmpty)
 
