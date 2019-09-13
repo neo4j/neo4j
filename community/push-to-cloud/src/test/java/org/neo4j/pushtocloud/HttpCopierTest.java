@@ -101,10 +101,8 @@ public class HttpCopierTest
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
         wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
 
-        // TODO there will be some pinging the console about status here in the future
-
         // when
-        copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() );
+        authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
 
         // then
         verify( postRequestedFor( urlEqualTo( "/import/auth" ) ) );
@@ -128,7 +126,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.equalTo( "Invalid username/password credentials" ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -142,7 +140,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
-                () -> copier.copy( true, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -164,7 +162,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -190,7 +188,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, CoreMatchers.containsString( "please contact support" ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -204,7 +202,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, containsString( "administrative access" ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -218,7 +216,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, allOf( containsString( "Unexpected response" ), containsString( "Authorization" ) ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -233,7 +231,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, containsString( "authorization token is invalid" ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -260,7 +258,7 @@ public class HttpCopierTest
         wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
 
         // when
-        copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() );
+        authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user consent
         verify( postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( notMatching( ".*Confirmed.*" ) ) );
@@ -285,7 +283,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, containsString( "No consent to overwrite" ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user consent
         verify( postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( notMatching( ".*Confirmed.*" ) ) );
@@ -307,7 +305,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, allOf( containsString( "Unexpected response" ), containsString( "Initiating upload target" ) ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -325,7 +323,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, allOf( containsString( "Unexpected response" ), containsString( "Initiating database upload" ) ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -353,7 +351,7 @@ public class HttpCopierTest
         wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
 
         // when
-        copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() );
+        authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
 
         // then
         verify( putRequestedFor( urlEqualTo( uploadLocationPath ) )
@@ -391,7 +389,7 @@ public class HttpCopierTest
         wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
 
         // when
-        copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() );
+        authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
 
         // then
         verify( putRequestedFor( urlEqualTo( uploadLocationPath ) )
@@ -422,7 +420,7 @@ public class HttpCopierTest
 
         // when
         assertThrows( CommandFailed.class, containsString( "A non-empty database already exists" ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -447,7 +445,7 @@ public class HttpCopierTest
 
         // when/then
         assertThrows( CommandFailed.class, containsString( "Upload failed after numerous attempts" ),
-                () -> copier.copy( false, TEST_CONSOLE_URL, source, "user", "pass".toCharArray() ) );
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
         Mockito.verify( sleeper, atLeast( 30 ) ).sleep( anyLong() );
     }
 
@@ -584,6 +582,12 @@ public class HttpCopierTest
             assertTrue( exceptionClass.isInstance( e ) );
             assertThat( e.getMessage(), message );
         }
+    }
+
+    private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path source, String username, char[] password ) throws CommandFailed
+    {
+        String bearerToken = copier.authenticate( false, TEST_CONSOLE_URL, username, password );
+        copier.copy( false, TEST_CONSOLE_URL, source, bearerToken );
     }
 
     private interface ThrowingRunnable

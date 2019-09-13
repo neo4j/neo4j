@@ -18,6 +18,8 @@ package org.neo4j.pushtocloud;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,10 +44,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DATABASE;
@@ -60,6 +64,8 @@ public class PushToCloudCommandTest
 
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
+    @Rule
+    public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Test
     public void shouldReadUsernameAndPasswordFromUserInput() throws Exception
@@ -82,7 +88,8 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( username ), eq( password ) );
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ) );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
     }
 
     @Test
@@ -99,7 +106,7 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
-        verify( targetCommunicator ).copy( anyBoolean(), any(), eq( dump ), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), eq( dump ), any() );
     }
 
     @Test
@@ -121,7 +128,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( eq( databaseName ), any() );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
     }
 
     @Test
@@ -145,11 +152,11 @@ public class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( databaseName, dumpFile );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
     }
 
     @Test
-    public void shouldFailOnDatabaseNameAsSourceUsingExistingDumpTarget() throws IOException, IncorrectUsage
+    public void shouldFailOnDatabaseNameAsSourceUsingExistingDumpTarget() throws IOException, IncorrectUsage, CommandFailed
     {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
@@ -182,7 +189,7 @@ public class PushToCloudCommandTest
     public void shouldNotAcceptBothDumpAndDatabaseNameAsSource() throws IOException, CommandFailed
     {
         // given
-        PushToCloudCommand command = command().build();
+        PushToCloudCommand command = command().copier( mockedTargetCommunicator() ).build();
 
         // when
         try
@@ -241,9 +248,6 @@ public class PushToCloudCommandTest
             // then good
         }
     }
-
-    @Rule
-    public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Test
     public void shouldNotAcceptOnlyUsernameOrPasswordFromEnvVar() throws IOException, CommandFailed
@@ -339,14 +343,14 @@ public class PushToCloudCommandTest
         // then
         String defaultDatabase = new Database().defaultValue();
         verify( dumpCreator ).dumpDatabase( eq( defaultDatabase ), any() );
-        verify( copier ).copy( anyBoolean(), any(), any(), any(), any() );
+        verify( copier ).copy( anyBoolean(), any(), any(), any() );
     }
 
     @Test
-    public void shouldFailOnDumpPointingToMissingFile() throws IOException, IncorrectUsage
+    public void shouldFailOnDumpPointingToMissingFile() throws IOException, IncorrectUsage, CommandFailed
     {
         // given
-        PushToCloudCommand command = command().build();
+        PushToCloudCommand command = command().copier( mockedTargetCommunicator() ).build();
 
         // when
         try
@@ -378,7 +382,7 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, "bolt+routing://mydbid-testenvironment.databases.neo4j.io" ) ) );
 
         // then
-        verify( copier ).copy( anyBoolean(), eq( "https://console-testenvironment.neo4j.io/v1/databases/mydbid" ), any(), any(), any() );
+        verify( copier ).copy( anyBoolean(), eq( "https://console-testenvironment.neo4j.io/v1/databases/mydbid" ), any(), any() );
     }
 
     @Test
@@ -394,12 +398,31 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, "bolt+routing://mydbid.databases.neo4j.io" ) ) );
 
         // then
-        verify( copier ).copy( anyBoolean(), eq( "https://console.neo4j.io/v1/databases/mydbid" ), any(), any(), any() );
+        verify( copier ).copy( anyBoolean(), eq( "https://console.neo4j.io/v1/databases/mydbid" ), any(), any() );
     }
 
-    private Copier mockedTargetCommunicator()
+    @Test
+    public void shouldAuthenticateBeforeDumping() throws CommandFailed, IOException, IncorrectUsage
+    {
+        // given
+        Copier copier = mockedTargetCommunicator();
+        DumpCreator dumper = mock( DumpCreator.class );
+        PushToCloudCommand command = command().copier( copier ).dumpCreator( dumper ).build();
+
+        // when
+        command.execute( array( arg( ARG_BOLT_URI, "bolt+routing://mydbid.databases.neo4j.io" ) ) );
+
+        // then
+        InOrder inOrder = inOrder( copier, dumper );
+        inOrder.verify( copier ).authenticate( anyBoolean(), anyString(), anyString(), any() );
+        inOrder.verify( dumper ).dumpDatabase( anyString(), any() );
+        inOrder.verify( copier ).copy( anyBoolean(), anyString(), any(), anyString() );
+    }
+
+    private Copier mockedTargetCommunicator() throws CommandFailed
     {
         Copier copier = mock( Copier.class );
+        when( copier.authenticate( anyBoolean(), any(), any(), any() ) ).thenReturn( "abc" );
         return copier;
     }
 

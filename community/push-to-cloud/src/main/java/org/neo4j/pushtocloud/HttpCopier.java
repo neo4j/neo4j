@@ -81,15 +81,48 @@ public class HttpCopier implements PushToCloudCommand.Copier
      * Do the actual transfer of the source (a Neo4j database dump) to the target.
      */
     @Override
-    public void copy( boolean verbose, String consoleURL, Path source, String username, char[] password ) throws CommandFailed
+    public void copy( boolean verbose, String consoleURL, Path source, String bearerToken ) throws CommandFailed
     {
         try
         {
-            String bearerToken = authenticate( verbose, consoleURL, username, password );
-            copy( verbose, consoleURL, source, bearerToken );
+            String bearerTokenHeader = "Bearer " + bearerToken;
+            long crc32Sum = calculateCrc32HashOfFile( source );
+            MutableBoolean consentConfirmed = new MutableBoolean();
+            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, bearerTokenHeader, consentConfirmed );
+            URL uploadLocation = initiateResumableUpload( verbose, signedURL );
+            long sourceLength = outsideWorld.fileSystem().getFileSize( source.toFile() );
+
+            // Enter the resume:able upload loop
+            long position = 0;
+            int retries = 0;
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            ProgressTrackingOutputStream.Progress
+                    uploadProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Upload", sourceLength ), position );
+            while ( !resumeUpload( verbose, source, sourceLength, position, uploadLocation, uploadProgress ) )
+            {
+                position = getResumablePosition( verbose, sourceLength, uploadLocation );
+                if ( position == POSITION_UPLOAD_COMPLETED )
+                {
+                    // This is somewhat unexpected, we didn't get an OK from the upload, but when we asked about how far the upload
+                    // got it responded that it was fully uploaded. I'd guess we're fine here.
+                    break;
+                }
+
+                // Truncated exponential backoff
+                if ( retries > 50 )
+                {
+                    throw new CommandFailed( "Upload failed after numerous attempts. The upload can be resumed with this command: TODO" );
+                }
+                long backoffFromRetryCount = SECONDS.toMillis( 1 << retries++ ) + random.nextInt( 1_000 );
+                sleeper.sleep( min( backoffFromRetryCount, MAXIMUM_RETRY_BACKOFF ) );
+            }
+            uploadProgress.done();
+
+            triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), crc32Sum, bearerTokenHeader, consentConfirmed.booleanValue() );
+
             doStatusPolling( verbose, consoleURL, bearerToken );
         }
-        catch ( IOException | InterruptedException e )
+        catch ( InterruptedException | IOException e )
         {
             throw new CommandFailed( e.getMessage(), e );
         }
@@ -142,79 +175,47 @@ public class HttpCopier implements PushToCloudCommand.Copier
         outsideWorld.stdOutLine( "Your data was successfully pushed to cloud and is now running." );
     }
 
-    private void copy( boolean verbose, String consoleURL, Path source, String bearerToken ) throws IOException, InterruptedException, CommandFailed
+    @Override
+    public String authenticate( boolean verbose, String consoleUrl, String username, char[] password ) throws CommandFailed
     {
-        String bearerTokenHeader = "Bearer " + bearerToken;
-        long crc32Sum = calculateCrc32HashOfFile( source );
-        MutableBoolean consentConfirmed = new MutableBoolean();
-        URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, bearerTokenHeader, consentConfirmed );
-        URL uploadLocation = initiateResumableUpload( verbose, signedURL );
-        long sourceLength = outsideWorld.fileSystem().getFileSize( source.toFile() );
-
-        // Enter the resume:able upload loop
-        long position = 0;
-        int retries = 0;
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        ProgressTrackingOutputStream.Progress
-                uploadProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Upload", sourceLength ), position );
-        while ( !resumeUpload( verbose, source, sourceLength, position, uploadLocation, uploadProgress ) )
-        {
-            position = getResumablePosition( verbose, sourceLength, uploadLocation );
-            if ( position == POSITION_UPLOAD_COMPLETED )
-            {
-                // This is somewhat unexpected, we didn't get an OK from the upload, but when we asked about how far the upload
-                // got it responded that it was fully uploaded. I'd guess we're fine here.
-                break;
-            }
-
-            // Truncated exponential backoff
-            if ( retries > 50 )
-            {
-                throw new CommandFailed( "Upload failed after numerous attempts. The upload can be resumed with this command: TODO" );
-            }
-            long backoffFromRetryCount = SECONDS.toMillis( 1 << retries++ ) + random.nextInt( 1_000 );
-            sleeper.sleep( min( backoffFromRetryCount, MAXIMUM_RETRY_BACKOFF ) );
-        }
-        uploadProgress.done();
-
-        triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), crc32Sum, bearerTokenHeader, consentConfirmed.booleanValue() );
-
-        // TODO go into a loop and ping the cloud console about progress on the import/restore
-    }
-
-    private String authenticate( boolean verbose, String consoleUrl, String username, char[] password ) throws IOException, CommandFailed
-    {
-        URL url = safeUrl( consoleUrl + "/import/auth" );
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         try
         {
-            connection.setRequestMethod( "POST" );
-            connection.setRequestProperty( "Authorization", "Basic " + base64Encode( username, password ) );
-            connection.setRequestProperty( "Accept", "application/json" );
-            int responseCode = connection.getResponseCode();
-            switch ( responseCode )
+            URL url = safeUrl( consoleUrl + "/import/auth" );
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            try
             {
-            case HTTP_NOT_FOUND:
-                // fallthrough
-            case HTTP_MOVED_PERM:
-                throw updatePluginErrorResponse( connection );
-            case HTTP_UNAUTHORIZED:
-                throw errorResponse( verbose, connection, "Invalid username/password credentials" );
-            case HTTP_FORBIDDEN:
-                throw errorResponse( verbose, connection, "The given credentials do not give administrative access to the target database" );
-            case HTTP_OK:
-                try ( InputStream responseData = connection.getInputStream() )
+                connection.setRequestMethod( "POST" );
+                connection.setRequestProperty( "Authorization", "Basic " + base64Encode( username, password ) );
+                connection.setRequestProperty( "Accept", "application/json" );
+                int responseCode = connection.getResponseCode();
+                switch ( responseCode )
                 {
-                    String json = new String( toByteArray( responseData ), UTF_8 );
-                    return parseJsonUsingJacksonParser( json, TokenBody.class ).Token;
+                case HTTP_NOT_FOUND:
+                    // fallthrough
+                case HTTP_MOVED_PERM:
+                    throw updatePluginErrorResponse( connection );
+                case HTTP_UNAUTHORIZED:
+                    throw errorResponse( verbose, connection, "Invalid username/password credentials" );
+                case HTTP_FORBIDDEN:
+                    throw errorResponse( verbose, connection, "The given credentials do not give administrative access to the target database" );
+                case HTTP_OK:
+                    try ( InputStream responseData = connection.getInputStream() )
+                    {
+                        String json = new String( toByteArray( responseData ), UTF_8 );
+                        return parseJsonUsingJacksonParser( json, TokenBody.class ).Token;
+                    }
+                default:
+                    throw unexpectedResponse( verbose, connection, "Authorization" );
                 }
-            default:
-                throw unexpectedResponse( verbose, connection, "Authorization" );
+            }
+            finally
+            {
+                connection.disconnect();
             }
         }
-        finally
+        catch ( IOException e )
         {
-            connection.disconnect();
+            throw new CommandFailed( e.getMessage(), e );
         }
     }
 
