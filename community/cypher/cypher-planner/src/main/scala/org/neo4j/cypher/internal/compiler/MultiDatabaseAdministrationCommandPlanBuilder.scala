@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.string.UTF8
 
 /**
@@ -257,7 +259,11 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // CREATE DATABASE foo
       case CreateDatabase(dbName) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
-        DatabaseNameValidator.assertValidDatabaseName(normalizedName)
+        try {
+          DatabaseNameValidator.assertValidDatabaseName(normalizedName)
+        } catch {
+          case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage)
+        }
         Some(plans.CreateDatabase(normalizedName))
 
       // DROP DATABASE foo
