@@ -65,6 +65,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.Group;
@@ -2350,6 +2351,74 @@ public class FulltextProceduresTest
             {
                 assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
             }
+            tx.success();
+        }
+    }
+
+    @Test
+    public void makeSureFulltextIndexDoesNotBlockSchemaIndexOnSameSchemaPattern()
+    {
+        db = createDatabase();
+
+        final Label label = Label.label( "label" );
+        final String prop = "prop";
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "myindex", array( label.name() ), array( prop ) ) );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( DB_AWAIT_INDEX, "myindex" ) );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( label ).on( prop ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( 2, Iterables.count( db.schema().getIndexes() ) );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void makeSureSchemaIndexDoesNotBlockFulltextIndexOnSameSchemaPattern()
+    {
+        db = createDatabase();
+
+        final Label label = Label.label( "label" );
+        final String prop = "prop";
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( label ).on( prop ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "myindex", array( label.name() ), array( prop ) ) );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( DB_AWAIT_INDEX, "myindex" ) );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( 2, Iterables.count( db.schema().getIndexes() ) );
             tx.success();
         }
     }
