@@ -237,8 +237,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     kernelMonitors.addMonitorListener(cacheListener)
 
     graph.withTx { tx =>
-      tx.execute("CYPHER expressionEngine=interpreted RETURN 42 AS a")
-      tx.execute("CYPHER expressionEngine=compiled RETURN 42 AS a")
+      tx.execute("CYPHER expressionEngine=interpreted RETURN 42 AS a").resultAsString()
+      tx.execute("CYPHER expressionEngine=compiled RETURN 42 AS a").resultAsString()
     }
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
@@ -258,8 +258,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     kernelMonitors.addMonitorListener(cacheListener)
 
     graph.withTx { tx =>
-      tx.execute("CYPHER operatorEngine=interpreted RETURN 42 AS a")
-      tx.execute("CYPHER operatorEngine=compiled RETURN 42 AS a")
+      tx.execute("CYPHER operatorEngine=interpreted RETURN 42 AS a").resultAsString()
+      tx.execute("CYPHER operatorEngine=compiled RETURN 42 AS a").resultAsString()
     }
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
@@ -279,8 +279,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     kernelMonitors.addMonitorListener(cacheListener)
 
     graph.withTx { tx =>
-      tx.execute("CYPHER runtime=interpreted RETURN 42 AS a")
-      tx.execute("CYPHER runtime=compiled RETURN 42 AS a")
+      tx.execute("CYPHER runtime=interpreted RETURN 42 AS a").resultAsString()
+      tx.execute("CYPHER runtime=compiled RETURN 42 AS a").resultAsString()
     }
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
