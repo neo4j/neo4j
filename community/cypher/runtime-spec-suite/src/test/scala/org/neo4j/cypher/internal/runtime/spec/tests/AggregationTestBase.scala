@@ -72,6 +72,29 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("c").withRows(singleRow(limit))
   }
 
+  test("should count(*) under apply") {
+    val nodesPerLabel = 100
+    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val limit = nodesPerLabel / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.limit(limit)
+      .|.expandAll("(a)-->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = aNodes.map( _ => Array[Any](limit))
+
+    runtimeResult should beColumns("c").withRows(expected)
+  }
+
   test("should count(*) on single grouping column") {
     // given
     nodePropertyGraph(sizeHint, {
@@ -114,6 +137,29 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("key", "count").withRows(for (i <- 0 until groupCount) yield {
       Array(s"bob$i", groupSize)
     })
+  }
+
+  test("should count(*) on single grouping column under apply") {
+    val nodesPerLabel = 100
+    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val limit = nodesPerLabel / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "c")
+      .apply()
+      .|.aggregation(Seq("a AS a"), Seq("count(*) AS c"))
+      .|.limit(limit)
+      .|.expandAll("(a)-->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = aNodes.map(a => Array[Any](a, limit))
+
+    runtimeResult should beColumns("a", "c").withRows(expected)
   }
 
   test("should count(*) on single primitive grouping column") {
