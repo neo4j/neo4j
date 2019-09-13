@@ -225,7 +225,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     //check if we need to jit compiling of queries
     if (inputQuery.options.compileWhenHot && config.recompilationLimit > 0) {
       //compile if hot enough
-      (interpretedExpressionCompiler, count => if (count > config.recompilationLimit) Some(compiledExpressionCompiler()) else None)
+      (interpretedExpressionCompiler, count => if (count >= config.recompilationLimit) Some(compiledExpressionCompiler()) else None)
     } else if (inputQuery.options.compileWhenHot) {
       //We have recompilationLimit == 0, go to compiled directly
       (compiledExpressionCompiler, NEVER_COMPILE)
@@ -257,19 +257,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                                                             primaryCompiler,
                                                             secondaryCompiler,
                                                             inputQuery.description)
-        cacheLookup match {
-          case _: CacheHit[_] |
-               _: CacheDisabled[_] =>
-            val executableQuery = cacheLookup.executableQuery
-            if (schemaHelper.lockLabels(schemaToken, executableQuery, inputQuery.options.version, tc)) {
-              tc.cleanForReuse()
-              return executableQuery
-            }
-          case CacheMiss(executableQuery) =>
-            // Do nothing. In the next attempt we will find the plan in the cache and
-            // used it unless the schema has changed during planning.
+        val executableQuery = cacheLookup.executableQuery
+
+        if (schemaHelper.lockLabels(schemaToken, executableQuery, inputQuery.options.version, tc)) {
+          tc.cleanForReuse()
+          return executableQuery
         }
 
+        // if the schema has changed while taking all locks we need to try again.
         n += 1
       }
     } finally {
