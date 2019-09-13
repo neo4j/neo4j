@@ -509,6 +509,12 @@ abstract class Read implements TxStateHolder,
         ((DefaultPropertyCursor) cursor).initNode( nodeReference, reference, this, ktx );
     }
 
+    @Override
+    public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
+    {
+        ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
+    }
+
     public abstract IndexReader indexReader( IndexDescriptor index, boolean fresh ) throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();

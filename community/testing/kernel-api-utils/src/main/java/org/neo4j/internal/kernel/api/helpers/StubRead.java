@@ -195,6 +195,12 @@ public class StubRead implements Read
     }
 
     @Override
+    public void relationshipProperties( long nodeReference, long reference, PropertyCursor cursor )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
         throw new UnsupportedOperationException();

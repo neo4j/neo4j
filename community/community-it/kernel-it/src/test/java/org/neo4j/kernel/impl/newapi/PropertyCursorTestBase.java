@@ -29,9 +29,13 @@ import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -84,9 +88,32 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             + "tincidunt. Sed placerat fringilla ex, vel placerat sem faucibus eget. Vestibulum semper dui sit amet "
             + "efficitur blandit. Donec eu tellus velit. Etiam a mi nec massa euismod posuere. Cras eget lacus leo.";
 
-    private static long bare, byteProp, shortProp, intProp, inlineLongProp, longProp,
-            floatProp, doubleProp, trueProp, falseProp, charProp, emptyStringProp, shortStringProp, longStringProp,
-            utf8Prop, smallArray, bigArray, pointProp, dateProp, allProps;
+    private static final String DATE_PROP = "dateProp";
+    private static final String POINT_PROP = "pointProp";
+    private static final String BYTE_PROP = "byteProp";
+    private static final String SHORT_PROP = "shortProp";
+    private static final String INT_PROP = "intProp";
+    private static final String INLINE_LONG_PROP = "inlineLongProp";
+    private static final String LONG_PROP = "longProp";
+    private static final String FLOAT_PROP = "floatProp";
+    private static final String DOUBLE_PROP = "doubleProp";
+    private static final String TRUE_PROP = "trueProp";
+    private static final String FALSE_PROP = "falseProp";
+    private static final String CHAR_PROP = "charProp";
+    private static final String EMPTY_STRING_PROP = "emptyStringProp";
+    private static final String SHORT_STRING_PROP = "shortStringProp";
+    private static final String LONG_STRING_PROP = "longStringProp";
+    private static final String UTF_8_PROP = "utf8Prop";
+    private static final String SMALL_ARRAY_PROP = "smallArrayProp";
+    private static final String BIG_ARRAY_PROP = "bigArrayProp";
+
+    private static long bareNodeId, bytePropNodeId, shortPropNodeId, intPropNodeId, inlineLongPropNodeId, longPropNodeId,
+            floatPropNodeId, doublePropNodeId, truePropNodeId, falsePropNodeId, charPropNodeId, emptyStringPropNodeId,
+            shortStringPropNodeId, longStringPropNodeId, utf8PropNodeId, smallArrayNodeId, bigArrayNodeId, pointPropNodeId,
+            datePropNodeId, allPropsNodeId, bareRelId, bytePropRelId, shortPropRelId, intPropRelId, inlineLongPropRelId,
+            longPropRelId, floatPropRelId, doublePropRelId, truePropRelId, falsePropRelId, charPropRelId, emptyStringPropRelId,
+            shortStringPropRelId, longStringPropRelId, utf8PropRelId, smallArrayRelId, bigArrayRelId, pointPropRelId,
+            datePropRelId, allPropsRelId;
 
     private static String chinese = "造Unicode之";
     private static Value pointValue = Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 20 );
@@ -102,67 +129,110 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            bare = tx.createNode().getId();
+            // Nodes
+            bareNodeId = tx.createNode().getId();
 
-            byteProp = createNodeWithProperty( tx, "byteProp", (byte) 13 );
-            shortProp = createNodeWithProperty( tx, "shortProp", (short) 13 );
-            intProp = createNodeWithProperty( tx, "intProp", 13 );
-            inlineLongProp = createNodeWithProperty( tx, "inlineLongProp", 13L );
-            longProp = createNodeWithProperty( tx, "longProp", Long.MAX_VALUE );
+            bytePropNodeId = createNodeWithProperty( tx, BYTE_PROP, (byte) 13 );
+            shortPropNodeId = createNodeWithProperty( tx, SHORT_PROP, (short) 13 );
+            intPropNodeId = createNodeWithProperty( tx, INT_PROP, 13 );
+            inlineLongPropNodeId = createNodeWithProperty( tx, INLINE_LONG_PROP, 13L );
+            longPropNodeId = createNodeWithProperty( tx, LONG_PROP, Long.MAX_VALUE );
 
-            floatProp = createNodeWithProperty( tx, "floatProp", 13.0f );
-            doubleProp = createNodeWithProperty( tx, "doubleProp", 13.0 );
+            floatPropNodeId = createNodeWithProperty( tx, FLOAT_PROP, 13.0f );
+            doublePropNodeId = createNodeWithProperty( tx, DOUBLE_PROP, 13.0 );
 
-            trueProp = createNodeWithProperty( tx, "trueProp", true );
-            falseProp = createNodeWithProperty( tx, "falseProp", false );
+            truePropNodeId = createNodeWithProperty( tx, TRUE_PROP, true );
+            falsePropNodeId = createNodeWithProperty( tx, FALSE_PROP, false );
 
-            charProp = createNodeWithProperty( tx, "charProp", 'x' );
-            emptyStringProp = createNodeWithProperty( tx, "emptyStringProp", "" );
-            shortStringProp = createNodeWithProperty( tx, "shortStringProp", "hello" );
-            longStringProp = createNodeWithProperty( tx, "longStringProp", LONG_STRING );
-            utf8Prop = createNodeWithProperty( tx, "utf8Prop", chinese );
+            charPropNodeId = createNodeWithProperty( tx, CHAR_PROP, 'x' );
+            emptyStringPropNodeId = createNodeWithProperty( tx, EMPTY_STRING_PROP, "" );
+            shortStringPropNodeId = createNodeWithProperty( tx, SHORT_STRING_PROP, "hello" );
+            longStringPropNodeId = createNodeWithProperty( tx, LONG_STRING_PROP, LONG_STRING );
+            utf8PropNodeId = createNodeWithProperty( tx, UTF_8_PROP, chinese );
 
-            smallArray = createNodeWithProperty( tx, "smallArray", new int[]{1, 2, 3, 4} );
-            bigArray = createNodeWithProperty( tx, "bigArray", new String[]{LONG_STRING} );
+            smallArrayNodeId = createNodeWithProperty( tx, SMALL_ARRAY_PROP, new int[]{1, 2, 3, 4} );
+            bigArrayNodeId = createNodeWithProperty( tx, BIG_ARRAY_PROP, new String[]{LONG_STRING} );
 
-            pointProp = createNodeWithProperty( tx, "pointProp", pointValue );
-            dateProp = createNodeWithProperty( tx, "dateProp", dateValue );
+            pointPropNodeId = createNodeWithProperty( tx, POINT_PROP, pointValue );
+            datePropNodeId = createNodeWithProperty( tx, DATE_PROP, dateValue );
 
-            Node all = tx.createNode();
+            Node allPropsNode = tx.createNode();
             // first property record
-            all.setProperty( "byteProp", (byte) 13 );
-            all.setProperty( "shortProp", (short) 13 );
-            all.setProperty( "intProp", 13 );
-            all.setProperty( "inlineLongProp", 13L );
+            allPropsNode.setProperty( BYTE_PROP, (byte) 13 );
+            allPropsNode.setProperty( SHORT_PROP, (short) 13 );
+            allPropsNode.setProperty( INT_PROP, 13 );
+            allPropsNode.setProperty( INLINE_LONG_PROP, 13L );
             // second property record
-            all.setProperty( "longProp", Long.MAX_VALUE );
-            all.setProperty( "floatProp", 13.0f );
-            all.setProperty( "doubleProp", 13.0 );
+            allPropsNode.setProperty( LONG_PROP, Long.MAX_VALUE );
+            allPropsNode.setProperty( FLOAT_PROP, 13.0f );
+            allPropsNode.setProperty( DOUBLE_PROP, 13.0 );
             //                  ^^^
             // third property record halfway through double?
-            all.setProperty( "trueProp", true );
-            all.setProperty( "falseProp", false );
+            allPropsNode.setProperty( TRUE_PROP, true );
+            allPropsNode.setProperty( FALSE_PROP, false );
 
-            all.setProperty( "charProp", 'x' );
-            all.setProperty( "emptyStringProp", "" );
-            all.setProperty( "shortStringProp", "hello" );
+            allPropsNode.setProperty( CHAR_PROP, 'x' );
+            allPropsNode.setProperty( EMPTY_STRING_PROP, "" );
+            allPropsNode.setProperty( SHORT_STRING_PROP, "hello" );
+            allPropsNode.setProperty( UTF_8_PROP, chinese );
+            allPropsNode.setProperty( POINT_PROP, pointValue );
+            allPropsNode.setProperty( DATE_PROP, dateValue );
             if ( supportsBigProperties() )
             {
-                all.setProperty( "longStringProp", LONG_STRING );
+                allPropsNode.setProperty( LONG_STRING_PROP, LONG_STRING );
+                allPropsNode.setProperty( SMALL_ARRAY_PROP, new int[]{1, 2, 3, 4} );
+                allPropsNode.setProperty( BIG_ARRAY_PROP, new String[]{LONG_STRING} );
             }
-            all.setProperty( "utf8Prop", chinese );
 
+            allPropsNodeId = allPropsNode.getId();
+
+            // Relationships
+            RelationshipType type = RelationshipType.withName("REL");
+            bareRelId = tx.createNode().createRelationshipTo(tx.createNode(), type).getId();
+
+            bytePropRelId = createRelWithProperty( tx, type, BYTE_PROP, (byte) 13 );
+            shortPropRelId = createRelWithProperty( tx, type, SHORT_PROP, (short) 13 );
+            intPropRelId = createRelWithProperty( tx, type, INT_PROP, 13 );
+            inlineLongPropRelId = createRelWithProperty( tx, type, INLINE_LONG_PROP, 13L );
+            longPropRelId = createRelWithProperty( tx, type, LONG_PROP, Long.MAX_VALUE );
+            floatPropRelId = createRelWithProperty( tx, type, FLOAT_PROP, 13.0f );
+            doublePropRelId = createRelWithProperty( tx, type, DOUBLE_PROP, 13.0 );
+            truePropRelId = createRelWithProperty( tx, type, TRUE_PROP, true );
+            falsePropRelId = createRelWithProperty( tx, type, FALSE_PROP, false );
+            charPropRelId = createRelWithProperty( tx, type, CHAR_PROP, 'x' );
+            emptyStringPropRelId = createRelWithProperty( tx, type, EMPTY_STRING_PROP, "" );
+            shortStringPropRelId = createRelWithProperty( tx, type, SHORT_STRING_PROP, "hello" );
+            longStringPropRelId = createRelWithProperty( tx, type, LONG_STRING_PROP, LONG_STRING );
+            utf8PropRelId = createRelWithProperty( tx, type, UTF_8_PROP, chinese );
+            smallArrayRelId = createRelWithProperty( tx, type, SMALL_ARRAY_PROP, new int[]{1, 2, 3, 4} );
+            bigArrayRelId = createRelWithProperty( tx, type, BIG_ARRAY_PROP, new String[]{LONG_STRING} );
+            pointPropRelId = createRelWithProperty( tx, type, POINT_PROP, pointValue );
+            datePropRelId = createRelWithProperty( tx, type, DATE_PROP, dateValue );
+
+            Relationship allPropsRel = allPropsNode.createRelationshipTo( tx.createNode(), type);
+            allPropsRelId = allPropsRel.getId();
+
+            allPropsRel.setProperty( BYTE_PROP, (byte) 13 );
+            allPropsRel.setProperty( SHORT_PROP, (short) 13 );
+            allPropsRel.setProperty( INT_PROP, 13 );
+            allPropsRel.setProperty( INLINE_LONG_PROP, 13L );
+            allPropsRel.setProperty( LONG_PROP, Long.MAX_VALUE );
+            allPropsRel.setProperty( FLOAT_PROP, 13.0f );
+            allPropsRel.setProperty( DOUBLE_PROP, 13.0 );
+            allPropsRel.setProperty( TRUE_PROP, true );
+            allPropsRel.setProperty( FALSE_PROP, false );
+            allPropsRel.setProperty( CHAR_PROP, 'x' );
+            allPropsRel.setProperty( EMPTY_STRING_PROP, "" );
+            allPropsRel.setProperty( SHORT_STRING_PROP, "hello" );
+            allPropsRel.setProperty( UTF_8_PROP, chinese );
+            allPropsRel.setProperty( POINT_PROP, pointValue );
+            allPropsRel.setProperty( DATE_PROP, dateValue );
             if ( supportsBigProperties() )
             {
-                all.setProperty( "smallArray", new int[]{1, 2, 3, 4} );
-                all.setProperty( "bigArray", new String[]{LONG_STRING} );
+                allPropsRel.setProperty( LONG_STRING_PROP, LONG_STRING );
+                allPropsRel.setProperty( SMALL_ARRAY_PROP, new int[]{1, 2, 3, 4} );
+                allPropsRel.setProperty( BIG_ARRAY_PROP, new String[]{LONG_STRING} );
             }
-
-            all.setProperty( "pointProp", pointValue );
-            all.setProperty( "dateProp", dateProp );
-
-            allProps = all.getId();
-
             tx.commit();
         }
     }
@@ -174,15 +244,22 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         return p.getId();
     }
 
+    private long createRelWithProperty( Transaction tx, RelationshipType type, String propertyKey, Object value )
+    {
+        Relationship r = tx.createNode().createRelationshipTo(tx.createNode(), type);
+        r.setProperty( propertyKey, value );
+        return r.getId();
+    }
+
     @Test
-    void shouldNotAccessNonExistentProperties()
+    void shouldNotAccessNonExistentNodeProperties()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
               PropertyCursor props = cursors.allocatePropertyCursor() )
         {
             // when
-            read.singleNode( bare, node );
+            read.singleNode(bareNodeId, node );
             assertTrue( node.next(), "node by reference" );
             assertFalse( hasProperties( node, props ), "no properties" );
 
@@ -197,32 +274,83 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    void shouldAccessSingleProperty()
+    void shouldNotAccessNonExistentRelationshipProperties()
     {
-        assertAccessSingleProperty( byteProp, Values.of( (byte) 13 ), ValueGroup.NUMBER );
-        assertAccessSingleProperty( shortProp, Values.of( (short) 13 ), ValueGroup.NUMBER );
-        assertAccessSingleProperty( intProp, Values.of( 13 ), ValueGroup.NUMBER );
-        assertAccessSingleProperty( inlineLongProp, Values.of( 13L ), ValueGroup.NUMBER );
-        assertAccessSingleProperty( longProp, Values.of( Long.MAX_VALUE ), ValueGroup.NUMBER );
-        assertAccessSingleProperty( floatProp, Values.of( 13.0f ), ValueGroup.NUMBER );
-        assertAccessSingleProperty( doubleProp, Values.of( 13.0 ), ValueGroup.NUMBER );
-        assertAccessSingleProperty( trueProp, Values.of( true ), ValueGroup.BOOLEAN );
-        assertAccessSingleProperty( falseProp, Values.of( false ), ValueGroup.BOOLEAN );
-        assertAccessSingleProperty( charProp, Values.of( 'x' ), ValueGroup.TEXT );
-        assertAccessSingleProperty( emptyStringProp, Values.of( "" ), ValueGroup.TEXT );
-        assertAccessSingleProperty( shortStringProp, Values.of( "hello" ), ValueGroup.TEXT );
+        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
+              PropertyCursor props = cursors.allocatePropertyCursor() )
+        {
+            // when
+            read.singleRelationship(bareRelId, relationship );
+            assertTrue( relationship.next(), "relationship by reference" );
+            assertFalse( hasProperties( relationship, props ), "no properties" );
+
+            relationship.properties( props );
+            assertFalse( props.next(), "no properties by direct method" );
+
+            read.relationshipProperties( relationship.relationshipReference(), relationship.propertiesReference(), props );
+            assertFalse( props.next(), "no properties via property ref" );
+
+            assertFalse( relationship.next(), "only one node" );
+        }
+    }
+
+    @Test
+    void shouldAccessSingleNodeProperty()
+    {
+        assertAccessSingleNodeProperty( bytePropNodeId, Values.of( (byte) 13 ), ValueGroup.NUMBER );
+        assertAccessSingleNodeProperty( shortPropNodeId, Values.of( (short) 13 ), ValueGroup.NUMBER );
+        assertAccessSingleNodeProperty( intPropNodeId, Values.of( 13 ), ValueGroup.NUMBER );
+        assertAccessSingleNodeProperty( inlineLongPropNodeId, Values.of( 13L ), ValueGroup.NUMBER );
+        assertAccessSingleNodeProperty( longPropNodeId, Values.of( Long.MAX_VALUE ), ValueGroup.NUMBER );
+        assertAccessSingleNodeProperty( floatPropNodeId, Values.of( 13.0f ), ValueGroup.NUMBER );
+        assertAccessSingleNodeProperty( doublePropNodeId, Values.of( 13.0 ), ValueGroup.NUMBER );
+        assertAccessSingleNodeProperty( truePropNodeId, Values.of( true ), ValueGroup.BOOLEAN );
+        assertAccessSingleNodeProperty( falsePropNodeId, Values.of( false ), ValueGroup.BOOLEAN );
+        assertAccessSingleNodeProperty( charPropNodeId, Values.of( 'x' ), ValueGroup.TEXT );
+        assertAccessSingleNodeProperty( emptyStringPropNodeId, Values.of( "" ), ValueGroup.TEXT );
+        assertAccessSingleNodeProperty( shortStringPropNodeId, Values.of( "hello" ), ValueGroup.TEXT );
         if ( supportsBigProperties() )
         {
-            assertAccessSingleProperty( longStringProp, Values.of( LONG_STRING ), ValueGroup.TEXT );
+            assertAccessSingleNodeProperty( longStringPropNodeId, Values.of( LONG_STRING ), ValueGroup.TEXT );
         }
-        assertAccessSingleProperty( utf8Prop, Values.of( chinese ), ValueGroup.TEXT );
+        assertAccessSingleNodeProperty( utf8PropNodeId, Values.of( chinese ), ValueGroup.TEXT );
+        if ( supportsBigProperties() )
+
+        {
+            assertAccessSingleNodeProperty( smallArrayNodeId, Values.of( new int[]{1, 2, 3, 4} ), ValueGroup.NUMBER_ARRAY );
+            assertAccessSingleNodeProperty( bigArrayNodeId, Values.of( new String[]{LONG_STRING} ), ValueGroup.TEXT_ARRAY );
+        }
+        assertAccessSingleNodeProperty( pointPropNodeId, Values.of( pointValue ), ValueGroup.GEOMETRY );
+        assertAccessSingleNodeProperty( datePropNodeId, Values.of( dateValue ), ValueGroup.DATE );
+    }
+
+    @Test
+    void shouldAssertSingleRelationshipProperty()
+    {
+        assertAccessSingleRelationshipProperty( bytePropRelId, Values.of( (byte) 13 ), ValueGroup.NUMBER );
+        assertAccessSingleRelationshipProperty( shortPropRelId, Values.of( (short) 13 ), ValueGroup.NUMBER );
+        assertAccessSingleRelationshipProperty( intPropRelId, Values.of( 13 ), ValueGroup.NUMBER );
+        assertAccessSingleRelationshipProperty( inlineLongPropRelId, Values.of( 13L ), ValueGroup.NUMBER );
+        assertAccessSingleRelationshipProperty( longPropRelId, Values.of( Long.MAX_VALUE ), ValueGroup.NUMBER );
+        assertAccessSingleRelationshipProperty( floatPropRelId, Values.of( 13.0f ), ValueGroup.NUMBER );
+        assertAccessSingleRelationshipProperty( doublePropRelId, Values.of( 13.0 ), ValueGroup.NUMBER );
+        assertAccessSingleRelationshipProperty( truePropRelId, Values.of( true ), ValueGroup.BOOLEAN );
+        assertAccessSingleRelationshipProperty( falsePropRelId, Values.of( false ), ValueGroup.BOOLEAN );
+        assertAccessSingleRelationshipProperty( charPropRelId, Values.of( 'x' ), ValueGroup.TEXT );
+        assertAccessSingleRelationshipProperty( emptyStringPropRelId, Values.of( "" ), ValueGroup.TEXT );
+        assertAccessSingleRelationshipProperty( shortStringPropRelId, Values.of( "hello" ), ValueGroup.TEXT );
         if ( supportsBigProperties() )
         {
-            assertAccessSingleProperty( smallArray, Values.of( new int[]{1, 2, 3, 4} ), ValueGroup.NUMBER_ARRAY );
-            assertAccessSingleProperty( bigArray, Values.of( new String[]{LONG_STRING} ), ValueGroup.TEXT_ARRAY );
+            assertAccessSingleRelationshipProperty( longStringPropRelId, Values.of( LONG_STRING ), ValueGroup.TEXT );
         }
-        assertAccessSingleProperty( pointProp, Values.of( pointValue ), ValueGroup.GEOMETRY );
-        assertAccessSingleProperty( dateProp, Values.of( dateValue ), ValueGroup.DATE );
+        assertAccessSingleRelationshipProperty( utf8PropRelId, Values.of( chinese ), ValueGroup.TEXT );
+        if ( supportsBigProperties() )
+        {
+            assertAccessSingleRelationshipProperty( smallArrayRelId, Values.of( new int[]{1, 2, 3, 4} ), ValueGroup.NUMBER_ARRAY );
+            assertAccessSingleRelationshipProperty( bigArrayRelId, Values.of( new String[]{LONG_STRING} ), ValueGroup.TEXT_ARRAY );
+        }
+        assertAccessSingleRelationshipProperty( pointPropRelId, Values.of( pointValue ), ValueGroup.GEOMETRY );
+        assertAccessSingleRelationshipProperty( datePropRelId, Values.of( dateValue ), ValueGroup.DATE );
     }
 
     @Test
@@ -233,7 +361,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
               PropertyCursor props = cursors.allocatePropertyCursor() )
         {
             // when
-            read.singleNode( allProps, node );
+            read.singleNode( allPropsNodeId, node );
             assertTrue( node.next(), "node by reference" );
             assertTrue( hasProperties( node, props ), "has properties" );
 
@@ -244,33 +372,80 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
                 values.add( props.propertyValue().asObject() );
             }
 
-            assertTrue( values.contains( (byte) 13 ), "byteProp" );
-            assertTrue( values.contains( (short) 13 ), "shortProp" );
-            assertTrue( values.contains( 13 ), "intProp" );
-            assertTrue( values.contains( 13L ), "inlineLongProp" );
-            assertTrue( values.contains( Long.MAX_VALUE ), "longProp" );
-            assertTrue( values.contains( 13.0f ), "floatProp" );
-            assertTrue( values.contains( 13.0 ), "doubleProp" );
-            assertTrue( values.contains( true ), "trueProp" );
-            assertTrue( values.contains( false ), "falseProp" );
-            assertTrue( values.contains( 'x' ), "charProp" );
-            assertTrue( values.contains( "" ), "emptyStringProp" );
-            assertTrue( values.contains( "hello" ), "shortStringProp" );
-            assertTrue( values.contains( chinese ), "utf8Prop" );
+            assertTrue( values.contains( (byte) 13 ), BYTE_PROP );
+            assertTrue( values.contains( (short) 13 ), SHORT_PROP );
+            assertTrue( values.contains( 13 ), INT_PROP );
+            assertTrue( values.contains( 13L ), INLINE_LONG_PROP );
+            assertTrue( values.contains( Long.MAX_VALUE ), LONG_PROP );
+            assertTrue( values.contains( 13.0f ), FLOAT_PROP );
+            assertTrue( values.contains( 13.0 ), DOUBLE_PROP );
+            assertTrue( values.contains( true ), TRUE_PROP );
+            assertTrue( values.contains( false ), FALSE_PROP );
+            assertTrue( values.contains( 'x' ), CHAR_PROP );
+            assertTrue( values.contains( "" ), EMPTY_STRING_PROP );
+            assertTrue( values.contains( "hello" ), SHORT_STRING_PROP );
+            assertTrue( values.contains( chinese ), UTF_8_PROP );
             if ( supportsBigProperties() )
             {
-                assertTrue( values.contains( LONG_STRING ), "longStringProp" );
-                assertThat( "smallArray", values, hasItem( intArray( 1, 2, 3, 4 ) ) );
-                assertThat( "bigArray", values, hasItem( arrayContaining( LONG_STRING ) ) );
+                assertTrue( values.contains( LONG_STRING ), LONG_STRING_PROP );
+                assertThat( SMALL_ARRAY_PROP, values, hasItem( intArray( 1, 2, 3, 4 ) ) );
+                assertThat( BIG_ARRAY_PROP, values, hasItem( arrayContaining( LONG_STRING ) ) );
             }
-            assertTrue( values.contains( pointValue ), "pointProp" );
+            assertTrue( values.contains( pointValue ), POINT_PROP );
+            assertTrue( values.contains( dateValue.asObject() ), DATE_PROP );
 
             int expected = supportsBigProperties() ? 18 : 15;
             assertEquals(  expected, values.size(), "number of values" );
         }
     }
 
-    private void assertAccessSingleProperty( long nodeId, Object expectedValue, ValueGroup expectedValueType )
+    @Test
+    void shouldAccessAllRelationshipProperties()
+    {
+        // given
+        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
+              PropertyCursor props = cursors.allocatePropertyCursor() )
+        {
+            // when
+            read.singleRelationship( allPropsRelId, relationship );
+            assertTrue( relationship.next(), "relationship by reference" );
+            assertTrue( hasProperties( relationship, props ), "has properties" );
+
+            relationship.properties( props );
+            Set<Object> values = new HashSet<>();
+            while ( props.next() )
+            {
+                values.add( props.propertyValue().asObject() );
+            }
+
+            assertTrue( values.contains( (byte) 13 ), BYTE_PROP);
+            assertTrue( values.contains( (short) 13 ), SHORT_PROP );
+            assertTrue( values.contains( 13 ), INT_PROP );
+            assertTrue( values.contains( 13L ), INLINE_LONG_PROP );
+            assertTrue( values.contains( Long.MAX_VALUE ), LONG_PROP );
+            assertTrue( values.contains( 13.0f ), FLOAT_PROP );
+            assertTrue( values.contains( 13.0 ), DOUBLE_PROP );
+            assertTrue( values.contains( true ), TRUE_PROP );
+            assertTrue( values.contains( false ), FALSE_PROP );
+            assertTrue( values.contains( 'x' ), CHAR_PROP );
+            assertTrue( values.contains( "" ), EMPTY_STRING_PROP );
+            assertTrue( values.contains( "hello" ), SHORT_STRING_PROP );
+            assertTrue( values.contains( chinese ), UTF_8_PROP);
+            if ( supportsBigProperties() )
+            {
+                assertTrue( values.contains( LONG_STRING ), LONG_STRING_PROP );
+                assertThat( SMALL_ARRAY_PROP, values, hasItem( intArray( 1, 2, 3, 4 ) ) );
+                assertThat( BIG_ARRAY_PROP, values, hasItem( arrayContaining( LONG_STRING ) ) );
+            }
+            assertTrue( values.contains( pointValue ), POINT_PROP);
+            assertTrue( values.contains( dateValue.asObject() ), DATE_PROP );
+
+            int expected = supportsBigProperties() ? 18 : 15;
+            assertEquals(  expected, values.size(), "number of values" );
+        }
+    }
+
+    private void assertAccessSingleNodeProperty( long nodeId, Object expectedValue, ValueGroup expectedValueType )
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -294,9 +469,40 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         }
     }
 
+    private void assertAccessSingleRelationshipProperty( long relationshipId, Object expectedValue, ValueGroup expectedValueType )
+    {
+        // given
+        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor();
+              PropertyCursor props = cursors.allocatePropertyCursor() )
+        {
+            // when
+            read.singleRelationship( relationshipId, relationship );
+            assertTrue( relationship.next(), "relationship by reference" );
+
+            assertTrue( hasProperties( relationship, props ), "has properties" );
+
+            relationship.properties( props );
+            assertTrue( props.next(), "has properties by direct method" );
+            assertEquals( expectedValue, props.propertyValue(), "correct value" );
+            assertEquals( expectedValueType, props.propertyType(), "correct value type " );
+            assertFalse( props.next(), "single property" );
+
+            read.relationshipProperties( relationship.relationshipReference(), relationship.propertiesReference(), props );
+            assertTrue( props.next(), "has properties via property ref" );
+            assertEquals(  expectedValue, props.propertyValue(), "correct value" );
+            assertFalse( props.next(), "single property" );
+        }
+    }
+
     private boolean hasProperties( NodeCursor node, PropertyCursor props )
     {
         node.properties( props );
+        return props.next();
+    }
+
+    private boolean hasProperties( RelationshipDataAccessor relationship, PropertyCursor props )
+    {
+        relationship.properties( props );
         return props.next();
     }
 
