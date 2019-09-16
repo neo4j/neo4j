@@ -29,8 +29,6 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
                                                         sizeHint: Int
                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  // TODO more tests
-
   test("empty input gives empty output") {
     // when
     val input = inputValues()
