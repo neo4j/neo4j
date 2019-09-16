@@ -133,6 +133,12 @@ trait SemanticAnalysisTooling {
     else
       SemanticCheckResult.success(state)
 
+  def whenState(condition: SemanticState => Boolean)(check: => SemanticCheck): SemanticCheck = state =>
+    if (condition(state))
+      check(state)
+    else
+      SemanticCheckResult.success(state)
+
   def unless(condition: Boolean)(check: => SemanticCheck): SemanticCheck = state =>
     if (condition)
       SemanticCheckResult.success(state)

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticErrorDef, SemanticFeature, SemanticState}
 import org.neo4j.cypher.internal.v4_0.ast.Statement
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticErrorDef, SemanticFeature, SemanticState}
 import org.neo4j.cypher.internal.v4_0.frontend.helpers.{TestContext, TestState}
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.parser.ParserTest
@@ -526,12 +526,12 @@ class MultipleGraphClauseSemanticCheckingTest
   }
 
   test("Allow view invocation in FROM") {
-    parsing("FROM v(1, x, 'a') RETURN 1")
+    parsing("FROM v(g, w(k)) RETURN 1")
       .shouldVerify(result => result.errors shouldBe empty)
   }
 
   test("Allow qualified view invocation in FROM") {
-    parsing("FROM a.b.v(1, x, 'a') RETURN 1")
+    parsing("FROM a.b.v(g, x.g, x.v(k)) RETURN 1")
       .shouldVerify(result => result.errors shouldBe empty)
   }
 
@@ -546,9 +546,38 @@ class MultipleGraphClauseSemanticCheckingTest
       .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
   }
 
-  override def convert(astNode: ast.Statement): SemanticCheckResult = {
+  test("Disallow expressions in view invocations") {
+    parsing("FROM a.b.v(1, 1+2, 'x') RETURN 1")
+      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
+  }
+
+  test("Allow expressions in view invocations (with feature flag)") {
+    parsingWith("WITH 1 AS x FROM v(2, 'x', x, x+3) RETURN 1", expressionsInViews)
+      .shouldVerify(result => result.errors shouldBe empty)
+  }
+
+  test("Expressions in view invocations are checked (with feature flag)") {
+    parsingWith("WITH 1 AS x FROM v(2, 'x', y, x+3) RETURN 1", expressionsInViews)
+      .shouldVerify(result => result.errorMessages should equal(Set("Variable `y` not defined")))
+  }
+
+  override type Extra = Seq[SemanticFeature]
+
+  private val defaultFeatures = Seq(
+    SemanticFeature.MultipleGraphs,
+    SemanticFeature.WithInitialQuerySignature
+  )
+
+  private val expressionsInViews =
+    defaultFeatures :+ SemanticFeature.ExpressionsInViewInvocations
+
+  override def convert(astNode: ast.Statement): SemanticCheckResult =
+    convert(astNode, defaultFeatures)
+
+  override def convert(astNode: Statement, features: Seq[SemanticFeature]): SemanticCheckResult = {
     val rewritten = PreparatoryRewriting(Deprecations.V1).transform(TestState(Some(astNode)), TestContext()).statement()
-    val initialState = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
+    val initialState =
+      SemanticState.clean.withFeatures(features: _*)
     rewritten.semanticCheck(initialState)
   }
 

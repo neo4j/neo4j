@@ -89,22 +89,36 @@ final case class FromGraph(expression: Expression)(val position: InputPosition) 
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      checkGraphReference
+      checkGraphReference chain
+      whenState(_.features(SemanticFeature.ExpressionsInViewInvocations))(checkGraphReferenceExpressions) chain
+      whenState(!_.features(SemanticFeature.ExpressionsInViewInvocations))(checkGraphReferenceRecursive)
 
   private def checkGraphReference: SemanticCheck =
-    graphReference match {
-      case Some(ViewRef(_, arguments))        => checkExpressions(arguments)
-      case Some(GraphRefParameter(parameter)) => checkExpressions(Seq(parameter))
-      case Some(_)                            => success
-      case _                                  => error("Invalid graph reference", position)
+    GraphReference.checkNotEmpty(graphReference, expression.position)
+
+  private def checkGraphReferenceRecursive: SemanticCheck =
+    graphReference.foldSemanticCheck(_.semanticCheck)
+
+  private def checkGraphReferenceExpressions: SemanticCheck =
+    graphReference.foldSemanticCheck {
+      case ViewRef(_, arguments)        => checkExpressions(arguments)
+      case GraphRefParameter(parameter) => checkExpressions(Seq(parameter))
+      case _                            => success
     }
 
   private def checkExpressions(expressions: Seq[Expression]): SemanticCheck =
-    expressions.foldSemanticCheck(expr =>
-      SemanticExpressionCheck.check(Expression.SemanticContext.Results, expr)
+    whenState(_.features(SemanticFeature.ExpressionsInViewInvocations))(
+      expressions.foldSemanticCheck(expr =>
+        SemanticExpressionCheck.check(Expression.SemanticContext.Results, expr)
+      )
     )
 
-  def graphReference: Option[GraphReference] = {
+  def graphReference: Option[GraphReference] =
+    GraphReference.from(expression)
+}
+
+object GraphReference extends SemanticAnalysisTooling {
+  def from(expression: Expression): Option[GraphReference] = {
 
     def fqn(expr: Expression): Option[List[String]] = expr match {
       case p: Property           => fqn(p.map).map(_ :+ p.propertyKey.name)
@@ -120,13 +134,26 @@ final case class FromGraph(expression: Expression)(val position: InputPosition) 
       case _                                   => None
     }
   }
+
+  def checkNotEmpty(gr: Option[GraphReference], pos: InputPosition): SemanticCheck =
+    when(gr.isEmpty)(error("Invalid graph reference", pos))
 }
 
-sealed trait GraphReference extends ASTNode
+sealed trait GraphReference extends ASTNode with SemanticCheckable {
+  override def semanticCheck: SemanticCheck = success
+}
 
 final case class GraphRef(name: CatalogName)(val position: InputPosition) extends GraphReference
 
-final case class ViewRef(name: CatalogName, arguments: Seq[Expression])(val position: InputPosition) extends GraphReference
+final case class ViewRef(name: CatalogName, arguments: Seq[Expression])(val position: InputPosition) extends GraphReference with SemanticAnalysisTooling {
+  override def semanticCheck: SemanticCheck =
+    arguments.zip(argumentsAsGraphReferences).foldSemanticCheck { case (arg, gr) =>
+      GraphReference.checkNotEmpty(gr, arg.position)
+    }
+
+  def argumentsAsGraphReferences: Seq[Option[GraphReference]] =
+    arguments.map(GraphReference.from)
+}
 
 final case class GraphRefParameter(parameter: Parameter)(val position: InputPosition) extends GraphReference
 
@@ -308,7 +335,7 @@ final case class ReturnGraph(graphName: Option[CatalogName])(val position: Input
 
   override def name = "RETURN GRAPH"
 
-  override def semanticCheck: SemanticCheck = 
+  override def semanticCheck: SemanticCheck =
     super.semanticCheck
 }
 
@@ -664,7 +691,7 @@ sealed trait ProjectionClause extends HorizonClause {
     */
   def withReturnItems(items: Seq[ReturnItem]): ProjectionClause
 
-  override def semanticCheck: SemanticCheck = 
+  override def semanticCheck: SemanticCheck =
     returnItems.semanticCheck
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
