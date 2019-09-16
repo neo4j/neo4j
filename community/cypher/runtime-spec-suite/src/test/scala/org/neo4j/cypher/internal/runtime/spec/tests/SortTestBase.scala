@@ -106,4 +106,21 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("a", "b").withRows(expected)
   }
+
+  test("should sort twice in a row") {
+    // given
+    val nodes = nodeGraph(1000)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .sort(sortItems = Seq(Ascending("x")))
+      .sort(sortItems = Seq(Descending("x")))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x").withRows(singleColumnInOrder(nodes))
+  }
 }

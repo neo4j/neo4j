@@ -559,4 +559,24 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("countStar", "count", "avg", "collect", "max", "min", "sum").withSingleRow(0, 0, null, Collections.emptyList(),  null, null, 0)
   }
+
+  test("should aggregate twice in a row") {
+    // given
+    val nodes = nodeGraph(1000)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("sum")
+      .aggregation(Seq.empty, Seq("sum(partialSum) AS sum"))
+      .aggregation(Seq("id(x) % 2 AS key"), Seq("sum(id(x)) AS partialSum"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(_.getId).sum
+
+    runtimeResult should beColumns("sum").withSingleRow(expected)
+  }
 }

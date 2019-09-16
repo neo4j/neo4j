@@ -179,4 +179,26 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     val expected = input.flatten.sortBy(arr => arr(0).asInstanceOf[Int])
     runtimeResult should beColumns("a").withRows(inOrder(expected))
   }
+
+  test("should top twice in a row") {
+    // given
+    val nodes = nodeGraph(1000)
+    val limit1 = 100
+    val limit2 = 50
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .top(sortItems = Seq(Ascending("x")), limit2)
+      .top(sortItems = Seq(Descending("x")), limit1)
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.sortBy(-_.getId).take(limit1).sortBy(_.getId).take(limit2)
+
+    runtimeResult should beColumns("x").withRows(singleColumnInOrder(expected))
+  }
 }

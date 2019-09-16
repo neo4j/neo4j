@@ -139,17 +139,6 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     runtimeResult should beColumns("x", "y").withRows(sortedDesc("y"))
   }
 
-  test("should reduce twice in a row") {
-    // given
-    val nodes = nodeGraph(1000)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .sort(sortItems = Seq(Ascending("x")))
-      .sort(sortItems = Seq(Descending("x")))
-      .allNodeScan("x")
-      .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
