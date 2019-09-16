@@ -40,7 +40,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -53,7 +53,7 @@ import static org.neo4j.test.rule.PageCacheConfig.config;
 public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 {
     private static final int PAGE_SIZE = 256;
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
     private final RandomRule random = new RandomRule();

@@ -26,16 +26,19 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.nio.file.Files;
+import java.nio.charset.Charset;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -55,6 +58,7 @@ import org.neo4j.index.internal.gbptree.InspectingVisitor;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -66,6 +70,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -80,12 +85,13 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 {
     private static final Label label = Label.label( "label" );
     private static final String propKey1 = "key1";
+    private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private PageCacheRule pageCacheRule = new PageCacheRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory();
+    private TestDirectory testDirectory = TestDirectory.testDirectory( fs.get() );
     private RandomRule random = new RandomRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( pageCacheRule ).around( random );
+    public RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory ).around( pageCacheRule ).around( random );
 
     @Test
     public void assertTreeHeightIsAsExpected() throws Exception
@@ -553,7 +559,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
     private void assertResultContainsMessage( ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
     {
-        final List<String> lines = Files.readAllLines( result.reportFile().toPath() );
+        final Reader reader = fs.openAsReader( result.reportFile(), Charset.defaultCharset() );
+        final BufferedReader bufferedReader = new BufferedReader( reader );
+        final List<String> lines = bufferedReader.lines().collect( Collectors.toList() );
         boolean reportContainExpectedMessage = false;
         for ( String line : lines )
         {
@@ -592,7 +600,8 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults( neo4j_home, testDirectory.directory().toPath().toAbsolutePath() );
-        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, false, consistencyFlags );
+        final FileSystemAbstraction fs = testDirectory.getFileSystem();
+        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fs, false, consistencyFlags );
     }
 
     private void setup( GraphDatabaseSettings.SchemaIndex schemaIndex )
@@ -604,6 +613,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     {
         final File homeDir = testDirectory.directory();
         final DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( homeDir )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( testDirectory.getFileSystem() ) )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
                 .build();
         try
@@ -626,10 +636,9 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
     private File[] schemaIndexFiles() throws IOException
     {
-        FileSystemAbstraction fs = testDirectory.getFileSystem();
         final File databaseDir = testDirectory.databaseDir();
         File indexDir = new File( databaseDir, "schema/index/" );
-        return fs.streamFilesRecursive( indexDir )
+        return testDirectory.getFileSystem().streamFilesRecursive( indexDir )
                 .map( FileHandle::getFile )
                 .toArray( File[]::new );
     }
