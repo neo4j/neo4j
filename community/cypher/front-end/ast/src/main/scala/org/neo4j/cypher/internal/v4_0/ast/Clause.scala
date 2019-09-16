@@ -862,16 +862,27 @@ case class SubQuery(part: QueryPart)(val position: InputPosition) extends Horizo
       checkSubquery
 
   def checkSubquery: SemanticCheck = { outer: SemanticState =>
+    // Create empty scope under root
     val empty: SemanticState = outer.newBaseScope
+    // Check inner query. Allow it to import from outer scope
     val inner: SemanticCheckResult = part.semanticCheckWithImports(outer)(empty)
     val output: Scope = part.finalScope(inner.state.currentScope.scope)
 
-    val after: SemanticState =
-      inner.state
-        .copy(currentScope = outer.currentScope.newSiblingScope)
-        .importValuesFromScope(outer.currentScope.scope)
-    val merged: SemanticCheckResult = declareVariables(output.valueSymbolTable.values)(after)
+    // Keep working from the latest state
+    val after: SemanticState = inner.state
+      // but jump back to scope tree of outer
+      .copy(currentScope = outer.currentScope)
+      // Copy in the scope tree from inner query (needed for Namespacer)
+      .insertSiblingScope(inner.state.currentScope.scope)
+      // Import variables from scope before subquery
+      .newSiblingScope
+      .importValuesFromScope(outer.currentScope.scope)
 
+    // Declare variables that are in output from subquery
+    val merged: SemanticCheckResult =
+      declareVariables(output.valueSymbolTable.values)(after)
+
+    // Keep errors from inner check and from variable declarations
     SemanticCheckResult(merged.state, inner.errors ++ merged.errors)
   }
 

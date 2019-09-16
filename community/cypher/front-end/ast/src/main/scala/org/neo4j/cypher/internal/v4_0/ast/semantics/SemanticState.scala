@@ -208,6 +208,8 @@ object SemanticState {
 
     def newSiblingScope: ScopeLocation = location.insertRight(Scope.empty).get
 
+    def insertSiblingScope(scope: Scope): ScopeLocation = location.insertRight(scope).get
+
     def isEmpty: Boolean = scope.isEmpty
 
     def localSymbol(name: String): Option[Symbol] = scope.symbol(name)
@@ -260,6 +262,8 @@ case class SemanticState(currentScope: ScopeLocation,
   def newChildScope: SemanticState = copy(currentScope = currentScope.newChildScope)
 
   def newSiblingScope: SemanticState = copy(currentScope = currentScope.newSiblingScope)
+
+  def insertSiblingScope(scope: Scope): SemanticState = copy(currentScope = currentScope.insertSiblingScope(scope))
 
   def popScope: SemanticState = copy(currentScope = currentScope.parent.get)
 
