@@ -579,4 +579,30 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("sum").withSingleRow(expected)
   }
+
+  test("should aggregation on top of apply with expand and limit and aggregation on rhs of apply") {
+    // given
+    val nodesPerLabel = 10
+    val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    val limit = nodesPerLabel / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("counts")
+      .aggregation(Seq.empty, Seq("collect(c) AS counts"))
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.limit(limit)
+      .|.expand("(x)-[:R]->(y)")
+      .|.argument("x")
+      .nodeByLabelScan("x","A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = aNodes.map(_ => limit).toArray
+
+    runtimeResult should beColumns("counts").withSingleRow(expected)
+  }
 }

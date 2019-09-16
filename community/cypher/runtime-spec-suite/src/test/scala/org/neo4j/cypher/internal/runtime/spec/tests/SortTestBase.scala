@@ -123,4 +123,24 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x").withRows(singleColumnInOrder(nodes))
   }
+
+  test("should sort on top of apply with all node scan and sort on rhs of apply") {
+    // given
+    val nodes = nodeGraph(10)
+    val inputRows = inputValues(nodes.map(node => Array[Any](node)): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .sort(sortItems = Seq(Descending("x")))
+      .apply()
+      .|.sort(sortItems = Seq(Descending("x")))
+      .|.allNodeScan("x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputRows)
+
+    runtimeResult should beColumns("x").withRows(rowCount(100))
+  }
 }

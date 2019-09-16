@@ -201,4 +201,34 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x").withRows(singleColumnInOrder(expected))
   }
+
+  test("should top on top of apply with expand and top on rhs of apply") {
+    // given
+    val nodesPerLabel = 10
+    val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    val limit1 = nodesPerLabel / 2
+    val limit2 = limit1 / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .top(sortItems = Seq(Ascending("y")), limit2)
+      .apply()
+      .|.top(sortItems = Seq(Descending("y")), limit1)
+      .|.expand("(x)-[:R]->(y)")
+      .|.argument("x")
+      .nodeByLabelScan("x","A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = aNodes.flatMap(_ => bNodes.sortBy(-_.getId)
+                         .take(limit1))
+                         .sortBy(_.getId)
+                         .take(limit2)
+                         .map(Array[Any](_))
+
+    runtimeResult should beColumns("y").withRows(inOrder(expected))
+  }
 }
