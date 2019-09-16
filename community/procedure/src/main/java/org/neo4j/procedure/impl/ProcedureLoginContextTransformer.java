@@ -22,8 +22,8 @@ package org.neo4j.procedure.impl;
 import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 public class ProcedureLoginContextTransformer implements Function<LoginContext,LoginContext>
 {
@@ -31,7 +31,7 @@ public class ProcedureLoginContextTransformer implements Function<LoginContext,L
 
     public ProcedureLoginContextTransformer( Context context )
     {
-        KernelTransaction tx = context.kernelTransactionOrNull();
+        InternalTransaction tx = context.internalTransactionOrNull();
         loginContext = tx != null ? tx.securityContext() : context.securityContext();
     }
 

@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -81,6 +80,9 @@ public class FulltextProcedures
 
     @Context
     public KernelTransaction tx;
+
+    @Context
+    public Transaction transaction;
 
     @Context
     public GraphDatabaseAPI db;
@@ -227,7 +229,7 @@ public class FulltextProcedures
                 {
                     long nodeReference = cursor.nodeReference();
                     float score = cursor.score();
-                    NodeOutput nodeOutput = NodeOutput.forExistingEntityOrNull( GraphDatabaseFacade.TEMP_TOP_LEVEL_TRANSACTION.get(), nodeReference, score );
+                    NodeOutput nodeOutput = NodeOutput.forExistingEntityOrNull( transaction, nodeReference, score );
                     if ( nodeOutput != null )
                     {
                         action.accept( nodeOutput );
@@ -273,7 +275,7 @@ public class FulltextProcedures
                     long relationshipReference = cursor.relationshipReference();
                     float score = cursor.score();
                     RelationshipOutput relationshipOutput =
-                            RelationshipOutput.forExistingEntityOrNull( GraphDatabaseFacade.TEMP_TOP_LEVEL_TRANSACTION.get(), relationshipReference, score );
+                            RelationshipOutput.forExistingEntityOrNull( transaction, relationshipReference, score );
                     if ( relationshipOutput != null )
                     {
                         action.accept( relationshipOutput );

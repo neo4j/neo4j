@@ -190,6 +190,6 @@ class ExecutionResultTest
         ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
         KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
-        return kernelTransaction == null ? null : new TopLevelTransaction( (GraphDatabaseFacade) db, kernelTransaction, new ThreadLocal<>() );
+        return kernelTransaction == null ? null : new TopLevelTransaction( (GraphDatabaseFacade) db, kernelTransaction );
     }
 }

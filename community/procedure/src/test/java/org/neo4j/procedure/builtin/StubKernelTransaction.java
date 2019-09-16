@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 public class StubKernelTransaction implements KernelTransaction
 {
@@ -213,6 +214,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public long lastTransactionIdWhenStarted()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void bindToUserTransaction( InternalTransaction internalTransaction )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

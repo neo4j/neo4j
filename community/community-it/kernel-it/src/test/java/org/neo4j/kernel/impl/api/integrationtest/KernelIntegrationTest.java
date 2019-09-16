@@ -41,12 +41,14 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -75,7 +77,8 @@ public abstract class KernelIntegrationTest
     protected Kernel kernel;
     protected IndexingService indexingService;
 
-    private Transaction transaction;
+    private InternalTransaction transaction;
+    private KernelTransaction kernelTransaction;
     private DbmsOperations dbmsOperations;
     protected DependencyResolver dependencyResolver;
     protected DefaultValueMapper valueMapper;
@@ -83,54 +86,64 @@ public abstract class KernelIntegrationTest
 
     protected TokenWrite tokenWriteInNewTransaction() throws KernelException
     {
-        transaction = kernel.beginTransaction( implicit, AnonymousContext.writeToken() );
-        return transaction.tokenWrite();
+        beginTransaction( AnonymousContext.writeToken() );
+        return kernelTransaction.tokenWrite();
     }
 
     protected Write dataWriteInNewTransaction() throws KernelException
     {
-        transaction = kernel.beginTransaction( implicit, AnonymousContext.write() );
-        return transaction.dataWrite();
+        beginTransaction( AnonymousContext.write() );
+        return kernelTransaction.dataWrite();
     }
 
     protected SchemaWrite schemaWriteInNewTransaction() throws KernelException
     {
-        transaction = kernel.beginTransaction( implicit, AUTH_DISABLED );
-        return transaction.schemaWrite();
+        beginTransaction( AUTH_DISABLED );
+        return kernelTransaction.schemaWrite();
     }
 
     protected Procedures procs() throws TransactionFailureException
     {
-        transaction = kernel.beginTransaction( implicit, AnonymousContext.read() );
-        return transaction.procedures();
+        if ( kernelTransaction == null )
+        {
+            beginTransaction( AnonymousContext.read() );
+        }
+        return kernelTransaction.procedures();
     }
 
     protected Procedures procsSchema() throws TransactionFailureException
     {
-        transaction = kernel.beginTransaction( implicit, AnonymousContext.full() );
-        return transaction.procedures();
+        if ( kernelTransaction == null )
+        {
+            beginTransaction( AnonymousContext.full() );
+        }
+        return kernelTransaction.procedures();
     }
 
     protected Transaction newTransaction() throws TransactionFailureException
     {
-        transaction = kernel.beginTransaction( implicit, AnonymousContext.read() );
-        return transaction;
+        beginTransaction( AnonymousContext.read() );
+        return kernelTransaction;
     }
 
     protected Transaction newTransaction( LoginContext loginContext ) throws TransactionFailureException
     {
-        transaction = kernel.beginTransaction( implicit, loginContext );
-        return transaction;
+        beginTransaction( loginContext );
+        return kernelTransaction;
     }
 
     /**
      * Create a temporary section wherein other transactions can be started an committed, and after which the <em>current</em> transaction will be restored as
      * current.
      */
-    Resource captureTransaction()
+    protected Resource captureTransaction()
     {
-        Transaction tx = transaction;
-        return () -> transaction = tx;
+        InternalTransaction tx = transaction;
+        KernelTransaction ktx = kernelTransaction;
+        return () -> {
+            transaction = tx;
+            kernelTransaction = ktx;
+        };
     }
 
     protected DbmsOperations dbmsOperations()
@@ -142,12 +155,20 @@ public abstract class KernelIntegrationTest
     {
         transaction.commit();
         transaction = null;
+        kernelTransaction = null;
     }
 
-    protected void rollback() throws TransactionFailureException
+    protected void rollback()
     {
         transaction.rollback();
         transaction = null;
+        kernelTransaction = null;
+    }
+
+    private void beginTransaction( LoginContext context )
+    {
+        transaction = db.beginTransaction( implicit, context );
+        kernelTransaction = transaction.kernelTransaction();
     }
 
     @BeforeEach
@@ -204,9 +225,9 @@ public abstract class KernelIntegrationTest
 
     private void stopDb() throws TransactionFailureException
     {
-        if ( transaction != null && transaction.isOpen() )
+        if ( kernelTransaction != null && kernelTransaction.isOpen() )
         {
-            transaction.close();
+            kernelTransaction.close();
         }
         managementService.shutdown();
     }

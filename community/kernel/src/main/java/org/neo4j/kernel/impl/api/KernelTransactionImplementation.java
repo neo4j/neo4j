@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.FrozenStatementLocks;
@@ -187,6 +188,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile Map<String,Object> userMetaData;
     private final AllStoreHolder allStoreHolder;
     private final Operations operations;
+    private InternalTransaction internalTransaction;
     private volatile TraceProvider traceProvider;
     private volatile TransactionInitializationTrace initializationTrace;
 
@@ -287,6 +289,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations.initialize();
         this.initializationTrace = traceProvider.getTraceInfo();
         return this;
+    }
+
+    @Override
+    public void bindToUserTransaction( InternalTransaction internalTransaction )
+    {
+        this.internalTransaction = internalTransaction;
     }
 
     int getReuseCount()
@@ -1051,6 +1059,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             reuseCount++;
             userMetaData = emptyMap();
             clientInfo = null;
+            internalTransaction = null;
             userTransactionId = 0;
             statistics.reset();
             releaseStatementResources();
@@ -1191,6 +1200,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void addIndexDoDropToTxState( IndexDescriptor index )
     {
         txState().indexDoDrop( index );
+    }
+
+    public InternalTransaction internalTransaction()
+    {
+        return internalTransaction;
     }
 
     public static class Statistics

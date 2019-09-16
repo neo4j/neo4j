@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.api.security.UserManager;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -47,6 +47,9 @@ public class AuthProcedures
 {
     @Context
     public SecurityContext securityContext;
+
+    @Context
+    public Transaction transaction;
 
     @Context
     public UserManager userManager;
@@ -106,7 +109,7 @@ public class AuthProcedures
 
         try
         {
-            Result execute = ((GraphDatabaseFacade) graph).TEMP_TOP_LEVEL_TRANSACTION.get().execute( query );
+            Result execute = transaction.execute( query );
             execute.accept( row ->
             {
                 var username = row.getString( "user" );
@@ -148,7 +151,7 @@ public class AuthProcedures
     {
         try
         {
-            Result execute = ((GraphDatabaseFacade) graph).TEMP_TOP_LEVEL_TRANSACTION.get().execute( query );
+            Result execute = transaction.execute( query );
             execute.accept( row -> true );
         }
         catch ( Exception e )

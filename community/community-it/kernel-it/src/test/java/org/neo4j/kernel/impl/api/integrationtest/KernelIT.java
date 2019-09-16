@@ -72,7 +72,6 @@ class KernelIT extends KernelIntegrationTest
     void schemaStateShouldBeEvictedOnIndexComingOnline() throws Exception
     {
         // GIVEN
-        schemaWriteInNewTransaction();
         try ( Transaction tx = db.beginTx() )
         {
             getOrCreateSchemaState( "my key", "my state" );

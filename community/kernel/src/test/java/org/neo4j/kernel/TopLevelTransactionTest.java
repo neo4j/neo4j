@@ -41,9 +41,7 @@ import static org.mockito.Mockito.when;
 
 class TopLevelTransactionTest
 {
-
-    private ThreadLocal<TopLevelTransaction> TEMP_TOP_LEVEL_TRANSACTION = new ThreadLocal<>();
-    private GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
+    private final GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
 
     @Test
     void shouldThrowTransientExceptionOnTransientKernelException() throws Exception
@@ -53,7 +51,7 @@ class TopLevelTransactionTest
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransactionFailureException( Status.Transaction.ConstraintsChanged,
                 "Proving that TopLevelTransaction does the right thing" ) ).when( kernelTransaction ).close();
-        TopLevelTransaction transaction = new TopLevelTransaction( facade, kernelTransaction, TEMP_TOP_LEVEL_TRANSACTION );
+        TopLevelTransaction transaction = new TopLevelTransaction( facade, kernelTransaction );
 
         // WHEN
         transaction.commit();
@@ -66,7 +64,7 @@ class TopLevelTransactionTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new RuntimeException( "Just a random failure" ) ).when( kernelTransaction ).close();
-        TopLevelTransaction transaction = new TopLevelTransaction( facade, kernelTransaction, TEMP_TOP_LEVEL_TRANSACTION );
+        TopLevelTransaction transaction = new TopLevelTransaction( facade, kernelTransaction );
 
         // WHEN
         transaction.commit();
@@ -79,7 +77,7 @@ class TopLevelTransactionTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransientDatabaseFailureException( "Just a random failure" ) ).when( kernelTransaction ).close();
-        TopLevelTransaction transaction = new TopLevelTransaction( facade, kernelTransaction, TEMP_TOP_LEVEL_TRANSACTION );
+        TopLevelTransaction transaction = new TopLevelTransaction( facade, kernelTransaction );
 
         // WHEN
         transaction.commit();
@@ -92,7 +90,7 @@ class TopLevelTransactionTest
         doReturn( true ).when( kernelTransaction ).isOpen();
         RuntimeException error = new TransactionTerminatedException( Status.Transaction.Terminated );
         doThrow( error ).when( kernelTransaction ).close();
-        TopLevelTransaction transaction = new TopLevelTransaction( facade, kernelTransaction, TEMP_TOP_LEVEL_TRANSACTION );
+        TopLevelTransaction transaction = new TopLevelTransaction( facade, kernelTransaction );
 
         transaction.commit();
     }
@@ -104,7 +102,7 @@ class TopLevelTransactionTest
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )
                 .thenReturn( Optional.of( Status.Transaction.Terminated ) );
 
-        TopLevelTransaction tx = new TopLevelTransaction( facade, kernelTransaction, TEMP_TOP_LEVEL_TRANSACTION );
+        TopLevelTransaction tx = new TopLevelTransaction( facade, kernelTransaction );
 
         Optional<Status> terminationReason1 = tx.terminationReason();
         Optional<Status> terminationReason2 = tx.terminationReason();

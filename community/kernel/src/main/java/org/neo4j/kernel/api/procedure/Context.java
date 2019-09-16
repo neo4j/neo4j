@@ -25,7 +25,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.ValueMapper;
 
@@ -85,20 +85,20 @@ public interface Context
     Thread thread();
 
     /**
-     * Returns the kernel transaction of this context
+     * Returns the internal transaction of this context
      * <p>
      * If no transaction has been associated with this context this method will throw a {@link ProcedureException}
      *
-     * @return the kernel transaction of this context
+     * @return the internal transaction of this context
      * @throws ProcedureException if no transaction has been associated with the context
      */
-    KernelTransaction kernelTransaction() throws ProcedureException;
+    InternalTransaction internalTransaction() throws ProcedureException;
 
     /**
-     * @return The kernel transaction of this context or <code>null</code> if no transaction has been associated with
+     * @return The internal transaction of this context or <code>null</code> if no transaction has been associated with
      * the context.
      */
-    KernelTransaction kernelTransactionOrNull();
+    InternalTransaction internalTransactionOrNull();
 
     /**
      * Returns the system clock of this context

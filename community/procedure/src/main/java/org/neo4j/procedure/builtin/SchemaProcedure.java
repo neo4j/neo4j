@@ -65,7 +65,7 @@ public class SchemaProcedure
     {
         final Map<String,VirtualNodeHack> nodes = new HashMap<>();
         final Map<String,Set<VirtualRelationshipHack>> relationships = new HashMap<>();
-        final KernelTransaction kernelTransaction = (KernelTransaction) internalTransaction.kernelTransaction();
+        final KernelTransaction kernelTransaction = internalTransaction.kernelTransaction();
         try ( Statement statement = kernelTransaction.acquireStatement() )
         {
             Read dataRead = kernelTransaction.dataRead();

@@ -40,19 +40,20 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -113,7 +114,7 @@ public class ProcedureCompilationTest
 {
     private static final AnyValue[] EMPTY = new AnyValue[0];
     private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
-    private static final KernelTransaction TRANSACTION = mock( KernelTransaction.class );
+    private static final InternalTransaction TRANSACTION = mock( InternalTransaction.class );
     public static final ResourceTracker RESOURCE_TRACKER = mock( ResourceTracker.class );
 
     private Context ctx;
@@ -123,7 +124,7 @@ public class ProcedureCompilationTest
     {
         ctx = mock( Context.class );
         when( ctx.thread() ).thenReturn( Thread.currentThread() );
-        when( ctx.kernelTransaction()).thenReturn( TRANSACTION );
+        when( ctx.internalTransaction() ).thenReturn( TRANSACTION );
         when( ctx.valueMapper() ).thenReturn( VALUE_MAPPER );
         when( TRANSACTION.toString() ).thenReturn( "I'm transaction" );
     }
@@ -158,7 +159,7 @@ public class ProcedureCompilationTest
     {
         // Given
         UserFunctionSignature signature = functionSignature( "test", "foo" ).out( NTInteger ).build();
-        FieldSetter setter1 = createSetter( InnerClass.class, "transaction", Context::kernelTransaction );
+        FieldSetter setter1 = createSetter( InnerClass.class, "transaction", Context::internalTransaction );
         FieldSetter setter2 = createSetter( InnerClass.class, "thread", Context::thread );
         Method longMethod = method( InnerClass.class, "stringMethod" );
 
@@ -378,7 +379,7 @@ public class ProcedureCompilationTest
         ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
                 .in( "in", NTString )
                 .out( singletonList( inputField( "name", NTString ) ) ).build();
-        FieldSetter setter1 = createSetter( InnerClass.class, "transaction", Context::kernelTransaction );
+        FieldSetter setter1 = createSetter( InnerClass.class, "transaction", Context::internalTransaction );
         FieldSetter setter2 = createSetter( InnerClass.class, "thread", Context::thread );
         Method stringStream = method( InnerClass.class, "stringStream" );
 
@@ -418,7 +419,7 @@ public class ProcedureCompilationTest
         // Given
         ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" ).build();
         // When
-        FieldSetter setter = createSetter( InnerClass.class, "transaction", Context::kernelTransaction );
+        FieldSetter setter = createSetter( InnerClass.class, "transaction", Context::internalTransaction );
         CallableProcedure voidMethod =
                 compileProcedure( signature, singletonList( setter ), method( InnerClass.class, "voidMethod" ) );
 
@@ -426,7 +427,7 @@ public class ProcedureCompilationTest
         RawIterator<AnyValue[],ProcedureException> iterator =
                 voidMethod.apply( ctx, EMPTY, RESOURCE_TRACKER );
         assertFalse( iterator.hasNext() );
-        verify( TRANSACTION ).startTime();
+        verify( TRANSACTION ).traversalDescription();
     }
 
     @Test
@@ -602,7 +603,7 @@ public class ProcedureCompilationTest
 
     public static class InnerClass
     {
-        public KernelTransaction transaction;
+        public Transaction transaction;
         public Thread thread;
 
         public String stringMethod()
@@ -626,7 +627,7 @@ public class ProcedureCompilationTest
 
         public void voidMethod()
         {
-            transaction.startTime();
+            transaction.traversalDescription();
         }
 
         public Stream<NonStaticInner> innerStream()

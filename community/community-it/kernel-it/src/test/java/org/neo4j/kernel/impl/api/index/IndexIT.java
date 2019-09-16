@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Timeout;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -115,17 +116,29 @@ class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    void createIndexForAnotherLabelWhileHoldingSharedLockOnOtherLabel() throws KernelException
+    void createIndexForAnotherLabelWhileHoldingSharedLockOnOtherLabel() throws KernelException, ExecutionException, InterruptedException
     {
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
         int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
+        commit();
 
         Write write = dataWriteInNewTransaction();
         long nodeId = write.nodeCreate();
         write.nodeAddLabel( nodeId, label2 );
-
-        schemaWriteInNewTransaction().indexCreate( descriptor );
-        commit();
+        try ( var resource = captureTransaction() )
+        {
+            executorService.submit( () -> {
+                try
+                {
+                    schemaWriteInNewTransaction().indexCreate( descriptor );
+                    commit();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            } ).get();
+        }
     }
 
     @Test
@@ -134,6 +147,7 @@ class IndexIT extends KernelIntegrationTest
     {
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
         int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
+        commit();
 
         LabelSchemaDescriptor anotherLabelDescriptor = SchemaDescriptor.forLabel( label2, propertyKeyId );
         schemaWriteInNewTransaction().indexCreate( anotherLabelDescriptor );

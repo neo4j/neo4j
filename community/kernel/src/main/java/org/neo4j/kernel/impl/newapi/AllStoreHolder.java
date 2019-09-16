@@ -1059,7 +1059,7 @@ public class AllStoreHolder extends Read
     private Context prepareContext( SecurityContext securityContext, ProcedureCallContext procedureContext )
     {
         return buildContext( databaseDependencies, valueMapper )
-                .withKernelTransaction( ktx )
+                .withTransaction( ktx.internalTransaction() )
                 .withSecurityContext( securityContext )
                 .withProcedureCallContext( procedureContext )
                 .context();

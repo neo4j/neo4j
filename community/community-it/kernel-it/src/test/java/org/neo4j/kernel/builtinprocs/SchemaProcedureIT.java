@@ -55,16 +55,14 @@ class SchemaProcedureIT extends KernelIntegrationTest
 
         // When
         Procedures procs = procs();
-        try ( var tx = db.beginTx() )
-        {
-            RawIterator<AnyValue[],ProcedureException> stream =
-                    procs.procedureCallRead( procs.procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0],
-                            ProcedureCallContext.EMPTY );
 
-            // Then
-            assertThat( asList( stream ), contains( equalTo( new AnyValue[]{EMPTY_LIST, EMPTY_LIST} ) ) );
-            tx.commit();
-        }
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs.procedureCallRead( procs.procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
+
+        // Then
+        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{EMPTY_LIST, EMPTY_LIST} ) ) );
+
     }
 
     @Test
@@ -86,28 +84,24 @@ class SchemaProcedureIT extends KernelIntegrationTest
         schemaOps.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId, propertyIdAge ), "constraint name" );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
-            // When
-            RawIterator<AnyValue[],ProcedureException> stream =
-                    procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0],
-                            ProcedureCallContext.EMPTY );
+        // When
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
-            // Then
-            while ( stream.hasNext() )
-            {
-                AnyValue[] next = stream.next();
-                assertEquals( 2, next.length );
-                ListValue nodes = (ListValue) next[0];
-                assertEquals( 1, nodes.size() );
-                NodeValue node = (NodeValue) nodes.value( 0 );
-                assertThat( node.labels(), equalTo( Values.stringArray( "Person" ) ) );
-                assertEquals( stringValue( "Person" ), node.properties().get( "name" ) );
-                assertEquals( VirtualValues.list( stringValue( "name" ) ), node.properties().get( "indexes" ) );
-                assertEquals( VirtualValues.list( stringValue( "CONSTRAINT ON ( person:Person ) ASSERT (person.age) IS UNIQUE" ) ),
-                        node.properties().get( "constraints" ) );
-            }
-            tx.commit();
+        // Then
+        while ( stream.hasNext() )
+        {
+            AnyValue[] next = stream.next();
+            assertEquals( 2, next.length );
+            ListValue nodes = (ListValue) next[0];
+            assertEquals( 1, nodes.size() );
+            NodeValue node = (NodeValue) nodes.value( 0 );
+            assertThat( node.labels(), equalTo( Values.stringArray( "Person" ) ) );
+            assertEquals( stringValue( "Person" ), node.properties().get( "name" ) );
+            assertEquals( VirtualValues.list( stringValue( "name" ) ), node.properties().get( "indexes" ) );
+            assertEquals( VirtualValues.list( stringValue( "CONSTRAINT ON ( person:Person ) ASSERT (person.age) IS UNIQUE" ) ),
+                    node.properties().get( "constraints" ) );
         }
     }
 
@@ -126,26 +120,21 @@ class SchemaProcedureIT extends KernelIntegrationTest
         transaction.dataWrite().relationshipCreate(  nodeIdPerson, relationshipTypeId, nodeIdLocation );
         commit();
 
-        try ( var tx = db.beginTx() )
-        {
-            // When
-            RawIterator<AnyValue[],ProcedureException> stream =
-                    procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0],
-                            ProcedureCallContext.EMPTY );
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
-            // Then
-            while ( stream.hasNext() )
-            {
-                AnyValue[] next = stream.next();
-                assertEquals( 2, next.length );
-                ListValue relationships = (ListValue) next[1];
-                assertEquals( 1, relationships.size() );
-                RelationshipValue relationship = (RelationshipValue) relationships.value( 0 );
-                assertEquals( "LIVES_IN", relationship.type().stringValue() );
-                assertThat( relationship.startNode().labels(), equalTo( Values.stringArray( "Person" ) ) );
-                assertThat( relationship.endNode().labels(), equalTo( Values.stringArray( "Location" ) ) );
-            }
-            tx.commit();
+        // Then
+        while ( stream.hasNext() )
+        {
+            AnyValue[] next = stream.next();
+            assertEquals( 2, next.length );
+            ListValue relationships = (ListValue) next[1];
+            assertEquals( 1, relationships.size() );
+            RelationshipValue relationship = (RelationshipValue) relationships.value( 0 );
+            assertEquals( "LIVES_IN", relationship.type().stringValue() );
+            assertThat( relationship.startNode().labels(), equalTo( Values.stringArray( "Person" ) ) );
+            assertThat( relationship.endNode().labels(), equalTo( Values.stringArray( "Location" ) ) );
         }
     }
 }

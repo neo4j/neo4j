@@ -31,12 +31,12 @@ import javax.tools.Diagnostic;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
-import org.neo4j.procedure.ProcedureTransaction;
 import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
@@ -58,7 +58,7 @@ public class ContextFieldVisitorTest
                     Log.class.getName() + ">, <" +
                     TerminationGuard.class.getName() + ">, <" +
                     SecurityContext.class.getName() + ">, <" +
-                    ProcedureTransaction.class.getName() + ">" );
+                    Transaction.class.getName() + ">" );
 
     @Rule
     public CompilationRule compilationRule = new CompilationRule();

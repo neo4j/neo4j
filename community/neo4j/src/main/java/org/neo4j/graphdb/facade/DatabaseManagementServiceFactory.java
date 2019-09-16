@@ -42,6 +42,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -64,7 +65,6 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.procedure.ProcedureTransaction;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.procedure.impl.ProcedureConfig;
@@ -263,12 +263,12 @@ public class DatabaseManagementServiceFactory
         //                              combine lots of small ones)
         //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
         globalProcedures.registerComponent( DependencyResolver.class, Context::dependencyResolver, false );
-        globalProcedures.registerComponent( KernelTransaction.class, Context::kernelTransaction, false );
+        globalProcedures.registerComponent( KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false );
         globalProcedures.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
 
         // Register injected public API components
         globalProcedures.registerComponent( Log.class, ctx -> proceduresLog, true );
-        globalProcedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
+        globalProcedures.registerComponent( Transaction.class, new ProcedureTransactionProvider(), true );
         globalProcedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
         globalProcedures.registerComponent( SecurityContext.class, Context::securityContext, true );
         globalProcedures.registerComponent( ProcedureCallContext.class, Context::procedureCallContext, true );

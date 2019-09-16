@@ -342,8 +342,8 @@ abstract class Read implements TxStateHolder,
     private class FilteringNodeLabelClient extends DefaultCloseListenable implements IndexProgressor.NodeLabelClient, AutoCloseablePlus
     {
         private FullAccessNodeCursor node;
-        private IndexProgressor.NodeLabelClient inner;
-        private AccessMode accessMode;
+        private final IndexProgressor.NodeLabelClient inner;
+        private final AccessMode accessMode;
 
         private FilteringNodeLabelClient( IndexProgressor.NodeLabelClient inner, AccessMode accessMode )
         {

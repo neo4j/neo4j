@@ -74,7 +74,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         try
         {
             showTokens( visitor, transaction );
-            showSchema( visitor, (KernelTransaction) transaction.kernelTransaction() );
+            showSchema( visitor, transaction.kernelTransaction() );
             showStatistics( visitor, transaction );
         }
         catch ( KernelException e )
@@ -194,7 +194,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     private void showRelCounts( InternalTransaction transaction, DbStructureVisitor visitor )
     {
         // all wildcards
-        KernelTransaction ktx = (KernelTransaction) transaction.kernelTransaction();
+        KernelTransaction ktx = transaction.kernelTransaction();
         noSide( ktx, visitor, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
 
         TokenRead tokenRead = ktx.tokenRead();

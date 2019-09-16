@@ -30,7 +30,7 @@ public class TerminationGuardProvider implements ThrowingFunction<Context,Termin
     @Override
     public TerminationGuard apply( Context ctx ) throws ProcedureException
     {
-        KernelTransaction ktx = ctx.kernelTransaction();
+        KernelTransaction ktx = ctx.internalTransaction().kernelTransaction();
         return new TransactionTerminationGuard( ktx );
     }
 

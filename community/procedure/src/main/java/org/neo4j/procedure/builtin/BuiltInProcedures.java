@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -54,7 +55,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Admin;
@@ -77,7 +78,10 @@ public class BuiltInProcedures
     static final long LONG_FIELD_NOT_CALCULATED = -1;  // the user should not even see this because that column should be filtered away (not yielded)
 
     @Context
-    public KernelTransaction tx;
+    public KernelTransaction kernelTransaction;
+
+    @Context
+    public Transaction transaction;
 
     @Context
     public DependencyResolver resolver;
@@ -100,10 +104,10 @@ public class BuiltInProcedures
 
         boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "nodeCount" ) );
         List<LabelResult> labelResults =
-                TokenAccess.LABELS.all( tx ).stream().map( label ->
+                TokenAccess.LABELS.all( kernelTransaction ).stream().map( label ->
                 {
-                    int labelId = tx.tokenRead().nodeLabel( label.name() );
-                    long count = shouldCount ? tx.dataRead().countsForNode( labelId ) : LONG_FIELD_NOT_CALCULATED;
+                    int labelId = kernelTransaction.tokenRead().nodeLabel( label.name() );
+                    long count = shouldCount ? kernelTransaction.dataRead().countsForNode( labelId ) : LONG_FIELD_NOT_CALCULATED;
                     return new LabelResult( label, count );
                 } ).collect( Collectors.toList() );
         return labelResults.stream();
@@ -120,7 +124,7 @@ public class BuiltInProcedures
         }
 
         List<PropertyKeyResult> propertyKeys =
-                TokenAccess.PROPERTY_KEYS.all( tx ).stream().map( PropertyKeyResult::new ).collect( Collectors.toList() );
+                TokenAccess.PROPERTY_KEYS.all( kernelTransaction ).stream().map( PropertyKeyResult::new ).collect( Collectors.toList() );
         return propertyKeys.stream();
     }
 
@@ -136,10 +140,10 @@ public class BuiltInProcedures
 
         boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "relationshipCount" ) );
         List<RelationshipTypeResult> relationshipTypes =
-                TokenAccess.RELATIONSHIP_TYPES.all( tx ).stream().map( type ->
+                TokenAccess.RELATIONSHIP_TYPES.all( kernelTransaction ).stream().map( type ->
                 {
-                    int typeId = tx.tokenRead().relationshipType( type.name() );
-                    long count = shouldCount ? tx.dataRead().countsForRelationship( ANY_LABEL, typeId, ANY_LABEL ) : LONG_FIELD_NOT_CALCULATED;
+                    int typeId = kernelTransaction.tokenRead().relationshipType( type.name() );
+                    long count = shouldCount ? kernelTransaction.dataRead().countsForRelationship( ANY_LABEL, typeId, ANY_LABEL ) : LONG_FIELD_NOT_CALCULATED;
                     return new RelationshipTypeResult( type, count );
                 } ).collect( Collectors.toList() );
         return relationshipTypes.stream();
@@ -155,13 +159,13 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        try ( Statement ignore = tx.acquireStatement() )
+        try ( Statement ignore = kernelTransaction.acquireStatement() )
         {
-            TokenRead tokenRead = tx.tokenRead();
+            TokenRead tokenRead = kernelTransaction.tokenRead();
             TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
             IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
 
-            SchemaReadCore schemaRead = tx.schemaRead().snapshot();
+            SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
             List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
 
             ArrayList<IndexResult> result = new ArrayList<>();
@@ -186,13 +190,13 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        try ( Statement ignore = tx.acquireStatement() )
+        try ( Statement ignore = kernelTransaction.acquireStatement() )
         {
-            TokenRead tokenRead = tx.tokenRead();
+            TokenRead tokenRead = kernelTransaction.tokenRead();
             TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
             IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
 
-            SchemaReadCore schemaRead = tx.schemaRead().snapshot();
+            SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
             List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
             IndexDescriptor index = null;
             for ( IndexDescriptor candidate : indexes )
@@ -384,7 +388,7 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        return new SchemaCalculator( tx ).calculateTabularResultStreamForNodes();
+        return new SchemaCalculator( kernelTransaction ).calculateTabularResultStreamForNodes();
     }
 
     @SystemProcedure
@@ -397,7 +401,7 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        return new SchemaCalculator( tx ).calculateTabularResultStreamForRels();
+        return new SchemaCalculator( kernelTransaction ).calculateTabularResultStreamForRels();
     }
 
     @SystemProcedure
@@ -409,8 +413,7 @@ public class BuiltInProcedures
         {
             return Stream.empty();
         }
-        return Stream.of(
-                new SchemaProcedure( graphDatabaseAPI, ((GraphDatabaseFacade) graphDatabaseAPI).TEMP_TOP_LEVEL_TRANSACTION.get() ).buildSchemaGraph() );
+        return Stream.of( new SchemaProcedure( graphDatabaseAPI, (InternalTransaction) transaction ).buildSchemaGraph() );
     }
 
     @SystemProcedure
@@ -423,8 +426,8 @@ public class BuiltInProcedures
             return Stream.empty();
         }
 
-        SchemaReadCore schemaRead = tx.schemaRead().snapshot();
-        TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
+        SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
+        TokenNameLookup tokens = new SilentTokenNameLookup( kernelTransaction.tokenRead() );
 
         List<ConstraintResult> result = new ArrayList<>();
         final List<ConstraintDescriptor> constraintDescriptors = asList( schemaRead.constraintsGetAll() );
@@ -478,7 +481,7 @@ public class BuiltInProcedures
 
     private IndexProcedures indexProcedures()
     {
-        return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
+        return new IndexProcedures( kernelTransaction, resolver.resolveDependency( IndexingService.class ) );
     }
 
     public static class LabelResult

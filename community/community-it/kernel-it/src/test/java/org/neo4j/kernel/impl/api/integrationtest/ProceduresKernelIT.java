@@ -141,7 +141,7 @@ class ProceduresKernelIT extends KernelIntegrationTest
                     ResourceTracker resourceTracker ) throws ProcedureException
             {
                 return RawIterator.<AnyValue[],ProcedureException>of(
-                        new AnyValue[]{Values.stringValue(ctx.kernelTransaction().dataRead().toString() )} );
+                        new AnyValue[]{Values.stringValue(ctx.internalTransaction().kernelTransaction().dataRead().toString() )} );
             }
         } );
 

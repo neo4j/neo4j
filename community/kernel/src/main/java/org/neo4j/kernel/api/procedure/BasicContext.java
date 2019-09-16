@@ -26,8 +26,8 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.ValueMapper;
 
@@ -36,19 +36,19 @@ import static java.util.Objects.requireNonNull;
 public class BasicContext implements Context
 {
     private final DependencyResolver resolver;
-    private final KernelTransaction kernelTransaction;
+    private final InternalTransaction transaction;
     private final SecurityContext securityContext;
     private final ValueMapper<Object> valueMapper;
     private final Thread thread;
     private final ProcedureCallContext procedureCallContext;
 
     private BasicContext( DependencyResolver resolver,
-            KernelTransaction kernelTransaction,
+            InternalTransaction transaction,
             SecurityContext securityContext, ValueMapper<Object> valueMapper,
             Thread thread, ProcedureCallContext procedureCallContext )
     {
         this.resolver = resolver;
-        this.kernelTransaction = kernelTransaction;
+        this.transaction = transaction;
         this.securityContext = securityContext;
         this.valueMapper = valueMapper;
         this.thread = thread;
@@ -86,33 +86,33 @@ public class BasicContext implements Context
     }
 
     @Override
-    public KernelTransaction kernelTransaction() throws ProcedureException
+    public InternalTransaction internalTransaction() throws ProcedureException
     {
-        return throwIfNull( "KernelTransaction", kernelTransaction );
+        return throwIfNull( "Transaction", transaction );
     }
 
     @Override
-    public KernelTransaction kernelTransactionOrNull()
+    public InternalTransaction internalTransactionOrNull()
     {
-        return kernelTransaction;
+        return transaction;
     }
 
     @Override
     public Clock systemClock() throws ProcedureException
     {
-        return throwIfNull( "SystemClock", kernelTransaction, t -> t.clocks().systemClock() );
+        return throwIfNull( "SystemClock", transaction.kernelTransaction(), t -> t.clocks().systemClock() );
     }
 
     @Override
     public Clock statementClock() throws ProcedureException
     {
-        return throwIfNull( "StatementClock", kernelTransaction, t -> t.clocks().statementClock() );
+        return throwIfNull( "StatementClock", transaction.kernelTransaction(), t -> t.clocks().statementClock() );
     }
 
     @Override
     public Clock transactionClock() throws ProcedureException
     {
-        return throwIfNull( "TransactionClock", kernelTransaction, t -> t.clocks().transactionClock() );
+        return throwIfNull( "TransactionClock", transaction.kernelTransaction(), t -> t.clocks().transactionClock() );
     }
 
     @Override
@@ -145,7 +145,7 @@ public class BasicContext implements Context
     public static class ContextBuilder
     {
         private DependencyResolver resolver;
-        private KernelTransaction kernelTransaction;
+        private InternalTransaction transaction;
         private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
         private Thread thread = Thread.currentThread();
         private ValueMapper<Object> valueMapper;
@@ -157,9 +157,9 @@ public class BasicContext implements Context
             this.valueMapper = valueMapper;
         }
 
-        public ContextBuilder withKernelTransaction( KernelTransaction kernelTransaction )
+        public ContextBuilder withTransaction( InternalTransaction internalTransaction )
         {
-            this.kernelTransaction = kernelTransaction;
+            this.transaction = internalTransaction;
             return this;
         }
 
@@ -181,7 +181,7 @@ public class BasicContext implements Context
             requireNonNull( securityContext );
             requireNonNull( valueMapper );
             requireNonNull( thread );
-            return new BasicContext( resolver, kernelTransaction, securityContext, valueMapper, thread, procedureCallContext );
+            return new BasicContext( resolver, transaction, securityContext, valueMapper, thread, procedureCallContext );
         }
     }
 }

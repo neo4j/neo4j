@@ -39,6 +39,7 @@ import org.neo4j.common.Edition;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -67,6 +68,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -111,6 +113,7 @@ class BuiltInProceduresTest
     private final SchemaRead schemaRead = mock( SchemaRead.class );
     private final SchemaReadCore schemaReadCore = mock( SchemaReadCore.class );
     private final Statement statement = mock( Statement.class );
+    private final InternalTransaction transaction = mock( InternalTransaction.class );
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final ProcedureCallContext callContext = mock( ProcedureCallContext.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
@@ -123,9 +126,10 @@ class BuiltInProceduresTest
     @BeforeEach
     void setup() throws Exception
     {
-        procs.registerComponent( KernelTransaction.class, Context::kernelTransaction, false );
+        procs.registerComponent( KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false );
         procs.registerComponent( DependencyResolver.class, Context::dependencyResolver, false );
         procs.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
+        procs.registerComponent( Transaction.class, Context::internalTransaction, true );
         procs.registerComponent( SecurityContext.class, Context::securityContext, true );
         procs.registerComponent( ProcedureCallContext.class, Context::procedureCallContext, true );
 
@@ -138,6 +142,7 @@ class BuiltInProceduresTest
         procs.registerProcedure( BuiltInProcedures.class );
         procs.registerProcedure( BuiltInDbmsProcedures.class );
 
+        when( transaction.kernelTransaction() ).thenReturn( tx );
         when( tx.acquireStatement() ).thenReturn( statement );
         when( tx.tokenRead() ).thenReturn( tokens );
         when( tx.dataRead() ).thenReturn( read );
@@ -519,7 +524,7 @@ class BuiltInProceduresTest
     {
         DefaultValueMapper valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
         Context ctx = buildContext(resolver, valueMapper )
-                        .withKernelTransaction( tx )
+                        .withTransaction( transaction )
                         .withProcedureCallContext( callContext )
                         .context();
 

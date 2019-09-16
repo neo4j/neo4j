@@ -36,7 +36,7 @@ public interface InternalTransaction extends Transaction
      * Loop-hole to access underlying kernel transaction. This is intended to allow
      * gradual removal of the InternalTransaction interface.
      */
-    org.neo4j.internal.kernel.api.Transaction kernelTransaction();
+    KernelTransaction kernelTransaction();
 
     KernelTransaction.Type transactionType();
 

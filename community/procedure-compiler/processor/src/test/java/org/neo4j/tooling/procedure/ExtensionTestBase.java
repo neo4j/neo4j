@@ -26,9 +26,9 @@ import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.logging.Log;
-import org.neo4j.procedure.ProcedureTransaction;
 import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.tooling.procedure.testutils.JavaFileObjectUtils;
 
@@ -108,7 +108,7 @@ public abstract class ExtensionTestBase
                                 Log.class.getName() + ">, <" +
                                 TerminationGuard.class.getName() + ">, <" +
                                 SecurityContext.class.getName() + ">, <" +
-                                ProcedureTransaction.class.getName() + ">" )
+                                Transaction.class.getName() + ">" )
                 .in( sproc ).onLine( 33 );
     }
 }

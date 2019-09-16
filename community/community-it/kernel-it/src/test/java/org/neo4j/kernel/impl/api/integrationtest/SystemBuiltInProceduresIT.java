@@ -320,6 +320,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         transaction.dataWrite().nodeCreate();
         int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "greeting" );
         transaction.dataWrite().nodeSetProperty( nodeId,propId, stringValue( "Hi!" ) );
+        commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
@@ -338,6 +339,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         long relId = transaction.dataWrite().relationshipCreate( nodeId, type, nodeId );
         transaction.dataWrite().relationshipCreate( nodeId, type, nodeId );
         transaction.dataWrite().relationshipSetProperty( relId,propId, stringValue( "Hi!" ) );
+        commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
@@ -356,6 +358,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         long relId = transaction.dataWrite().relationshipCreate( nodeId, type, nodeId );
         transaction.dataWrite().relationshipCreate( nodeId, type, nodeId );
         transaction.dataWrite().relationshipSetProperty( relId,propId, stringValue( "Hi!" ) );
+        commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {

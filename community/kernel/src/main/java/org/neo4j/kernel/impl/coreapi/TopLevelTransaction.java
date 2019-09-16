@@ -96,13 +96,11 @@ public class TopLevelTransaction implements InternalTransaction
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private final GraphDatabaseFacade facade;
     private KernelTransaction transaction;
-    private final ThreadLocal<TopLevelTransaction> tempTopLevelTransaction;
 
-    public TopLevelTransaction( GraphDatabaseFacade facade, KernelTransaction transaction, ThreadLocal<TopLevelTransaction> tempTopLevelTransaction )
+    public TopLevelTransaction( GraphDatabaseFacade facade, KernelTransaction transaction )
     {
         this.facade = facade;
-        this.transaction = transaction;
-        this.tempTopLevelTransaction = tempTopLevelTransaction;
+        setTransaction( transaction );
     }
 
     @Override
@@ -171,7 +169,7 @@ public class TopLevelTransaction implements InternalTransaction
                     new EntityNotFoundException( EntityType.NODE, id ) );
         }
 
-        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        KernelTransaction ktx = kernelTransaction();
         try ( Statement ignore = ktx.acquireStatement() )
         {
             if ( !ktx.dataRead().nodeExists( id ) )
@@ -204,7 +202,7 @@ public class TopLevelTransaction implements InternalTransaction
                     new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
         }
 
-        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        KernelTransaction ktx = kernelTransaction();
         try ( Statement ignore = ktx.acquireStatement() )
         {
             if ( !ktx.dataRead().relationshipExists( id ) )
@@ -219,13 +217,13 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public BidirectionalTraversalDescription bidirectionalTraversalDescription()
     {
-        return new BidirectionalTraversalDescriptionImpl( () -> ((KernelTransaction) kernelTransaction()).acquireStatement() );
+        return new BidirectionalTraversalDescriptionImpl( () -> kernelTransaction().acquireStatement() );
     }
 
     @Override
     public TraversalDescription traversalDescription()
     {
-        return new MonoDirectionalTraversalDescription( () -> ((KernelTransaction) kernelTransaction()).acquireStatement() );
+        return new MonoDirectionalTraversalDescription( () -> kernelTransaction().acquireStatement() );
     }
 
     @Override
@@ -287,7 +285,7 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public ResourceIterator<Node> findNodes( final Label myLabel, final String key, final Object value )
     {
-        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
@@ -298,7 +296,7 @@ public class TopLevelTransaction implements InternalTransaction
     public ResourceIterator<Node> findNodes(
             final Label myLabel, final String key, final String value, final StringSearchMode searchMode )
     {
-        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
@@ -327,7 +325,7 @@ public class TopLevelTransaction implements InternalTransaction
     public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2,
             String key3, Object value3 )
     {
-        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         return nodesByLabelAndProperties( transaction, labelId,
@@ -339,7 +337,7 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
     {
-        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         return nodesByLabelAndProperties( transaction, labelId,
@@ -350,7 +348,7 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
     {
-        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         IndexQuery.ExactPredicate[] queries = new IndexQuery.ExactPredicate[propertyValues.size()];
@@ -365,7 +363,7 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public ResourceIterable<Node> getAllNodes()
     {
-        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        KernelTransaction ktx = kernelTransaction();
         return () ->
         {
             Statement statement = ktx.acquireStatement();
@@ -400,7 +398,7 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public ResourceIterable<Relationship> getAllRelationships()
     {
-        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        KernelTransaction ktx = kernelTransaction();
         return () ->
         {
             Statement statement = ktx.acquireStatement();
@@ -442,7 +440,6 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public void close()
     {
-        tempTopLevelTransaction.remove();
         safeTransactionOperation( Transaction::close );
     }
 
@@ -482,6 +479,7 @@ public class TopLevelTransaction implements InternalTransaction
     public void setTransaction( KernelTransaction transaction )
     {
         this.transaction = transaction;
+        transaction.bindToUserTransaction( this );
     }
 
     @FunctionalInterface
@@ -508,7 +506,7 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
-    public Transaction kernelTransaction()
+    public KernelTransaction kernelTransaction()
     {
         return transaction;
     }
@@ -583,7 +581,7 @@ public class TopLevelTransaction implements InternalTransaction
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex(
             Statement statement, int labelId, IndexQuery... queries )
     {
-        KernelTransaction transaction = (KernelTransaction) kernelTransaction();
+        KernelTransaction transaction = kernelTransaction();
 
         NodeLabelIndexCursor nodeLabelCursor = transaction.cursors().allocateNodeLabelIndexCursor();
         NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor();
@@ -652,7 +650,7 @@ public class TopLevelTransaction implements InternalTransaction
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
     {
-        KernelTransaction ktx = (KernelTransaction) kernelTransaction();
+        KernelTransaction ktx = kernelTransaction();
         Statement statement = ktx.acquireStatement();
 
         int labelId = ktx.tokenRead().nodeLabel( myLabel.name() );
@@ -749,11 +747,11 @@ public class TopLevelTransaction implements InternalTransaction
 
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
     {
-        return () -> tokens.inUse( (KernelTransaction) kernelTransaction() );
+        return () -> tokens.inUse( kernelTransaction() );
     }
 
     private <T> ResourceIterable<T> all( final TokenAccess<T> tokens )
     {
-        return () -> tokens.all( (KernelTransaction) kernelTransaction() );
+        return () -> tokens.all( kernelTransaction() );
     }
 }

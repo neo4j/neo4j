@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 /**
  * Extends the outwards-facing {@link org.neo4j.internal.kernel.api.Transaction} with additional functionality
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.api.ClockContext;
  */
 public interface KernelTransaction extends Transaction, AssertOpen
 {
+    //TODO: misha remove when thread local tx will be removed
     interface CloseListener
     {
         /**
@@ -96,6 +98,12 @@ public interface KernelTransaction extends Transaction, AssertOpen
     long lastTransactionIdWhenStarted();
 
     /**
+     * Bind this kernel transaction to a user transaction
+     * @param internalTransaction
+     */
+    void bindToUserTransaction( InternalTransaction internalTransaction );
+
+    /**
      * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
      * {@link Kernel#beginTransaction(Type, LoginContext)}.
      */
@@ -103,7 +111,6 @@ public interface KernelTransaction extends Transaction, AssertOpen
 
     /**
      * @return start time of this transaction, i.e. basically {@link System#nanoTime()} when user called
-     * {@link org.neo4j.internal.kernel.api.Session#beginTransaction(Type)}.
      */
     long startTimeNanos();
 

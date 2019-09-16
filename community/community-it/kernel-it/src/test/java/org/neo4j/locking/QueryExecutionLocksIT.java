@@ -706,6 +706,12 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public void bindToUserTransaction( InternalTransaction internalTransaction )
+        {
+            internal.bindToUserTransaction( internalTransaction );
+        }
+
+        @Override
         public long startTime()
         {
             return internal.startTime();

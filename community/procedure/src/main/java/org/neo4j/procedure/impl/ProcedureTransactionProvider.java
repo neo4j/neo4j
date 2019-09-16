@@ -19,49 +19,264 @@
  */
 package org.neo4j.procedure.impl;
 
+import java.util.Map;
+import java.util.Optional;
+
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.StringSearchMode;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.Context;
-import org.neo4j.procedure.ProcedureTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
-public class ProcedureTransactionProvider implements ThrowingFunction<Context,ProcedureTransaction,ProcedureException>
+public class ProcedureTransactionProvider implements ThrowingFunction<Context,Transaction,ProcedureException>
 {
     @Override
-    public ProcedureTransaction apply( Context ctx ) throws ProcedureException
+    public Transaction apply( Context ctx ) throws ProcedureException
     {
-        KernelTransaction ktx = ctx.kernelTransaction();
+        InternalTransaction ktx = ctx.internalTransaction();
         return new ProcedureTransactionImpl( ktx );
     }
 
-    private static class ProcedureTransactionImpl implements ProcedureTransaction
+    private static class ProcedureTransactionImpl implements InternalTransaction
     {
-        private final KernelTransaction ktx;
+        private final InternalTransaction transaction;
 
-        ProcedureTransactionImpl( KernelTransaction ktx )
+        ProcedureTransactionImpl( InternalTransaction transaction )
         {
-            this.ktx = ktx;
+            this.transaction = transaction;
         }
 
         @Override
-        public void terminate()
+        public void commit()
         {
-            ktx.markForTermination( Status.Transaction.Terminated );
+            throw new UnsupportedOperationException( "Commit of ongoing transaction inside of procedure is unsupported." );
         }
 
         @Override
         public void rollback()
         {
-            try
-            {
-                ktx.rollback();
-            }
-            catch ( TransactionFailureException e )
-            {
-                throw new org.neo4j.graphdb.TransactionFailureException( "Rollback procedure transaction.", e );
-            }
+            throw new UnsupportedOperationException( "Rollback of ongoing transaction inside of procedure is unsupported." );
+        }
+
+        @Override
+        public Node createNode()
+        {
+            return transaction.createNode();
+        }
+
+        @Override
+        public Node createNode( Label... labels )
+        {
+            return transaction.createNode( labels );
+        }
+
+        @Override
+        public Node getNodeById( long id )
+        {
+            return transaction.getNodeById( id );
+        }
+
+        @Override
+        public Result execute( String query ) throws QueryExecutionException
+        {
+            return transaction.execute( query );
+        }
+
+        @Override
+        public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
+        {
+            return transaction.execute( query, parameters );
+        }
+
+        @Override
+        public Relationship getRelationshipById( long id )
+        {
+            return transaction.getRelationshipById( id );
+        }
+
+        @Override
+        public BidirectionalTraversalDescription bidirectionalTraversalDescription()
+        {
+            return transaction.bidirectionalTraversalDescription();
+        }
+
+        @Override
+        public TraversalDescription traversalDescription()
+        {
+            return transaction.traversalDescription();
+        }
+
+        @Override
+        public ResourceIterable<Label> getAllLabelsInUse()
+        {
+            return transaction.getAllLabelsInUse();
+        }
+
+        @Override
+        public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+        {
+            return transaction.getAllRelationshipTypesInUse();
+        }
+
+        @Override
+        public ResourceIterable<Label> getAllLabels()
+        {
+            return transaction.getAllLabels();
+        }
+
+        @Override
+        public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+        {
+            return transaction.getAllRelationshipTypes();
+        }
+
+        @Override
+        public ResourceIterable<String> getAllPropertyKeys()
+        {
+            return transaction.getAllPropertyKeys();
+        }
+
+        @Override
+        public Node findNode( Label myLabel, String key, Object value )
+        {
+            return transaction.findNode( myLabel, key, value );
+        }
+
+        @Override
+        public ResourceIterator<Node> findNodes( Label myLabel )
+        {
+            return transaction.findNodes( myLabel );
+        }
+
+        @Override
+        public ResourceIterator<Node> findNodes( Label myLabel, String key, Object value )
+        {
+            return transaction.findNodes( myLabel, key, value );
+        }
+
+        @Override
+        public ResourceIterator<Node> findNodes( Label myLabel, String key, String value, StringSearchMode searchMode )
+        {
+            return transaction.findNodes( myLabel, key, value, searchMode );
+        }
+
+        @Override
+        public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2, String key3, Object value3 )
+        {
+            return transaction.findNodes( label, key1, value1, key2, value2, key3, value3 );
+        }
+
+        @Override
+        public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
+        {
+            return transaction.findNodes( label, key1, value1, key2, value2 );
+        }
+
+        @Override
+        public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
+        {
+            return transaction.findNodes( label, propertyValues );
+        }
+
+        @Override
+        public ResourceIterable<Node> getAllNodes()
+        {
+            return transaction.getAllNodes();
+        }
+
+        @Override
+        public ResourceIterable<Relationship> getAllRelationships()
+        {
+            return transaction.getAllRelationships();
+        }
+
+        @Override
+        public void close()
+        {
+            throw new UnsupportedOperationException( "Close of ongoing transaction inside of procedure is unsupported." );
+        }
+
+        @Override
+        public void setTransaction( KernelTransaction transaction )
+        {
+            this.transaction.setTransaction( transaction );
+        }
+
+        @Override
+        public Lock acquireWriteLock( PropertyContainer entity )
+        {
+            return transaction.acquireWriteLock( entity );
+        }
+
+        @Override
+        public Lock acquireReadLock( PropertyContainer entity )
+        {
+            return transaction.acquireReadLock( entity );
+        }
+
+        @Override
+        public KernelTransaction kernelTransaction()
+        {
+            return transaction.kernelTransaction();
+        }
+
+        @Override
+        public KernelTransaction.Type transactionType()
+        {
+            return transaction.transactionType();
+        }
+
+        @Override
+        public SecurityContext securityContext()
+        {
+            return transaction.securityContext();
+        }
+
+        @Override
+        public ClientConnectionInfo clientInfo()
+        {
+            return transaction.clientInfo();
+        }
+
+        @Override
+        public KernelTransaction.Revertable overrideWith( SecurityContext context )
+        {
+            return transaction.overrideWith( context );
+        }
+
+        @Override
+        public Optional<Status> terminationReason()
+        {
+            return transaction.terminationReason();
+        }
+
+        @Override
+        public void setMetaData( Map<String,Object> txMeta )
+        {
+            transaction.setMetaData( txMeta );
+        }
+
+        @Override
+        public void terminate()
+        {
+            transaction.terminate();
         }
     }
 }

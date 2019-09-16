@@ -23,6 +23,7 @@ package org.neo4j.kernel.api;
  * Used to verify that some source of operation is still open when operation is performed.
  * E.g. verify that transaction is still open when lazily reading property values from store.
  */
+@FunctionalInterface
 public interface AssertOpen
 {
     /**

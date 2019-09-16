@@ -109,7 +109,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final DatabaseInfo databaseInfo;
     private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
-    public static final ThreadLocal<TopLevelTransaction> TEMP_TOP_LEVEL_TRANSACTION = new ThreadLocal<>();
 
     public GraphDatabaseFacade( GraphDatabaseFacade facade, Function<LoginContext,LoginContext> loginContextTransformer )
     {
@@ -200,18 +199,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         try ( var internalTransaction = beginTransaction( implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout.toMillis(), MILLISECONDS ) )
         {
-            try ( var result = execute( query, parameters ) )
+            try ( var result = execute( internalTransaction, query, ValueUtils.asParameterMapValue( parameters ) ) )
             {
                 resultConsumer.accept( result );
             }
             internalTransaction.commit();
         }
-    }
-
-    private Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
-    {
-        TopLevelTransaction transaction = TEMP_TOP_LEVEL_TRANSACTION.get();
-        return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
     public Result execute( InternalTransaction transaction, String query, MapValue parameters )
@@ -241,9 +234,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             throw new org.neo4j.graphdb.TransactionFailureException( "Fail to start new transaction. Already have transaction in the context." );
         }
         final KernelTransaction kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
-        TopLevelTransaction transaction = new TopLevelTransaction( this, kernelTransaction, TEMP_TOP_LEVEL_TRANSACTION );
-        TEMP_TOP_LEVEL_TRANSACTION.set( transaction );
-        return transaction;
+        return new TopLevelTransaction( this, kernelTransaction );
     }
 
     @Override
