@@ -23,7 +23,11 @@ import org.parboiled.scala._
 
 trait ParserTest[T, J] extends CypherFunSuite {
 
+  type Extra
+
   def convert(astNode: T): J
+
+  def convert(astNode: T, extra: Extra): J = convert(astNode)
 
   class ResultCheck(val actuals: Seq[J], text: String) {
 
@@ -53,9 +57,11 @@ trait ParserTest[T, J] extends CypherFunSuite {
     override def toString: String = s"ResultCheck( $text -> $actuals )"
   }
 
-  def parsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p ~ EOI, s), s)
+  def parsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p ~ EOI, s), None, s)
 
-  def partiallyParsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p, s), s)
+  def parsingWith(s: String, extra: Extra)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p ~ EOI, s), Some(extra), s)
+
+  def partiallyParsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p, s), None, s)
 
   def assertFails(s: String)(implicit p: Rule1[T]) {
     try {
@@ -71,8 +77,13 @@ trait ParserTest[T, J] extends CypherFunSuite {
   private def parseRule(rule: Rule1[T], text: String): ParsingResult[T] =
     ReportingParseRunner(rule).run(text)
 
-  private def convertResult(r: ParsingResult[T], input: String) = r.result match {
-    case Some(t) => new ResultCheck(Seq(convert(t)), input)
+  private def convertResult(r: ParsingResult[T], extra: Option[Extra], input: String) = r.result match {
+    case Some(t) =>
+      val converted = extra match {
+        case None    => convert(t)
+        case Some(e) => convert(t, e)
+      }
+      new ResultCheck(Seq(converted), input)
     case None    => fail(s"'$input' failed with: " + r.parseErrors.map {
       case error: InvalidInputError =>
         val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
