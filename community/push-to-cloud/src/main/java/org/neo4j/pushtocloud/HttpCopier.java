@@ -89,7 +89,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         {
             String bearerTokenHeader = "Bearer " + bearerToken;
             long crc32Sum = calculateCrc32HashOfFile( source );
-            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, bearerTokenHeader );
+            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, source.toFile().length(), bearerTokenHeader );
             URL uploadLocation = initiateResumableUpload( verbose, signedURL );
             long sourceLength = outsideWorld.fileSystem().getFileSize( source.toFile() );
 
@@ -246,7 +246,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     /**
      * Communication with Neo4j's cloud console, resulting in some signed URI to do the actual upload to.
      */
-    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, String bearerToken )
+    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, long fileSize, String bearerToken )
             throws IOException, CommandFailed
     {
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
@@ -260,7 +260,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             connection.setDoOutput( true );
             try ( OutputStream postData = connection.getOutputStream() )
             {
-                postData.write( buildCrc32WithConsentJson( crc32Sum ).getBytes( UTF_8 ) );
+                postData.write( buildCrc32WithConsentJson( crc32Sum, fileSize ).getBytes( UTF_8 ) );
             }
 
             // Read the response
@@ -374,7 +374,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             connection.setDoOutput( true );
             try ( OutputStream postData = connection.getOutputStream() )
             {
-                postData.write( buildCrc32WithConsentJson( crc32Sum ).getBytes( UTF_8 ) );
+                postData.write( buildCrc32WithConsentJson( crc32Sum, null ).getBytes( UTF_8 ) );
             }
 
             int responseCode = connection.getResponseCode();
@@ -474,9 +474,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private static String buildCrc32WithConsentJson( long crc32Sum )
+    private static String buildCrc32WithConsentJson( long crc32Sum, Long fileSize )
     {
-        return String.format( "{\"Crc32\":%d}", crc32Sum );
+        String fileSizeString = "";
+        if ( fileSize != null )
+        {
+            fileSizeString = String.format(", \"DumpSize\":%d", fileSize);
+        }
+        return String.format( "{\"Crc32\":%d%s}", crc32Sum, fileSizeString );
     }
 
     private static void safeSkip( InputStream sourceStream, long position ) throws IOException
