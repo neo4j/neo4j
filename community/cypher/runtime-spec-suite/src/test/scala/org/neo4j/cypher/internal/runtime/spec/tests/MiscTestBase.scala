@@ -37,26 +37,6 @@ import scala.concurrent.{Await, Future}
 
 abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                        runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
-  test("should sort-apply") {
-    // given
-    circleGraph(1000)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .sort(Seq(Descending("y")))
-      .apply()
-      .|.expandAll("(x)--(y)")
-      .|.argument()
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y").withRows(sortedDesc("y"))
-  }
-
   test("should apply-apply-sort") {
     // given
     circleGraph(1000)

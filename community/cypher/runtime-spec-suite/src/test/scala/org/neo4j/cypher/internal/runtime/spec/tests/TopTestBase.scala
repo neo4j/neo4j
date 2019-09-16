@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.logical.plans.{Ascending, Descending}
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.graphdb.Node
+
+import scala.collection.JavaConverters._
 
 abstract class TopTestBase[CONTEXT <: RuntimeContext](
                                                         edition: Edition[CONTEXT],
@@ -230,5 +233,36 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
                          .map(Array[Any](_))
 
     runtimeResult should beColumns("y").withRows(inOrder(expected))
+  }
+
+  test("should top on top of apply") {
+    // given
+    val nodeCount = 10
+    val (nodes, _) = circleGraph(nodeCount)
+    val limit = nodeCount / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .top(Seq(Descending("y"), Ascending("x")), limit )
+      .apply()
+      .|.expandAll("(x)--(y)")
+      .|.argument()
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+
+    val allRows = for {
+      x <- nodes
+      rel <- x.getRelationships().asScala
+      y = rel.getOtherNode(x)
+    } yield Array[Any](x, y)
+
+    val expected = allRows.sortBy(row => (-row(1).asInstanceOf[Node].getId, row(0).asInstanceOf[Node].getId)).take(limit)
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
   }
 }

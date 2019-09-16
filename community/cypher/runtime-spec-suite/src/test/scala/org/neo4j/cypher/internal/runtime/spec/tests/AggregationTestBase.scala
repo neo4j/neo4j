@@ -605,4 +605,74 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("counts").withSingleRow(expected)
   }
+
+  // TODO fix in morsel & parallel
+  ignore("should aggregation on top of apply with expand and limit and aggregation on rhs of apply") {
+    // given
+    val nodesPerLabel = 10
+    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    val limit = nodesPerLabel / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("counts")
+      .aggregation(Seq.empty, Seq("collect(c) AS counts"))
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.limit(limit)
+      .|.expand("(x)-[:R]->(y)")
+      .|.argument("x")
+      .nodeByLabelScan("x","A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = aNodes.map(_ => limit).toArray
+
+    runtimeResult should beColumns("counts").withSingleRow(expected)
+  }
+
+  test("should aggregate with no grouping on top of apply with expand on RHS") {
+    // given
+    val nodesPerLabel = 10
+    val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("ys")
+      .aggregation(Seq.empty, Seq("count(y) AS ys"))
+      .apply()
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x","A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("ys").withSingleRow(aNodes.size * bNodes.size)
+  }
+
+  test("should aggregate on top of apply with expand on RHS") {
+    // given
+    val nodesPerLabel = 10
+    val (aNodes, bNodes) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "ys")
+      .aggregation(Seq("x AS x"), Seq("count(y) AS ys"))
+      .apply()
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .nodeByLabelScan("x","A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = aNodes.map(x => Array[Any](x, bNodes.size))
+    runtimeResult should beColumns("x", "ys").withRows(expected)
+  }
 }
