@@ -90,8 +90,10 @@ final case class FromGraph(expression: Expression)(val position: InputPosition) 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       checkGraphReference chain
-      whenState(_.features(SemanticFeature.ExpressionsInViewInvocations))(checkGraphReferenceExpressions) chain
-      whenState(!_.features(SemanticFeature.ExpressionsInViewInvocations))(checkGraphReferenceRecursive)
+      whenState(_.features(SemanticFeature.ExpressionsInViewInvocations))(
+        thenBranch = checkGraphReferenceExpressions,
+        elseBranch = checkGraphReferenceRecursive
+      )
 
   private def checkGraphReference: SemanticCheck =
     GraphReference.checkNotEmpty(graphReference, expression.position)
