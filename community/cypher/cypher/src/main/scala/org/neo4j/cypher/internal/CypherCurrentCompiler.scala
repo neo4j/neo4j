@@ -93,8 +93,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           LogSystemCommand(resolveParameterForManagementCommands(source), l.command)(new SequentialIdGen(l.id.x + 1))
         case c@CreateUser(_, _, _, Some(paramPassword), _, _) =>
           CreateUser(c.source, c.userName, Some(getParamValue(paramPassword)), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
-        case a@AlterUser(_, _, Some(paramPassword), _, _) =>
-          AlterUser(a.userName, Some(getParamValue(paramPassword)), None, a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))
+        case a@AlterUser(_, _, _, Some(paramPassword), _, _) =>
+          AlterUser(a.source, a.userName, Some(getParamValue(paramPassword)), None, a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))
         case p@SetOwnPassword(_, Some(newParamPassword), _, None) =>
           SetOwnPassword(Some(getParamValue(newParamPassword)), None, p.currentStringPassword, None)(new SequentialIdGen(p.id.x + 1))
         case p@SetOwnPassword(_, None, _, Some(currentParamPassword)) =>

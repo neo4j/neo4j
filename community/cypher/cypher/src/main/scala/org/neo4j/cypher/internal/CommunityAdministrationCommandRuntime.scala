@@ -24,7 +24,7 @@ import java.util
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.procs.{QueryHandler, SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
+import org.neo4j.cypher.internal.procs.{AdministrativeCommandPrivilegeExecutionPlan, QueryHandler, SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.internal.kernel.api.security.SecurityContext
@@ -60,12 +60,17 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] = {
 
+    // Check Admin Rights
+    case AssertAdmin() => (_, _, securityContext) =>
+      AdministrativeCommandPrivilegeExecutionPlan(securityContext)
+
     // SHOW USERS
-    case ShowUsers() => (_, _, _) =>
+    case ShowUsers(source) => (context, parameterMapping, securityContext) =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
         """MATCH (u:User)
           |RETURN u.name as user, u.passwordChangeRequired AS passwordChangeRequired""".stripMargin,
-        VirtualValues.EMPTY_MAP
+        VirtualValues.EMPTY_MAP,
+        source = source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET PASSWORD password

@@ -61,7 +61,6 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       case Some(IgnoredRuntimeResult) => IgnoredRuntimeResult
       case _ =>
         val tc = ctx.kernelTransactionalContext
-        if (!name.equals("AlterCurrentUserSetPassword") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
 
         var revertAccessModeChange: KernelTransaction.Revertable = null
         try {

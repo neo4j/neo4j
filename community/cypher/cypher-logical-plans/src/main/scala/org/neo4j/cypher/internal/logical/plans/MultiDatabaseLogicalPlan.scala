@@ -47,23 +47,25 @@ abstract class SecurityAdministrationLogicalPlan(source: Option[MultiDatabaseLog
 }
 
 // Security administration commands
-case class ShowUsers()(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+case class ShowUsers(source: Option[PrivilegePlan])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class CreateUser(source: Option[SecurityAdministrationLogicalPlan], userName: String, initialStringPassword: Option[Array[Byte]], initialParameterPassword: Option[Parameter],
                       requirePasswordChange: Boolean, suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class DropUser(source: Option[SecurityAdministrationLogicalPlan], userName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
-case class AlterUser(userName: String, initialStringPassword: Option[Array[Byte]], initialParameterPassword: Option[Parameter],
+case class AlterUser(source: Option[PrivilegePlan], userName: String, initialStringPassword: Option[Array[Byte]], initialParameterPassword: Option[Parameter],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class SetOwnPassword(newStringPassword: Option[Array[Byte]], newParameterPassword: Option[Parameter],
                           currentStringPassword: Option[Array[Byte]], currentParameterPassword: Option[Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
-case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+case class ShowRoles(source: Option[PrivilegePlan], withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 case class CreateRole(source: Option[SecurityAdministrationLogicalPlan], roleName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 case class DropRole(source: Option[SecurityAdministrationLogicalPlan], roleName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
-case class GrantRoleToUser(source: Option[GrantRoleToUser], roleName: String, userName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
-case class RevokeRoleFromUser(source: Option[RevokeRoleFromUser], roleName: String, userNames: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
+case class GrantRoleToUser(source: Option[SecurityAdministrationLogicalPlan], roleName: String, userName: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
+case class RevokeRoleFromUser(source: Option[SecurityAdministrationLogicalPlan], roleName: String, userNames: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 case class RequireRole(source: Option[SecurityAdministrationLogicalPlan], name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 case class CopyRolePrivileges(source: Option[SecurityAdministrationLogicalPlan], to: String, from: String, grantDeny: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
 abstract class PrivilegePlan()(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+
+case class AssertAdmin()(implicit idGen: IdGen) extends PrivilegePlan
 
 case class GrantAccess(source: Option[PrivilegePlan], database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class DenyAccess(source: Option[PrivilegePlan], database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
@@ -81,20 +83,20 @@ case class GrantWrite(source: Option[PrivilegePlan], resource: ActionResource, d
 case class DenyWrite(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class RevokeWrite(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String, revokeType: RevokeType)(implicit idGen: IdGen) extends PrivilegePlan
 
-case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+case class ShowPrivileges(source: Option[PrivilegePlan], scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 
 case class LogSystemCommand(source: LogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
-case class DoNothingIfNotExists(label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
-case class DoNothingIfExists(label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
-case class EnsureNodeExists(label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+case class DoNothingIfNotExists(source: Option[PrivilegePlan], label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+case class DoNothingIfExists(source: Option[PrivilegePlan], label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+case class EnsureNodeExists(source: Option[PrivilegePlan], label: String, name: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 
 // Database administration commands
 case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class ShowDefaultDatabase()(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class ShowDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class CreateDatabase(source: Option[MultiDatabaseLogicalPlan], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-case class DropDatabase(source: Option[EnsureValidNonSystemDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-case class StartDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-case class StopDatabase(source: Option[EnsureValidNonSystemDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
-case class EnsureValidNonSystemDatabase(source: Option[DoNothingIfNotExists], normalizedName: NormalizedDatabaseName, action: String)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+case class DropDatabase(source: Option[MultiDatabaseLogicalPlan], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+case class StartDatabase(source: Option[MultiDatabaseLogicalPlan], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+case class StopDatabase(source: Option[MultiDatabaseLogicalPlan], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+case class EnsureValidNonSystemDatabase(source: Option[SecurityAdministrationLogicalPlan], normalizedName: NormalizedDatabaseName, action: String)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 case class EnsureValidNumberOfDatabases(source: Option[CreateDatabase])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
