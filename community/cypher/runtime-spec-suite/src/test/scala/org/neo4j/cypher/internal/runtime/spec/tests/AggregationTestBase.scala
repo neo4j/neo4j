@@ -27,8 +27,11 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.{DoubleValue, DurationValue, StringValue, Values}
 import org.neo4j.values.virtual.ListValue
+
+import scala.collection.JavaConverters._
 
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
@@ -674,5 +677,47 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = aNodes.map(x => Array[Any](x, bNodes.size))
     runtimeResult should beColumns("x", "ys").withRows(expected)
+  }
+
+  test("should perform aggregation with multiple nested apply plans") {
+    // given
+    val nodesPerLabel = 4
+    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("key", "sum")
+      .aggregation(Seq("innerKey %2 AS key"), Seq("sum(innerSum) AS sum"))
+      .apply()
+      .|.apply()
+      .|.|.aggregation(Seq("outerKey AS innerKey"), Seq("sum(id(innerY)) AS innerSum"))
+      .|.|.unwind("ys AS innerY")
+      .|.|.argument()
+      .|.aggregation(Seq("id(y) % 4 AS outerKey"), Seq("collect(y) AS ys"))
+      .|.expandAll("(x)--(y)")
+      .|.argument()
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    def outerAgg(from: Node): Seq[(Long, Seq[Node])] = {
+      (for {
+        rel <- from.getRelationships().asScala.toSeq
+        to = rel.getOtherNode(from)
+      } yield (from, to)).groupBy{ case (_, to) => to.getId % 2}
+        .map{ case (key, seq) => (key, seq.map(_._2))}.toSeq
+    }
+
+    val expected = (for {
+      x <- aNodes
+      (outerKey, ys) <- outerAgg(x)
+      innerKey = outerKey
+      innerSum = ys.map(_.getId).sum
+    } yield (innerKey, innerSum)).groupBy{ case (innerKey, _) => innerKey % 2}
+                                 .map { case (key, seq) => Array[Any](key, seq.map(_._2).sum) }
+
+    // then
+    runtimeResult should beColumns("key", "sum").withRows(expected)
   }
 }

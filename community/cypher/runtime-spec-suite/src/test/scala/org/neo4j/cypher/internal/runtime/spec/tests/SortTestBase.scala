@@ -163,4 +163,28 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x", "y").withRows(sortedDesc("y"))
   }
+
+  test("should apply apply sort") {
+    // given
+    circleGraph(1000)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .apply()
+      .|.apply()
+      .|.|.sort(Seq(Ascending("z")))
+      .|.|.expandAll("(y)--(z)")
+      .|.|.argument()
+      .|.sort(Seq(Descending("y")))
+      .|.expandAll("(x)--(y)")
+      .|.argument()
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "y", "z").withRows(groupedBy("x", "y").asc("z"))
+  }
 }

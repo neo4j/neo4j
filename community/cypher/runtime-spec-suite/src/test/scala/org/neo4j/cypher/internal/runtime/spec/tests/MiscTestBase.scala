@@ -23,7 +23,6 @@ import java.util.Collections
 
 import org.hamcrest.CoreMatchers.any
 import org.hamcrest.Matchers.containsString
-import org.neo4j.cypher.internal.logical.plans.{Ascending, Descending}
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ArithmeticException
@@ -37,30 +36,6 @@ import scala.concurrent.{Await, Future}
 
 abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                        runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
-  test("should apply-apply-sort") {
-    // given
-    circleGraph(1000)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y", "z")
-      .apply()
-      .|.apply()
-      .|.|.sort(Seq(Ascending("z")))
-      .|.|.expandAll("(y)--(z)")
-      .|.|.argument()
-      .|.sort(Seq(Descending("y")))
-      .|.expandAll("(x)--(y)")
-      .|.argument()
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y", "z").withRows(groupedBy("x", "y").asc("z"))
-  }
-
   test("should complete query with error") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)

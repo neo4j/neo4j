@@ -265,4 +265,51 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
+
+  test("should apply apply top") {
+    // given
+    val nodesPerLabel = 100
+    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val limit1 = nodesPerLabel / 2
+    val limit2 = limit1 / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .apply()
+      .|.apply()
+      .|.|.top(Seq(Ascending("z")), limit2)
+      .|.|.expandAll("(y)--(z)")
+      .|.|.argument()
+      .|.top(Seq(Descending("y")), limit1)
+      .|.expandAll("(x)--(y)")
+      .|.argument()
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    def outerTop(from: Node): Seq[(Node, Node)] = {
+      (for {
+        rel <- from.getRelationships().asScala.toSeq
+        to = rel.getOtherNode(from)
+      } yield (from, to)).sortBy(tuple => -tuple._2.getId).take(limit1)
+    }
+
+    def innerTop(fromNode: Node): Seq[Node] = {
+      (for {
+        rel <- fromNode.getRelationships().asScala.toSeq
+        to = rel.getOtherNode(fromNode)
+      } yield to).sortBy(_.getId).take(limit2)
+    }
+
+    val expected = for {
+      x <- aNodes
+      (x, y) <- outerTop(x)
+      z <- innerTop(y.asInstanceOf[Node])
+    } yield Array[Any](x, y, z)
+
+    // then
+    runtimeResult should beColumns("x", "y", "z").withRows(expected)
+  }
 }
