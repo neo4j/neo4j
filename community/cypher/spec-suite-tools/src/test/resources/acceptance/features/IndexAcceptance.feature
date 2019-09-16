@@ -26,12 +26,16 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      CREATE (:Product {unitsInStock: 8})
+      CREATE (:Product {unitsInStock: 12})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :Product(unitsInStock)
       """
     And having executed:
       """
-      CREATE (:Product {unitsInStock: 8})
-      CREATE (:Product {unitsInStock: 12})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -48,12 +52,16 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      CREATE (:Product {unitsInStock: 8})
+      CREATE (:Product {unitsInStock: 12})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :Product(unitsInStock)
       """
     And having executed:
       """
-      CREATE (:Product {unitsInStock: 8})
-      CREATE (:Product {unitsInStock: 12})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -71,6 +79,10 @@ Feature: IndexAcceptance
     And having executed:
       """
       CREATE INDEX ON :Person(name)
+      """
+    And having executed:
+      """
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -90,6 +102,10 @@ Feature: IndexAcceptance
     And having executed:
       """
       CREATE INDEX ON :Person(name)
+      """
+    And having executed:
+      """
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -111,6 +127,10 @@ Feature: IndexAcceptance
       """
       CREATE INDEX ON :Person(id)
       """
+    And having executed:
+      """
+      CALL db.awaitIndexes()
+      """
     When executing query:
       """
       MERGE (person:Person {name: 'Lasse', id: 42})
@@ -125,16 +145,20 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE INDEX ON :City(name)
-      """
-    And having executed:
-      """
       CREATE (:Person {name: 'A', bornIn: 'New York'})
       CREATE (:Person {name: 'B', bornIn: 'Ohio'})
       CREATE (:Person {name: 'C', bornIn: 'New Jersey'})
       CREATE (:Person {name: 'D', bornIn: 'New York'})
       CREATE (:Person {name: 'E', bornIn: 'Ohio'})
       CREATE (:Person {name: 'F', bornIn: 'New Jersey'})
+      """
+    And having executed:
+      """
+      CREATE INDEX ON :City(name)
+      """
+    And having executed:
+      """
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -151,11 +175,15 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      CREATE (:L:A {prop: 42})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :L(prop)
       """
     And having executed:
       """
-      CREATE (:L:A {prop: 42})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -174,6 +202,10 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      UNWIND range(1, 100) AS x CREATE (u:User {prop1: x, prop2: x})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :User(prop1)
       """
     And having executed:
@@ -182,7 +214,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      UNWIND range(1, 100) AS x CREATE (u:User {prop1: x, prop2: x})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -202,6 +234,10 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      UNWIND range(1, 100) AS x CREATE (:User {prop1: x, prop2: x})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :User(prop1)
       """
     And having executed:
@@ -210,7 +246,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      UNWIND range(1, 100) AS x CREATE (:User {prop1: x, prop2: x})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -229,6 +265,10 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      UNWIND range(1, 100) AS x CREATE (:User {prop1: x+'_val', prop2: x+'_val'})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :User(prop1)
       """
     And having executed:
@@ -237,7 +277,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      UNWIND range(1, 100) AS x CREATE (:User {prop1: x+'_val', prop2: x+'_val'})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -256,6 +296,10 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      UNWIND range(1, 100) AS x CREATE (:User {prop1: x+'_val', prop2: x+'_val'})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :User(prop1)
       """
     And having executed:
@@ -264,7 +308,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      UNWIND range(1, 100) AS x CREATE (:User {prop1: x+'_val', prop2: x+'_val'})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -283,11 +327,15 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      UNWIND range(1, 100) AS x CREATE (u:User {prop: x+'_val'})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :User(prop)
       """
     And having executed:
       """
-      UNWIND range(1, 100) AS x CREATE (u:User {prop: x+'_val'})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -305,6 +353,12 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      CREATE (:Person   {name: 'x', number: 0}),
+             (:Person   {name: 'y', number: 1}),
+             (:Person   {name: 'z', number: 2})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :Person(name)
       """
     And having executed:
@@ -313,9 +367,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE (:Person   {name: 'x', number: 0}),
-             (:Person   {name: 'y', number: 1}),
-             (:Person   {name: 'z', number: 2})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -338,6 +390,18 @@ Feature: IndexAcceptance
              (:Person   {name: 'y', number: 1}),
              (:Person   {name: 'z', number: 2})
       """
+    And having executed:
+      """
+      CREATE INDEX ON :Person(name)
+      """
+    And having executed:
+      """
+      CREATE INDEX ON :Person(number)
+      """
+    And having executed:
+      """
+      CALL db.awaitIndexes()
+      """
     When executing query:
       """
       WITH 100 as variable
@@ -355,12 +419,16 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      CREATE (:Person {name: 'Jack'})
+      CREATE (:Person {name: 'Jill'})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :Person(name)
       """
     And having executed:
       """
-      CREATE (:Person {name: 'Jack'})
-      CREATE (:Person {name: 'Jill'})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
@@ -376,12 +444,16 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
+      CREATE (:Person {name: 'Jack'})
+      CREATE (:Person {name: 'Jill'})
+      """
+    And having executed:
+      """
       CREATE INDEX ON :Person(name)
       """
     And having executed:
       """
-      CREATE (:Person {name: 'Jack'})
-      CREATE (:Person {name: 'Jill'})
+      CALL db.awaitIndexes()
       """
     When executing query:
       """
