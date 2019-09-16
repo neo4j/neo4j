@@ -24,20 +24,23 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.Race;
@@ -369,6 +372,32 @@ public class SchemaCacheTest
         {
             assertEquals( 1, Iterators.count( cache.indexesByProperty( propertyId ) ) );
         }
+    }
+
+    @Test
+    public void removeSchemaWithRepeatedLabel()
+    {
+        final SchemaCache cache = newSchemaCache();
+
+        final int id = 1;
+        final int[] repeatedLabels = {0, 1, 0};
+        final MultiTokenSchemaDescriptor schema = SchemaDescriptorFactory.multiToken( repeatedLabels, EntityType.NODE, 1 );
+        final StoreIndexDescriptor storeIndexDescriptor = IndexDescriptorFactory.forSchema( schema ).withId( id );
+        cache.addSchemaRule( storeIndexDescriptor );
+        cache.removeSchemaRule( id );
+    }
+
+    @Test
+    public void removeSchemaWithRepeatedRelType()
+    {
+        final SchemaCache cache = newSchemaCache();
+
+        final int id = 1;
+        final int[] repeatedRelTypes = {0, 1, 0};
+        final MultiTokenSchemaDescriptor schema = SchemaDescriptorFactory.multiToken( repeatedRelTypes, EntityType.RELATIONSHIP, 1 );
+        final StoreIndexDescriptor storeIndexDescriptor = IndexDescriptorFactory.forSchema( schema ).withId( id );
+        cache.addSchemaRule( storeIndexDescriptor );
+        cache.removeSchemaRule( id );
     }
 
     private StoreIndexDescriptor newIndexRule( long id, int label, int propertyKey )
