@@ -22,11 +22,11 @@ package org.neo4j.index.internal.gbptree;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.list.primitive.ImmutableLongList;
 import org.eclipse.collections.api.list.primitive.LongList;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,39 +35,47 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-import static org.junit.rules.RuleChain.outerRule;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectorySupportExtension.class, RandomExtension.class} )
+abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 {
     private static final int PAGE_SIZE = 256;
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
-    private final RandomRule random = new RandomRule();
+
+    @RegisterExtension
+    static final PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+
+    @Inject
+    EphemeralFileSystemAbstraction fs;
+    @Inject
+    TestDirectory directory;
+    @Inject
+    RandomRule random;
+
     private RandomValues randomValues;
     private TestLayout<KEY,VALUE> layout;
     private File indexFile;
     private PageCache pageCache;
     private boolean isDynamic;
 
-    @Rule
-    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
-
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         indexFile = directory.file( "index" );
         pageCache = createPageCache();
@@ -80,11 +88,11 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 
     private PageCache createPageCache()
     {
-        return pageCacheRule.getPageCache( fs.get(), config().withPageSize( PAGE_SIZE ) );
+        return pageCacheExtension.getPageCache( fs, config().withPageSize( PAGE_SIZE ) );
     }
 
     @Test
-    public void shouldDetectNotATreeNodeRoot() throws IOException
+    void shouldDetectNotATreeNodeRoot() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -100,7 +108,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectNotATreeNodeInternal() throws IOException
+    void shouldDetectNotATreeNodeInternal() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -117,7 +125,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectNotATreeNodeLeaf() throws IOException
+    void shouldDetectNotATreeNodeLeaf() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -133,7 +141,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectUnknownTreeNodeTypeRoot() throws IOException
+    void shouldDetectUnknownTreeNodeTypeRoot() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -149,7 +157,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectUnknownTreeNodeTypeInternal() throws IOException
+    void shouldDetectUnknownTreeNodeTypeInternal() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -165,7 +173,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectUnknownTreeNodeTypeLeaf() throws IOException
+    void shouldDetectUnknownTreeNodeTypeLeaf() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -181,7 +189,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectRightSiblingNotPointingToCorrectSibling() throws IOException
+    void shouldDetectRightSiblingNotPointingToCorrectSibling() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -197,7 +205,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectLeftSiblingNotPointingToCorrectSibling() throws IOException
+    void shouldDetectLeftSiblingNotPointingToCorrectSibling() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -213,7 +221,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectIfAnyNodeInTreeHasSuccessor() throws IOException
+    void shouldDetectIfAnyNodeInTreeHasSuccessor() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -229,7 +237,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectRightSiblingPointerWithTooLowGeneration() throws IOException
+    void shouldDetectRightSiblingPointerWithTooLowGeneration() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -245,7 +253,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectLeftSiblingPointerWithTooLowGeneration() throws IOException
+    void shouldDetectLeftSiblingPointerWithTooLowGeneration() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -261,7 +269,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectChildPointerWithTooLowGeneration() throws IOException
+    void shouldDetectChildPointerWithTooLowGeneration() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -279,7 +287,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectKeysOutOfOrderInIsolatedNode() throws IOException
+    void shouldDetectKeysOutOfOrderInIsolatedNode() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -302,7 +310,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectKeysLocatedInWrongNodeLowKey() throws IOException
+    void shouldDetectKeysLocatedInWrongNodeLowKey() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -325,7 +333,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectKeysLocatedInWrongNodeHighKey() throws IOException
+    void shouldDetectKeysLocatedInWrongNodeHighKey() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -348,9 +356,9 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectNodeMetaInconsistencyDynamicNodeAllocSpaceOverlapActiveKeys() throws IOException
+    void shouldDetectNodeMetaInconsistencyDynamicNodeAllocSpaceOverlapActiveKeys() throws IOException
     {
-        assumeTrue( "Only relevant for dynamic layout", isDynamic );
+        Assumptions.assumeTrue( isDynamic, "Only relevant for dynamic layout" );
         try ( GBPTree<KEY,VALUE> index = index( layout ).build() )
         {
             treeWithHeight( index, layout, 2 );
@@ -366,9 +374,9 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectNodeMetaInconsistencyDynamicNodeOverlapBetweenOffsetArrayAndAllocSpace() throws IOException
+    void shouldDetectNodeMetaInconsistencyDynamicNodeOverlapBetweenOffsetArrayAndAllocSpace() throws IOException
     {
-        assumeTrue( "Only relevant for dynamic layout", isDynamic );
+        Assumptions.assumeTrue( isDynamic, "Only relevant for dynamic layout" );
         try ( GBPTree<KEY,VALUE> index = index( layout ).build() )
         {
             treeWithHeight( index, layout, 2 );
@@ -384,9 +392,9 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectNodeMetaInconsistencyDynamicNodeSpaceAreasNotSummingToTotalSpace() throws IOException
+    void shouldDetectNodeMetaInconsistencyDynamicNodeSpaceAreasNotSummingToTotalSpace() throws IOException
     {
-        assumeTrue( "Only relevant for dynamic layout", isDynamic );
+        Assumptions.assumeTrue( isDynamic, "Only relevant for dynamic layout" );
         try ( GBPTree<KEY,VALUE> index = index( layout ).build() )
         {
             treeWithHeight( index, layout, 2 );
@@ -402,9 +410,9 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectNodeMetaInconsistencyDynamicNodeAllocOffsetMisplaced() throws IOException
+    void shouldDetectNodeMetaInconsistencyDynamicNodeAllocOffsetMisplaced() throws IOException
     {
-        assumeTrue( "Only relevant for dynamic layout", isDynamic );
+        Assumptions.assumeTrue( isDynamic, "Only relevant for dynamic layout" );
         try ( GBPTree<KEY,VALUE> index = index( layout ).build() )
         {
             treeWithHeight( index, layout, 2 );
@@ -420,7 +428,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectPageMissingFreelistEntry() throws IOException
+    void shouldDetectPageMissingFreelistEntry() throws IOException
     {
         long targetMissingId;
         try ( GBPTree<KEY,VALUE> index = index().build() )
@@ -463,7 +471,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectExtraFreelistEntry() throws IOException
+    void shouldDetectExtraFreelistEntry() throws IOException
     {
         long targetNode;
         try ( GBPTree<KEY,VALUE> index = index().build() )
@@ -499,7 +507,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectExtraEmptyPageInFile() throws IOException
+    void shouldDetectExtraEmptyPageInFile() throws IOException
     {
         long lastId;
         try ( GBPTree<KEY,VALUE> index = index().build() )
@@ -537,7 +545,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectIdLargerThanFreelistLastId() throws IOException
+    void shouldDetectIdLargerThanFreelistLastId() throws IOException
     {
         long targetLastId;
         long targetPageId;
@@ -584,7 +592,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectCrashedGSPP() throws IOException
+    void shouldDetectCrashedGSPP() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -604,7 +612,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectBrokenGSPP() throws IOException
+    void shouldDetectBrokenGSPP() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -624,7 +632,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectUnreasonableKeyCount() throws IOException
+    void shouldDetectUnreasonableKeyCount() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -642,7 +650,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectChildPointerPointingTwoLevelsDown() throws IOException
+    void shouldDetectChildPointerPointingTwoLevelsDown() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -661,7 +669,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectChildPointerPointingToUpperLevelSameStack() throws IOException
+    void shouldDetectChildPointerPointingToUpperLevelSameStack() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -680,7 +688,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectChildPointerPointingToSameLevel() throws IOException
+    void shouldDetectChildPointerPointingToSameLevel() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -700,7 +708,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectChildPointerPointingToUpperLevelNotSameStack() throws IOException
+    void shouldDetectChildPointerPointingToUpperLevelNotSameStack() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -719,7 +727,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectChildPointerPointingToChildOwnedByOtherNode() throws IOException
+    void shouldDetectChildPointerPointingToChildOwnedByOtherNode() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -741,9 +749,9 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectExceptionDuringConsistencyCheck() throws IOException
+    void shouldDetectExceptionDuringConsistencyCheck() throws IOException
     {
-        assumeTrue( "This trick to make GBPTreeConsistencyChecker throw exception only work for dynamic layout", isDynamic );
+        Assumptions.assumeTrue( isDynamic, "This trick to make GBPTreeConsistencyChecker throw exception only work for dynamic layout" );
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             treeWithHeight( index, 2 );
@@ -759,7 +767,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectSiblingPointerPointingToLowerLevel() throws IOException
+    void shouldDetectSiblingPointerPointingToLowerLevel() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -778,7 +786,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDetectSiblingPointerPointingToUpperLevel() throws IOException
+    void shouldDetectSiblingPointerPointingToUpperLevel() throws IOException
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
@@ -959,7 +967,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             public void notATreeNode( long pageId, File file )
             {
                 called.setTrue();
-                assertEquals( targetNode, pageId );
+                assertEquals( pageId, targetNode );
             }
         } );
         assertCalled( called );
@@ -1079,7 +1087,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
-                Assert.assertThat( message, containsString( "Overlap between allocSpace and active keys" ) );
+                assertThat( message, containsString( "Overlap between allocSpace and active keys" ) );
             }
         } );
         assertCalled( called );
@@ -1095,7 +1103,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
-                Assert.assertThat( message, containsString( "Overlap between offsetArray and allocSpace" ) );
+                assertThat( message, containsString( "Overlap between offsetArray and allocSpace" ) );
             }
         } );
         assertCalled( called );
@@ -1111,7 +1119,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
-                Assert.assertThat( message, containsString( "Space areas did not sum to total space" ) );
+                assertThat( message, containsString( "Space areas did not sum to total space" ) );
             }
         } );
         assertCalled( called );
@@ -1127,7 +1135,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
-                Assert.assertThat( message, containsString( "Pointer to allocSpace is misplaced, it should point to start of key" ) );
+                assertThat( message, containsString( "Pointer to allocSpace is misplaced, it should point to start of key" ) );
             }
         } );
         assertCalled( called );
@@ -1289,7 +1297,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     private static <KEY,VALUE> void assertReportException( GBPTree<KEY,VALUE> index ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<KEY>()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<>()
         {
             @Override
             public void exception( Exception e )
@@ -1302,7 +1310,7 @@ public abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 
     private static void assertCalled( MutableBoolean called )
     {
-        assertTrue( "Expected to receive call to correct consistency report method.", called.getValue() );
+        assertTrue( called.getValue(), "Expected to receive call to correct consistency report method." );
     }
 
     private long randomAmong( LongList list )
