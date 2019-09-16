@@ -38,41 +38,6 @@ import scala.concurrent.{Await, Future}
 abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                        runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
 
-  test("should handle allNodeScan") {
-    // given
-    val nodes = nodeGraph(11)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = for { n <- nodes } yield Array(n)
-    runtimeResult should beColumns("x").withRows(expected)
-  }
-
-  test("should handle allNodeScan and filter") {
-    // given
-    val nodes = nodeGraph(11)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .filter("id(x) >= 3")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = for { n <- nodes if n.getId >= 3 } yield Array(n)
-    runtimeResult should beColumns("x").withRows(expected)
-  }
-
   test("should handle expand + filter") {
     // given
     val size = 1000
