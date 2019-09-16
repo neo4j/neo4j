@@ -67,6 +67,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
         try {
           val fullAccess = tc.securityContext().withMode(AccessMode.Static.FULL)
           revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
+          tc.kernelTransaction().dataWrite() // assert that we are allowed to write
 
           val systemSubscriber = new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler)
           val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
