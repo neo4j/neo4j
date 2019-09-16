@@ -37,17 +37,18 @@ class TaskCloser {
     if (!closed) {
       closed = true
       var foundException: Option[Throwable] = None
-      _tasks.reverse foreach {
-        f =>
-          try {
-            f(success)
-          } catch {
-            case e: Throwable =>
-              foundException match {
-                case Some(first) => first.addSuppressed(e)
-                case None => foundException = Some(e)
-              }
-          }
+      val iterator = _tasks.reverseIterator
+      while (iterator.hasNext) {
+        val f = iterator.next()
+        try {
+          f(success)
+        } catch {
+          case e: Throwable =>
+            foundException match {
+              case Some(first) => first.addSuppressed(e)
+              case None => foundException = Some(e)
+            }
+        }
       }
 
       foundException.forall(throwable => throw throwable)
