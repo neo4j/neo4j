@@ -107,9 +107,9 @@ class PointTest
         assertArrayEquals( pointValue( WGS84, 0, -90 ).coordinate(), new double[]{0, -90} );
 
         // invalid ones for y
-        assertThrows( InvalidValuesArgumentException.class, () -> pointValue( WGS84, 0, 91 ),
+        assertThrows( InvalidArgumentException.class, () -> pointValue( WGS84, 0, 91 ),
                 "Cannot create WGS84 point with invalid coordinate: [0.0, 91.0]. Valid range for Y coordinate is [-90, 90]." );
-        assertThrows( InvalidValuesArgumentException.class, () -> pointValue( WGS84, 0, -91 ),
+        assertThrows( InvalidArgumentException.class, () -> pointValue( WGS84, 0, -91 ),
                 "Cannot create WGS84 point with invalid coordinate: [0.0, -91.0]. Valid range for Y coordinate is [-90, 90]." );
     }
 
@@ -142,9 +142,9 @@ class PointTest
         assertArrayEquals( pointValue( WGS84_3D, 0, -90, 0 ).coordinate(), new double[]{0, -90, 0} );
 
         // invalid ones for y
-        assertThrows( InvalidValuesArgumentException.class, () -> pointValue( WGS84_3D, 0, 91, 0 ),
+        assertThrows( InvalidArgumentException.class, () -> pointValue( WGS84_3D, 0, 91, 0 ),
                 "Cannot create WGS84 point with invalid coordinate: [0.0, 91.0, 0.0]. Valid range for Y coordinate is [-90, 90]." );
-        assertThrows( InvalidValuesArgumentException.class, () -> pointValue( WGS84_3D, 0, -91, 0 ),
+        assertThrows( InvalidArgumentException.class, () -> pointValue( WGS84_3D, 0, -91, 0 ),
                 "Cannot create WGS84 point with invalid coordinate: [0.0, -91.0, 0.0]. Valid range for Y coordinate is [-90, 90]." );
     }
 

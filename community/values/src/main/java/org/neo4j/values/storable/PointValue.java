@@ -73,7 +73,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             //   (@see org.neo4j.bolt.v2.messaging.Neo4jPackV2Test#shouldFailToPackPointWithIllegalDimensions )
             if ( coordinate[1] > 90 || coordinate[1] < -90 )
             {
-                throw new InvalidValuesArgumentException(
+                throw new InvalidArgumentException(
                         "Cannot create WGS84 point with invalid coordinate: " + Arrays.toString( coordinate ) +
                                 ". Valid range for Y coordinate is [-90, 90]." );
             }
