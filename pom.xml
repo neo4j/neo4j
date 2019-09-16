@@ -102,8 +102,8 @@
     <metrics.version>4.1.0</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
     <jersey.version>2.29</jersey.version>
-    <junit.version>5.5.1</junit.version>
-    <junit.platform.version>1.5.1</junit.platform.version>
+    <junit.version>5.5.2</junit.version>
+    <junit.platform.version>1.5.2</junit.platform.version>
     <currentYear>2019</currentYear>
     <opencypher.version>1.0.0-M14</opencypher.version>
     <caffeine.version>2.8.0</caffeine.version>
