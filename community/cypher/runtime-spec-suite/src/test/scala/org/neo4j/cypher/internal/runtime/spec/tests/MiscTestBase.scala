@@ -121,48 +121,6 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
-  test("should sort") {
-    // given
-    circleGraph(10000)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .sort(Seq(Descending("y")))
-      .expandAll("(x)--(y)")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y").withRows(sortedDesc("y"))
-  }
-
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    runtimeResult should beColumns("x").withRows(singleColumnInOrder(nodes))
-  }
-
-  test("should all node scan and sort on rhs of apply") {
-    // given
-    val nodes = nodeGraph(10)
-    val inputRows = inputValues(nodes.map(node => Array[Any](node)): _*)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .apply()
-      .|.sort(sortItems = Seq(Descending("x")))
-      .|.allNodeScan("x")
-      .input(nodes = Seq("x"))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime, inputRows)
-
-    runtimeResult should beColumns("x").withRows(rowCount(100))
-  }
 
   test("should sort on top of apply with all node scan and sort on rhs of apply") {
     // given
@@ -184,25 +142,6 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     runtimeResult should beColumns("x").withRows(rowCount(100))
   }
 
-  test("should apply-sort") {
-    // given
-    circleGraph(1000)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .apply()
-      .|.sort(Seq(Descending("y")))
-      .|.expandAll("(x)--(y)")
-      .|.argument()
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "y").withRows(groupedBy("x").desc("y"))
-  }
 
   test("should sort-apply") {
     // given
