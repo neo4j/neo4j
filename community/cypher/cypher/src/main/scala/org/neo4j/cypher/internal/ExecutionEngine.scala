@@ -288,10 +288,15 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // HELPERS
 
   @throws(classOf[ParameterNotFoundException])
-  private def checkParameters(queryParams: Seq[String], givenParams: MapValue, extractedParams: MapValue) {
-    val missingKeys = queryParams.filter(key => !(givenParams.containsKey(key) || extractedParams.containsKey(key))).distinct
-    if (missingKeys.nonEmpty) {
-      throw new ParameterNotFoundException("Expected parameter(s): " + missingKeys.mkString(", "))
+  private def checkParameters(queryParams: Array[String], givenParams: MapValue, extractedParams: MapValue) {
+    var i = 0
+    while (i < queryParams.length) {
+      val key = queryParams(i)
+      if (!(givenParams.containsKey(key) || extractedParams.containsKey(key))) {
+        val missingKeys = queryParams.filter(key => !(givenParams.containsKey(key) || extractedParams.containsKey(key))).distinct
+        throw new ParameterNotFoundException("Expected parameter(s): " + missingKeys.mkString(", "))
+      }
+      i += 1
     }
   }
 

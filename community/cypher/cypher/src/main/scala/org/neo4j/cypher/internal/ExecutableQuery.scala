@@ -69,7 +69,7 @@ trait ExecutableQuery extends CacheabilityInfo {
   /**
     * Names of all parameters for this query, explicit and auto-parametrized.
     */
-  val paramNames: Seq[String]
+  val paramNames: Array[String]
 
   /**
     * The names and values of the auto-parametrized parameters for this query.
