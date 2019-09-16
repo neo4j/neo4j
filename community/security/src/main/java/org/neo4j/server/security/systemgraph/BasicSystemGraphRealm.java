@@ -328,20 +328,6 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
     }
 
     @Override
-    public void setUserRequirePasswordChange( String username, boolean requirePasswordChange ) throws InvalidArgumentsException
-    {
-        basicSystemGraphOperations.setUserRequirePasswordChange( username, requirePasswordChange );
-        clearCacheForUser( username );
-    }
-
-    @Override
-    public void setUserStatus( String username, boolean isSuspended ) throws InvalidArgumentsException
-    {
-        basicSystemGraphOperations.setUserStatus( username, isSuspended );
-        clearCacheForUser( username );
-    }
-
-    @Override
     public Set<String> getAllUsernames()
     {
         return basicSystemGraphOperations.getAllUsernames();
@@ -363,7 +349,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         }
     }
 
-    protected void clearCacheForUser( String username )
+    private void clearCacheForUser( String username )
     {
         clearCache( new SimplePrincipalCollection( username, this.getName() ) );
     }

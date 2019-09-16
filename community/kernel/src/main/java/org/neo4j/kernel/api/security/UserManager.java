@@ -46,10 +46,6 @@ public interface UserManager
      */
     void setUserPassword( String username, byte[] password, boolean requirePasswordChange ) throws InvalidArgumentsException;
 
-    void setUserRequirePasswordChange( String username, boolean requirePasswordChange ) throws InvalidArgumentsException;
-
-    void setUserStatus( String username, boolean isSuspended ) throws InvalidArgumentsException;
-
     Set<String> getAllUsernames();
 
     UserManager NO_AUTH = new UserManager()
@@ -89,16 +85,6 @@ public interface UserManager
             {
                 Arrays.fill( password, (byte) 0 );
             }
-        }
-
-        @Override
-        public void setUserRequirePasswordChange( String username, boolean requirePasswordChange )
-        {
-        }
-
-        @Override
-        public void setUserStatus( String username, boolean isSuspended )
-        {
         }
 
         @Override
