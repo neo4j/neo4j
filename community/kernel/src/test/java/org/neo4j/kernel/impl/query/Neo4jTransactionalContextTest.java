@@ -70,7 +70,6 @@ class Neo4jTransactionalContextTest
     private ThreadToStatementContextBridge txBridge;
     private ConfiguredExecutionStatistics statistics;
     private GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
-    private DefaultValueMapper valueMapper = new DefaultValueMapper( databaseFacade );
     private KernelTransactionFactory transactionFactory = mock( KernelTransactionFactory.class );
     private DatabaseId databaseId = TestDatabaseIdRepository.randomDatabaseId();
 
@@ -91,7 +90,7 @@ class Neo4jTransactionalContextTest
         when( txBridge.getKernelTransactionBoundToThisThread( eq( true ), any( DatabaseId.class ) ) ).thenReturn( kernelTransaction );
 
         Neo4jTransactionalContext transactionalContext =
-                new Neo4jTransactionalContext( null, txBridge, initialTransaction, initialStatement, executingQuery, valueMapper, transactionFactory );
+                new Neo4jTransactionalContext( null, txBridge, initialTransaction, initialStatement, executingQuery, databaseFacade, transactionFactory );
 
         transactionalContext.check();
 
@@ -131,7 +130,7 @@ class Neo4jTransactionalContextTest
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context =
-                new Neo4jTransactionalContext( queryService, txBridge, initialTransaction, initialStatement, executingQuery, valueMapper, transactionFactory );
+                new Neo4jTransactionalContext( queryService, txBridge, initialTransaction, initialStatement, executingQuery, databaseFacade, transactionFactory );
 
         // When
         context.commitAndRestartTx();
@@ -206,7 +205,7 @@ class Neo4jTransactionalContextTest
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context =
-                new Neo4jTransactionalContext( queryService, txBridge, initialTransaction, initialStatement, executingQuery, valueMapper, transactionFactory );
+                new Neo4jTransactionalContext( queryService, txBridge, initialTransaction, initialStatement, executingQuery, databaseFacade, transactionFactory );
 
         // When
         assertThrows(RuntimeException.class, context::commitAndRestartTx );
@@ -254,7 +253,7 @@ class Neo4jTransactionalContextTest
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         when( executingQuery.databaseId() ).thenReturn( databaseId );
         Neo4jTransactionalContext transactionalContext = new Neo4jTransactionalContext( queryService,
-                txBridge, initialTransaction, initialStatement, executingQuery, valueMapper, transactionFactory );
+                txBridge, initialTransaction, initialStatement, executingQuery, databaseFacade, transactionFactory );
 
         statistics.setFaults( 2 );
         statistics.setHits( 5 );
@@ -425,7 +424,7 @@ class Neo4jTransactionalContextTest
     {
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         when( executingQuery.databaseId() ).thenReturn( databaseId );
-        return new Neo4jTransactionalContext( queryService, txBridge, initialTx, initialStatement, executingQuery, valueMapper, transactionFactory );
+        return new Neo4jTransactionalContext( queryService, txBridge, initialTx, initialStatement, executingQuery, databaseFacade, transactionFactory );
     }
 
     private KernelTransaction mockTransaction( Statement statement )

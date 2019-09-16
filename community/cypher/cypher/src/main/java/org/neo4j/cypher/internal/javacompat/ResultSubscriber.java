@@ -39,7 +39,6 @@ import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
@@ -71,8 +70,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     public ResultSubscriber( TransactionalContext context )
     {
         this.context = context;
-        this.valueMapper = new DefaultValueMapper(
-                context.graph().getDependencyResolver().resolveDependency( EmbeddedProxySPI.class ) );
+        this.valueMapper = new DefaultValueMapper( context.proxySPI() );
     }
 
     public void init( QueryExecution execution )

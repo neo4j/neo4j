@@ -43,7 +43,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton( queryServiceSupplier );
         Neo4jTransactionalContext.Creator contextCreator =
                 ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(), txBridge, tx, initialStatement, executingQuery,
-                        new DefaultValueMapper( proxySpi ), transactionFactory );
+                        proxySpi, transactionFactory );
         Supplier<Statement> statementSupplier = () -> proxySpi.kernelTransaction().acquireStatement();
         return new Neo4jTransactionalContextFactory( statementSupplier, contextCreator );
     }
@@ -63,7 +63,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
                                 tx,
                                 initialStatement,
                                 executingQuery,
-                                new DefaultValueMapper( proxySpi ),
+                                proxySpi,
                                 transactionFactory
                         );
         Supplier<Statement> statementSupplier = () -> proxySpi.kernelTransaction().acquireStatement();

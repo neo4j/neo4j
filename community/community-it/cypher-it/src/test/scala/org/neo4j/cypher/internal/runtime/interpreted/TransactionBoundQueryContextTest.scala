@@ -51,7 +51,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.database.{DatabaseId, TestDatabaseIdRepository}
 import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation}
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.{GraphDatabaseFacade, KernelTransactionFactory}
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
@@ -71,7 +71,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   var graphOps: GraphDatabaseService = null
   var graph: GraphDatabaseQueryService = null
   var outerTx: InternalTransaction = null
-  var valueMapper: ValueMapper[AnyRef] = _
+  var proxySPI: EmbeddedProxySPI = _
   var transactionFactory: KernelTransactionFactory = _
   var statement: KernelStatement = null
   val indexSearchMonitor = mock[IndexSearchMonitor]
@@ -81,7 +81,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     managementService = new TestDatabaseManagementServiceBuilder().impermanent().build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new javacompat.GraphDatabaseCypherService(graphOps)
-    valueMapper = new DefaultValueMapper(mock[GraphDatabaseFacade])
+    proxySPI = mock[EmbeddedProxySPI]
     transactionFactory = mock[KernelTransactionFactory]
     outerTx = mock[InternalTransaction]
     val kernelTransaction = mock[KernelTransactionImplementation](RETURNS_DEEP_STUBS)
@@ -108,7 +108,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transaction = mock[KernelTransaction]
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(ArgumentMatchers.eq(true), any(classOf[DatabaseId]))).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper, transactionFactory)
+    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], proxySPI, transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -132,7 +132,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(transaction.acquireStatement()).thenReturn(statement)
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(ArgumentMatchers.eq(true), any(classOf[DatabaseId]))).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper, transactionFactory)
+    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], proxySPI, transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -229,7 +229,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(transaction.acquireStatement()).thenReturn(statement)
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(ArgumentMatchers.eq(true), any(classOf[DatabaseId]))).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper, transactionFactory)
+    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], proxySPI, transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     val resource1 = mock[AutoCloseablePlus]
