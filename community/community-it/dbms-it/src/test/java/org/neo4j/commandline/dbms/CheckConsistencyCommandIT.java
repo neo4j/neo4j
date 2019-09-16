@@ -98,8 +98,8 @@ class CheckConsistencyCommandIT
                 "%n" +
                 "check-consistency ([--database=<database>] | [--backup=<path>]) [--verbose]%n" +
                 "                  [--additional-config=<path>] [--check-graph=<true/false>]%n" +
-                "                  [--check-indexes=<true/false>]%n" +
                 "                  [--check-index-structure=<true/false>]%n" +
+                "                  [--check-indexes=<true/false>]%n" +
                 "                  [--check-label-scan-store=<true/false>]%n" +
                 "                  [--check-property-owners=<true/false>] [--report-dir=<path>]%n" +
                 "%n" +

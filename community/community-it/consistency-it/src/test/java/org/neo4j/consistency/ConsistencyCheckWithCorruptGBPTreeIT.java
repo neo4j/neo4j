@@ -499,7 +499,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
-    public void multipleCorruptionsInLabelScanStore() throws Exception
+    public void corruptionInLabelScanStore() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> rootNode = new MutableObject<>();
@@ -620,7 +620,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
     private File labelScanStoreFile()
     {
-        final File dataDir = testDirectory.storeLayout().storeDirectory();
+        final File dataDir = testDirectory.databaseDir();
         return new File( dataDir, DatabaseFile.LABEL_SCAN_STORE.getName() );
     }
 
