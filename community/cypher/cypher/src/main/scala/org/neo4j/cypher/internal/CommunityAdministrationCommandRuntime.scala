@@ -177,7 +177,6 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
         s"""
            |MATCH (node:$label {name: $$name})
-           |SET node.ignore = 0 // need to be a write query to trigger error on follower in a cluster
            |RETURN node.name AS name
         """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
         QueryHandler
@@ -193,7 +192,6 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       UpdatingSystemCommandExecutionPlan("DoNothingIfExists", normalExecutionEngine,
         s"""
            |MATCH (node:$label {name: $$name})
-           |SET node.ignore = 0 // need to be a write query to trigger error on follower in a cluster
            |RETURN node.name AS name
         """.stripMargin, VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
         QueryHandler
@@ -209,7 +207,6 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case EnsureNodeExists(label, name) => (_, _, _) =>
       UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
         s"""MATCH (node:$label {name: $$name})
-           |SET node.ignore = 0 // need to be a write query to trigger error on follower in a cluster
            |RETURN node""".stripMargin,
         VirtualValues.map(Array("name"), Array(Values.stringValue(name))),
         QueryHandler
