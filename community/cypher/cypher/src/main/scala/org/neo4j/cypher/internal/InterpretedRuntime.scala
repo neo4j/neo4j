@@ -61,7 +61,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     new InterpretedExecutionPlan(query.periodicCommitInfo,
                                  resultBuilderFactory,
                                  InterpretedRuntimeName,
-                                 query.readOnly)
+                                 query.readOnly,
+                                 Nil)
   }
 
   /**
@@ -71,7 +72,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   class InterpretedExecutionPlan(periodicCommit: Option[PeriodicCommitInfo],
                                  resultBuilderFactory: ExecutionResultBuilderFactory,
                                  override val runtimeName: RuntimeName,
-                                 readOnly: Boolean) extends ExecutionPlan {
+                                 readOnly: Boolean,
+                                 override val metadata: Seq[Argument]) extends ExecutionPlan {
 
     override def run(queryContext: QueryContext,
                      doProfile: Boolean,
@@ -100,8 +102,6 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                     input,
                     subscriber)
     }
-
-    override def metadata: Seq[Argument] = Nil
 
     override def notifications: Set[InternalNotification] = Set.empty
   }

@@ -22,6 +22,7 @@ package org.neo4j.codegen.bytecode;
 import org.neo4j.codegen.CodeGenerationStrategy;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CodeGeneratorOption;
+import org.neo4j.codegen.DisassemblyVisitor;
 
 public enum ByteCode implements CodeGeneratorOption
 {
@@ -47,6 +48,27 @@ public enum ByteCode implements CodeGeneratorOption
         }
     };
     public static final CodeGeneratorOption VERIFY_GENERATED_BYTECODE = load( "Verifier" );
+    public static final CodeGeneratorOption PRINT_BYTECODE = new DisassemblyVisitor()
+    {
+        @Override
+        protected void visitDisassembly( String className, CharSequence disassembly )
+        {
+            String[] lines = disassembly.toString().split( "\\n" );
+            System.out.println( "=== Generated class bytecode " + className + " ===\n" );
+            for ( int i = 0; i < lines.length; i++ )
+            {
+                System.out.print( i + 1 );
+                System.out.print( '\t' );
+                System.out.println( lines[i] );
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "PRINT_BYTECODE";
+        }
+    };
 
     @Override
     public void applyTo( Object target )
@@ -62,7 +84,7 @@ public enum ByteCode implements CodeGeneratorOption
         try
         {
             return (CodeGeneratorOption) Class.forName( ByteCode.class.getName() + option )
-                    .getDeclaredMethod( "load" + option ).invoke( null );
+                                              .getDeclaredMethod( "load" + option ).invoke( null );
         }
         catch ( Throwable e )
         {

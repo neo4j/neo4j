@@ -26,24 +26,69 @@ import org.neo4j.codegen.FieldReference.{field, staticField}
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen.TypeReference.OBJECT
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
-import org.neo4j.codegen.source.SourceCode.{PRINT_SOURCE, SOURCECODE}
-import org.neo4j.codegen.{CodeGenerator, TypeReference}
+import org.neo4j.codegen.bytecode.ByteCode.PRINT_BYTECODE
+import org.neo4j.codegen.source.SourceCode.SOURCECODE
+import org.neo4j.codegen.source.SourceCode.PRINT_SOURCE
+import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.codegen.{CodeGenerator, CodeGeneratorOption, DisassemblyVisitor, TypeReference}
 
 /**
   * Produces runnable code from an IntermediateRepresentation
   */
 object CodeGeneration {
 
-  private val DEBUG = false
+  // Use these options for Debugging. They will print generated code to stdout
+  private val DEBUG_PRINT_SOURCE = false
+  private val DEBUG_PRINT_BYTECODE = false
 
-  def compileClass[T](c: ClassDeclaration[T], generator: CodeGenerator = createGenerator): Class[T] = {
+  sealed trait CodeGenerationMode {
+    def saver: CodeSaver
+  }
+  case class ByteCodeGeneration(saver: CodeSaver) extends CodeGenerationMode
+  case class SourceCodeGeneration(saver: CodeSaver) extends CodeGenerationMode
+
+  object CodeGenerationMode {
+    def fromDebugOptions(debugOptions: Set[String]): CodeGenerationMode = {
+      if(debugOptions.contains("generate_java_source")) {
+        val saver = new CodeSaver(debugOptions.contains("show_java_source"), debugOptions.contains("show_bytecode"))
+        SourceCodeGeneration(saver)
+      } else {
+        val saver = new CodeSaver(false, debugOptions.contains("show_bytecode"))
+        ByteCodeGeneration(saver)
+      }
+    }
+  }
+
+  class CodeSaver(saveSource: Boolean, saveByteCode: Boolean) extends {
+    private var _source: Seq[(String, String)] = Seq.empty
+    private var _bytecode: Seq[(String, String)] = Seq.empty
+
+    private def sourceVisitor: SourceVisitor =
+      (reference: TypeReference, sourceCode: CharSequence) => _source = _source :+ (reference.name() -> sourceCode.toString)
+
+    private def byteCodeVisitor: DisassemblyVisitor =
+      (className: String, disassembly: CharSequence) => _bytecode = _bytecode :+ (className -> disassembly.toString)
+
+    def options: List[CodeGeneratorOption] = {
+      var l: List[CodeGeneratorOption] = Nil
+      if (saveSource) l ::= sourceVisitor
+      if (saveByteCode) l::= byteCodeVisitor
+      l
+    }
+
+    def sourceCode: Seq[(String, String)] = _source
+
+    def bytecode: Seq[(String, String)] = _bytecode
+  }
+
+  def compileClass[T](c: ClassDeclaration[T], generator: CodeGenerator): Class[T] = {
     val handle = compileClassDeclaration(c, generator)
     val clazz = handle.loadClass()
     setConstants(clazz, c.fields)
     clazz.asInstanceOf[Class[T]]
   }
 
-  def compileAnonymousClass[T](c: ClassDeclaration[T], generator: CodeGenerator = createGenerator): Class[T] = {
+  def compileAnonymousClass[T](c: ClassDeclaration[T], generator: CodeGenerator): Class[T] = {
     val handle = compileClassDeclaration(c, generator)
     val clazz = handle.loadAnonymousClass()
     setConstants(clazz, c.fields)
@@ -86,9 +131,16 @@ object CodeGeneration {
     }
   }
 
-  def createGenerator: CodeGenerator = {
-    if (DEBUG) generateCode(classOf[IntermediateRepresentation].getClassLoader, SOURCECODE, PRINT_SOURCE)
-    else generateCode(classOf[IntermediateRepresentation].getClassLoader, BYTECODE)
+  def createGenerator(codeGenerationMode: CodeGenerationMode): CodeGenerator = {
+    var (strategy, options) = (codeGenerationMode, DEBUG_PRINT_SOURCE) match {
+      case (SourceCodeGeneration(saver), _) => (SOURCECODE, saver.options)
+      case (ByteCodeGeneration(saver), true) => (SOURCECODE, saver.options)
+      case (ByteCodeGeneration(saver), false) => (BYTECODE, saver.options)
+    }
+    if (DEBUG_PRINT_SOURCE) options ::= PRINT_SOURCE
+    if (DEBUG_PRINT_BYTECODE) options ::= PRINT_BYTECODE
+
+    generateCode(classOf[IntermediateRepresentation].getClassLoader, strategy, options: _*)
   }
 
   private def compileExpression(ir: IntermediateRepresentation, block: codegen.CodeBlock): codegen.Expression = ir match {
