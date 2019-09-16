@@ -134,6 +134,7 @@ public class DataImporter
         long startTime = currentTimeMillis();
         try ( InputIterator dataIterator = data.iterator() )
         {
+            executionMonitor.start( execution );
             for ( int i = 0; i < numRunners; i++ )
             {
                 pool.submit( new ExhaustingEntityImporterRunnable(
@@ -141,7 +142,6 @@ public class DataImporter
             }
             pool.shutdown();
 
-            executionMonitor.start( execution );
             long nextWait = 0;
             try
             {
