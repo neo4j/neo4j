@@ -173,6 +173,24 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case (source, (userName, roleName)) => Some(plans.RevokeRoleFromUser(source, userName, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
+      // GRANT ACCESS ON DATABASE foo TO role
+      case c@GrantPrivilege(AccessPrivilege(), _, database, _, roleNames) =>
+        roleNames.foldLeft(Option.empty[plans.GrantAccess]) {
+          case (source, roleName) => Some(plans.GrantAccess(source, database, roleName))
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // DENY ACCESS ON DATABASE foo TO role
+      case c@DenyPrivilege(AccessPrivilege(), _, database, _, roleNames) =>
+        roleNames.foldLeft(Option.empty[plans.DenyAccess]) {
+          case (source, roleName) => Some(plans.DenyAccess(source, database, roleName))
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // REVOKE ACCESS ON DATABASE foo FROM role
+      case c@RevokePrivilege(AccessPrivilege(), _, database, _, roleNames, revokeType) =>
+        roleNames.foldLeft(Option.empty[plans.RevokeAccess]) {
+          case (source, roleName) => Some(plans.RevokeAccess(source, database, roleName, revokeType))
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
       case c@GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {

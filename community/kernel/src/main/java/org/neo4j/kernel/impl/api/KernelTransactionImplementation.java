@@ -831,7 +831,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Read dataRead()
     {
-        assertAllowsReads();
         return operations.dataRead();
     }
 
@@ -868,7 +867,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public SchemaRead schemaRead()
     {
-        assertAllowsReads();
         return operations.schemaRead();
     }
 
@@ -962,15 +960,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         AccessMode accessMode = securityContext.mode();
         if ( !accessMode.allowsTokenReads() )
-        {
-            throw accessMode.onViolation( format( "Read operations are not allowed for %s.", securityContext().description() ) );
-        }
-    }
-
-    private void assertAllowsReads()
-    {
-        AccessMode accessMode = securityContext().mode();
-        if ( !accessMode.allowsReads() )
         {
             throw accessMode.onViolation( format( "Read operations are not allowed for %s.", securityContext().description() ) );
         }

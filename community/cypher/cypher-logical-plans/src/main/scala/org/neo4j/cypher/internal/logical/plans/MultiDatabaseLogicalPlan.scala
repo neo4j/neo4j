@@ -64,6 +64,11 @@ case class RequireRole(source: Option[SecurityAdministrationLogicalPlan], name: 
 case class CopyRolePrivileges(source: Option[SecurityAdministrationLogicalPlan], to: String, from: String, grantDeny: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
 abstract class PrivilegePlan()(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
+
+case class GrantAccess(source: Option[PrivilegePlan], database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class DenyAccess(source: Option[PrivilegePlan], database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class RevokeAccess(source: Option[PrivilegePlan], database: GraphScope, roleName: String, revokeType: RevokeType)(implicit idGen: IdGen) extends PrivilegePlan
+
 case class GrantTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class DenyTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class RevokeTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String, revokeType: RevokeType)(implicit idGen: IdGen) extends PrivilegePlan

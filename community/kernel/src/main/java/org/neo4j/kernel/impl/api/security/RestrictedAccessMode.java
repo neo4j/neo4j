@@ -43,12 +43,6 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsReads()
-    {
-        return original.allowsReads() && wrapping.allowsReads();
-    }
-
-    @Override
     public boolean allowsWrites()
     {
         return original.allowsWrites() && wrapping.allowsWrites();

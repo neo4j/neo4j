@@ -46,23 +46,23 @@ trait Statement extends Parser
   }
 
   def GrantCommand: Rule1[CatalogDDL] = rule("Security privilege grant statement") {
-      GrantRole | GrantTraverse | GrantRead | GrantMatch | GrantWrite
+      GrantRole | GrantAccess | GrantTraverse | GrantRead | GrantMatch | GrantWrite
   }
 
   def DenyCommand: Rule1[CatalogDDL] = rule("Security privilege deny statement") {
-    DenyTraverse | DenyRead | DenyMatch | DenyWrite
+    DenyAccess | DenyTraverse | DenyRead | DenyMatch | DenyWrite
   }
 
   def RevokeCommand: Rule1[CatalogDDL] = rule("Security privilege revoke statement") {
-    RevokeRole | RevokeTraverse | RevokeRead | RevokeMatch | RevokeWrite | RevokeGrant | RevokeDeny
+    RevokeRole | RevokeAccess | RevokeTraverse | RevokeRead | RevokeMatch | RevokeWrite | RevokeGrant | RevokeDeny
   }
 
   def RevokeGrant: Rule1[CatalogDDL] = rule("Security privilege revoke grant statement") {
-    RevokeGrantTraverse | RevokeGrantRead | RevokeGrantMatch | RevokeGrantWrite
+    RevokeGrantAccess | RevokeGrantTraverse | RevokeGrantRead | RevokeGrantMatch | RevokeGrantWrite
   }
 
   def RevokeDeny: Rule1[CatalogDDL] = rule("Security privilege revoke deny statement") {
-    RevokeDenyTraverse | RevokeDenyRead | RevokeDenyMatch | RevokeDenyWrite
+    RevokeDenyAccess | RevokeDenyTraverse | RevokeDenyRead | RevokeDenyMatch | RevokeDenyWrite
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -204,6 +204,36 @@ trait Statement extends Parser
   def RevokeRole: Rule1[RevokeRolesFromUsers] = rule("CATALOG REVOKE ROLE") {
     group(keyword("REVOKE") ~~ (keyword("ROLES") | keyword("ROLE")) ~~ SymbolicNamesList ~~
       keyword("FROM") ~~ SymbolicNamesList) ~~>> (ast.RevokeRolesFromUsers(_, _))
+  }
+
+  //`GRANT ACCESS ON DATABASE foo TO role`
+  def GrantAccess: Rule1[GrantPrivilege] = rule("CATALOG GRANT ACCESS") {
+    group(keyword("GRANT ACCESS") ~~ Database ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+      ((scope, grantees) => ast.GrantPrivilege.access(scope, grantees))
+  }
+
+  //`DENY ACCESS ON DATABASE foo TO role`
+  def DenyAccess: Rule1[DenyPrivilege] = rule("CATALOG DENY ACCESS") {
+    group(keyword("DENY ACCESS") ~~ Database ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+      ((scope, grantees) => ast.DenyPrivilege.access(scope, grantees))
+  }
+
+  //`REVOKE GRANT ACCESS ON DATABASE foo FROM role`
+  def RevokeGrantAccess: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT ACCESS") {
+    group(keyword("REVOKE GRANT ACCESS") ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((scope, grantees) => ast.RevokePrivilege.grantedAccess(scope, grantees))
+  }
+
+  //`REVOKE DENY ACCESS ON DATABASE foo FROM role`
+  def RevokeDenyAccess: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY ACCESS") {
+    group(keyword("REVOKE DENY ACCESS") ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((scope, grantees) => ast.RevokePrivilege.deniedAccess(scope, grantees))
+  }
+
+  //`REVOKE TRAVERSE ON DATABASE foo FROM role`
+  def RevokeAccess: Rule1[RevokePrivilege] = rule("CATALOG REVOKE ACCESS") {
+    group(keyword("REVOKE ACCESS") ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((scope, grantees) => ast.RevokePrivilege.access(scope,grantees))
   }
 
   //`GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role`
@@ -359,6 +389,12 @@ trait Statement extends Parser
   private def RelationshipKeyword: Rule0 = keyword("RELATIONSHIPS") | keyword("RELATIONSHIP")
 
   private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
+
+  private def Database: Rule1[GraphScope] = rule("on a database")(
+    group(keyword("ON") ~~ (keyword("DATABASE") | keyword("DATABASES"))) ~~
+      (group(SymbolicNameString) ~~>> (ast.NamedGraphScope(_)) |
+        keyword("*") ~~~> ast.AllGraphsScope())
+  )
 
   private def Graph: Rule1[GraphScope] = rule("on a database/graph")(
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~

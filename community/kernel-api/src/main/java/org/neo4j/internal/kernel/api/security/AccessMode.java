@@ -88,12 +88,6 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsReads()
-        {
-            return read;
-        }
-
-        @Override
         public boolean allowsWrites()
         {
             return write;
@@ -203,7 +197,6 @@ public interface AccessMode
     }
 
     boolean allowsTokenReads();
-    boolean allowsReads();
     boolean allowsWrites();
     boolean allowsTokenCreates();
     boolean allowsSchemaWrites();

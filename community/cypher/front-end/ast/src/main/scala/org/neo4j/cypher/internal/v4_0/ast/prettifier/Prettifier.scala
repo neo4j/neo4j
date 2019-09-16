@@ -140,6 +140,18 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ RevokeRolesFromUsers(roleNames, userNames) =>
       s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", " )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
+    case x @ GrantPrivilege(AccessPrivilege(), _, dbScope, _, roleNames) =>
+      val dbName = Prettifier.extractDbScope(dbScope)
+      s"${x.name} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"
+
+    case x @ DenyPrivilege(AccessPrivilege(), _, dbScope, _, roleNames) =>
+      val dbName = Prettifier.extractDbScope(dbScope)
+      s"${x.name} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"
+
+    case x @ RevokePrivilege(AccessPrivilege(), _, dbScope, _, roleNames, _) =>
+      val dbName = Prettifier.extractDbScope(dbScope)
+      s"${x.name} ON DATABASE $dbName FROM ${Prettifier.escapeNames(roleNames)}"
+
     case x @ GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
@@ -430,11 +442,6 @@ object Prettifier {
       case AllResource() => "*"
       case _ => "<unknown>"
     }
-    val dbName = dbScope match {
-      case NamedGraphScope(name) => escapeName(name)
-      case AllGraphsScope() => "*"
-      case _ => "<unknown>"
-    }
     val segment = qualifier match {
       case LabelQualifier(name) => "NODE " + escapeName(name)
       case LabelsQualifier(names) => "NODES " + names.map(escapeName).mkString(", ")
@@ -445,7 +452,18 @@ object Prettifier {
       case AllQualifier() => "ELEMENTS *"
       case _ => "<unknown>"
     }
-    (resourceName, dbName, segment)
+    (resourceName, extractDbScope(dbScope), segment)
+  }
+
+  def revokeOperation(operation: String, revokeType: RevokeType): String = revokeType match {
+    case _: RevokeBothType => s"$operation(ALL)"
+    case _ => s"$operation(${revokeType.name})"
+  }
+
+  def extractDbScope(dbScope: GraphScope): String = dbScope match {
+    case NamedGraphScope(name) => escapeName(name)
+    case AllGraphsScope() => "*"
+    case _ => "<unknown>"
   }
 
   /*
