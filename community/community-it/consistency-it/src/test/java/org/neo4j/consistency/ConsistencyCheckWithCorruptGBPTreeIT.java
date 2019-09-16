@@ -22,9 +22,8 @@ package org.neo4j.consistency;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.bouncycastle.util.Arrays;
 import org.eclipse.collections.api.list.primitive.ImmutableLongList;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -56,6 +55,7 @@ import org.neo4j.index.internal.gbptree.GBPTreeInspection;
 import org.neo4j.index.internal.gbptree.GBPTreePointerType;
 import org.neo4j.index.internal.gbptree.InspectingVisitor;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
@@ -67,34 +67,39 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
-public class ConsistencyCheckWithCorruptGBPTreeIT
+@EphemeralPageCacheExtension
+@ExtendWith( RandomExtension.class )
+class ConsistencyCheckWithCorruptGBPTreeIT
 {
     private static final Label label = Label.label( "label" );
     private static final String propKey1 = "key1";
-    private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private PageCacheRule pageCacheRule = new PageCacheRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory( fs.get() );
-    private RandomRule random = new RandomRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory ).around( pageCacheRule ).around( random );
+    @Inject
+    EphemeralFileSystemAbstraction fs;
+    @Inject
+    PageCache pageCache;
+    @Inject
+    TestDirectory testDirectory;
+    @Inject
+    RandomRule random;
 
     @Test
-    public void assertTreeHeightIsAsExpected() throws Exception
+    void assertTreeHeightIsAsExpected() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Integer> heightRef = new MutableObject<>();
@@ -102,12 +107,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         corruptIndexes( true, ( tree, inspection ) -> heightRef.setValue( inspection.getLastLevel() ), indexFiles );
 
         final int height = heightRef.getValue();
-        assertEquals( "This test assumes height of index tree is 2 but height for this index was " + height +
-                ". This is most easily regulated by changing number of nodes in setup.", 2, height );
+        assertEquals( 2, height, "This test assumes height of index tree is 2 but height for this index was " + height +
+                ". This is most easily regulated by changing number of nodes in setup." );
     }
 
     @Test
-    public void shouldNotCheckIndexesIfConfiguredNotTo() throws Exception
+    void shouldNotCheckIndexesIfConfiguredNotTo() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -120,11 +125,11 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         ConsistencyFlags flags = new ConsistencyFlags( true, false, false, true, true );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
 
-        assertTrue( "Expected store to be consistent when not checking indexes.", result.isSuccessful() );
+        assertTrue( result.isSuccessful(), "Expected store to be consistent when not checking indexes." );
     }
 
     @Test
-    public void shouldCheckIndexStructureEvenIfNotCheckingIndexes() throws Exception
+    void shouldCheckIndexStructureEvenIfNotCheckingIndexes() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -137,12 +142,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         ConsistencyFlags flags = new ConsistencyFlags( true, false, true, true, true );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
 
-        assertFalse( "Expected store to be inconsistent when checking index structure.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be inconsistent when checking index structure." );
         assertResultContainsMessage( result, "Page: " + targetNode.getValue() + " is not a tree node page" );
     }
 
     @Test
-    public void shouldNotCheckIndexStructureIfConfiguredNotToEvenIfCheckingIndexes() throws Exception
+    void shouldNotCheckIndexStructureIfConfiguredNotToEvenIfCheckingIndexes() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -155,11 +160,11 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         ConsistencyFlags flags = new ConsistencyFlags( true, true, false, true, true );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
 
-        assertTrue( "Expected store to be consistent when not checking indexes.", result.isSuccessful() );
+        assertTrue( result.isSuccessful(), "Expected store to be consistent when not checking indexes." );
     }
 
     @Test
-    public void shouldReportProgress() throws Exception
+    void shouldReportProgress() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
 
@@ -167,12 +172,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         ProgressMonitorFactory factory = ProgressMonitorFactory.textual( writer );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), factory );
 
-        assertTrue( "Expected new database to be clean.", result.isSuccessful() );
+        assertTrue( result.isSuccessful(), "Expected new database to be clean." );
         assertTrue( writer.toString().contains( "Index structure consistency check" ) );
     }
 
     @Test
-    public void notATreeNode() throws Exception
+    void notATreeNode() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -184,12 +189,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Page: " + targetNode.getValue() + " is not a tree node page." );
     }
 
     @Test
-    public void unknownTreeNodeType() throws Exception
+    void unknownTreeNodeType() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -201,12 +206,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Page: " + targetNode.getValue() + " has an unknown tree node type:" );
     }
 
     @Test
-    public void siblingsDontPointToEachOther() throws Exception
+    void siblingsDontPointToEachOther() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -218,12 +223,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Sibling pointers misaligned." );
     }
 
     @Test
-    public void rightmostNodeHasRightSibling() throws Exception
+    void rightmostNodeHasRightSibling() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
@@ -234,12 +239,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Expected rightmost node to have no right sibling but was 10" );
     }
 
     @Test
-    public void pointerToOldVersionOfTreeNode() throws Exception
+    void pointerToOldVersionOfTreeNode() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -252,12 +257,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "We ended up on tree node " + targetNode.getValue() + " which has a newer generation, successor is: 6" );
     }
 
     @Test
-    public void pointerHasLowerGenerationThanNode() throws Exception
+    void pointerHasLowerGenerationThanNode() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -272,14 +277,14 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result,
                 String.format( "Pointer (%s) in tree node %d has pointer generation %d, but target node %d has a higher generation %d.",
                         GBPTreePointerType.rightSibling(), targetNode.getValue(), 1, rightSibling.getValue(), 4 ) );
     }
 
     @Test
-    public void keysOutOfOrderInNode() throws Exception
+    void keysOutOfOrderInNode() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -292,12 +297,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, String.format( "Keys in tree node %d are out of order.", targetNode.getValue() ) );
     }
 
     @Test
-    public void keysLocatedInWrongNode() throws Exception
+    void keysLocatedInWrongNode() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
@@ -309,12 +314,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Expected range for this tree node is" );
     }
 
     @Test
-    public void unusedPage() throws Exception
+    void unusedPage() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
@@ -326,12 +331,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Index has a leaked page that will never be reclaimed, pageId=" );
     }
 
     @Test
-    public void pageIdExceedLastId() throws Exception
+    void pageIdExceedLastId() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
@@ -341,12 +346,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Index has a leaked page that will never be reclaimed, pageId=" );
     }
 
     @Test
-    public void nodeMetaInconsistency() throws Exception
+    void nodeMetaInconsistency() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
@@ -356,12 +361,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "has inconsistent meta data: Meta data for tree node is inconsistent" );
     }
 
     @Test
-    public void pageIdSeenMultipleTimes() throws Exception
+    void pageIdSeenMultipleTimes() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -373,14 +378,14 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result,
                 "Page id seen multiple times, this means either active tree node is present in freelist or pointers in tree create a loop, pageId=" +
                         targetNode.getValue() );
     }
 
     @Test
-    public void crashPointer() throws Exception
+    void crashPointer() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -392,12 +397,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Crashed pointer found in tree node " + targetNode.getValue() );
     }
 
     @Test
-    public void brokenPointer() throws Exception
+    void brokenPointer() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -409,12 +414,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Broken pointer found in tree node " + targetNode.getValue() );
     }
 
     @Test
-    public void unreasonableKeyCount() throws Exception
+    void unreasonableKeyCount() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
@@ -426,12 +431,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Unexpected keyCount on pageId " + targetNode.getValue() + ", keyCount=" + Integer.MAX_VALUE );
     }
 
     @Test
-    public void childNodeFoundAmongParentNodes() throws Exception
+    void childNodeFoundAmongParentNodes() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
@@ -442,12 +447,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Circular reference, child tree node found among parent nodes. Parents:" );
     }
 
     @Test
-    public void exception() throws Exception
+    void exception() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
@@ -458,14 +463,14 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result,
                 "Caught exception during consistency check: org.neo4j.index.internal.gbptree.TreeInconsistencyException: Some internal problem causing out of" +
                         " bounds: pageId:" );
     }
 
     @Test
-    public void shouldIncludeIndexFileInConsistencyReport() throws Exception
+    void shouldIncludeIndexFileInConsistencyReport() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
@@ -476,12 +481,12 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
-        assertFalse( "Expected store to be considered inconsistent.", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected store to be considered inconsistent." );
         assertResultContainsMessage( result, "Index file: " + corruptedFiles.get( 0 ).getAbsolutePath() );
     }
 
     @Test
-    public void multipleCorruptions() throws Exception
+    void multipleCorruptions() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> internalNode = new MutableObject<>();
@@ -505,7 +510,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
-    public void corruptionInLabelScanStore() throws Exception
+    void corruptionInLabelScanStore() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> rootNode = new MutableObject<>();
@@ -522,7 +527,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
-    public void multipleCorruptionsInFusionIndex() throws Exception
+    void multipleCorruptionsInFusionIndex() throws Exception
     {
         setup( GraphDatabaseSettings.SchemaIndex.NATIVE30, db ->
                 {
@@ -573,7 +578,7 @@ public class ConsistencyCheckWithCorruptGBPTreeIT
         }
         String errorMessage = format("Expected consistency report to contain message `%s'. Real result was: %s%n",
                 expectedMessage, String.join( System.lineSeparator(), lines ) );
-        assertTrue( errorMessage, reportContainExpectedMessage );
+        assertTrue( reportContainExpectedMessage, errorMessage );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider ) throws ConsistencyCheckIncompleteException
