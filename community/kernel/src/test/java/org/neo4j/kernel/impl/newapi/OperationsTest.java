@@ -36,6 +36,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -85,6 +86,7 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -642,7 +644,7 @@ class OperationsTest
     {
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
-        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+        storageReaderWithConstraints( constraint );
         int labelId = descriptor.getLabelId();
         int propertyId = descriptor.getPropertyId();
         when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
@@ -661,7 +663,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintExists( constraint );
+        order.verify( storageReader ).constraintsGetForSchema( descriptor );
         order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
     }
 
@@ -671,7 +673,7 @@ class OperationsTest
         // given
         String indexProvider = Config.defaults().get( default_schema_provider );
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
-        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+        storageReaderWithConstraints( constraint );
         int labelId = descriptor.getLabelId();
         int propertyId = descriptor.getPropertyId();
         when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
@@ -690,7 +692,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintExists( constraint );
+        order.verify( storageReader ).constraintsGetForSchema( descriptor );
         order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
     }
 
@@ -699,7 +701,7 @@ class OperationsTest
     {
         // given
         NodeKeyConstraintDescriptor constraint = nodeKeyForSchema( descriptor );
-        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+        storageReaderWithConstraints( constraint );
         int labelId = descriptor.getLabelId();
         int propertyId = descriptor.getPropertyId();
         when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
@@ -718,7 +720,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintExists( constraint );
+        order.verify( storageReader ).constraintsGetForSchema( descriptor );
         order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
     }
 
@@ -728,7 +730,7 @@ class OperationsTest
         // given
         String indexProvider = Config.defaults().get( default_schema_provider );
         NodeKeyConstraintDescriptor constraint = nodeKeyForSchema( descriptor );
-        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+        when( storageReader.constraintsGetForSchema( descriptor ) ).thenReturn( asIterator( constraint ) );
         int labelId = descriptor.getLabelId();
         int propertyId = descriptor.getPropertyId();
         when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
@@ -747,7 +749,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintExists( constraint );
+        order.verify( storageReader ).constraintsGetForSchema( descriptor );
         order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
     }
 
@@ -756,7 +758,7 @@ class OperationsTest
     {
         // given
         NodeExistenceConstraintDescriptor constraint = existsForSchema( descriptor );
-        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+        storageReaderWithConstraints( constraint );
         int labelId = descriptor.getLabelId();
         int propertyId = descriptor.getPropertyId();
         when( tokenHolders.labelTokens().getTokenById( labelId ) ).thenReturn( new NamedToken( "Label", labelId ) );
@@ -775,7 +777,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, labelId );
-        order.verify( storageReader ).constraintExists( constraint );
+        order.verify( storageReader ).constraintsGetForSchema( descriptor );
         order.verify( locks ).releaseExclusive( ResourceTypes.LABEL, labelId );
     }
 
@@ -785,7 +787,7 @@ class OperationsTest
         // given
         RelationTypeSchemaDescriptor descriptor = SchemaDescriptor.forRelType( 11, 13 );
         RelExistenceConstraintDescriptor constraint = existsForSchema( descriptor );
-        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+        storageReaderWithConstraints( constraint );
         int relTypeId = descriptor.getRelTypeId();
         int propertyId = descriptor.getPropertyId();
         when( tokenHolders.relationshipTypeTokens().getTokenById( relTypeId ) ).thenReturn( new NamedToken( "Label", relTypeId ) );
@@ -804,7 +806,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId );
-        order.verify( storageReader ).constraintExists( constraint );
+        order.verify( storageReader ).constraintsGetForSchema( descriptor );
         order.verify( locks ).releaseExclusive( ResourceTypes.RELATIONSHIP_TYPE, relTypeId );
     }
 
@@ -814,7 +816,7 @@ class OperationsTest
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor ).withName( "constraint" );
         IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).withName( "constraint" ).materialise( 13 );
-        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+        storageReaderWithConstraints( constraint );
         when( storageReader.indexExists( index ) ).thenReturn( true );
         when( storageReader.indexGetForSchema( descriptor ) ).thenReturn( index );
 
@@ -967,6 +969,7 @@ class OperationsTest
         when( tokenHolders.labelTokens().getTokenById( 3 ) ).thenReturn( new NamedToken( "LabelC", 1 ) );
         when( tokenHolders.propertyKeyTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "PropA", 1 ) );
         when( tokenHolders.propertyKeyTokens().getTokenById( 2 ) ).thenReturn( new NamedToken( "PropB", 2 ) );
+        storageReaderWithoutConstraints();
         operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ) );
         operations.indexCreate( SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {2, 3}, new int[] {1, 2} ), null );
         operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", null );
@@ -1085,6 +1088,7 @@ class OperationsTest
         AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
         when( allStoreHolder.index( any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
         when( allStoreHolder.indexGetForName( any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
+        when( allStoreHolder.constraintsGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
                 mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults() );
@@ -1097,6 +1101,23 @@ class OperationsTest
         inOrder.verify( ktx ).txState();
         inOrder.verify( commandCreationContext ).reserveSchema();
         inOrder.verifyNoMoreInteractions();
+    }
+
+    private static Iterator<ConstraintDescriptor> asIterator( ConstraintDescriptor constraint )
+    {
+        return singletonList( constraint ).iterator();
+    }
+
+    private void storageReaderWithConstraints( ConstraintDescriptor constraint )
+    {
+        when( storageReader.constraintsGetForSchema( constraint.schema() ) ).thenReturn( asIterator( constraint ) );
+        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+    }
+
+    private void storageReaderWithoutConstraints()
+    {
+        when( storageReader.constraintsGetForSchema( any() ) ).thenReturn( Iterables.<ConstraintDescriptor>empty().iterator() );
+        when( storageReader.constraintExists( any() ) ).thenReturn( false );
     }
 
     private void setStoreRelationship( long relationshipId, long sourceNode, long targetNode, int relationshipLabel )

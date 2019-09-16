@@ -25,6 +25,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.common.EntityType;
@@ -34,6 +35,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.function.ThrowingIntFunction;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -53,6 +55,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -70,10 +73,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
@@ -100,6 +106,7 @@ import static java.lang.Math.min;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.INDEX_CREATION;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -786,10 +793,10 @@ public class Operations implements Write, SchemaWrite
     {
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();
-        assertValidDescriptor( prototype.schema(), SchemaKernelException.OperationContext.INDEX_CREATION );
+        assertValidDescriptor( prototype.schema(), INDEX_CREATION );
         prototype = ensureIndexPrototypeHasName( prototype );
         prototype.getName().ifPresent( this::exclusiveSchemaNameLock );
-        assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, prototype );
+        assertNoBlockingSchemaRulesExists( prototype );
 
         return indexDoCreate( prototype );
     }
@@ -930,9 +937,7 @@ public class Operations implements Write, SchemaWrite
             constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor ).withName( name );
             constraint = ensureConstraintHasName( constraint );
             exclusiveSchemaNameLock( constraint.getName() );
-            assertConstraintDoesNotExist( constraint );
-            // It is not allowed to create uniqueness constraints on indexed label/property pairs
-            assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, IndexPrototype.uniqueForSchema( descriptor ) );
+            assertNoBlockingSchemaRulesExists( constraint );
         }
         catch ( SchemaKernelException e )
         {
@@ -943,6 +948,110 @@ public class Operations implements Write, SchemaWrite
         // Create constraints
         constraint = indexBackedConstraintCreate( constraint, provider );
         return constraint;
+    }
+
+    private void assertNoBlockingSchemaRulesExists( IndexPrototype prototype )
+            throws EquivalentSchemaRuleAlreadyExistsException, IndexWithNameAlreadyExistsException, ConstraintWithNameAlreadyExistsException,
+            AlreadyIndexedException, AlreadyConstrainedException
+    {
+        Optional<String> prototypeName = prototype.getName();
+        if ( prototypeName.isEmpty() )
+        {
+            throw new IllegalStateException( "Expected index to always have a name by this point" );
+        }
+
+        // Equivalent index
+        IndexDescriptor indexWithSameSchema = allStoreHolder.index( prototype.schema() );
+        String name = prototypeName.get();
+        if ( indexWithSameSchema.getName().equals( name ) &&              // - Same name
+             indexWithSameSchema.isUnique() == prototype.isUnique() )     // - Same index type
+        {
+            //Todo exception message
+            // - include existing schema rule and the schema rule we tried to create
+            throw new EquivalentSchemaRuleAlreadyExistsException( "" );
+        }
+
+        // Name conflict with other schema rule
+        assertSchemaRuleWithNameDoesNotExist( name );
+
+        // Already constrained
+        final Iterator<ConstraintDescriptor> constraintWithSameSchema = allStoreHolder.constraintsGetForSchema( prototype.schema() );
+        while ( constraintWithSameSchema.hasNext() )
+        {
+            final ConstraintDescriptor constraint = constraintWithSameSchema.next();
+            if ( constraint.type() != ConstraintType.EXISTS )
+            {
+                throw new AlreadyConstrainedException( constraint, INDEX_CREATION, tokenNameLookup );
+            }
+        }
+
+        // Already indexed
+        if ( indexWithSameSchema != IndexDescriptor.NO_INDEX )
+        {
+            throw new AlreadyIndexedException( prototype.schema(), INDEX_CREATION );
+        }
+    }
+
+    private void assertNoBlockingSchemaRulesExists( ConstraintDescriptor constraint )
+            throws EquivalentSchemaRuleAlreadyExistsException, IndexWithNameAlreadyExistsException, ConstraintWithNameAlreadyExistsException,
+            AlreadyConstrainedException, AlreadyIndexedException
+    {
+        final String name = constraint.getName();
+        if ( name == null )
+        {
+            throw new IllegalStateException( "Expected constraint to always have a name by this point" );
+        }
+
+        // Equivalent constraint
+        final List<ConstraintDescriptor> constraintsWithSameSchema = Iterators.asList( allStoreHolder.constraintsGetForSchema( constraint.schema() ) );
+        for ( ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema )
+        {
+            if ( constraint.equals( constraintWithSameSchema ) &&
+                 constraint.getName().equals( constraintWithSameSchema.getName() ) )
+            {
+                //Todo exception message
+                // - include existing schema rule and the schema rule we tried to create
+                throw new EquivalentSchemaRuleAlreadyExistsException( "" );
+            }
+        }
+
+        // Name conflict with other schema rule
+        assertSchemaRuleWithNameDoesNotExist( name );
+
+        // Already constrained
+        for ( ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema )
+        {
+            final boolean creatingExistenceConstraint = constraint.type() == ConstraintType.EXISTS;
+            final boolean existingIsExistenceConstraint = constraintWithSameSchema.type() == ConstraintType.EXISTS;
+            if ( creatingExistenceConstraint == existingIsExistenceConstraint )
+            {
+                throw new AlreadyConstrainedException( constraintWithSameSchema, CONSTRAINT_CREATION, tokenNameLookup );
+            }
+        }
+        // Already indexed
+        if ( constraint.type() != ConstraintType.EXISTS )
+        {
+            IndexDescriptor indexWithSameSchema = allStoreHolder.index( constraint.schema() );
+            if ( indexWithSameSchema != IndexDescriptor.NO_INDEX )
+            {
+                throw new AlreadyIndexedException( constraint.schema(), CONSTRAINT_CREATION );
+            }
+        }
+    }
+
+    private void assertSchemaRuleWithNameDoesNotExist( String name ) throws IndexWithNameAlreadyExistsException, ConstraintWithNameAlreadyExistsException
+    {
+        // Check constraints first because some of them will also be backed by constraint
+        final ConstraintDescriptor constraintWithSameName = allStoreHolder.constraintGetForName( name );
+        if ( constraintWithSameName != null )
+        {
+            throw new ConstraintWithNameAlreadyExistsException( name );
+        }
+        final IndexDescriptor indexWithSameName = allStoreHolder.indexGetForName( name );
+        if ( indexWithSameName != IndexDescriptor.NO_INDEX )
+        {
+            throw new IndexWithNameAlreadyExistsException( name );
+        }
     }
 
     @Override
@@ -966,9 +1075,7 @@ public class Operations implements Write, SchemaWrite
             constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor ).withName( name );
             constraint = ensureConstraintHasName( constraint );
             exclusiveSchemaNameLock( constraint.getName() );
-            assertConstraintDoesNotExist( constraint );
-            // It is not allowed to create node key constraints on indexed label/property pairs
-            assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, IndexPrototype.uniqueForSchema( descriptor ) );
+            assertNoBlockingSchemaRulesExists( constraint );
         }
         catch ( SchemaKernelException e )
         {
@@ -1032,7 +1139,7 @@ public class Operations implements Write, SchemaWrite
             ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor ).withName( name );
             constraint = ensureConstraintHasName( constraint );
             exclusiveSchemaNameLock( constraint.getName() );
-            assertConstraintDoesNotExist( constraint );
+            assertNoBlockingSchemaRulesExists( constraint );
             return constraint;
         }
         catch ( SchemaKernelException e )
@@ -1096,56 +1203,6 @@ public class Operations implements Write, SchemaWrite
             if ( index != IndexDescriptor.NO_INDEX )
             {
                 txState.indexDoDrop( index );
-            }
-        }
-    }
-
-    private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context, IndexPrototype prototype )
-            throws AlreadyIndexedException, AlreadyConstrainedException
-    {
-        IndexDescriptor existingIndex = allStoreHolder.index( prototype.schema() );
-        Optional<String> prototypeName = prototype.getName();
-        if ( existingIndex == IndexDescriptor.NO_INDEX && prototypeName.isPresent() )
-        {
-            String name = prototypeName.get();
-            if ( allStoreHolder.constraintGetForName( name ) != null )
-            {
-                throw new AlreadyConstrainedException( name, context );
-            }
-            IndexDescriptor indexReference = allStoreHolder.indexGetForName( name );
-            if ( indexReference != IndexDescriptor.NO_INDEX )
-            {
-                existingIndex = indexReference;
-            }
-        }
-        if ( existingIndex != IndexDescriptor.NO_INDEX )
-        {
-            // OK so we found a matching constraint index. We check whether or not it has an owner
-            // because this may have been a left-over constraint index from a previously failed
-            // constraint creation, due to crash or similar, hence the missing owner.
-            if ( existingIndex.isUnique() )
-            {
-                if ( context != CONSTRAINT_CREATION || constraintIndexHasOwner( existingIndex ) )
-                {
-                    throw new AlreadyConstrainedException( ConstraintDescriptorFactory.uniqueForSchema( prototype.schema() ),
-                            context, tokenNameLookup );
-                }
-            }
-            else
-            {
-                if ( prototype.schema().equals( existingIndex.schema() ) )
-                {
-                    throw new AlreadyIndexedException( prototype.schema(), context );
-                }
-                if ( prototypeName.isPresent() )
-                {
-                    String name = prototypeName.get();
-                    if ( name.equals( existingIndex.getName() ) )
-                    {
-                        throw new AlreadyIndexedException( name, context );
-                    }
-                }
-                throw new AlreadyIndexedException( prototype.schema(), context );
             }
         }
     }
@@ -1218,32 +1275,6 @@ public class Operations implements Write, SchemaWrite
         if ( !allStoreHolder.nodeExists( sourceNode ) )
         {
             throw new EntityNotFoundException( NODE, sourceNode );
-        }
-    }
-
-    private boolean constraintIndexHasOwner( IndexDescriptor index )
-    {
-        return allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null;
-    }
-
-    private void assertConstraintDoesNotExist( ConstraintDescriptor constraint ) throws AlreadyConstrainedException
-    {
-        if ( allStoreHolder.constraintExists( constraint ) )
-        {
-            throw new AlreadyConstrainedException( constraint,
-                    SchemaKernelException.OperationContext.CONSTRAINT_CREATION,
-                    tokenNameLookup );
-        }
-        String name = constraint.getName();
-        ConstraintDescriptor existingConstraint = allStoreHolder.constraintGetForName( name );
-        IndexDescriptor existingIndex = allStoreHolder.indexGetForName( name );
-        if ( existingConstraint == null && existingIndex == IndexDescriptor.NO_INDEX )
-        {
-            return; // No existing index or constraint.
-        }
-        if ( existingConstraint != null || !existingIndex.isUnique() || existingIndex.getOwningConstraintId().isPresent() )
-        {
-            throw new AlreadyConstrainedException( name, CONSTRAINT_CREATION );
         }
     }
 
