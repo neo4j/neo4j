@@ -77,10 +77,9 @@ public class AuthProceduresIT
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setup() throws InvalidAuthTokenException, IOException
+    void setup() throws InvalidAuthTokenException
     {
         fs = new EphemeralFileSystemAbstraction();
-        removePreviousAuthFile();
         DatabaseManagementServiceBuilder graphDatabaseFactory = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).impermanent()
                 .setConfig( GraphDatabaseSettings.auth_enabled, true );
         managementService = graphDatabaseFactory.build();
@@ -278,15 +277,6 @@ public class AuthProceduresIT
     }
 
     //---------- utility -----------
-
-    private void removePreviousAuthFile() throws IOException
-    {
-        Path file = Paths.get( "target/test-data/" + DEFAULT_DATABASE_NAME + "/data/dbms/auth" );
-        if ( Files.exists( file ) )
-        {
-            Files.delete( file );
-        }
-    }
 
     private LoginContext login( String username, String password ) throws InvalidAuthTokenException
     {

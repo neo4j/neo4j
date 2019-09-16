@@ -54,7 +54,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.testing.MessageMatchers.responseMessage;
 import static org.neo4j.bolt.testing.MessageMatchers.serialize;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.DB_NAME_KEY;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public class TransportTestUtil
 {
@@ -181,7 +180,7 @@ public class TransportTestUtil
     public byte[] defaultRunAutoCommitTx( String statement, MapValue params, String database ) throws IOException
     {
         var meta = VirtualValues.map( new String[]{DB_NAME_KEY}, new AnyValue[]{Values.stringValue( database )} );
-        return chunk( new RunMessage( statement, params, meta, List.of(), null, AccessMode.WRITE, Map.of(), SYSTEM_DATABASE_NAME ), BoltV4Messages.pullAll() );
+        return chunk( new RunMessage( statement, params, meta, List.of(), null, AccessMode.WRITE, Map.of(), database ), BoltV4Messages.pullAll() );
     }
 
     public byte[] defaultRunAutoCommitTxWithoutResult( String statement, MapValue params ) throws IOException

@@ -56,7 +56,7 @@ public class AuthProcedures
 
     @SystemProcedure
     @Description( "Create a new user." )
-    @Procedure( name = "dbms.security.createUser", mode = DBMS, deprecatedBy = "ddl command CREATE USER" )
+    @Procedure( name = "dbms.security.createUser", mode = DBMS )
     public void createUser(
             @Name( "username" ) String username,
             @Name( "password" ) String password,
@@ -95,6 +95,7 @@ public class AuthProcedures
         return Stream.of( new UserResult( username, false ) );
     }
 
+    @SuppressWarnings( "AccessStaticViaInstance" )
     @SystemProcedure
     @Description( "List all native users." )
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
@@ -142,6 +143,7 @@ public class AuthProcedures
         }
     }
 
+    @SuppressWarnings( "AccessStaticViaInstance" )
     private void runSystemCommand( String query, String procedureName ) throws ProcedureException
     {
         try
