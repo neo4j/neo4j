@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.modules;
 
-import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 
 import java.util.Arrays;
 import java.util.Collections;

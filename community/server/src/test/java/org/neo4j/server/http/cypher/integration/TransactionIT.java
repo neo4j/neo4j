@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.codehaus.jackson.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -447,7 +447,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         assertEquals( 200, response1.status() );
         JsonNode everything = jsonNode( response1.rawContent() );
         JsonNode result = everything.get( "results" ).get( 0 );
-        long id = result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).getLongValue();
+        long id = result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asLong();
 
         // WHEN
         Response response2 = POST( transactionCommitUri(),
@@ -670,7 +670,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         Set<String> labels = new HashSet<>();
         for ( JsonNode node : nodes.get( 0 ).get( "labels" ) )
         {
-            labels.add( node.getTextValue() );
+            labels.add( node.asText() );
         }
         assertEquals( "labels", asSet( "Foo", "Bar" ), labels );
     }

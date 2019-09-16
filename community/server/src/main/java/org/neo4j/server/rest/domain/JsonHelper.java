@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.rest.domain;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonLocation;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonLocation;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -70,7 +70,7 @@ public class JsonHelper
         {
             return OBJECT_MAPPER.readValue( json, Object.class );
         }
-        catch ( org.codehaus.jackson.JsonParseException e )
+        catch ( com.fasterxml.jackson.core.JsonParseException e )
         {
             String message = e.getMessage().split( "\\r?\\n" )[0];
             JsonLocation location = e.getLocation();

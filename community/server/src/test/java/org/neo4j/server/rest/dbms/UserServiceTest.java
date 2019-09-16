@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.dbms;
 
-import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

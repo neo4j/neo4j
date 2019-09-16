@@ -19,7 +19,7 @@
  */
 package org.neo4j.harness;
 
-import org.codehaus.jackson.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.harness.internal.InProcessNeo4j;

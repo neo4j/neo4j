@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.http.cypher.format.output.json;
 
-import org.codehaus.jackson.JsonGenerator;
+import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.IOException;
 import java.net.URI;

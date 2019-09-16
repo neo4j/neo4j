@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.neo4j.kernel.impl.security.User;
 

@@ -30,6 +30,7 @@ import org.neo4j.server.http.cypher.format.api.InputFormatException;
 import org.neo4j.string.UTF8;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -41,11 +42,10 @@ import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 public class StatementDeserializerTest
 {
     @Test
-    @SuppressWarnings( "unchecked" )
     public void shouldDeserializeSingleStatement()
     {
         // Given
-        String json = createJsonFrom( map( "statements", asList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) ) );
+        String json = createJsonFrom( map( "statements", singletonList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) ) );
 
         // When
         StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
@@ -143,13 +143,12 @@ public class StatementDeserializerTest
     }
 
     @Test
-    @SuppressWarnings( "unchecked" )
     public void shouldDeserializeMultipleStatements()
     {
         // Given
         String json = createJsonFrom( map( "statements", asList(
                 map( "statement", "Blah blah", "parameters", map( "one", 12 ) ),
-                map( "statement", "Blah bluh", "parameters", map( "asd", asList( "one, two" ) ) ) ) ) );
+                map( "statement", "Blah bluh", "parameters", map( "asd", singletonList( "one, two" ) ) ) ) ) );
 
         // When
         StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
@@ -165,7 +164,7 @@ public class StatementDeserializerTest
         assertNotNull( stmt2 );
 
         assertThat( stmt2.statement(), equalTo( "Blah bluh" ) );
-        assertThat( stmt2.parameters(), equalTo( map( "asd", asList( "one, two" ) ) ) );
+        assertThat( stmt2.parameters(), equalTo( map( "asd", singletonList( "one, two" ) ) ) );
 
         assertNull( de.read() );
     }
@@ -186,8 +185,8 @@ public class StatementDeserializerTest
         assertYieldsErrors( "[{]}",
                 "Could not parse the incoming JSON", "Unexpected close marker ']': " +
                                 "expected '}' " +
-                                "(for OBJECT starting at [Source: TestInputStream; line: 1, column: 1])\n " +
-                                "at [Source: TestInputStream; line: 1, column: 4]" );
+                                "(for Object starting at [Source: (ByteArrayInputStream); line: 1, column: 2])\n " +
+                                "at [Source: (ByteArrayInputStream); line: 1, column: 4]" );
 
         assertYieldsErrors( "{ \"statements\" : \"ITS A STRING\" }",
                          "Unable to deserialize request. " +
@@ -195,26 +194,19 @@ public class StatementDeserializerTest
                                 "found [START_OBJECT, FIELD_NAME, VALUE_STRING]." );
 
         assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : [\"dd\"] } ] }",
-                "Could not map the incoming JSON", "Can not deserialize instance of" +
-                                " java.lang.String out of START_ARRAY token\n at [Source: TestInputStream; line: 1, " +
-                                "column: 22]" );
+                "Could not map the incoming JSON", "Cannot deserialize instance of" +
+                                " `java.lang.String` out of START_ARRAY token\n at [Source: (ByteArrayInputStream); line: 1, " +
+                                "column: 36]" );
 
         assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : \"stmt\", \"parameters\" : [\"AN ARRAY!!\"] } ] }",
-                         "Could not map the incoming JSON", "Can not deserialize instance of" +
-                                " java.util.LinkedHashMap out of START_ARRAY token\n at [Source: TestInputStream; " +
-                                "line: 1, column: 42]" );
+                         "Could not map the incoming JSON", "Cannot deserialize instance of" +
+                                " `java.util.LinkedHashMap` out of START_ARRAY token\n at [Source: (ByteArrayInputStream); " +
+                                "line: 1, column: 59]" );
     }
 
     private void assertYieldsErrors( String json, String... expectedErrorMessages )
     {
-        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) )
-        {
-            @Override
-            public String toString()
-            {
-                return "TestInputStream";
-            }
-        } );
+        StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) ) );
 
         try
         {
