@@ -24,7 +24,7 @@ public enum Edition
     // Note, these are sent verbatim via UDC if UDC is enabled
     UNKNOWN( "unknown" ),
     COMMUNITY( "community" ),
-    COMMERCIAL( "commercial" );
+    ENTERPRISE( "enterprise" );
 
     private final String description;
 

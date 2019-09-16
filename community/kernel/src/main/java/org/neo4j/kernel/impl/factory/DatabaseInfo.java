@@ -26,9 +26,9 @@ public enum DatabaseInfo
     UNKNOWN( Edition.UNKNOWN, OperationalMode.UNKNOWN ),
     TOOL( Edition.UNKNOWN, OperationalMode.SINGLE ),
     COMMUNITY( Edition.COMMUNITY, OperationalMode.SINGLE ),
-    COMMERCIAL( Edition.COMMERCIAL, OperationalMode.SINGLE ),
-    CORE( Edition.COMMERCIAL, OperationalMode.CORE ),
-    READ_REPLICA( Edition.COMMERCIAL, OperationalMode.READ_REPLICA );
+    ENTERPRISE( Edition.ENTERPRISE, OperationalMode.SINGLE ),
+    CORE( Edition.ENTERPRISE, OperationalMode.CORE ),
+    READ_REPLICA( Edition.ENTERPRISE, OperationalMode.READ_REPLICA );
 
     public final Edition edition;
     public final OperationalMode operationalMode;

@@ -240,7 +240,7 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals )
     {
-        // Community should correspond to commercial with authorization disabled
+        // Community should correspond to enterprise with authorization disabled
         return null;
     }
 

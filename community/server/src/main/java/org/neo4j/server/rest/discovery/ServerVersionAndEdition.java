@@ -56,7 +56,7 @@ public class ServerVersionAndEdition
     {
         String serverClassName = neoServer.getClass().getName().toLowerCase();
 
-        if ( serverClassName.contains( "enterpriseneoserver" ) || serverClassName.contains( "commercialneoserver" ) )
+        if ( serverClassName.contains( "enterpriseneoserver" ) )
         {
             return "enterprise";
         }
