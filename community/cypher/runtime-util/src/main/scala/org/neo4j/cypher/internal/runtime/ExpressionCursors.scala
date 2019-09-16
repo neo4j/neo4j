@@ -38,6 +38,8 @@ class ExpressionCursors(cursorFactory: CursorFactory) extends DefaultCloseListen
   }
 
   override def closeInternal(): Unit = {
-    IOUtils.closeAll(nodeCursor, relationshipScanCursor, propertyCursor)
+    if (!isClosed) {
+      IOUtils.closeAll(nodeCursor, relationshipScanCursor, propertyCursor)
+    }
   }
 }
