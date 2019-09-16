@@ -464,4 +464,29 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     // then
     a [ParameterWrongTypeException] should be thrownBy consume(execute(logicalQuery, runtime, input))
   }
+
+  test("should handle expand + filter") {
+    // given
+    val size = 1000
+    val (_, rels) = circleGraph(size)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .filter(s"id(y) >= ${size / 2}")
+      .expandAll("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        r <- rels
+        if r.getEndNode.getId >= size /2
+        row <- List(Array(r.getStartNode, r.getEndNode))
+      } yield row
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
 }

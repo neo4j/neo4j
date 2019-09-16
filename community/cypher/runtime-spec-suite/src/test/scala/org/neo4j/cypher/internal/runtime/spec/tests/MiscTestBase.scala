@@ -37,56 +37,6 @@ import scala.concurrent.{Await, Future}
 
 abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                        runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
-
-  test("should handle expand + filter") {
-    // given
-    val size = 1000
-    val (_, rels) = circleGraph(size)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .filter(s"id(y) >= ${size / 2}")
-      .expandAll("(x)-->(y)")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected =
-      for {
-        r <- rels
-        if r.getEndNode.getId >= size /2
-        row <- List(Array(r.getStartNode, r.getEndNode))
-      } yield row
-    runtimeResult should beColumns("x", "y").withRows(expected)
-  }
-
-  test("should handle expand") {
-    // given
-    val (_, rels) = circleGraph(10000)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .expandAll("(x)--(y)")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected =
-      for {
-        r <- rels
-        row <- List(Array(r.getStartNode, r.getEndNode),
-                    Array(r.getEndNode, r.getStartNode))
-      } yield row
-    runtimeResult should beColumns("x", "y").withRows(expected)
-  }
-
-
   test("should sort on top of apply with all node scan and sort on rhs of apply") {
     // given
     val nodes = nodeGraph(10)
