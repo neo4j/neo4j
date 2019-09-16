@@ -26,6 +26,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     SemanticState.clean
       .withFeature(SemanticFeature.CorrelatedSubQueries)
       .withFeature(SemanticFeature.MultipleGraphs)
+      .withFeature(SemanticFeature.ExpressionsInViewInvocations)
 
   test("returned variables are added to scope after subquery") {
     // WITH 1 AS a
