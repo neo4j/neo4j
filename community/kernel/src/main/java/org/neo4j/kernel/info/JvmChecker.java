@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.info;
 
+import java.util.stream.Stream;
 import java.lang.management.MemoryUsage;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -38,6 +39,8 @@ public class JvmChecker
     static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of " +
             "the Java runtime. Please use Oracle(R) Java(TM) 11 or OpenJDK(TM) 11.";
     private static final Pattern SUPPORTED_JAVA_NAME_PATTERN = compile( "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server) VM" );
+    private static final String NO_SERIALIZATION_FILTER_WARNING = "The version of the Java runtime you are using " +
+            " does not include some important security features. Please use a JRE of version 8u121 or higher.";
 
     private final Log log;
     private final JvmMetadataRepository jvmMetadataRepository;
@@ -71,6 +74,10 @@ public class JvmChecker
         {
             log.warn( memorySettingWarning( initialHeapSize, heapMemoryUsage.getInit() ) );
         }
+        if ( !serializationFilterIsAvailable() )
+        {
+            log.warn( NO_SERIALIZATION_FILTER_WARNING );
+        }
     }
 
     static String memorySettingWarning( Setting<?> setting, long currentUsage )
@@ -85,5 +92,24 @@ public class JvmChecker
     {
         String normalizedOption = option.toUpperCase();
         return jvmArguments.stream().noneMatch( o -> o.toUpperCase().startsWith( normalizedOption ) );
+    }
+
+    boolean serializationFilterIsAvailable()
+    {
+        //As part of JEP290 ObjectInputFilter was backported to JDK 8 in version 121, but under a different package.
+        Stream<String> classNames = Stream.of( "sun.misc.ObjectInputFilter", "java.io.ObjectInputFilter" );
+        return classNames.anyMatch( className ->
+        {
+            try
+            {
+                Class.forName( className );
+            }
+            catch ( ClassNotFoundException e )
+            {
+                return false;
+            }
+            return true;
+        } );
+
     }
 }
