@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -177,7 +177,7 @@ class DataAndSchemaTransactionSeparationIT
         return Transaction::createNode;
     }
 
-    private static <T extends PropertyContainer> Function<Transaction, Object> propertyRead(
+    private static <T extends Entity> Function<Transaction, Object> propertyRead(
             Class<T> type, final T entity, final String key )
     {
         return new FailureRewrite<>( type.getSimpleName() + ".getProperty()" )
@@ -190,10 +190,10 @@ class DataAndSchemaTransactionSeparationIT
         };
     }
 
-    private static <T extends PropertyContainer> Function<Transaction, Void> propertyWrite(
+    private static <T extends Entity> Function<Transaction, Void> propertyWrite(
             Class<T> type, final T entity, final String key, final Object value )
     {
-        return new FailureRewrite<Void>( type.getSimpleName() + ".setProperty()" )
+        return new FailureRewrite<>( type.getSimpleName() + ".setProperty()" )
         {
             @Override
             Void perform( Transaction transaction )

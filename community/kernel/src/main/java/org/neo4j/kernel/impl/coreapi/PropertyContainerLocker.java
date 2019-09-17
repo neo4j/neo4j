@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.Statement;
  */
 public class PropertyContainerLocker
 {
-    public Lock exclusiveLock( KernelTransaction ktx, PropertyContainer container )
+    public Lock exclusiveLock( KernelTransaction ktx, Entity container )
     {
         try ( Statement ignore = ktx.acquireStatement() )
         {
@@ -54,7 +54,7 @@ public class PropertyContainerLocker
         }
     }
 
-    public Lock sharedLock( KernelTransaction ktx, PropertyContainer container )
+    public Lock sharedLock( KernelTransaction ktx, Entity container )
     {
         try ( Statement ignore = ktx.acquireStatement() )
         {

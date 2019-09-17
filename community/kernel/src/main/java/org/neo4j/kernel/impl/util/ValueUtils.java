@@ -30,7 +30,6 @@ import java.util.stream.StreamSupport;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
@@ -202,7 +201,7 @@ public final class ValueUtils
         return VirtualValues.fromList( values );
     }
 
-    public static AnyValue asNodeOrEdgeValue( PropertyContainer container )
+    public static AnyValue asNodeOrEdgeValue( Entity container )
     {
         if ( container instanceof Node )
         {

@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.core;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
 import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
@@ -251,7 +251,7 @@ public class PathProxy implements Path
     }
 
     @Override
-    public Iterator<PropertyContainer> iterator()
+    public Iterator<Entity> iterator()
     {
         return new Iterator<>()
         {
@@ -265,7 +265,7 @@ public class PathProxy implements Path
             }
 
             @Override
-            public PropertyContainer next()
+            public Entity next()
             {
                 if ( relationship )
                 {

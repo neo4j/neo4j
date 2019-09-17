@@ -23,8 +23,8 @@ import org.neo4j.annotations.api.PublicApi;
 
 /**
  * An acquired lock on an entity for a transaction, acquired from
- * {@link Transaction#acquireWriteLock(PropertyContainer)} or
- * {@link Transaction#acquireReadLock(PropertyContainer)} this lock
+ * {@link Transaction#acquireWriteLock(Entity)} or
+ * {@link Transaction#acquireReadLock(Entity)} this lock
  * can be released manually using {@link #release()}. If not released
  * manually it will be automatically released when the transaction owning
  * it finishes.

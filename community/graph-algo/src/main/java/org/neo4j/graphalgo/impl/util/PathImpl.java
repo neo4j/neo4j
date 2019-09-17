@@ -23,9 +23,9 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.internal.helpers.collection.ArrayIterator;
@@ -244,12 +244,12 @@ public final class PathImpl implements Path
     }
 
     @Override
-    public Iterator<PropertyContainer> iterator()
+    public Iterator<Entity> iterator()
     {
         return new Iterator<>()
         {
-            Iterator<? extends PropertyContainer> current = nodes().iterator();
-            Iterator<? extends PropertyContainer> next = relationships().iterator();
+            Iterator<? extends Entity> current = nodes().iterator();
+            Iterator<? extends Entity> next = relationships().iterator();
 
             @Override
             public boolean hasNext()
@@ -258,7 +258,7 @@ public final class PathImpl implements Path
             }
 
             @Override
-            public PropertyContainer next()
+            public Entity next()
             {
                 try
                 {
@@ -266,7 +266,7 @@ public final class PathImpl implements Path
                 }
                 finally
                 {
-                    Iterator<? extends PropertyContainer> temp = current;
+                    Iterator<? extends Entity> temp = current;
                     current = next;
                     next = temp;
                 }

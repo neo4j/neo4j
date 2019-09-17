@@ -27,12 +27,12 @@ import java.util.Optional;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -494,13 +494,13 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
-    public Lock acquireWriteLock( PropertyContainer entity )
+    public Lock acquireWriteLock( Entity entity )
     {
         return locker.exclusiveLock( transaction, entity );
     }
 
     @Override
-    public Lock acquireReadLock( PropertyContainer entity )
+    public Lock acquireReadLock( Entity entity )
     {
         return locker.sharedLock(transaction, entity);
     }

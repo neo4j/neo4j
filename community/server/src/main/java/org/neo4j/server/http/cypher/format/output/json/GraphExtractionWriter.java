@@ -26,11 +26,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
@@ -146,7 +146,7 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private void writeProperties( JsonGenerator out, PropertyContainer container ) throws IOException
+    private void writeProperties( JsonGenerator out, Entity container ) throws IOException
     {
         out.writeObjectFieldStart( "properties" );
         try

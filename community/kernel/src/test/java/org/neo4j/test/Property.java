@@ -19,7 +19,7 @@
  */
 package org.neo4j.test;
 
-import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Entity;
 
 public final class Property
 {
@@ -28,7 +28,7 @@ public final class Property
         return new Property( key, value );
     }
 
-    public static <E extends PropertyContainer> E set( E entity, Property... properties )
+    public static <E extends Entity> E set( E entity, Property... properties )
     {
         for ( Property property : properties )
         {

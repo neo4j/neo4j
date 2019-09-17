@@ -35,9 +35,9 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -338,7 +338,7 @@ public class DbRepresentation
         private final String entityToString;
         private final long entityId;
 
-        PropertiesRep( PropertyContainer entity, long id )
+        PropertiesRep( Entity entity, long id )
         {
             this.entityId = id;
             this.entityToString = entity.toString();

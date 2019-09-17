@@ -22,9 +22,9 @@ package org.neo4j.graphdb.impl.traversal;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.graphdb.traversal.TraversalBranch;
@@ -45,7 +45,7 @@ class BidirectionalTraversalBranchPath implements Path
         this.end = end;
 
         // Most used properties: endNode and lastRelationship, so cache them right away (semi-expensive though).
-        Iterator<PropertyContainer> endPathEntities = end.iterator();
+        Iterator<Entity> endPathEntities = end.iterator();
         this.endNode = (Node) endPathEntities.next();
         this.lastRelationship = endPathEntities.hasNext() ?
                 (Relationship) endPathEntities.next() : start.lastRelationship();
@@ -173,10 +173,10 @@ class BidirectionalTraversalBranchPath implements Path
     }
 
     @Override
-    public Iterator<PropertyContainer> iterator()
+    public Iterator<Entity> iterator()
     {
         // TODO Don't loop through them all up front
-        LinkedList<PropertyContainer> entities = new LinkedList<>();
+        LinkedList<Entity> entities = new LinkedList<>();
         TraversalBranch branch = start;
         while ( branch.length() > 0 )
         {

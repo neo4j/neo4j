@@ -32,9 +32,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
@@ -75,7 +75,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     public void testPropertyContainerWriting() throws IOException
     {
         //Given
-        PropertyContainer propertyContainer = mock( PropertyContainer.class );
+        Entity propertyContainer = mock( Entity.class );
         when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
 
         boolean exceptionThrown = false;
@@ -98,7 +98,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     public void testNodeWriting() throws IOException
     {
         //Given
-        PropertyContainer node = mock( Node.class );
+        Entity node = mock( Node.class );
         when( node.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When
@@ -119,7 +119,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     public void testRelationshipWriting() throws IOException
     {
         //Given
-        PropertyContainer relationship = mock( Relationship.class );
+        Entity relationship = mock( Relationship.class );
         when( relationship.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When
@@ -141,7 +141,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     {
         //Given
         Path path = mock( Path.class );
-        PropertyContainer propertyContainer = mock( PropertyContainer.class );
+        Entity propertyContainer = mock( Entity.class );
         when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
         when( path.iterator() ).thenReturn( Arrays.asList(propertyContainer).listIterator() );
 
@@ -163,7 +163,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     public void testIteratorWriting() throws IOException
     {
         //Given
-        PropertyContainer propertyContainer = mock( PropertyContainer.class );
+        Entity propertyContainer = mock( Entity.class );
         when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When

@@ -276,7 +276,7 @@ public class GraphDatabaseServiceTest
         return state -> db.beginTx();
     }
 
-    private WorkerCommand<Void, Object> setProperty( final PropertyContainer entity,
+    private WorkerCommand<Void, Object> setProperty( final Entity entity,
             final String key, final String value )
     {
         return state ->

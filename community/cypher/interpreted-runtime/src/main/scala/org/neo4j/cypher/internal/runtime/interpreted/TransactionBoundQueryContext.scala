@@ -844,7 +844,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                   pathPredicate: KernelPredicate[Path],
-                                  filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = {
+                                  filters: Seq[KernelPredicate[Entity]]): Option[Path] = {
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
     //could probably do without node proxies here
@@ -853,7 +853,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                pathPredicate: KernelPredicate[Path],
-                               filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = {
+                               filters: Seq[KernelPredicate[Entity]]): scala.Iterator[Path] = {
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
     pathFinder.findAllPaths(entityAccessor.newNodeProxy(left), entityAccessor.newNodeProxy(right)).iterator()
@@ -879,7 +879,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     CallSupport.aggregateFunction(transactionalContext.tc, id, allowed)
 
   private def buildPathFinder(depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
-                              filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {
+                              filters: Seq[KernelPredicate[Entity]]): ShortestPath = {
     val startExpander = expander match {
       case OnlyDirectionExpander(_, _, dir) =>
         PathExpanderBuilder.allTypes(toGraphDb(dir))
@@ -890,10 +890,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     val expanderWithNodeFilters = expander.nodeFilters.foldLeft(startExpander) {
-      case (acc, filter) => acc.addNodeFilter((t: PropertyContainer) => filter.test(t))
+      case (acc, filter) => acc.addNodeFilter((t: Entity) => filter.test(t))
     }
     val expanderWithAllPredicates = expander.relFilters.foldLeft(expanderWithNodeFilters) {
-      case (acc, filter) => acc.addRelationshipFilter((t: PropertyContainer) => filter.test(t))
+      case (acc, filter) => acc.addRelationshipFilter((t: Entity) => filter.test(t))
     }
     val shortestPathPredicate = new ShortestPathPredicate {
       override def test(path: Path): Boolean = pathPredicate.test(path)

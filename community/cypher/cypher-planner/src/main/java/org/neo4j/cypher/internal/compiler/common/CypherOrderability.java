@@ -30,8 +30,8 @@ import java.util.stream.LongStream;
 
 import org.neo4j.exceptions.IncomparableValuesException;
 import org.neo4j.exceptions.UnorderableValueException;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -285,8 +285,8 @@ public class CypherOrderability
     // TODO test
     private static final Comparator<Path> PATH_COMPARATOR = ( lhs, rhs ) ->
     {
-        Iterator<PropertyContainer> lhsIter = lhs.iterator();
-        Iterator<PropertyContainer> rhsIter = rhs.iterator();
+        Iterator<Entity> lhsIter = lhs.iterator();
+        Iterator<Entity> rhsIter = rhs.iterator();
         while ( lhsIter.hasNext() && rhsIter.hasNext() )
         {
             int result = compare( lhsIter.next(), rhsIter.next() );

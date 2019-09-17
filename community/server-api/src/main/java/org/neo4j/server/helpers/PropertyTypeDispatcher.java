@@ -24,7 +24,7 @@ import java.time.temporal.TemporalAmount;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.helpers.collection.ArrayIterator;
 
@@ -47,7 +47,7 @@ public abstract class PropertyTypeDispatcher<K, T>
     }
 
     public static void consumeProperties( PropertyTypeDispatcher<String, Void> dispatcher,
-            PropertyContainer entity )
+            Entity entity )
     {
         for ( Map.Entry<String, Object> property : entity.getAllProperties().entrySet() )
         {

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb.{Node, PropertyContainer, Result}
-import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.{Entity, Node, Result}
+import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
@@ -29,8 +29,8 @@ import scala.collection.JavaConverters._
 abstract class ExecutionEngineFunSuite
   extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport with QueryPlanTestSupport {
 
-  case class haveProperty(propName: String) extends Matcher[PropertyContainer] {
-    def apply(left: PropertyContainer): MatchResult = {
+  case class haveProperty(propName: String) extends Matcher[Entity] {
+    def apply(left: Entity): MatchResult = {
 
       val result = graph.inTx {
         left.hasProperty(propName)
@@ -43,8 +43,8 @@ abstract class ExecutionEngineFunSuite
       )
     }
 
-    def withValue(value: Any) = this and new Matcher[PropertyContainer] {
-      def apply(left: PropertyContainer): MatchResult = {
+    def withValue(value: Any) = this and new Matcher[Entity] {
+      def apply(left: Entity): MatchResult = {
         val propValue = graph.inTx(left.getProperty(propName))
         val result = propValue == value
         MatchResult(

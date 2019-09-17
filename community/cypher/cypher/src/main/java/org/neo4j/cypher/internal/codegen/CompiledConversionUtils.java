@@ -36,8 +36,8 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.neo4j.exceptions.CypherTypeException;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue;
@@ -638,9 +638,9 @@ public abstract class CompiledConversionUtils
         {
             return Values.of( ((RelationshipProxyWrappingValue) object).relationshipProxy().getProperty( key ) );
         }
-        if ( object instanceof PropertyContainer ) // Entity that is not wrapped by an AnyValue
+        if ( object instanceof Entity ) // Entity that is not wrapped by an AnyValue
         {
-            return Values.of( ((PropertyContainer) object).getProperty( key ) );
+            return Values.of( ((Entity) object).getProperty( key ) );
         }
         if ( object instanceof NodeValue )
         {

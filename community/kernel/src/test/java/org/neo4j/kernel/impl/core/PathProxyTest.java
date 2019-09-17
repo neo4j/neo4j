@@ -27,7 +27,6 @@ import java.util.Iterator;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -143,8 +142,8 @@ class PathProxyTest
         // given
         Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
-        Iterator<PropertyContainer> iterator = path.iterator();
-        PropertyContainer entity;
+        Iterator<Entity> iterator = path.iterator();
+        Entity entity;
 
         // then
         assertTrue( iterator.hasNext() );

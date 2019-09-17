@@ -37,9 +37,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
@@ -94,11 +94,11 @@ public class Neo4jJsonCodec extends ObjectMapper
     @Override
     public void writeValue( JsonGenerator out, Object value ) throws IOException
     {
-        if ( value instanceof PropertyContainer )
+        if ( value instanceof Entity )
         {
             try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
             {
-                writePropertyContainer( out, (PropertyContainer) value, txStateChecker );
+                writePropertyContainer( out, (Entity) value, txStateChecker );
             }
         }
         else if ( value instanceof Path )
@@ -209,7 +209,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePath( JsonGenerator out, Iterator<PropertyContainer> value,
+    private void writePath( JsonGenerator out, Iterator<Entity> value,
             TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeStartArray();
@@ -226,7 +226,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePropertyContainer( JsonGenerator out, PropertyContainer value,
+    private void writePropertyContainer( JsonGenerator out, Entity value,
             TransactionStateChecker txStateChecker )
             throws IOException
     {
@@ -245,7 +245,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writeNodeOrRelationship( JsonGenerator out, PropertyContainer entity, boolean isDeleted )
+    private void writeNodeOrRelationship( JsonGenerator out, Entity entity, boolean isDeleted )
             throws IOException
     {
         out.writeStartObject();
@@ -388,7 +388,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         out.writeStartArray();
         try
         {
-            for ( PropertyContainer element : value )
+            for ( Entity element : value )
             {
                 writeMeta( out, element );
             }

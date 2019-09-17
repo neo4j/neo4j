@@ -26,8 +26,8 @@ import java.util.List;
 
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -84,7 +84,7 @@ public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
             assertEquals( rpath.get( 4 ), graph.getRelationship( transaction,  "e2", "f2" ) );
             assertEquals( rpath.get( 5 ), graph.getRelationship( transaction,  "f2", "g2" ) );
             // check it as both
-            List<PropertyContainer> cpath = singleSource.getPath( graph.getNode( transaction, "g2" ) );
+            List<Entity> cpath = singleSource.getPath( graph.getNode( transaction, "g2" ) );
             assertEquals( 13, cpath.size() );
             assertEquals( cpath.get( 0 ), graph.getNode( transaction, "a" ) );
             assertEquals( cpath.get( 2 ), graph.getNode( transaction, "b2" ) );

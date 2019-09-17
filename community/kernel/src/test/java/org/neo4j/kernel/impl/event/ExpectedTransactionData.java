@@ -26,7 +26,6 @@ import java.util.Set;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
@@ -201,7 +200,7 @@ class ExpectedTransactionData
     /**
      * @return {@code non-null} if this property should be expected to come as removed property in the event
      */
-    private <E extends PropertyContainer> Object removeProperty( Map<E,Map<String,PropertyEntryImpl<E>>> map,
+    private <E> Object removeProperty( Map<E,Map<String,PropertyEntryImpl<E>>> map,
             E entity, String key, Object valueBeforeTx )
     {
         if ( map.containsKey( entity ) )
@@ -226,7 +225,7 @@ class ExpectedTransactionData
         return valueBeforeTx;
     }
 
-    private <E extends PropertyContainer> PropertyEntryImpl<E> property( E entity, String key, Object value,
+    private <E> PropertyEntryImpl<E> property( E entity, String key, Object value,
             Object valueBeforeTx )
     {
         return new PropertyEntryImpl<>( entity, key, value, valueBeforeTx );
@@ -358,7 +357,7 @@ class ExpectedTransactionData
         }
     }
 
-    private <KEY extends PropertyContainer> Map<KEY, Map<String, PropertyEntryImpl<KEY>>> clone(
+    private <KEY> Map<KEY, Map<String, PropertyEntryImpl<KEY>>> clone(
             Map<KEY, Map<String, PropertyEntryImpl<KEY>>> map )
     {
         Map<KEY, Map<String, PropertyEntryImpl<KEY>>> result = new HashMap<>();
@@ -369,7 +368,7 @@ class ExpectedTransactionData
         return result;
     }
 
-    private <T extends PropertyContainer> void checkAssigned( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
+    private <T> void checkAssigned( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {
         PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry( map, entry );
         if ( expected != null )
@@ -378,7 +377,7 @@ class ExpectedTransactionData
         }
     }
 
-    private <T extends PropertyContainer> void checkRemoved( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
+    private <T> void checkRemoved( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {
         PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry( map, entry );
         if ( expected != null )
@@ -387,7 +386,7 @@ class ExpectedTransactionData
         }
     }
 
-    private <T extends PropertyContainer> PropertyEntryImpl<T> fetchExpectedPropertyEntry( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
+    private <T> PropertyEntryImpl<T> fetchExpectedPropertyEntry( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {
         T entity = entry.entity();
         boolean hasEntity = map.containsKey( entity );

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.planner.spi.{IdempotentResult, TokenContext}
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.exceptions.EntityNotFoundException
-import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.graphdb.{Entity, Path}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.IndexDescriptor
@@ -165,10 +165,10 @@ trait QueryContext extends TokenContext with DbAccess {
   def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path]
 
   def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
-                         filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path]
+                         filters: Seq[KernelPredicate[Entity]]): Option[Path]
 
   def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
-                      filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path]
+                      filters: Seq[KernelPredicate[Entity]]): Iterator[Path]
 
   def lockNodes(nodeIds: Long*)
 
@@ -334,10 +334,10 @@ trait KernelPredicate[T] {
 }
 
 trait Expander {
-  def addRelationshipFilter(newFilter: KernelPredicate[PropertyContainer]): Expander
-  def addNodeFilter(newFilter: KernelPredicate[PropertyContainer]): Expander
-  def nodeFilters: Seq[KernelPredicate[PropertyContainer]]
-  def relFilters: Seq[KernelPredicate[PropertyContainer]]
+  def addRelationshipFilter(newFilter: KernelPredicate[Entity]): Expander
+  def addNodeFilter(newFilter: KernelPredicate[Entity]): Expander
+  def nodeFilters: Seq[KernelPredicate[Entity]]
+  def relFilters: Seq[KernelPredicate[Entity]]
 }
 
 trait UserDefinedAggregator {

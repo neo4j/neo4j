@@ -33,9 +33,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.ReverseArrayIterator;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -231,12 +231,12 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
             }
 
             @Override
-            public Iterator<PropertyContainer> iterator()
+            public Iterator<Entity> iterator()
             {
                 return new Iterator<>()
                 {
-                    Iterator<? extends PropertyContainer> current = nodes().iterator();
-                    Iterator<? extends PropertyContainer> next = relationships().iterator();
+                    Iterator<? extends Entity> current = nodes().iterator();
+                    Iterator<? extends Entity> next = relationships().iterator();
 
                     @Override
                     public boolean hasNext()
@@ -245,7 +245,7 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
                     }
 
                     @Override
-                    public PropertyContainer next()
+                    public Entity next()
                     {
                         try
                         {
@@ -253,7 +253,7 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
                         }
                         finally
                         {
-                            Iterator<? extends PropertyContainer> temp = current;
+                            Iterator<? extends Entity> temp = current;
                             current = next;
                             next = temp;
                         }

@@ -21,7 +21,6 @@ package org.neo4j.graphdb.event;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
 /**
@@ -38,7 +37,7 @@ import org.neo4j.graphdb.Relationship;
  *            {@link Node} or {@link Relationship}.
  */
 @PublicApi
-public interface PropertyEntry<T extends PropertyContainer>
+public interface PropertyEntry<T>
 {
     /**
      * Get the entity that this property was modified on. The entity is either a

@@ -25,10 +25,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -86,7 +86,7 @@ public class GraphMock
     {
         List<Node> nodes = new ArrayList<>( links.length + 1 );
         List<Relationship> relationships = new ArrayList<>( links.length );
-        List<PropertyContainer> mixed = new ArrayList<>( links.length * 2 + 1 );
+        List<Entity> mixed = new ArrayList<>( links.length * 2 + 1 );
         nodes.add( node );
         mixed.add( node );
         Path path = mock( Path.class );
@@ -136,7 +136,7 @@ public class GraphMock
         return relationship;
     }
 
-    private static <T extends PropertyContainer> T mockPropertyContainer( Class<T> type, Properties properties )
+    private static <T extends Entity> T mockPropertyContainer( Class<T> type, Properties properties )
     {
         T container = mock( type );
         when( container.getProperty( anyString() ) ).thenAnswer( properties );

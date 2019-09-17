@@ -22,8 +22,8 @@ package org.neo4j.graphalgo.impl.shortestpath;
 import java.util.List;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -61,7 +61,7 @@ public interface SingleSourceSingleSinkShortestPath<CostType>
      * Node/Relationship.
      * @return The path as an alternating list of Node/Relationship.
      */
-    List<PropertyContainer> getPath();
+    List<Entity> getPath();
 
     /**
      * A call to this will run the algorithm to find a single shortest path, if
@@ -82,7 +82,7 @@ public interface SingleSourceSingleSinkShortestPath<CostType>
      * already done, and return them as alternating lists of Node/Relationship.
      * @return A list of the paths as alternating lists of Node/Relationship.
      */
-    List<List<PropertyContainer>> getPaths();
+    List<List<Entity>> getPaths();
 
     /**
      * A call to this will run the algorithm to find all shortest paths, if not

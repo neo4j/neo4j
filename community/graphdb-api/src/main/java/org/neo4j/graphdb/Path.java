@@ -33,7 +33,7 @@ import org.neo4j.annotations.api.PublicApi;
  * node in such a traversal is reached via {@link Path#endNode()}.
  */
 @PublicApi
-public interface Path extends Iterable<PropertyContainer>
+public interface Path extends Iterable<Entity>
 {
     /**
      * Returns the start node of this path. It's also the first node returned
@@ -133,5 +133,5 @@ public interface Path extends Iterable<PropertyContainer>
      * @see Iterable#iterator()
      */
     @Override
-    Iterator<PropertyContainer> iterator();
+    Iterator<Entity> iterator();
 }

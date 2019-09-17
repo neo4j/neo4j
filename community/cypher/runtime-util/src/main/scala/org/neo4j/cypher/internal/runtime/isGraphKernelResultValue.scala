@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.graphdb.{Entity, Path}
 
 object isGraphKernelResultValue extends (Any => Boolean) {
 
-  override def apply(v: Any): Boolean = v.isInstanceOf[PropertyContainer] || v.isInstanceOf[Path]
+  override def apply(v: Any): Boolean = v.isInstanceOf[Entity] || v.isInstanceOf[Path]
 }

@@ -28,8 +28,8 @@ import java.util.Map;
 import org.neo4j.graphalgo.CostAccumulator;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -133,7 +133,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     }
 
     @Override
-    public List<List<PropertyContainer>> getPaths( Node targetNode )
+    public List<List<Entity>> getPaths( Node targetNode )
     {
         if ( targetNode == null )
         {
@@ -178,7 +178,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     }
 
     @Override
-    public List<PropertyContainer> getPath( Node targetNode )
+    public List<Entity> getPath( Node targetNode )
     {
         if ( targetNode == null )
         {
@@ -233,7 +233,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     }
 
     @Override
-    public List<PropertyContainer> getPath()
+    public List<Entity> getPath()
     {
         return getPath( endNode );
     }
@@ -251,7 +251,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     }
 
     @Override
-    public List<List<PropertyContainer>> getPaths()
+    public List<List<Entity>> getPaths()
     {
         return getPaths( endNode );
     }

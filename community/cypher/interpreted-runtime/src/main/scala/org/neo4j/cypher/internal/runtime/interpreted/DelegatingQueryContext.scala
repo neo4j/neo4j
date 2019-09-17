@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.graphdb.{Entity, Path}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
@@ -231,12 +231,12 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                   pathPredicate: KernelPredicate[Path],
-                                  filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] =
+                                  filters: Seq[KernelPredicate[Entity]]): Option[Path] =
     singleDbHit(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
 
   override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                pathPredicate: KernelPredicate[Path],
-                               filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
+                               filters: Seq[KernelPredicate[Entity]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
   override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =

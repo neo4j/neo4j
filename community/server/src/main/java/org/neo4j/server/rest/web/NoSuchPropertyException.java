@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class NoSuchPropertyException extends Exception implements Status.HasStatus
 {
     private static final long serialVersionUID = -2078314214014212029L;
 
-    public NoSuchPropertyException( PropertyContainer entity, String key )
+    public NoSuchPropertyException( Entity entity, String key )
     {
         super( entity + " does not have a property \"" + key + "\"" );
     }

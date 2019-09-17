@@ -33,10 +33,10 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
@@ -177,7 +177,7 @@ abstract class TraversalTestBase
         assertTrue( "Should be empty", current.isEmpty() );
     }
 
-    static final Representation<PropertyContainer> NAME_PROPERTY_REPRESENTATION = new PropertyRepresentation( "name" );
+    static final Representation<Entity> NAME_PROPERTY_REPRESENTATION = new PropertyRepresentation( "name" );
 
     private static final Representation<Relationship> RELATIONSHIP_TYPE_REPRESENTATION =
             item -> item.getType().name();
@@ -188,7 +188,7 @@ abstract class TraversalTestBase
     }
 
     protected static final class PropertyRepresentation implements
-            Representation<PropertyContainer>
+            Representation<Entity>
     {
         PropertyRepresentation( String key )
         {
@@ -198,7 +198,7 @@ abstract class TraversalTestBase
         private final String key;
 
         @Override
-        public String represent( PropertyContainer item )
+        public String represent( Entity item )
         {
             return (String) item.getProperty( key );
         }

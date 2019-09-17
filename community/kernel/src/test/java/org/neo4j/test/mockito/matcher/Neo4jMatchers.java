@@ -30,10 +30,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -220,7 +220,7 @@ public class Neo4jMatchers
         return Iterables.asSet( map( Label::name, enums ) );
     }
 
-    public static class PropertyValueMatcher extends TypeSafeDiagnosingMatcher<PropertyContainer>
+    public static class PropertyValueMatcher extends TypeSafeDiagnosingMatcher<Entity>
     {
         private final PropertyMatcher propertyMatcher;
         private final String propertyName;
@@ -234,7 +234,7 @@ public class Neo4jMatchers
         }
 
         @Override
-        protected boolean matchesSafely( PropertyContainer propertyContainer, Description mismatchDescription )
+        protected boolean matchesSafely( Entity propertyContainer, Description mismatchDescription )
         {
             if ( !propertyMatcher.matchesSafely( propertyContainer, mismatchDescription ) )
             {
@@ -277,7 +277,7 @@ public class Neo4jMatchers
 
     }
 
-    public static class PropertyMatcher extends TypeSafeDiagnosingMatcher<PropertyContainer>
+    public static class PropertyMatcher extends TypeSafeDiagnosingMatcher<Entity>
     {
 
         public final String propertyName;
@@ -288,7 +288,7 @@ public class Neo4jMatchers
         }
 
         @Override
-        protected boolean matchesSafely( PropertyContainer propertyContainer, Description mismatchDescription )
+        protected boolean matchesSafely( Entity propertyContainer, Description mismatchDescription )
         {
             if ( !propertyContainer.hasProperty( propertyName ) )
             {
@@ -342,7 +342,7 @@ public class Neo4jMatchers
     }
 
     public static Deferred<String> getPropertyKeys( final GraphDatabaseService db,
-                                                    final PropertyContainer propertyContainer )
+                                                    final Entity propertyContainer )
     {
         return new Deferred<>( db )
         {

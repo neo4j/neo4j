@@ -433,7 +433,7 @@ public interface Transaction extends AutoCloseable
      * (with {@link Lock#release()} it's going to be released when the
      * transaction finishes.
      */
-    Lock acquireWriteLock( PropertyContainer entity );
+    Lock acquireWriteLock( Entity entity );
 
     /**
      * Acquires a read lock for {@code entity} for this transaction.
@@ -448,5 +448,5 @@ public interface Transaction extends AutoCloseable
      * (with {@link Lock#release()} it's going to be released with the
      * transaction finishes.
      */
-    Lock acquireReadLock( PropertyContainer entity );
+    Lock acquireReadLock( Entity entity );
 }

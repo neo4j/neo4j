@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -54,7 +54,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     }
 
     @Override
-    protected PropertyContainer lookupPropertyContainer( Transaction transaction, long id )
+    protected Entity lookupPropertyContainer( Transaction transaction, long id )
     {
         return transaction.getRelationshipById( id );
     }

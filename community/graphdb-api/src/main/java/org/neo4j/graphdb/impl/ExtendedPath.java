@@ -21,9 +21,9 @@ package org.neo4j.graphdb.impl;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
@@ -157,15 +157,15 @@ public class ExtendedPath implements Path
     }
 
     @Override
-    public Iterator<PropertyContainer> iterator()
+    public Iterator<Entity> iterator()
     {
         return new PrefetchingIterator<>()
         {
-            final Iterator<PropertyContainer> startEntities = start.iterator();
+            final Iterator<Entity> startEntities = start.iterator();
             int lastReturned = 2;
 
             @Override
-            protected PropertyContainer fetchNextOrNull()
+            protected Entity fetchNextOrNull()
             {
                 if ( startEntities.hasNext() )
                 {

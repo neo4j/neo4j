@@ -38,7 +38,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -537,7 +536,7 @@ class TransactionEventsIT
             this.random = random;
         }
 
-        private <E extends PropertyContainer> E random( List<E> entities )
+        private <E> E random( List<E> entities )
         {
             return entities.isEmpty() ? null : entities.get( random.nextInt( entities.size() ) );
         }

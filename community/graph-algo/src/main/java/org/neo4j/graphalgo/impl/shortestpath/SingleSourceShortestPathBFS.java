@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -107,7 +107,7 @@ public class SingleSourceShortestPathBFS implements
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<PropertyContainer> getPath( Node targetNode )
+    public List<Entity> getPath( Node targetNode )
     {
         if ( targetNode == null )
         {
@@ -164,7 +164,7 @@ public class SingleSourceShortestPathBFS implements
      * @see SingleSourceShortestPath
      */
     @Override
-    public List<List<PropertyContainer>> getPaths( Node targetNode )
+    public List<List<Entity>> getPaths( Node targetNode )
     {
         if ( targetNode == null )
         {

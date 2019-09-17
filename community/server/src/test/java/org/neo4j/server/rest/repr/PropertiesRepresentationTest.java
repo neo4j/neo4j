@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Entity;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -103,9 +103,9 @@ public class PropertiesRepresentationTest
         }
     }
 
-    static PropertyContainer container( Map<String, Object> values )
+    static Entity container( Map<String, Object> values )
     {
-        PropertyContainer container = mock( PropertyContainer.class );
+        Entity container = mock( Entity.class );
         when( container.getPropertyKeys() ).thenReturn( values.keySet() );
         when( container.getAllProperties() ).thenReturn( values );
         for ( Map.Entry<String, Object> entry : values.entrySet() )

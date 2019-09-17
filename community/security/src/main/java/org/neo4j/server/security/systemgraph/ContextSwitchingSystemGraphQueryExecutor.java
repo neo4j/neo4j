@@ -23,10 +23,10 @@ import java.util.Map;
 
 import org.neo4j.cypher.internal.javacompat.SystemDatabaseInnerAccessor;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -303,13 +303,13 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
 
             @Override
-            public Lock acquireWriteLock( PropertyContainer entity )
+            public Lock acquireWriteLock( Entity entity )
             {
                 return transaction.acquireWriteLock( entity );
             }
 
             @Override
-            public Lock acquireReadLock( PropertyContainer entity )
+            public Lock acquireReadLock( Entity entity )
             {
                 return transaction.acquireReadLock( entity );
             }

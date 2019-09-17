@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -156,7 +156,7 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
         }
     }
 
-    private void assertPropertyEqual( PropertyContainer primitive, String key, String value )
+    private void assertPropertyEqual( Entity primitive, String key, String value )
     {
         assertEquals( value, primitive.getProperty( key ) );
     }

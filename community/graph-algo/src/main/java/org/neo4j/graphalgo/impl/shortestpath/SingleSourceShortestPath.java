@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -55,7 +55,7 @@ public interface SingleSourceShortestPath<CostType>
      * Node/Relationship.
      * @return The path as an alternating list of Node/Relationship.
      */
-    List<PropertyContainer> getPath( Node targetNode );
+    List<Entity> getPath( Node targetNode );
 
     /**
      * A call to this will run the algorithm, if not already done, and return
@@ -76,7 +76,7 @@ public interface SingleSourceShortestPath<CostType>
      * already done, and return them as alternating lists of Node/Relationship.
      * @return A list of the paths as alternating lists of Node/Relationship.
      */
-    List<List<PropertyContainer>> getPaths( Node targetNode );
+    List<List<Entity>> getPaths( Node targetNode );
 
     /**
      * A call to this will run the algorithm to find all shortest paths, if not

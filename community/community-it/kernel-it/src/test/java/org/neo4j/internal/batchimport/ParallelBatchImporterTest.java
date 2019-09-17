@@ -45,10 +45,10 @@ import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
@@ -490,7 +490,7 @@ public class ParallelBatchImporterTest
         assertTrue( expectedLabels.isEmpty() );
     }
 
-    private static void assertPropertiesEquals( InputEntity input, PropertyContainer entity )
+    private static void assertPropertiesEquals( InputEntity input, Entity entity )
     {
         Object[] properties = input.properties();
         for ( int i = 0; i < properties.length; i++ )
@@ -501,7 +501,7 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private static void assertPropertyValueEquals( InputEntity input, PropertyContainer entity, String key,
+    private static void assertPropertyValueEquals( InputEntity input, Entity entity, String key,
         Object expected, Object array )
     {
         if ( expected.getClass().isArray() )

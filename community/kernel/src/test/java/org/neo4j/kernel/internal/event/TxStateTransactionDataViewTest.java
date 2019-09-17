@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
@@ -337,10 +337,10 @@ class TxStateTransactionDataViewTest
                 equalTo( genericMap( "username", "Igor" ) ) );
     }
 
-    private static List<Long> idList( Iterable<? extends PropertyContainer> entities )
+    private static List<Long> idList( Iterable<? extends Entity> entities )
     {
         List<Long> out = new ArrayList<>();
-        for ( PropertyContainer entity : entities )
+        for ( Entity entity : entities )
         {
             out.add( entity instanceof Node ? ((Node) entity).getId() : ((Relationship) entity).getId() );
         }

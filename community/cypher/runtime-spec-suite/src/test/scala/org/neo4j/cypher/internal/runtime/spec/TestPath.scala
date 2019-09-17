@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import java.{lang, util}
 
-import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.graphdb.{Entity, Node, Path, Relationship}
 
 /**
   * Test org.neo4j.graphdb.Path implementation, used for runtime spec suite assertions.
@@ -47,7 +47,7 @@ class TestPath(override val startNode: Node, _relationships: Seq[Relationship]) 
 
   override def length(): Int = _relationships.size
 
-  override def iterator(): util.Iterator[PropertyContainer] = ???
+  override def iterator(): util.Iterator[Entity] = ???
 
   def take(n: Int): TestPath =
     new TestPath(startNode, _relationships.take(n))

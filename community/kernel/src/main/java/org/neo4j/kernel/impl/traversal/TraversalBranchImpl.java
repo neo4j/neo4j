@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.traversal;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
@@ -303,9 +303,9 @@ class TraversalBranchImpl implements TraversalBranch
     }
 
     @Override
-    public Iterator<PropertyContainer> iterator()
+    public Iterator<Entity> iterator()
     {
-        LinkedList<PropertyContainer> entities = new LinkedList<>();
+        LinkedList<Entity> entities = new LinkedList<>();
         TraversalBranch branch = this;
         while ( branch.length() > 0 )
         {

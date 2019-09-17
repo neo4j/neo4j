@@ -32,10 +32,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -65,7 +65,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Override
-    protected PropertyContainer lookupPropertyContainer( Transaction transaction, long id )
+    protected Entity lookupPropertyContainer( Transaction transaction, long id )
     {
         return transaction.getNodeById( id );
     }

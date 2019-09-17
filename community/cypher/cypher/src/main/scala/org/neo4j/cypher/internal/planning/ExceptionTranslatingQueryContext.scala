@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.graphdb.{Entity, Path}
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.IndexDescriptor
@@ -254,10 +254,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] =
     translateException(inner.variableLengthPathExpand(realNode, minHops, maxHops, direction, relTypes))
 
-  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] =
+  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]]): Option[Path] =
     translateException(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
+  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[Entity]]): Iterator[Path] =
     translateException(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
   override def nodeCountByCountStore(labelId: Int): Long =

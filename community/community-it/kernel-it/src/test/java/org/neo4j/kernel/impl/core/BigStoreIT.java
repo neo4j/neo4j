@@ -30,10 +30,10 @@ import java.util.Map;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -204,7 +204,7 @@ class BigStoreIT
         return heapMb >= requiredHeapMb;
     }
 
-    private static void assertProperties( Map<String, Object> properties, PropertyContainer entity )
+    private static void assertProperties( Map<String, Object> properties, Entity entity )
     {
         int count = 0;
         for ( String key : entity.getPropertyKeys() )
@@ -224,7 +224,7 @@ class BigStoreIT
         assertEquals( properties.size(), count );
     }
 
-    private static void setProperties( PropertyContainer entity, Map<String, Object> properties )
+    private static void setProperties( Entity entity, Map<String, Object> properties )
     {
         for ( Map.Entry<String, Object> property : properties.entrySet() )
         {

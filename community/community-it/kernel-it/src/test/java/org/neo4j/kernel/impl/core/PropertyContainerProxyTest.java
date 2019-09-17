@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
@@ -49,7 +49,7 @@ public abstract class PropertyContainerProxyTest
 
     protected abstract long createPropertyContainer( Transaction tx );
 
-    protected abstract PropertyContainer lookupPropertyContainer( Transaction transaction, long id );
+    protected abstract Entity lookupPropertyContainer( Transaction transaction, long id );
 
     @Test
     void shouldListAllProperties()
@@ -71,7 +71,7 @@ public abstract class PropertyContainerProxyTest
         try ( Transaction tx = db.beginTx() )
         {
             containerId = createPropertyContainer( tx );
-            PropertyContainer container = lookupPropertyContainer( tx, containerId );
+            Entity container = lookupPropertyContainer( tx, containerId );
 
             for ( Map.Entry<String,Object> entry : properties.entrySet() )
             {

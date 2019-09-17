@@ -29,8 +29,8 @@ import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
@@ -260,9 +260,9 @@ class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
             boolean pathB2D = false;
             boolean pathBD2 = false;
             boolean pathB2D2 = false;
-            List<List<PropertyContainer>> paths = dijkstra.getPaths();
+            List<List<Entity>> paths = dijkstra.getPaths();
             assertEquals( 4, paths.size() );
-            for ( List<PropertyContainer> path : paths )
+            for ( List<Entity> path : paths )
             {
                 assertEquals( 9, path.size() );
                 assertEquals( path.get( 0 ), graph.getNode( transaction, "a" ) );

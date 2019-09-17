@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.util;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -221,7 +221,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         }
 
         @Override
-        public Iterator<PropertyContainer> iterator()
+        public Iterator<Entity> iterator()
         {
             return new Iterator<>()
             {
@@ -237,9 +237,9 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
                 }
 
                 @Override
-                public PropertyContainer next()
+                public Entity next()
                 {
-                    PropertyContainer propertyContainer;
+                    Entity propertyContainer;
                     if ( (index & 1) == 0 )
                     {
                         propertyContainer = mapNode( nodes[index >> 1] );

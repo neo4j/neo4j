@@ -39,10 +39,10 @@ import java.util.stream.Collectors;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
@@ -270,7 +270,7 @@ class ReuseStorageSpaceIT
         batchedDelete( db, tx -> tx.getAllNodes(), Node::delete );
     }
 
-    private static <ENTITY extends PropertyContainer> void batchedDelete( GraphDatabaseService db,
+    private static <ENTITY> void batchedDelete( GraphDatabaseService db,
             Function<Transaction,ResourceIterable<ENTITY>> provider, Consumer<ENTITY> deleter )
     {
         int deleted;
@@ -293,7 +293,7 @@ class ReuseStorageSpaceIT
         while ( deleted > 0 );
     }
 
-    private static void setProperties( RandomValues random, PropertyContainer entity )
+    private static void setProperties( RandomValues random, Entity entity )
     {
         for ( String propertyKey : random.selection( TOKENS, 0, TOKENS.length, false ) )
         {

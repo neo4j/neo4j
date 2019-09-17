@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -173,7 +173,7 @@ class ReadTransactionLogWritingTest
                 getAllProperties( relationship );
             }
 
-            private void getAllProperties( PropertyContainer entity )
+            private void getAllProperties( Entity entity )
             {
                 for ( String key : entity.getPropertyKeys() )
                 {

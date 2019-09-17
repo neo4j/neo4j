@@ -22,16 +22,16 @@ package org.neo4j.server.rest.repr;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 
-import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
 public final class PropertiesRepresentation extends MappingRepresentation
 {
-    private final PropertyContainer entity;
+    private final Entity entity;
 
-    public PropertiesRepresentation( PropertyContainer entity )
+    public PropertiesRepresentation( Entity entity )
     {
         super( RepresentationType.PROPERTIES );
         this.entity = entity;
