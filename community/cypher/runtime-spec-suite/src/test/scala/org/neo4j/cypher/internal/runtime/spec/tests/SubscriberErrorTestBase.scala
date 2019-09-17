@@ -35,10 +35,8 @@ abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
     val subscriber = ExplodingSubscriber(explodeOnResult = true)
 
     // then
-    intercept[Kaboom] {
-      val runtimeResult = execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber)
-      runtimeResult.request(Long.MaxValue)
-      runtimeResult.await()
+    a[Kaboom] shouldBe thrownBy {
+      execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber).consumeAll()
     }
   }
 
@@ -47,10 +45,8 @@ abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
     val subscriber = ExplodingSubscriber(explodeOnRecord = true)
 
     // then
-    intercept[Kaboom] {
-      val runtimeResult = execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber)
-      runtimeResult.request(Long.MaxValue)
-      runtimeResult.await()
+    a[Kaboom] shouldBe thrownBy {
+      execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber).consumeAll()
     }
   }
 
@@ -59,10 +55,8 @@ abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
     val subscriber = ExplodingSubscriber(explodeOnField = true)
 
     // then
-    intercept[Kaboom] {
-      val runtimeResult = execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber)
-      runtimeResult.request(Long.MaxValue)
-      runtimeResult.await()
+    a[Kaboom] shouldBe thrownBy {
+      execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber).consumeAll()
     }
   }
 
@@ -71,10 +65,8 @@ abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
     val subscriber = ExplodingSubscriber(explodeOnRecordCompleted = true)
 
     // then
-    intercept[Kaboom] {
-      val runtimeResult = execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber)
-      runtimeResult.request(Long.MaxValue)
-      runtimeResult.await()
+    a[Kaboom] shouldBe thrownBy {
+      execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber).consumeAll()
     }
   }
 
@@ -83,14 +75,12 @@ abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
     val subscriber = ExplodingSubscriber(explodeOnError = true)
 
     // then
-    val exception = intercept[org.neo4j.exceptions.ArithmeticException] {
-      val runtimeResult = execute(someArithmeticErrorQuery, runtime, NO_INPUT.stream(), subscriber)
-      runtimeResult.request(Long.MaxValue)
-      runtimeResult.await()
-    }
-    intercept[Kaboom] {
-      throw exception.getSuppressed.head
-    }
+    val exception =
+      intercept[org.neo4j.exceptions.ArithmeticException] {
+        execute(someArithmeticErrorQuery, runtime, NO_INPUT.stream(), subscriber).consumeAll()
+      }
+
+    exception.getSuppressed.head shouldBe a[Kaboom]
   }
 
   test("should fail correctly on onResultCompleted exception") {
@@ -98,10 +88,8 @@ abstract class SubscriberErrorTestBase[CONTEXT <: RuntimeContext](
     val subscriber = ExplodingSubscriber(explodeOnResultCompleted = true)
 
     // then
-    intercept[Kaboom] {
-      val runtimeResult = execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber)
-      runtimeResult.request(Long.MaxValue)
-      runtimeResult.await()
+    a[Kaboom] shouldBe thrownBy {
+      execute(someGraphAndQuery, runtime, NO_INPUT.stream(), subscriber).consumeAll()
     }
   }
 
