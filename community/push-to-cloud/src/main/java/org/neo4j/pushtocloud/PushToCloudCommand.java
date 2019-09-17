@@ -117,7 +117,7 @@ public class PushToCloudCommand implements AdminCommand
                 }
                 else
                 {
-                    username = outsideWorld.promptLine("Neo4j cloud database user name: ");
+                    username = outsideWorld.promptLine( "Neo4j cloud database user name: " );
                 }
             }
             char[] password;
@@ -133,7 +133,7 @@ public class PushToCloudCommand implements AdminCommand
                 }
                 else
                 {
-                    password = outsideWorld.promptPassword("Neo4j cloud database password: ");
+                    password = outsideWorld.promptPassword( "Neo4j cloud database password: " );
                 }
             }
 
