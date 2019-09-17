@@ -53,6 +53,14 @@ public class SecurityContext implements LoginContext
         return true;
     }
 
+    /**
+     * Check whether the user has a specific level of admin rights.
+     */
+    public boolean allowsAdminAction( AdminActionOnResource action )
+    {
+        return true;
+    }
+
     @Override
     public AuthSubject subject()
     {

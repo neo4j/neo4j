@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs.{AdministrativeCommandPrivilegeExecutionPlan, QueryHandler, SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.exceptions.CantCompileQueryException
+import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.{InvalidArgumentsException, Status}
@@ -61,8 +62,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] = {
 
     // Check Admin Rights
-    case AssertAdmin() => (_, _, securityContext) =>
-      AdministrativeCommandPrivilegeExecutionPlan(securityContext)
+    case AssertDbmsAdmin(action) => (_, _, securityContext) =>
+      AdministrativeCommandPrivilegeExecutionPlan(securityContext, action, DatabaseScope.ALL)
+
+    case AssertDatabaseAdmin(action, database) => (_, _, securityContext) =>
+      AdministrativeCommandPrivilegeExecutionPlan(securityContext, action, new DatabaseScope(database.name()))
 
     // SHOW USERS
     case ShowUsers(source) => (context, parameterMapping, securityContext) =>
@@ -178,7 +182,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine,
         "MATCH (d:Database {default: true}) RETURN d.name as name", VirtualValues.EMPTY_MAP)
 
-    case DoNothingIfNotExists(label, name) => (_, _, _) =>
+    case DoNothingIfNotExists(source, label, name) => (context, parameterMapping, securityContext) =>
       UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
         s"""
            |MATCH (node:$label {name: $$name})
@@ -190,10 +194,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
               new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
-          }
+          },
+        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
-    case DoNothingIfExists(label, name) => (_, _, _) =>
+    case DoNothingIfExists(source, label, name) => (context, parameterMapping, securityContext) =>
       UpdatingSystemCommandExecutionPlan("DoNothingIfExists", normalExecutionEngine,
         s"""
            |MATCH (node:$label {name: $$name})
@@ -205,11 +210,12 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
               new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
-          }
+          },
+        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // Ensure that the role or user exists before being dropped
-    case EnsureNodeExists(label, name) => (_, _, _) =>
+    case EnsureNodeExists(source, label, name) => (context, parameterMapping, securityContext) =>
       UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
         s"""MATCH (node:$label {name: $$name})
            |RETURN node""".stripMargin,
@@ -220,7 +226,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             case error: HasStatus if error.status() == Status.Cluster.NotALeader =>
               new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name': $followerError", error)
             case error => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '$name'.", error) // should not get here but need a default case
-          }
+          },
+        source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping, securityContext))
       )
 
     // SUPPORT PROCEDURES (need to be cleared before here)
