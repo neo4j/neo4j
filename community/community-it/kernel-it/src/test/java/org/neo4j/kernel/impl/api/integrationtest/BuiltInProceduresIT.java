@@ -53,10 +53,8 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
@@ -183,7 +181,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
     void failWhenCallingNonExistingProcedures()
     {
         assertThrows( ProcedureException.class,
-            () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver, AnonymousContext.none().authorize(
+            () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], transaction, dependencyResolver, AnonymousContext.none().authorize(
                 LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, valueMapper ) );
     }
 

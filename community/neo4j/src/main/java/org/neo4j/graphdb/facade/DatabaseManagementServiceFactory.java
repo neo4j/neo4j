@@ -57,7 +57,7 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
+import org.neo4j.kernel.impl.api.dbms.TransactionalDbmsOperations;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -142,7 +142,7 @@ public class DatabaseManagementServiceFactory
         globalDependencies.satisfyDependencies( managementService );
 
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
-        globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
+        globalDependencies.satisfyDependency( new TransactionalDbmsOperations( globalProcedures ) );
 
         edition.createSystemGraphInitializer( globalModule, databaseManager );
         edition.createSecurityModule( globalModule );

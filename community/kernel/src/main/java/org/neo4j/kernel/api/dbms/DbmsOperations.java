@@ -24,6 +24,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
@@ -36,6 +37,7 @@ public interface DbmsOperations
 {
     /** Invoke a DBMS procedure by id */
     RawIterator<AnyValue[],ProcedureException> procedureCallDbms( int id, AnyValue[] input,
+            InternalTransaction internalTransaction,
             DependencyResolver dependencyResolver, SecurityContext securityContext,
             ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException;
 }

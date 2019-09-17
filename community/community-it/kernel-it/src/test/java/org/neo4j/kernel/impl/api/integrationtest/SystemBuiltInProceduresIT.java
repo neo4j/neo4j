@@ -437,7 +437,8 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void failWhenCallingNonExistingProcedures()
     {
         assertThrows( ProcedureException.class,
-                () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver, AnonymousContext.none().authorize(
+                () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], transaction,
+                        dependencyResolver, AnonymousContext.none().authorize(
                         LoginContext.IdLookup.EMPTY, getDatabaseName() ), EMPTY_RESOURCE_MANAGER, valueMapper ) );
     }
 

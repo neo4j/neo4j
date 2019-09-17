@@ -122,7 +122,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         int procedureId = procs().procedureGet( procedureName ).id();
         RawIterator<AnyValue[],ProcedureException> callResult =
                 dbmsOperations()
-                        .procedureCallDbms( procedureId, toArray( stringValue( searchString ) ), dependencyResolver,
+                        .procedureCallDbms( procedureId, toArray( stringValue( searchString ) ), transaction, dependencyResolver,
                                 AUTH_DISABLED, EMPTY_RESOURCE_MANAGER, valueMapper );
         return asList( callResult );
     }

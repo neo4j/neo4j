@@ -77,7 +77,7 @@ public abstract class KernelIntegrationTest
     protected Kernel kernel;
     protected IndexingService indexingService;
 
-    private InternalTransaction transaction;
+    protected InternalTransaction transaction;
     private KernelTransaction kernelTransaction;
     private DbmsOperations dbmsOperations;
     protected DependencyResolver dependencyResolver;

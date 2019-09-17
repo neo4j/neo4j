@@ -27,31 +27,35 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
-public class NonTransactionalDbmsOperations implements DbmsOperations
+public class TransactionalDbmsOperations implements DbmsOperations
 {
     private final GlobalProcedures globalProcedures;
 
-    public NonTransactionalDbmsOperations( GlobalProcedures globalProcedures )
+    public TransactionalDbmsOperations( GlobalProcedures globalProcedures )
     {
         this.globalProcedures = globalProcedures;
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallDbms( int id, AnyValue[] input, DependencyResolver dependencyResolver,
-            SecurityContext securityContext, ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException
+    public RawIterator<AnyValue[],ProcedureException> procedureCallDbms( int id, AnyValue[] input, InternalTransaction transaction,
+            DependencyResolver dependencyResolver, SecurityContext securityContext,
+            ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException
     {
-        Context ctx = createContext( securityContext, dependencyResolver, valueMapper );
+        Context ctx = createContext( transaction, securityContext, dependencyResolver, valueMapper );
         return globalProcedures.callProcedure( ctx, id, input, resourceTracker );
     }
 
-    private static Context createContext( SecurityContext securityContext, DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper )
+    private static Context createContext( InternalTransaction transaction, SecurityContext securityContext,
+            DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper )
     {
         return buildContext( dependencyResolver, valueMapper )
+                .withTransaction( transaction )
                 .withSecurityContext( securityContext ).context();
     }
 }
