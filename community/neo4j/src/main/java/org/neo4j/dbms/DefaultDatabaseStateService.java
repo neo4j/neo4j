@@ -44,7 +44,7 @@ public final class DefaultDatabaseStateService implements DatabaseStateService
     }
 
     @Override
-    public Optional<Throwable> databaseHasFailed( DatabaseId databaseId )
+    public Optional<Throwable> causeOfFailure( DatabaseId databaseId )
     {
         return databaseManager.getDatabaseContext( databaseId ).map( StandaloneDatabaseContext::failureCause );
     }

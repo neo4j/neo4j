@@ -214,7 +214,7 @@ public class DatabaseManagementServiceFactory
             throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " not found." );
         }
 
-        Optional<Throwable> failure = dbStateService.databaseHasFailed( SYSTEM_DATABASE_ID );
+        Optional<Throwable> failure = dbStateService.causeOfFailure( SYSTEM_DATABASE_ID );
         if ( failure.isPresent() )
         {
             throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " failed to start.", failure.get() );

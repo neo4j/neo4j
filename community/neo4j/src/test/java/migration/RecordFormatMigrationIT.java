@@ -27,13 +27,9 @@ import java.io.File;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
@@ -193,7 +189,7 @@ class RecordFormatMigrationIT
     {
         assertThrows( Throwable.class, database::beginTx );
         DatabaseStateService dbStateService = getDatabaseStateService( database );
-        var failure = dbStateService.databaseHasFailed( database.databaseId() );
+        var failure = dbStateService.causeOfFailure( database.databaseId() );
         return failure.orElseThrow( () -> new AssertionError( format( "No failure found for database %s", database.databaseId().name() ) ) );
     }
 

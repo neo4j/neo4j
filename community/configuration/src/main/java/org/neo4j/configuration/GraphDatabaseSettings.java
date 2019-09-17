@@ -1100,10 +1100,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .addConstraint( min( Duration.ofSeconds( 1 ) ) )
             .build();
 
-    @Description( "Defines the level of parallelism employed by the reconciler. 0 corresponds the number of cores available on the host machine." )
-    @Internal
-    public static final Setting<Integer> reconciler_maximum_parallelism = newBuilder( "dbms.reconciler.max_parallelism", INT, 0 ).build();
-
     /**
      * Default settings for server. The default values are assumes to be default for embedded deployments through the code.
      * This map contains default server settings that you can pass to the builders.

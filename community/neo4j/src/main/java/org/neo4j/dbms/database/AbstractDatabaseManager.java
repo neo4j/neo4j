@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -29,11 +30,13 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -49,11 +52,12 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 
+import static java.lang.String.format;
 import static java.util.Collections.unmodifiableNavigableMap;
 
 public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<DB>
 {
-    protected final ConcurrentHashMap<DatabaseId,DB> databaseMap;
+    protected final Map<DatabaseId,DB> databaseMap;
     protected final GlobalModule globalModule;
     protected final AbstractEditionModule edition;
     protected final Log log;
@@ -105,7 +109,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 
     private void startAllDatabases()
     {
-        forEachDatabase( this::startDatabase, false );
+        forEachDatabase( this::startDatabase, false, "start" );
     }
 
     @Override
@@ -119,7 +123,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 
     private void stopAllDatabases()
     {
-        forEachDatabase( this::stopDatabase, true );
+        forEachDatabase( this::stopDatabase, true, "stop" );
     }
 
     @Override
@@ -146,32 +150,59 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
                                                    databaseConfig, EpochSupplier.NO_EPOCHS );
     }
 
-    private void forEachDatabase( BiConsumer<DatabaseId,DB> consumer, boolean systemDatabaseLast )
+    private void forEachDatabase( BiConsumer<DatabaseId,DB> consumer, boolean systemDatabaseLast, String operationName )
     {
         var snapshot = systemDatabaseLast ? databasesSnapshot().descendingMap().entrySet() : databasesSnapshot().entrySet();
+        DatabaseManagementException dbmsExceptions = null;
 
         for ( var entry : snapshot )
         {
             DatabaseId databaseId = entry.getKey();
             DB context = entry.getValue();
-            consumer.accept( databaseId, context );
+            try
+            {
+                consumer.accept( databaseId, context );
+            }
+            catch ( Throwable t )
+            {
+                var dbmsException = new DatabaseManagementException( format( "An error occurred! Unable to %s the database `%s`.",
+                        operationName, databaseId.name() ), t );
+                dbmsExceptions = Exceptions.chain( dbmsExceptions, dbmsException );
+            }
+        }
+
+        if ( dbmsExceptions != null )
+        {
+            throw dbmsExceptions;
         }
     }
 
-    protected DB startDatabase( DatabaseId databaseId, DB context )
+    protected void startDatabase( DatabaseId databaseId, DB context )
     {
-        log.info( "Starting '%s' database.", databaseId.name() );
-        Database database = context.database();
-        database.start();
-        return context;
+        try
+        {
+            log.info( "Starting '%s' database.", databaseId.name() );
+            Database database = context.database();
+            database.start();
+        }
+        catch ( Throwable t )
+        {
+            throw new DatabaseManagementException( format( "An error occurred! Unable to start database with name `%s`.", databaseId.name() ), t );
+        }
     }
 
-    protected DB stopDatabase( DatabaseId databaseId, DB context )
+    protected void stopDatabase( DatabaseId databaseId, DB context )
     {
-        log.info( "Stop '%s' database.", databaseId.name() );
-        Database database = context.database();
-        database.stop();
-        return context;
+        try
+        {
+            log.info( "Stop '%s' database.", databaseId.name() );
+            Database database = context.database();
+            database.stop();
+        }
+        catch ( Throwable t )
+        {
+            throw new DatabaseManagementException( format( "An error occurred! Unable to stop database with name `%s`.", databaseId.name() ), t );
+        }
     }
 
     protected VersionContextSupplier createVersionContextSupplier( DatabaseConfig databaseConfig )

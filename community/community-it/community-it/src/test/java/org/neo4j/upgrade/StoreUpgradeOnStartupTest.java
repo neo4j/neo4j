@@ -37,9 +37,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -123,8 +120,8 @@ public class StoreUpgradeOnStartupTest
         try
         {
             DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-            assertTrue( databaseStateService.databaseHasFailed( database.databaseId() ).isPresent() );
-            assertThat( rootCause( databaseStateService.databaseHasFailed( database.databaseId() ).get() ),
+            assertTrue( databaseStateService.causeOfFailure( database.databaseId() ).isPresent() );
+            assertThat( rootCause( databaseStateService.causeOfFailure( database.databaseId() ).get() ),
                     Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );
         }
         finally

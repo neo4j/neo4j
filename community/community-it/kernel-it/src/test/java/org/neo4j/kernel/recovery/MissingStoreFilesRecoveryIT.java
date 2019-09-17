@@ -95,7 +95,7 @@ class MissingStoreFilesRecoveryIT
 
         managementService = serviceBuilder.build();
         var dbStateService = getDatabaseStateService();
-        assertTrue( dbStateService.databaseHasFailed( defaultDatabaseId ).isPresent() );
+        assertTrue( dbStateService.causeOfFailure( defaultDatabaseId ).isPresent() );
     }
 
     @Test
@@ -107,7 +107,7 @@ class MissingStoreFilesRecoveryIT
         fileSystem.deleteFile( databaseLayout.nodeStore() );
 
         var dbStateService = getDatabaseStateService();
-        var failure = dbStateService.databaseHasFailed( defaultDatabaseId );
+        var failure = dbStateService.causeOfFailure( defaultDatabaseId );
         assertFalse( failure.isPresent() );
         assertFalse( fileSystem.fileExists( databaseLayout.nodeStore() ) );
     }

@@ -72,8 +72,8 @@ class DatabaseFailureIT
 
         database = startDatabase();
         DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-        assertTrue( databaseStateService.databaseHasFailed( database.databaseId() ).isPresent() );
-        assertFalse( databaseStateService.databaseHasFailed( SYSTEM_DATABASE_ID ).isPresent() );
+        assertTrue( databaseStateService.causeOfFailure( database.databaseId() ).isPresent() );
+        assertFalse( databaseStateService.causeOfFailure( SYSTEM_DATABASE_ID ).isPresent() );
     }
 
     @Test

@@ -24,6 +24,7 @@ import java.util.SortedMap;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseExistsException;
+import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -75,10 +76,10 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * Database name should be unique.
      * By default a database is in a started state when it is initially created.
      * @param databaseId ID of database to create
-     * @throws DatabaseExistsException In case if database with specified name already exists
+     * @throws DatabaseManagementException if database with specified name already exists, or the limited number of databases has been reached.
      * @return database context for newly created database
      */
-    DB createDatabase( DatabaseId databaseId ) throws DatabaseExistsException;
+    DB createDatabase( DatabaseId databaseId ) throws DatabaseManagementException;
 
     /**
      * Drop database with specified name.

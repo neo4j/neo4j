@@ -47,5 +47,5 @@ public interface DatabaseStateService
      * @param databaseId the database to check for failure
      * @return the cause of the database failure, if there is one.
      */
-    Optional<Throwable> databaseHasFailed( DatabaseId databaseId );
+    Optional<Throwable> causeOfFailure( DatabaseId databaseId );
 }

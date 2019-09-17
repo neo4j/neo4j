@@ -112,33 +112,31 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     }
 
     @Override
-    protected StandaloneDatabaseContext stopDatabase( DatabaseId databaseId, StandaloneDatabaseContext context )
+    protected void stopDatabase( DatabaseId databaseId, StandaloneDatabaseContext context )
     {
         try
         {
-            return super.stopDatabase( databaseId, context );
+            super.stopDatabase( databaseId, context );
         }
         catch ( Throwable t )
         {
             log.error( "Failed to stop database: " + databaseId.name(), t );
             context.fail( t );
         }
-        return context;
     }
 
     @Override
-    protected StandaloneDatabaseContext startDatabase( DatabaseId databaseId, StandaloneDatabaseContext context )
+    protected void startDatabase( DatabaseId databaseId, StandaloneDatabaseContext context )
     {
         try
         {
-            return super.startDatabase( databaseId, context );
+            super.startDatabase( databaseId, context );
         }
         catch ( Throwable t )
         {
             log.error( "Failed to start database: " + databaseId.name(), t );
             context.fail( t );
         }
-        return context;
     }
 
     private void checkDatabaseLimit( DatabaseId databaseId )

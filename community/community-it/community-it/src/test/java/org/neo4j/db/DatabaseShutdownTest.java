@@ -28,9 +28,6 @@ import java.nio.file.OpenOption;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -80,7 +77,7 @@ class DatabaseShutdownTest
         DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
         factory.setFailFlush( true );
         managementService.shutdown();
-        assertTrue( dbStateService.databaseHasFailed( databaseService.databaseId() ).isPresent() );
+        assertTrue( dbStateService.causeOfFailure( databaseService.databaseId() ).isPresent() );
         assertEquals( LifecycleStatus.SHUTDOWN, factory.getDatabaseStatus() );
     }
 

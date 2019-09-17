@@ -27,8 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -307,7 +305,7 @@ class RecoveryIT
         {
             DatabaseStateService dbStateService = restartedDb.getDependencyResolver().resolveDependency( DatabaseStateService.class );
 
-            var failure = dbStateService.databaseHasFailed( restartedDb.databaseId() );
+            var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
             assertTrue( failure.isPresent() );
             assertThat( getRootCause( failure.get() ).getMessage(), containsString( "Transaction logs are missing and recovery is not possible." ) );
         }

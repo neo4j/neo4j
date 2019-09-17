@@ -29,7 +29,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,13 +45,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
@@ -104,8 +101,8 @@ class DatabaseStartupTest
 
             assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
             DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-            assertTrue( dbStateService.databaseHasFailed( databaseService.databaseId() ).isPresent() );
-            Throwable throwable = findCauseOrSuppressed( dbStateService.databaseHasFailed( databaseService.databaseId() ).get(),
+            assertTrue( dbStateService.causeOfFailure( databaseService.databaseId() ).isPresent() );
+            Throwable throwable = findCauseOrSuppressed( dbStateService.causeOfFailure( databaseService.databaseId() ).get(),
                     e -> e instanceof IllegalArgumentException ).get();
             assertEquals( "Unknown store version 'bad'", throwable.getMessage() );
         }
@@ -149,8 +146,8 @@ class DatabaseStartupTest
         {
             assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
             DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-            assertTrue( dbStateService.databaseHasFailed( databaseService.databaseId() ).isPresent() );
-            Optional<Throwable> upgradeException = findCauseOrSuppressed( dbStateService.databaseHasFailed( databaseService.databaseId() ).get(),
+            assertTrue( dbStateService.causeOfFailure( databaseService.databaseId() ).isPresent() );
+            Optional<Throwable> upgradeException = findCauseOrSuppressed( dbStateService.causeOfFailure( databaseService.databaseId() ).get(),
                     e -> e instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
             assertTrue( upgradeException.isPresent() );
         }

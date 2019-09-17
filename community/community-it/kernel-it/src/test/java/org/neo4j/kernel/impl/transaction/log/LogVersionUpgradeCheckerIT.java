@@ -25,8 +25,6 @@ import java.io.IOException;
 
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,7 +46,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
@@ -96,7 +93,7 @@ class LogVersionUpgradeCheckerIT
         {
             DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
 
-            var failure = dbStateService.databaseHasFailed( db.databaseId() );
+            var failure = dbStateService.causeOfFailure( db.databaseId() );
             assertTrue( failure.isPresent() );
             assertThat( getRootCause( failure.get() ), new NestedThrowableMatcher( UpgradeNotAllowedException.class ) );
         }

@@ -172,8 +172,8 @@ class RecoveryCorruptedTransactionLogIT
         try
         {
             DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-            assertTrue( dbStateService.databaseHasFailed( db.databaseId() ).isPresent() );
-            assertThat( dbStateService.databaseHasFailed( db.databaseId() ).get(), new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
+            assertTrue( dbStateService.causeOfFailure( db.databaseId() ).isPresent() );
+            assertThat( dbStateService.causeOfFailure( db.databaseId() ).get(), new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
         }
         finally
         {
@@ -404,8 +404,8 @@ class RecoveryCorruptedTransactionLogIT
         {
 
             DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-            assertTrue( dbStateService.databaseHasFailed( db.databaseId() ).isPresent() );
-            assertThat( dbStateService.databaseHasFailed( db.databaseId() ).get(), new RootCauseMatcher<>( NegativeArraySizeException.class ) );
+            assertTrue( dbStateService.causeOfFailure( db.databaseId() ).isPresent() );
+            assertThat( dbStateService.causeOfFailure( db.databaseId() ).get(), new RootCauseMatcher<>( NegativeArraySizeException.class ) );
         }
         finally
         {
