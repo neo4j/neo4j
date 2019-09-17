@@ -44,8 +44,8 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
   def withTail(newTail: SinglePlannerQuery): PlannerQueryBuilder = {
     copy(q = q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq)))))
   }
-  
-  def withQueryInput(inputVariables : Set[String]): PlannerQueryBuilder = {
+
+  def withQueryInput(inputVariables : Seq[String]): PlannerQueryBuilder = {
     copy(q = q.withInput(inputVariables))
   }
 

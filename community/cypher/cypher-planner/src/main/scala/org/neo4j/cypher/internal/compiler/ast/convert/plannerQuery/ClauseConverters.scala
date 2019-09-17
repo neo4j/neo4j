@@ -64,7 +64,7 @@ object ClauseConverters {
     ).withTail(SinglePlannerQuery.empty)
 
   private def addInputDataStreamToLogicalPlanInput(acc: PlannerQueryBuilder, clause: InputDataStream): PlannerQueryBuilder =
-    acc.withQueryInput(clause.variables.map(_.name).toSet)
+    acc.withQueryInput(clause.variables.map(_.name))
 
   private def asSelections(optWhere: Option[Where]) = Selections(optWhere.
     map(_.expression.asPredicates).

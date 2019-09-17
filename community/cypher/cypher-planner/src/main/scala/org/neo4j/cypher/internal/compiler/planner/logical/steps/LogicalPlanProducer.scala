@@ -124,7 +124,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Apply(left, right), solved, providedOrder, context)
   }
 
-  def planInputApply(left: LogicalPlan, right: LogicalPlan, symbols: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+  def planInputApply(left: LogicalPlan, right: LogicalPlan, symbols: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(right.id).asSinglePlannerQuery.withInput(symbols)
     // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
     val providedOrder = providedOrders.get(left.id)
@@ -630,9 +630,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                          context.csvBufferSize), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
-  def planInput(symbols: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+  def planInput(symbols: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryInput = Some(symbols))
-    annotate(Input(symbols.toSeq), solved, ProvidedOrder.empty, context)
+    annotate(Input(symbols), solved, ProvidedOrder.empty, context)
   }
 
   def planUnwind(inner: LogicalPlan, name: String, expression: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {

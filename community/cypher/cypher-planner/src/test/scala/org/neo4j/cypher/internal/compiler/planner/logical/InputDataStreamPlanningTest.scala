@@ -66,6 +66,11 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  test("INPUT DATA STREAM g, uid, cids, cid, p RETURN *") {
+    new given().getLogicalPlanFor("INPUT DATA STREAM g, uid, cids, cid, p RETURN *")._2 should equal(
+      Input(Seq("g", "uid", "cids", "cid", "p")))
+  }
+
   override def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     InputDataStreamTestParsing andThen super.pipeLine()
   }

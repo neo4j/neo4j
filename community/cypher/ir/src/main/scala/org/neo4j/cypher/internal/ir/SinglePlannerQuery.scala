@@ -35,7 +35,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
   /**
    * Optionally, an input to the query provided using INPUT DATA STREAM. These are the column names provided by IDS.
    */
-  val queryInput: Option[Set[String]]
+  val queryInput: Option[Seq[String]]
   /**
     * The part of query from a MATCH/MERGE/CREATE until (excluding) the next WITH/RETURN.
     */
@@ -71,7 +71,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def withInput(queryInput: Set[String]): SinglePlannerQuery =
+  def withInput(queryInput: Seq[String]): SinglePlannerQuery =
     copy(input = Some(queryInput), queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput))
 
   override def withoutHints(hintsToIgnore: Seq[Hint]): SinglePlannerQuery = {
@@ -168,7 +168,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
                      interestingOrder: InterestingOrder = interestingOrder,
                      horizon: QueryHorizon = horizon,
                      tail: Option[SinglePlannerQuery] = tail,
-                     input: Option[Set[String]] = queryInput): SinglePlannerQuery
+                     input: Option[Seq[String]] = queryInput): SinglePlannerQuery
 
   def foldMap(f: (SinglePlannerQuery, SinglePlannerQuery) => SinglePlannerQuery): SinglePlannerQuery = tail match {
     case None => this
@@ -242,14 +242,14 @@ case class RegularSinglePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
                                      interestingOrder: InterestingOrder = InterestingOrder.empty,
                                      horizon: QueryHorizon = QueryProjection.empty,
                                      tail: Option[SinglePlannerQuery] = None,
-                                     queryInput: Option[Set[String]] = None) extends SinglePlannerQuery {
+                                     queryInput: Option[Seq[String]] = None) extends SinglePlannerQuery {
 
   // This is here to stop usage of copy from the outside
   override protected def copy(queryGraph: QueryGraph = queryGraph,
                               interestingOrder: InterestingOrder = interestingOrder,
                               horizon: QueryHorizon = horizon,
                               tail: Option[SinglePlannerQuery] = tail,
-                              queryInput: Option[Set[String]] = queryInput): SinglePlannerQuery =
+                              queryInput: Option[Seq[String]] = queryInput): SinglePlannerQuery =
     RegularSinglePlannerQuery(queryGraph, interestingOrder, horizon, tail, queryInput)
 
   override def dependencies: Set[String] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
