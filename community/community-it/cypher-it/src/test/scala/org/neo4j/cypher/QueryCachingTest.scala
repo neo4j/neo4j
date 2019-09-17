@@ -245,9 +245,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       "cacheMiss: (CYPHER 4.0 expressionEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheHit: (CYPHER 4.0 expressionEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.0 expressionEngine=compiled RETURN 42 AS a, Map())",
-      "cacheHit: (CYPHER 4.0 expressionEngine=compiled RETURN 42 AS a, Map())"
+      "cacheMiss: (CYPHER 4.0 expressionEngine=compiled RETURN 42 AS a, Map())"
     )
 
     actual should equal(expected)
@@ -266,9 +264,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       "cacheMiss: (CYPHER 4.0 operatorEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheHit: (CYPHER 4.0 operatorEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.0 RETURN 42 AS a, Map())",
-      "cacheHit: (CYPHER 4.0 RETURN 42 AS a, Map())"
+      "cacheMiss: (CYPHER 4.0 RETURN 42 AS a, Map())"
     )
 
     actual should equal(expected)
@@ -287,9 +283,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val expected = List(
       s"cacheFlushDetected",
       "cacheMiss: (CYPHER 4.0 runtime=interpreted RETURN 42 AS a, Map())",
-      "cacheHit: (CYPHER 4.0 runtime=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.0 runtime=compiled RETURN 42 AS a, Map())",
-      "cacheHit: (CYPHER 4.0 runtime=compiled RETURN 42 AS a, Map())"
+      "cacheMiss: (CYPHER 4.0 runtime=compiled RETURN 42 AS a, Map())"
     )
 
     actual should equal(expected)
