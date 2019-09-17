@@ -51,7 +51,7 @@ trait WithHeapUsageEstimation {
 
 trait ExecutionContext extends WithHeapUsageEstimation {
 
-  def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit
+  def copyTo(target: ExecutionContext, sourceLongOffset: Int = 0, sourceRefOffset: Int = 0, targetLongOffset: Int = 0, targetRefOffset: Int = 0): Unit
   def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
   def setLongAt(offset: Int, value: Long): Unit
   def getLongAt(offset: Int): Long
@@ -129,7 +129,7 @@ trait ExecutionContext extends WithHeapUsageEstimation {
 class MapExecutionContext(private val m: MutableMap[String, AnyValue], private var cachedProperties: MutableMap[ASTCachedProperty, Value] = null)
   extends ExecutionContext {
 
-  override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = fail()
+  override def copyTo(target: ExecutionContext, sourceLongOffset: Int = 0, sourceRefOffset: Int = 0, targetLongOffset: Int = 0, targetRefOffset: Int = 0): Unit = fail()
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = fail()
 
