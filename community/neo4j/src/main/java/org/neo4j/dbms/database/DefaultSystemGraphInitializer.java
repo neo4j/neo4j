@@ -60,6 +60,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         this.isCommunity = isCommunity;
     }
 
+    @Override
     public void initializeSystemGraph() throws Exception
     {
         // First get a recent handle on the database representing the system graph
@@ -68,6 +69,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         initializeSystemGraph( system );
     }
 
+    @Override
     public void initializeSystemGraph( GraphDatabaseService system ) throws Exception
     {
         // First get a recent handle on the database representing the system graph
