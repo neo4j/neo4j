@@ -128,6 +128,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     firstRunning = false;
                     statusProgress.rewindTo( 0 );
                     statusProgress.add( 2 );
+                    break;
                 case "loading failed":
                     throw new CommandFailed( "We're sorry, something has gone wrong. We did not recognize the file you uploaded as a valid Neo4j dump file. " +
                             "Please check the file and try again. If you have received this error after confirming the type of file being uploaded," +
