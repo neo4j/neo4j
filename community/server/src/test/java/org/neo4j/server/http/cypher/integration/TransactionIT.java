@@ -599,7 +599,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         PrintStream out = new PrintStream( socket.getOutputStream() );
 
         String output = quotedJson(
-                "{ 'statements': [ { 'statement': 'WITH * UNWIND range(0, 9999) AS i CREATE (n {i: i}) RETURN n' } ] " +
+                "{ 'statements': [ { 'statement': 'UNWIND range(0, 9999) AS i CREATE (n {i: i}) RETURN n' } ] " +
                 "}" ).get();
         out.print( format( "POST /%s/commit HTTP/1.1\r\n", txUri ) );
         out.print( "Host: localhost:7474\r\n" );
