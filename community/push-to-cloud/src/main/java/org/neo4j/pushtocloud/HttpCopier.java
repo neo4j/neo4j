@@ -32,7 +32,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.LongFunction;
 import java.util.zip.CRC32;
 
 import org.neo4j.commandline.admin.CommandFailed;
@@ -101,8 +100,8 @@ public class HttpCopier implements PushToCloudCommand.Copier
         outsideWorld.stdOutLine( "We have received your export and it is currently being loaded into your cloud instance." );
         outsideWorld.stdOutLine( "You can wait here, or abort this command and head over to the console to be notified of when your database is running." );
         String bearerTokenHeader = "Bearer " + bearerToken;
-        ProgressTrackingOutputStream.Progress
-                statusProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.create("Import status", 3L), 0 );
+        ProgressTrackingOutputStream.Progress statusProgress =
+                new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Import status", 3L ), 0 );
         boolean firstRunning = true;
         while ( !statusProgress.isDone() )
         {
@@ -115,14 +114,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     // take this result as valid, once the status loading or restoring was seen before.
                     if ( !firstRunning )
                     {
-                        statusProgress.rewindTo( 0);
+                        statusProgress.rewindTo( 0 );
                         statusProgress.add( 3 );
                         statusProgress.done();
                         break;
                     }
                 case "loading":
                     firstRunning = false;
-                    statusProgress.rewindTo( 0);
+                    statusProgress.rewindTo( 0 );
                     statusProgress.add( 1 );
                     break;
                 case "restoring":
@@ -642,6 +641,6 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     public interface ProgressListenerFactory
     {
-        ProgressListener create( String text, Long length );
+        ProgressListener create( String text, long length );
     }
 }
