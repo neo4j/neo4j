@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.exceptions;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -27,16 +28,10 @@ import org.neo4j.kernel.api.exceptions.Status;
  *
  * @see Transaction#thawLocks()
  */
-public class LocksNotFrozenException extends IllegalStateException implements Status.HasStatus
+public class LocksNotFrozenException extends KernelException
 {
     public LocksNotFrozenException()
     {
-        super( "Attempted to thaw Transaction locks that were not frozen." );
-    }
-
-    @Override
-    public Status status()
-    {
-        return Status.Transaction.TransactionAccessedConcurrently;
+        super( Status.Transaction.TransactionAccessedConcurrently, "Attempted to thaw Transaction locks that were not frozen." );
     }
 }

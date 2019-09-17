@@ -903,7 +903,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public void thawLocks()
+    public void thawLocks() throws LocksNotFrozenException
     {
         StatementLocks locks = statementLocks;
         if ( locks instanceof FrozenStatementLocks )

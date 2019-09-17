@@ -91,7 +91,7 @@ public interface QuerySubscriber
         {
             subscriber.onError( t );
         }
-        catch ( Throwable onErrorException )
+        catch ( Exception onErrorException )
         {
             t.addSuppressed( onErrorException );
         }
