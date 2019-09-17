@@ -119,8 +119,27 @@ public class IndexCreateIT extends KernelIntegrationTest
         // when
         try
         {
-            final org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor = forLabel( 0, 1, 1 );
+            LabelSchemaDescriptor descriptor = forLabel( 0, 1, 1 );
             schemaWrite.indexCreate( descriptor );
+            fail( "Should have failed" );
+        }
+        catch ( RepeatedPropertyInSchemaException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateConstraintWithDuplicateProperties() throws KernelException
+    {
+        // given
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+
+        // when
+        try
+        {
+            LabelSchemaDescriptor descriptor = forLabel( 0, 1, 1 );
+            schemaWrite.uniquePropertyConstraintCreate( descriptor );
             fail( "Should have failed" );
         }
         catch ( RepeatedPropertyInSchemaException e )
