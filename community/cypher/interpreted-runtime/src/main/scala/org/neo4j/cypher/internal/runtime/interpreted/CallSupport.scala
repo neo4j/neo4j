@@ -78,8 +78,7 @@ object CallSupport {
                   transactionalContext.dbmsOperations.procedureCallDbms(id,
                                                                         _,
                                                                         transactionalContext.transaction(),
-                                                                        transactionalContext.graph
-                                                                          .getDependencyResolver,
+                                                                        transactionalContext.graph.getDependencyResolver,
                                                                         transactionalContext.securityContext,
                                                                         transactionalContext.resourceTracker,
                                                                         transactionalContext.valueMapper))
