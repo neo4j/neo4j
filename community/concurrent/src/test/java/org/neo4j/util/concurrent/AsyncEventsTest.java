@@ -22,6 +22,7 @@ package org.neo4j.util.concurrent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -32,15 +33,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
+@Timeout( 30 )
 class AsyncEventsTest
 {
     private ExecutorService executor;
@@ -118,89 +118,83 @@ class AsyncEventsTest
     }
 
     @Test
-    void mustProcessEventsDirectlyWhenShutDown()
+    void mustProcessEventsDirectlyWhenShutDown() throws InterruptedException
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
+        EventConsumer consumer = new EventConsumer();
+
+        AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
+        executor.submit( asyncEvents );
+
+        asyncEvents.send( new Event() );
+        Thread threadForFirstEvent = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
+        asyncEvents.shutdown();
+
+        assertThat( threadForFirstEvent, is( not( Thread.currentThread() ) ) );
+
+        Thread threadForSubsequentEvents;
+        do
         {
-            EventConsumer consumer = new EventConsumer();
-
-            AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
-            executor.submit( asyncEvents );
-
             asyncEvents.send( new Event() );
-            Thread threadForFirstEvent = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
-            asyncEvents.shutdown();
-
-            assertThat( threadForFirstEvent, is( not( Thread.currentThread() ) ) );
-
-            Thread threadForSubsequentEvents;
-            do
-            {
-                asyncEvents.send( new Event() );
-                threadForSubsequentEvents = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
-            }
-            while ( threadForSubsequentEvents != Thread.currentThread() );
-        } );
+            threadForSubsequentEvents = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
+        }
+        while ( threadForSubsequentEvents != Thread.currentThread() );
     }
 
     @Test
-    void concurrentlyPublishedEventsMustAllBeProcessed()
+    void concurrentlyPublishedEventsMustAllBeProcessed() throws InterruptedException
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
+        EventConsumer consumer = new EventConsumer();
+        final CountDownLatch startLatch = new CountDownLatch( 1 );
+        final int threads = 10;
+        final int iterations = 2_000;
+        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
+        executor.submit( asyncEvents );
+
+        ExecutorService threadPool = Executors.newFixedThreadPool( threads );
+        Runnable runner = () ->
         {
-            EventConsumer consumer = new EventConsumer();
-            final CountDownLatch startLatch = new CountDownLatch( 1 );
-            final int threads = 10;
-            final int iterations = 2_000;
-            final AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
-            executor.submit( asyncEvents );
-
-            ExecutorService threadPool = Executors.newFixedThreadPool( threads );
-            Runnable runner = () ->
-            {
-                try
-                {
-                    startLatch.await();
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-
-                for ( int i = 0; i < iterations; i++ )
-                {
-                    asyncEvents.send( new Event() );
-                }
-            };
-            for ( int i = 0; i < threads; i++ )
-            {
-                threadPool.submit( runner );
-            }
-            startLatch.countDown();
-
-            Thread thisThread = Thread.currentThread();
-            int eventCount = threads * iterations;
             try
             {
-                for ( int i = 0; i < eventCount; i++ )
+                startLatch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            for ( int i = 0; i < iterations; i++ )
+            {
+                asyncEvents.send( new Event() );
+            }
+        };
+        for ( int i = 0; i < threads; i++ )
+        {
+            threadPool.submit( runner );
+        }
+        startLatch.countDown();
+
+        Thread thisThread = Thread.currentThread();
+        int eventCount = threads * iterations;
+        try
+        {
+            for ( int i = 0; i < eventCount; i++ )
+            {
+                Event event = consumer.poll( 1, TimeUnit.SECONDS );
+                if ( event == null )
                 {
-                    Event event = consumer.poll( 1, TimeUnit.SECONDS );
-                    if ( event == null )
-                    {
-                        i--;
-                    }
-                    else
-                    {
-                        assertThat( event.processedBy, is( not( thisThread ) ) );
-                    }
+                    i--;
+                }
+                else
+                {
+                    assertThat( event.processedBy, is( not( thisThread ) ) );
                 }
             }
-            finally
-            {
-                asyncEvents.shutdown();
-                threadPool.shutdown();
-            }
-        } );
+        }
+        finally
+        {
+            asyncEvents.shutdown();
+            threadPool.shutdown();
+        }
     }
 
     @Test
