@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -144,6 +145,32 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         .projection(s"$a1 AS $a2", s"$b1 AS $b2")
         .projection(s"1 AS $b1")
         .nodeByLabelScan(a1, "A")
+        .build()
+    )
+  }
+
+  test("one UNION distinct without columns") {
+
+    val (_, logicalPlan, _, _, _) = new given {
+    }.getLogicalPlanFor(
+      """
+        |CREATE (a)
+        |UNION
+        |CREATE (b)
+        |""".stripMargin, stripProduceResults = false)
+
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults()
+        .union()
+        .|.projection()
+        .|.emptyResult()
+        .|.create(createNode("b"))
+        .|.argument()
+        .projection()
+        .emptyResult()
+        .create(createNode("a"))
+        .argument()
         .build()
     )
   }

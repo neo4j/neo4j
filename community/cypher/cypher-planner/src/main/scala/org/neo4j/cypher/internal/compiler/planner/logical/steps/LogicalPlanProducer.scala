@@ -634,7 +634,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = RegularSinglePlannerQuery(queryInput = Some(symbols))
     annotate(Input(symbols.toSeq), solved, ProvidedOrder.empty, context)
   }
-  
+
   def planUnwind(inner: LogicalPlan, name: String, expression: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
     val (rewrittenExpression, rewrittenInner) = PatternExpressionSolver.ForSingle.solve(inner, expression, interestingOrder, context)
@@ -753,7 +753,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       case u: UnionQuery => markDistinctInUnion(u)
       case _ => throw new IllegalStateException("Planning a distinct for union, but no union was planned before.")
     }
-    annotate(Distinct(left, returnAll.toMap), solved, providedOrders.get(left.id), context)
+    if (returnAll.isEmpty) {
+      annotate(left.copyPlanWithIdGen(idGen), solved, providedOrders.get(left.id), context)
+    } else {
+      annotate(Distinct(left, returnAll.toMap), solved, providedOrders.get(left.id), context)
+    }
   }
 
   private def markDistinctInUnion(query: PlannerQueryPart): PlannerQueryPart = {

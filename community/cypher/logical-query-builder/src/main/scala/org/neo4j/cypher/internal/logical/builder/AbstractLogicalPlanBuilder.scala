@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength, CreateNode}
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Predicate, pos}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
@@ -401,6 +401,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(source => SetRelationshipPropertiesFromMap(source, relationship, ExpressionParser.parseExpression(map), removeOtherProps)(_)))
   }
 
+  def create(nodes: CreateNode*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, Seq.empty)(_)))
+  }
+
   def nodeHashJoin(nodes: String*): IMPL = {
     appendAtCurrentIndent(BinaryOperator((left, right) => NodeHashJoin(nodes.toSet, left, right)(_)))
   }
@@ -505,4 +509,7 @@ object AbstractLogicalPlanBuilder {
       }
     }
   }
+
+  def createNode(node: String, labels: String*): CreateNode =
+    CreateNode(node, labels.map(LabelName(_)(pos)), None)
 }
