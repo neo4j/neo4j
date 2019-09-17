@@ -589,7 +589,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
              |
              |but got
              |
-             |${Rows.pretty(rows)}""".stripMargin,
+             |${rowsMatcher.formatRows(rows)}""".stripMargin,
           ""
         )
       }

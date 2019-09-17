@@ -25,7 +25,7 @@ import org.hamcrest.CoreMatchers.any
 import org.hamcrest.Matchers.containsString
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.logging.AssertableLogProvider.inLog
-import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RowsMatcher, RuntimeTestSuite}
+import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, Rows, RowsMatcher, RuntimeTestSuite, _}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.kernel.impl.util.{NodeEntityWrappingNodeValue, RelationshipEntityWrappingValue}
@@ -166,5 +166,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
         case _ => true
       })
     }
+
+    override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
   }
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.util.Objects
 
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
 import org.neo4j.values.{AnyValue, AnyValues}
 import org.scalatest.matchers.Matcher
 
@@ -36,8 +36,10 @@ object Rows {
     val sb = new StringBuilder
     if (a.isEmpty)
       sb ++= "<NO ROWS>"
+    else
+     sb ++= s"<${a.size} rows>\n"
 
-    // There is a bug in IntelliJ that falsely displays a test as green if there is too much output in certain cases. (It is still red in maveb though)
+    // There is a bug in IntelliJ that falsely displays a test as green if there is too much output in certain cases. (It is still red in maven though)
     // This .take(1000) is too avoid that situation
     for (row <- a.take(1000))
       sb ++= row.map(value => Objects.toString(value)).mkString("", ", ", "\n")
@@ -50,20 +52,23 @@ object Rows {
 
 trait RowsMatcher {
   def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean
+  def formatRows(rows: IndexedSeq[Array[AnyValue]]): String
 }
 
 object AnyRowsMatcher extends RowsMatcher {
   override def toString: String = "<ANY ROWS>"
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = true
+  override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
 object NoRowsMatcher extends RowsMatcher {
   override def toString: String = "<NO ROWS>"
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = rows.isEmpty
+  override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
 case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]]) extends RowsMatcher {
-  override def toString: String = Rows.pretty(expected) + " in any order"
+  override def toString: String = formatRows(expected) + " in any order"
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
 
     if (expected.size != rows.size)
@@ -74,10 +79,13 @@ case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]]) extends RowsMa
 
     sortedExpected == sortedRows
   }
+
+  override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String =
+    Rows.pretty(rows.map(row => VirtualValues.list(row:_*)).sorted(Rows.ANY_VALUE_ORDERING).map(l => l.asArray()))
 }
 
 case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]]) extends RowsMatcher {
-  override def toString: String = Rows.pretty(expected) + " in order"
+  override def toString: String = formatRows(expected) + " in order"
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
 
     if (expected.size != rows.size)
@@ -88,6 +96,7 @@ case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]]) extends RowsMatch
 
     sortedExpected == sortedRows
   }
+  override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
 case class RowCount(expected: Int) extends RowsMatcher {
@@ -95,12 +104,15 @@ case class RowCount(expected: Int) extends RowsMatcher {
 
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
     rows.size == expected
+
+  override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
 case class CustomRowsMatcher(inner: Matcher[Seq[Array[AnyValue]]]) extends RowsMatcher {
   override def toString: String = s"Rows matching $inner"
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
     inner(rows).matches
+  override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
 trait RowOrderMatcher extends RowsMatcher {
@@ -149,6 +161,8 @@ trait RowOrderMatcher extends RowsMatcher {
     }
     onComplete()
   }
+
+  override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 
   def foreach(f: RowOrderMatcher => Unit): Unit = {
     var x: Option[RowOrderMatcher] = Some(this)
