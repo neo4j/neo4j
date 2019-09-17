@@ -239,17 +239,17 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
                 @Override
                 public Entity next()
                 {
-                    Entity propertyContainer;
+                    Entity entity;
                     if ( (index & 1) == 0 )
                     {
-                        propertyContainer = mapNode( nodes[index >> 1] );
+                        entity = mapNode( nodes[index >> 1] );
                     }
                     else
                     {
-                        propertyContainer = mapRelationship( relationships[index >> 1] );
+                        entity = mapRelationship( relationships[index >> 1] );
                     }
                     index++;
-                    return propertyContainer;
+                    return entity;
                 }
             };
         }

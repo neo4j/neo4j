@@ -29,7 +29,7 @@ import org.neo4j.annotations.api.PublicApi;
  * <p>
  * Node has three major groups of operations: operations that deal with
  * relationships, operations that deal with properties (see
- * {@link PropertyContainer}) and operations that deal with {@link Label labels}.
+ * {@link Entity}) and operations that deal with {@link Label labels}.
  * <p>
  * The relationship operations provide a number of overloaded accessors (such as
  * <code>getRelationships(...)</code> with "filters" for type, direction, etc),
@@ -48,7 +48,7 @@ import org.neo4j.annotations.api.PublicApi;
  * values. {@link #setProperty(String, Object) setProperty()} takes a
  * <code>java.lang.Object</code> only to avoid an explosion of overloaded
  * <code>setProperty()</code> methods. For further documentation see
- * {@link PropertyContainer}.
+ * {@link Entity}.
  * <p>
  * A node's id is unique, but note the following: Neo4j reuses its internal ids
  * when nodes and relationships are deleted, which means it's bad practice to

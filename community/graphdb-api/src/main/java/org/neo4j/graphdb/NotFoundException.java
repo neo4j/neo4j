@@ -24,7 +24,7 @@ package org.neo4j.graphdb;
  * property that does not exist. As an example, using
  * {@link Transaction#getNodeById} passing in an id that does not exist
  * will cause this exception to be thrown.
- * {@link PropertyContainer#getProperty(String)} will also throw this exception
+ * {@link Entity#getProperty(String)} will also throw this exception
  * if the given key does not exist.
  * <p>
  * Another scenario involves multiple concurrent transactions which obtain a reference to the same node or

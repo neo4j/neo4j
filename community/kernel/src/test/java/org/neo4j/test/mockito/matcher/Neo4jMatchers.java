@@ -234,14 +234,14 @@ public class Neo4jMatchers
         }
 
         @Override
-        protected boolean matchesSafely( Entity propertyContainer, Description mismatchDescription )
+        protected boolean matchesSafely( Entity entity, Description mismatchDescription )
         {
-            if ( !propertyMatcher.matchesSafely( propertyContainer, mismatchDescription ) )
+            if ( !propertyMatcher.matchesSafely( entity, mismatchDescription ) )
             {
                 return false;
             }
 
-            Object foundValue = propertyContainer.getProperty( propertyName );
+            Object foundValue = entity.getProperty( propertyName );
             if ( !propertyValuesEqual( expectedValue, foundValue ) )
             {
                 mismatchDescription.appendText( "found value " + formatValue( foundValue ) );
@@ -288,12 +288,12 @@ public class Neo4jMatchers
         }
 
         @Override
-        protected boolean matchesSafely( Entity propertyContainer, Description mismatchDescription )
+        protected boolean matchesSafely( Entity entity, Description mismatchDescription )
         {
-            if ( !propertyContainer.hasProperty( propertyName ) )
+            if ( !entity.hasProperty( propertyName ) )
             {
                 mismatchDescription.appendText( String.format( "found property container with property keys: %s",
-                        Iterables.asSet( propertyContainer.getPropertyKeys() ) ) );
+                        Iterables.asSet( entity.getPropertyKeys() ) ) );
                 return false;
             }
             return true;
@@ -342,14 +342,14 @@ public class Neo4jMatchers
     }
 
     public static Deferred<String> getPropertyKeys( final GraphDatabaseService db,
-                                                    final Entity propertyContainer )
+                                                    final Entity entity )
     {
         return new Deferred<>( db )
         {
             @Override
             protected Iterable<String> manifest()
             {
-                return propertyContainer.getPropertyKeys();
+                return entity.getPropertyKeys();
             }
         };
     }

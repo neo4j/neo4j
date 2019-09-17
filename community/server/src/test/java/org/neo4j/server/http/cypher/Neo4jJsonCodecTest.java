@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,17 +73,17 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testPropertyContainerWriting() throws IOException
+    public void testEntityWriting() throws IOException
     {
         //Given
-        Entity propertyContainer = mock( Entity.class );
-        when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
+        Entity entity = mock( Entity.class );
+        when( entity.getAllProperties() ).thenThrow( RuntimeException.class );
 
         boolean exceptionThrown = false;
         //When
         try
         {
-            jsonCodec.writeValue( jsonGenerator, propertyContainer );
+            jsonCodec.writeValue( jsonGenerator, entity );
         }
         catch ( IllegalArgumentException e )
         {
@@ -141,9 +142,9 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     {
         //Given
         Path path = mock( Path.class );
-        Entity propertyContainer = mock( Entity.class );
-        when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
-        when( path.iterator() ).thenReturn( Arrays.asList(propertyContainer).listIterator() );
+        Entity entity = mock( Entity.class );
+        when( entity.getAllProperties() ).thenThrow( RuntimeException.class );
+        when( path.iterator() ).thenReturn( Arrays.asList(entity).listIterator() );
 
         //When
         try
@@ -163,13 +164,13 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     public void testIteratorWriting() throws IOException
     {
         //Given
-        Entity propertyContainer = mock( Entity.class );
-        when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
+        Entity entity = mock( Entity.class );
+        when( entity.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When
         try
         {
-            jsonCodec.writeValue( jsonGenerator, Arrays.asList( propertyContainer ) );
+            jsonCodec.writeValue( jsonGenerator, Collections.singletonList( entity ) );
         }
         catch ( Exception ignored )
         {

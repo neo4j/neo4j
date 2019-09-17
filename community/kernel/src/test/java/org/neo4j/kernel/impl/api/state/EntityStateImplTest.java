@@ -35,13 +35,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class PropertyContainerStateImplTest
+class EntityStateImplTest
 {
     @Test
     void shouldListAddedProperties()
     {
         // Given
-        PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
+        EntityStateImpl state = new EntityStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
         state.addProperty( 1, Values.of( "Hello" ) );
         state.addProperty( 2, Values.of( "Hello" ) );
         state.removeProperty( 1 );
@@ -58,7 +58,7 @@ class PropertyContainerStateImplTest
     void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced()
     {
         // Given
-        PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
+        EntityStateImpl state = new EntityStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
         state.addProperty( 1, Values.of( "Hello" ) );
         state.addProperty( 1, Values.of( "WAT" ) );
         state.addProperty( 2, Values.of( "Hello" ) );
@@ -78,7 +78,7 @@ class PropertyContainerStateImplTest
     void shouldConvertAddRemoveToChange()
     {
         // Given
-        PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
+        EntityStateImpl state = new EntityStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
 
         // When
         state.removeProperty( 4 );

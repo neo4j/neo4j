@@ -45,16 +45,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class RelationshipProxyTest extends PropertyContainerProxyTest
+public class RelationshipProxyTest extends EntityProxyTest
 {
     @Override
-    protected long createPropertyContainer( Transaction tx )
+    protected long createEntity( Transaction tx )
     {
         return tx.createNode().createRelationshipTo( tx.createNode(), withName( "FOO" ) ).getId();
     }
 
     @Override
-    protected Entity lookupPropertyContainer( Transaction transaction, long id )
+    protected Entity lookupEntity( Transaction transaction, long id )
     {
         return transaction.getRelationshipById( id );
     }

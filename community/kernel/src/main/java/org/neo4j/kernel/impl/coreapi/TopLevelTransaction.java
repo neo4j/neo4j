@@ -93,7 +93,7 @@ import static org.neo4j.values.storable.Values.utf8Value;
 
 public class TopLevelTransaction implements InternalTransaction
 {
-    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
+    private static final EntityLocker locker = new EntityLocker();
     private final GraphDatabaseFacade facade;
     private KernelTransaction transaction;
 

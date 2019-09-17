@@ -29,21 +29,20 @@ import org.neo4j.kernel.api.Statement;
 /**
  * Manages user-facing locks.
  */
-public class PropertyContainerLocker
+class EntityLocker
 {
-    public Lock exclusiveLock( KernelTransaction ktx, Entity container )
+    Lock exclusiveLock( KernelTransaction ktx, Entity entity )
     {
         try ( Statement ignore = ktx.acquireStatement() )
         {
-            if ( container instanceof Node )
+            long id = entity.getId();
+            if ( entity instanceof Node )
             {
-                long id = ((Node) container).getId();
                 ktx.locks().acquireExclusiveNodeLock( id );
                 return new CoreAPILock( () -> ktx.locks().releaseExclusiveNodeLock( id ) );
             }
-            else if ( container instanceof Relationship )
+            else if ( entity instanceof Relationship )
             {
-                long id = ((Relationship) container).getId();
                 ktx.locks().acquireExclusiveRelationshipLock( id );
                 return new CoreAPILock( () -> ktx.locks().releaseExclusiveRelationshipLock( id ) );
             }
@@ -54,19 +53,18 @@ public class PropertyContainerLocker
         }
     }
 
-    public Lock sharedLock( KernelTransaction ktx, Entity container )
+    Lock sharedLock( KernelTransaction ktx, Entity entity )
     {
         try ( Statement ignore = ktx.acquireStatement() )
         {
-            if ( container instanceof Node )
+            long id = entity.getId();
+            if ( entity instanceof Node )
             {
-                long id = ((Node) container).getId();
                 ktx.locks().acquireSharedNodeLock( id );
                 return new CoreAPILock( () -> ktx.locks().releaseSharedNodeLock( id ) );
             }
-            else if ( container instanceof Relationship )
+            else if ( entity instanceof Relationship )
             {
-                long id = ((Relationship) container).getId();
                 ktx.locks().acquireSharedRelationshipLock( id );
                 return new CoreAPILock( () -> ktx.locks().releaseSharedRelationshipLock( id ) );
             }

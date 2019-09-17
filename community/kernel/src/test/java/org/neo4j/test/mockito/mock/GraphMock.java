@@ -120,7 +120,7 @@ public class GraphMock
 
     private static Node mockNode( long id, Label[] labels, Properties properties )
     {
-        Node node = mockPropertyContainer( Node.class, properties );
+        Node node = mockEntity( Node.class, properties );
         when( node.getId() ).thenReturn( id );
         when( node.getLabels() ).thenReturn( Iterables.asResourceIterable( asList( labels ) ) );
         return node;
@@ -128,7 +128,7 @@ public class GraphMock
 
     private static Relationship mockRelationship( long id, Node start, String type, Node end, Properties properties )
     {
-        Relationship relationship = mockPropertyContainer( Relationship.class, properties );
+        Relationship relationship = mockEntity( Relationship.class, properties );
         when( relationship.getId() ).thenReturn( id );
         when( relationship.getStartNode() ).thenReturn( start );
         when( relationship.getEndNode() ).thenReturn( end );
@@ -136,7 +136,7 @@ public class GraphMock
         return relationship;
     }
 
-    private static <T extends Entity> T mockPropertyContainer( Class<T> type, Properties properties )
+    private static <T extends Entity> T mockEntity( Class<T> type, Properties properties )
     {
         T container = mock( type );
         when( container.getProperty( anyString() ) ).thenAnswer( properties );

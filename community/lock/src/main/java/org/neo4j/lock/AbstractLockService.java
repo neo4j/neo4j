@@ -69,9 +69,11 @@ abstract class AbstractLockService<HANDLE> implements LockService
 
     protected abstract static class LockedEntity
     {
-        private LockedEntity()
+        private final long id;
+
+        private LockedEntity( long id )
         {
-            // all instances defined in this class
+            this.id = id;
         }
 
         @Override
@@ -82,13 +84,27 @@ abstract class AbstractLockService<HANDLE> implements LockService
             return repr.append( ']' ).toString();
         }
 
-        abstract void toString( StringBuilder repr );
+        void toString( StringBuilder repr )
+        {
+            repr.append( "id=" ).append( id );
+        }
 
         @Override
-        public abstract int hashCode();
+        public int hashCode()
+        {
+            return (int) (id ^ (id >>> 32));
+        }
 
         @Override
-        public abstract boolean equals( Object obj );
+        public boolean equals( Object obj )
+        {
+            if ( obj != null && obj.getClass().equals( getClass() ) )
+            {
+                LockedEntity that = (LockedEntity) obj;
+                return this.id == that.id;
+            }
+            return false;
+        }
     }
 
     private class LockReference extends Lock
@@ -136,40 +152,7 @@ abstract class AbstractLockService<HANDLE> implements LockService
         }
     }
 
-    static class LockedPropertyContainer extends LockedEntity
-    {
-        private final long id;
-
-        LockedPropertyContainer( long id )
-        {
-            this.id = id;
-        }
-
-        @Override
-        void toString( StringBuilder repr )
-        {
-            repr.append( "id=" ).append( id );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return (int) (id ^ (id >>> 32));
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( obj != null && obj.getClass().equals( getClass() ) )
-            {
-                LockedPropertyContainer that = (LockedPropertyContainer) obj;
-                return this.id == that.id;
-            }
-            return false;
-        }
-    }
-
-    static final class LockedNode extends LockedPropertyContainer
+    static final class LockedNode extends LockedEntity
     {
         LockedNode( long nodeId )
         {
@@ -177,7 +160,7 @@ abstract class AbstractLockService<HANDLE> implements LockService
         }
     }
 
-    static final class LockedRelationship extends LockedPropertyContainer
+    static final class LockedRelationship extends LockedEntity
     {
         LockedRelationship( long relationshipId )
         {

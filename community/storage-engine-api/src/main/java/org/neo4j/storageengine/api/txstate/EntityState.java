@@ -37,7 +37,7 @@ import static java.util.Collections.emptyIterator;
  * <li>{@linkplain #changedProperties() changed property values}.</li>
  * </ul>
  */
-public interface PropertyContainerState
+public interface EntityState
 {
     Iterator<StorageProperty> addedProperties();
 
@@ -53,9 +53,9 @@ public interface PropertyContainerState
 
     Value propertyValue( int propertyKey );
 
-    PropertyContainerState EMPTY = new EmptyPropertyContainerState();
+    EntityState EMPTY = new EmptyEntityState();
 
-    class EmptyPropertyContainerState implements PropertyContainerState
+    class EmptyEntityState implements EntityState
     {
         @Override
         public Iterator<StorageProperty> addedProperties()

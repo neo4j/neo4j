@@ -41,7 +41,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 
-class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
+class NodeStateImpl extends EntityStateImpl implements NodeState
 {
     static final NodeState EMPTY = new NodeState()
     {

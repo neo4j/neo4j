@@ -24,9 +24,9 @@ import org.neo4j.storageengine.api.RelationshipVisitor;
 /**
  * Represents the transactional changes to a relationship.
  *
- * @see PropertyContainerState
+ * @see EntityState
  */
-public interface RelationshipState extends PropertyContainerState
+public interface RelationshipState extends EntityState
 {
     long getId();
 

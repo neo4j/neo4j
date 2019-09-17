@@ -98,7 +98,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
             {
-                writePropertyContainer( out, (Entity) value, txStateChecker );
+                writeEntity( out, (Entity) value, txStateChecker );
             }
         }
         else if ( value instanceof Path )
@@ -217,7 +217,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             while ( value.hasNext() )
             {
-                writePropertyContainer( out, value.next(), txStateChecker );
+                writeEntity( out, value.next(), txStateChecker );
             }
         }
         finally
@@ -226,7 +226,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePropertyContainer( JsonGenerator out, Entity value,
+    private void writeEntity( JsonGenerator out, Entity value,
             TransactionStateChecker txStateChecker )
             throws IOException
     {

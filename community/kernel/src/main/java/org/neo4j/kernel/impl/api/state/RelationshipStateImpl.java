@@ -32,7 +32,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 
-class RelationshipStateImpl extends PropertyContainerStateImpl implements RelationshipState
+class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
 {
     static final RelationshipState EMPTY = new RelationshipState()
     {

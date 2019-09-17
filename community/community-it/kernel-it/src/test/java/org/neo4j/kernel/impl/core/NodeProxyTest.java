@@ -54,18 +54,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.NamedThreadFactory.named;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
-public class NodeProxyTest extends PropertyContainerProxyTest
+public class NodeProxyTest extends EntityProxyTest
 {
     private final String PROPERTY_KEY = "PROPERTY_KEY";
 
     @Override
-    protected long createPropertyContainer( Transaction tx )
+    protected long createEntity( Transaction tx )
     {
         return tx.createNode().getId();
     }
 
     @Override
-    protected Entity lookupPropertyContainer( Transaction transaction, long id )
+    protected Entity lookupEntity( Transaction transaction, long id )
     {
         return transaction.getNodeById( id );
     }

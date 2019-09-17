@@ -42,14 +42,14 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 @ImpermanentDbmsExtension
-public abstract class PropertyContainerProxyTest
+public abstract class EntityProxyTest
 {
     @Inject
     GraphDatabaseService db;
 
-    protected abstract long createPropertyContainer( Transaction tx );
+    protected abstract long createEntity( Transaction tx );
 
-    protected abstract Entity lookupPropertyContainer( Transaction transaction, long id );
+    protected abstract Entity lookupEntity( Transaction transaction, long id );
 
     @Test
     void shouldListAllProperties()
@@ -70,8 +70,8 @@ public abstract class PropertyContainerProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            containerId = createPropertyContainer( tx );
-            Entity container = lookupPropertyContainer( tx, containerId );
+            containerId = createEntity( tx );
+            Entity container = lookupEntity( tx, containerId );
 
             for ( Map.Entry<String,Object> entry : properties.entrySet() )
             {
@@ -85,7 +85,7 @@ public abstract class PropertyContainerProxyTest
         Map<String,Object> listedProperties;
         try ( Transaction tx = db.beginTx() )
         {
-            listedProperties = lookupPropertyContainer( tx, containerId ).getAllProperties();
+            listedProperties = lookupEntity( tx, containerId ).getAllProperties();
             tx.commit();
         }
 

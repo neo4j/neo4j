@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.storageengine.api.txstate.EntityState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -43,7 +43,7 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
 
     private Read read;
     private StoragePropertyCursor storeCursor;
-    private PropertyContainerState propertiesState;
+    private EntityState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
     private AssertOpen assertOpen;

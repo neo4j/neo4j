@@ -29,10 +29,10 @@ import org.neo4j.storageengine.api.RelationshipDirection;
  * <li>{@linkplain #labelDiffSets() Labels} that have been {@linkplain DiffSets#getAdded() added}
  * or {@linkplain DiffSets#getRemoved() removed}.</li>
  * <li>Added and removed relationships.</li>
- * <li>{@linkplain PropertyContainerState Changes to properties}.</li>
+ * <li>{@linkplain EntityState Changes to properties}.</li>
  * </ul>
  */
-public interface NodeState extends PropertyContainerState
+public interface NodeState extends EntityState
 {
     LongDiffSets labelDiffSets();
 

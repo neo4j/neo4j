@@ -25,7 +25,7 @@ import org.neo4j.annotations.api.PublicApi;
  * A relationship between two nodes in the graph. A relationship has a start
  * node, an end node and a {@link RelationshipType type}. You can attach
  * properties to relationships with the API specified in
- * {@link PropertyContainer}.
+ * {@link Entity}.
  * <p>
  * Relationships are created by invoking the
  * {@link Node#createRelationshipTo(Node, RelationshipType)

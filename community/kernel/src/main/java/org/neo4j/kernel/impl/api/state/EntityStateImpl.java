@@ -31,7 +31,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.storageengine.api.txstate.EntityState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -39,7 +39,7 @@ import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyIterator;
 import static java.util.Objects.requireNonNull;
 
-class PropertyContainerStateImpl implements PropertyContainerState
+class EntityStateImpl implements EntityState
 {
     private final long id;
     private MutableLongObjectMap<Value> addedProperties;
@@ -48,7 +48,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
 
     protected final CollectionsFactory collectionsFactory;
 
-    PropertyContainerStateImpl( long id, CollectionsFactory collectionsFactory )
+    EntityStateImpl( long id, CollectionsFactory collectionsFactory )
     {
         this.id = id;
         this.collectionsFactory = requireNonNull( collectionsFactory );
