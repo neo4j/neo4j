@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -198,11 +199,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
             SelfSignedCertificateFactory.create( testDirectory.storeDir().getAbsoluteFile() );
         }
 
-        int resultCode = ServerBootstrapper.start( bootstrapper,
-                "--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
-                "-c", configOption( data_directory, testDirectory.storeDir().getAbsolutePath() ),
-                "-c", configOption( logs_directory, testDirectory.storeDir().getAbsolutePath() ),
-                "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.storeDir().getAbsolutePath() ) : "",
+        String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.storeDir().getAbsolutePath() ) : "",
 
                 "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
                 "-c", HttpConnector.listen_address.name() + "=localhost:0",
@@ -211,8 +208,9 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
                 "-c", HttpsConnector.listen_address.name() + "=localhost:0",
 
                 "-c", BoltConnector.enabled.name() + "=" + boltEnabled,
-                "-c", BoltConnector.listen_address.name() + "=localhost:0"
-        );
+                "-c", BoltConnector.listen_address.name() + "=localhost:0" };
+        var allConfigOptions = ArrayUtils.addAll( config, getAdditionalArguments() );
+        int resultCode = ServerBootstrapper.start( bootstrapper, allConfigOptions );
 
         assertEquals( ServerBootstrapper.OK, resultCode );
         assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
