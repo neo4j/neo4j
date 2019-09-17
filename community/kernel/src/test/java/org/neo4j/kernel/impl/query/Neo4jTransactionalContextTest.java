@@ -130,7 +130,8 @@ class Neo4jTransactionalContextTest
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context =
-                new Neo4jTransactionalContext( queryService, txBridge, initialTransaction, initialStatement, executingQuery, databaseFacade, transactionFactory );
+                new Neo4jTransactionalContext( queryService, txBridge, initialTransaction, initialStatement,
+                                               executingQuery, databaseFacade, transactionFactory );
 
         // When
         context.commitAndRestartTx();
@@ -205,7 +206,8 @@ class Neo4jTransactionalContextTest
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Neo4jTransactionalContext context =
-                new Neo4jTransactionalContext( queryService, txBridge, initialTransaction, initialStatement, executingQuery, databaseFacade, transactionFactory );
+                new Neo4jTransactionalContext( queryService, txBridge, initialTransaction, initialStatement,
+                                               executingQuery, databaseFacade, transactionFactory );
 
         // When
         assertThrows(RuntimeException.class, context::commitAndRestartTx );
