@@ -89,7 +89,6 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes(20)
     runtimeResult should beColumns("x").withNoRows()
   }
 
