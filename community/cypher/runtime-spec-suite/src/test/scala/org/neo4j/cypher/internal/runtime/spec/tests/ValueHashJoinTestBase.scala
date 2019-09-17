@@ -106,13 +106,13 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("e")
-      .valueHashJoin("e.prop=f.prop")
-      .|.expand("(b)-->(f)")
-      .|.expand("(c)-->(b)")
-      .|.allNodeScan("c")
-      .expand("(b)-->(e)")
-      .expand("(a)-->(b)")
+      .produceResults("c")
+      .valueHashJoin("c.prop=f.prop")
+      .|.expand("(e)-[r4]->(f)")
+      .|.expand("(d)-[r3]->(e)")
+      .|.allNodeScan("d")
+      .expand("(b)-[r2]->(c)")
+      .expand("(a)-[r1]->(b)")
       .allNodeScan("a")
       .build()
 
@@ -120,6 +120,29 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     // then
     val expected = nodes.map(n => Array(n))
-    runtimeResult should beColumns("e").withRows(expected)
+    runtimeResult should beColumns("c").withRows(expected)
+  }
+
+  test("should handle cached properties from both lhs and rhs") {
+    val nodes = nodePropertyGraph(sizeHint, {
+      case i => Map("prop" -> i)
+    })
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("ab")
+      .apply()
+      .|.valueHashJoin("cache[ab.prop] = cache[b.prop]")
+      .|.|.filter("cache[ab.prop] = cache[b.prop]")
+      .|.|.allNodeScan("b")
+      .|.argument()
+      .projection("coalesce(a, null) AS ab")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n))
+    runtimeResult should beColumns("ab").withRows(expected)
   }
 }
