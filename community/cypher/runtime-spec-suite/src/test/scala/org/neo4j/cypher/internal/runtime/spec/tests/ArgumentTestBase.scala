@@ -46,4 +46,25 @@ abstract class ArgumentTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(0 until 5))
   }
+
+  test("should make argument available on the RHS of an Apply with limit") {
+    // given
+    val  input = inputValues((0 until sizeHint).map(Array[Any](_)):_*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.limit(2)
+      .|.unwind("[x,x,x] AS y")
+      .|.filter("x < 5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("y").withRows(singleColumn(Seq(0, 0, 1, 1, 2, 2, 3, 3, 4, 4)))
+  }
 }
