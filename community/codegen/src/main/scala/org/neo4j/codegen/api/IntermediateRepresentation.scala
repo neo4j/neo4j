@@ -544,6 +544,36 @@ object IntermediateRepresentation {
   def constructor[OWNER, IN1, IN2](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2]) =
     Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2)))
 
+  def constructor[OWNER, IN1, IN2, IN3](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3)))
+
+  def constructor[OWNER, IN1, IN2, IN3, IN4](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4)))
+
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5)))
+
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6)))
+
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7)))
+
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8)))
+
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9)))
+
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10)))
+
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10],  in11: Manifest[IN11]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10), typeRef(in11)))
+
+  def constructor[OWNER, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11, IN12](implicit owner: Manifest[OWNER],  in1: Manifest[IN1], in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],  in7: Manifest[IN7],  in8: Manifest[IN8],  in9: Manifest[IN9],  in10: Manifest[IN10],  in11: Manifest[IN11],  in12: Manifest[IN12]) =
+    Constructor(typeRef(owner), Seq(typeRef(in1), typeRef(in2),  typeRef(in3),  typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10), typeRef(in11), typeRef(in12)))
+
   def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation = InvokeStatic(
     method, params)
 
