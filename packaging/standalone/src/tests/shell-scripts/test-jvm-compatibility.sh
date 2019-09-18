@@ -6,7 +6,7 @@ test_description="Test JVM compatibility checking"
 fake_install
 
 test_expect_success "should run happily with Java 11" "
-  FAKE_JAVA_VERSION='11' test_expect_stdout_matching 'unsupported Java runtime' run_console
+  FAKE_JAVA_VERSION='11' run_console
 "
 
 test_expect_success "should run happily with Java 10" "
