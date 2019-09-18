@@ -37,12 +37,12 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -164,7 +164,7 @@ class KernelTransactionTestBase
         try
         {
             SecurityContext securityContext = loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME );
-            tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, Type.implicit,
+            tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.explicit,
                     securityContext, transactionTimeout, 1L, EMBEDDED_CONNECTION );
         }
         catch ( KernelException e )

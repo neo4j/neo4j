@@ -29,10 +29,11 @@ import java.io.IOException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -46,8 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
-import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class CountsStoreRecoveryTest
@@ -84,7 +85,7 @@ class CountsStoreRecoveryTest
 
         // then
         Kernel kernel = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Kernel.class );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
         {
             assertEquals( 1, tx.dataRead().countsForNode( tx.tokenRead().nodeLabel( "A" ) ) );
             assertEquals( 1, tx.dataRead().countsForNode( tx.tokenRead().nodeLabel( "B" ) ) );

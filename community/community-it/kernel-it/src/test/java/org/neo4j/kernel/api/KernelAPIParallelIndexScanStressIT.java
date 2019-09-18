@@ -27,10 +27,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -43,7 +41,7 @@ import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
 @DbmsExtension
 @ExtendWith( RandomExtension.class )
@@ -86,7 +84,7 @@ class KernelAPIParallelIndexScanStressIT
         // when & then
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         IndexReadSession[] indexes = new IndexReadSession[3];
-        try ( Transaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
         {
             int propKey = tx.tokenRead().propertyKey( "prop" );
 
@@ -105,7 +103,7 @@ class KernelAPIParallelIndexScanStressIT
 
     }
 
-    private static IndexReadSession indexReadSession( Transaction tx, int propKey, String label ) throws IndexNotFoundKernelException
+    private static IndexReadSession indexReadSession( KernelTransaction tx, int propKey, String label ) throws IndexNotFoundKernelException
     {
         int labelId = tx.tokenRead().nodeLabel( label );
         IndexDescriptor index = tx.schemaRead().index( labelId, propKey );

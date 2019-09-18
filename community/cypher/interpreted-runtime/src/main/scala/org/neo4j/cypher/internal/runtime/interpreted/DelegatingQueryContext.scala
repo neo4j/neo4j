@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.database.DatabaseId
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -332,7 +333,7 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def databaseId: DatabaseId = inner.databaseId
 
-  override def transaction: Transaction = inner.transaction
+  override def transaction: KernelTransaction = inner.transaction
 
   override def cursors: CursorFactory = inner.cursors
 

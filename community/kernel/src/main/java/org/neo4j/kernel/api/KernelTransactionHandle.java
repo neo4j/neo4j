@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -49,7 +47,7 @@ public interface KernelTransactionHandle
 
     /**
      * The start time of the underlying transaction. I.e. basically {@link System#currentTimeMillis()} when user
-     * called {@link Kernel#beginTransaction(Transaction.Type, LoginContext)}.
+     * called {@link Kernel#beginTransaction(KernelTransaction.Type, LoginContext)}.
      *
      * @return the transaction start time.
      */

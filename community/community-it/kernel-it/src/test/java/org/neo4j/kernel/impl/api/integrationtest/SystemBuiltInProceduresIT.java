@@ -25,12 +25,12 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.values.AnyValue;
@@ -65,7 +65,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void listAllLabels() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
         transaction.dataWrite().nodeAddLabel( nodeId, labelId );
@@ -97,7 +97,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void listRelationshipTypes() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "MyRelType" );
         long startNodeId = transaction.dataWrite().nodeCreate();
         long endNodeId = transaction.dataWrite().nodeCreate();
@@ -132,7 +132,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void listAllIndexes() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
@@ -163,7 +163,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void awaitIndexes() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
@@ -188,7 +188,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void awaitIndex() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
@@ -207,7 +207,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void listConstraints() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         transaction.schemaWrite().uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( 1,1 ),"Test" );
         commit();
 
@@ -222,7 +222,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void resampleIndex() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
@@ -241,7 +241,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void resampleOutdatedIndexes() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
@@ -260,7 +260,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void awaitEventuallyConsistentIndexRefresh() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
@@ -315,7 +315,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     @Test
     void nodeTypeProperties() throws Throwable
     {
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         long nodeId = transaction.dataWrite().nodeCreate();
         transaction.dataWrite().nodeCreate();
         int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "greeting" );
@@ -332,7 +332,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     @Test
     void relTypeProperties() throws Throwable
     {
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "REL" );
         int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "greeting" );
         long nodeId = transaction.dataWrite().nodeCreate();
@@ -351,7 +351,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     @Test
     void schemaVisualization() throws Throwable
     {
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "REL" );
         int propId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "greeting" );
         long nodeId = transaction.dataWrite().nodeCreate();

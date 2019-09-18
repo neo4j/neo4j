@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PruningVarLengthExpan
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, MapExecutionContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
-import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext
+import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.query.{QuerySubscriber, QuerySubscriberAdapter}
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue

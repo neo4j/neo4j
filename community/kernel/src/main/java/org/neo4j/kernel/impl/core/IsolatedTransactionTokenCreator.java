@@ -23,9 +23,9 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.Transaction.Type;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.token.TokenCreator;
 
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -48,7 +48,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized int createToken( String name, boolean internal ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
-        try ( Transaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
             int id = createKey( tx, name, internal );
             tx.commit();
@@ -60,7 +60,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized void createTokens( String[] names, int[] ids, boolean internal, IntPredicate filter ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
-        try ( Transaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
             for ( int i = 0; i < ids.length; i++ )
             {
@@ -73,5 +73,5 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
         }
     }
 
-    abstract int createKey( Transaction transaction, String name, boolean internal ) throws KernelException;
+    abstract int createKey( KernelTransaction transaction, String name, boolean internal ) throws KernelException;
 }

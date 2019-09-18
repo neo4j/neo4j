@@ -23,10 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
@@ -35,7 +33,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
 @DbmsExtension
 @ExtendWith( RandomExtension.class )
@@ -56,7 +54,7 @@ class KernelAPIParallelLabelScanStressIT
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
 
         // Create nodes with labels
-        try ( Transaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
         {
             labels[0] = createLabeledNodes( tx, N_NODES, "LABEL1" );
             labels[1] = createLabeledNodes( tx, N_NODES, "LABEL2" );
@@ -72,7 +70,7 @@ class KernelAPIParallelLabelScanStressIT
                                                                                    labels[random.nextInt( labels.length )] ) );
     }
 
-    private static int createLabeledNodes( Transaction tx, int nNodes, String labelName ) throws KernelException
+    private static int createLabeledNodes( KernelTransaction tx, int nNodes, String labelName ) throws KernelException
     {
         int label = tx.tokenWrite().labelCreateForName( labelName, false );
         for ( int i = 0; i < nNodes; i++ )

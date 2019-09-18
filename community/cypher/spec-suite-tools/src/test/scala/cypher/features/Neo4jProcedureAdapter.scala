@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
-import org.neo4j.kernel.api.{InwardKernel, ResourceTracker}
+import org.neo4j.kernel.api.{Kernel, ResourceTracker}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.procedure.Mode
@@ -63,7 +63,7 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
   override def registerProcedure(signature: String, values: CypherValueRecords): Unit = {
     val parsedSignature = parser.parse(signature)
     val kernelProcedure = buildProcedure(parsedSignature, values)
-    Try(database.getDependencyResolver.resolveDependency(classOf[InwardKernel]).registerProcedure(kernelProcedure)) match {
+    Try(database.getDependencyResolver.resolveDependency(classOf[Kernel]).registerProcedure(kernelProcedure)) match {
       case Success(_) =>
       case Failure(e) => System.err.println(s"\nRegistration of procedure $signature failed: " + e.getMessage)
     }

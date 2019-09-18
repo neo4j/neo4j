@@ -33,8 +33,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.OtherThreadRule;
 
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
 class RelationshipIT extends KernelIntegrationTest
 {
@@ -67,7 +67,7 @@ class RelationshipIT extends KernelIntegrationTest
     void shouldListRelationshipsInCurrentAndSubsequentTx() throws Exception
     {
         // given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         int relType1 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type1" );
         int relType2 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type2" );
 
@@ -133,7 +133,7 @@ class RelationshipIT extends KernelIntegrationTest
         int relType1;
         int relType2;
         {
-            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             relType1 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type1" );
             relType2 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type2" );
@@ -145,7 +145,7 @@ class RelationshipIT extends KernelIntegrationTest
             commit();
         }
         {
-            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // When
             transaction.dataWrite().relationshipDelete( fromRefToOther1 );
@@ -162,7 +162,7 @@ class RelationshipIT extends KernelIntegrationTest
     @Test
     void shouldReturnRelsWhenAskingForRelsWhereOnlySomeTypesExistInCurrentRel() throws Exception
     {
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         int relType1 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type1" );
         int relType2 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type2" );
@@ -184,7 +184,7 @@ class RelationshipIT extends KernelIntegrationTest
         int relTypeTheNodeDoesUse;
         int relTypeTheNodeDoesNotUse;
         {
-            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             relTypeTheNodeDoesUse = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type1" );
             relTypeTheNodeDoesNotUse = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type2" );
@@ -199,7 +199,7 @@ class RelationshipIT extends KernelIntegrationTest
             }
             commit();
         }
-        Transaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction();
 
         // When I've asked for rels that the node does not have
         assertRels( nodeGetRelationships( transaction, refNode, INCOMING, new int[]{relTypeTheNodeDoesNotUse} ) );
@@ -214,7 +214,7 @@ class RelationshipIT extends KernelIntegrationTest
     {
         assertTrue( otherThread.execute( state ->
         {
-            try ( Transaction ktx = kernel.beginTransaction( implicit, LoginContext.AUTH_DISABLED ) )
+            try ( KernelTransaction ktx = kernel.beginTransaction( implicit, LoginContext.AUTH_DISABLED ) )
             {
                 assertRels( nodeGetRelationships( ktx, refNode, both ), longs );
             }

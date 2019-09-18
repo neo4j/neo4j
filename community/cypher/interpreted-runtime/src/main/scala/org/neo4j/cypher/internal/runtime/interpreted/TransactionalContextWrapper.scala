@@ -41,7 +41,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
 
   def graph: GraphDatabaseQueryService = tc.graph()
 
-  override def transaction: Transaction = tc.kernelTransaction
+  override def transaction: KernelTransaction = tc.kernelTransaction
 
   override def cursors: CursorFactory = if (threadSafeCursors == null) tc.kernelTransaction.cursors() else threadSafeCursors
 

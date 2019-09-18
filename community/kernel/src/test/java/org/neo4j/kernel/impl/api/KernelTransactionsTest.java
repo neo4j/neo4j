@@ -122,9 +122,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 import static org.neo4j.kernel.api.security.AnonymousContext.none;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
@@ -392,7 +393,7 @@ class KernelTransactionsTest
         KernelTransactions kernelTransactions = newKernelTransactions();
         kernelTransactions.blockNewTransactions();
         var e = assertThrows( Exception.class,
-                () -> kernelTransactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
+                () -> kernelTransactions.newInstance( implicit, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
         assertThat( e, instanceOf( IllegalStateException.class ) );
     }
 
@@ -450,7 +451,7 @@ class KernelTransactionsTest
         LoginContext loginContext = mock( LoginContext.class );
         when( loginContext.authorize( any(), any() ) ).thenThrow( new AuthorizationExpiredException( "Freeze failed." ) );
 
-        assertException( () -> kernelTransactions.newInstance( KernelTransaction.Type.explicit, loginContext, EMBEDDED_CONNECTION, 0L ),
+        assertException( () -> kernelTransactions.newInstance( explicit, loginContext, EMBEDDED_CONNECTION, 0L ),
                 AuthorizationExpiredException.class, "Freeze failed." );
 
         assertThat("We should not have any transaction", kernelTransactions.activeTransactions(), is(empty()));
@@ -464,7 +465,7 @@ class KernelTransactionsTest
         databaseAvailabilityGuard.shutdown();
 
         assertThrows( DatabaseShutdownException.class, () ->
-            kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ) );
+            kernelTransactions.newInstance( explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ) );
     }
 
     @Test
@@ -479,7 +480,7 @@ class KernelTransactionsTest
         } ).get();
 
         assertThrows( IllegalStateException.class, () ->
-            kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ) );
+            kernelTransactions.newInstance( explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ) );
     }
 
     @Test
@@ -490,7 +491,7 @@ class KernelTransactionsTest
         kernelTransactions.stop();
         kernelTransactions.start();
         assertNotNull(
-            kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ),
+            kernelTransactions.newInstance( explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ),
             "New transaction created by restarted kernel transactions component." );
     }
 
@@ -499,19 +500,19 @@ class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         try ( KernelTransaction kernelTransaction = kernelTransactions
-                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L ) )
+                .newInstance( explicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L ) )
         {
             assertEquals( 1, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
         }
 
         try ( KernelTransaction kernelTransaction = kernelTransactions
-                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L ) )
+                .newInstance( explicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L ) )
         {
             assertEquals( 2, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
         }
 
         try ( KernelTransaction kernelTransaction = kernelTransactions
-                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L ) )
+                .newInstance( explicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L ) )
         {
             assertEquals( 3, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
         }
@@ -619,7 +620,7 @@ class KernelTransactionsTest
     {
         try
         {
-            kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ).close();
+            kernelTransactions.newInstance( explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ).close();
         }
         catch ( TransactionFailureException e )
         {
@@ -780,7 +781,7 @@ class KernelTransactionsTest
 
     private static KernelTransaction getKernelTransaction( KernelTransactions transactions )
     {
-        return transactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L );
+        return transactions.newInstance( implicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L );
     }
 
     private static class TestKernelTransactions extends KernelTransactions

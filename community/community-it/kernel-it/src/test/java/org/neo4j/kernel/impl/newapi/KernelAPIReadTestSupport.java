@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.kernel.api.Kernel;
 
 /**
  * This interface defines the functionality that's needed to run Kernel API Read tests (tests that extends

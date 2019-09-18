@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -52,7 +52,7 @@ class GraphDatabaseFacadeTest
 {
     private GraphDatabaseFacade graphDatabaseFacade;
     private GraphDatabaseQueryService queryService;
-    private InwardKernel inwardKernel;
+    private Kernel kernel;
     private ThreadToStatementContextBridge contextBridge;
     private KernelTransaction kernelTransaction;
     private Statement statement;
@@ -63,8 +63,8 @@ class GraphDatabaseFacadeTest
         queryService = mock( GraphDatabaseQueryService.class );
         Database database = mock( Database.class, RETURNS_MOCKS );
         Dependencies resolver = mock( Dependencies.class );
-        inwardKernel = mock( InwardKernel.class, RETURNS_MOCKS );
-        when( database.getKernel() ).thenReturn( inwardKernel );
+        kernel = mock( Kernel.class, RETURNS_MOCKS );
+        when( database.getKernel() ).thenReturn( kernel );
         when( database.getDependencyResolver() ).thenReturn( resolver );
         contextBridge = mock( ThreadToStatementContextBridge.class );
 
@@ -87,7 +87,7 @@ class GraphDatabaseFacadeTest
     {
         graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 
-        verify( inwardKernel ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 10L );
+        verify( kernel ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 10L );
     }
 
     @Test
@@ -96,6 +96,6 @@ class GraphDatabaseFacadeTest
         graphDatabaseFacade.beginTx();
 
         long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
-        verify( inwardKernel ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout );
+        verify( kernel ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout );
     }
 }

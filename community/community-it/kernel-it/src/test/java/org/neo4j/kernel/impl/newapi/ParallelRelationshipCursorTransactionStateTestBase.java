@@ -44,9 +44,9 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.KernelTransaction;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,7 +64,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
     @Test
     void shouldHandleEmptyDatabase() throws TransactionFailureException
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
             {
@@ -83,7 +83,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
         int size = 100;
         MutableLongSet created = LongSets.mutable.empty();
         MutableLongSet deleted =  LongSets.mutable.empty();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             int type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
@@ -95,7 +95,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             deleted.each( new CheckedLongProcedure()
             {
@@ -132,7 +132,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
         MutableLongSet existing = createRelationships( size );
         MutableLongSet added = LongSets.mutable.empty();
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             int type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
@@ -166,7 +166,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
     @Test
     void shouldReserveBatchFromTxState() throws KernelException
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             int type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
@@ -202,7 +202,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
         LongArrayList ids = new LongArrayList();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             int type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
@@ -251,7 +251,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
         LongArrayList ids = new LongArrayList();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             int type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
@@ -296,7 +296,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
         int size = 128;
         LongArrayList ids = new LongArrayList();
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             int type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
@@ -347,7 +347,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             for ( int i = 0; i < 1000; i++ )
             {
                 MutableLongSet allRels = LongSets.mutable.withAll( existingRelationships );
-                try ( Transaction tx = beginTransaction() )
+                try ( KernelTransaction tx = beginTransaction() )
                 {
                     int relationshipsInTx = random.nextInt( 100 );
                     Write write = tx.dataWrite();
@@ -389,7 +389,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
     private MutableLongSet createRelationships( int size ) throws KernelException
     {
         MutableLongSet rels = LongSets.mutable.empty();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             int type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );

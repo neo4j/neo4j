@@ -38,13 +38,13 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -79,7 +79,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
     void listAllLabels() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
         transaction.dataWrite().nodeAddLabel( nodeId, labelId );
@@ -98,7 +98,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
     void listAllLabelsMustNotBlockOnConstraintCreatingTransaction() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
         int propKey = transaction.tokenWrite().propertyKeyCreateForName( "prop", false );
@@ -161,7 +161,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
     void listRelationshipTypes() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "MyRelType" );
         long startNodeId = transaction.dataWrite().nodeCreate();
         long endNodeId = transaction.dataWrite().nodeCreate();
@@ -206,7 +206,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
     void listAllIndexes() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
@@ -308,7 +308,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
     void listAllIndexesMustNotBlockOnConstraintCreatingTransaction() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );

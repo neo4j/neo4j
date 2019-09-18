@@ -25,8 +25,8 @@ import java.util.Collections
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME}
 import org.neo4j.exceptions._
 import org.neo4j.graphdb.{QueryExecutionException, Result}
-import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
+import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
@@ -748,7 +748,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
                         resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}): Int = {
     selectDatabase(database)
     val login = authManager.login(SecurityTestUtils.authToken(username, password))
-    val tx = graph.beginTransaction(Transaction.Type.explicit, login)
+    val tx = graph.beginTransaction(Type.explicit, login)
     try {
       var count = 0
       val result: Result = tx.execute(query, params)

@@ -469,7 +469,7 @@ public class FulltextIndexProviderTest
         {
             KernelImpl kernel = db.resolveDependency( KernelImpl.class );
             return (KernelTransactionImplementation) kernel.beginTransaction(
-                    org.neo4j.internal.kernel.api.Transaction.Type.explicit, LoginContext.AUTH_DISABLED );
+                    KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED );
         }
         catch ( TransactionFailureException e )
         {

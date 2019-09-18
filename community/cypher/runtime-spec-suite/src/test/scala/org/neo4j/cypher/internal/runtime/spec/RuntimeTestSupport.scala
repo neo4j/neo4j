@@ -29,8 +29,10 @@ import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.security.LoginContext
-import org.neo4j.internal.kernel.api.{CursorFactory, Transaction}
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber, TransactionalContext}
 import org.neo4j.kernel.lifecycle.LifeSupport
@@ -81,7 +83,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                   subscriber: QuerySubscriber,
                   profile: Boolean): RESULT = {
-    val transaction = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    val transaction = cypherGraphDb.beginTransaction(Type.`implicit`, LoginContext.AUTH_DISABLED)
     txHolder.set(transaction)
     try {
       val txContext = beginTx(transaction)
@@ -101,7 +103,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   def compile(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
-    var transaction = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    var transaction = cypherGraphDb.beginTransaction(KernelTransaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     val txContext = beginTx(transaction)
     val runtimeContext = newRuntimeContext(txContext, newQueryContext(txContext))
     try {

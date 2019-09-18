@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.kernel.api.Kernel;
 
 /**
  * Data collector section that contains meta data about the System,

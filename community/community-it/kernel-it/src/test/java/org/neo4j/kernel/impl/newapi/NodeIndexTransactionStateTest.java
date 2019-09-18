@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class NodeIndexTransactionStateTest extends NodeIndexTransactionStateTestBase<WriteTestSupport>
@@ -31,7 +31,7 @@ public class NodeIndexTransactionStateTest extends NodeIndexTransactionStateTest
     }
 
     @Override
-    protected void terminate( Transaction transaction )
+    protected void terminate( KernelTransaction transaction )
     {
         transaction.markForTermination( Status.Transaction.Terminated );
     }

@@ -120,7 +120,7 @@ class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
+        KernelTransaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
 
         long previousCommittedTxId = lastCommittedTxId( db );
@@ -134,7 +134,7 @@ class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
+        KernelTransaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
 
         assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
@@ -146,7 +146,7 @@ class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
+        KernelTransaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
         tx.markForTermination( Status.Transaction.Terminated );
 
@@ -159,7 +159,7 @@ class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
+        KernelTransaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
         tx.markForTermination( Status.Transaction.Terminated );
 
@@ -172,7 +172,7 @@ class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        org.neo4j.internal.kernel.api.Transaction tx = newTransaction();
+        KernelTransaction tx = newTransaction();
         try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
         {
             tx.dataRead().singleNode( 1, node );
@@ -201,7 +201,7 @@ class KernelIT extends KernelIntegrationTest
         return txIdStore.getLastCommittedTransactionId();
     }
 
-    private static IndexDescriptor createIndex( org.neo4j.internal.kernel.api.Transaction transaction )
+    private static IndexDescriptor createIndex( KernelTransaction transaction )
             throws KernelException
     {
         TokenWrite tokenWrite = transaction.tokenWrite();

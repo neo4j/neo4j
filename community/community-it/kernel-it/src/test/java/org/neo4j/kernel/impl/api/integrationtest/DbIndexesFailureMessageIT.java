@@ -26,11 +26,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.AnyValue;
@@ -65,7 +65,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
     void listAllIndexesWithFailedIndex() throws Throwable
     {
         // Given
-        Transaction transaction = newTransaction( AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         int failedLabel = transaction.tokenWrite().labelGetOrCreateForName( "Fail" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         failNextIndexPopulation.set( true );

@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
-import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.token.api.NamedToken;
 
@@ -37,7 +37,7 @@ class LabelIT extends KernelIntegrationTest
     void shouldListAllLabels() throws Exception
     {
         // given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         int label1Id = transaction.tokenWrite().labelGetOrCreateForName( "label1" );
         int label2Id = transaction.tokenWrite().labelGetOrCreateForName( "label2" );
 

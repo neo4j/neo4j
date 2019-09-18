@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodeCount;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodes;
@@ -45,7 +45,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
     {
         // GIVEN
         long toDelete;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             createNode( tx.dataWrite(), labelOne, labelFirst );
             createNode( tx.dataWrite(), labelTwo, labelFirst );
@@ -57,13 +57,13 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             tx.dataWrite().nodeDelete( toDelete );
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             org.neo4j.internal.kernel.api.Read read = tx.dataRead();
 
@@ -106,7 +106,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
         long deletedInTx;
         long createdInTx;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             inStore = createNode( tx.dataWrite(), labelOne );
             createNode( tx.dataWrite(), labelTwo );
@@ -114,7 +114,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             tx.dataWrite().nodeDelete( deletedInTx );
             createdInTx = createNode( tx.dataWrite(), labelOne );

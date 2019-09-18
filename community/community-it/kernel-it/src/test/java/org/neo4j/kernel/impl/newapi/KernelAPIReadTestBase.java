@@ -29,13 +29,13 @@ import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -60,7 +60,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
 {
     protected static File folder;
     protected static KernelAPIReadTestSupport testSupport;
-    protected Transaction tx;
+    protected KernelTransaction tx;
     protected Read read;
     protected SchemaRead schemaRead;
     protected Token token;
@@ -115,14 +115,14 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         cursors = new ManagedTestCursors( tx.cursors() );
     }
 
-    protected Transaction beginTransaction() throws TransactionFailureException
+    protected KernelTransaction beginTransaction() throws TransactionFailureException
     {
         Kernel kernel = testSupport.kernelToTest();
         return beginTransaction( kernel );
     }
 
-    private static Transaction beginTransaction( Kernel kernel ) throws TransactionFailureException
+    private static KernelTransaction beginTransaction( Kernel kernel ) throws TransactionFailureException
     {
-        return kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
+        return kernel.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
     }
 }

@@ -33,9 +33,9 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -53,7 +53,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "hello" ) );
             nodeWithProp( tx, "bellow" );
@@ -69,7 +69,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -96,7 +96,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "bee hive" ) );
             nodeWithProp( tx, "a" );
@@ -112,7 +112,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -170,7 +170,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         }
     }
 
-    private Pair<Long,Value> nodeWithProp( Transaction tx, Object value ) throws Exception
+    private Pair<Long,Value> nodeWithProp( KernelTransaction tx, Object value ) throws Exception
     {
         Write write = tx.dataWrite();
         long node = write.nodeCreate();

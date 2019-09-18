@@ -25,8 +25,8 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -98,7 +98,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
 
     private void assertIllegalToken( ThrowingConsumer<Token, KernelException> f )
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             f.accept( tx.token() );
             fail( "Expected IllegalTokenNameException" );
@@ -115,7 +115,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
 
     private int mapToken( ThrowingFunction<Token, Integer, KernelException> f )
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             return f.apply( tx.token() );
         }
@@ -128,7 +128,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
 
     private void forToken( ThrowingConsumer<Token, KernelException> f )
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             f.accept( tx.token() );
         }

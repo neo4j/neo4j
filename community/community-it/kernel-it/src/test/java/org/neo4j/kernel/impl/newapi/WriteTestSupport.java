@@ -25,11 +25,11 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -45,7 +45,7 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
     public void setup( File storeDir )
     {
         db = newDb( storeDir );
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             //We are creating these dummy tokens so that that the ones that we actually use don't get
             //the value 0. Using 0 may hide bugs that are caused by default the initialization of ints
@@ -79,9 +79,9 @@ public class WriteTestSupport implements KernelAPIWriteTestSupport
         return resolver.resolveDependency( Kernel.class );
     }
 
-    private Transaction beginTransaction() throws TransactionFailureException
+    private KernelTransaction beginTransaction() throws TransactionFailureException
     {
-        return kernelToTest().beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
+        return kernelToTest().beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
     }
 
     @Override

@@ -35,10 +35,10 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -59,7 +59,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     {
         // given
         Set<Pair<Long, Value>> expected = new HashSet<>();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "1suff" ) );
             nodeWithProp( tx, "pluff" );
@@ -69,7 +69,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -88,7 +88,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         Set<Pair<Long,Value>> expected = new HashSet<>();
         long nodeToDelete;
         long nodeToChange;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "suff1" ) );
             expected.add( nodeWithProp( tx, "supp" ) );
@@ -100,7 +100,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -122,7 +122,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "banana" ) );
             nodeWithProp( tx, "apple" );
@@ -132,7 +132,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -150,7 +150,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "suff1" ) );
             nodeWithPropId( tx, "supp" );
@@ -160,7 +160,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -178,7 +178,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "banana" ) );
             nodeWithProp( tx, "apple" );
@@ -188,7 +188,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -206,7 +206,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
         long nodeToChange;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "banana" ) );
             nodeToChange = nodeWithPropId( tx, "apple" );
@@ -216,7 +216,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -238,7 +238,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
         long nodeToChange;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             nodeToChange = nodeWithPropId( tx, "banana" );
             nodeWithPropId( tx, "apple" );
@@ -248,7 +248,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -269,7 +269,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
         long nodeToChange;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             nodeToChange = nodeWithPropId( tx, "banana" );
             nodeWithPropId( tx, "apple" );
@@ -279,7 +279,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -298,7 +298,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "gnomebat" ) );
             nodeWithPropId( tx, "fishwombat" );
@@ -308,7 +308,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -323,7 +323,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     @Test
     void shouldThrowIfTransactionTerminated() throws Exception
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             // given
             terminate( tx );
@@ -333,14 +333,14 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    protected abstract void terminate( Transaction transaction );
+    protected abstract void terminate( KernelTransaction transaction );
 
-    private long nodeWithPropId( Transaction tx, Object value ) throws Exception
+    private long nodeWithPropId( KernelTransaction tx, Object value ) throws Exception
     {
         return nodeWithProp( tx, value ).first();
     }
 
-    private Pair<Long,Value> nodeWithProp( Transaction tx, Object value ) throws Exception
+    private Pair<Long,Value> nodeWithProp( KernelTransaction tx, Object value ) throws Exception
     {
         Write write = tx.dataWrite();
         long node = write.nodeCreate();
@@ -377,7 +377,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
      * will create a node with that value, after initializing the cursor and assert that the new node is not found.
      * @param queries the index queries
      */
-    private void assertNodeAndValueForSeek( Set<Pair<Long,Value>> expected, Transaction tx, IndexDescriptor index, boolean needsValues,
+    private void assertNodeAndValueForSeek( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
             Object anotherValueFoundByQuery, IndexQuery... queries ) throws Exception
     {
         try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
@@ -400,7 +400,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
      * @param anotherValueFoundByQuery a values that would be found by, if a node with that value existed. This method
      * will create a node with that value, after initializing the cursor and assert that the new node is not found.
      */
-    private void assertNodeAndValueForScan( Set<Pair<Long,Value>> expected, Transaction tx, IndexDescriptor index, boolean needsValues,
+    private void assertNodeAndValueForScan( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
             Object anotherValueFoundByQuery ) throws Exception
     {
         IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
@@ -411,7 +411,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    private void assertNodeAndValue( Set<Pair<Long,Value>> expected, Transaction tx, boolean needsValues, Object anotherValueFoundByQuery,
+    private void assertNodeAndValue( Set<Pair<Long,Value>> expected, KernelTransaction tx, boolean needsValues, Object anotherValueFoundByQuery,
             NodeValueIndexCursor nodes ) throws Exception
     {
         // Modify tx state with changes that should not be reflected in the cursor, since it was already initialized in the above statement

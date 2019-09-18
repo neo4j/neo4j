@@ -32,6 +32,7 @@ import org.neo4j.graphdb.{Entity, Path}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.database.DatabaseId
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -302,7 +303,7 @@ trait RelationshipOperations extends Operations[RelationshipValue, RelationshipS
 
 trait QueryTransactionalContext extends CloseableResource {
 
-  def transaction : Transaction
+  def transaction : KernelTransaction
 
   def cursors : CursorFactory
 

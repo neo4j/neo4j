@@ -26,12 +26,12 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.values.storable.Value;
@@ -83,7 +83,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         long nodeId = createNodeWithValue( value );
 
         // when looking for it
-        Transaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction();
         Read read = transaction.dataRead();
         int propertyId = index.schema().getPropertyIds()[0];
         try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor()  )
@@ -105,7 +105,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         createNodeWithValue( Values.of( "other_" + value ) );
 
         // when looking for it
-        Transaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction();
         try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
         {
             long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
@@ -126,7 +126,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         long nodeId = createNodeWithValues( value1, value2 );
 
         // when looking for it
-        Transaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction();
         try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
         {
             long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index,
@@ -148,7 +148,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         createNodeWithValues( Values.of( "other_" + value1 ), Values.of( "other_" + value2 ) );
 
         // when looking for it
-        Transaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction();
         try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
         {
             long foundId =  transaction.dataRead().lockingNodeUniqueIndexSeek( index,
@@ -194,7 +194,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         Runnable runnableForThread2 = () ->
         {
             latch.waitForAllToStart();
-            try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
+            try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
                   NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
             {
                 tx.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
@@ -250,7 +250,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
     private IndexDescriptor createUniquenessConstraint( int labelId, int... propertyIds ) throws Exception
     {
-        Transaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
+        KernelTransaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyIds );
         transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor, null );
         IndexDescriptor result = transaction.schemaRead().index( descriptor.getLabelId(), descriptor.getPropertyIds() );

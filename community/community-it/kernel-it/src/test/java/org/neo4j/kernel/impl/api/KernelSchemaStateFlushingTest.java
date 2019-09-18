@@ -25,13 +25,13 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -39,8 +39,8 @@ import org.neo4j.test.extension.Inject;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
 @ImpermanentDbmsExtension
 class KernelSchemaStateFlushingTest
@@ -54,7 +54,7 @@ class KernelSchemaStateFlushingTest
     void setup() throws KernelException
     {
         kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        try ( Transaction transaction = beginTransaction() )
+        try ( KernelTransaction transaction = beginTransaction() )
         {
             // Make sure that a label token with id 1, and a property key token, also with id 1, both exists.
             transaction.tokenWrite().labelGetOrCreateForName( "Label0" );
@@ -148,7 +148,7 @@ class KernelSchemaStateFlushingTest
 
     private ConstraintDescriptor createConstraint() throws KernelException
     {
-        try ( Transaction transaction = beginTransaction() )
+        try ( KernelTransaction transaction = beginTransaction() )
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
                     SchemaDescriptor.forLabel( 1, 1 ), null );
@@ -159,7 +159,7 @@ class KernelSchemaStateFlushingTest
 
     private void dropConstraint( ConstraintDescriptor descriptor ) throws KernelException
     {
-        try ( Transaction transaction = beginTransaction() )
+        try ( KernelTransaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().constraintDrop( descriptor );
             transaction.commit();
@@ -168,7 +168,7 @@ class KernelSchemaStateFlushingTest
 
     private IndexDescriptor createIndex() throws KernelException
     {
-        try ( Transaction transaction = beginTransaction() )
+        try ( KernelTransaction transaction = beginTransaction() )
         {
             IndexDescriptor reference = transaction.schemaWrite().indexCreate(
                     SchemaDescriptor.forLabel( 1, 1 ) );
@@ -179,7 +179,7 @@ class KernelSchemaStateFlushingTest
 
     private void dropIndex( IndexDescriptor reference ) throws KernelException
     {
-        try ( Transaction transaction = beginTransaction() )
+        try ( KernelTransaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexDrop( reference );
             transaction.commit();
@@ -189,7 +189,7 @@ class KernelSchemaStateFlushingTest
     private void awaitIndexOnline( IndexDescriptor descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
-        try ( Transaction transaction = beginTransaction() )
+        try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaIndexTestHelper.awaitIndexOnline( transaction.schemaRead(), descriptor );
             transaction.commit();
@@ -199,7 +199,7 @@ class KernelSchemaStateFlushingTest
 
     private void awaitSchemaStateCleared( String keyForProbing ) throws TransactionFailureException
     {
-        try ( Transaction transaction = beginTransaction() )
+        try ( KernelTransaction transaction = beginTransaction() )
         {
             while ( transaction.schemaRead().schemaStateGetOrCreate( keyForProbing, ignored -> null ) != null )
             {
@@ -211,7 +211,7 @@ class KernelSchemaStateFlushingTest
 
     private String commitToSchemaState( String key, String value ) throws TransactionFailureException
     {
-        try ( Transaction transaction = beginTransaction() )
+        try ( KernelTransaction transaction = beginTransaction() )
         {
             String result = getOrCreateFromState( transaction, key, value );
             transaction.commit();
@@ -219,12 +219,12 @@ class KernelSchemaStateFlushingTest
         }
     }
 
-    private String getOrCreateFromState( Transaction tx, String key, final String value )
+    private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
     {
         return tx.schemaRead().schemaStateGetOrCreate( key, from -> value );
     }
 
-    private Transaction beginTransaction() throws TransactionFailureException
+    private KernelTransaction beginTransaction() throws TransactionFailureException
     {
         return kernel.beginTransaction( implicit, AUTH_DISABLED );
     }

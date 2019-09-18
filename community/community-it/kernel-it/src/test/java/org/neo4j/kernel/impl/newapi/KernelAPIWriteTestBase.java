@@ -24,10 +24,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -73,10 +73,10 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         testSupport.clearGraph();
     }
 
-    protected Transaction beginTransaction() throws TransactionFailureException
+    protected KernelTransaction beginTransaction() throws TransactionFailureException
     {
         Kernel kernel = testSupport.kernelToTest();
-        return kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
+        return kernel.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
     }
 
     @AfterAll

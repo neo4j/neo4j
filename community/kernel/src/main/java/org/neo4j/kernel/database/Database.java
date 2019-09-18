@@ -48,7 +48,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.LoggingMonitor;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -59,7 +58,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
@@ -822,7 +821,7 @@ public class Database extends LifecycleAdapter
         return executionEngine;
     }
 
-    public InwardKernel getKernel()
+    public Kernel getKernel()
     {
         return kernelModule.kernelAPI();
     }

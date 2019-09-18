@@ -26,13 +26,10 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -47,11 +44,15 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.procedure.CallableProcedure;
+import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
+import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -322,22 +323,46 @@ class ConstraintIndexCreatorTest
         }
 
         @Override
-        public Transaction beginTransaction( Transaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo )
+        public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout )
         {
             return remember( createTransaction() );
         }
 
         @Override
-        public Transaction beginTransaction( Transaction.Type type, LoginContext loginContext )
+        public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo )
         {
             return remember( createTransaction() );
         }
 
         @Override
+        public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
+        {
+            return remember( createTransaction() );
+        }
+
+        @Override
+        public void registerProcedure( CallableProcedure procedure )
+        {
+
+        }
+
+        @Override
+        public void registerUserFunction( CallableUserFunction function )
+        {
+
+        }
+
+        @Override
+        public void registerUserAggregationFunction( CallableUserAggregationFunction function )
+        {
+
+        }
+
         public CursorFactory cursors()
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
+
     }
 
     private SchemaRead schemaRead()
@@ -374,10 +399,6 @@ class ConstraintIndexCreatorTest
         catch ( InvalidTransactionTypeKernelException e )
         {
             fail( "Expected write transaction" );
-        }
-        catch ( KernelException e )
-        {
-            throw new RuntimeException( e );
         }
         return transaction;
     }

@@ -40,11 +40,11 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Result;
-import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -80,6 +80,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
 public class InvocationTest
 {
@@ -237,7 +238,7 @@ public class InvocationTest
         TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
         var facade = mock( GraphDatabaseFacade.class, Answers.RETURNS_DEEP_STUBS );
         var transaction = mock( InternalTransaction.class );
-        when( facade.beginTransaction( eq( Type.implicit ), any(LoginContext.class), any(ClientConnectionInfo.class), anyLong(), any( TimeUnit.class ) ) )
+        when( facade.beginTransaction( eq( implicit ), any(LoginContext.class), any(ClientConnectionInfo.class), anyLong(), any( TimeUnit.class ) ) )
                 .thenReturn( transaction );
         when( transaction.execute( eq( queryText), any() ) ).thenReturn( executionResult );
         when( executionEngine.isPeriodicCommit( queryText ) ).thenReturn( true );
@@ -346,7 +347,7 @@ public class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( kernel ).newTransaction( any( Type.class ), any( LoginContext.class ), eq( EMBEDDED_CONNECTION ), anyLong() );
+        verify( kernel ).newTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), eq( EMBEDDED_CONNECTION ), anyLong() );
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeStatementStart( statement, List.of( "c1", "c2", "c3" ) );
@@ -649,7 +650,7 @@ public class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( kernel ).newTransaction( Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 100 );
+        verify( kernel ).newTransaction( implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 100 );
     }
 
     @Test
@@ -856,8 +857,8 @@ public class InvocationTest
     private TransitionalPeriodTransactionMessContainer mockKernel()
     {
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
-        when( kernel.newTransaction( any( Type.class ), any( LoginContext.class ), any( ClientConnectionInfo.class ), anyLong() ) ).thenReturn(
-                transactionContext );
+        when( kernel.newTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), any( ClientConnectionInfo.class ), anyLong() ) )
+                .thenReturn( transactionContext );
         return kernel;
     }
 

@@ -39,9 +39,9 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 import org.neo4j.graphdb._
-import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory

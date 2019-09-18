@@ -45,8 +45,8 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.kernel.api.KernelTransaction;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,7 +66,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     @Test
     void shouldHandleEmptyDatabase() throws KernelException
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
             try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
@@ -87,7 +87,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         Set<Long> created = new HashSet<>( size );
         Set<Long> deleted = new HashSet<>( size );
         int label = label( "L" );
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             for ( int i = 0; i < size; i++ )
@@ -102,7 +102,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             for ( long delete : deleted )
             {
@@ -134,7 +134,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         int size = 64;
         int label = label( "L" );
         MutableLongSet existing = LongSets.mutable.withAll( createNodesWithLabel( label, size ) );
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             MutableLongSet added = LongSets.mutable.withAll( createNodesWithLabel( tx.dataWrite(), label, size ) );
 
@@ -162,7 +162,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     @Test
     void shouldReserveBatchFromTxState() throws KernelException
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
             createNodesWithLabel( tx.dataWrite(), label, 11 );
@@ -194,7 +194,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 1024;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
             LongList ids = createNodesWithLabel( tx.dataWrite(), label, size );
@@ -239,7 +239,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         ExecutorService service = Executors.newFixedThreadPool( 4 );
         int size = 2000;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
             LongList ids = createNodesWithLabel( tx.dataWrite(), label, size );
@@ -287,7 +287,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             for ( int i = 0; i < 1000; i++ )
             {
                 MutableLongSet allNodes = LongSets.mutable.withAll( existingNodes );
-                try ( Transaction tx = beginTransaction() )
+                try ( KernelTransaction tx = beginTransaction() )
                 {
                     int nodeInTx = random.nextInt( 1000 );
                     allNodes.addAll( createNodesWithLabel( tx.dataWrite(), label, nodeInTx ) );
@@ -324,7 +324,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             throws KernelException
     {
         LongList ids;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             ids = createNodesWithLabel( write, label, size );
@@ -349,7 +349,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     private int label( String name ) throws KernelException
     {
         int label;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( name );
             tx.commit();

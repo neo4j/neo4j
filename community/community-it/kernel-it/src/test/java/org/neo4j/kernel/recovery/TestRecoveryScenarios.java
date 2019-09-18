@@ -35,12 +35,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -56,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class TestRecoveryScenarios
@@ -184,7 +185,7 @@ class TestRecoveryScenarios
         // THEN
         // -- really the problem was that recovery threw exception, so mostly assert that.
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
         {
             assertEquals( 0, tx.dataRead().countsForNode( -1 ) );
             final TokenHolder holder = db.getDependencyResolver().resolveDependency( TokenHolders.class ).labelTokens();

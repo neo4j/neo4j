@@ -31,10 +31,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -48,9 +49,9 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.fs.FileUtils.deleteFile;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
 @TestDirectoryExtension
 class IndexSamplingIntegrationTest
@@ -193,7 +194,7 @@ class IndexSamplingIntegrationTest
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
 
-    private IndexDescriptor indexId( org.neo4j.internal.kernel.api.Transaction tx )
+    private IndexDescriptor indexId( KernelTransaction tx )
     {
         int labelId = tx.tokenRead().nodeLabel( label.name() );
         int propertyKeyId = tx.tokenRead().propertyKey( property );
@@ -210,7 +211,7 @@ class IndexSamplingIntegrationTest
             db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
-            try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
+            try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
             {
                 return tx.schemaRead().indexSample( indexId( tx ), Registers.newDoubleLongRegister() );
             }
@@ -234,7 +235,7 @@ class IndexSamplingIntegrationTest
             db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
-            try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
+            try ( KernelTransaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
             {
                 return tx.schemaRead().indexUpdatesAndSize( indexId( tx ), Registers.newDoubleLongRegister() );
             }

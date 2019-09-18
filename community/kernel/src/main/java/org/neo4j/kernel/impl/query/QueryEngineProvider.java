@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.query;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;

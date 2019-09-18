@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.core;
 import java.util.function.Supplier;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 
 public class DefaultRelationshipTypeCreator extends IsolatedTransactionTokenCreator
 {
@@ -33,7 +33,7 @@ public class DefaultRelationshipTypeCreator extends IsolatedTransactionTokenCrea
     }
 
     @Override
-    protected int createKey( Transaction transaction, String name, boolean internal ) throws KernelException
+    protected int createKey( KernelTransaction transaction, String name, boolean internal ) throws KernelException
     {
         return transaction.tokenWrite().relationshipTypeCreateForName( name, internal );
     }

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,14 +37,14 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
     {
         // GIVEN
         long deletedInTx, unaffected, addedInTx, addedAndRemovedInTx;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             deletedInTx = tx.dataWrite().nodeCreate();
             unaffected = tx.dataWrite().nodeCreate();
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             // WHEN
             addedInTx = tx.dataWrite().nodeCreate();
@@ -67,7 +67,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         long node;
         int relType;
         long deletedInTx, unaffected, addedInTx, addedAndRemovedInTx;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
             relType = tx.tokenWrite().relationshipTypeCreateForName( "REL_TYPE", false );
@@ -76,7 +76,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             // WHEN
             addedInTx = tx.dataWrite().relationshipCreate(node, relType, node);
@@ -98,7 +98,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         // GIVEN
         long node;
         int p1, p2, p3, p4, p5;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
             p1 = tx.tokenWrite().propertyKeyCreateForName( "p1", false );
@@ -112,7 +112,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             // WHEN
             tx.dataWrite().nodeSetProperty( node, p3, Values.of( 13 ) );

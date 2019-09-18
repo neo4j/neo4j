@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -765,7 +764,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         Epoch epoch = mock( Epoch.class );
         when( epoch.tokenId() ).thenReturn( epochTokenId );
         KernelTransactionImplementation transaction = newNotInitializedTransaction( () -> epoch );
-        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), Transaction.Type.implicit,
+        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), KernelTransaction.Type.implicit,
                 mock( SecurityContext.class ), 0, 1L, EMBEDDED_CONNECTION );
         assertEquals( "KernelTransaction[epoch:" + epochTokenId + "]", transaction.toString() );
     }

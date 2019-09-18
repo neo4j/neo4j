@@ -25,9 +25,9 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
@@ -53,7 +53,7 @@ class TwoPhaseNodeForRelationshipLocking
         this.lockTracer = lockTracer;
     }
 
-    void lockAllNodesAndConsumeRelationships( long nodeId, final Transaction transaction, NodeCursor nodes ) throws KernelException
+    void lockAllNodesAndConsumeRelationships( long nodeId, final KernelTransaction transaction, NodeCursor nodes ) throws KernelException
     {
         boolean retry;
         do
@@ -87,7 +87,7 @@ class TwoPhaseNodeForRelationshipLocking
         while ( retry );
     }
 
-    private void collectAndSortNodeIds( long nodeId, Transaction transaction, NodeCursor nodes )
+    private void collectAndSortNodeIds( long nodeId, KernelTransaction transaction, NodeCursor nodes )
     {
         final MutableLongSet nodeIdSet = new LongHashSet();
         nodeIdSet.add( nodeId );

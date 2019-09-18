@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,7 +54,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         long r;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             r = tx.dataWrite().relationshipCreate( n1, label, n2 );
@@ -73,7 +73,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     void shouldCreateRelationshipBetweenInTransactionNodes() throws Exception
     {
         long n1, n2, r;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             n1 = tx.dataWrite().nodeCreate();
             n2 = tx.dataWrite().nodeCreate();
@@ -101,7 +101,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             tx.dataWrite().relationshipCreate( n1, label, n2 );
@@ -129,7 +129,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
             tx.commit();
@@ -146,12 +146,12 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     {
         long relationship = 0;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             assertFalse( tx.dataWrite().relationshipDelete( relationship ) );
             tx.rollback();
         }
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             assertFalse( tx.dataWrite().relationshipDelete( relationship ) );
             tx.commit();
@@ -170,7 +170,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
@@ -202,7 +202,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
@@ -235,7 +235,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ),
@@ -268,7 +268,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
@@ -299,7 +299,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             tx.commit();
         }
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
@@ -332,7 +332,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
@@ -366,7 +366,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
@@ -403,10 +403,10 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
 
         // When
-        Transaction tx = beginTransaction();
+        KernelTransaction tx = beginTransaction();
         int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
         assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, property, theValue ), equalTo( theValue ) );
 
-        assertThat( tx.commit(), equalTo( Transaction.READ_ONLY ) );
+        assertThat( tx.commit(), equalTo( KernelTransaction.READ_ONLY ) );
     }
 }

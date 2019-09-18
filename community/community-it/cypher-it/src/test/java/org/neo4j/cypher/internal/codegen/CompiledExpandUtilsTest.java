@@ -24,14 +24,14 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
@@ -44,7 +44,7 @@ import static org.neo4j.cypher.internal.codegen.CompiledExpandUtils.nodeGetDegre
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
 @DbmsExtension( configurationCallback = "config" )
 class CompiledExpandUtilsTest
@@ -58,7 +58,7 @@ class CompiledExpandUtilsTest
         builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 );
     }
 
-    private Transaction transaction() throws TransactionFailureException
+    private KernelTransaction transaction() throws TransactionFailureException
     {
         DependencyResolver resolver = db.getDependencyResolver();
         return resolver.resolveDependency( Kernel.class ).beginTransaction( implicit, LoginContext.AUTH_DISABLED );
@@ -69,7 +69,7 @@ class CompiledExpandUtilsTest
     {
         // GIVEN
         long node;
-        try ( Transaction tx = transaction() )
+        try ( KernelTransaction tx = transaction() )
         {
             Write write = tx.dataWrite();
             node = write.nodeCreate();
@@ -88,7 +88,7 @@ class CompiledExpandUtilsTest
             tx.commit();
         }
 
-        try ( Transaction tx = transaction() )
+        try ( KernelTransaction tx = transaction() )
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
@@ -107,7 +107,7 @@ class CompiledExpandUtilsTest
         // GIVEN
         long node;
         int in, out, loop;
-        try ( Transaction tx = transaction() )
+        try ( KernelTransaction tx = transaction() )
         {
             Write write = tx.dataWrite();
             node = write.nodeCreate();
@@ -125,7 +125,7 @@ class CompiledExpandUtilsTest
             tx.commit();
         }
 
-        try ( Transaction tx = transaction() )
+        try ( KernelTransaction tx = transaction() )
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();

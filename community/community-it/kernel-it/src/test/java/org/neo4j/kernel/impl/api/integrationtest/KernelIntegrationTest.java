@@ -30,17 +30,16 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -59,11 +58,11 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 @TestDirectoryExtension
@@ -120,13 +119,13 @@ public abstract class KernelIntegrationTest
         return kernelTransaction.procedures();
     }
 
-    protected Transaction newTransaction() throws TransactionFailureException
+    protected KernelTransaction newTransaction() throws TransactionFailureException
     {
         beginTransaction( AnonymousContext.read() );
         return kernelTransaction;
     }
 
-    protected Transaction newTransaction( LoginContext loginContext ) throws TransactionFailureException
+    protected KernelTransaction newTransaction( LoginContext loginContext ) throws TransactionFailureException
     {
         beginTransaction( loginContext );
         return kernelTransaction;
@@ -238,7 +237,7 @@ public abstract class KernelIntegrationTest
         startDb();
     }
 
-    static Value relationshipGetProperty( Transaction transaction, long relationship, int property )
+    static Value relationshipGetProperty( KernelTransaction transaction, long relationship, int property )
     {
         try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor();
               PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
@@ -263,12 +262,12 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    static Iterator<Long> nodeGetRelationships( Transaction transaction, long node, Direction direction )
+    static Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction )
     {
         return nodeGetRelationships( transaction, node, direction, null );
     }
 
-    static Iterator<Long> nodeGetRelationships( Transaction transaction, long node, Direction direction, int[] types )
+    static Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction, int[] types )
     {
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
         {
@@ -295,7 +294,7 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    protected static int countNodes( Transaction transaction )
+    protected static int countNodes( KernelTransaction transaction )
     {
         int result = 0;
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
@@ -309,7 +308,7 @@ public abstract class KernelIntegrationTest
         return result;
     }
 
-    public static int countRelationships( Transaction transaction )
+    public static int countRelationships( KernelTransaction transaction )
     {
         int result = 0;
         try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor() )

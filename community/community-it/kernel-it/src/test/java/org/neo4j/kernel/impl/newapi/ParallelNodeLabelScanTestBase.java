@@ -46,8 +46,8 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,7 +74,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     {
         MutableLongSet fooNodes = LongSets.mutable.empty();
         MutableLongSet barNodes = LongSets.mutable.empty();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             TokenWrite tokenWrite = tx.tokenWrite();
             FOO_LABEL = tokenWrite.labelGetOrCreateForName( "foo" );

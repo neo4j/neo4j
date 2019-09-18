@@ -22,7 +22,6 @@ package org.neo4j.bolt.dbapi.impl;
 import java.util.Optional;
 
 import org.neo4j.bolt.dbapi.BoltTransaction;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -106,6 +105,6 @@ public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl impleme
     public Optional<Status> getReasonIfTerminated()
     {
         var transaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
-        return Optional.ofNullable( transaction ).flatMap( Transaction::getReasonIfTerminated );
+        return Optional.ofNullable( transaction ).flatMap( KernelTransaction::getReasonIfTerminated );
     }
 }

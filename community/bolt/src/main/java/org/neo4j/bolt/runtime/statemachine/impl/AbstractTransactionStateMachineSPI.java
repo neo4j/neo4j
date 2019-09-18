@@ -33,7 +33,6 @@ import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.Bookmark;
-
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix;
@@ -44,8 +43,8 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
-import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
 public abstract class AbstractTransactionStateMachineSPI implements TransactionStateMachineSPI
 {

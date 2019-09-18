@@ -25,10 +25,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -37,6 +35,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.Ope
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -54,10 +53,10 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
-import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type;
 
 public class ConstraintIndexCreator
 {
@@ -192,7 +191,7 @@ public class ConstraintIndexCreator
     public void dropUniquenessConstraintIndex( IndexDescriptor index )
             throws TransactionFailureException
     {
-        try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction transaction = kernelSupplier.get().beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
             ((KernelTransactionImplementation)transaction).addIndexDoDropToTxState( index );
             transaction.commit();
@@ -258,9 +257,9 @@ public class ConstraintIndexCreator
 
     public IndexDescriptor createConstraintIndex( IndexBackedConstraintDescriptor constraint, String provider )
     {
-        try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction transaction = kernelSupplier.get().beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
-            IndexDescriptor index = ((KernelTransaction) transaction).indexUniqueCreate( constraint, provider );
+            IndexDescriptor index = transaction.indexUniqueCreate( constraint, provider );
             transaction.commit();
             return index;
         }

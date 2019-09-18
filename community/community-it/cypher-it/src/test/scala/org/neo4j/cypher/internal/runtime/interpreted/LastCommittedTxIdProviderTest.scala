@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.internal.kernel.api.Transaction
+import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.database.Database
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
@@ -67,7 +67,7 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   }
 
   private def createNode(): Unit = {
-    val tx = db.beginTransaction( Transaction.Type.explicit, AnonymousContext.write() )
+    val tx = db.beginTransaction( Type.explicit, AnonymousContext.write() )
     try {
       tx.createNode()
       tx.commit()

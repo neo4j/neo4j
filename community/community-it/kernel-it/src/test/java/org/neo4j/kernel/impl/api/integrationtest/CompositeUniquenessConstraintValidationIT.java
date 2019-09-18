@@ -32,13 +32,12 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -63,7 +62,7 @@ public class CompositeUniquenessConstraintValidationIT
     private final Object[] bValues;
     private ConstraintDescriptor constraintDescriptor;
     private int label;
-    private Transaction transaction;
+    private KernelTransaction transaction;
     protected Kernel kernel;
 
     @Parameterized.Parameters( name = "{index}: {0}" )
@@ -139,7 +138,7 @@ public class CompositeUniquenessConstraintValidationIT
         transaction.schemaWrite().constraintDrop( constraintDescriptor );
         commit();
 
-        try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
         {
             try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {

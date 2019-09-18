@@ -25,9 +25,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -650,7 +650,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         assert labels != null;
         assert propKeys.size() == propValues.size();
 
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
 
         for ( String labelname : labels )
@@ -675,7 +675,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         assert type != null && !type.isEmpty();
         assert propKeys.size() == propValues.size();
 
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         int typeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( type );
         long relId = transaction.dataWrite().relationshipCreate( startNode, typeId, endNode );

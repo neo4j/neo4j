@@ -23,11 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -35,7 +33,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
 @DbmsExtension
 class KernelAPIParallelTraversalStressIT
@@ -62,7 +60,7 @@ class KernelAPIParallelTraversalStressIT
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         long[] nodes = new long[N_NODES];
-        Transaction setup = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED );
+        KernelTransaction setup = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED );
 
         int relationshipType = setup.token().relationshipTypeCreateForName( "R", false );
         for ( int i = 0; i < N_NODES; i++ )
@@ -120,7 +118,7 @@ class KernelAPIParallelTraversalStressIT
         final NodeCursor nodeCursor;
         final RelationshipTraversalCursor traversalCursor;
 
-        NodeAndTraverseCursors( Transaction tx )
+        NodeAndTraverseCursors( KernelTransaction tx )
         {
             nodeCursor = tx.cursors().allocateNodeCursor();
             traversalCursor = tx.cursors().allocateRelationshipTraversalCursor();

@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.newapi;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.assertion.Assert;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,7 +41,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         // GIVEN
         long nodeId;
         int labelId;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             // WHEN
             nodeId = tx.dataWrite().nodeCreate();
@@ -61,7 +61,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         // GIVEN
         long nodeId;
         int labelId;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             // WHEN
             nodeId = tx.dataWrite().nodeCreate();
@@ -82,7 +82,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         int label;
         int propertyKey;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
@@ -90,7 +90,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             assertAllowedLocks( label, propertyKey, tx );
 
@@ -109,7 +109,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         int label;
         int propertyKey;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
@@ -117,7 +117,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             // WHEN
             tx.freezeLocks();
@@ -135,7 +135,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         int label;
         int propertyKey;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
@@ -143,7 +143,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             // WHEN
             assertThrows( LocksNotFrozenException.class, tx::thawLocks );
@@ -160,7 +160,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         int label;
         int propertyKey;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
@@ -168,7 +168,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             // WHEN
             tx.freezeLocks();
@@ -205,7 +205,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
         // GIVEN
         long node;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
 
@@ -220,12 +220,12 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
 
     // HELPERS
 
-    private void assertAllowedLocks( int label, int propertyKey, Transaction tx )
+    private void assertAllowedLocks( int label, int propertyKey, KernelTransaction tx )
     {
         tx.schemaRead().index( label, propertyKey ); // acquires shared schema lock, but that's fine again
     }
 
-    private void assertFrozenLocks( int label, int propertyKey, Transaction tx )
+    private void assertFrozenLocks( int label, int propertyKey, KernelTransaction tx )
     {
         Assert.assertException( () -> tx.schemaRead().index( label, propertyKey ), // acquires shared schema lock
                                 FrozenLocksException.class );
@@ -233,7 +233,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
 
     private void assertNoNode( long nodeId ) throws TransactionFailureException
     {
-        try ( Transaction tx = beginTransaction();
+        try ( KernelTransaction tx = beginTransaction();
                 NodeCursor cursor = tx.cursors().allocateNodeCursor() )
         {
             tx.dataRead().singleNode( nodeId, cursor );
@@ -243,7 +243,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
 
     private void assertNodeExists( long nodeId ) throws TransactionFailureException
     {
-        try ( Transaction tx = beginTransaction();
+        try ( KernelTransaction tx = beginTransaction();
                 NodeCursor cursor = tx.cursors().allocateNodeCursor() )
         {
             tx.dataRead().singleNode( nodeId, cursor );

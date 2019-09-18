@@ -103,7 +103,7 @@ public class LuceneFulltextTestSupport
         try
         {
             return (KernelTransactionImplementation) db.resolveDependency( KernelImpl.class ).beginTransaction(
-                    org.neo4j.internal.kernel.api.Transaction.Type.explicit, LoginContext.AUTH_DISABLED );
+                    KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED );
         }
         catch ( TransactionFailureException e )
         {

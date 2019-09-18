@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Value;
 
@@ -54,7 +54,7 @@ public class SchemaCalculator
     private final TokenRead tokenRead;
     private final CursorFactory cursors;
 
-    SchemaCalculator( Transaction ktx )
+    SchemaCalculator( KernelTransaction ktx )
     {
         this.dataRead = ktx.dataRead();
         this.tokenRead = ktx.tokenRead();

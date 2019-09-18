@@ -31,16 +31,16 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
@@ -61,7 +61,7 @@ final class GraphCountsSection
     static Stream<RetrieveResult> retrieve( Kernel kernel, Anonymizer anonymizer )
             throws TransactionFailureException, IndexNotFoundKernelException
     {
-        try ( Transaction tx = kernel.beginTransaction( Transaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
         {
             TokenRead tokens = tx.tokenRead();
             Read read = tx.dataRead();

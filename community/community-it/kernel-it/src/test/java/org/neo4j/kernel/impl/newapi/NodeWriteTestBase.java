@@ -27,8 +27,8 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -55,7 +55,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     void shouldCreateNode() throws Exception
     {
         long node;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
             tx.commit();
@@ -71,7 +71,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     void shouldRollbackOnFailure() throws Exception
     {
         long node;
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
             tx.rollback();
@@ -93,7 +93,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     {
         long node = createNode();
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             tx.dataWrite().nodeDelete( node );
             tx.commit();
@@ -117,12 +117,12 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     {
         long node = 0;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             assertFalse( tx.dataWrite().nodeDelete( node ) );
             tx.rollback();
         }
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             assertFalse( tx.dataWrite().nodeDelete( node ) );
             tx.commit();
@@ -137,7 +137,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node = createNode();
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int labelId = tx.token().labelGetOrCreateForName( labelName );
             assertTrue( tx.dataWrite().nodeAddLabel( node, labelId ) );
@@ -153,7 +153,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     {
         long node = createNodeWithLabel( labelName );
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int labelId = tx.token().labelGetOrCreateForName( labelName );
             assertFalse( tx.dataWrite().nodeAddLabel( node, labelId ) );
@@ -168,7 +168,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     {
         long nodeId = createNodeWithLabel( labelName );
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int labelId = tx.token().labelGetOrCreateForName( labelName );
             assertTrue( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
@@ -183,7 +183,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     {
         long node = 1337L;
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int labelId = tx.token().labelGetOrCreateForName( labelName );
             assertThrows( KernelException.class, () -> tx.dataWrite().nodeAddLabel( node, labelId ) );
@@ -196,14 +196,14 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         int labelId;
         long nodeId = createNodeWithLabel( labelName );
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             labelId = tx.token().labelGetOrCreateForName( labelName );
             assertTrue( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             labelId = tx.token().labelGetOrCreateForName( labelName );
             assertFalse( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
@@ -220,7 +220,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node = createNode();
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
@@ -238,7 +238,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node = createNode();
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
@@ -257,7 +257,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         deleteNode( node );
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) );
@@ -276,7 +276,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node = createNodeWithProperty( propertyKey, 42 );
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ),
@@ -295,7 +295,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node = createNodeWithProperty( propertyKey, 42 );
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
@@ -314,7 +314,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node = createNode();
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ), equalTo( NO_VALUE ) );
@@ -332,7 +332,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node = createNodeWithProperty( propertyKey, 42 );
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
@@ -353,7 +353,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long node = createNode();
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
@@ -374,7 +374,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
         // when
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             int prop = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             tx.dataWrite().nodeRemoveProperty( node, prop );
@@ -396,11 +396,11 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         long nodeId = createNodeWithProperty( propertyKey, theValue.asObject() );
 
         // When
-        Transaction tx = beginTransaction();
+        KernelTransaction tx = beginTransaction();
         int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
         assertThat( tx.dataWrite().nodeSetProperty( nodeId, property, theValue ), equalTo( theValue ) );
 
-        assertThat( tx.commit(), equalTo( Transaction.READ_ONLY ) );
+        assertThat( tx.commit(), equalTo( KernelTransaction.READ_ONLY ) );
     }
 
     @Test
@@ -412,7 +412,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         Value largeByteArray = Values.of( new byte[100_000] );
 
         // When
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             prop = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, prop, largeByteArray ), equalTo( NO_VALUE ) );
@@ -420,7 +420,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         }
 
         // Then
-        try ( Transaction tx = beginTransaction();
+        try ( KernelTransaction tx = beginTransaction();
               NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
               PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor() )
         {

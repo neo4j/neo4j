@@ -28,13 +28,14 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherT
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.helpers.Indexes
 import org.neo4j.internal.kernel.api.procs._
 import org.neo4j.internal.kernel.api.security.LoginContext
-import org.neo4j.internal.kernel.api.{Kernel, TokenRead, Transaction => KernelTransaction}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.InwardKernel
+import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.procedure.{CallableProcedure, CallableUserAggregationFunction, CallableUserFunction, GlobalProcedures}
+import org.neo4j.kernel.api.{Kernel, KernelTransaction}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.monitoring.Monitors
@@ -132,7 +133,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     val kernel = graph.getDependencyResolver.resolveDependency(classOf[Kernel])
     var ktx: KernelTransaction = null
     try {
-      ktx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED )
+      ktx = kernel.beginTransaction( Type.explicit, LoginContext.AUTH_DISABLED )
       f(ktx)
     } finally {
       ktx.commit()
@@ -336,7 +337,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
 
-  private def kernelAPI: InwardKernel = graph.getDependencyResolver.resolveDependency(classOf[InwardKernel])
+  private def kernelAPI: Kernel = graph.getDependencyResolver.resolveDependency(classOf[Kernel])
 
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
     def apply(graph: GraphDatabaseQueryService): MatchResult = {

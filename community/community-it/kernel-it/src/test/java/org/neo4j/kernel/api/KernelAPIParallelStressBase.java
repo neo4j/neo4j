@@ -24,21 +24,19 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.Race;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
 class KernelAPIParallelStress
 {
     static <RESOURCE extends AutoCloseable> void parallelStressInTx( Kernel kernel,
                                                                      int nThreads,
-                                                                     Function<Transaction, RESOURCE> resourceSupplier,
+                                                                     Function<KernelTransaction, RESOURCE> resourceSupplier,
                                                                      BiFunction<Read, RESOURCE, Runnable> runnable ) throws Throwable
     {
         Race race = new Race();
@@ -47,7 +45,7 @@ class KernelAPIParallelStress
         race.withEndCondition( () -> currentTimeMillis() > endTime );
 
         List<RESOURCE> nodeCursors = new ArrayList<RESOURCE>();
-        try ( Transaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
         {
             // assert our test works single-threaded before racing
             try ( RESOURCE nodeCursor = resourceSupplier.apply( tx ) )

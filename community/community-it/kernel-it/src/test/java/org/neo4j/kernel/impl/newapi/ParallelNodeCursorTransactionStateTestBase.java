@@ -43,10 +43,10 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.KernelTransaction;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,7 +65,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     @Test
     void shouldHandleEmptyDatabase() throws TransactionFailureException
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
             {
@@ -84,7 +84,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         int size = 100;
         MutableLongSet created = LongSets.mutable.empty();
         MutableLongSet deleted =  LongSets.mutable.empty();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             for ( int i = 0; i < size; i++ )
@@ -95,7 +95,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             tx.commit();
         }
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             deleted.each( new CheckedLongProcedure()
             {
@@ -132,7 +132,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         MutableLongSet existing = createNodes( size );
         MutableLongSet added = LongSets.mutable.empty();
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             for ( int i = 0; i < size; i++ )
             {
@@ -164,7 +164,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     void shouldReserveBatchFromTxState()
             throws TransactionFailureException, InvalidTransactionTypeKernelException
     {
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             for ( int i = 0; i < 11; i++ )
             {
@@ -199,7 +199,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
         LongArrayList ids = new LongArrayList();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             for ( int i = 0; i < size; i++ )
@@ -244,7 +244,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
         LongArrayList ids = new LongArrayList();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             for ( int i = 0; i < size; i++ )
@@ -289,7 +289,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         int size = 128;
         LongArrayList ids = new LongArrayList();
 
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             for ( int i = 0; i < size; i++ )
@@ -337,7 +337,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             for ( int i = 0; i < 1000; i++ )
             {
                 MutableLongSet allNodes = LongSets.mutable.withAll( existingNodes );
-                try ( Transaction tx = beginTransaction() )
+                try ( KernelTransaction tx = beginTransaction() )
                 {
                     int nodeInTx = random.nextInt( 100 );
                     for ( int j = 0; j < nodeInTx; j++ )
@@ -377,7 +377,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             throws TransactionFailureException, InvalidTransactionTypeKernelException
     {
         MutableLongSet nodes = LongSets.mutable.empty();
-        try ( Transaction tx = beginTransaction() )
+        try ( KernelTransaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
             for ( int i = 0; i < size; i++ )

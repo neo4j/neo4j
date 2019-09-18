@@ -58,7 +58,6 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -109,13 +108,13 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public void commit()
     {
-        safeTransactionOperation( Transaction::commit );
+        safeTransactionOperation( KernelTransaction::commit );
     }
 
     @Override
     public void rollback()
     {
-        safeTransactionOperation( Transaction::rollback );
+        safeTransactionOperation( KernelTransaction::rollback );
     }
 
     @Override
@@ -443,7 +442,7 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public void close()
     {
-        safeTransactionOperation( Transaction::close );
+        safeTransactionOperation( KernelTransaction::close );
     }
 
     private void safeTransactionOperation( TransactionalOperation operation )

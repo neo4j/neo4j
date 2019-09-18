@@ -39,7 +39,6 @@ import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
-import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
@@ -47,20 +46,19 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.database.{DatabaseId, TestDatabaseIdRepository}
 import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.factory.{GraphDatabaseFacade, KernelTransactionFactory}
+import org.neo4j.kernel.impl.factory.KernelTransactionFactory
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
-import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.lock.LockTracer
 import org.neo4j.resources.CpuClock
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
-import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import scala.collection.JavaConverters._

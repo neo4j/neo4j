@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
@@ -67,7 +68,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.graphdb.ResultConsumer.EMPTY_CONSUMER;
-import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
@@ -129,29 +129,29 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
     protected InternalTransaction beginTransaction()
     {
-        return beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
+        return beginTransaction( Type.explicit, AUTH_DISABLED );
     }
 
     @Override
     public Transaction beginTx( long timeout, TimeUnit unit )
     {
-        return beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout, unit );
+        return beginTransaction( Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout, unit );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
+    public InternalTransaction beginTransaction( Type type, LoginContext loginContext )
     {
         return beginTransaction( type, loginContext, EMBEDDED_CONNECTION );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo )
+    public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo )
     {
         return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout,
+    public InternalTransaction beginTransaction( Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout,
             TimeUnit unit )
     {
         return beginTransactionInternal( type, loginContext, clientInfo, unit.toMillis( timeout ) );
@@ -173,7 +173,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer, Duration timeout )
             throws QueryExecutionException
     {
-        try ( var internalTransaction = beginTransaction( implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout.toMillis(), MILLISECONDS ) )
+        try ( var internalTransaction = beginTransaction( Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout.toMillis(), MILLISECONDS ) )
         {
             try ( var result = execute( internalTransaction, query, ValueUtils.asParameterMapValue( parameters ) ) )
             {
@@ -202,7 +202,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
     }
 
-    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
+    private InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
             long timeoutMillis )
     {
         if ( statementContext.hasTransaction() )
@@ -219,7 +219,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return database.getDatabaseId();
     }
 
-    KernelTransaction beginKernelTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
+    KernelTransaction beginKernelTransaction( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
             long timeout )
     {
         try

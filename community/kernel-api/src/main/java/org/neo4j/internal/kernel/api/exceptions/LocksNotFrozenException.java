@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**

@@ -29,7 +29,6 @@ import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -95,7 +94,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     {
         InternalTransaction topLevelInternalTransaction = beginInternalTransaction( type, loginContext, clientInfo, txTimeout, txMetadata );
         KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( false, databaseAPI.databaseId() );
-        if ( Transaction.Type.implicit == type )
+        if ( KernelTransaction.Type.implicit == type )
         {
             return new PeriodicBoltKernelTransaction( queryExecutionEngine, txBridge, transactionalContextFactory, kernelTransaction,
                     topLevelInternalTransaction );

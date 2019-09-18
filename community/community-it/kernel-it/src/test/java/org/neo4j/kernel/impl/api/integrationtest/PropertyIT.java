@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Values;
@@ -44,7 +44,7 @@ class PropertyIT extends KernelIntegrationTest
         // given
         dbWithNoCache();
 
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
 
@@ -70,7 +70,7 @@ class PropertyIT extends KernelIntegrationTest
     void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
     {
         // given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "RELATED" );
         long startNodeId = transaction.dataWrite().nodeCreate();
@@ -90,7 +90,7 @@ class PropertyIT extends KernelIntegrationTest
     void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
     {
         // given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         int prop = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "RELATED" );
 

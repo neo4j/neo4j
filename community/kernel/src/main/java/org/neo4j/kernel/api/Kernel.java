@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -34,11 +33,11 @@ import org.neo4j.kernel.api.procedure.CallableUserFunction;
  * and write operations are supported as well as creating transactions.
  *
  * Changes to the graph (i.e. write operations) are performed via a
- * {@link #beginTransaction(Transaction.Type, LoginContext)}  transaction context} where changes done
+ * {@link #beginTransaction(KernelTransaction.Type, LoginContext)}  transaction context} where changes done
  * inside the transaction are visible in read operations for {@link Statement statements}
  * executed within that transaction context.
  */
-public interface InwardKernel extends Kernel
+public interface Kernel
 {
     /**
      * Creates and returns a new {@link KernelTransaction} capable of modifying the
@@ -50,6 +49,27 @@ public interface InwardKernel extends Kernel
      * @param timeout transaction timeout in milliseconds
      */
     KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout )
+            throws TransactionFailureException;
+
+    /**
+     * Begin new transaction.
+     *
+     * @param type type of transaction (implicit/explicit)
+     * @param loginContext the {@link LoginContext} of the user which is beginning this transaction
+     * @param clientInfo {@link ClientConnectionInfo} of the user which is beginning this transaction
+     * @return the transaction
+     */
+    KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo )
+            throws TransactionFailureException;
+
+    /**
+     * Begin new transaction.
+     *
+     * @param type type of transaction (implicit/explicit)
+     * @param loginContext the {@link LoginContext} of the user which is beginning this transaction
+     * @return the transaction
+     */
+    KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
             throws TransactionFailureException;
 
     /**
@@ -75,4 +95,9 @@ public interface InwardKernel extends Kernel
      * @param function function to register
      */
     void registerUserAggregationFunction( CallableUserAggregationFunction function ) throws ProcedureException;
+
+    /**
+     * Cursor factory which produces cursors that are not bound to any particular transaction.
+     */
+    CursorFactory cursors();
 }

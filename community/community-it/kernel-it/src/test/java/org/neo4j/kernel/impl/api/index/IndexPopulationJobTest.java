@@ -44,15 +44,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -100,8 +100,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
@@ -136,7 +136,7 @@ class IndexPopulationJobTest
         indexStoreView = indexStoreView();
         indexStatisticsStore = db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
 
-        try ( Transaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             labelId = tx.tokenWrite().labelGetOrCreateForName( FIRST.name() );
             tx.tokenWrite().labelGetOrCreateForName( SECOND.name() );
@@ -788,7 +788,7 @@ class IndexPopulationJobTest
 
     private IndexPrototype indexPrototype( Label label, String propertyKey, boolean constraint ) throws KernelException
     {
-        try ( Transaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
@@ -833,7 +833,7 @@ class IndexPopulationJobTest
 
     private int getPropertyKeyForName( String name ) throws TransactionFailureException
     {
-        try ( Transaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( KernelTransaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             int result = tx.tokenRead().propertyKey( name );
             tx.commit();

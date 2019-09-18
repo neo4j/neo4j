@@ -34,6 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.kernel.api.KernelTransaction;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -129,7 +130,7 @@ class RelationshipTestSupport
     }
 
     static Map<String,Integer> count(
-            org.neo4j.internal.kernel.api.Transaction transaction,
+            KernelTransaction transaction,
             RelationshipTraversalCursor relationship ) throws KernelException
     {
         HashMap<String,Integer> counts = new HashMap<>();
@@ -142,7 +143,7 @@ class RelationshipTestSupport
     }
 
     static void assertCount(
-            org.neo4j.internal.kernel.api.Transaction transaction,
+            KernelTransaction transaction,
             RelationshipTraversalCursor relationship,
             Map<String,Integer> expectedCounts,
             int expectedType,
@@ -225,7 +226,7 @@ class RelationshipTestSupport
         return computeKey( r.type.name(), r.direction );
     }
 
-    private static String computeKey( org.neo4j.internal.kernel.api.Transaction transaction, RelationshipTraversalCursor r ) throws KernelException
+    private static String computeKey( KernelTransaction transaction, RelationshipTraversalCursor r ) throws KernelException
     {
         Direction d;
         if ( r.sourceNodeReference() == r.targetNodeReference() )

@@ -27,13 +27,13 @@ import java.util.Set;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.helpers.StubCursorFactory;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubRead;
 import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.locking.Locks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +51,7 @@ class TwoPhaseNodeForRelationshipLockingTest
 {
     private static final long nodeId = 42L;
     private static final int TYPE = 77;
-    private final Transaction transaction = mock( Transaction.class );
+    private final KernelTransaction transaction = mock( KernelTransaction.class );
     private final Locks.Client locks = mock( Locks.Client.class );
 
     @Test
@@ -121,7 +121,7 @@ class TwoPhaseNodeForRelationshipLockingTest
         verifyNoMoreInteractions( locks );
     }
 
-    static void returnRelationships( Transaction transaction,
+    static void returnRelationships( KernelTransaction transaction,
             final boolean skipFirst, final TestRelationshipChain relIds ) throws EntityNotFoundException
     {
 

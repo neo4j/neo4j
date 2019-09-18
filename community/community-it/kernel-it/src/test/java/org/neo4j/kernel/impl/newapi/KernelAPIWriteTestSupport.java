@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.kernel.api.Kernel;
 
 /**
  * This interface defines the functionality that's needed to run Kernel API Write tests (tests that extends

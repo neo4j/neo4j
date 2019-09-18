@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.values.AnyValue;
@@ -69,7 +69,7 @@ class SchemaProcedureIT extends KernelIntegrationTest
     void testLabelIndex() throws Throwable
     {
         // Given there is label with index and a constraint
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         transaction.dataWrite().nodeAddLabel( nodeId, labelId );
@@ -109,7 +109,7 @@ class SchemaProcedureIT extends KernelIntegrationTest
     void testRelationShip() throws Throwable
     {
         // Given there ar
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeIdPerson = transaction.dataWrite().nodeCreate();
         int labelIdPerson = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         transaction.dataWrite().nodeAddLabel( nodeIdPerson, labelIdPerson );
