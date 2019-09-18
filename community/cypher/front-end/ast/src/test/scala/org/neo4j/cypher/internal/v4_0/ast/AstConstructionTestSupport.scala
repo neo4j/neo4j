@@ -288,6 +288,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def return_(ob: OrderBy, items: ReturnItem*): Return =
     Return(false, ReturnItems(false, items)(pos), Some(ob), None, None)(pos)
 
+  def returnAll: Return =
+    Return(ReturnItems(true, Seq.empty)(pos))(pos)
+
   def orderBy(items: SortItem*): OrderBy =
     OrderBy(items)(pos)
 
@@ -300,10 +303,14 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def unwind(e: Expression, v: Variable): Unwind =
     Unwind(e, v)(pos)
 
-  def call(ns: Seq[String], name: String): UnresolvedCall =
+  def call(ns: Seq[String], name: String,
+           args: Option[Seq[Expression]] = Some(Vector()),
+           yields: Option[Seq[Variable]] = None
+          ): UnresolvedCall =
     UnresolvedCall(Namespace(ns.toList)(pos),
       ProcedureName(name)(pos),
-      Some(Vector()), None
+      Some(Vector()),
+      yields.map(vs => ProcedureResult(vs.toIndexedSeq.map(ProcedureResultItem(_)(pos)))(pos))
     )(pos)
 
   def from(e: Expression): FromGraph =
