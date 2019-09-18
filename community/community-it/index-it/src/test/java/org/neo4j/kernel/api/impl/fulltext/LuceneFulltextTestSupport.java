@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -51,7 +50,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -142,12 +142,10 @@ public class LuceneFulltextTestSupport
         return relationship.getId();
     }
 
-    public static KernelTransaction kernelTransaction( Transaction tx ) throws Exception
+    static KernelTransaction kernelTransaction( Transaction tx )
     {
-        assertThat( tx, instanceOf( TopLevelTransaction.class ) );
-        Field transactionField = TopLevelTransaction.class.getDeclaredField( "transaction" );
-        transactionField.setAccessible( true );
-        return (KernelTransaction) transactionField.get( tx );
+        assertThat( tx, instanceOf( TransactionImpl.class ) );
+        return ((InternalTransaction)tx).kernelTransaction();
     }
 
     void assertQueryFindsNothing( KernelTransaction ktx, boolean nodes, String indexName, String query ) throws Exception

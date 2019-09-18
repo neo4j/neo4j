@@ -91,13 +91,16 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 import static org.neo4j.values.storable.Values.utf8Value;
 
-public class TopLevelTransaction implements InternalTransaction
+/**
+ * Default implementation of {@link org.neo4j.graphdb.Transaction}
+ */
+public class TransactionImpl implements InternalTransaction
 {
     private static final EntityLocker locker = new EntityLocker();
     private final GraphDatabaseFacade facade;
     private KernelTransaction transaction;
 
-    public TopLevelTransaction( GraphDatabaseFacade facade, KernelTransaction transaction )
+    public TransactionImpl( GraphDatabaseFacade facade, KernelTransaction transaction )
     {
         this.facade = facade;
         setTransaction( transaction );
