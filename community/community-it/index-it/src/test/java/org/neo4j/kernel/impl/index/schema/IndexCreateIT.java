@@ -21,10 +21,17 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
@@ -59,6 +66,75 @@ public class IndexCreateIT extends KernelIntegrationTest
     void shouldFailCreateUniquePropertyConstraintWithNonExistentProviderName() throws KernelException
     {
         shouldFailWithNonExistentProviderName( UNIQUE_CONSTRAINT_CREATOR );
+    }
+
+    @Test
+    void shouldFailCreateIndexWithDuplicateLabels() throws KernelException
+    {
+        shouldFailWithDuplicateLabels( INDEX_CREATOR );
+    }
+
+    @Test
+    void shouldFailUniquePropertyConstraintWithDuplicateLabels() throws KernelException
+    {
+        shouldFailWithDuplicateLabels( UNIQUE_CONSTRAINT_CREATOR );
+    }
+
+    protected void shouldFailWithDuplicateLabels( IndexCreator creator ) throws KernelException
+    {
+        // given
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+
+        // when
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{0, 0}, new int[]{1} );
+        // then
+        assertThrows( RepeatedLabelInSchemaException.class, () -> schemaWrite.indexCreate( descriptor ) );
+    }
+
+    @Test
+    void shouldFailCreateIndexWithDuplicateRelationshipTypes() throws KernelException
+    {
+        shouldFailWithDuplicateRelationshipTypes( INDEX_CREATOR );
+    }
+
+    @Test
+    void shouldFailCreateUniquePropertyConstraintWithDuplicateRelationshipTypes() throws KernelException
+    {
+        shouldFailWithDuplicateRelationshipTypes( INDEX_CREATOR );
+    }
+
+    protected void shouldFailWithDuplicateRelationshipTypes( IndexCreator creator ) throws KernelException
+    {
+        // given
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+
+        // when
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{0, 0}, new int[]{1} );
+        // then
+        assertThrows( RepeatedRelationshipTypeInSchemaException.class, () -> schemaWrite.indexCreate( descriptor ) );
+    }
+
+    @Test
+    void shouldFailCreateIndexWithDuplicateProperties() throws KernelException
+    {
+        shouldFailWithDuplicateProperties( INDEX_CREATOR );
+    }
+
+    @Test
+    void shouldFailCreateUniquePropertyConstraintWithDuplicateProperties() throws KernelException
+    {
+        shouldFailWithDuplicateProperties( UNIQUE_CONSTRAINT_CREATOR );
+    }
+
+    protected void shouldFailWithDuplicateProperties( IndexCreator creator ) throws KernelException
+    {
+        // given
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+
+        // when
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{0}, new int[]{1, 1} );
+        // then
+        assertThrows( RepeatedPropertyInSchemaException.class, () -> schemaWrite.indexCreate( descriptor ) );
     }
 
     protected void shouldFailWithNonExistentProviderName( IndexCreator creator ) throws KernelException

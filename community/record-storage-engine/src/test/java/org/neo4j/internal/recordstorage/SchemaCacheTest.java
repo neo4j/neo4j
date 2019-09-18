@@ -31,6 +31,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigCompleter;
@@ -375,6 +376,32 @@ class SchemaCacheTest
     }
 
     @Test
+    void removeSchemaWithRepeatedLabel()
+    {
+        final SchemaCache cache = newSchemaCache();
+
+        final int id = 1;
+        final int[] repeatedLabels = {0, 1, 0};
+        final FulltextSchemaDescriptor schema = fulltext( NODE, IndexConfig.empty(), repeatedLabels, new int[]{1} );
+        IndexDescriptor index = newIndexRule( schema, id );
+        cache.addSchemaRule( index );
+        cache.removeSchemaRule( id );
+    }
+
+    @Test
+    void removeSchemaWithRepeatedRelType()
+    {
+        final SchemaCache cache = newSchemaCache();
+
+        final int id = 1;
+        final int[] repeatedRelTypes = {0, 1, 0};
+        final FulltextSchemaDescriptor schema = fulltext( RELATIONSHIP, IndexConfig.empty(), repeatedRelTypes, new int[]{1} );
+        IndexDescriptor index = newIndexRule( schema, id );
+        cache.addSchemaRule( index );
+        cache.removeSchemaRule( id );
+    }
+
+    @Test
     void shouldGetRelatedIndexForLabel()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
@@ -652,7 +679,12 @@ class SchemaCacheTest
 
     private static IndexDescriptor newIndexRule( long id, int label, int... propertyKeys )
     {
-        return IndexPrototype.forSchema( forLabel( label, propertyKeys ) ).withName( "index_id" ).materialise( id );
+        return newIndexRule( forLabel( label, propertyKeys ), id );
+    }
+
+    private static IndexDescriptor newIndexRule( SchemaDescriptor schema, long id )
+    {
+        return IndexPrototype.forSchema( schema ).withName( "index_id" ).materialise( id );
     }
 
     private static ConstraintDescriptor nodePropertyExistenceConstraint( long ruleId, int labelId, int propertyId )

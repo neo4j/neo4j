@@ -67,7 +67,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Level;
@@ -89,6 +93,7 @@ import static java.util.Arrays.asList;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
@@ -99,6 +104,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
@@ -2600,6 +2606,51 @@ public class FulltextProceduresTest
             assertEquals( 2, Iterables.count( db.schema().getIndexes() ) );
             tx.commit();
         }
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateIndexWithDuplicateProperty()
+    {
+        db = createDatabase();
+
+        final Exception e = assertThrows( Exception.class, () -> {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id", "id" ) ) );
+            }
+        } );
+        final Throwable cause = Exceptions.rootCause( e );
+        assertThat( cause, instanceOf( RepeatedPropertyInSchemaException.class ) );
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateIndexWithDuplicateLabel()
+    {
+        db = createDatabase();
+
+        final Exception e = assertThrows( Exception.class, () -> {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.execute( format( NODE_CREATE, "myindex", array( "Label", "Label" ), array( "id" ) ) );
+            }
+        } );
+        final Throwable cause = Exceptions.rootCause( e );
+        assertThat( cause, instanceOf( RepeatedLabelInSchemaException.class ) );
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateIndexWithDuplicateRelType()
+    {
+        db = createDatabase();
+
+        final Exception e = assertThrows( Exception.class, () -> {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.execute( format( RELATIONSHIP_CREATE, "myindex", array( "RelType", "RelType" ), array( "id" ) ) );
+            }
+        } );
+        final Throwable cause = Exceptions.rootCause( e );
+        assertThat( cause, instanceOf( RepeatedRelationshipTypeInSchemaException.class ) );
     }
 
     private void assertNoIndexSeeks( Result result )
