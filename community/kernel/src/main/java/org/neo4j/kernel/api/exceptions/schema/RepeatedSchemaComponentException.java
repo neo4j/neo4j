@@ -25,27 +25,41 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class RepeatedPropertyInCompositeSchemaException extends SchemaKernelException
+public abstract class RepeatedSchemaComponentException extends SchemaKernelException
 {
     private final SchemaDescriptor schema;
     private final OperationContext context;
+    private final SchemaComponent component;
 
-    public RepeatedPropertyInCompositeSchemaException( SchemaDescriptor schema, OperationContext context )
+    RepeatedSchemaComponentException( Status status, SchemaDescriptor schema, OperationContext context, SchemaComponent component )
     {
-        super( Status.Schema.RepeatedPropertyInCompositeSchema, format(
-                schema, context, SchemaUtil.idTokenNameLookup ) );
+        super( status, format( schema, context, SchemaUtil.idTokenNameLookup, component ) );
         this.schema = schema;
         this.context = context;
+        this.component = component;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( schema, context, tokenNameLookup );
+        return format( schema, context, tokenNameLookup, component );
     }
 
-    private static String format(
-            SchemaDescriptor schema, OperationContext context, TokenNameLookup tokenNameLookup )
+    enum SchemaComponent
+    {
+        PROPERTY( "property" ),
+        LABEL( "label" ),
+        RELATIONSHIP_TYPE( "relationship type" );
+
+        private final String name;
+
+        SchemaComponent( String name )
+        {
+            this.name = name;
+        }
+    }
+
+    private static String format( SchemaDescriptor schema, OperationContext context, TokenNameLookup tokenNameLookup, SchemaComponent component )
     {
         String schemaName;
         switch ( context )
@@ -62,8 +76,8 @@ public class RepeatedPropertyInCompositeSchemaException extends SchemaKernelExce
             schemaName = "Schema object";
             break;
         }
-        return String.format( "%s on %s includes a property more than once.",
-                schemaName, schema.userDescription( tokenNameLookup ) );
+        return String.format( "%s on %s includes a %s more than once.",
+                schemaName, schema.userDescription( tokenNameLookup ), component.name );
 
     }
 }

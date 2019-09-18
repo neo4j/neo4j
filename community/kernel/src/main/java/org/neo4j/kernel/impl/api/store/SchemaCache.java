@@ -369,10 +369,17 @@ public class SchemaCache
                 for ( int entityTokenId : schema.getEntityTokenIds() )
                 {
                     Set<CapableIndexDescriptor> forLabel = indexDescriptorsByLabel.get( entityTokenId );
-                    forLabel.remove( index );
-                    if ( forLabel.isEmpty() )
+                    /* Previously, a bug made it possible to create fulltext indexes with repeated labels or relationship types
+                       which would cause us to try and remove the same entity token twice which could cause a NPE if the 'forLabel'
+                       set would be empty after the first removal such that the set would be completely removed from 'indexDescriptorsByLabel'.
+                       Fixed as of 3.5.10 */
+                    if ( forLabel != null )
                     {
-                        indexDescriptorsByLabel.remove( entityTokenId );
+                        forLabel.remove( index );
+                        if ( forLabel.isEmpty() )
+                        {
+                            indexDescriptorsByLabel.remove( entityTokenId );
+                        }
                     }
                 }
 

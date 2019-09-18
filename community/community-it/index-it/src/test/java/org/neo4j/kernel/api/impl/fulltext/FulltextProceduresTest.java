@@ -65,7 +65,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.Group;
@@ -85,6 +89,7 @@ import static java.util.Arrays.asList;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
@@ -2420,6 +2425,57 @@ public class FulltextProceduresTest
         {
             assertEquals( 2, Iterables.count( db.schema().getIndexes() ) );
             tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateIndexWithDuplicateProperty()
+    {
+        db = createDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id", "id" ) ) );
+            fail( "Expected to fail when trying to create index with duplicate properties" );
+        }
+        catch ( Exception e )
+        {
+            final Throwable cause = Exceptions.rootCause( e );
+            assertThat( cause, instanceOf( RepeatedPropertyInSchemaException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateIndexWithDuplicateLabel()
+    {
+        db = createDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( NODE_CREATE, "myindex", array( "Label", "Label" ), array( "id" ) ) );
+            fail( "Expected to fail when trying to create index with duplicate labels" );
+        }
+        catch ( Exception e )
+        {
+            final Throwable cause = Exceptions.rootCause( e );
+            assertThat( cause, instanceOf( RepeatedLabelInSchemaException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateIndexWithDuplicateRelType()
+    {
+        db = createDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( RELATIONSHIP_CREATE, "myindex", array( "RelType", "RelType" ), array( "id" ) ) );
+            fail( "Expected to fail when trying to create index with duplicate relationship types" );
+        }
+        catch ( Exception e )
+        {
+            final Throwable cause = Exceptions.rootCause( e );
+            assertThat( cause, instanceOf( RepeatedRelationshipTypeInSchemaException.class ) );
         }
     }
 

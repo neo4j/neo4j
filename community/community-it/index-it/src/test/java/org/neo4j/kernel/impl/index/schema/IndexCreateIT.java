@@ -28,8 +28,14 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
+import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.storageengine.api.EntityType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -64,6 +70,82 @@ public class IndexCreateIT extends KernelIntegrationTest
     public void shouldFailCreateUniquePropertyConstraintWithNonExistentProviderName() throws KernelException
     {
         shouldFailWithNonExistentProviderName( UNIQUE_CONSTRAINT_CREATOR );
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateIndexWithDuplicateLabel() throws KernelException
+    {
+        // given
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+
+        // when
+        try
+        {
+            final MultiTokenSchemaDescriptor descriptor = SchemaDescriptorFactory.multiToken( new int[]{0, 0}, EntityType.NODE, 1 );
+            schemaWrite.indexCreate( descriptor );
+            fail( "Should have failed" );
+        }
+        catch ( RepeatedLabelInSchemaException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateIndexWithDuplicateRelationshipTypes() throws KernelException
+    {
+        // given
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+
+        // when
+        try
+        {
+            final MultiTokenSchemaDescriptor descriptor = SchemaDescriptorFactory.multiToken( new int[]{0, 0}, EntityType.RELATIONSHIP, 1 );
+            schemaWrite.indexCreate( descriptor );
+            fail( "Should have failed" );
+        }
+        catch ( RepeatedRelationshipTypeInSchemaException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateIndexWithDuplicateProperties() throws KernelException
+    {
+        // given
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+
+        // when
+        try
+        {
+            LabelSchemaDescriptor descriptor = forLabel( 0, 1, 1 );
+            schemaWrite.indexCreate( descriptor );
+            fail( "Should have failed" );
+        }
+        catch ( RepeatedPropertyInSchemaException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void shouldNotBePossibleToCreateConstraintWithDuplicateProperties() throws KernelException
+    {
+        // given
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+
+        // when
+        try
+        {
+            LabelSchemaDescriptor descriptor = forLabel( 0, 1, 1 );
+            schemaWrite.uniquePropertyConstraintCreate( descriptor );
+            fail( "Should have failed" );
+        }
+        catch ( RepeatedPropertyInSchemaException e )
+        {
+            // then good
+        }
     }
 
     void shouldFailWithNonExistentProviderName( IndexCreator creator ) throws KernelException

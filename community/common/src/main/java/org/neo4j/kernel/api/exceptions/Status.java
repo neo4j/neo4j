@@ -302,7 +302,11 @@ public interface Status
     {
         // client errors
         RepeatedPropertyInCompositeSchema( ClientError,
-                "Unable to create composite index or constraint because a property was specified in several positions." ),
+                "Unable to create index or constraint because schema had a repeated property." ),
+        RepeatedLabelInSchema( ClientError,
+                "Unable to create index or constraint because schema had a repeated label." ),
+        RepeatedRelationshipTypeInSchema( ClientError,
+                "Unable to create index or constraint because schema had a repeated relationship type." ),
         ConstraintAlreadyExists( ClientError,
                 "Unable to perform operation because it would clash with a pre-existing constraint." ),
         ConstraintNotFound( ClientError,
