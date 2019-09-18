@@ -157,6 +157,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   test("should join on empty rhs") {
     // given
     val nodes = nodeGraph(sizeHint)
+    nodeGraph(19, "RHS")
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
@@ -164,7 +165,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y", "z")
       .cartesianProduct()
       .|.expand("(y)--(z)")
-      .|.allNodeScan("y")
+      .|.nodeByLabelScan("y", "RHS")
       .input(nodes = Seq("x"))
       .build()
 
@@ -195,6 +196,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should join after expand on rhs") {
+    val sizeHint = 24
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
@@ -343,8 +345,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(inOrder(expectedResultRows))
   }
 
-
-  test("should join with limit after join") {
+  test("should join with limit on top of join") {
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
@@ -366,4 +367,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x", "y", "z").withRows(rowCount(limitCount))
   }
+
+  // TODO test join on rhs of cartesian
+  // TODO test limit on rhs of cartesian
 }
