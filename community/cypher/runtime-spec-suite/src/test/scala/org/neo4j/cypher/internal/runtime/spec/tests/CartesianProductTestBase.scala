@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
@@ -29,85 +30,86 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
 
-//  test("handle cached properties and cartesian product on LHS of apply") {
-//    // given
-//    val nodes = nodePropertyGraph(sizeHint, {
-//      case i: Int => Map("prop" -> i)
-//    }, "Label")
-//    index("Label", "prop")
-//
-//    // when
-//    val logicalQuery = new LogicalQueryBuilder(this)
-//      .produceResults("n")
-//      .apply()
-//      .|.cartesianProduct()
-//      .|.|.argument("n")
-//      .|.argument("n")
-//      .nodeIndexOperator("n:Label(prop)", getValue = GetValue)
-//      .build()
-//
-//    // then
-//    val runtimeResult = execute(logicalQuery, runtime)
-//    runtimeResult should beColumns("n").withRows(singleColumn(nodes))
-//  }
-//
-//  test("should handle multiple columns ") {
-//    // given
-//    val size = 10 //sizehint is a bit too big here
-//    val nodes = nodePropertyGraph(size, {
-//      case _ => Map("prop" -> "foo")
-//    })
-//    val relTuples = (for (i <- 0 until size) yield {
-//      Seq(
-//        (i, (i + 1) % size, "R")
-//        )
-//    }).reduce(_ ++ _)
-//    connect(nodes, relTuples)
-//
-//    // when
-//    val logicalQuery = new LogicalQueryBuilder(this)
-//      .produceResults("c")
-//      .cartesianProduct()
-//      .|.expand("(e)-[r4]->(f)")
-//      .|.expand("(d)-[r3]->(e)")
-//      .|.allNodeScan("d")
-//      .expand("(b)-[r2]->(c)")
-//      .expand("(a)-[r1]->(b)")
-//      .allNodeScan("a")
-//      .build()
-//
-//    val runtimeResult = execute(logicalQuery, runtime)
-//
-//    // then
-//    val expected = nodes.flatMap(c => (1 to size).map(_ => Array(c)))
-//    runtimeResult should beColumns("c").withRows(expected)
-//  }
-//
-//  test("should handle different cached-properties on lhs and rhs of cartesian product") {
-//    // given
-//    val nodes = nodePropertyGraph(sizeHint, {
-//      case i => Map("prop" -> i)
-//    })
-//
-//    // when
-//    val logicalQuery = new LogicalQueryBuilder(this)
-//      .produceResults("aProp", "bProp")
-//      .projection("cache[a.prop] AS aProp", "cache[b.prop] AS bProp")
-//      .cartesianProduct()
-//      .|.filter("cache[b.prop] < 10")
-//      .|.allNodeScan("b")
-//      .filter("cache[a.prop] < 20")
-//      .allNodeScan("a")
-//      .build()
-//    val runtimeResult = execute(logicalQuery, runtime)
-//
-//    // then
-//    val expected = nodes.map(n => Array(n, n)). take(10)
-//    runtimeResult should beColumns("a", "b").withRows(expected)
-//  }
+  test("handle cached properties and cartesian product on LHS of apply") {
+    // given
+    val nodes = nodePropertyGraph(sizeHint, {
+      case i: Int => Map("prop" -> i)
+    }, "Label")
+    index("Label", "prop")
 
-  test("the test") {
-    nodePropertyGraph(sizeHint, {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.argument("n")
+      .|.argument("n")
+      .nodeIndexOperator("n:Label(prop)", getValue = GetValue)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes))
+  }
+
+  test("should handle multiple columns ") {
+    // given
+    val size = 10 //sizehint is a bit too big here
+    val nodes = nodePropertyGraph(size, {
+      case _ => Map("prop" -> "foo")
+    })
+    val relTuples = (for (i <- 0 until size) yield {
+      Seq(
+        (i, (i + 1) % size, "R")
+        )
+    }).reduce(_ ++ _)
+    connect(nodes, relTuples)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .cartesianProduct()
+      .|.expand("(e)-[r4]->(f)")
+      .|.expand("(d)-[r3]->(e)")
+      .|.allNodeScan("d")
+      .expand("(b)-[r2]->(c)")
+      .expand("(a)-[r1]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.flatMap(c => (1 to size).map(_ => Array(c)))
+    runtimeResult should beColumns("c").withRows(expected)
+  }
+
+  test("should handle different cached-properties on lhs and rhs of cartesian product") {
+    // given
+    val nodes = nodePropertyGraph(sizeHint, {
+      case i => Map("prop" -> i)
+    })
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("aProp", "bProp")
+      .projection("cache[a.prop] AS aProp", "cache[b.prop] AS bProp")
+      .cartesianProduct()
+      .|.filter("cache[b.prop] < 5")
+      .|.allNodeScan("b")
+      .filter("cache[a.prop] < 10")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {i <- 0 to 9
+                        j <- 0 to 4} yield Array(i, j)
+    runtimeResult should beColumns("aProp", "bProp").withRows(expected)
+  }
+
+  test("should handle cached properties from both lhs and rhs") {
+    val nodes = nodePropertyGraph(sizeHint, {
       case i => Map("prop" -> i)
     })
 
@@ -125,8 +127,8 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .build()
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = (0 to 9).map(Array(_))
-    println(consume(runtimeResult))
+    val expected = nodes.map(n => Array(n)).take(10)
+    runtimeResult should beColumns("ab").withRows(expected)
   }
 
 
