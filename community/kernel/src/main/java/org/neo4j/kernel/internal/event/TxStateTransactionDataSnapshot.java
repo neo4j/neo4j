@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -64,7 +64,6 @@ import static java.lang.Math.toIntExact;
 public class TxStateTransactionDataSnapshot implements TransactionData, AutoCloseable
 {
     private final ReadableTransactionState state;
-    private final TransactionalProxyFactory proxySpi;
     private final StorageReader store;
     private final KernelTransaction transaction;
 
@@ -77,14 +76,15 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
     private final MutableLongObjectMap<RelationshipProxy> relationshipsReadFromStore = new LongObjectHashMap<>( 16 );
     private final StorageRelationshipScanCursor relationship;
+    private final InternalTransaction internalTransaction;
 
-    TxStateTransactionDataSnapshot( ReadableTransactionState state, TransactionalProxyFactory proxySpi, StorageReader storageReader,
+    TxStateTransactionDataSnapshot( ReadableTransactionState state, StorageReader storageReader,
             KernelTransaction transaction )
     {
         this.state = state;
-        this.proxySpi = proxySpi;
         this.store = storageReader;
         this.transaction = transaction;
+        this.internalTransaction = ((KernelTransactionImplementation) transaction).internalTransaction();
         this.relationship = storageReader.allocateRelationshipScanCursor();
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
@@ -333,7 +333,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private Relationship relationship( long relId )
     {
-        RelationshipProxy relationship = proxySpi.newRelationshipProxy( relId );
+        RelationshipProxy relationship = internalTransaction.newRelationshipProxy( relId );
         if ( !state.relationshipVisit( relId, relationship ) )
         {   // This relationship has been created or changed in this transaction
             RelationshipProxy cached = relationshipsReadFromStore.get( relId );
@@ -356,7 +356,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private Iterable<Node> map2Nodes( LongIterable ids )
     {
-        return ids.asLazy().collect( id -> new NodeProxy( proxySpi, ((KernelTransactionImplementation)transaction).internalTransaction(), id ) );
+        return ids.asLazy().collect( id -> new NodeProxy( internalTransaction, id ) );
     }
 
     private Iterable<Relationship> map2Rels( LongIterable ids )
@@ -428,7 +428,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         @Override
         public Node entity()
         {
-            return new NodeProxy( proxySpi, ((KernelTransactionImplementation)transaction).internalTransaction(), nodeId );
+            return new NodeProxy( internalTransaction, nodeId );
         }
 
         @Override
@@ -540,7 +540,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         @Override
         public Node node()
         {
-            return new NodeProxy( proxySpi, ((KernelTransactionImplementation)transaction).internalTransaction(), nodeId );
+            return new NodeProxy( internalTransaction, nodeId );
         }
 
         @Override

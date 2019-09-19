@@ -25,7 +25,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -58,9 +57,7 @@ class ServerExecutionEngineTest
                                           .resolveDependency( QueryExecutionEngine.class );
         ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
         KernelTransactionFactory transactionFactory = resolver.resolveDependency( KernelTransactionFactory.class );
-        TransactionalProxyFactory transactionalProxyFactory = resolver.resolveDependency( TransactionalProxyFactory.class );
-        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( transactionalProxyFactory,
-                                                                                              () -> resolver
+        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( () -> resolver
                                                                                                       .resolveDependency( GraphDatabaseQueryService.class ),
                                                                                               transactionFactory,
                                                                                               bridge );

@@ -383,9 +383,8 @@ public class NodeProxyTest extends EntityProxyTest
     void shouldThrowCorrectExceptionOnLabelTokensExceeded() throws KernelException
     {
         // given
-        TransactionalProxyFactory spi = mockedProxySPI();
         var transaction = mockedTransactionWithDepletedTokens();
-        NodeProxy nodeProxy = new NodeProxy( spi, transaction, 5 );
+        NodeProxy nodeProxy = new NodeProxy( transaction, 5 );
 
         // when
         assertThrows( ConstraintViolationException.class, () -> nodeProxy.addLabel( Label.label( "Label" ) ) );
@@ -395,8 +394,7 @@ public class NodeProxyTest extends EntityProxyTest
     void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
     {
         // given
-        TransactionalProxyFactory spi = mockedProxySPI();
-        NodeProxy nodeProxy = new NodeProxy( spi, mockedTransactionWithDepletedTokens(), 5 );
+        NodeProxy nodeProxy = new NodeProxy( mockedTransactionWithDepletedTokens(), 5 );
 
         // when
         assertThrows( ConstraintViolationException.class, () -> nodeProxy.setProperty( "key", "value" ) );
@@ -406,8 +404,7 @@ public class NodeProxyTest extends EntityProxyTest
     void shouldThrowCorrectExceptionOnRelationshipTypeTokensExceeded() throws KernelException
     {
         // given
-        TransactionalProxyFactory spi = mockedProxySPI();
-        NodeProxy nodeProxy = new NodeProxy( spi, mockedTransactionWithDepletedTokens(), 5 );
+        NodeProxy nodeProxy = new NodeProxy( mockedTransactionWithDepletedTokens(), 5 );
 
         // when
         assertThrows( ConstraintViolationException.class, () -> nodeProxy.setProperty( "key", "value" ) );

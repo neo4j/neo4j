@@ -113,19 +113,4 @@ public abstract class EntityProxyTest
         when( internalTransaction.kernelTransaction() ).thenReturn( ktx );
         return internalTransaction;
     }
-
-    TransactionalProxyFactory mockedProxySPI() throws KernelException
-    {
-        TransactionalProxyFactory spi = mock( TransactionalProxyFactory.class );
-        KernelTransaction ktx = mock( KernelTransaction.class );
-        TokenWrite tokenWrite = mock( TokenWrite.class );
-        when( ktx.tokenWrite() ).thenReturn( tokenWrite );
-        when( tokenWrite.labelGetOrCreateForName( any() ) ).thenThrow(
-                new TokenCapacityExceededKernelException( new Exception( "Just some cause" ), TokenHolder.TYPE_LABEL ) );
-        when( tokenWrite.propertyKeyGetOrCreateForName( any() ) ).thenThrow(
-                new TokenCapacityExceededKernelException( new Exception( "Just some cause" ), TokenHolder.TYPE_PROPERTY_KEY ) );
-        when( tokenWrite.relationshipTypeGetOrCreateForName( any() ) ).thenThrow(
-                new TokenCapacityExceededKernelException( new Exception( "Just some cause" ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        return spi;
-    }
 }

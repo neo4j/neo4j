@@ -61,7 +61,7 @@ public class DatabaseTransactionEventListeners
             return null;
         }
 
-        TransactionData txData = state == null ? EMPTY_DATA : new TxStateTransactionDataSnapshot( state, databaseFacade, storageReader, transaction );
+        TransactionData txData = state == null ? EMPTY_DATA : new TxStateTransactionDataSnapshot( state, storageReader, transaction );
         TransactionListenersState listenersStates = new TransactionListenersState( txData );
 
         for ( TransactionEventListener<?> listener : eventListeners )

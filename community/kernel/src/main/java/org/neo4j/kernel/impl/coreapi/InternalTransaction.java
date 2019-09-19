@@ -27,8 +27,9 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 
-public interface InternalTransaction extends Transaction
+public interface InternalTransaction extends Transaction, TransactionalProxyFactory
 {
     void setTransaction( KernelTransaction transaction );
 

@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.Log;
@@ -66,8 +65,8 @@ public class ResourceInjectionTest
 {
     private ProcedureCompiler compiler;
     private final DependencyResolver dependencyResolver = new Dependencies();
-    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( TransactionalProxyFactory.class ), mock( InternalTransaction.class ) );
-    private Log log = mock(Log.class);
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( InternalTransaction.class ) );
+    private final Log log = mock(Log.class);
 
     public static String notAvailableMessage( String procName )
     {

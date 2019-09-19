@@ -52,7 +52,7 @@ public class SystemDatabaseInnerAccessor implements Supplier<GraphDatabaseQueryS
         var dependencyResolver = this.systemDb.getDependencyResolver();
         var transactionFactory = dependencyResolver.resolveDependency( KernelTransactionFactory.class );
         var txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-        this.contextFactory = Neo4jTransactionalContextFactory.create( this.systemDb, this, transactionFactory, txBridge );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( this, transactionFactory, txBridge );
     }
 
     public InternalTransaction beginTx()
@@ -87,6 +87,7 @@ public class SystemDatabaseInnerAccessor implements Supplier<GraphDatabaseQueryS
      * system database has two execution engines, the normal accessible from the outside only supports administration commands and no graph commands,
      * while the inner one which does understand graph commands is only available to key internal infrastructure like the security infrastructure.
      */
+    @FunctionalInterface
     public interface SystemDatabaseInnerEngine
     {
         QueryExecution execute( String query, MapValue parameters, TransactionalContext context,

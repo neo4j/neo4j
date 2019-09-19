@@ -31,7 +31,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -70,7 +69,7 @@ class DefaultValueMapperTest
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            var mapper = new DefaultValueMapper( (TransactionalProxyFactory) db, (InternalTransaction) tx );
+            var mapper = new DefaultValueMapper( (InternalTransaction) tx );
             Path mapped = mapper.mapPath( path( asNodeValues( node ), asRelationshipsValues() ) );
             assertThat( mapped.length(), equalTo( 0 ) );
             assertThat( mapped.startNode(), equalTo( node ) );
@@ -101,7 +100,7 @@ class DefaultValueMapperTest
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            var mapper = new DefaultValueMapper( (TransactionalProxyFactory) db, (InternalTransaction) tx );
+            var mapper = new DefaultValueMapper( (InternalTransaction) tx );
             Path mapped = mapper.mapPath( path( asNodeValues( start, end ), asRelationshipsValues( relationship ) ) );
             assertThat( mapped.length(), equalTo( 1 ) );
             assertThat( mapped.startNode(), equalTo( start ) );
@@ -138,7 +137,7 @@ class DefaultValueMapperTest
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            var mapper = new DefaultValueMapper( (TransactionalProxyFactory) db, (InternalTransaction) tx );
+            var mapper = new DefaultValueMapper( (InternalTransaction) tx );
             Path mapped = mapper.mapPath( path( asNodeValues( a, b, c, d, e ), asRelationshipsValues( r1, r2, r3, r4 ) ) );
             assertThat( mapped.length(), equalTo( 4 ) );
             assertThat( mapped.startNode(), equalTo( a ) );
@@ -174,7 +173,7 @@ class DefaultValueMapperTest
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            var mapper = new DefaultValueMapper( (TransactionalProxyFactory) db, (InternalTransaction) tx );
+            var mapper = new DefaultValueMapper( (InternalTransaction) tx );
             Relationship coreAPIRelationship = mapper.mapRelationship( relationshipValue );
             assertThat( coreAPIRelationship.getId(), equalTo( relationship.getId() ) );
             assertThat( coreAPIRelationship.getStartNode(), equalTo( start ) );

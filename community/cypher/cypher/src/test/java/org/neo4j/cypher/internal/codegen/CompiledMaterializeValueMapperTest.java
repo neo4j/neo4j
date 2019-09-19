@@ -21,10 +21,8 @@ package org.neo4j.cypher.internal.codegen;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -44,13 +42,12 @@ import static org.mockito.Mockito.mock;
 class CompiledMaterializeValueMapperTest
 {
     private static final InternalTransaction transaction = mock( InternalTransaction.class );
-    private static final TransactionalProxyFactory spi = new CompilerTransactionalProxyFactory();
 
-    private static final NodeValue nodeProxyValue = ValueUtils.fromNodeProxy( new NodeProxy( spi, transaction, 1L ) );
+    private static final NodeValue nodeProxyValue = ValueUtils.fromNodeProxy( new NodeProxy( transaction, 1L ) );
     private static final NodeValue directNodeValue = VirtualValues.nodeValue( 2L, Values.stringArray(), VirtualValues.EMPTY_MAP );
     private static final NodeReference nodeReference = VirtualValues.node( 1L ); // Should equal nodeProxyValue when converted
 
-    private static final RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipProxy( spi, transaction, 11L ) );
+    private static final RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipProxy( transaction, 11L ) );
     private static final RelationshipValue directRelationshipValue =
             VirtualValues.relationshipValue( 12L, nodeProxyValue, directNodeValue, Values.stringValue( "TYPE" ), VirtualValues.EMPTY_MAP );
     private static final RelationshipReference relationshipReference = VirtualValues.relationship( 11L ); // Should equal relationshipProxyValue when converted
@@ -129,40 +126,13 @@ class CompiledMaterializeValueMapperTest
 
     private void verifyConvertsValue( AnyValue expected, AnyValue valueToTest )
     {
-        AnyValue actual = CompiledMaterializeValueMapper.mapAnyValue( spi, valueToTest );
+        AnyValue actual = CompiledMaterializeValueMapper.mapAnyValue( transaction, valueToTest );
         assertEquals( expected, actual );
     }
 
     private void verifyDoesNotTouchValue( AnyValue value )
     {
-        AnyValue mappedValue = CompiledMaterializeValueMapper.mapAnyValue( spi, value );
+        AnyValue mappedValue = CompiledMaterializeValueMapper.mapAnyValue( transaction, value );
         assertSame( value, mappedValue ); // Test with reference equality since we should get the same reference back
-    }
-
-    private static class CompilerTransactionalProxyFactory implements TransactionalProxyFactory
-    {
-        @Override
-        public RelationshipProxy newRelationshipProxy( long id )
-        {
-            return new RelationshipProxy( this, transaction, id );
-        }
-
-        @Override
-        public NodeProxy newNodeProxy( long nodeId )
-        {
-            return new NodeProxy( this, transaction, nodeId );
-        }
-
-        @Override
-        public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public RelationshipType getRelationshipTypeById( int type )
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
     }
 }

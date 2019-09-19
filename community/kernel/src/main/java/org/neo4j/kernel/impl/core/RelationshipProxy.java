@@ -56,23 +56,20 @@ import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
 public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
 {
-    private final TransactionalProxyFactory spi;
     private final InternalTransaction internalTransaction;
     private long id = NO_ID;
     private long startNode = NO_ID;
     private long endNode = NO_ID;
     private int type;
 
-    public RelationshipProxy( TransactionalProxyFactory spi, InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
+    public RelationshipProxy( InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
     {
-        this.spi = spi;
         this.internalTransaction = internalTransaction;
         visit( id, type, startNode, endNode );
     }
 
-    public RelationshipProxy( TransactionalProxyFactory spi, InternalTransaction internalTransaction, long id )
+    public RelationshipProxy( InternalTransaction internalTransaction, long id )
     {
-        this.spi = spi;
         this.internalTransaction = internalTransaction;
         this.id = id;
     }
@@ -170,29 +167,29 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     {
         internalTransaction.kernelTransaction().assertOpen();
         return new Node[]{
-                spi.newNodeProxy( sourceId() ),
-                spi.newNodeProxy( targetId() )};
+                internalTransaction.newNodeProxy( sourceId() ),
+                internalTransaction.newNodeProxy( targetId() )};
     }
 
     @Override
     public Node getOtherNode( Node node )
     {
         internalTransaction.kernelTransaction().assertOpen();
-        return spi.newNodeProxy( getOtherNodeId( node.getId() ) );
+        return internalTransaction.newNodeProxy( getOtherNodeId( node.getId() ) );
     }
 
     @Override
     public Node getStartNode()
     {
         internalTransaction.kernelTransaction().assertOpen();
-        return spi.newNodeProxy( sourceId() );
+        return internalTransaction.newNodeProxy( sourceId() );
     }
 
     @Override
     public Node getEndNode()
     {
         internalTransaction.kernelTransaction().assertOpen();
-        return spi.newNodeProxy( targetId() );
+        return internalTransaction.newNodeProxy( targetId() );
     }
 
     @Override
@@ -227,7 +224,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public RelationshipType getType()
     {
         internalTransaction.kernelTransaction().assertOpen();
-        return spi.getRelationshipTypeById( typeId() );
+        return internalTransaction.getRelationshipTypeById( typeId() );
     }
 
     @Override
@@ -507,7 +504,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public boolean isType( RelationshipType type )
     {
         internalTransaction.kernelTransaction().assertOpen();
-        return spi.getRelationshipTypeById( typeId() ).name().equals( type.name() );
+        return internalTransaction.getRelationshipTypeById( typeId() ).name().equals( type.name() );
     }
 
     public int compareTo( Object rel )
@@ -534,7 +531,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         String relType;
         try
         {
-            relType = spi.getRelationshipTypeById( typeId() ).name();
+            relType = internalTransaction.getRelationshipTypeById( typeId() ).name();
             return format( "(%d)-[%s,%d]->(%d)", sourceId(), relType, getId(), targetId() );
         }
         catch ( NotInTransactionException | DatabaseShutdownException e )

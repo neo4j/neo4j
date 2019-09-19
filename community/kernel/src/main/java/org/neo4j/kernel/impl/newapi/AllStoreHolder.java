@@ -64,9 +64,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -96,7 +94,6 @@ public class AllStoreHolder extends Read
     private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies databaseDependencies;
     private final IndexReaderCache indexReaderCache;
-    private final TransactionalProxyFactory proxyFactory;
     private LabelScanReader labelScanReader;
 
     public AllStoreHolder( StorageReader storageReader,
@@ -118,7 +115,6 @@ public class AllStoreHolder extends Read
         this.labelScanStore = labelScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
         this.databaseDependencies = databaseDependencies;
-        this.proxyFactory = databaseDependencies.resolveDependency( GraphDatabaseFacade.class );
     }
 
     @Override
@@ -1034,7 +1030,7 @@ public class AllStoreHolder extends Read
     private Context prepareContext( SecurityContext securityContext, ProcedureCallContext procedureContext )
     {
         final InternalTransaction internalTransaction = ktx.internalTransaction();
-        return buildContext( databaseDependencies, new DefaultValueMapper( proxyFactory, internalTransaction ) )
+        return buildContext( databaseDependencies, new DefaultValueMapper( internalTransaction ) )
                 .withTransaction( internalTransaction )
                 .withSecurityContext( securityContext )
                 .withProcedureCallContext( procedureContext )

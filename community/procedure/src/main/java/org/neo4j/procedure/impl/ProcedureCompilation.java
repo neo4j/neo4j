@@ -869,7 +869,7 @@ public final class ProcedureCompilation
         else
         {
             throw new IllegalArgumentException(
-                    "Cannot convert " + value.map( new DefaultValueMapper( null, null ) ) + " to byte for input to procedure" );
+                    "Cannot convert " + value.map( new DefaultValueMapper( null ) ) + " to byte for input to procedure" );
         }
     }
 

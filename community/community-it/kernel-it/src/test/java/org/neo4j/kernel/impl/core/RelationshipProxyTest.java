@@ -64,11 +64,10 @@ public class RelationshipProxyTest extends EntityProxyTest
     void shouldBeAbleToReferToIdsBeyondMaxInt()
     {
         // GIVEN
-        TransactionalProxyFactory actions = mock( TransactionalProxyFactory.class );
         var transaction = mock( InternalTransaction.class );
-        when( actions.newNodeProxy( anyLong() ) ).then(
+        when( transaction.newNodeProxy( anyLong() ) ).then(
                 invocation -> nodeWithId( invocation.getArgument( 0 ) ) );
-        when( actions.getRelationshipTypeById( anyInt() ) ).then(
+        when( transaction.getRelationshipTypeById( anyInt() ) ).then(
                 invocation -> new NamedToken( "whatever", invocation.getArgument( 0 ) ) );
 
         long[] ids = new long[]{
@@ -97,8 +96,8 @@ public class RelationshipProxyTest extends EntityProxyTest
             long nodeId1 = ids[i + 1];
             long nodeId2 = ids[i + 2];
             int type = types[i];
-            verifyIds( actions, transaction, id, nodeId1, type, nodeId2 );
-            verifyIds( actions, transaction, id, nodeId2, type, nodeId1 );
+            verifyIds( transaction, id, nodeId1, type, nodeId2 );
+            verifyIds( transaction, id, nodeId2, type, nodeId1 );
         }
     }
 
@@ -232,17 +231,16 @@ public class RelationshipProxyTest extends EntityProxyTest
     void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
     {
         // given
-        TransactionalProxyFactory spi = mockedProxySPI();
         var transaction = mockedTransactionWithDepletedTokens();
-        RelationshipProxy relationshipProxy = new RelationshipProxy( spi, transaction, 5 );
+        RelationshipProxy relationshipProxy = new RelationshipProxy( transaction, 5 );
 
         // when
         assertThrows( ConstraintViolationException.class, () -> relationshipProxy.setProperty( "key", "value" ) );
     }
 
-    private void verifyIds( TransactionalProxyFactory actions, InternalTransaction transaction, long relationshipId, long nodeId1, int typeId, long nodeId2 )
+    private void verifyIds( InternalTransaction transaction, long relationshipId, long nodeId1, int typeId, long nodeId2 )
     {
-        RelationshipProxy proxy = new RelationshipProxy( actions, transaction, relationshipId, nodeId1, typeId, nodeId2 );
+        RelationshipProxy proxy = new RelationshipProxy( transaction, relationshipId, nodeId1, typeId, nodeId2 );
         assertEquals( relationshipId, proxy.getId() );
         // our mock above is known to return RelationshipTypeToken
         assertEquals( nodeId1, proxy.getStartNode().getId() );

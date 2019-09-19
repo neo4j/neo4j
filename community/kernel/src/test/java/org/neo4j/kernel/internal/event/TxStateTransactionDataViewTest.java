@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.values.storable.Value;
@@ -328,11 +327,10 @@ class TxStateTransactionDataViewTest
     @Test
     void shouldAccessExampleMetaData()
     {
-        TransactionalProxyFactory spi = mock( TransactionalProxyFactory.class );
         final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.getMetaData() ).thenReturn( genericMap( "username", "Igor" ) );
         TxStateTransactionDataSnapshot transactionDataSnapshot =
-                new TxStateTransactionDataSnapshot( state, spi, ops, transaction );
+                new TxStateTransactionDataSnapshot( state, ops, transaction );
         assertEquals( 1, transactionDataSnapshot.metaData().size() );
         assertThat( "Expected metadata map to contain defined username", transactionDataSnapshot.metaData(),
                 equalTo( genericMap( "username", "Igor" ) ) );
@@ -350,14 +348,13 @@ class TxStateTransactionDataViewTest
 
     private TxStateTransactionDataSnapshot snapshot()
     {
-        var spi = mock( TransactionalProxyFactory.class );
-        var internalTransaction = mock( InternalTransaction.class );
-        when( spi.newNodeProxy( anyLong() ) ).thenAnswer( invocation -> new NodeProxy( spi, internalTransaction, invocation.getArgument( 0 ) ) );
-        when( spi.newRelationshipProxy( anyLong() ) )
-                .thenAnswer( invocation -> new RelationshipProxy( spi, internalTransaction, invocation.getArgument( 0 ) ) );
-        when( spi.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )
-                .thenAnswer( invocation -> new RelationshipProxy( spi, internalTransaction, invocation.getArgument( 0 ), invocation.getArgument( 1 ),
+        var transaction = mock( InternalTransaction.class );
+        when( transaction.newNodeProxy( anyLong() ) ).thenAnswer( invocation -> new NodeProxy( transaction, invocation.getArgument( 0 ) ) );
+        when( transaction.newRelationshipProxy( anyLong() ) )
+                .thenAnswer( invocation -> new RelationshipProxy( transaction, invocation.getArgument( 0 ) ) );
+        when( transaction.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )
+                .thenAnswer( invocation -> new RelationshipProxy( transaction, invocation.getArgument( 0 ), invocation.getArgument( 1 ),
                         invocation.getArgument( 2 ), invocation.getArgument( 3 ) ) );
-        return new TxStateTransactionDataSnapshot( state, spi, ops, transaction );
+        return new TxStateTransactionDataSnapshot( state, ops, this.transaction );
     }
 }

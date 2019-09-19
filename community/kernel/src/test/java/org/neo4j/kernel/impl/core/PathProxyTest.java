@@ -38,14 +38,13 @@ import static org.mockito.Mockito.mock;
 
 class PathProxyTest
 {
-    private final TransactionalProxyFactory proxySPI = mock( TransactionalProxyFactory.class );
     private final InternalTransaction transaction = mock( InternalTransaction.class );
 
     @Test
     void shouldIterateThroughNodes()
     {
         // given
-        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Node> iterator = path.nodes().iterator();
         Node node;
@@ -67,7 +66,7 @@ class PathProxyTest
     void shouldIterateThroughNodesInReverse()
     {
         // given
-        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Node> iterator = path.reverseNodes().iterator();
         Node node;
@@ -89,7 +88,7 @@ class PathProxyTest
     void shouldIterateThroughRelationships()
     {
         // given
-        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Relationship> iterator = path.relationships().iterator();
         Relationship relationship;
@@ -112,7 +111,7 @@ class PathProxyTest
     void shouldIterateThroughRelationshipsInReverse()
     {
         // given
-        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Relationship> iterator = path.reverseRelationships().iterator();
         Relationship relationship;
@@ -135,7 +134,7 @@ class PathProxyTest
     void shouldIterateAlternatingNodesAndRelationships()
     {
         // given
-        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Entity> iterator = path.iterator();
         Entity entity;

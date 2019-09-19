@@ -73,15 +73,13 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 
 public class NodeProxy implements Node, RelationshipFactory<Relationship>
 {
-    private final TransactionalProxyFactory spi;
     private final InternalTransaction internalTransaction;
     private final long nodeId;
 
-    public NodeProxy( TransactionalProxyFactory spi, InternalTransaction internalTransaction, long nodeId )
+    public NodeProxy( InternalTransaction internalTransaction, long nodeId )
     {
         this.internalTransaction = internalTransaction;
         this.nodeId = nodeId;
-        this.spi = spi;
     }
 
     public static boolean isDeletedInCurrentTransaction( Node node )
@@ -571,7 +569,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         try
         {
             long relationshipId = transaction.dataWrite().relationshipCreate( nodeId, relationshipTypeId, otherNode.getId() );
-            return spi.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
+            return internalTransaction.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
         }
         catch ( EntityNotFoundException e )
         {
@@ -855,6 +853,6 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     @Override
     public Relationship relationship( long id, long startNodeId, int typeId, long endNodeId )
     {
-        return spi.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
+        return internalTransaction.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
     }
 }

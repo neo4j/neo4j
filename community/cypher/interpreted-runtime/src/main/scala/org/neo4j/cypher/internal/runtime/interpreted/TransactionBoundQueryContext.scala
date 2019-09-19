@@ -51,7 +51,6 @@ import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder 
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.{ResourceManager => _, _}
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
 import org.neo4j.storageengine.api.RelationshipVisitor
@@ -69,9 +68,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   extends TransactionBoundTokenContext(transactionalContext.kernelTransaction) with QueryContext {
   override val nodeOps: NodeOperations = new NodeOperations
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
-  override lazy val entityAccessor: TransactionalProxyFactory =
-    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[TransactionalProxyFactory])
-  private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(entityAccessor, transactionalContext.tc.transaction())
+  private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(transactionalContext.tc.transaction())
 
   // We don't need to unregister this anywhere since the TransactionBoundQueryContext will be closed together with the Statement
   transactionalContext.tc.statement().registerCloseableResource(resources)
@@ -97,13 +94,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       override def reads(): Read = transactionalContext.dataRead
     }
 
-  override def createNode(labels: Array[Int]): NodeValue = ValueUtils.fromNodeProxy(entityAccessor.newNodeProxy(writes().nodeCreateWithLabels(labels)))
+  override def createNode(labels: Array[Int]): NodeValue = ValueUtils.fromNodeProxy(transactionalContext.tc.transaction().newNodeProxy(writes().nodeCreateWithLabels(labels)))
 
   override def createNodeId(labels: Array[Int]): Long = writes().nodeCreateWithLabels(labels)
 
   override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = {
     val relId = transactionalContext.kernelTransaction.dataWrite().relationshipCreate(start, relType, end)
-    fromRelationshipProxy(entityAccessor.newRelationshipProxy(relId, start, relType, end))
+    fromRelationshipProxy(transactionalContext.tc.transaction().newRelationshipProxy(relId, start, relType, end))
   }
 
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = {
@@ -177,7 +174,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
           override protected def fetchNext(): RelationshipValue =
             if (selectionCursor.next())
-              fromRelationshipProxy(entityAccessor.newRelationshipProxy(selectionCursor.relationshipReference(),
+              fromRelationshipProxy(transactionalContext.tc.transaction().newRelationshipProxy(selectionCursor.relationshipReference(),
                                                                         selectionCursor.sourceNodeReference(),
                                                                         selectionCursor.`type`(),
                                                                         selectionCursor.targetNodeReference()))
@@ -215,7 +212,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                 endNodeId: Long,
                                 typeId: Int): RelationshipValue =
     try {
-      fromRelationshipProxy(entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId))
+      fromRelationshipProxy(transactionalContext.tc.transaction().newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId))
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
     }
@@ -314,7 +311,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     reads().nodeLabelScan(id, cursor)
     new CursorIterator[NodeValue] {
       override protected def fetchNext(): NodeValue = {
-        if (cursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(cursor.nodeReference()))
+        if (cursor.next()) fromNodeProxy(transactionalContext.tc.transaction().newNodeProxy(cursor.nodeReference()))
         else null
       }
 
@@ -506,7 +503,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     override def getById(id: Long): NodeValue = try {
-      fromNodeProxy(entityAccessor.newNodeProxy(id))
+      fromNodeProxy(transactionalContext.tc.transaction().newNodeProxy(id))
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
@@ -516,7 +513,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       reads().allNodesScan(nodeCursor)
       new CursorIterator[NodeValue] {
         override protected def fetchNext(): NodeValue = {
-          if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+          if (nodeCursor.next()) fromNodeProxy(transactionalContext.tc.transaction().newNodeProxy(nodeCursor.nodeReference()))
           else null
         }
 
@@ -544,7 +541,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     override def getByIdIfExists(id: Long): Option[NodeValue] =
       if (id >= 0 && reads().nodeExists(id))
-        Some(fromNodeProxy(entityAccessor.newNodeProxy(id)))
+        Some(fromNodeProxy(transactionalContext.tc.transaction().newNodeProxy(id)))
       else
         None
   }
@@ -612,7 +609,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     override def getById(id: Long): RelationshipValue = try {
-      fromRelationshipProxy(entityAccessor.newRelationshipProxy(id))
+      fromRelationshipProxy(transactionalContext.tc.transaction().newRelationshipProxy(id))
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
@@ -627,7 +624,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           if (cursor.next()) {
             val src = cursor.sourceNodeReference()
             val dst = cursor.targetNodeReference()
-            val relProxy = entityAccessor.newRelationshipProxy(id, src, cursor.`type`(), dst)
+            val relProxy = transactionalContext.tc.transaction().newRelationshipProxy(id, src, cursor.`type`(), dst)
             Some(fromRelationshipProxy(relProxy))
           }
           else
@@ -644,7 +641,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       new CursorIterator[RelationshipValue] {
         override protected def fetchNext(): RelationshipValue = {
           if (relCursor.next())
-            fromRelationshipProxy(entityAccessor.newRelationshipProxy(relCursor.relationshipReference(),
+            fromRelationshipProxy(transactionalContext.tc.transaction().newRelationshipProxy(relCursor.relationshipReference(),
                                                                       relCursor.sourceNodeReference(), relCursor.`type`(),
                                                                       relCursor.targetNodeReference()))
           else null
@@ -818,7 +815,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
       baseTraversalDescription.expand(expander.build())
     }
-    traversalDescription.traverse(entityAccessor.newNodeProxy(realNode)).iterator().asScala
+    traversalDescription.traverse(transactionalContext.tc.transaction().newNodeProxy(realNode)).iterator().asScala
   }
 
   private def getDatabaseService = {
@@ -848,7 +845,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
     //could probably do without node proxies here
-    Option(pathFinder.findSinglePath(entityAccessor.newNodeProxy(left), entityAccessor.newNodeProxy(right)))
+    Option(pathFinder.findSinglePath(transactionalContext.tc.transaction().newNodeProxy(left), transactionalContext.tc.transaction().newNodeProxy(right)))
   }
 
   override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
@@ -856,7 +853,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                filters: Seq[KernelPredicate[Entity]]): scala.Iterator[Path] = {
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
-    pathFinder.findAllPaths(entityAccessor.newNodeProxy(left), entityAccessor.newNodeProxy(right)).iterator()
+    pathFinder.findAllPaths(transactionalContext.tc.transaction().newNodeProxy(left), transactionalContext.tc.transaction().newNodeProxy(right)).iterator()
       .asScala
   }
 

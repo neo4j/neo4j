@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
@@ -53,7 +52,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final InternalTransaction transaction;
     private KernelTransaction kernelTransaction;
     private Statement statement;
-    private final TransactionalProxyFactory proxySPI;
     private final ValueMapper<Object> valueMapper;
     private final KernelTransactionFactory transactionFactory;
     private volatile boolean isOpen = true;
@@ -62,7 +60,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private long pageMisses;
 
     public Neo4jTransactionalContext( GraphDatabaseQueryService graph, ThreadToStatementContextBridge txBridge, InternalTransaction initialTransaction,
-            Statement initialStatement, ExecutingQuery executingQuery, TransactionalProxyFactory proxySPI, KernelTransactionFactory transactionFactory )
+            Statement initialStatement, ExecutingQuery executingQuery, KernelTransactionFactory transactionFactory )
     {
         this.graph = graph;
         this.txBridge = txBridge;
@@ -75,15 +73,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.databaseId = executingQuery.databaseId();
         this.kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
         this.statement = initialStatement;
-        this.proxySPI = proxySPI;
-        this.valueMapper = new DefaultValueMapper( proxySPI, initialTransaction );
+        this.valueMapper = new DefaultValueMapper( initialTransaction );
         this.transactionFactory = transactionFactory;
-    }
-
-    @Override
-    public TransactionalProxyFactory proxySPI()
-    {
-        return this.proxySPI;
     }
 
     @Override

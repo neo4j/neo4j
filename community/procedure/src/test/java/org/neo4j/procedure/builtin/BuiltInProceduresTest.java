@@ -67,7 +67,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -522,7 +521,7 @@ class BuiltInProceduresTest
 
     private List<Object[]> call( String name, Object... args ) throws ProcedureException, IndexNotFoundKernelException
     {
-        DefaultValueMapper valueMapper = new DefaultValueMapper( mock( TransactionalProxyFactory.class ), mock( InternalTransaction.class ) );
+        DefaultValueMapper valueMapper = new DefaultValueMapper( mock( InternalTransaction.class ) );
         Context ctx = buildContext(resolver, valueMapper )
                         .withTransaction( transaction )
                         .withProcedureCallContext( callContext )

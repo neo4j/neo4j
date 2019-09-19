@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.values.virtual.MapValue;
@@ -35,13 +34,13 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
 {
     private final Neo4jTransactionalContext.Creator contextCreator;
 
-    public static TransactionalContextFactory create( TransactionalProxyFactory proxySpi, Supplier<GraphDatabaseQueryService> queryServiceSupplier,
+    public static TransactionalContextFactory create( Supplier<GraphDatabaseQueryService> queryServiceSupplier,
             KernelTransactionFactory transactionFactory, ThreadToStatementContextBridge txBridge )
     {
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton( queryServiceSupplier );
         Neo4jTransactionalContext.Creator contextCreator =
                 ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(), txBridge, tx, initialStatement, executingQuery,
-                        proxySpi, transactionFactory );
+                        transactionFactory );
         return new Neo4jTransactionalContextFactory( contextCreator );
     }
 
@@ -50,7 +49,6 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     {
         var resolver = queryService.getDependencyResolver();
         var txBridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
-        var proxySpi = resolver.resolveDependency( TransactionalProxyFactory.class );
         var transactionFactory = resolver.resolveDependency( KernelTransactionFactory.class );
         Neo4jTransactionalContext.Creator contextCreator =
                 ( tx, initialStatement, executingQuery ) ->
@@ -60,7 +58,6 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
                                 tx,
                                 initialStatement,
                                 executingQuery,
-                                proxySpi,
                                 transactionFactory
                         );
         return new Neo4jTransactionalContextFactory( contextCreator );

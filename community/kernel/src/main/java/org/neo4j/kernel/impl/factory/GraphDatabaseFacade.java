@@ -27,8 +27,6 @@ import java.util.function.Function;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -45,24 +43,14 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
-import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.token.TokenHolders;
-import org.neo4j.token.api.TokenNotFoundException;
-import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
@@ -75,14 +63,13 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 /**
  * Default implementation of the GraphDatabaseService interface.
  */
-public class GraphDatabaseFacade implements GraphDatabaseAPI, TransactionalProxyFactory
+public class GraphDatabaseFacade implements GraphDatabaseAPI
 {
     private final Schema schema;
     private final Database database;
     private final ThreadToStatementContextBridge statementContext;
     private final TransactionalContextFactory contextFactory;
     private final Config config;
-    private final TokenHolders tokenHolders;
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final DatabaseInfo databaseInfo;
     private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
@@ -102,11 +89,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, TransactionalProxy
         this.availabilityGuard = requireNonNull( availabilityGuard );
         this.databaseInfo = requireNonNull( databaseInfo );
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true, databaseId() ) );
-        this.tokenHolders = database.getTokenHolders();
-        this.contextFactory = Neo4jTransactionalContextFactory.create( this,
-                () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ),
-                new FacadeKernelTransactionFactory( config, this ),
-                txBridge );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ),
+                new FacadeKernelTransactionFactory( config, this ), txBridge );
     }
 
     @Override
@@ -183,32 +167,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, TransactionalProxy
         T transformedResult;
         try ( var internalTransaction = beginTransaction( Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout.toMillis(), MILLISECONDS ) )
         {
-            try ( var result = execute( internalTransaction, query, ValueUtils.asParameterMapValue( parameters ) ) )
+            try ( var result = internalTransaction.execute( query, parameters ) )
             {
                 transformedResult = resultTransformer.apply( result );
             }
             internalTransaction.commit();
         }
         return transformedResult;
-    }
-
-    public Result execute( InternalTransaction transaction, String query, MapValue parameters )
-            throws QueryExecutionException
-    {
-        TransactionalContext context = contextFactory.newContext( transaction, query, parameters );
-        try
-        {
-            availabilityGuard.assertDatabaseAvailable();
-            return database.getExecutionEngine().executeQuery( query, parameters, context, false );
-        }
-        catch ( UnavailableException ue )
-        {
-            throw new org.neo4j.graphdb.TransactionFailureException( ue.getMessage(), ue );
-        }
-        catch ( QueryExecutionKernelException e )
-        {
-            throw e.asUserException();
-        }
     }
 
     private InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
@@ -218,8 +183,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, TransactionalProxy
         {
             throw new org.neo4j.graphdb.TransactionFailureException( "Fail to start new transaction. Already have transaction in the context." );
         }
-        final KernelTransaction kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
-        return new TransactionImpl( this, kernelTransaction );
+        var kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
+        return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction );
     }
 
     @Override
@@ -273,43 +238,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, TransactionalProxy
     public String toString()
     {
         return databaseInfo + " [" + databaseLayout() + "]";
-    }
-
-    @Override
-    public RelationshipProxy newRelationshipProxy( long id )
-    {
-        return new RelationshipProxy( this, getInternalTransaction(), id );
-    }
-
-    private InternalTransaction getInternalTransaction()
-    {
-        return ((KernelTransactionImplementation) statementContext.getKernelTransactionBoundToThisThread( true, databaseId() )).internalTransaction();
-    }
-
-    @Override
-    public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
-    {
-        return new RelationshipProxy( this, getInternalTransaction(), id, startNodeId, typeId, endNodeId );
-    }
-
-    @Override
-    public NodeProxy newNodeProxy( long nodeId )
-    {
-        return new NodeProxy( this, getInternalTransaction(), nodeId );
-    }
-
-    @Override
-    public RelationshipType getRelationshipTypeById( int type )
-    {
-        try
-        {
-            String name = tokenHolders.relationshipTypeTokens().getTokenById( type ).name();
-            return RelationshipType.withName( name );
-        }
-        catch ( TokenNotFoundException e )
-        {
-            throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + type );
-        }
     }
 
     private void assertTransactionOpen()

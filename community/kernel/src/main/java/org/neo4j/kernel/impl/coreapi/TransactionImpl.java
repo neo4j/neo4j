@@ -74,14 +74,24 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.coreapi.internal.NodeCursorResourceIterator;
 import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -96,12 +106,20 @@ import static org.neo4j.values.storable.Values.utf8Value;
 public class TransactionImpl implements InternalTransaction
 {
     private static final EntityLocker locker = new EntityLocker();
-    private final GraphDatabaseFacade facade;
+    private final TokenHolders tokenHolders;
+    private final TransactionalContextFactory contextFactory;
+    private final DatabaseAvailabilityGuard availabilityGuard;
+    private final QueryExecutionEngine executionEngine;
     private KernelTransaction transaction;
 
-    public TransactionImpl( GraphDatabaseFacade facade, KernelTransaction transaction )
+    public TransactionImpl( TokenHolders tokenHolders, TransactionalContextFactory contextFactory,
+            DatabaseAvailabilityGuard availabilityGuard, QueryExecutionEngine executionEngine,
+            KernelTransaction transaction )
     {
-        this.facade = facade;
+        this.tokenHolders = tokenHolders;
+        this.contextFactory = contextFactory;
+        this.availabilityGuard = availabilityGuard;
+        this.executionEngine = executionEngine;
         setTransaction( transaction );
     }
 
@@ -122,7 +140,7 @@ public class TransactionImpl implements InternalTransaction
     {
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            return facade.newNodeProxy( transaction.dataWrite().nodeCreate() );
+            return newNodeProxy( transaction.dataWrite().nodeCreate() );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -146,7 +164,7 @@ public class TransactionImpl implements InternalTransaction
 
             Write write = transaction.dataWrite();
             long nodeId = write.nodeCreateWithLabels( labelIds );
-            return facade.newNodeProxy( nodeId );
+            return newNodeProxy( nodeId );
         }
         catch ( ConstraintValidationException e )
         {
@@ -179,7 +197,7 @@ public class TransactionImpl implements InternalTransaction
                 throw new NotFoundException( format( "Node %d not found", id ),
                         new EntityNotFoundException( EntityType.NODE, id ) );
             }
-            return facade.newNodeProxy( id );
+            return newNodeProxy( id );
         }
     }
 
@@ -192,7 +210,26 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
-        return facade.execute( this, query, ValueUtils.asParameterMapValue( parameters ) );
+        return execute( this, query, ValueUtils.asParameterMapValue( parameters ) );
+    }
+
+    public Result execute( InternalTransaction transaction, String query, MapValue parameters )
+            throws QueryExecutionException
+    {
+        TransactionalContext context = contextFactory.newContext( transaction, query, parameters );
+        try
+        {
+            availabilityGuard.assertDatabaseAvailable();
+            return executionEngine.executeQuery( query, parameters, context, false );
+        }
+        catch ( UnavailableException ue )
+        {
+            throw new org.neo4j.graphdb.TransactionFailureException( ue.getMessage(), ue );
+        }
+        catch ( QueryExecutionKernelException e )
+        {
+            throw e.asUserException();
+        }
     }
 
     @Override
@@ -212,7 +249,7 @@ public class TransactionImpl implements InternalTransaction
                 throw new NotFoundException( format( "Relationship %d not found", id ),
                         new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
             }
-            return facade.newRelationshipProxy( id );
+            return newRelationshipProxy( id );
         }
     }
 
@@ -378,7 +415,7 @@ public class TransactionImpl implements InternalTransaction
                 {
                     if ( cursor.next() )
                     {
-                        return facade.newNodeProxy( cursor.nodeReference() );
+                        return newNodeProxy( cursor.nodeReference() );
                     }
                     else
                     {
@@ -413,7 +450,7 @@ public class TransactionImpl implements InternalTransaction
                 {
                     if ( cursor.next() )
                     {
-                        return facade.newRelationshipProxy( cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.type(),
+                        return newRelationshipProxy( cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.type(),
                                 cursor.targetNodeReference() );
                     }
                     else
@@ -549,6 +586,38 @@ public class TransactionImpl implements InternalTransaction
         transaction.setMetaData( txMeta );
     }
 
+    @Override
+    public RelationshipProxy newRelationshipProxy( long id )
+    {
+        return new RelationshipProxy( this, id );
+    }
+
+    @Override
+    public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
+    {
+        return new RelationshipProxy( this, id, startNodeId, typeId, endNodeId );
+    }
+
+    @Override
+    public NodeProxy newNodeProxy( long nodeId )
+    {
+        return new NodeProxy( this, nodeId );
+    }
+
+    @Override
+    public RelationshipType getRelationshipTypeById( int type )
+    {
+        try
+        {
+            String name = tokenHolders.relationshipTypeTokens().getTokenById( type ).name();
+            return RelationshipType.withName( name );
+        }
+        catch ( TokenNotFoundException e )
+        {
+            throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + type );
+        }
+    }
+
     private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )
     {
         Statement statement = transaction.acquireStatement();
@@ -569,7 +638,7 @@ public class TransactionImpl implements InternalTransaction
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
 
-                return new NodeCursorResourceIterator<>( cursor, statement, facade::newNodeProxy );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }
             catch ( KernelException e )
             {
@@ -596,7 +665,7 @@ public class TransactionImpl implements InternalTransaction
                 nodeCursor,
                 propertyCursor,
                 statement,
-                facade::newNodeProxy,
+                this::newNodeProxy,
                 queries );
     }
 
@@ -622,7 +691,7 @@ public class TransactionImpl implements InternalTransaction
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
-                return new NodeCursorResourceIterator<>( cursor, statement, facade::newNodeProxy );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }
             catch ( KernelException e )
             {
@@ -664,7 +733,7 @@ public class TransactionImpl implements InternalTransaction
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
-        return new NodeCursorResourceIterator<>( cursor, statement, facade::newNodeProxy );
+        return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
     }
 
     private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )

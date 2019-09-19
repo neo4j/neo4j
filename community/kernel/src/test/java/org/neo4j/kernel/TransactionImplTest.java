@@ -28,8 +28,12 @@ import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.token.TokenHolders;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -42,6 +46,10 @@ import static org.mockito.Mockito.when;
 class TransactionImplTest
 {
     private final GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
+    private final TokenHolders tokenHolders = mock( TokenHolders.class );
+    private final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
+    private final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
+    private final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
 
     @Test
     void shouldThrowTransientExceptionOnTransientKernelException() throws Exception
@@ -51,7 +59,7 @@ class TransactionImplTest
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransactionFailureException( Status.Transaction.ConstraintsChanged,
                 "Proving that transaction does the right thing" ) ).when( kernelTransaction ).close();
-        TransactionImpl transaction = new TransactionImpl( facade, kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
 
         // WHEN
         transaction.commit();
@@ -64,7 +72,7 @@ class TransactionImplTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new RuntimeException( "Just a random failure" ) ).when( kernelTransaction ).close();
-        TransactionImpl transaction = new TransactionImpl( facade, kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
 
         // WHEN
         transaction.commit();
@@ -77,7 +85,7 @@ class TransactionImplTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransientDatabaseFailureException( "Just a random failure" ) ).when( kernelTransaction ).close();
-        TransactionImpl transaction = new TransactionImpl( facade, kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
 
         // WHEN
         transaction.commit();
@@ -90,7 +98,7 @@ class TransactionImplTest
         doReturn( true ).when( kernelTransaction ).isOpen();
         RuntimeException error = new TransactionTerminatedException( Status.Transaction.Terminated );
         doThrow( error ).when( kernelTransaction ).close();
-        TransactionImpl transaction = new TransactionImpl( facade, kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
 
         transaction.commit();
     }
@@ -102,7 +110,7 @@ class TransactionImplTest
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )
                 .thenReturn( Optional.of( Status.Transaction.Terminated ) );
 
-        TransactionImpl tx = new TransactionImpl( facade, kernelTransaction );
+        TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction );
 
         Optional<Status> terminationReason1 = tx.terminationReason();
         Optional<Status> terminationReason2 = tx.terminationReason();

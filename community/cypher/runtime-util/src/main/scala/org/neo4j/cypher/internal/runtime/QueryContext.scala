@@ -35,7 +35,6 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.database.DatabaseId
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value}
@@ -58,8 +57,6 @@ import scala.collection.Iterator
 trait QueryContext extends TokenContext with DbAccess {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
-
-  def entityAccessor: TransactionalProxyFactory
 
   def transactionalContext: QueryTransactionalContext
 

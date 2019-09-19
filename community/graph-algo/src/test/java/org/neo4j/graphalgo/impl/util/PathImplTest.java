@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -48,7 +47,6 @@ import static org.mockito.Mockito.when;
 
 class PathImplTest
 {
-    private final TransactionalProxyFactory proxyFactory = mock( TransactionalProxyFactory.class );
     private final InternalTransaction transaction = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
 
     @Test
@@ -106,7 +104,7 @@ class PathImplTest
     @Test
     void testPathReverseNodes()
     {
-        when( proxyFactory.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
+        when( transaction.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
 
         Path path = new PathImpl.Builder( createNodeProxy( 1 ) )
                                 .push( createRelationshipProxy( 1, 2 ) )
@@ -125,7 +123,7 @@ class PathImplTest
     @Test
     void testPathNodes()
     {
-        when( proxyFactory.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
+        when( transaction.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
 
         Path path = new PathImpl.Builder( createNodeProxy( 1 ) )
                 .push( createRelationshipProxy( 1, 2 ) )
@@ -143,12 +141,12 @@ class PathImplTest
 
     private RelationshipProxy createRelationshipProxy( int startNodeId, int endNodeId )
     {
-        return new RelationshipProxy( proxyFactory, transaction, 1L, startNodeId, 1, endNodeId );
+        return new RelationshipProxy( transaction, 1L, startNodeId, 1, endNodeId );
     }
 
     private NodeProxy createNodeProxy( int nodeId )
     {
-        return new NodeProxy( proxyFactory, transaction, nodeId );
+        return new NodeProxy( transaction, nodeId );
     }
 
     private static Node createNode( long nodeId )
