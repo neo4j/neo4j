@@ -70,10 +70,10 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -164,8 +164,8 @@ class OperationsTest
         when( engine.newReader() ).thenReturn( storageReader );
         indexingService = mock( IndexingService.class );
         Dependencies dependencies = new Dependencies();
-        DefaultValueMapper mapper = mock( DefaultValueMapper.class );
-        dependencies.satisfyDependency( mapper );
+        var facade = mock( GraphDatabaseFacade.class );
+        dependencies.satisfyDependency( facade );
         allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock( GlobalProcedures.class ), mock( SchemaState.class ), indexingService,
                 mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );

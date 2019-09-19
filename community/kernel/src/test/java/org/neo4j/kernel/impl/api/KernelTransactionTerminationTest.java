@@ -49,12 +49,12 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
@@ -304,7 +304,7 @@ class KernelTransactionTerminationTest
         static TestKernelTransaction create()
         {
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
+            dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
             return new TestKernelTransaction( new CommitTrackingMonitor(), dependencies );
         }
 

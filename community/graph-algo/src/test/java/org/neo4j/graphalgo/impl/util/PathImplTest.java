@@ -42,13 +42,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class PathImplTest
 {
-    private final TransactionalProxyFactory spi = mock( TransactionalProxyFactory.class );
-    private final InternalTransaction transaction = mock( InternalTransaction.class );
+    private final TransactionalProxyFactory proxyFactory = mock( TransactionalProxyFactory.class );
+    private final InternalTransaction transaction = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
 
     @Test
     void singularNodeWorksForwardsAndBackwards()
@@ -105,7 +106,7 @@ class PathImplTest
     @Test
     void testPathReverseNodes()
     {
-        when( spi.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
+        when( proxyFactory.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
 
         Path path = new PathImpl.Builder( createNodeProxy( 1 ) )
                                 .push( createRelationshipProxy( 1, 2 ) )
@@ -124,7 +125,7 @@ class PathImplTest
     @Test
     void testPathNodes()
     {
-        when( spi.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
+        when( proxyFactory.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
 
         Path path = new PathImpl.Builder( createNodeProxy( 1 ) )
                 .push( createRelationshipProxy( 1, 2 ) )
@@ -142,12 +143,12 @@ class PathImplTest
 
     private RelationshipProxy createRelationshipProxy( int startNodeId, int endNodeId )
     {
-        return new RelationshipProxy( spi, transaction, 1L, startNodeId, 1, endNodeId );
+        return new RelationshipProxy( proxyFactory, transaction, 1L, startNodeId, 1, endNodeId );
     }
 
     private NodeProxy createNodeProxy( int nodeId )
     {
-        return new NodeProxy( spi, transaction, nodeId );
+        return new NodeProxy( proxyFactory, transaction, nodeId );
     }
 
     private static Node createNode( long nodeId )
