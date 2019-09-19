@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal._
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.lifecycle.LifeSupport
-import org.neo4j.logging.NullLog
+import org.neo4j.logging.LogProvider
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
-                                         newRuntimeContextManager: (CypherRuntimeConfiguration, DependencyResolver, LifeSupport) => RuntimeContextManager[CONTEXT],
+                                         newRuntimeContextManager: (CypherRuntimeConfiguration, DependencyResolver, LifeSupport, LogProvider) => RuntimeContextManager[CONTEXT],
                                          configs: (Setting[_], Object)*) {
 
   import scala.collection.JavaConverters._
@@ -53,8 +53,8 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
     configs.collectFirst { case (key, value) if key == setting => value.asInstanceOf[T] }
   }
 
-  def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport): RuntimeContextManager[CONTEXT] =
-    newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport)
+  def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport, logProvider: LogProvider): RuntimeContextManager[CONTEXT] =
+    newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport, logProvider)
 
   private def runtimeConfig(): CypherRuntimeConfiguration = {
     cypherConfig.toCypherRuntimeConfiguration
@@ -69,6 +69,6 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
 object COMMUNITY {
   val EDITION = new Edition(
     () => new TestDatabaseManagementServiceBuilder,
-    (runtimeConfig, _, _) => CommunityRuntimeContextManager(NullLog.getInstance(), runtimeConfig),
+    (runtimeConfig, _, _, logProvider) => CommunityRuntimeContextManager(logProvider.getLog("test"), runtimeConfig),
     GraphDatabaseSettings.cypher_hints_error -> TRUE)
 }

@@ -34,6 +34,7 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.{QuerySubscriber, RecordingQuerySubscriber}
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.logging.{AssertableLogProvider, LogProvider}
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.{AnyValue, AnyValues}
 import org.scalactic.source.Position
@@ -70,12 +71,14 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   var graphDb: GraphDatabaseService = _
   var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
+  val logProvider: AssertableLogProvider = new AssertableLogProvider()
 
   override def beforeEach(): Unit = {
     DebugLog.beginTime()
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
-    runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode)
+    logProvider.clear()
+    runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
     runtimeTestSupport.start()
     super.beforeEach()
   }
@@ -86,8 +89,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     afterTest()
   }
   
-  protected def createRuntimeTestSupport(graphDb: GraphDatabaseService, edition: Edition[CONTEXT], workloadMode: Boolean): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode)
+  protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
+                                         edition: Edition[CONTEXT],
+                                         workloadMode: Boolean,
+                                         logProvider: LogProvider): RuntimeTestSupport[CONTEXT] = {
+    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider)
   }
 
   protected def shutdownDatabase(): Unit = {
@@ -171,6 +177,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
              ): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
     val result = runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber, profile = false)
+
     RecordingRuntimeResult(result, subscriber)
   }
 

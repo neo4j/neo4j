@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber, TransactionalContext}
 import org.neo4j.kernel.lifecycle.LifeSupport
+import org.neo4j.logging.LogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.VirtualValues
 
@@ -48,13 +49,14 @@ import scala.util.Try
   */
 class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseService,
                                                     val edition: Edition[CONTEXT],
-                                                    val workloadMode: Boolean
+                                                    val workloadMode: Boolean,
+                                                    val logProvider: LogProvider
                                                    ) extends CypherFunSuite {
 
   private val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
   private val lifeSupport = new LifeSupport
   private val resolver: DependencyResolver = cypherGraphDb.getDependencyResolver
-  protected val runtimeContextManager = edition.newRuntimeContextManager(resolver, lifeSupport)
+  protected val runtimeContextManager: RuntimeContextManager[CONTEXT] = edition.newRuntimeContextManager(resolver, lifeSupport, logProvider)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
   var txHolder = new ThreadLocal[InternalTransaction]

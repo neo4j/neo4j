@@ -23,10 +23,11 @@ import java.util.Collections
 
 import org.neo4j.cypher.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.{CypherRuntime, MasterCompiler, RuntimeContext}
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.{CypherRuntime, MasterCompiler, RuntimeContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.logging.LogProvider
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue, VirtualValues}
 
@@ -207,8 +208,11 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
     runtimeResult should beColumns("type").withSingleRow("AWESOME_RELATIONSHIP")
   }
 
-  override protected def createRuntimeTestSupport(graphDb: GraphDatabaseService, edition: Edition[CONTEXT], workloadMode: Boolean): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode) {
+  override protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
+                                                  edition: Edition[CONTEXT],
+                                                  workloadMode: Boolean,
+                                                  logProvider: LogProvider): RuntimeTestSupport[CONTEXT] = {
+    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider) {
 
       override protected def newRuntimeContext(txContext: TransactionalContext, queryContext: QueryContext): CONTEXT = {
         runtimeContextManager.create(queryContext,
