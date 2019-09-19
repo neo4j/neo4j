@@ -58,7 +58,7 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
                 new SecureHasher(),
                 new BasicPasswordPolicy(),
                 authStategy,
-                true);
+                true );
         setupDefaultUser();
     }
 
