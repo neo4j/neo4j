@@ -199,17 +199,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", NoChildren, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
-      case GrantAccess(_, database, roleName) =>
-        val dbName = Prettifier.extractDbScope(database)
-        PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(Database(dbName), Role(roleName)), variables)
+      case GrantDatabaseAction(_, action, database, roleName) =>
+        val (dbName, actionName) = Prettifier.extractDbScope(database, action)
+        PlanDescriptionImpl(id, "GrantDatabaseAction", NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
 
-      case DenyAccess(_, database, roleName) =>
-        val dbName = Prettifier.extractDbScope(database)
-        PlanDescriptionImpl(id, "DenyTraverse", NoChildren, Seq(Database(dbName), Role(roleName)), variables)
+      case DenyDatabaseAction(_, action, database, roleName) =>
+        val (dbName, actionName) = Prettifier.extractDbScope(database, action)
+        PlanDescriptionImpl(id, "DenyDatabaseAction", NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
 
-      case RevokeAccess(_, database, roleName, revokeType) =>
-        val dbName = Prettifier.extractDbScope(database)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), NoChildren, Seq(Database(dbName), Role(roleName)), variables)
+      case RevokeDatabaseAction(_, action, database, roleName, revokeType) =>
+        val (dbName, actionName) = Prettifier.extractDbScope(database, action)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
@@ -522,17 +522,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case RevokeRoleFromUser(_, roleName, userName) =>
         PlanDescriptionImpl(id, "RevokeRoleFromUser", children, Seq(Role(Prettifier.escapeName(roleName)), User(Prettifier.escapeName(userName))), variables)
 
-      case GrantAccess(_, database, roleName) =>
-        val dbName = Prettifier.extractDbScope(database)
-        PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(Database(dbName), Role(roleName)), variables)
+      case GrantDatabaseAction(_, action, database, roleName) =>
+        val (dbName, actionName) = Prettifier.extractDbScope(database, action)
+        PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
 
-      case DenyAccess(_, database, roleName) =>
-        val dbName = Prettifier.extractDbScope(database)
-        PlanDescriptionImpl(id, "DenyTraverse", NoChildren, Seq(Database(dbName), Role(roleName)), variables)
+      case DenyDatabaseAction(_, action, database, roleName) =>
+        val (dbName, actionName) = Prettifier.extractDbScope(database, action)
+        PlanDescriptionImpl(id, "DenyTraverse", NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
 
-      case RevokeAccess(_, database, roleName, revokeType) =>
-        val dbName = Prettifier.extractDbScope(database)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), NoChildren, Seq(Database(dbName), Role(roleName)), variables)
+      case RevokeDatabaseAction(_, action, database, roleName, revokeType) =>
+        val (dbName, actionName) = Prettifier.extractDbScope(database, action)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)

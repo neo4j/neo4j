@@ -251,7 +251,6 @@ sealed trait AdminAction
 
 sealed trait DatabaseAction extends AdminAction
 
-// TODO not sure about case class/object or even if they should be here or in plans or somewhere else, might need both here and in plans
 case object AccessDatabaseAction extends DatabaseAction
 case object StartDatabaseAction extends DatabaseAction
 case object StopDatabaseAction extends DatabaseAction

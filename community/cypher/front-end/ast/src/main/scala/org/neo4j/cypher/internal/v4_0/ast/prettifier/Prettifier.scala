@@ -466,14 +466,14 @@ object Prettifier {
     case _ => "<unknown>"
   }
 
-  def extractDbScope(action: DatabaseAction): String = action match {
+  def extractDbScope(action: AdminAction): String = action match {
     case AccessDatabaseAction => "ACCESS"
     case StartDatabaseAction => "START"
     case StopDatabaseAction => "STOP"
     case _ => "<unknown>"
   }
 
-  def extractDbScope(dbScope: GraphScope, action: DatabaseAction): (String, String) = (extractDbScope(dbScope), extractDbScope(action))
+  def extractDbScope(dbScope: GraphScope, action: AdminAction): (String, String) = (extractDbScope(dbScope), extractDbScope(action))
 
   /*
    * Some strings (identifiers) were escaped with back-ticks to allow non-identifier characters

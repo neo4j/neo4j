@@ -21,10 +21,10 @@ package org.neo4j.internal.kernel.api.security;
 
 public class AdminActionOnResource
 {
-    private final AdminAction action;
+    private final PrivilegeAction action;
     private final DatabaseScope resource;
 
-    public AdminActionOnResource( AdminAction action, DatabaseScope resource )
+    public AdminActionOnResource( PrivilegeAction action, DatabaseScope resource )
     {
         this.action = action;
         this.resource = resource;
@@ -35,7 +35,7 @@ public class AdminActionOnResource
         return action.satisfies( request.action ) && (resource.all || resource.name.equals( request.resource.name ));
     }
 
-    public static AdminActionOnResource ALL = new AdminActionOnResource( AdminAction.ALL_ADMIN, DatabaseScope.ALL );
+    public static AdminActionOnResource ALL = new AdminActionOnResource( PrivilegeAction.ADMIN, DatabaseScope.ALL );
 
     public static class DatabaseScope
     {

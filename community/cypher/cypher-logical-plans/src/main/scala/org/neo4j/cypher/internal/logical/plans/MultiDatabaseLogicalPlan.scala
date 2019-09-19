@@ -69,9 +69,13 @@ abstract class PrivilegePlan()(implicit idGen: IdGen) extends SecurityAdministra
 case class AssertDbmsAdmin(action: AdminAction)(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertDatabaseAdmin(action: AdminAction, database: NormalizedDatabaseName)(implicit idGen: IdGen) extends PrivilegePlan
 
-case class GrantAccess(source: Option[PrivilegePlan], database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
-case class DenyAccess(source: Option[PrivilegePlan], database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
-case class RevokeAccess(source: Option[PrivilegePlan], database: GraphScope, roleName: String, revokeType: RevokeType)(implicit idGen: IdGen) extends PrivilegePlan
+case class GrantDbmsAction(source: Option[PrivilegePlan], action: AdminAction, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class DenyDbmsAction(source: Option[PrivilegePlan], action: AdminAction, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class RevokeDbmsAction(source: Option[PrivilegePlan], action: AdminAction, roleName: String, revokeType: RevokeType)(implicit idGen: IdGen) extends PrivilegePlan
+
+case class GrantDatabaseAction(source: Option[PrivilegePlan], action: AdminAction, database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class DenyDatabaseAction(source: Option[PrivilegePlan], action: AdminAction, database: GraphScope, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class RevokeDatabaseAction(source: Option[PrivilegePlan], action: AdminAction, database: GraphScope, roleName: String, revokeType: RevokeType)(implicit idGen: IdGen) extends PrivilegePlan
 
 case class GrantTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class DenyTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan

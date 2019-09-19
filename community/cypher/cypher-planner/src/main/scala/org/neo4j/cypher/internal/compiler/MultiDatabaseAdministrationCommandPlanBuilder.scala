@@ -178,22 +178,22 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case (source, (userName, roleName)) => Some(plans.RevokeRoleFromUser(source, userName, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // GRANT ACCESS ON DATABASE foo TO role
+      // GRANT ACCESS/START/STOP ON DATABASE foo TO role
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
         roleNames.foldLeft(Some(plans.AssertDbmsAdmin(action).asInstanceOf[PrivilegePlan])) {
-          case (source, roleName) => Some(plans.GrantAccess(source, database, roleName))
+          case (source, roleName) => Some(plans.GrantDatabaseAction(source, action, database, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // DENY ACCESS ON DATABASE foo TO role
+      // DENY ACCESS/START/STOP ON DATABASE foo TO role
       case c@DenyPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
         roleNames.foldLeft(Some(plans.AssertDbmsAdmin(action).asInstanceOf[PrivilegePlan])) {
-          case (source, roleName) => Some(plans.DenyAccess(source, database, roleName))
+          case (source, roleName) => Some(plans.DenyDatabaseAction(source, action, database, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // REVOKE ACCESS ON DATABASE foo FROM role
+      // REVOKE ACCESS/START/STOP ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
         roleNames.foldLeft(Some(plans.AssertDbmsAdmin(action).asInstanceOf[PrivilegePlan])) {
-          case (source, roleName) => Some(plans.RevokeAccess(source, database, roleName, revokeType))
+          case (source, roleName) => Some(plans.RevokeDatabaseAction(source, action, database, roleName, revokeType))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role

@@ -19,8 +19,24 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public enum AdminAction
+public enum PrivilegeAction
 {
+    // Database actions
+    /** ACCESS database */
+    ACCESS,
+
+    /** MATCH element and read labels */
+    TRAVERSE,
+
+    /** Read properties of element */
+    READ,
+
+    /** Create, update and delete elements and properties */
+    WRITE,
+
+    /** Execute procedure/view with elevated access */
+    EXECUTE,
+
     CREATE_LABEL,
     CREATE_RELTYPE,
     CREATE_PROPERTYKEY,
@@ -32,13 +48,15 @@ public enum AdminAction
 
     START_DATABASE,
     STOP_DATABASE,
-    CREATE_DATABASE,
-    DROP_DATABASE,
 
     SHOW_TRANSACTION,
     KILL_TRANSACTION,
     SHOW_CONNECTION,
     KILL_CONNECTION,
+
+    // DBMS actions
+    CREATE_DATABASE,
+    DROP_DATABASE,
 
     SHOW_USER,
     CREATE_USER,
@@ -58,17 +76,23 @@ public enum AdminAction
 
     // Some grouping actions that represent super-sets of other actions
 
-    ALL_ADMIN  // TODO: Remove this entry once all admin privileges are property supported as fine grained
+    // TODO UNIT TEST ME!!!!!!!!!!
+    ADMIN
             {
-                public boolean satisfies( AdminAction action )
+                public boolean satisfies( PrivilegeAction action )
                 {
-                    return true;
+                    return USER_MANAGEMENT.satisfies( action ) ||
+                           ROLE_MANAGEMENT.satisfies( action ) ||
+                           PRIVILEGE_MANAGEMENT.satisfies( action ) ||
+                           TRANSACTION_MANAGEMENT.satisfies( action ) ||
+                           DATABASE_MANAGEMENT.satisfies( action ) ||
+                           this == action;
                 }
             },
 
-    ALL_TOKEN
+    TOKEN
             {
-                public boolean satisfies( AdminAction action )
+                public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
                     {
@@ -82,9 +106,9 @@ public enum AdminAction
                 }
             },
 
-    ALL_SCHEMA
+    SCHEMA
             {
-                public boolean satisfies( AdminAction action )
+                public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
                     {
@@ -99,9 +123,26 @@ public enum AdminAction
                 }
             },
 
-    ALL_TRANSACTION
+    DATABASE_MANAGEMENT
             {
-                public boolean satisfies( AdminAction action )
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case CREATE_DATABASE:
+                    case DROP_DATABASE:
+                    case START_DATABASE:
+                    case STOP_DATABASE:
+                        return true;
+                    default:
+                        return this == action;
+                    }
+                }
+            },
+
+    TRANSACTION_MANAGEMENT
+            {
+                public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
                     {
@@ -116,9 +157,9 @@ public enum AdminAction
                 }
             },
 
-    ALL_USER
+    USER_MANAGEMENT
             {
-                public boolean satisfies( AdminAction action )
+                public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
                     {
@@ -133,9 +174,9 @@ public enum AdminAction
                 }
             },
 
-    ALL_ROLE
+    ROLE_MANAGEMENT
             {
-                public boolean satisfies( AdminAction action )
+                public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
                     {
@@ -151,9 +192,9 @@ public enum AdminAction
                 }
             },
 
-    ALL_PRIVILEGE
+    PRIVILEGE_MANAGEMENT
             {
-                public boolean satisfies( AdminAction action )
+                public boolean satisfies( PrivilegeAction action )
                 {
                     switch ( action )
                     {
@@ -172,8 +213,19 @@ public enum AdminAction
      * @return true if this action satifies the specified action. For example any broad-scope action satisfies many other actions, but a narrow scope action
      * satifies only itself.
      */
-    public boolean satisfies( AdminAction action )
+    public boolean satisfies( PrivilegeAction action )
     {
         return this == action;
+    }
+
+    @Override
+    public String toString()
+    {
+        return super.toString().toLowerCase();
+    }
+
+    public boolean isAdminAction()
+    {
+        return ADMIN.satisfies( this );
     }
 }

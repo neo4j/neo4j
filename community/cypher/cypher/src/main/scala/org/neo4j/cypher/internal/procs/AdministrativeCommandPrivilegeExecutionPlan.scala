@@ -28,7 +28,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
-import org.neo4j.internal.kernel.api.security.{AdminActionOnResource, SecurityContext, AdminAction => KernelAdminAction}
+import org.neo4j.internal.kernel.api.security.{AdminActionOnResource, SecurityContext, PrivilegeAction => KernelPrivilegeAction}
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
@@ -54,49 +54,51 @@ case class AdministrativeCommandPrivilegeExecutionPlan(securityContext: Security
 }
 
 object AdminActionMapper {
-  def asKernelAction(action: AdminAction): KernelAdminAction = action match {
-    case StartDatabaseAction => KernelAdminAction.START_DATABASE
-    case StopDatabaseAction => KernelAdminAction.STOP_DATABASE
-    case CreateDatabaseAction => KernelAdminAction.CREATE_DATABASE
-    case DropDatabaseAction => KernelAdminAction.DROP_DATABASE
+  def asKernelAction(action: AdminAction): KernelPrivilegeAction = action match {
+    case AccessDatabaseAction => KernelPrivilegeAction.ACCESS
 
-    case ShowUserAction => KernelAdminAction.SHOW_USER
-    case CreateUserAction => KernelAdminAction.CREATE_USER
-    case AlterUserAction => KernelAdminAction.ALTER_USER
-    case DropUserAction => KernelAdminAction.DROP_USER
+    case StartDatabaseAction => KernelPrivilegeAction.START_DATABASE
+    case StopDatabaseAction => KernelPrivilegeAction.STOP_DATABASE
+    case CreateDatabaseAction => KernelPrivilegeAction.CREATE_DATABASE
+    case DropDatabaseAction => KernelPrivilegeAction.DROP_DATABASE
 
-    case ShowRoleAction => KernelAdminAction.SHOW_ROLE
-    case CreateRoleAction => KernelAdminAction.CREATE_ROLE
-    case DropRoleAction => KernelAdminAction.DROP_ROLE
-    case GrantRoleAction => KernelAdminAction.GRANT_ROLE
-    case RevokeRoleAction => KernelAdminAction.REVOKE_ROLE
+    case ShowUserAction => KernelPrivilegeAction.SHOW_USER
+    case CreateUserAction => KernelPrivilegeAction.CREATE_USER
+    case AlterUserAction => KernelPrivilegeAction.ALTER_USER
+    case DropUserAction => KernelPrivilegeAction.DROP_USER
 
-    case ShowPrivilegeAction => KernelAdminAction.SHOW_PRIVILEGE
-    case GrantPrivilegeAction => KernelAdminAction.GRANT_PRIVILEGE
-    case RevokePrivilegeAction => KernelAdminAction.REVOKE_PRIVILEGE
-    case DenyPrivilegeAction => KernelAdminAction.DENY_PRIVILEGE
+    case ShowRoleAction => KernelPrivilegeAction.SHOW_ROLE
+    case CreateRoleAction => KernelPrivilegeAction.CREATE_ROLE
+    case DropRoleAction => KernelPrivilegeAction.DROP_ROLE
+    case GrantRoleAction => KernelPrivilegeAction.GRANT_ROLE
+    case RevokeRoleAction => KernelPrivilegeAction.REVOKE_ROLE
+
+    case ShowPrivilegeAction => KernelPrivilegeAction.SHOW_PRIVILEGE
+    case GrantPrivilegeAction => KernelPrivilegeAction.GRANT_PRIVILEGE
+    case RevokePrivilegeAction => KernelPrivilegeAction.REVOKE_PRIVILEGE
+    case DenyPrivilegeAction => KernelPrivilegeAction.DENY_PRIVILEGE
   }
 
-  def asCypherAdminAction(action: KernelAdminAction): AdminAction = action match {
-    case KernelAdminAction.START_DATABASE => StartDatabaseAction
-    case KernelAdminAction.STOP_DATABASE => StopDatabaseAction
-    case KernelAdminAction.CREATE_DATABASE => CreateDatabaseAction
-    case KernelAdminAction.DROP_DATABASE => DropDatabaseAction
+  def asCypherAdminAction(action: KernelPrivilegeAction): AdminAction = action match {
+    case KernelPrivilegeAction.START_DATABASE => StartDatabaseAction
+    case KernelPrivilegeAction.STOP_DATABASE => StopDatabaseAction
+    case KernelPrivilegeAction.CREATE_DATABASE => CreateDatabaseAction
+    case KernelPrivilegeAction.DROP_DATABASE => DropDatabaseAction
 
-    case KernelAdminAction.SHOW_USER => ShowUserAction
-    case KernelAdminAction.CREATE_USER => CreateUserAction
-    case KernelAdminAction.ALTER_USER => AlterUserAction
-    case KernelAdminAction.DROP_USER => DropUserAction
+    case KernelPrivilegeAction.SHOW_USER => ShowUserAction
+    case KernelPrivilegeAction.CREATE_USER => CreateUserAction
+    case KernelPrivilegeAction.ALTER_USER => AlterUserAction
+    case KernelPrivilegeAction.DROP_USER => DropUserAction
 
-    case KernelAdminAction.SHOW_ROLE => ShowRoleAction
-    case KernelAdminAction.CREATE_ROLE => CreateRoleAction
-    case KernelAdminAction.DROP_ROLE => DropRoleAction
-    case KernelAdminAction.GRANT_ROLE => GrantRoleAction
-    case KernelAdminAction.REVOKE_ROLE => RevokeRoleAction
+    case KernelPrivilegeAction.SHOW_ROLE => ShowRoleAction
+    case KernelPrivilegeAction.CREATE_ROLE => CreateRoleAction
+    case KernelPrivilegeAction.DROP_ROLE => DropRoleAction
+    case KernelPrivilegeAction.GRANT_ROLE => GrantRoleAction
+    case KernelPrivilegeAction.REVOKE_ROLE => RevokeRoleAction
 
-    case KernelAdminAction.SHOW_PRIVILEGE => ShowPrivilegeAction
-    case KernelAdminAction.GRANT_PRIVILEGE => GrantPrivilegeAction
-    case KernelAdminAction.REVOKE_PRIVILEGE => RevokePrivilegeAction
-    case KernelAdminAction.DENY_PRIVILEGE => DenyPrivilegeAction
+    case KernelPrivilegeAction.SHOW_PRIVILEGE => ShowPrivilegeAction
+    case KernelPrivilegeAction.GRANT_PRIVILEGE => GrantPrivilegeAction
+    case KernelPrivilegeAction.REVOKE_PRIVILEGE => RevokePrivilegeAction
+    case KernelPrivilegeAction.DENY_PRIVILEGE => DenyPrivilegeAction
   }
 }
