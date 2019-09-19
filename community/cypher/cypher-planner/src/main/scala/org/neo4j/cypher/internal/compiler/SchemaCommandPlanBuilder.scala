@@ -82,9 +82,13 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         Some(plans.DropConstraintOnName(name))
 
       // CREATE INDEX ON :LABEL(prop)
-      // CREATE INDEX name ON :LABEL(prop)
-      case CreateIndex(label, props, name) =>
-        Some(plans.CreateIndex(label, props, name))
+      case CreateIndex(label, props) =>
+        Some(plans.CreateIndex(label, props, None))
+
+      // CREATE INDEX FOR (n:LABEL) ON (n.prop)
+      // CREATE INDEX name FOR (n:LABEL) ON (n.prop)
+      case CreateIndexNewSyntax(_, label, props, name) =>
+        Some(plans.CreateIndex(label, props.map(_.propertyKey), name))
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, props) =>

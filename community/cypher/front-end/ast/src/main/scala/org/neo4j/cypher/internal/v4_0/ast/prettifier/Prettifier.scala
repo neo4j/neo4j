@@ -35,11 +35,16 @@ case class Prettifier(expr: ExpressionStringifier) {
       val query = queryPart(part)
       s"$hint$query"
 
-    case CreateIndex(LabelName(label), properties, None) =>
+    case CreateIndex(LabelName(label), properties) =>
       s"CREATE INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
 
-    case CreateIndex(LabelName(label), properties, Some(name)) =>
-      s"CREATE INDEX ${Prettifier.escapeName(name)} ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
+    case CreateIndexNewSyntax(variable, LabelName(label), properties, None) =>
+      val propString = properties.map(p => s"${p.map.asInstanceOf[Variable].name}.${p.propertyKey.name}").mkString("(", ", ", ")")
+      s"CREATE INDEX FOR (${variable.name}:$label) ON $propString"
+
+    case CreateIndexNewSyntax(variable, LabelName(label), properties, Some(name)) =>
+      val propString = properties.map(p => s"${p.map.asInstanceOf[Variable].name}.${p.propertyKey.name}").mkString("(", ", ", ")")
+      s"CREATE INDEX ${Prettifier.escapeName(name)} FOR (${variable.name}:$label) ON $propString"
 
     case DropIndex(LabelName(label), properties) =>
       s"DROP INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"

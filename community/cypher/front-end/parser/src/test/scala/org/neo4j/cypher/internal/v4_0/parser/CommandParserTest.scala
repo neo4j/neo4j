@@ -32,37 +32,56 @@ class CommandParserTest
   // Create index
 
   test("CREATE INDEX ON :Person(name)") {
-    yields(ast.CreateIndex(exp.LabelName("Person")(_), List(exp.PropertyKeyName("name")(pos)), None))
+    yields(ast.CreateIndex(labelName("Person"), List(propertyKeyName("name"))))
   }
 
   test("CREATE INDEX ON :Person(name,age)") {
-    yields(ast.CreateIndex(exp.LabelName("Person")(_), List(exp.PropertyKeyName("name")(pos), exp.PropertyKeyName("age")(pos)), None))
+    yields(ast.CreateIndex(labelName("Person"), List(propertyKeyName("name"), propertyKeyName("age"))))
   }
 
   test("CREATE INDEX my_index ON :Person(name)") {
-    yields(ast.CreateIndex(exp.LabelName("Person")(_), List(exp.PropertyKeyName("name")(pos)), Some("my_index")))
+    failsToParse
   }
 
   test("CREATE INDEX my_index ON :Person(name,age)") {
-    yields(ast.CreateIndex(exp.LabelName("Person")(_), List(exp.PropertyKeyName("name")(pos), exp.PropertyKeyName("age")(pos)), Some("my_index")))
-  }
-
-  test("CREATE INDEX `$my_index` ON :Person(name)") {
-    yields(ast.CreateIndex(exp.LabelName("Person")(_), List(exp.PropertyKeyName("name")(pos)), Some("$my_index")))
-  }
-
-  test("CREATE INDEX $my_index ON :Person(name)") {
     failsToParse
   }
+
+  // new syntax
+
+  test("CREATE INDEX FOR (n:Person) ON (n.name)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), None))
+  }
+
+  test("CREATE INDEX FOR (n:Person) ON (n.name, n.age)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None))
+  }
+
+  test("CREATE INDEX my_index FOR (n:Person) ON (n.name)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index")))
+  }
+
+  test("CREATE INDEX my_index FOR (n:Person) ON (n.name, n.age)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index")))
+  }
+
+  test("CREATE INDEX `$my_index` FOR (n:Person) ON (n.name)") {
+    yields(ast.CreateIndexNewSyntax(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("$my_index")))
+  }
+
+  test("CREATE INDEX $my_index FOR (n:Person) ON (n.name)") {
+    failsToParse
+  }
+
 
   // Drop index
 
   test("DROP INDEX ON :Person(name)") {
-    yields(ast.DropIndex(exp.LabelName("Person")(_), List(exp.PropertyKeyName("name")(pos))))
+    yields(ast.DropIndex(labelName("Person"), List(propertyKeyName("name"))))
   }
 
   test("DROP INDEX ON :Person(name, age)") {
-    yields(ast.DropIndex(exp.LabelName("Person")(_), List(exp.PropertyKeyName("name")(pos), exp.PropertyKeyName("age")(pos))))
+    yields(ast.DropIndex(labelName("Person"), List(propertyKeyName("name"), propertyKeyName("age"))))
   }
 
   test("DROP INDEX my_index") {
@@ -84,50 +103,41 @@ class CommandParserTest
   // Create constraint
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateNodeKeyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), None))
+    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateNodeKeyConstraint(variable, exp.LabelName("Label")(_),
-      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_)), None))
+    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
+      Seq(prop("node", "prop1"), prop("node", "prop2")), None))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), None))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), None))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_),
-      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_)), None))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
+      Seq(prop("node", "prop1"), prop("node", "prop2")), None))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateNodePropertyExistenceConstraint(variable, exp.LabelName("Label")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), None))
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None))
   }
 
   test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    val variable = exp.Variable("r")(_)
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), None))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None))
   }
 
   test("CREATE CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    val variable = exp.Variable("r")(_)
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), None))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None))
   }
 
   test("CREATE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    val variable = exp.Variable("r")(_)
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), None))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS NODE KEY") {
@@ -143,40 +153,33 @@ class CommandParserTest
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateNodeKeyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), Some("my_constraint")))
+    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint")))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateNodeKeyConstraint(variable, exp.LabelName("Label")(_),
-      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_)), Some("my_constraint")))
+    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
+      Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint")))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), Some("my_constraint")))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint")))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)), Some("my_constraint")))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint")))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateUniquePropertyConstraint(variable, exp.LabelName("Label")(_),
-      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_)), Some("my_constraint")))
+    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
+      Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint")))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.CreateNodePropertyExistenceConstraint(variable, exp.LabelName("Label")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), Some("my_constraint")))
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint")))
   }
 
   test("CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    val variable = exp.Variable("r")(_)
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_), Some("$my_constraint")))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint")))
   }
 
   test("CREATE CONSTRAINT $my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
@@ -186,50 +189,41 @@ class CommandParserTest
   // Drop constraint
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.DropNodeKeyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_))))
+    yields(ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.DropNodeKeyConstraint(variable, exp.LabelName("Label")(_),
-      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_))))
+    yields(ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"),
+      Seq(prop("node", "prop1"), prop("node", "prop2"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.DropUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_))))
+    yields(ast.DropUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.DropUniquePropertyConstraint(variable, exp.LabelName("Label")(_), Seq(exp.Property(variable, exp.PropertyKeyName("prop")(_))(_))))
+    yields(ast.DropUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.DropUniquePropertyConstraint(variable, exp.LabelName("Label")(_),
-      Seq(exp.Property(variable, exp.PropertyKeyName("prop1")(_))(_), exp.Property(variable, exp.PropertyKeyName("prop2")(_))(_))))
+    yields(ast.DropUniquePropertyConstraint(varFor("node"), labelName("Label"),
+      Seq(prop("node", "prop1"), prop("node", "prop2"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
-    val variable = exp.Variable("node")(_)
-    yields(ast.DropNodePropertyExistenceConstraint(variable, exp.LabelName("Label")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)))
+    yields(ast.DropNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop")))
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    val variable = exp.Variable("r")(_)
-    yields(ast.DropRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)))
+    yields(ast.DropRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop")))
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    val variable = exp.Variable("r")(_)
-    yields(ast.DropRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)))
+    yields(ast.DropRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop")))
   }
 
   test("DROP CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    val variable = exp.Variable("r")(_)
-    yields(ast.DropRelationshipPropertyExistenceConstraint(variable, exp.RelTypeName("R")(_), exp.Property(variable, exp.PropertyKeyName("prop")(_))(_)))
+    yields(ast.DropRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop")))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS NODE KEY") {
@@ -260,4 +254,13 @@ class CommandParserTest
     failsToParse
   }
 
+  // help method
+
+  private def propertyKeyName(name: String) = {
+    exp.PropertyKeyName(name)(pos)
+  }
+
+  private def relTypeName(name: String) = {
+    exp.RelTypeName(name)(pos)
+  }
 }

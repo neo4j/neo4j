@@ -108,6 +108,16 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The parameter syntax `{param}` is deprecated, please use `$param` instead"
     ),
+    DEPRECATED_CREATE_INDEX_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The create index syntax `CREATE INDEX ON :Label(property)` is deprecated, please use `CREATE INDEX FOR (n:Label) ON (n.property)` instead"
+    ),
+    DEPRECATED_DROP_INDEX_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The drop index syntax `DROP INDEX ON :Label(property)` is deprecated, please use `DROP INDEX index_name` instead"
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,

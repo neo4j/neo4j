@@ -26,9 +26,23 @@ sealed trait Command extends Statement {
   override def returnColumns = List.empty
 }
 
-case class CreateIndex(label: LabelName, properties: List[PropertyKeyName], name: Option[String])(val position: InputPosition) extends Command {
+case class CreateIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition) extends Command {
 //  def property = properties(0)
   def semanticCheck = Seq()
+}
+
+case class CreateIndexNewSyntax(variable: Variable, label: LabelName, properties: List[Property], name: Option[String])(val position: InputPosition)
+  extends Command with SemanticAnalysisTooling {
+
+  override def semanticCheck =
+    declareVariable(variable, CTNode) chain
+    SemanticExpressionCheck.simple(properties) chain
+    semanticCheckFold(properties) {
+      property =>
+        when(!property.map.isInstanceOf[Variable]) {
+          error("Cannot index nested properties", property.position)
+        }
+    }
 }
 
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition) extends Command {

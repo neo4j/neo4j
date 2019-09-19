@@ -67,6 +67,10 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedParameterSyntax(pos) =>
       NotificationCode.DEPRECATED_PARAMETER_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedCreateIndexSyntax(pos) =>
+      NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedDropIndexSyntax(pos) =>
+      NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCompiledRuntimeNotification =>
       NotificationCode.DEPRECATED_COMPILED_RUNTIME.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>

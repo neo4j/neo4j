@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.rewriting
 
+import org.neo4j.cypher.internal.v4_0.ast.{CreateIndex, DropIndex}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util._
 
@@ -64,6 +65,18 @@ object Deprecations {
         Deprecation(
           () => p,
           () => Some(DeprecatedRelTypeSeparatorNotification(p.position))
+        )
+
+      case i: CreateIndex =>
+        Deprecation(
+          () => i,
+          () => Some(DeprecatedCreateIndexSyntax(i.position))
+        )
+
+      case i: DropIndex =>
+        Deprecation(
+          () => i,
+          () => Some(DeprecatedDropIndexSyntax(i.position))
         )
     }
   }

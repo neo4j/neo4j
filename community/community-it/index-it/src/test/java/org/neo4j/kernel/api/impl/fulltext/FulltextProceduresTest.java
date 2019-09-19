@@ -328,7 +328,7 @@ public class FulltextProceduresTest
         expectedException.expectMessage( "already exists" );
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( "CREATE INDEX `node` ON :Label1(prop1)" ).close();
+            transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
             transaction.commit();
         }
     }
@@ -345,7 +345,7 @@ public class FulltextProceduresTest
         expectedException.expectMessage( "There already exists an index called 'node'." );
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( "CREATE INDEX `node` ON :Label1(prop1)" ).close();
+            transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
             transaction.commit();
         }
     }
@@ -356,7 +356,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( "CREATE INDEX `node` ON :Label1(prop1)" ).close();
+            transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
             transaction.commit();
         }
         expectedException.expectMessage( "already exists" );
@@ -373,7 +373,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( "CREATE INDEX `node` ON :Label1(prop1)" ).close();
+            transaction.execute( "CREATE INDEX `node` FOR (n:Label1) ON (n.prop1)" ).close();
             transaction.commit();
         }
         expectedException.expectMessage( "already exists" );

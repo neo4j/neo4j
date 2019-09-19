@@ -36,3 +36,7 @@ case class DeprecatedVarLengthBindingNotification(position: InputPosition, varia
 case class DeprecatedRelTypeSeparatorNotification(position: InputPosition) extends InternalNotification
 
 case class DeprecatedParameterSyntax(position: InputPosition) extends InternalNotification
+
+case class DeprecatedCreateIndexSyntax(position: InputPosition) extends InternalNotification
+
+case class DeprecatedDropIndexSyntax(position: InputPosition) extends InternalNotification

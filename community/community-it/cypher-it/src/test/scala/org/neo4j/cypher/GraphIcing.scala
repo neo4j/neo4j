@@ -114,7 +114,7 @@ trait GraphIcing {
 
     def createIndex(label: String, properties: String*): IndexDefinition = {
       withTx( tx => {
-        tx.execute(s"CREATE INDEX ON :$label(${properties.map(p => s"`$p`").mkString(",")})")
+        tx.execute(s"CREATE INDEX FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")})")
       })
 
       withTx( tx => {
@@ -126,7 +126,7 @@ trait GraphIcing {
 
     def createIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
       withTx( tx => {
-        tx.execute(s"CREATE INDEX `$name` ON :$label(${properties.map(p => s"`$p`").mkString(",")})")
+        tx.execute(s"CREATE INDEX `$name` FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")})")
       })
 
       inTx {

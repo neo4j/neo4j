@@ -114,7 +114,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
   test("correctIndexStatisticsForIndexAddedTwice") {
     execute("create index on :Person(name)")
 
-    val result = execute("create index on :Person(name)")
+    val result = execute("create index for (n:Person) on (n.name)")
     val stats  = result.queryStatistics()
 
     assert(stats.indexesAdded === 0)
@@ -122,7 +122,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
   }
 
   test("correctIndexStatisticsForIndexWithNameAdded") {
-    val result = execute("create index my_index on :Person(name)")
+    val result = execute("create index my_index for (n:Person) on (n.name)")
     val stats  = result.queryStatistics()
 
     assert(stats.indexesAdded === 1)
