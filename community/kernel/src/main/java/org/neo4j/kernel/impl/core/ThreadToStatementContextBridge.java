@@ -78,11 +78,6 @@ public class ThreadToStatementContextBridge
         return getKernelTransactionBoundToThisThread( true, databaseId ).acquireStatement();
     }
 
-    public void assertInUnterminatedTransaction()
-    {
-        assertInUnterminatedTransaction( threadLocalTransaction.get() );
-    }
-
     public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict, DatabaseId databaseId )
     {
         KernelTransaction transaction = threadLocalTransaction.get();

@@ -34,6 +34,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -47,6 +48,7 @@ import static org.mockito.Mockito.when;
 class PathImplTest
 {
     private final EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
+    private final InternalTransaction transaction = mock( InternalTransaction.class );
 
     @Test
     void singularNodeWorksForwardsAndBackwards()
@@ -140,12 +142,12 @@ class PathImplTest
 
     private RelationshipProxy createRelationshipProxy( int startNodeId, int endNodeId )
     {
-        return new RelationshipProxy( spi, 1L, startNodeId, 1, endNodeId );
+        return new RelationshipProxy( spi, transaction, 1L, startNodeId, 1, endNodeId );
     }
 
     private NodeProxy createNodeProxy( int nodeId )
     {
-        return new NodeProxy( spi, nodeId );
+        return new NodeProxy( spi, transaction, nodeId );
     }
 
     private static Node createNode( long nodeId )

@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 
@@ -35,6 +36,7 @@ public class PathProxy implements Path
     private final long[] nodes;
     private final long[] relationships;
     private final int[] directedTypes;
+    private final InternalTransaction internalTransaction;
 
     /**
      * @param proxySPI
@@ -49,8 +51,9 @@ public class PathProxy implements Path
      *         has its start node at {@code i} and its end node at {@code i + 1}, and should be {@code ~typeId} if the
      *         relationship at {@code i} has its start node at {@code i + 1} and its end node at {@code i}.
      */
-    public PathProxy( EmbeddedProxySPI proxySPI, long[] nodes, long[] relationships, int[] directedTypes )
+    public PathProxy( EmbeddedProxySPI proxySPI, InternalTransaction internalTransaction, long[] nodes, long[] relationships, int[] directedTypes )
     {
+        this.internalTransaction = internalTransaction;
         assert nodes.length == relationships.length + 1;
         assert relationships.length == directedTypes.length;
         this.proxySPI = proxySPI;
@@ -130,13 +133,13 @@ public class PathProxy implements Path
     @Override
     public Node startNode()
     {
-        return new NodeProxy( proxySPI, nodes[0] );
+        return new NodeProxy( proxySPI, internalTransaction, nodes[0] );
     }
 
     @Override
     public Node endNode()
     {
-        return new NodeProxy( proxySPI, nodes[nodes.length - 1] );
+        return new NodeProxy( proxySPI, internalTransaction, nodes[nodes.length - 1] );
     }
 
     @Override
@@ -152,11 +155,11 @@ public class PathProxy implements Path
         int type = directedTypes[offset];
         if ( type >= 0 )
         {
-            return new RelationshipProxy( proxySPI, relationships[offset], nodes[offset], type, nodes[offset + 1] );
+            return new RelationshipProxy( proxySPI, internalTransaction, relationships[offset], nodes[offset], type, nodes[offset + 1] );
         }
         else
         {
-            return new RelationshipProxy( proxySPI, relationships[offset], nodes[offset + 1], ~type, nodes[offset] );
+            return new RelationshipProxy( proxySPI, internalTransaction, relationships[offset], nodes[offset + 1], ~type, nodes[offset] );
         }
     }
 
@@ -218,7 +221,7 @@ public class PathProxy implements Path
             @Override
             public Node next()
             {
-                return new NodeProxy( proxySPI, nodes[i++] );
+                return new NodeProxy( proxySPI, internalTransaction, nodes[i++] );
             }
         };
     }
@@ -239,7 +242,7 @@ public class PathProxy implements Path
             @Override
             public Node next()
             {
-                return new NodeProxy( proxySPI, nodes[--i] );
+                return new NodeProxy( proxySPI, internalTransaction, nodes[--i] );
             }
         };
     }
@@ -275,7 +278,7 @@ public class PathProxy implements Path
                 else
                 {
                     relationship = true;
-                    return new NodeProxy( proxySPI, nodes[i] );
+                    return new NodeProxy( proxySPI, internalTransaction, nodes[i] );
                 }
             }
         };

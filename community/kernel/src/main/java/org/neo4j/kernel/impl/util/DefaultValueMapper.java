@@ -30,6 +30,7 @@ import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
@@ -42,10 +43,12 @@ import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 public class DefaultValueMapper extends ValueMapper.JavaMapper
 {
     private final EmbeddedProxySPI proxySPI;
+    private final InternalTransaction transaction;
 
-    public DefaultValueMapper( EmbeddedProxySPI proxySPI )
+    public DefaultValueMapper( EmbeddedProxySPI proxySPI, InternalTransaction transaction )
     {
         this.proxySPI = proxySPI;
+        this.transaction = transaction;
     }
 
     @Override
@@ -55,7 +58,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         { // this is the back door through which "virtual nodes" slip
             return ((NodeProxyWrappingNodeValue) value).nodeProxy();
         }
-        return new NodeProxy( proxySPI, value.id() );
+        return new NodeProxy( proxySPI, transaction, value.id() );
     }
 
     @Override
@@ -65,7 +68,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         { // this is the back door through which "virtual relationships" slip
             return ((RelationshipProxyWrappingValue) value).relationshipProxy();
         }
-        return new RelationshipProxy( proxySPI, value.id() );
+        return new RelationshipProxy( proxySPI, transaction, value.id() );
     }
 
     @Override

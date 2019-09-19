@@ -45,6 +45,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -275,33 +276,26 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public KernelTransaction kernelTransaction()
-    {
-        return statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-    }
-
-    @Override
-    public void assertInUnterminatedTransaction()
-    {
-        statementContext.assertInUnterminatedTransaction();
-    }
-
-    @Override
     public RelationshipProxy newRelationshipProxy( long id )
     {
-        return new RelationshipProxy( this, id );
+        return new RelationshipProxy( this, getInternalTransaction(), id );
+    }
+
+    private InternalTransaction getInternalTransaction()
+    {
+        return ((KernelTransactionImplementation) statementContext.getKernelTransactionBoundToThisThread( true, databaseId() )).internalTransaction();
     }
 
     @Override
     public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
     {
-        return new RelationshipProxy( this, id, startNodeId, typeId, endNodeId );
+        return new RelationshipProxy( this, getInternalTransaction(), id, startNodeId, typeId, endNodeId );
     }
 
     @Override
     public NodeProxy newNodeProxy( long nodeId )
     {
-        return new NodeProxy( this, nodeId );
+        return new NodeProxy( this, getInternalTransaction(), nodeId );
     }
 
     @Override

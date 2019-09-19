@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -78,7 +79,7 @@ public class ProcedureTest
     private ProcedureCompiler procedureCompiler;
     private ComponentRegistry components;
     private final DependencyResolver dependencyResolver = new Dependencies();
-    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ), mock( InternalTransaction.class ) );
 
     @BeforeEach
     void setUp()

@@ -113,7 +113,7 @@ import static org.neo4j.values.virtual.VirtualValues.list;
 public class ProcedureCompilationTest
 {
     private static final AnyValue[] EMPTY = new AnyValue[0];
-    private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
+    private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper( mock( EmbeddedProxySPI.class ), mock( InternalTransaction.class ) );
     private static final InternalTransaction TRANSACTION = mock( InternalTransaction.class );
     public static final ResourceTracker RESOURCE_TRACKER = mock( ResourceTracker.class );
 

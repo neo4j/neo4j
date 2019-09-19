@@ -27,14 +27,12 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.function.Suppliers.lazySingleton;
 
 public class Neo4jTransactionalContextFactory implements TransactionalContextFactory
 {
-    private final Supplier<Statement> statementSupplier;
     private final Neo4jTransactionalContext.Creator contextCreator;
 
     public static TransactionalContextFactory create( EmbeddedProxySPI proxySpi, Supplier<GraphDatabaseQueryService> queryServiceSupplier,
@@ -44,8 +42,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         Neo4jTransactionalContext.Creator contextCreator =
                 ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(), txBridge, tx, initialStatement, executingQuery,
                         proxySpi, transactionFactory );
-        Supplier<Statement> statementSupplier = () -> proxySpi.kernelTransaction().acquireStatement();
-        return new Neo4jTransactionalContextFactory( statementSupplier, contextCreator );
+        return new Neo4jTransactionalContextFactory( contextCreator );
     }
 
     @Deprecated
@@ -66,21 +63,19 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
                                 proxySpi,
                                 transactionFactory
                         );
-        Supplier<Statement> statementSupplier = () -> proxySpi.kernelTransaction().acquireStatement();
-        return new Neo4jTransactionalContextFactory( statementSupplier, contextCreator );
+        return new Neo4jTransactionalContextFactory( contextCreator );
     }
 
     // Please use the factory methods above to actually construct an instance
-    private Neo4jTransactionalContextFactory( Supplier<Statement> statementSupplier, Neo4jTransactionalContext.Creator contextCreator )
+    private Neo4jTransactionalContextFactory( Neo4jTransactionalContext.Creator contextCreator )
     {
-        this.statementSupplier = statementSupplier;
         this.contextCreator = contextCreator;
     }
 
     @Override
     public final Neo4jTransactionalContext newContext( InternalTransaction tx, String queryText, MapValue queryParameters )
     {
-        Statement initialStatement = statementSupplier.get();
+        Statement initialStatement = tx.kernelTransaction().acquireStatement();
         var executingQuery = initialStatement.queryRegistration().startQueryExecution( queryText, queryParameters );
         return contextCreator.create( tx, initialStatement, executingQuery );
     }

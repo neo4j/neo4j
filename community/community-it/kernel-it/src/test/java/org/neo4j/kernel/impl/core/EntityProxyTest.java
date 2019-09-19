@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.api.TokenHolder;
@@ -97,11 +98,26 @@ public abstract class EntityProxyTest
         }
     }
 
-    EmbeddedProxySPI mockedProxySPIWithDepletedTokens() throws KernelException
+    InternalTransaction mockedTransactionWithDepletedTokens() throws KernelException
+    {
+        var internalTransaction = mock( InternalTransaction.class );
+        var ktx = mock( KernelTransaction.class );
+        var tokenWrite = mock( TokenWrite.class );
+        when( ktx.tokenWrite() ).thenReturn( tokenWrite );
+        when( tokenWrite.labelGetOrCreateForName( any() ) ).thenThrow(
+                new TokenCapacityExceededKernelException( new Exception( "Just some cause" ), TokenHolder.TYPE_LABEL ) );
+        when( tokenWrite.propertyKeyGetOrCreateForName( any() ) ).thenThrow(
+                new TokenCapacityExceededKernelException( new Exception( "Just some cause" ), TokenHolder.TYPE_PROPERTY_KEY ) );
+        when( tokenWrite.relationshipTypeGetOrCreateForName( any() ) ).thenThrow(
+                new TokenCapacityExceededKernelException( new Exception( "Just some cause" ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        when( internalTransaction.kernelTransaction() ).thenReturn( ktx );
+        return internalTransaction;
+    }
+
+    EmbeddedProxySPI mockedProxySPI() throws KernelException
     {
         EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
         KernelTransaction ktx = mock( KernelTransaction.class );
-        when( spi.kernelTransaction() ).thenReturn( ktx );
         TokenWrite tokenWrite = mock( TokenWrite.class );
         when( ktx.tokenWrite() ).thenReturn( tokenWrite );
         when( tokenWrite.labelGetOrCreateForName( any() ) ).thenThrow(

@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -196,7 +195,6 @@ public abstract class KernelIntegrationTest
         indexingService = dependencyResolver.resolveDependency( IndexingService.class );
         statementContextSupplier = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
         dbmsOperations = dependencyResolver.resolveDependency( DbmsOperations.class );
-        valueMapper = new DefaultValueMapper( dependencyResolver.resolveDependency( EmbeddedProxySPI.class ) );
     }
 
     protected DatabaseManagementService createDatabaseService()

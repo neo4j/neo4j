@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Relationship
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI
-import org.neo4j.kernel.impl.core.RelationshipProxy
+import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, RelationshipProxy}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 class ShortestPathNoDuplicatesTest extends CypherFunSuite {
 
@@ -36,9 +36,10 @@ class ShortestPathNoDuplicatesTest extends CypherFunSuite {
 
   test("Should handle lists of length two") {
     val actions = mock[EmbeddedProxySPI]
-    val a = new RelationshipProxy(actions, 1)
-    val b = new RelationshipProxy(actions, 2)
-    val a1 = new RelationshipProxy(actions, 1)
+    val transaction = mock[InternalTransaction]
+    val a = new RelationshipProxy(actions, transaction, 1)
+    val b = new RelationshipProxy(actions, transaction, 2)
+    val a1 = new RelationshipProxy(actions, transaction, 1)
 
     ShortestPathExpression.noDuplicates(List(a, b)) should be(true)
     ShortestPathExpression.noDuplicates(List(a, a)) should be(false)
@@ -47,9 +48,10 @@ class ShortestPathNoDuplicatesTest extends CypherFunSuite {
 
   test("Should handle lists of length three") {
     val actions = mock[EmbeddedProxySPI]
-    val a = new RelationshipProxy(actions, 1)
-    val b = new RelationshipProxy(actions, 2)
-    val c = new RelationshipProxy(actions, 3)
+    val transaction = mock[InternalTransaction]
+    val a = new RelationshipProxy(actions, transaction, 1)
+    val b = new RelationshipProxy(actions, transaction, 2)
+    val c = new RelationshipProxy(actions, transaction, 3)
 
     ShortestPathExpression.noDuplicates(List(a, b, c)) should be(true)
     ShortestPathExpression.noDuplicates(List(a, a, b)) should be(false)
@@ -59,15 +61,16 @@ class ShortestPathNoDuplicatesTest extends CypherFunSuite {
 
   test("Should handle long lists") {
     val actions = mock[EmbeddedProxySPI]
-    val a = new RelationshipProxy(actions, 1)
-    val b = new RelationshipProxy(actions, 2)
-    val c = new RelationshipProxy(actions, 3)
-    val d = new RelationshipProxy(actions, 4)
-    val e = new RelationshipProxy(actions, 5)
-    val f = new RelationshipProxy(actions, 6)
-    val g = new RelationshipProxy(actions, 7)
-    val h = new RelationshipProxy(actions, 8)
-    val i = new RelationshipProxy(actions, 9)
+    val transaction = mock[InternalTransaction]
+    val a = new RelationshipProxy(actions, transaction, 1)
+    val b = new RelationshipProxy(actions, transaction, 2)
+    val c = new RelationshipProxy(actions, transaction, 3)
+    val d = new RelationshipProxy(actions, transaction, 4)
+    val e = new RelationshipProxy(actions, transaction, 5)
+    val f = new RelationshipProxy(actions, transaction, 6)
+    val g = new RelationshipProxy(actions, transaction, 7)
+    val h = new RelationshipProxy(actions, transaction, 8)
+    val i = new RelationshipProxy(actions, transaction, 9)
 
     val l0 = List(a, b, c, d, e, f, g, h, i)
     ShortestPathExpression.noDuplicates(l0) should be(true)

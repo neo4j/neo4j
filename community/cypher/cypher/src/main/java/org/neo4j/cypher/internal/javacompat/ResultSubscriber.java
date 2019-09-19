@@ -70,7 +70,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     public ResultSubscriber( TransactionalContext context )
     {
         this.context = context;
-        this.valueMapper = new DefaultValueMapper( context.proxySPI() );
+        this.valueMapper = new DefaultValueMapper( context.proxySPI(), context.transaction() );
     }
 
     public void init( QueryExecution execution )

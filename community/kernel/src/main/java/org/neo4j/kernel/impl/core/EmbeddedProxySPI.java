@@ -20,14 +20,9 @@
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.api.KernelTransaction;
 
 public interface EmbeddedProxySPI
 {
-    KernelTransaction kernelTransaction();
-
-    void assertInUnterminatedTransaction();
-
     RelationshipProxy newRelationshipProxy( long id );
 
     RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );

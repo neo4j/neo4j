@@ -131,7 +131,6 @@ import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
@@ -336,7 +335,6 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( idController );
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( versionContextSupplier );
-            databaseDependencies.satisfyDependency( new DefaultValueMapper( databaseFacade ) );
             databaseDependencies.satisfyDependency( databaseTracer );
             databaseDependencies.satisfyDependency( lockTracer );
 

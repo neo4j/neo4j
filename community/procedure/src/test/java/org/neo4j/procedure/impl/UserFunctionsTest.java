@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
@@ -61,7 +62,7 @@ class UserFunctionsTest
                     .build();
     private final CallableUserFunction function = function( signature );
     private final DependencyResolver dependencyResolver = new Dependencies();
-    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ), mock( InternalTransaction.class ) );
 
     @Test
     void shouldGetRegisteredFunction() throws Throwable

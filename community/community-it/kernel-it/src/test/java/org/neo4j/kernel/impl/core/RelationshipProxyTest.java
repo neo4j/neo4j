@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.token.api.NamedToken;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,6 +65,7 @@ public class RelationshipProxyTest extends EntityProxyTest
     {
         // GIVEN
         EmbeddedProxySPI actions = mock( EmbeddedProxySPI.class );
+        var transaction = mock( InternalTransaction.class );
         when( actions.newNodeProxy( anyLong() ) ).then(
                 invocation -> nodeWithId( invocation.getArgument( 0 ) ) );
         when( actions.getRelationshipTypeById( anyInt() ) ).then(
@@ -95,8 +97,8 @@ public class RelationshipProxyTest extends EntityProxyTest
             long nodeId1 = ids[i + 1];
             long nodeId2 = ids[i + 2];
             int type = types[i];
-            verifyIds( actions, id, nodeId1, type, nodeId2 );
-            verifyIds( actions, id, nodeId2, type, nodeId1 );
+            verifyIds( actions, transaction, id, nodeId1, type, nodeId2 );
+            verifyIds( actions, transaction, id, nodeId2, type, nodeId1 );
         }
     }
 
@@ -230,16 +232,17 @@ public class RelationshipProxyTest extends EntityProxyTest
     void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
     {
         // given
-        EmbeddedProxySPI spi = mockedProxySPIWithDepletedTokens();
-        RelationshipProxy relationshipProxy = new RelationshipProxy( spi, 5 );
+        EmbeddedProxySPI spi = mockedProxySPI();
+        var transaction = mockedTransactionWithDepletedTokens();
+        RelationshipProxy relationshipProxy = new RelationshipProxy( spi, transaction, 5 );
 
         // when
         assertThrows( ConstraintViolationException.class, () -> relationshipProxy.setProperty( "key", "value" ) );
     }
 
-    private void verifyIds( EmbeddedProxySPI actions, long relationshipId, long nodeId1, int typeId, long nodeId2 )
+    private void verifyIds( EmbeddedProxySPI actions, InternalTransaction transaction, long relationshipId, long nodeId1, int typeId, long nodeId2 )
     {
-        RelationshipProxy proxy = new RelationshipProxy( actions, relationshipId, nodeId1, typeId, nodeId2 );
+        RelationshipProxy proxy = new RelationshipProxy( actions, transaction, relationshipId, nodeId1, typeId, nodeId2 );
         assertEquals( relationshipId, proxy.getId() );
         // our mock above is known to return RelationshipTypeToken
         assertEquals( nodeId1, proxy.getStartNode().getId() );

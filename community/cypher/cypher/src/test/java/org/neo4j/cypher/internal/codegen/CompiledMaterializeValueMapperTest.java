@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.codegen;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
@@ -39,16 +39,18 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
 
 class CompiledMaterializeValueMapperTest
 {
+    private static final InternalTransaction transaction = mock( InternalTransaction.class );
     private static final EmbeddedProxySPI spi = new CompilerEmbeddedProxySPI();
 
-    private static final NodeValue nodeProxyValue = ValueUtils.fromNodeProxy( new NodeProxy( spi, 1L ) );
+    private static final NodeValue nodeProxyValue = ValueUtils.fromNodeProxy( new NodeProxy( spi, transaction, 1L ) );
     private static final NodeValue directNodeValue = VirtualValues.nodeValue( 2L, Values.stringArray(), VirtualValues.EMPTY_MAP );
     private static final NodeReference nodeReference = VirtualValues.node( 1L ); // Should equal nodeProxyValue when converted
 
-    private static final RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipProxy( spi, 11L ) );
+    private static final RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipProxy( spi, transaction, 11L ) );
     private static final RelationshipValue directRelationshipValue =
             VirtualValues.relationshipValue( 12L, nodeProxyValue, directNodeValue, Values.stringValue( "TYPE" ), VirtualValues.EMPTY_MAP );
     private static final RelationshipReference relationshipReference = VirtualValues.relationship( 11L ); // Should equal relationshipProxyValue when converted
@@ -142,25 +144,13 @@ class CompiledMaterializeValueMapperTest
         @Override
         public RelationshipProxy newRelationshipProxy( long id )
         {
-            return new RelationshipProxy( this, id );
+            return new RelationshipProxy( this, transaction, id );
         }
 
         @Override
         public NodeProxy newNodeProxy( long nodeId )
         {
-            return new NodeProxy( this, nodeId );
-        }
-
-        @Override
-        public KernelTransaction kernelTransaction()
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public void assertInUnterminatedTransaction()
-        {
-            throw new IllegalStateException( "Should not be used" );
+            return new NodeProxy( this, transaction, nodeId );
         }
 
         @Override

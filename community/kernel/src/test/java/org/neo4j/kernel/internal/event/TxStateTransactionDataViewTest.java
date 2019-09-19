@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -69,7 +70,7 @@ class TxStateTransactionDataViewTest
     private final ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
     private final Statement stmt = mock( Statement.class );
     private final StubStorageCursors ops = new StubStorageCursors();
-    private final KernelTransaction transaction = mock( KernelTransaction.class );
+    private final KernelTransaction transaction = mock( KernelTransactionImplementation.class );
     private final TokenRead tokenRead = mock( TokenRead.class );
 
     private final TransactionState state = new TxState();
@@ -342,18 +343,20 @@ class TxStateTransactionDataViewTest
         List<Long> out = new ArrayList<>();
         for ( Entity entity : entities )
         {
-            out.add( entity instanceof Node ? ((Node) entity).getId() : ((Relationship) entity).getId() );
+            out.add( entity instanceof Node ? entity.getId() : entity.getId() );
         }
         return out;
     }
 
     private TxStateTransactionDataSnapshot snapshot()
     {
-        EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
-        when( spi.newNodeProxy( anyLong() ) ).thenAnswer( invocation -> new NodeProxy( spi, invocation.getArgument( 0 ) ) );
-        when( spi.newRelationshipProxy( anyLong() ) ).thenAnswer( invocation -> new RelationshipProxy( spi, invocation.getArgument( 0 ) ) );
-        when( spi.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).thenAnswer(
-                invocation -> new RelationshipProxy( spi, invocation.getArgument( 0 ), invocation.getArgument( 1 ),
+        var spi = mock( EmbeddedProxySPI.class );
+        var internalTransaction = mock( InternalTransaction.class );
+        when( spi.newNodeProxy( anyLong() ) ).thenAnswer( invocation -> new NodeProxy( spi, internalTransaction, invocation.getArgument( 0 ) ) );
+        when( spi.newRelationshipProxy( anyLong() ) )
+                .thenAnswer( invocation -> new RelationshipProxy( spi, internalTransaction, invocation.getArgument( 0 ) ) );
+        when( spi.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )
+                .thenAnswer( invocation -> new RelationshipProxy( spi, internalTransaction, invocation.getArgument( 0 ), invocation.getArgument( 1 ),
                         invocation.getArgument( 2 ), invocation.getArgument( 3 ) ) );
         return new TxStateTransactionDataSnapshot( state, spi, ops, transaction );
     }

@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -743,7 +744,7 @@ class KernelTransactionsTest
     private static Dependencies createDependencies()
     {
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( new DefaultValueMapper( mock( GraphDatabaseFacade.class ) ) );
+        dependencies.satisfyDependency( new DefaultValueMapper( mock( GraphDatabaseFacade.class ), mock( InternalTransaction.class ) ) );
         return dependencies;
     }
 

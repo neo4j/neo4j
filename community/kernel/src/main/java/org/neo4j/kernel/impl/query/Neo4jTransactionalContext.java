@@ -76,7 +76,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
         this.statement = initialStatement;
         this.proxySPI = proxySPI;
-        this.valueMapper = new DefaultValueMapper( proxySPI );
+        this.valueMapper = new DefaultValueMapper( proxySPI, initialTransaction );
         this.transactionFactory = transactionFactory;
     }
 

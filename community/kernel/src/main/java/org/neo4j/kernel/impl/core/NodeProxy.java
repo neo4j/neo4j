@@ -58,6 +58,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -73,10 +74,12 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 public class NodeProxy implements Node, RelationshipFactory<Relationship>
 {
     private final EmbeddedProxySPI spi;
+    private final InternalTransaction internalTransaction;
     private final long nodeId;
 
-    public NodeProxy( EmbeddedProxySPI spi, long nodeId )
+    public NodeProxy( EmbeddedProxySPI spi, InternalTransaction internalTransaction, long nodeId )
     {
+        this.internalTransaction = internalTransaction;
         this.nodeId = nodeId;
         this.spi = spi;
     }
@@ -86,7 +89,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         if ( node instanceof NodeProxy )
         {
             NodeProxy proxy = (NodeProxy) node;
-            KernelTransaction ktx = proxy.spi.kernelTransaction();
+            KernelTransaction ktx = proxy.internalTransaction.kernelTransaction();
             try ( Statement ignore = ktx.acquireStatement() )
             {
                 return ktx.dataRead().nodeDeletedInTransaction( proxy.nodeId );
@@ -228,7 +231,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     @Override
     public void setProperty( String key, Object value )
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKeyId;
         try
         {
@@ -282,7 +285,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKeyId;
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -505,7 +508,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
 
     private KernelTransaction safeAcquireTransaction()
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         if ( transaction.isTerminated() )
         {
             Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
@@ -583,7 +586,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     @Override
     public void addLabel( Label label )
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int labelId;
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -624,7 +627,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     @Override
     public void removeLabel( Label label )
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         try ( Statement ignore = transaction.acquireStatement() )
         {
             int labelId = transaction.tokenRead().nodeLabel( label.name() );

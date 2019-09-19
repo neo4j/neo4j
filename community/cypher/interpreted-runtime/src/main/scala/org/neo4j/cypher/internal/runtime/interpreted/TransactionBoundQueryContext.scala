@@ -71,7 +71,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
   override lazy val entityAccessor: EmbeddedProxySPI =
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[EmbeddedProxySPI])
-  private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(entityAccessor)
+  private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(entityAccessor, transactionalContext.tc.transaction())
 
   // We don't need to unregister this anywhere since the TransactionBoundQueryContext will be closed together with the Statement
   transactionalContext.tc.statement().registerCloseableResource(resources)

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
@@ -28,6 +27,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -38,19 +38,14 @@ import static org.mockito.Mockito.mock;
 
 class PathProxyTest
 {
-    private EmbeddedProxySPI proxySPI;
-
-    @BeforeEach
-    void setUp()
-    {
-        proxySPI = mock( EmbeddedProxySPI.class );
-    }
+    private final EmbeddedProxySPI proxySPI = mock( EmbeddedProxySPI.class );
+    private final InternalTransaction transaction = mock( InternalTransaction.class );
 
     @Test
     void shouldIterateThroughNodes()
     {
         // given
-        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Node> iterator = path.nodes().iterator();
         Node node;
@@ -72,7 +67,7 @@ class PathProxyTest
     void shouldIterateThroughNodesInReverse()
     {
         // given
-        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Node> iterator = path.reverseNodes().iterator();
         Node node;
@@ -94,7 +89,7 @@ class PathProxyTest
     void shouldIterateThroughRelationships()
     {
         // given
-        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Relationship> iterator = path.relationships().iterator();
         Relationship relationship;
@@ -117,7 +112,7 @@ class PathProxyTest
     void shouldIterateThroughRelationshipsInReverse()
     {
         // given
-        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Relationship> iterator = path.reverseRelationships().iterator();
         Relationship relationship;
@@ -140,7 +135,7 @@ class PathProxyTest
     void shouldIterateAlternatingNodesAndRelationships()
     {
         // given
-        Path path = new PathProxy( proxySPI, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
+        Path path = new PathProxy( proxySPI, transaction, new long[] {1, 2, 3}, new long[] {100, 200}, new int[] {0, ~0} );
 
         Iterator<Entity> iterator = path.iterator();
         Entity entity;
@@ -148,19 +143,19 @@ class PathProxyTest
         // then
         assertTrue( iterator.hasNext() );
         assertThat( entity = iterator.next(), instanceOf( Node.class ) );
-        assertEquals( 1, ((Entity) entity).getId() );
+        assertEquals( 1, entity.getId() );
         assertTrue( iterator.hasNext() );
         assertThat( entity = iterator.next(), instanceOf( Relationship.class ) );
-        assertEquals( 100, ((Entity) entity).getId() );
+        assertEquals( 100, entity.getId() );
         assertTrue( iterator.hasNext() );
         assertThat( entity = iterator.next(), instanceOf( Node.class ) );
-        assertEquals( 2, ((Entity) entity).getId() );
+        assertEquals( 2, entity.getId() );
         assertTrue( iterator.hasNext() );
         assertThat( entity = iterator.next(), instanceOf( Relationship.class ) );
-        assertEquals( 200, ((Entity) entity).getId() );
+        assertEquals( 200, entity.getId() );
         assertTrue( iterator.hasNext() );
         assertThat( entity = iterator.next(), instanceOf( Node.class ) );
-        assertEquals( 3, ((Entity) entity).getId() );
+        assertEquals( 3, entity.getId() );
         assertFalse( iterator.hasNext() );
     }
 }

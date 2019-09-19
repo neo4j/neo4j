@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -56,20 +57,23 @@ import static org.neo4j.internal.kernel.api.Read.NO_ID;
 public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
 {
     private final EmbeddedProxySPI spi;
+    private final InternalTransaction internalTransaction;
     private long id = NO_ID;
     private long startNode = NO_ID;
     private long endNode = NO_ID;
     private int type;
 
-    public RelationshipProxy( EmbeddedProxySPI spi, long id, long startNode, int type, long endNode )
+    public RelationshipProxy( EmbeddedProxySPI spi, InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
     {
         this.spi = spi;
+        this.internalTransaction = internalTransaction;
         visit( id, type, startNode, endNode );
     }
 
-    public RelationshipProxy( EmbeddedProxySPI spi, long id )
+    public RelationshipProxy( EmbeddedProxySPI spi, InternalTransaction internalTransaction, long id )
     {
         this.spi = spi;
+        this.internalTransaction = internalTransaction;
         this.id = id;
     }
 
@@ -78,7 +82,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         if ( relationship instanceof RelationshipProxy )
         {
             RelationshipProxy proxy = (RelationshipProxy) relationship;
-            KernelTransaction ktx = proxy.spi.kernelTransaction();
+            KernelTransaction ktx = proxy.internalTransaction.kernelTransaction();
             try ( Statement ignore = ktx.acquireStatement() )
             {
                 return ktx.dataRead().relationshipDeletedInTransaction( proxy.id );
@@ -101,7 +105,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         // It enough to check only start node, since it's absence will indicate that data was not yet loaded.
         if ( startNode == NO_ID )
         {
-            KernelTransaction transaction = spi.kernelTransaction();
+            KernelTransaction transaction = internalTransaction.kernelTransaction();
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
@@ -145,7 +149,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public void delete()
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         try
         {
             boolean deleted = transaction.dataWrite().relationshipDelete( id );
@@ -164,7 +168,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public Node[] getNodes()
     {
-        spi.assertInUnterminatedTransaction();
+        internalTransaction.kernelTransaction().assertOpen();
         return new Node[]{
                 spi.newNodeProxy( sourceId() ),
                 spi.newNodeProxy( targetId() )};
@@ -173,21 +177,21 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public Node getOtherNode( Node node )
     {
-        spi.assertInUnterminatedTransaction();
+        internalTransaction.kernelTransaction().assertOpen();
         return spi.newNodeProxy( getOtherNodeId( node.getId() ) );
     }
 
     @Override
     public Node getStartNode()
     {
-        spi.assertInUnterminatedTransaction();
+        internalTransaction.kernelTransaction().assertOpen();
         return spi.newNodeProxy( sourceId() );
     }
 
     @Override
     public Node getEndNode()
     {
-        spi.assertInUnterminatedTransaction();
+        internalTransaction.kernelTransaction().assertOpen();
         return spi.newNodeProxy( targetId() );
     }
 
@@ -222,14 +226,14 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public RelationshipType getType()
     {
-        spi.assertInUnterminatedTransaction();
+        internalTransaction.kernelTransaction().assertOpen();
         return spi.getRelationshipTypeById( typeId() );
     }
 
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         List<String> keys = new ArrayList<>();
         try
         {
@@ -260,7 +264,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             return Collections.emptyMap();
         }
 
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
 
         int itemsToReturn = keys.length;
         TokenRead token = transaction.tokenRead();
@@ -305,7 +309,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public Map<String, Object> getAllProperties()
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         Map<String,Object> properties = new HashMap<>();
 
         try
@@ -335,7 +339,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
         if ( propertyKey == TokenRead.NO_TOKEN )
         {
@@ -368,7 +372,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
         PropertyCursor properties = transaction.ambientPropertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
@@ -397,7 +401,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             return false;
         }
 
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
         if ( propertyKey == TokenRead.NO_TOKEN )
         {
@@ -421,7 +425,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public void setProperty( String key, Object value )
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKeyId;
         try
         {
@@ -470,7 +474,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public Object removeProperty( String key )
     {
-        KernelTransaction transaction = spi.kernelTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKeyId;
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -502,7 +506,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public boolean isType( RelationshipType type )
     {
-        spi.assertInUnterminatedTransaction();
+        internalTransaction.kernelTransaction().assertOpen();
         return spi.getRelationshipTypeById( typeId() ).name().equals( type.name() );
     }
 
