@@ -76,8 +76,9 @@ public enum AdminAction
                     case CREATE_RELTYPE:
                     case CREATE_PROPERTYKEY:
                         return true;
+                    default:
+                        return this == action;
                     }
-                    return this == action;
                 }
             },
 
@@ -92,8 +93,9 @@ public enum AdminAction
                     case CREATE_CONSTRAINT:
                     case DROP_CONSTRAINT:
                         return true;
+                    default:
+                        return this == action;
                     }
-                    return this == action;
                 }
             },
 
@@ -108,8 +110,9 @@ public enum AdminAction
                     case SHOW_CONNECTION:
                     case KILL_CONNECTION:
                         return true;
+                    default:
+                        return this == action;
                     }
-                    return this == action;
                 }
             },
 
@@ -124,8 +127,9 @@ public enum AdminAction
                     case ALTER_USER:
                     case DROP_USER:
                         return true;
+                    default:
+                        return this == action;
                     }
-                    return this == action;
                 }
             },
 
@@ -141,8 +145,9 @@ public enum AdminAction
                     case GRANT_ROLE:
                     case REVOKE_ROLE:
                         return true;
+                    default:
+                        return this == action;
                     }
-                    return this == action;
                 }
             },
 
@@ -157,8 +162,9 @@ public enum AdminAction
                     case DENY_PRIVILEGE:
                     case REVOKE_PRIVILEGE:
                         return true;
+                    default:
+                        return this == action;
                     }
-                    return this == action;
                 }
             };
 
