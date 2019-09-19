@@ -56,6 +56,7 @@ import org.neo4j.index.internal.gbptree.GBPTreeInspection;
 import org.neo4j.index.internal.gbptree.GBPTreePointerType;
 import org.neo4j.index.internal.gbptree.InspectingVisitor;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -70,6 +71,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,6 +81,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
+import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
@@ -102,11 +106,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         fs.mkdirs( neo4jHome );
 
-        dbmsAction( fs, NATIVE_BTREE10, db ->
+        dbmsAction( neo4jHome, fs, NATIVE_BTREE10, db ->
         {
             indexWithStringData( db, label );
             databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
-        });
+        } );
         sourceSnapshot = fs.snapshot();
     }
 
@@ -532,31 +536,51 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void multipleCorruptionsInFusionIndex() throws Exception
     {
-        // Also make sure we have some numbers
-        dbmsAction( fs, NATIVE30, db ->
-                {
-                    Label label = Label.label( "label2" );
-                    indexWithNumberData( db, label );
-                } );
+        // Because NATIVE30 provider use Lucene internally we can not use the snapshot from ephemeral file system because
+        // lucene will not use it to store the files. Therefor we use a default file system together with TestDirectory
+        // for cleanup.
+        final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
+        testDirectory.prepareDirectory( ConsistencyCheckWithCorruptGBPTreeIT.class, "multipleCorruptionsInFusionIndex" );
 
-        final File[] indexFiles = schemaIndexFiles( NATIVE30 );
-        final List<File> files = corruptIndexes( true, ( tree, inspection ) -> {
-            long leafNode = inspection.getLeafNodes().get( 1 );
-            long internalNode = inspection.getInternalNodes().get( 0 );
-            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( leafNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ) );
-            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( internalNode, GBPTreeCorruption.setChild( 0, internalNode ) ) );
-        }, indexFiles );
-
-        assertTrue( files.size() > 0, "Expected number of corrupted files to be more than one." );
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
-        for ( File file : files )
+        try
         {
-            assertResultContainsMessage( result,
-                    "Index will be excluded from further consistency checks. Index file: " + file.getAbsolutePath() );
+            final File neo4jHome = testDirectory.directory();
+            dbmsAction( neo4jHome, fs, NATIVE30, db ->
+            {
+                Label label = Label.label( "label2" );
+                indexWithNumberData( db, label );
+            } );
+
+            final File[] indexFiles = schemaIndexFiles( fs, testDirectory.databaseDir(), NATIVE30 );
+            final List<File> files = corruptIndexes( fs, true, ( tree, inspection ) -> {
+                long leafNode = inspection.getLeafNodes().get( 1 );
+                long internalNode = inspection.getInternalNodes().get( 0 );
+                tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( leafNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ) );
+                tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( internalNode, GBPTreeCorruption.setChild( 0, internalNode ) ) );
+            }, indexFiles );
+
+            assertTrue( files.size() > 0, "Expected number of corrupted files to be more than one." );
+            ConsistencyCheckService.Result result =
+                    runConsistencyCheck( fs, neo4jHome, testDirectory.databaseLayout(), NullLogProvider.getInstance(), NONE, DEFAULT );
+            for ( File file : files )
+            {
+                assertResultContainsMessage( fs, result,
+                        "Index will be excluded from further consistency checks. Index file: " + file.getAbsolutePath() );
+            }
+        }
+        finally
+        {
+            testDirectory.cleanup();
         }
     }
 
     private void assertResultContainsMessage( ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
+    {
+        assertResultContainsMessage( fs, result, expectedMessage );
+    }
+
+    private void assertResultContainsMessage( FileSystemAbstraction fs, ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
     {
         final Reader reader = fs.openAsReader( result.reportFile(), Charset.defaultCharset() );
         final BufferedReader bufferedReader = new BufferedReader( reader );
@@ -577,24 +601,30 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider ) throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( logProvider, ProgressMonitorFactory.NONE );
+        return runConsistencyCheck( logProvider, NONE );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( logProvider, ProgressMonitorFactory.NONE, consistencyFlags );
+        return runConsistencyCheck( logProvider, NONE, consistencyFlags );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ProgressMonitorFactory progressFactory )
             throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( logProvider, progressFactory, ConsistencyFlags.DEFAULT );
+        return runConsistencyCheck( logProvider, progressFactory, DEFAULT );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ProgressMonitorFactory progressFactory,
             ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
+    {
+        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressFactory, consistencyFlags );
+    }
+
+    private ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, File neo4jHome, DatabaseLayout databaseLayout,
+            LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         Config config = Config.defaults( neo4j_home, neo4jHome.toPath() );
@@ -604,7 +634,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     /**
      * Open dbms with schemaIndex as default index provider on provided file system abstraction and apply dbSetup to DEFAULT_DATABASE.
      */
-    private void dbmsAction( FileSystemAbstraction fs, GraphDatabaseSettings.SchemaIndex schemaIndex, Consumer<GraphDatabaseService> dbSetup )
+    private void dbmsAction( File neo4jHome, FileSystemAbstraction fs, GraphDatabaseSettings.SchemaIndex schemaIndex,
+            Consumer<GraphDatabaseService> dbSetup )
     {
         final DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( neo4jHome )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
@@ -629,13 +660,13 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private File[] schemaIndexFiles() throws IOException
     {
-        return schemaIndexFiles( NATIVE_BTREE10 );
+        final File databaseDir = databaseLayout.databaseDirectory();
+        return schemaIndexFiles( fs, databaseDir, NATIVE_BTREE10 );
     }
 
-    private File[] schemaIndexFiles( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws IOException
+    private File[] schemaIndexFiles( FileSystemAbstraction fs, File databaseDir, GraphDatabaseSettings.SchemaIndex schemaIndex ) throws IOException
     {
         final String fileNameFriendlyProviderName = IndexDirectoryStructure.fileNameFriendly( schemaIndex.providerName() );
-        final File databaseDir = databaseLayout.databaseDirectory();
         File indexDir = new File( databaseDir, "schema/index/" );
         return fs.streamFilesRecursive( indexDir )
                 .map( FileHandle::getFile )
@@ -644,6 +675,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     private List<File> corruptIndexes( boolean readOnly, CorruptionInject corruptionInject, File... targetFiles ) throws Exception
+    {
+        return corruptIndexes( fs, readOnly, corruptionInject, targetFiles );
+    }
+
+    private List<File> corruptIndexes( FileSystemAbstraction fs, boolean readOnly, CorruptionInject corruptionInject, File... targetFiles ) throws Exception
     {
         List<File> treeFiles = new ArrayList<>();
         try ( JobScheduler jobScheduler = createInitialisedScheduler();
