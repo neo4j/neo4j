@@ -457,11 +457,13 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       commandexpressions.GenericCase(predicateAlternatives, toCommandExpression(id, e.default, self))
   }
 
-  private def hasLabels(id: Id, e: ast.HasLabels, self: ExpressionConverters) = e.labels.map {
-    l => predicates.HasLabel(self.toCommandExpression(id, e.expression),
-                             commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)): Predicate
-  } reduceLeft {
-    predicates.And(_, _)
+  private def hasLabels(id: Id, e: ast.HasLabels, self: ExpressionConverters): Predicate = {
+    val preds = e.labels.map {
+      l =>
+        predicates.HasLabel(self.toCommandExpression(id, e.expression),
+          commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)): Predicate
+    }
+    commands.predicates.Ands(preds: _*)
   }
 
   private def mapItems(id: Id, items: Seq[(ast.PropertyKeyName, ast.Expression)],
