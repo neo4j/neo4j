@@ -19,6 +19,7 @@ package org.neo4j.pushtocloud;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
@@ -74,6 +75,7 @@ public class HttpCopierTest
 
     private static final int TEST_PORT = 8080;
     private static final String TEST_CONSOLE_URL = "http://localhost:" + TEST_PORT;
+    private static final String STATUS_POLLING_PASSED_FIRST_CALL = "Passed first";
 
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
@@ -99,7 +101,8 @@ public class HttpCopierTest
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
-        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
+        wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
+        wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
         authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
@@ -256,7 +259,8 @@ public class HttpCopierTest
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
-        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
+        wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
+        wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
         authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
@@ -348,7 +352,8 @@ public class HttpCopierTest
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, firstUploadLength, sourceLength )
                 .willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
-        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
+        wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
+        wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
         authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
@@ -386,7 +391,8 @@ public class HttpCopierTest
         wireMock.stubFor( getResumablePositionRequest( sourceLength, uploadLocationPath )
                 .willReturn( uploadCompleteGetResumablePositionResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
-        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
+        wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
+        wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
         authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
@@ -515,13 +521,33 @@ public class HttpCopierTest
                 .withStatus( HTTP_OK );
     }
 
-    private MappingBuilder statusPollingRequest( String authorizationTokenResponse )
+    private MappingBuilder firstStatusPollingRequest( String authorizationTokenResponse )
     {
         return get( urlEqualTo( "/import/status" ) )
-                .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) );
+                .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) )
+                .willReturn( firstSuccessfulDatabaseRunningResponse() )
+                .inScenario( "test" )
+                .whenScenarioStateIs( Scenario.STARTED )
+                .willSetStateTo( STATUS_POLLING_PASSED_FIRST_CALL );
     }
 
-    private ResponseDefinitionBuilder successfulDatabaseRunningResponse()
+    private ResponseDefinitionBuilder firstSuccessfulDatabaseRunningResponse()
+    {
+        return aResponse()
+                .withBody( "{\"Status\":\"loading\"}" )
+                .withStatus( HTTP_OK );
+    }
+
+    private MappingBuilder secondStatusPollingRequest( String authorizationTokenResponse )
+    {
+        return get( urlEqualTo( "/import/status" ) )
+                .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) )
+                .willReturn( secondSuccessfulDatabaseRunningResponse() )
+                .inScenario( "test" )
+                .whenScenarioStateIs( STATUS_POLLING_PASSED_FIRST_CALL );
+    }
+
+    private ResponseDefinitionBuilder secondSuccessfulDatabaseRunningResponse()
     {
         return aResponse()
                 .withBody( "{\"Status\":\"running\"}" )

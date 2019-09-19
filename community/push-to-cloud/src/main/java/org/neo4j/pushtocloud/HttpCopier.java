@@ -150,6 +150,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                         statusProgress.done();
                         break;
                     }
+                    break;
                 case "loading":
                     firstRunning = false;
                     statusProgress.rewindTo( 0 );
