@@ -98,7 +98,7 @@ class PreParser(configuredVersion: CypherVersion,
 }
 
 object PreParser {
-  private val periodicCommitHintRegex: Regex = "^\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
+  val periodicCommitHintRegex: Regex = "^\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
 
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlannerOption, CypherRuntimeOption)] = Set.empty
   private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlannerOption, CypherVersion)] = Set.empty
