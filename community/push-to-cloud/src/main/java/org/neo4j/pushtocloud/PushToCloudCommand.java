@@ -88,8 +88,6 @@ public class PushToCloudCommand implements AdminCommand
         boolean verbose = arguments.getBoolean( ARG_VERBOSE );
         try
         {
-            Path source = initiateSource( arguments );
-
             String passwordFromArg = arguments.get( ARG_PASSWORD );
             String username = arguments.get( ARG_USERNAME );
 
@@ -139,7 +137,11 @@ public class PushToCloudCommand implements AdminCommand
 
             String boltURI = arguments.get( ARG_BOLT_URI );
             String consoleURL = buildConsoleURI( boltURI );
-            copier.copy( verbose, consoleURL, source, username, password );
+            String bearerToken = copier.authenticate( verbose, consoleURL, username, password );
+
+            Path source = initiateSource( arguments );
+
+            copier.copy( verbose, consoleURL, source, bearerToken );
         }
         catch ( Exception e )
         {
@@ -220,7 +222,28 @@ public class PushToCloudCommand implements AdminCommand
 
     public interface Copier
     {
-        void copy( boolean verbose, String consoleURL, Path source, String username, char[] password ) throws CommandFailed;
+        /**
+         * Authenticates user by name and password.
+         *
+         * @param verbose whether or not to print verbose debug messages/statuses.
+         * @param consoleURL console URI to target.
+         * @param username the username.
+         * @param password the password.
+         * @return a bearer token to pass into {@link #copy(boolean, String, Path, String)} later on.
+         * @throws CommandFailed on authentication failure or some other unexpected failure.
+         */
+        String authenticate( boolean verbose, String consoleURL, String username, char[] password ) throws CommandFailed;
+
+        /**
+         * Copies the given dump to the console URI.
+         *
+         * @param verbose whether or not to print verbose debug messages/statuses.
+         * @param consoleURL console URI to target.
+         * @param source dump to copy to the target.
+         * @param bearerToken token from successful {@link #authenticate(boolean, String, String, char[])} call.
+         * @throws CommandFailed on copy failure or some other unexpected failure.
+         */
+        void copy( boolean verbose, String consoleURL, Path source, String bearerToken ) throws CommandFailed;
     }
 
     public interface DumpCreator
