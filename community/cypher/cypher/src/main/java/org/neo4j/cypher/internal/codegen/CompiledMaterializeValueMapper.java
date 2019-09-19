@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.codegen;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
@@ -51,7 +51,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 public final class CompiledMaterializeValueMapper
 {
-    public static AnyValue mapAnyValue( EmbeddedProxySPI proxySPI, AnyValue value )
+    public static AnyValue mapAnyValue( TransactionalProxyFactory proxySPI, AnyValue value )
     {
         // First do a dry run to determine if any conversion will actually be needed,
         // because if it isn't we can just return the value as it is without having
@@ -71,9 +71,9 @@ public final class CompiledMaterializeValueMapper
 
     private static final class WritingMaterializeValueMapper extends AbstractMaterializeValueMapper
     {
-        private EmbeddedProxySPI proxySpi;
+        private TransactionalProxyFactory proxySpi;
 
-        WritingMaterializeValueMapper( EmbeddedProxySPI proxySpi )
+        WritingMaterializeValueMapper( TransactionalProxyFactory proxySpi )
         {
             this.proxySpi = proxySpi;
         }

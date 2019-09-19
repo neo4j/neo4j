@@ -64,7 +64,7 @@ public class RelationshipProxyTest extends EntityProxyTest
     void shouldBeAbleToReferToIdsBeyondMaxInt()
     {
         // GIVEN
-        EmbeddedProxySPI actions = mock( EmbeddedProxySPI.class );
+        TransactionalProxyFactory actions = mock( TransactionalProxyFactory.class );
         var transaction = mock( InternalTransaction.class );
         when( actions.newNodeProxy( anyLong() ) ).then(
                 invocation -> nodeWithId( invocation.getArgument( 0 ) ) );
@@ -232,7 +232,7 @@ public class RelationshipProxyTest extends EntityProxyTest
     void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
     {
         // given
-        EmbeddedProxySPI spi = mockedProxySPI();
+        TransactionalProxyFactory spi = mockedProxySPI();
         var transaction = mockedTransactionWithDepletedTokens();
         RelationshipProxy relationshipProxy = new RelationshipProxy( spi, transaction, 5 );
 
@@ -240,7 +240,7 @@ public class RelationshipProxyTest extends EntityProxyTest
         assertThrows( ConstraintViolationException.class, () -> relationshipProxy.setProperty( "key", "value" ) );
     }
 
-    private void verifyIds( EmbeddedProxySPI actions, InternalTransaction transaction, long relationshipId, long nodeId1, int typeId, long nodeId2 )
+    private void verifyIds( TransactionalProxyFactory actions, InternalTransaction transaction, long relationshipId, long nodeId1, int typeId, long nodeId2 )
     {
         RelationshipProxy proxy = new RelationshipProxy( actions, transaction, relationshipId, nodeId1, typeId, nodeId2 );
         assertEquals( relationshipId, proxy.getId() );

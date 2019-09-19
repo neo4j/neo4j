@@ -32,7 +32,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 
 public class PathProxy implements Path
 {
-    private final EmbeddedProxySPI proxySPI;
+    private final TransactionalProxyFactory proxySPI;
     private final long[] nodes;
     private final long[] relationships;
     private final int[] directedTypes;
@@ -51,7 +51,7 @@ public class PathProxy implements Path
      *         has its start node at {@code i} and its end node at {@code i + 1}, and should be {@code ~typeId} if the
      *         relationship at {@code i} has its start node at {@code i + 1} and its end node at {@code i}.
      */
-    public PathProxy( EmbeddedProxySPI proxySPI, InternalTransaction internalTransaction, long[] nodes, long[] relationships, int[] directedTypes )
+    public PathProxy( TransactionalProxyFactory proxySPI, InternalTransaction internalTransaction, long[] nodes, long[] relationships, int[] directedTypes )
     {
         this.internalTransaction = internalTransaction;
         assert nodes.length == relationships.length + 1;

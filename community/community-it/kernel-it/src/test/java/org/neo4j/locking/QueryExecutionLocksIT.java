@@ -68,8 +68,8 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -228,7 +228,7 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public EmbeddedProxySPI proxySPI()
+        public TransactionalProxyFactory proxySPI()
         {
             return delegate.proxySPI();
         }

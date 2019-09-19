@@ -31,9 +31,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 
 class PathImplTest
 {
-    private final EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
+    private final TransactionalProxyFactory spi = mock( TransactionalProxyFactory.class );
     private final InternalTransaction transaction = mock( InternalTransaction.class );
 
     @Test

@@ -114,9 +114,9 @@ public abstract class EntityProxyTest
         return internalTransaction;
     }
 
-    EmbeddedProxySPI mockedProxySPI() throws KernelException
+    TransactionalProxyFactory mockedProxySPI() throws KernelException
     {
-        EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
+        TransactionalProxyFactory spi = mock( TransactionalProxyFactory.class );
         KernelTransaction ktx = mock( KernelTransaction.class );
         TokenWrite tokenWrite = mock( TokenWrite.class );
         when( ktx.tokenWrite() ).thenReturn( tokenWrite );

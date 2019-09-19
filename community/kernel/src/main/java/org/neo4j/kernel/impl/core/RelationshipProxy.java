@@ -56,21 +56,21 @@ import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
 public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
 {
-    private final EmbeddedProxySPI spi;
+    private final TransactionalProxyFactory spi;
     private final InternalTransaction internalTransaction;
     private long id = NO_ID;
     private long startNode = NO_ID;
     private long endNode = NO_ID;
     private int type;
 
-    public RelationshipProxy( EmbeddedProxySPI spi, InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
+    public RelationshipProxy( TransactionalProxyFactory spi, InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
     {
         this.spi = spi;
         this.internalTransaction = internalTransaction;
         visit( id, type, startNode, endNode );
     }
 
-    public RelationshipProxy( EmbeddedProxySPI spi, InternalTransaction internalTransaction, long id )
+    public RelationshipProxy( TransactionalProxyFactory spi, InternalTransaction internalTransaction, long id )
     {
         this.spi = spi;
         this.internalTransaction = internalTransaction;

@@ -35,9 +35,9 @@ import java.util.Map;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -87,7 +87,7 @@ class ParameterConverterTest
     @BeforeEach
     void setup()
     {
-        EmbeddedProxySPI manager = mock( EmbeddedProxySPI.class );
+        TransactionalProxyFactory manager = mock( TransactionalProxyFactory.class );
         when( manager.newNodeProxy( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
             long id = invocationOnMock.getArgument( 0 );

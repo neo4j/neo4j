@@ -46,10 +46,10 @@ import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
@@ -75,7 +75,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 /**
  * Default implementation of the GraphDatabaseService interface.
  */
-public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
+public class GraphDatabaseFacade implements GraphDatabaseAPI, TransactionalProxyFactory
 {
     private final Schema schema;
     private final Database database;

@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
@@ -61,7 +61,7 @@ class ProceduresTest
     private final ProcedureSignature signature = procedureSignature( "org", "myproc" ).out( "name", NTString ).build();
     private final CallableProcedure procedure = procedure( signature );
     private final DependencyResolver dependencyResolver = new Dependencies();
-    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ), mock( InternalTransaction.class ) );
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( TransactionalProxyFactory.class ), mock( InternalTransaction.class ) );
 
     @Test
     void shouldGetRegisteredProcedure() throws Throwable

@@ -383,7 +383,7 @@ public class NodeProxyTest extends EntityProxyTest
     void shouldThrowCorrectExceptionOnLabelTokensExceeded() throws KernelException
     {
         // given
-        EmbeddedProxySPI spi = mockedProxySPI();
+        TransactionalProxyFactory spi = mockedProxySPI();
         var transaction = mockedTransactionWithDepletedTokens();
         NodeProxy nodeProxy = new NodeProxy( spi, transaction, 5 );
 
@@ -395,7 +395,7 @@ public class NodeProxyTest extends EntityProxyTest
     void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
     {
         // given
-        EmbeddedProxySPI spi = mockedProxySPI();
+        TransactionalProxyFactory spi = mockedProxySPI();
         NodeProxy nodeProxy = new NodeProxy( spi, mockedTransactionWithDepletedTokens(), 5 );
 
         // when
@@ -406,7 +406,7 @@ public class NodeProxyTest extends EntityProxyTest
     void shouldThrowCorrectExceptionOnRelationshipTypeTokensExceeded() throws KernelException
     {
         // given
-        EmbeddedProxySPI spi = mockedProxySPI();
+        TransactionalProxyFactory spi = mockedProxySPI();
         NodeProxy nodeProxy = new NodeProxy( spi, mockedTransactionWithDepletedTokens(), 5 );
 
         // when

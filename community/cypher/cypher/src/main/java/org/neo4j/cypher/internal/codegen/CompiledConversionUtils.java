@@ -39,7 +39,7 @@ import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipProxyWrappingValue;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -277,7 +277,7 @@ public abstract class CompiledConversionUtils
     }
 
     @SuppressWarnings( {"unchecked", "WeakerAccess"} )
-    public static AnyValue materializeAnyResult( EmbeddedProxySPI proxySpi, Object anyValue )
+    public static AnyValue materializeAnyResult( TransactionalProxyFactory proxySpi, Object anyValue )
     {
         if ( anyValue == null || anyValue == NO_VALUE )
         {
@@ -362,7 +362,7 @@ public abstract class CompiledConversionUtils
     }
 
     // NOTE: This assumes anyValue is an instance of AnyValue
-    public static AnyValue materializeAnyValueResult( EmbeddedProxySPI proxySpi, Object anyValue )
+    public static AnyValue materializeAnyValueResult( TransactionalProxyFactory proxySpi, Object anyValue )
     {
         if ( anyValue instanceof VirtualNodeValue )
         {
@@ -393,7 +393,7 @@ public abstract class CompiledConversionUtils
         return (AnyValue) anyValue;
     }
 
-    public static NodeValue materializeNodeValue( EmbeddedProxySPI proxySpi, Object anyValue )
+    public static NodeValue materializeNodeValue( TransactionalProxyFactory proxySpi, Object anyValue )
     {
         // Null check has to be done outside by the generated code
         if ( anyValue instanceof NodeValue )
@@ -411,7 +411,7 @@ public abstract class CompiledConversionUtils
         throw new IllegalArgumentException( "Do not know how to materialize node value from type " + anyValue.getClass().getName() );
     }
 
-    public static RelationshipValue materializeRelationshipValue( EmbeddedProxySPI proxySpi, Object anyValue )
+    public static RelationshipValue materializeRelationshipValue( TransactionalProxyFactory proxySpi, Object anyValue )
     {
         // Null check has to be done outside by the generated code
         if ( anyValue instanceof RelationshipValue )

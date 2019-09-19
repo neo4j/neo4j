@@ -52,7 +52,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
@@ -113,7 +113,7 @@ import static org.neo4j.values.virtual.VirtualValues.list;
 public class ProcedureCompilationTest
 {
     private static final AnyValue[] EMPTY = new AnyValue[0];
-    private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper( mock( EmbeddedProxySPI.class ), mock( InternalTransaction.class ) );
+    private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper( mock( TransactionalProxyFactory.class ), mock( InternalTransaction.class ) );
     private static final InternalTransaction TRANSACTION = mock( InternalTransaction.class );
     public static final ResourceTracker RESOURCE_TRACKER = mock( ResourceTracker.class );
 

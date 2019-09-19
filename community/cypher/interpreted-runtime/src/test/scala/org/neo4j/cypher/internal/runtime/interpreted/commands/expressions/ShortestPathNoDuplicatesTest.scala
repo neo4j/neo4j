@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Relationship
-import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, RelationshipProxy}
+import org.neo4j.kernel.impl.core.{RelationshipProxy, TransactionalProxyFactory}
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 class ShortestPathNoDuplicatesTest extends CypherFunSuite {
@@ -35,7 +35,7 @@ class ShortestPathNoDuplicatesTest extends CypherFunSuite {
   }
 
   test("Should handle lists of length two") {
-    val actions = mock[EmbeddedProxySPI]
+    val actions = mock[TransactionalProxyFactory]
     val transaction = mock[InternalTransaction]
     val a = new RelationshipProxy(actions, transaction, 1)
     val b = new RelationshipProxy(actions, transaction, 2)
@@ -47,7 +47,7 @@ class ShortestPathNoDuplicatesTest extends CypherFunSuite {
   }
 
   test("Should handle lists of length three") {
-    val actions = mock[EmbeddedProxySPI]
+    val actions = mock[TransactionalProxyFactory]
     val transaction = mock[InternalTransaction]
     val a = new RelationshipProxy(actions, transaction, 1)
     val b = new RelationshipProxy(actions, transaction, 2)
@@ -60,7 +60,7 @@ class ShortestPathNoDuplicatesTest extends CypherFunSuite {
   }
 
   test("Should handle long lists") {
-    val actions = mock[EmbeddedProxySPI]
+    val actions = mock[TransactionalProxyFactory]
     val transaction = mock[InternalTransaction]
     val a = new RelationshipProxy(actions, transaction, 1)
     val b = new RelationshipProxy(actions, transaction, 2)

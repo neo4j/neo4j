@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.codegen;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.mock;
 class CompiledMaterializeValueMapperTest
 {
     private static final InternalTransaction transaction = mock( InternalTransaction.class );
-    private static final EmbeddedProxySPI spi = new CompilerEmbeddedProxySPI();
+    private static final TransactionalProxyFactory spi = new CompilerTransactionalProxyFactory();
 
     private static final NodeValue nodeProxyValue = ValueUtils.fromNodeProxy( new NodeProxy( spi, transaction, 1L ) );
     private static final NodeValue directNodeValue = VirtualValues.nodeValue( 2L, Values.stringArray(), VirtualValues.EMPTY_MAP );
@@ -139,7 +139,7 @@ class CompiledMaterializeValueMapperTest
         assertSame( value, mappedValue ); // Test with reference equality since we should get the same reference back
     }
 
-    private static class CompilerEmbeddedProxySPI implements EmbeddedProxySPI
+    private static class CompilerTransactionalProxyFactory implements TransactionalProxyFactory
     {
         @Override
         public RelationshipProxy newRelationshipProxy( long id )

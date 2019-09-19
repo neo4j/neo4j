@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -58,8 +58,8 @@ class ServerExecutionEngineTest
                                           .resolveDependency( QueryExecutionEngine.class );
         ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
         KernelTransactionFactory transactionFactory = resolver.resolveDependency( KernelTransactionFactory.class );
-        EmbeddedProxySPI embeddedProxySPI = resolver.resolveDependency( EmbeddedProxySPI.class );
-        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( embeddedProxySPI,
+        TransactionalProxyFactory transactionalProxyFactory = resolver.resolveDependency( TransactionalProxyFactory.class );
+        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( transactionalProxyFactory,
                                                                                               () -> resolver
                                                                                                       .resolveDependency( GraphDatabaseQueryService.class ),
                                                                                               transactionFactory,

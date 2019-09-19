@@ -40,9 +40,9 @@ import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -64,7 +64,7 @@ import static java.lang.Math.toIntExact;
 public class TxStateTransactionDataSnapshot implements TransactionData, AutoCloseable
 {
     private final ReadableTransactionState state;
-    private final EmbeddedProxySPI proxySpi;
+    private final TransactionalProxyFactory proxySpi;
     private final StorageReader store;
     private final KernelTransaction transaction;
 
@@ -78,7 +78,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final MutableLongObjectMap<RelationshipProxy> relationshipsReadFromStore = new LongObjectHashMap<>( 16 );
     private final StorageRelationshipScanCursor relationship;
 
-    TxStateTransactionDataSnapshot( ReadableTransactionState state, EmbeddedProxySPI proxySpi, StorageReader storageReader, KernelTransaction transaction )
+    TxStateTransactionDataSnapshot( ReadableTransactionState state, TransactionalProxyFactory proxySpi, StorageReader storageReader,
+            KernelTransaction transaction )
     {
         this.state = state;
         this.proxySpi = proxySpi;

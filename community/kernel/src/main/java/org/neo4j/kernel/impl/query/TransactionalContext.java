@@ -27,14 +27,14 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.values.ValueMapper;
 
 public interface TransactionalContext
 {
-    EmbeddedProxySPI proxySPI();
+    TransactionalProxyFactory proxySPI();
 
     ValueMapper<Object> valueMapper();
 

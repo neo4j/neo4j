@@ -51,7 +51,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.database.{DatabaseId, TestDatabaseIdRepository}
 import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation}
-import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, TransactionalProxyFactory}
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
@@ -69,7 +69,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   var graphOps: GraphDatabaseService = null
   var graph: GraphDatabaseQueryService = null
   var outerTx: InternalTransaction = null
-  var proxySPI: EmbeddedProxySPI = _
+  var proxySPI: TransactionalProxyFactory = _
   var transactionFactory: KernelTransactionFactory = _
   var statement: KernelStatement = null
   val indexSearchMonitor = mock[IndexSearchMonitor]
@@ -79,7 +79,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     managementService = new TestDatabaseManagementServiceBuilder().impermanent().build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new javacompat.GraphDatabaseCypherService(graphOps)
-    proxySPI = mock[EmbeddedProxySPI]
+    proxySPI = mock[TransactionalProxyFactory]
     transactionFactory = mock[KernelTransactionFactory]
     outerTx = mock[InternalTransaction]
     val kernelTransaction = mock[KernelTransactionImplementation](RETURNS_DEEP_STUBS)

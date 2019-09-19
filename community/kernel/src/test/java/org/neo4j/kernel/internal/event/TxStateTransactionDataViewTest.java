@@ -43,10 +43,10 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.values.storable.Value;
@@ -328,7 +328,7 @@ class TxStateTransactionDataViewTest
     @Test
     void shouldAccessExampleMetaData()
     {
-        EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
+        TransactionalProxyFactory spi = mock( TransactionalProxyFactory.class );
         final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.getMetaData() ).thenReturn( genericMap( "username", "Igor" ) );
         TxStateTransactionDataSnapshot transactionDataSnapshot =
@@ -350,7 +350,7 @@ class TxStateTransactionDataViewTest
 
     private TxStateTransactionDataSnapshot snapshot()
     {
-        var spi = mock( EmbeddedProxySPI.class );
+        var spi = mock( TransactionalProxyFactory.class );
         var internalTransaction = mock( InternalTransaction.class );
         when( spi.newNodeProxy( anyLong() ) ).thenAnswer( invocation -> new NodeProxy( spi, internalTransaction, invocation.getArgument( 0 ) ) );
         when( spi.newRelationshipProxy( anyLong() ) )

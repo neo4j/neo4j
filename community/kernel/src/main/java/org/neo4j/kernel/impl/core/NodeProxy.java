@@ -73,11 +73,11 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 
 public class NodeProxy implements Node, RelationshipFactory<Relationship>
 {
-    private final EmbeddedProxySPI spi;
+    private final TransactionalProxyFactory spi;
     private final InternalTransaction internalTransaction;
     private final long nodeId;
 
-    public NodeProxy( EmbeddedProxySPI spi, InternalTransaction internalTransaction, long nodeId )
+    public NodeProxy( TransactionalProxyFactory spi, InternalTransaction internalTransaction, long nodeId )
     {
         this.internalTransaction = internalTransaction;
         this.nodeId = nodeId;

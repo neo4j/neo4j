@@ -38,7 +38,7 @@ import static org.mockito.Mockito.mock;
 
 class PathProxyTest
 {
-    private final EmbeddedProxySPI proxySPI = mock( EmbeddedProxySPI.class );
+    private final TransactionalProxyFactory proxySPI = mock( TransactionalProxyFactory.class );
     private final InternalTransaction transaction = mock( InternalTransaction.class );
 
     @Test
