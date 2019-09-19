@@ -29,10 +29,5 @@ public class LogVersions
         // no instances are allowed
     }
 
-    // This version will probably be the end of the line of log header format versions.
-    // Please don't add more since they aren't really used anyway.
-    public static final byte CURRENT_LOG_VERSION = 6;
-
-    // on disk current format version
-    static final short CURRENT_FORMAT_VERSION = CURRENT_LOG_VERSION & 0xFF;
+    public static final byte CURRENT_LOG_FORMAT_VERSION = 7;
 }

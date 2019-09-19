@@ -72,6 +72,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -234,6 +235,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.add( logFiles );
         final BatchingTransactionAppender appender = life.add(
@@ -293,6 +295,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.add( logFiles );
         final BatchingTransactionAppender appender =

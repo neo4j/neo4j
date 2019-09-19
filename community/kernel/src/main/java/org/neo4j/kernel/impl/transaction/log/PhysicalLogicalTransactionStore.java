@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogHeaderVisitor;
@@ -179,7 +180,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         }
 
         @Override
-        public boolean visit( LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog )
+        public boolean visit( LogHeader logHeader, LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog )
         {
             boolean foundIt = transactionId >= firstTransactionIdInLog &&
                               transactionId <= lastTransactionIdInLog;

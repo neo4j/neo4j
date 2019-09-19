@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -78,10 +79,11 @@ class TransactionLogFileTest
     void skipLogFileWithoutHeader() throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
-                                           .withTransactionIdStore( transactionIdStore )
-                                           .withLogVersionRepository( logVersionRepository )
-                                           .withLogEntryReader( logEntryReader() )
-                                           .build();
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
+                .build();
         life.add( logFiles );
         life.start();
 
@@ -105,6 +107,7 @@ class TransactionLogFileTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
 
         // WHEN
@@ -129,6 +132,7 @@ class TransactionLogFileTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.start();
         life.add( logFiles );
@@ -159,6 +163,7 @@ class TransactionLogFileTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.start();
         life.add( logFiles );
@@ -205,6 +210,7 @@ class TransactionLogFileTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.start();
         life.add( logFiles );
@@ -288,6 +294,7 @@ class TransactionLogFileTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.start();
         life.add( logFiles );

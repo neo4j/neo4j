@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -221,6 +222,7 @@ class TransactionLogFilesTest
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
     }
 

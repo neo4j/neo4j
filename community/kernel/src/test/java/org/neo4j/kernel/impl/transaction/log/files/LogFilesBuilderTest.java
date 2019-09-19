@@ -33,6 +33,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -136,6 +137,7 @@ class LogFilesBuilderTest
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         logFiles.init();
         logFiles.start();

@@ -54,6 +54,7 @@ import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -123,6 +124,7 @@ class BatchingTransactionAppenderRotationIT
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
     }
 

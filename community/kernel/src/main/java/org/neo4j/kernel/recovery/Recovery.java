@@ -320,6 +320,8 @@ public final class Recovery
                 .withDependencies( dependencies )
                 .build();
 
+        logFiles.accept( new StoreIdValidator( storageEngine.getStoreId() ) );
+
         Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
         LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles ) );
 

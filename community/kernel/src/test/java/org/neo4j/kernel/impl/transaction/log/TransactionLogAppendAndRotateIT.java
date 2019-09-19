@@ -56,6 +56,7 @@ import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -96,6 +97,7 @@ class TransactionLogAppendAndRotateIT
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.add( logFiles );
         final AtomicBoolean end = new AtomicBoolean();

@@ -17,32 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.storageengine.api;
 
-import org.neo4j.internal.helpers.collection.LruCache;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-
-public class LogHeaderCache
+public interface StoreIdProvider
 {
-    private final LruCache<Long /*log version*/,LogHeader /*last committed tx*/> logHeaderCache;
-
-    public LogHeaderCache( int headerCacheSize )
-    {
-        this.logHeaderCache = new LruCache<>( "Log header cache", headerCacheSize );
-    }
-
-    public void clear()
-    {
-        logHeaderCache.clear();
-    }
-
-    public void putHeader( long logVersion, LogHeader logHeader )
-    {
-        logHeaderCache.put( logVersion, logHeader );
-    }
-
-    public LogHeader getLogHeader( long logVersion )
-    {
-        return logHeaderCache.get( logVersion );
-    }
+    StoreId getStoreId();
 }

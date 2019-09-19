@@ -44,13 +44,12 @@ class TransactionLogFileInformationTest
         long version = 10L;
         when( logHeaderCache.getLogHeader( version ) ).thenReturn( null );
         when( logFiles.versionExists( version ) ).thenReturn( true );
-        when( logFiles.extractHeader( version ) ).thenReturn(
-                new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L )
-        );
+        LogHeader expectedHeader = new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L );
+        when( logFiles.extractHeader( version ) ).thenReturn( expectedHeader );
 
         long firstCommittedTxId = info.getFirstEntryId( version );
         assertEquals( expected, firstCommittedTxId );
-        verify( logHeaderCache ).putHeader( version, expected - 1 );
+        verify( logHeaderCache ).putHeader( version, expectedHeader );
     }
 
     @Test
@@ -60,7 +59,8 @@ class TransactionLogFileInformationTest
         long expected = 5;
 
         long version = 10L;
-        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected - 1 );
+        LogHeader expectedHeader = new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L );
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expectedHeader );
 
         long firstCommittedTxId = info.getFirstEntryId( version );
         assertEquals( expected, firstCommittedTxId );
@@ -76,14 +76,13 @@ class TransactionLogFileInformationTest
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
         when( logHeaderCache.getLogHeader( version ) ).thenReturn( null );
         when( logFiles.versionExists( version ) ).thenReturn( true );
-        when( logFiles.extractHeader( version ) ).thenReturn(
-                new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L )
-        );
+        LogHeader expectedHeader = new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L );
+        when( logFiles.extractHeader( version ) ).thenReturn( expectedHeader );
         when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals( expected, firstCommittedTxId );
-        verify( logHeaderCache ).putHeader( version, expected - 1 );
+        verify( logHeaderCache ).putHeader( version, expectedHeader );
     }
 
     @Test
@@ -95,7 +94,9 @@ class TransactionLogFileInformationTest
         long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
         when( logFiles.versionExists( version ) ).thenReturn( true );
-        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected - 1 );
+
+        LogHeader expectedHeader = new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L );
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expectedHeader );
         when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingEntryId();

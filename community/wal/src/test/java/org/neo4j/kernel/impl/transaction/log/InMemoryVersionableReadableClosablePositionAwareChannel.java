@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
 public class InMemoryVersionableReadableClosablePositionAwareChannel extends InMemoryClosableChannel implements
         ReadableLogChannel
@@ -29,7 +29,7 @@ public class InMemoryVersionableReadableClosablePositionAwareChannel extends InM
 
     public InMemoryVersionableReadableClosablePositionAwareChannel()
     {
-        this( 0, CURRENT_LOG_VERSION );
+        this( 0, CURRENT_LOG_FORMAT_VERSION );
     }
 
     public InMemoryVersionableReadableClosablePositionAwareChannel( long version, byte formatVersion )

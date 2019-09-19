@@ -209,27 +209,26 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         long highTransactionId = logFilesContext.getLastCommittedTransactionId();
         while ( versionExists( logVersion ) )
         {
-            Long previousLogLastTxId = logHeaderCache.getLogHeader( logVersion );
-            if ( previousLogLastTxId == null )
+            LogHeader logHeader = logHeaderCache.getLogHeader( logVersion );
+            if ( logHeader == null )
             {
-                LogHeader header = readLogHeader( fileSystem, getLogFileForVersion( logVersion ), false );
-                if ( header != null )
+                logHeader = readLogHeader( fileSystem, getLogFileForVersion( logVersion ), false );
+                if ( logHeader != null )
                 {
-                    assert logVersion == header.logVersion;
-                    logHeaderCache.putHeader( header.logVersion, header.lastCommittedTxId );
-                    previousLogLastTxId = header.lastCommittedTxId;
+                    assert logVersion == logHeader.logVersion;
+                    logHeaderCache.putHeader( logHeader.logVersion, logHeader );
                 }
             }
 
-            if ( previousLogLastTxId != null )
+            if ( logHeader != null )
             {
-                long lowTransactionId = previousLogLastTxId + 1;
+                long lowTransactionId = logHeader.lastCommittedTxId + 1;
                 LogPosition position = LogPosition.start( logVersion );
-                if ( !visitor.visit( position, lowTransactionId, highTransactionId ) )
+                if ( !visitor.visit( logHeader, position, lowTransactionId, highTransactionId ) )
                 {
                     break;
                 }
-                highTransactionId = previousLogLastTxId;
+                highTransactionId = logHeader.lastCommittedTxId;
             }
             logVersion--;
         }

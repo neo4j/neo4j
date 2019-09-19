@@ -26,6 +26,6 @@ import java.io.Closeable;
  * you know the MetaDataStore has all this information in it. In the end I believe this abstraction should be extracted from storage
  * into kernel so that it owns it altogether.
  */
-public interface TransactionMetaDataStore extends TransactionIdStore, LogVersionRepository, Closeable
+public interface TransactionMetaDataStore extends TransactionIdStore, LogVersionRepository, StoreIdProvider, Closeable
 {
 }

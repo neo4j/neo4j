@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -108,6 +109,6 @@ class TransactionLogChannelAllocatorIT
                 new VersionAwareLogEntryReader(), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem,
-                NullLogProvider.getInstance(), DatabaseTracer.NULL );
+                NullLogProvider.getInstance(), DatabaseTracer.NULL, () -> StoreId.DEFAULT );
     }
 }

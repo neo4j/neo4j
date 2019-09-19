@@ -19,58 +19,64 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_VERSION;
 
+/**
+ * Write the transaction log file header.
+ *
+ * Current format is
+ * <pre>
+ *  log version    7 bytes
+ *  log format     1 bytes
+ *  last committed 8 bytes
+ *  store id       40 bytes
+ * </pre>
+ */
 public class LogHeaderWriter
 {
+    private static final long LOG_VERSION_BITS = 56;
+    static final long LOG_VERSION_MASK = (1L << LOG_VERSION_BITS) - 1;
+
     private LogHeaderWriter()
     {
     }
 
-    public static void writeLogHeader( FlushableChannel channel, long logVersion, long previousCommittedTxId )
-            throws IOException
+    public static void writeLogHeader( FlushableChannel channel, LogHeader logHeader ) throws IOException
     {
-        channel.putLong( encodeLogVersion( logVersion ) );
-        channel.putLong( previousCommittedTxId );
+        channel.putLong( encodeLogVersion( logHeader.logVersion, logHeader.logFormatVersion ) );
+        channel.putLong( logHeader.lastCommittedTxId );
+        StoreId storeId = logHeader.storeId;
+        channel.putLong( storeId.getCreationTime() );
+        channel.putLong( storeId.getRandomId() );
+        channel.putLong( storeId.getStoreVersion() );
+        channel.putLong( storeId.getUpgradeTime() );
+        channel.putLong( storeId.getUpgradeTxId() );
     }
 
-    public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion, long previousCommittedTxId )
-    {
-        buffer.clear();
-        buffer.putLong( encodeLogVersion( logVersion ) );
-        buffer.putLong( previousCommittedTxId );
-        buffer.flip();
-        return buffer;
-    }
-
-    public static void writeLogHeader( FileSystemAbstraction fileSystem, File file, long logVersion,
-                                       long previousLastCommittedTxId ) throws IOException
-    {
-        try ( StoreChannel channel = fileSystem.write( file ) )
-        {
-            writeLogHeader( channel, logVersion, previousLastCommittedTxId );
-        }
-    }
-
-    public static void writeLogHeader( StoreChannel channel, long logVersion, long previousLastCommittedTxId )
-            throws IOException
+    public static void writeLogHeader( StoreChannel channel, LogHeader logHeader ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-        writeLogHeader( buffer, logVersion, previousLastCommittedTxId );
+        buffer.putLong( encodeLogVersion( logHeader.logVersion, logHeader.logFormatVersion ) );
+        buffer.putLong( logHeader.lastCommittedTxId );
+        StoreId storeId = logHeader.storeId;
+        buffer.putLong( storeId.getCreationTime() );
+        buffer.putLong( storeId.getRandomId() );
+        buffer.putLong( storeId.getStoreVersion() );
+        buffer.putLong( storeId.getUpgradeTime() );
+        buffer.putLong( storeId.getUpgradeTxId() );
+        buffer.flip();
         channel.writeAll( buffer );
     }
 
-    public static long encodeLogVersion( long logVersion )
+    public static long encodeLogVersion( long logVersion, long formatVersion )
     {
-        return logVersion | (((long) CURRENT_FORMAT_VERSION) << 56);
+        return (logVersion & LOG_VERSION_MASK) | (formatVersion << LOG_VERSION_BITS);
     }
 }

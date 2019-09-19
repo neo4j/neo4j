@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -63,7 +64,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
 class VersionAwareLogEntryReaderIT
 {
     // this offset includes log header and transaction that create node on test setup
-    private static final long END_OF_DATA_OFFSET = 151L;
+    private static final long END_OF_DATA_OFFSET = 191L;
     @Inject
     private FileSystemAbstraction fs;
     @Inject
@@ -85,9 +86,11 @@ class VersionAwareLogEntryReaderIT
     void readOnlyLogFilesWhileCommandsAreAvailable() throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
-                                           .withLogEntryReader( entryReader )
-                                           .withLogVersionRepository( new SimpleLogVersionRepository() )
-                                           .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
+                .withLogEntryReader( entryReader )
+                .withLogVersionRepository( new SimpleLogVersionRepository() )
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withStoreId( new StoreId( 0 ) )
+                .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
             assertEquals( kibiBytes( 128 ), logFiles.getHighestLogFile().length() );
@@ -104,7 +107,9 @@ class VersionAwareLogEntryReaderIT
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( entryReader )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
-                .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withStoreId( new StoreId( 0 ) )
+                .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
             LogPosition logPosition = entryReader.lastPosition();
@@ -125,7 +130,9 @@ class VersionAwareLogEntryReaderIT
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( entryReader )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
-                .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withStoreId( new StoreId( 0 ) )
+                .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
             LogPositionMarker positionMarker = new LogPositionMarker();
@@ -183,7 +190,9 @@ class VersionAwareLogEntryReaderIT
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( entryReader )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
-                .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withStoreId( new StoreId( 0 ) )
+                .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
             LogPosition logPosition = entryReader.lastPosition();

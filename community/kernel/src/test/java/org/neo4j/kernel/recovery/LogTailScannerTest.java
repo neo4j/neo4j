@@ -53,6 +53,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -99,11 +100,12 @@ class LogTailScannerTest
         logVersionRepository = new SimpleLogVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder
-            .activeFilesBuilder( testDirectory.databaseLayout(), fs, pageCache )
-            .withLogVersionRepository( logVersionRepository )
-            .withTransactionIdStore( transactionIdStore )
-            .withLogEntryReader( logEntryReader() )
-            .build();
+                .activeFilesBuilder( testDirectory.databaseLayout(), fs, pageCache )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
+                .build();
         tailScanner = new LogTailScanner( logFiles, reader, monitors );
     }
 

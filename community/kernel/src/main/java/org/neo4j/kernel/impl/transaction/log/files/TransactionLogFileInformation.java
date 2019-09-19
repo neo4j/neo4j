@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 public class TransactionLogFileInformation implements LogFileInformation
 {
@@ -64,18 +65,18 @@ public class TransactionLogFileInformation implements LogFileInformation
     @Override
     public long getFirstEntryId( long version ) throws IOException
     {
-        Long logHeader = logHeaderCache.getLogHeader( version );
+        LogHeader logHeader = logHeaderCache.getLogHeader( version );
         if ( logHeader != null )
         {   // It existed in cache
-            return logHeader + 1;
+            return logHeader.lastCommittedTxId + 1;
         }
 
         // Wasn't cached, go look for it
         if ( logFiles.versionExists( version ) )
         {
-            long previousVersionLastCommittedTx = logFiles.extractHeader( version ).lastCommittedTxId;
-            logHeaderCache.putHeader( version, previousVersionLastCommittedTx );
-            return previousVersionLastCommittedTx + 1;
+            logHeader = logFiles.extractHeader( version );
+            logHeaderCache.putHeader( version, logHeader );
+            return logHeader.lastCommittedTxId + 1;
         }
         return -1;
     }

@@ -53,6 +53,7 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
@@ -103,6 +104,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.add( logFiles );
         life.start();
@@ -137,6 +139,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.add( logFiles );
 
@@ -170,6 +173,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
 
         life.start();
@@ -267,6 +271,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
                 .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
                 .build();
         life.start();
         life.add( logFiles );

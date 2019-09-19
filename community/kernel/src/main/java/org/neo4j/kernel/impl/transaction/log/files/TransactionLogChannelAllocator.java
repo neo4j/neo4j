@@ -31,6 +31,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogFileCreateEvent;
 import org.neo4j.logging.Log;
@@ -38,8 +39,7 @@ import org.neo4j.logging.Log;
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
 class TransactionLogChannelAllocator
 {
@@ -76,12 +76,12 @@ class TransactionLogChannelAllocator
                 // we always write file header from the beginning of the file
                 storeChannel.position( 0 );
                 long lastTxId = lastCommittedTransactionId.getAsLong();
-                writeLogHeader( headerBuffer, version, lastTxId );
-                logHeaderCache.putHeader( version, lastTxId );
-                storeChannel.writeAll( headerBuffer );
+                LogHeader logHeader = new LogHeader( version, lastTxId, logFilesContext.getStoreId() );
+                LogHeaderWriter.writeLogHeader( storeChannel, logHeader );
+                logHeaderCache.putHeader( version, logHeader );
             }
         }
-        byte formatVersion = header == null ? CURRENT_LOG_VERSION : header.logFormatVersion;
+        byte formatVersion = header == null ? CURRENT_LOG_FORMAT_VERSION : header.logFormatVersion;
         return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion, logFile );
     }
 

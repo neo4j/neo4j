@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.transaction;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.storageengine.api.StoreId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,7 +37,7 @@ class LogHeaderCacheTest
         final LogHeaderCache cache = new LogHeaderCache( 2 );
 
         // when
-        final Long logHeader = cache.getLogHeader( 5 );
+        final LogHeader logHeader = cache.getLogHeader( 5 );
 
         // then
         assertNull( logHeader );
@@ -48,11 +50,11 @@ class LogHeaderCacheTest
         final LogHeaderCache cache = new LogHeaderCache( 2 );
 
         // when
-        cache.putHeader( 5, 3 );
-        final long logHeader = cache.getLogHeader( 5 );
+        cache.putHeader( 5, new LogHeader( 1, 3, StoreId.DEFAULT ) );
+        final LogHeader logHeader = cache.getLogHeader( 5 );
 
         // then
-        assertEquals( 3, logHeader );
+        assertEquals( 3, logHeader.lastCommittedTxId );
     }
 
     @Test
@@ -62,9 +64,9 @@ class LogHeaderCacheTest
         final LogHeaderCache cache = new LogHeaderCache( 2 );
 
         // when
-        cache.putHeader( 5, 3 );
+        cache.putHeader( 5, new LogHeader( 1, 3, StoreId.DEFAULT ) );
         cache.clear();
-        final Long logHeader = cache.getLogHeader( 5 );
+        final LogHeader logHeader = cache.getLogHeader( 5 );
 
         // then
         assertNull( logHeader );

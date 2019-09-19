@@ -47,7 +47,7 @@ class LogVersionLocatorTest
         final LogPosition position = new LogPosition( 1, 128 );
 
         // when
-        final boolean result = locator.visit( position, firstTxIdInLog, lastTxIdInLog );
+        final boolean result = locator.visit( null, position, firstTxIdInLog, lastTxIdInLog );
 
         // then
         assertFalse( result );
@@ -66,7 +66,7 @@ class LogVersionLocatorTest
         final LogPosition position = new LogPosition( 1, 128 );
 
         // when
-        final boolean result = locator.visit( position, firstTxIdInLog, lastTxIdInLog );
+        final boolean result = locator.visit( null, position, firstTxIdInLog, lastTxIdInLog );
 
         // then
         assertTrue( result );

@@ -19,21 +19,53 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import java.util.Objects;
+
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
+
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
 public class LogHeader
 {
+    /**
+     * The size of the version section of the header
+     */
+    public static final int LOG_HEADER_VERSION_SIZE = Long.BYTES;
+
+    /**
+     * The total size of the current header format.
+     *
+     * <pre>
+     *   |<-               LOG_HEADER_SIZE              ->|
+     *   |<-LOG_HEADER_VERSION_SIZE->|
+     *   --------------------------------------------------
+     *   |          version          | last tx | store id |
+     *  </pre>
+     */
     public static final int LOG_HEADER_SIZE = LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 
     public final byte logFormatVersion;
     public final long logVersion;
     public final long lastCommittedTxId;
+    public final StoreId storeId;
+
+    public LogHeader( long logVersion, long lastCommittedTxId, StoreId storeId )
+    {
+        this( CURRENT_LOG_FORMAT_VERSION, logVersion, lastCommittedTxId, storeId );
+    }
 
     public LogHeader( byte logFormatVersion, long logVersion, long lastCommittedTxId )
+    {
+        this( logFormatVersion, logVersion, lastCommittedTxId, null );
+    }
+
+    public LogHeader( byte logFormatVersion, long logVersion, long lastCommittedTxId, StoreId storeId )
     {
         this.logFormatVersion = logFormatVersion;
         this.logVersion = logVersion;
         this.lastCommittedTxId = lastCommittedTxId;
+        this.storeId = storeId;
     }
 
     @Override
@@ -47,19 +79,17 @@ public class LogHeader
         {
             return false;
         }
-
         LogHeader logHeader = (LogHeader) o;
-        return lastCommittedTxId == logHeader.lastCommittedTxId && logFormatVersion == logHeader.logFormatVersion &&
-               logVersion == logHeader.logVersion;
+        return logFormatVersion == logHeader.logFormatVersion &&
+                logVersion == logHeader.logVersion &&
+                lastCommittedTxId == logHeader.lastCommittedTxId &&
+                Objects.equals( storeId, logHeader.storeId );
     }
 
     @Override
     public int hashCode()
     {
-        int result = logFormatVersion;
-        result = 31 * result + (int) (logVersion ^ (logVersion >>> 32));
-        result = 31 * result + (int) (lastCommittedTxId ^ (lastCommittedTxId >>> 32));
-        return result;
+        return Objects.hash( logFormatVersion, logVersion, lastCommittedTxId, storeId );
     }
 
     @Override
@@ -69,6 +99,7 @@ public class LogHeader
                 "logFormatVersion=" + logFormatVersion +
                 ", logVersion=" + logVersion +
                 ", lastCommittedTxId=" + lastCommittedTxId +
+                ", storeId=" + storeId +
                 '}';
     }
 }

@@ -47,6 +47,7 @@ public class TransactionLogsInitializer implements LogFilesInitializer
             LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                     .withTransactionIdStore( neoStores.getMetaDataStore() )
                     .withLogVersionRepository( neoStores.getMetaDataStore() )
+                    .withStoreId( neoStores.getMetaDataStore().getStoreId() )
                     .withConfig( config ).build();
             new Lifespan( logFiles ).close();
         }

@@ -39,6 +39,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static java.util.Objects.requireNonNull;
@@ -76,6 +78,7 @@ public class LogFilesBuilder
     private String logFileName = TransactionLogFilesHelper.DEFAULT_NAME;
     private boolean fileBasedOperationsOnly;
     private DatabaseTracer databaseTracer = DatabaseTracer.NULL;
+    private StoreId storeId;
 
     private LogFilesBuilder()
     {
@@ -193,6 +196,12 @@ public class LogFilesBuilder
         return this;
     }
 
+    public LogFilesBuilder withStoreId( StoreId storeId )
+    {
+        this.storeId = storeId;
+        return this;
+    }
+
     public LogFiles build() throws IOException
     {
         TransactionLogFilesContext filesContext = buildContext();
@@ -221,6 +230,7 @@ public class LogFilesBuilder
             config = Config.defaults();
         }
         requireNonNull( fileSystem );
+        Supplier<StoreId> storeIdSupplier = getStoreId();
         Supplier<LogVersionRepository> logVersionRepositorySupplier = getLogVersionRepositorySupplier();
         LongSupplier lastCommittedIdSupplier = lastCommittedIdSupplier();
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
@@ -232,7 +242,7 @@ public class LogFilesBuilder
 
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier, fileSystem,
-                logProvider, databaseTracer );
+                logProvider, databaseTracer, storeIdSupplier );
     }
 
     private AtomicLong getRotationThresholdAndRegisterForUpdates()
@@ -406,6 +416,24 @@ public class LogFilesBuilder
                     "Please provide an instance or a dependencies where it can be found." );
             return () -> resolveDependency( TransactionIdStore.class ).committingTransactionId();
         }
+    }
+
+    private Supplier<StoreId> getStoreId()
+    {
+        if ( storeId != null )
+        {
+            return () -> storeId;
+        }
+        if ( fileBasedOperationsOnly )
+        {
+            return () ->
+            {
+                throw new UnsupportedOperationException( "Current version of log files can't perform any " +
+                        "operation that require availability of store id. Please build full version of log files " +
+                        "to be able to use them." );
+            };
+        }
+        return () -> resolveDependency( StoreIdProvider.class ).getStoreId();
     }
 
     private TransactionIdStore readOnlyTransactionIdStore() throws IOException

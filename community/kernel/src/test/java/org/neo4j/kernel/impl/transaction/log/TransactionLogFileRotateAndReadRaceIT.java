@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -100,10 +101,11 @@ class TransactionLogFileRotateAndReadRaceIT
         // GIVEN
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
-            .withLogVersionRepository( logVersionRepository )
-            .withTransactionIdStore( new SimpleTransactionIdStore() )
-            .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
-            .build();
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
+                .withStoreId( new StoreId( 0 ) )
+                .build();
         life.add( logFiles );
         LogFile logFile = logFiles.getLogFile();
         FlushablePositionAwareChannel writer = logFile.getWriter();

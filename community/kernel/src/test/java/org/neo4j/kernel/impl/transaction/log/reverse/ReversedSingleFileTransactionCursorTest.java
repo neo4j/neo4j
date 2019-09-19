@@ -47,6 +47,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -91,10 +92,11 @@ class ReversedSingleFileTransactionCursorTest
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
-                                           .withLogVersionRepository( logVersionRepository )
-                                           .withTransactionIdStore( transactionIdStore )
-                                           .withLogEntryReader( logEntryReader() )
-                                           .build();
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( new StoreId( 0 ) )
+                .build();
         life.add( logFiles );
         logFile = logFiles.getLogFile();
     }

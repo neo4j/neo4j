@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 public interface LogHeaderVisitor
 {
@@ -27,5 +28,5 @@ public interface LogHeaderVisitor
      * Used for visiting log headers in reverse order of age, meaning latest first.
      * Stops visiting when false is returned.
      */
-    boolean visit( LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog );
+    boolean visit( LogHeader logHeader, LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog );
 }
