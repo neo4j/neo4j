@@ -68,7 +68,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     public int valueSize( IdRange ignore )
     {
         // generation + state bit-sets
-        return Long.BYTES + longsPerEntry * Long.BYTES * IdRange.BITSET_SIZE;
+        return Long.BYTES + longsPerEntry * Long.BYTES * IdRange.BITSET_COUNT;
     }
 
     @Override

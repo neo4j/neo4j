@@ -41,7 +41,7 @@ import static java.util.Arrays.fill;
  */
 class IdRange
 {
-    private static final int BITSET_COUNT = 3;
+    static final int BITSET_COUNT = 3;
 
     static final int BITSET_COMMIT = 0;
     static final int BITSET_REUSE = 1;
