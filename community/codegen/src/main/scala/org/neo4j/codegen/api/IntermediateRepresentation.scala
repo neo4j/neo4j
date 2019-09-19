@@ -437,7 +437,6 @@ case class ClassDeclaration[T](packageName: String,
 }
 
 case class MethodDeclaration(methodName: String,
-                             owner: codegen.TypeReference,
                              returnType: codegen.TypeReference,
                              parameters: Seq[Parameter],
                              body: IntermediateRepresentation,
