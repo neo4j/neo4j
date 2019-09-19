@@ -19,11 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import java.util.Collections
+
+import org.hamcrest.CoreMatchers.any
+import org.hamcrest.Matchers.containsString
 import org.neo4j.cypher.internal.logical.plans.{Ascending, Descending}
-import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RowsMatcher, RuntimeTestSuite}
+import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
+import org.neo4j.logging.AssertableLogProvider.inLog
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{NodeReference, RelationshipReference}
 
@@ -309,6 +314,36 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
     // then
     runtimeResult should beColumns("x", "y", "r").withRows(populated)
+  }
+
+  test("should handle expand - aggregation - expand ") {
+
+    //given
+    val paths = chainGraphs(11, "TO", "TO")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "bs", "d")
+      .expand("(c)-[r3*1..2]->(d)") // assuming we do not fuse var-expand
+      .expand("(a)-[r2]->(c)")
+      .aggregation(Seq("a AS a"), Seq("collect(b) AS bs"))
+      .expand("(a)-[r1]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    // when
+    val runtimeResult =  execute(logicalQuery, runtime)
+
+    //then
+    //this check is mostly for the morsel runtime, making sure we don't fail when fusing
+    logProvider.assertNone(inLog(any(classOf[String])).debug(containsString("Retrying physical planning")))
+
+    val expected =
+      for {
+        path: TestPath <- paths
+      } yield {
+        Array(path.startNode, Collections.singletonList(path.nodeAt(1)), path.endNode())
+      }
+
+    runtimeResult should beColumns("a", "bs", "d").withRows(expected)
   }
 
   case object populated extends RowsMatcher {
