@@ -132,12 +132,12 @@ public abstract class IndexDirectoryStructure
         };
     }
 
-    private static String fileNameFriendly( String name )
+    public static String fileNameFriendly( String name )
     {
         return name.replaceAll( "\\+", "_" );
     }
 
-    private static String fileNameFriendly( IndexProviderDescriptor descriptor )
+    static String fileNameFriendly( IndexProviderDescriptor descriptor )
     {
         return fileNameFriendly( descriptor.getKey() + "-" + descriptor.getVersion() );
     }

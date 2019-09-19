@@ -22,8 +22,10 @@ package org.neo4j.consistency;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.bouncycastle.util.Arrays;
 import org.eclipse.collections.api.list.primitive.ImmutableLongList;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.TestInstance;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,7 +34,6 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -62,46 +63,74 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
-@EphemeralPageCacheExtension
-@ExtendWith( RandomExtension.class )
+@TestInstance( TestInstance.Lifecycle.PER_CLASS )
 class ConsistencyCheckWithCorruptGBPTreeIT
 {
     private static final Label label = Label.label( "label" );
     private static final String propKey1 = "key1";
 
-    @Inject
-    EphemeralFileSystemAbstraction fs;
-    @Inject
-    PageCache pageCache;
-    @Inject
-    TestDirectory testDirectory;
-    @Inject
-    RandomRule random;
+    private static final File neo4jHome = new File( "neo4j_home" ).getAbsoluteFile();
+    // Created in @BeforeAll, contain full dbms with schema index backed by native-bree-1.0
+    private EphemeralFileSystemAbstraction sourceSnapshot;
+    // Database layout for database created in @BeforeAll
+    private DatabaseLayout databaseLayout;
+    // Re-instantiated in @BeforeEach using sourceSnapshot
+    private EphemeralFileSystemAbstraction fs;
+
+    @BeforeAll
+    void createIndex()
+    {
+        final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        fs.mkdirs( neo4jHome );
+
+        dbmsAction( fs, NATIVE_BTREE10, db ->
+        {
+            indexWithStringData( db, label );
+            databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
+        });
+        sourceSnapshot = fs.snapshot();
+    }
+
+    @BeforeEach
+    void restoreSnapshot()
+    {
+        fs = sourceSnapshot.snapshot();
+    }
+
+    @Test
+    void simpleTestWithNoSetup() throws Exception
+    {
+        MutableObject<Integer> heightRef = new MutableObject<>();
+        File[] indexFiles = schemaIndexFiles();
+        corruptIndexes( true, ( tree, inspection ) -> heightRef.setValue( inspection.getLastLevel() ), indexFiles );
+
+        final int height = heightRef.getValue();
+        assertEquals( 2, height, "This test assumes height of index tree is 2 but height for this index was " + height +
+                ". This is most easily regulated by changing number of nodes in setup." );
+    }
 
     @Test
     void assertTreeHeightIsAsExpected() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Integer> heightRef = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> heightRef.setValue( inspection.getLastLevel() ), indexFiles );
@@ -114,7 +143,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void shouldNotCheckIndexesIfConfiguredNotTo() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -131,7 +159,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void shouldCheckIndexStructureEvenIfNotCheckingIndexes() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -149,7 +176,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void shouldNotCheckIndexStructureIfConfiguredNotToEvenIfCheckingIndexes() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -166,7 +192,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void shouldReportProgress() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
 
         Writer writer = new StringWriter();
         ProgressMonitorFactory factory = ProgressMonitorFactory.textual( writer );
@@ -179,7 +204,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void notATreeNode() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -196,7 +220,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void unknownTreeNodeType() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -213,7 +236,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void siblingsDontPointToEachOther() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -230,7 +252,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void rightmostNodeHasRightSibling() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
             final long root = inspection.getRootNode();
@@ -246,7 +267,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void pointerToOldVersionOfTreeNode() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -264,7 +284,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void pointerHasLowerGenerationThanNode() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         MutableObject<Long> rightSibling = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
@@ -286,7 +305,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void keysOutOfOrderInNode() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -304,7 +322,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void keysLocatedInWrongNode() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
             final long internalNode = inspection.getNodesPerLevel().get( 1 ).get( 0 );
@@ -321,10 +338,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void unusedPage() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
-            final Long internalNode = inspection.getNodesPerLevel().get( 1 ).get( 0 );
+            final long internalNode = inspection.getNodesPerLevel().get( 1 ).get( 0 );
             int keyCount = inspection.getKeyCounts().get( internalNode );
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( internalNode,GBPTreeCorruption.setKeyCount( keyCount - 1 ) ) );
         }, indexFiles );
@@ -338,11 +354,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void pageIdExceedLastId() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
-        corruptIndexes( true, ( tree, inspection ) -> {
-            tree.unsafe( GBPTreeCorruption.decrementFreelistWritePos() );
-        }, indexFiles );
+        corruptIndexes( true, ( tree, inspection ) -> tree.unsafe( GBPTreeCorruption.decrementFreelistWritePos() ), indexFiles );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
 
@@ -353,7 +366,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void nodeMetaInconsistency() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( inspection.getRootNode(), GBPTreeCorruption.decrementAllocOffsetInDynamicNode() ) );
@@ -368,7 +380,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void pageIdSeenMultipleTimes() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -387,7 +398,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void crashPointer() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( false, ( tree, inspection ) -> {
@@ -404,7 +414,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void brokenPointer() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -421,7 +430,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void unreasonableKeyCount() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> targetNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -438,7 +446,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void childNodeFoundAmongParentNodes() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
             final long rootNode = inspection.getRootNode();
@@ -454,7 +461,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void exception() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
             final long rootNode = inspection.getRootNode();
@@ -472,7 +478,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void shouldIncludeIndexFileInConsistencyReport() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         File[] indexFiles = schemaIndexFiles();
         List<File> corruptedFiles = corruptIndexes( true, ( tree, inspection ) -> {
             final long rootNode = inspection.getRootNode();
@@ -488,7 +493,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void multipleCorruptions() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> internalNode = new MutableObject<>();
         File[] indexFiles = schemaIndexFiles();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -512,7 +516,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void corruptionInLabelScanStore() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 );
         MutableObject<Long> rootNode = new MutableObject<>();
         File labelScanStoreFile = labelScanStoreFile();
         corruptIndexes( true, ( tree, inspection ) -> {
@@ -529,24 +532,14 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void multipleCorruptionsInFusionIndex() throws Exception
     {
-        setup( GraphDatabaseSettings.SchemaIndex.NATIVE30, db ->
+        // Also make sure we have some numbers
+        dbmsAction( fs, NATIVE30, db ->
                 {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        // Also make sure we have some numbers
-                        for ( int i = 0; i < 1000; i++ )
-                        {
-                            Node node = tx.createNode( label );
-                            node.setProperty( propKey1, i );
-                            Node secondNode = tx.createNode( label );
-                            secondNode.setProperty( propKey1, LocalDate.ofEpochDay( i ) );
-                        }
-                        tx.commit();
-                    }
-                }
-        );
+                    Label label = Label.label( "label2" );
+                    indexWithNumberData( db, label );
+                } );
 
-        File[] indexFiles = schemaIndexFiles();
+        final File[] indexFiles = schemaIndexFiles( NATIVE30 );
         final List<File> files = corruptIndexes( true, ( tree, inspection ) -> {
             long leafNode = inspection.getLeafNodes().get( 1 );
             long internalNode = inspection.getInternalNodes().get( 0 );
@@ -554,6 +547,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( internalNode, GBPTreeCorruption.setChild( 0, internalNode ) ) );
         }, indexFiles );
 
+        assertTrue( files.size() > 0, "Expected number of corrupted files to be more than one." );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
         for ( File file : files )
         {
@@ -603,29 +597,23 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        Config config = Config.defaults( neo4j_home, testDirectory.directory().toPath().toAbsolutePath() );
-        final FileSystemAbstraction fs = testDirectory.getFileSystem();
+        Config config = Config.defaults( neo4j_home, neo4jHome.toPath() );
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fs, false, consistencyFlags );
     }
 
-    private void setup( GraphDatabaseSettings.SchemaIndex schemaIndex )
+    /**
+     * Open dbms with schemaIndex as default index provider on provided file system abstraction and apply dbSetup to DEFAULT_DATABASE.
+     */
+    private void dbmsAction( FileSystemAbstraction fs, GraphDatabaseSettings.SchemaIndex schemaIndex, Consumer<GraphDatabaseService> dbSetup )
     {
-        setup( schemaIndex, db -> {} );
-    }
-
-    private void setup( GraphDatabaseSettings.SchemaIndex schemaIndex, Consumer<GraphDatabaseService> additionalSetup )
-    {
-        final File homeDir = testDirectory.directory();
-        final DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( homeDir )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( testDirectory.getFileSystem() ) )
+        final DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( neo4jHome )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
                 .build();
         try
         {
             final GraphDatabaseService db = dbms.database( DEFAULT_DATABASE_NAME );
-            createAnIndex( db );
-            additionalSetup.accept( db );
+            dbSetup.accept( db );
         }
         finally
         {
@@ -635,16 +623,23 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private File labelScanStoreFile()
     {
-        final File dataDir = testDirectory.databaseDir();
+        final File dataDir = databaseLayout.databaseDirectory();
         return new File( dataDir, DatabaseFile.LABEL_SCAN_STORE.getName() );
     }
 
     private File[] schemaIndexFiles() throws IOException
     {
-        final File databaseDir = testDirectory.databaseDir();
+        return schemaIndexFiles( NATIVE_BTREE10 );
+    }
+
+    private File[] schemaIndexFiles( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws IOException
+    {
+        final String fileNameFriendlyProviderName = IndexDirectoryStructure.fileNameFriendly( schemaIndex.providerName() );
+        final File databaseDir = databaseLayout.databaseDirectory();
         File indexDir = new File( databaseDir, "schema/index/" );
-        return testDirectory.getFileSystem().streamFilesRecursive( indexDir )
+        return fs.streamFilesRecursive( indexDir )
                 .map( FileHandle::getFile )
+                .filter( file -> file.getAbsolutePath().contains( fileNameFriendlyProviderName ) )
                 .toArray( File[]::new );
     }
 
@@ -652,7 +647,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         List<File> treeFiles = new ArrayList<>();
         try ( JobScheduler jobScheduler = createInitialisedScheduler();
-              PageCache pageCache = createPageCache( testDirectory.getFileSystem(), jobScheduler ) )
+              PageCache pageCache = createPageCache( fs, jobScheduler ) )
         {
             SchemaLayouts schemaLayouts = new SchemaLayouts();
             GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( pageCache, schemaLayouts, readOnly );
@@ -673,7 +668,21 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return treeFiles;
     }
 
-    private void createAnIndex( GraphDatabaseService db )
+    private void indexWithNumberData( GraphDatabaseService db, Label label )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < 1000; i++ )
+            {
+                Node node = tx.createNode( label );
+                node.setProperty( propKey1, i );
+            }
+            tx.commit();
+        }
+        createIndexOn( db, label );
+    }
+
+    private void indexWithStringData( GraphDatabaseService db, Label label )
     {
         String longString = longString();
 
@@ -688,6 +697,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             }
             tx.commit();
         }
+        createIndexOn( db, label );
+    }
+
+    private void createIndexOn( GraphDatabaseService db, Label label )
+    {
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label ).on( propKey1 ).create();
