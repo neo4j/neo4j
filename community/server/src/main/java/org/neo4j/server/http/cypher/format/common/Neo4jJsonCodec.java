@@ -232,12 +232,12 @@ public class Neo4jJsonCodec extends ObjectMapper
     {
         if ( value instanceof Node )
         {
-            writeNodeOrRelationship( out, value, txStateChecker.isNodeDeletedInCurrentTx( ((Node) value).getId() ) );
+            writeNodeOrRelationship( out, value, txStateChecker.isNodeDeletedInCurrentTx( value.getId() ) );
         }
         else if ( value instanceof Relationship )
         {
             writeNodeOrRelationship( out, value,
-                    txStateChecker.isRelationshipDeletedInCurrentTx( ((Relationship) value).getId() ) );
+                    txStateChecker.isRelationshipDeletedInCurrentTx( value.getId() ) );
         }
         else
         {
@@ -272,7 +272,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             for ( byte b : bytes )
             {
-                out.writeNumber( (int) b );
+                out.writeNumber( b );
             }
         }
         finally

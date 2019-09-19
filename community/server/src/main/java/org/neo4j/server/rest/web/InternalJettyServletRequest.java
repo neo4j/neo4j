@@ -63,7 +63,7 @@ public class InternalJettyServletRequest extends Request
         {
             if ( bytes.length > position )
             {
-                return (int) bytes[position++];
+                return bytes[position++];
             }
 
             if ( readListener != null )
@@ -81,7 +81,7 @@ public class InternalJettyServletRequest extends Request
 
         public long contentRead()
         {
-            return (long) position;
+            return position;
         }
 
         @Override

@@ -101,7 +101,7 @@ public class DynamicRecord extends AbstractBaseRecord
      */
     public PropertyType getType()
     {
-        return PropertyType.getPropertyTypeOrNull( (long) (this.type << 24) );
+        return PropertyType.getPropertyTypeOrNull( this.type << 24 );
     }
 
     /**

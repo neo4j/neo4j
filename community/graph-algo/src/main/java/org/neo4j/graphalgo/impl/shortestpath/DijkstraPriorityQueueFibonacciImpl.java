@@ -102,12 +102,10 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
     Map<Node,FibonacciHeap<HeapObject>.FibonacciHeapNode> heapNodes = new HashMap<Node,FibonacciHeap<HeapObject>.FibonacciHeapNode>();
     FibonacciHeap<HeapObject> heap;
 
-    public DijkstraPriorityQueueFibonacciImpl(
-        final Comparator<CostType> costComparator )
+    public DijkstraPriorityQueueFibonacciImpl( final Comparator<CostType> costComparator )
     {
         super();
-        heap = new FibonacciHeap<>(
-                (Comparator<HeapObject>) ( o1, o2 ) -> costComparator.compare( o1.getCost(), o2.getCost() ) );
+        heap = new FibonacciHeap<>( ( o1, o2 ) -> costComparator.compare( o1.getCost(), o2.getCost() ) );
     }
 
     @Override
