@@ -103,10 +103,10 @@ public enum AdminAction
                 {
                     switch ( action )
                     {
-                    case CREATE_INDEX:
-                    case DROP_INDEX:
-                    case CREATE_CONSTRAINT:
-                    case DROP_CONSTRAINT:
+                    case SHOW_TRANSACTION:
+                    case KILL_TRANSACTION:
+                    case SHOW_CONNECTION:
+                    case KILL_CONNECTION:
                         return true;
                     }
                     return this == action;
