@@ -30,8 +30,8 @@ import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
-import org.neo4j.kernel.api.exceptions.{InvalidArgumentsException, Status}
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
+import org.neo4j.kernel.api.exceptions.{InvalidArgumentsException, Status}
 import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
