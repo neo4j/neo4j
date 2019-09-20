@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.procedure.{CallableProcedure, CallableUserAggregationFunction, CallableUserFunction, GlobalProcedures}
 import org.neo4j.kernel.api.{Kernel, KernelTransaction}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.monitoring.Monitors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
@@ -52,6 +53,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   var graph: GraphDatabaseCypherService = _
   var managementService: DatabaseManagementService = _
   var nodes: List[Node] = _
+  protected var tx: InternalTransaction = _
 
   def databaseConfig(): Map[Setting[_],Object] = Map()
 
@@ -71,6 +73,29 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   protected def onNewGraphDatabase(): Unit = ()
   protected def onDeletedGraphDatabase(): Unit = ()
+
+  protected def beginTransaction(`type`: KernelTransaction.Type, loginContext: LoginContext): InternalTransaction = {
+    if (tx != null) {
+      throw new TransactionFailureException("Failed to start a new transaction. Already have an open transaction in `tx` in this test.")
+    }
+    tx = graph.beginTransaction(`type`, loginContext)
+    tx
+  }
+
+  // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
+  protected def inTestTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T = withTx(f, txType)
+
+  protected def inTestTx[T](f: => T): T = inTestTx(_ => f)
+
+  protected def withTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T = {
+    if (tx == null) {
+      graph.withTx(f, txType)
+    } else {
+      // Reuse the open transaction
+      // (NOTE: Transaction Type is meaningless after the removal of placebo transaction anyway, so we do not care to check if it differs)
+      f(tx)
+    }
+  }
 
   protected def startGraphDatabase(storeDir: File): Unit = {
     managementService = graphDatabaseFactory(storeDir).impermanent().build()
@@ -100,6 +125,10 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   override protected def stopTest() {
     try {
+      if (tx != null) {
+        tx.close()
+        tx = null
+      }
       super.stopTest()
     }
     finally {
@@ -115,7 +144,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def assertInTx(f: => Option[String]) {
-    graph.inTx { f match {
+    inTestTx { f match {
         case Some(error) => fail(error)
         case _           =>
       }
@@ -150,15 +179,15 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     transaction
   }
 
-  def nodeId(n: Node) = graph.inTx {
+  def nodeId(n: Node) = inTestTx {
     n.getId
   }
 
-  def relationshipId(r: Relationship) = graph.inTx {
+  def relationshipId(r: Relationship) = inTestTx {
     r.getId
   }
 
-  def labels(n: Node) = graph.inTx {
+  def labels(n: Node) = inTestTx {
     n.getLabels.iterator().asScala.map(_.toString).toSet
   }
 
@@ -175,7 +204,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def createNode(name: String): Node = createNode(Map[String, Any]("name" -> name))
 
   def createNode(props: Map[String, Any]): Node = {
-    graph.inTx { tx =>
+    inTestTx { tx =>
       val node = tx.createNode()
 
       props.foreach((kv) => node.setProperty(kv._1, kv._2))
@@ -186,7 +215,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def createLabeledNode(props: Map[String, Any], labels: String*): Node = {
     val n = createNode()
 
-    graph.inTx {
+    inTestTx {
       labels.foreach {
         name => n.addLabel(Label.label(name))
       }
@@ -204,7 +233,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
   def deleteAllEntities() = {
-    graph.withTx( tx => {
+    withTx( tx => {
       val relIterator = tx.getAllRelationships.iterator()
 
       while (relIterator.hasNext) {
@@ -235,14 +264,14 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     })
   }
 
-  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = graph.inTx {
+  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = inTestTx {
     val r = n1.createRelationshipTo(n2, RelationshipType.withName(relType))
 
     props.foreach((kv) => r.setProperty(kv._1, kv._2))
     r
   }
 
-  def relate(x: ((String, String), String)): Relationship = graph.inTx {
+  def relate(x: ((String, String), String)): Relationship = inTestTx {
     x match {
       case ((from, relType), to) => {
         val f = node(from)
@@ -341,7 +370,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
     def apply(graph: GraphDatabaseQueryService): MatchResult = {
-      graph.inTx {
+      inTestTx {
         val constraintNames = graph.schema().getConstraints.asScala.toList.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
         val result = expectedConstraints.forall(i => constraintNames.contains(i.toString))
         MatchResult(
