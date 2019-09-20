@@ -45,6 +45,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -239,15 +240,31 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         assertExpectedException( expectedCause, expectedMessage, exception );
     }
 
-    //todo
-    // IndexWithNameAlreadyExist
-    // X shouldThrowIfIndexWithNameExistsWhenCreatingIndex
-    // X shouldThrowIfIndexWithNameExistsWhenCreatingUniquenessConstraint
-    // ConstraintWithNameAlreadyExist
-    // - shouldThrowIfConstraintWithNameExistsWhenCreatingIndex
-    // - shouldThrowIfConstraintWithNameExistsWhenCreatingUniquenessConstraint
-    // - shouldThrowIfConstraintWithNameExistsWhenCreatingNodeKeyConstraint
-    // - shouldThrowIfConstraintWithNameExistsWhenCreatingExistenceConstraint
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfConstraintWithNameExistsWhenCreatingIndex( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( label ).on( secondPropertyKey ).withName( "name" ).create(),
+                ConstraintViolationException.class );
+        Class<ConstraintWithNameAlreadyExistsException> expectedCause = ConstraintWithNameAlreadyExistsException.class;
+        String expectedMessage = "There already exists a constraint called 'name'.";
+        assertExpectedException( expectedCause, expectedMessage, exception );
+    }
+
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfConstraintWithNameExistsWhenCreatingUniquenessConstraint( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( secondPropertyKey ).withName( "name" ).create(),
+                ConstraintViolationException.class );
+        Class<ConstraintWithNameAlreadyExistsException> expectedCause = ConstraintWithNameAlreadyExistsException.class;
+        String expectedMessage = "There already exists a constraint called 'name'.";
+        assertExpectedException( expectedCause, expectedMessage, exception );
+    }
 
     @Test
     void shouldThrowConstraintViolationIfAskedToCreateCompoundConstraint()
