@@ -39,7 +39,7 @@ class IndexProviderFactoryUtil
     static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor,
             Config config, OperationalMode operationalMode )
     {
-        boolean ephemeral = config.get( GraphDatabaseSettings.ephemeral );
+        boolean ephemeral = config.get( GraphDatabaseSettings.ephemeral_lucene );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral );
         return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitor, config, operationalMode );
     }

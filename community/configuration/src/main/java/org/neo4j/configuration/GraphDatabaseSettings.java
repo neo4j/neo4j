@@ -129,7 +129,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> read_only = newBuilder( "dbms.read_only", BOOL, false ).build();
 
     @Internal
-    public static final Setting<Boolean> ephemeral = newBuilder( "unsupported.dbms.ephemeral", BOOL, false ).build();
+    @Description( "Configure lucene to be in memory only, for test environment. This is set in code and should never be configured explicitly." )
+    public static final Setting<Boolean> ephemeral_lucene = newBuilder( "unsupported.dbms.lucene.ephemeral", BOOL, false ).build();
 
     @Internal
     public static final Setting<String> lock_manager = newBuilder( "unsupported.dbms.lock_manager", STRING, "community" ).build();

@@ -80,7 +80,7 @@ public class DatabaseManagementServiceBuilder
 
     protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
     {
-        config.set( GraphDatabaseSettings.ephemeral, false );
+        config.set( GraphDatabaseSettings.ephemeral_lucene, false );
         return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory() )
                 .build( storeDir, augmentConfig( config ), dependencies );
     }

@@ -65,7 +65,7 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         config.setIfNotSet( GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ZERO );
         if ( impermanent )
         {
-            config.set( GraphDatabaseSettings.ephemeral, true );
+            config.set( GraphDatabaseSettings.ephemeral_lucene, true );
             config.setIfNotSet( GraphDatabaseSettings.keep_logical_logs, "1 files" );
             return new ImpermanentTestDatabaseGlobalModule( storeDir, config, dependencies, this.databaseInfo );
         }

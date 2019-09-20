@@ -79,7 +79,7 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
     public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
         Config config = dependencies.getConfig();
-        boolean ephemeral = config.get( GraphDatabaseSettings.ephemeral );
+        boolean ephemeral = config.get( GraphDatabaseSettings.ephemeral_lucene );
         FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
         DirectoryFactory directoryFactory = directoryFactory( ephemeral );
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
