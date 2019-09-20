@@ -21,27 +21,22 @@ package org.neo4j.server.modules;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.net.URI;
-import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.rest.dbms.UserService;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.not;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -72,34 +67,5 @@ public class DBMSModuleTest
         module.start();
 
         verify( webServer ).addJAXRSClasses( anyList(), anyString(), isNull() );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void shouldNotRegisterUserServiceWhenAuthDisabled() throws Exception
-    {
-        WebServer webServer = mock( WebServer.class );
-        Config config = mock( Config.class );
-
-        CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
-        when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
-        when( neoServer.getWebServer() ).thenReturn( webServer );
-        when( config.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( false );
-        when( config.get( ServerSettings.http_paths_blacklist ) ).thenReturn( emptyList() );
-
-        DBMSModule module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder().build(), NullLogProvider.getInstance() );
-
-        module.start();
-
-        verify( webServer ).addJAXRSClasses( anyList(), anyString(), isNull() );
-        ArgumentCaptor<List<Class<?>>> captor = ArgumentCaptor.forClass( List.class );
-        verify( webServer ).addJAXRSClasses( captor.capture(), anyString(), anyCollection() );
-
-        List<Class<?>> registeredClasses = captor.getAllValues()
-                .stream()
-                .flatMap( List::stream )
-                .collect( toList() );
-
-        assertThat( registeredClasses, not( contains( UserService.class ) ) );
     }
 }

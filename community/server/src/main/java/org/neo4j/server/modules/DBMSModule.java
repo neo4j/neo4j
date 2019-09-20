@@ -21,7 +21,6 @@ package org.neo4j.server.modules;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
@@ -30,7 +29,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.rest.dbms.UserService;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.discovery.DiscoveryService;
 import org.neo4j.server.rest.web.AccessiblePathFilter;
@@ -85,7 +83,7 @@ public class DBMSModule implements ServerModule
     {
         if ( config.get( GraphDatabaseSettings.auth_enabled ) )
         {
-            return Arrays.asList( UserService.class, JacksonJsonProvider.class );
+            return singletonList( JacksonJsonProvider.class );
         }
         return Collections.emptyList();
     }
