@@ -34,7 +34,6 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
@@ -587,7 +586,7 @@ public class HttpCopierTest
 
     private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path source, String username, char[] password ) throws CommandFailed
     {
-        String bearerToken = copier.authenticate( false, TEST_CONSOLE_URL, username, password, new MutableBoolean() );
+        String bearerToken = copier.authenticate( false, TEST_CONSOLE_URL, username, password, false );
         copier.copy( false, TEST_CONSOLE_URL, source, bearerToken );
     }
 

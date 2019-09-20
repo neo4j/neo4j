@@ -17,7 +17,6 @@
 package org.neo4j.pushtocloud;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -175,7 +174,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     }
 
     @Override
-    public String authenticate( boolean verbose, String consoleUrl, String username, char[] password, MutableBoolean consentConfirmed ) throws CommandFailed
+    public String authenticate( boolean verbose, String consoleUrl, String username, char[] password, Boolean consentConfirmed ) throws CommandFailed
     {
         try
         {
@@ -186,14 +185,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 connection.setRequestMethod( "POST" );
                 connection.setRequestProperty( "Authorization", "Basic " + base64Encode( username, password ) );
                 connection.setRequestProperty( "Accept", "application/json" );
-                if ( consentConfirmed.booleanValue() )
-                {
-                    connection.setRequestProperty("Confirmed", "true");
-                }
-                else
-                {
-                    connection.setRequestProperty("Confirmed", "false");
-                }
+                connection.setRequestProperty( "Confirmed", String.valueOf( consentConfirmed ) );
                 int responseCode = connection.getResponseCode();
                 switch ( responseCode )
                 {
@@ -211,8 +203,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                             askForBooleanConsent( "A non-empty database already exists at the given location, would you like to overwrite that database?" );
                     if ( consent )
                     {
-                        consentConfirmed.setTrue();
-                        return authenticate( verbose, consoleUrl, username, password, consentConfirmed );
+                        return authenticate( verbose, consoleUrl, username, password, true );
                     }
                     else
                     {

@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -138,7 +137,7 @@ public class PushToCloudCommand implements AdminCommand
 
             String boltURI = arguments.get( ARG_BOLT_URI );
             String consoleURL = buildConsoleURI( boltURI );
-            String bearerToken = copier.authenticate( verbose, consoleURL, username, password, new MutableBoolean() );
+            String bearerToken = copier.authenticate( verbose, consoleURL, username, password, false );
 
             Path source = initiateSource( arguments );
 
@@ -230,10 +229,11 @@ public class PushToCloudCommand implements AdminCommand
          * @param consoleURL console URI to target.
          * @param username the username.
          * @param password the password.
+         * @param consentConfirmed user confirmed to overwrite existing database.
          * @return a bearer token to pass into {@link #copy(boolean, String, Path, String)} later on.
          * @throws CommandFailed on authentication failure or some other unexpected failure.
          */
-        String authenticate( boolean verbose, String consoleURL, String username, char[] password, MutableBoolean consentConfirmed ) throws CommandFailed;
+        String authenticate( boolean verbose, String consoleURL, String username, char[] password, Boolean consentConfirmed ) throws CommandFailed;
 
         /**
          * Copies the given dump to the console URI.

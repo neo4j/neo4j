@@ -88,7 +88,7 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
-        //verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), any() );
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), any() );
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
     }
 
