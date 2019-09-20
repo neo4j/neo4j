@@ -53,6 +53,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DATABASE;
+import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_CONFIRMED;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP_TO;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_PASSWORD;
@@ -89,6 +90,32 @@ public class PushToCloudCommandTest
 
         // then
         verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
+    }
+
+    @Test
+    public void shouldAcceptConfirmationViaCommandLine() throws Exception
+    {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String username = "neo4j";
+        char[] password = {'a', 'b', 'c'};
+        OutsideWorld outsideWorld = new ControlledOutsideWorld( new DefaultFileSystemAbstraction() )
+                .withPromptResponse( username )
+                .withPasswordResponse( password );
+        PushToCloudCommand command = command()
+                .copier( targetCommunicator )
+                .outsideWorld( outsideWorld )
+                .build();
+
+        // when
+        command.execute( array(
+                arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
+                arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ),
+                arg( ARG_CONFIRMED, "true" ) ) );
+
+        // then
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), eq( true ) );
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
     }
 

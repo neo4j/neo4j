@@ -42,6 +42,7 @@ public class PushToCloudCommand implements AdminCommand
     static final String ARG_DUMP = "dump";
     static final String ARG_DUMP_TO = "dump-to";
     static final String ARG_VERBOSE = "v";
+    static final String ARG_CONFIRMED = "confirmed";
     static final String ARG_USERNAME = "username";
     static final String ARG_PASSWORD = "password";
     static final String ENV_USERNAME = "NEO4J_USERNAME";
@@ -64,7 +65,9 @@ public class PushToCloudCommand implements AdminCommand
                             "Alternatively NEO4J_USERNAME environment variable can be used." ) )
             .withArgument( new OptionalNamedArg( ARG_PASSWORD, "true/false", null,
                     "Optional: Password of the target database to push this database to. Prompt will ask for password if not provided. " +
-                            "Alternatively NEO4J_PASSWORD environment variable can be used." ) );
+                            "Alternatively NEO4J_PASSWORD environment variable can be used." ) )
+            .withArgument( new OptionalNamedArg( ARG_CONFIRMED, "true/false", "false",
+                    "Optional: Confirmation that a non empty cloud database would be overwritten." ) );
 
     private final Path homeDir;
     private final Path configDir;
@@ -136,8 +139,10 @@ public class PushToCloudCommand implements AdminCommand
             }
 
             String boltURI = arguments.get( ARG_BOLT_URI );
+            String confirmationViaArgument = arguments.get( ARG_CONFIRMED );
+
             String consoleURL = buildConsoleURI( boltURI );
-            String bearerToken = copier.authenticate( verbose, consoleURL, username, password, false );
+            String bearerToken = copier.authenticate( verbose, consoleURL, username, password, "true".equals( confirmationViaArgument ) );
 
             Path source = initiateSource( arguments );
 
