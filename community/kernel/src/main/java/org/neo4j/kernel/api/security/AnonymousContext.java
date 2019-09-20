@@ -34,9 +34,9 @@ public class AnonymousContext implements LoginContext
         this.accessMode = accessMode;
     }
 
-    public static AnonymousContext none()
+    public static AnonymousContext access()
     {
-        return new AnonymousContext( AccessMode.Static.NONE );
+        return new AnonymousContext( AccessMode.Static.ACCESS );
     }
 
     public static AnonymousContext read()

@@ -180,19 +180,19 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // GRANT ACCESS/START/STOP ON DATABASE foo TO role
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
-        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(action).asInstanceOf[PrivilegePlan])) {
+        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, roleName) => Some(plans.GrantDatabaseAction(source, action, database, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY ACCESS/START/STOP ON DATABASE foo TO role
       case c@DenyPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
-        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(action).asInstanceOf[PrivilegePlan])) {
+        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, roleName) => Some(plans.DenyDatabaseAction(source, action, database, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE ACCESS/START/STOP ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
-        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(action).asInstanceOf[PrivilegePlan])) {
+        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
           case (source, roleName) => Some(plans.RevokeDatabaseAction(source, action, database, roleName, revokeType))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 

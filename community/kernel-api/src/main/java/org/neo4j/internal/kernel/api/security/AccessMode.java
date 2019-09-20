@@ -32,7 +32,7 @@ public interface AccessMode
     enum Static implements AccessMode
     {
         /** No reading or writing allowed. */
-        NONE( false, false, false, false, false ),
+        ACCESS( false, false, false, false, false ),
         /** No reading or writing allowed because of expired credentials. */
         CREDENTIALS_EXPIRED( false, false, false, false, false )
                 {

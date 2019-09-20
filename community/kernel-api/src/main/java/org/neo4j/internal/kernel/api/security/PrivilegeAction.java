@@ -223,9 +223,4 @@ public enum PrivilegeAction
     {
         return super.toString().toLowerCase();
     }
-
-    public boolean isAdminAction()
-    {
-        return ADMIN.satisfies( this );
-    }
 }

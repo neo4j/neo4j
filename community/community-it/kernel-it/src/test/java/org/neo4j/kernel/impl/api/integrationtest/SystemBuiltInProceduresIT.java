@@ -438,7 +438,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     {
         assertThrows( ProcedureException.class,
                 () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], transaction,
-                        dependencyResolver, AnonymousContext.none().authorize(
+                        dependencyResolver, AnonymousContext.access().authorize(
                         LoginContext.IdLookup.EMPTY, getDatabaseName() ), EMPTY_RESOURCE_MANAGER, valueMapper ) );
     }
 

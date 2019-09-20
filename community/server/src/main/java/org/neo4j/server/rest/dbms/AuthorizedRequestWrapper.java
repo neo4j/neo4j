@@ -51,7 +51,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         }
         // If whitelisted uris can start transactions we cannot throw exception here
         //throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
-        return AnonymousContext.none();
+        return AnonymousContext.access();
     }
 
     private final String authType;

@@ -35,37 +35,44 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
 {
     @Test
-    void shouldNotAllowReadsInNoneMode()
+    void shouldAllowReadsInAccessMode()
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AnonymousContext.none() );
+        KernelTransactionImplementation tx = newTransaction( AnonymousContext.access() );
 
-        assertThrows( AuthorizationViolationException.class, tx::dataRead );
+        // This is allowed, but will see an empty graph
+        Read reads = tx.dataRead();
+
+        // Then
+        assertNotNull( reads );    }
+
+    @Test
+    void shouldAllowTokenReadsInAccessMode()
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction( AnonymousContext.access() );
+
+        // When
+        TokenRead tokenRead = tx.tokenRead();
+
+        // Then
+        assertNotNull( tokenRead );
     }
 
     @Test
-    void shouldNotAllowTokenReadsInNoneMode()
+    void shouldNotAllowWritesInAccessMode()
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AnonymousContext.none() );
-
-        assertThrows( AuthorizationViolationException.class, tx::tokenRead );
-    }
-
-    @Test
-    void shouldNotAllowWritesInNoneMode()
-    {
-        // Given
-        KernelTransactionImplementation tx = newTransaction( AnonymousContext.none() );
+        KernelTransactionImplementation tx = newTransaction( AnonymousContext.access() );
 
         assertThrows( AuthorizationViolationException.class, tx::dataWrite );
     }
 
     @Test
-    void shouldNotAllowSchemaWritesInNoneMode()
+    void shouldNotAllowSchemaWritesInAccessMode()
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AnonymousContext.none() );
+        KernelTransactionImplementation tx = newTransaction( AnonymousContext.access() );
 
         assertThrows( AuthorizationViolationException.class, tx::schemaWrite );
     }
@@ -102,12 +109,17 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
     }
 
     @Test
-    void shouldNotAllowReadAccessInWriteOnlyMode()
+    void shouldAllowReadAccessInWriteOnlyMode()
     {
         // Given
         KernelTransactionImplementation tx = newTransaction( AnonymousContext.writeOnly() );
 
-        assertThrows( AuthorizationViolationException.class, tx::dataRead );
+        // When
+        Read reads = tx.dataRead();
+
+        // Then
+        // This is allowed, but will see an empty graph
+        assertNotNull( reads );
     }
 
     @Test

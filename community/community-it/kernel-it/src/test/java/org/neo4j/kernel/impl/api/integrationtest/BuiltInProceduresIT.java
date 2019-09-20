@@ -181,7 +181,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
     void failWhenCallingNonExistingProcedures()
     {
         assertThrows( ProcedureException.class,
-            () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], transaction, dependencyResolver, AnonymousContext.none().authorize(
+            () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], transaction, dependencyResolver, AnonymousContext.access().authorize(
                 LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, valueMapper ) );
     }
 
