@@ -134,21 +134,27 @@ public class HttpCopier implements PushToCloudCommand.Copier
         ProgressTrackingOutputStream.Progress statusProgress =
                 new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Import status", 3L ), 0 );
         boolean firstRunning = true;
+        long importStartedTimeout = System.currentTimeMillis() + 90 * 1000; // timeout to switch from first running to loading = 1.5 minute
         while ( !statusProgress.isDone() )
         {
             String status = getDatabaseStatus( verbose, safeUrl( consoleURL + "/import/status" ), bearerTokenHeader );
             switch ( status )
             {
                 case "running":
+                    boolean passedStartImportTimeout = System.currentTimeMillis() > importStartedTimeout;
+                    if ( passedStartImportTimeout )
+                    {
+                        throw new CommandFailed( "We're sorry, it couldn't be detected that the import was started, " +
+                                "please check the console for further details." );
+                    }
                     // It could happen that the very first call of this method is so fast, that the database is still in state
                     // "running". So we need to check if this is the case and ignore the result in that case and only
                     // take this result as valid, once the status loading or restoring was seen before.
-                    if ( !firstRunning )
+                    if ( !firstRunning)
                     {
                         statusProgress.rewindTo( 0 );
                         statusProgress.add( 3 );
                         statusProgress.done();
-                        break;
                     }
                     break;
                 case "loading":
