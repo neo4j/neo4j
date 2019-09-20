@@ -79,13 +79,15 @@ class TestNeo4jApiExceptions
         assertThrows( NotInTransactionException.class, rel::delete );
 
         newTransaction();
-        assertEquals( node1.getProperty( "test" ), 1 );
-        assertEquals( rel.getProperty( "test" ), 11 );
-        assertEquals( rel, node1.getSingleRelationship( MyRelTypes.TEST, Direction.OUTGOING ) );
-        node1.delete();
-        node2.delete();
-        rel.delete();
-        node3.delete();
+        var testNode = tx.getNodeById( node1.getId() );
+        var testRelationship = tx.getRelationshipById( rel.getId() );
+        assertEquals( testNode.getProperty( "test" ), 1 );
+        assertEquals( testRelationship.getProperty( "test" ), 11 );
+        assertEquals( testRelationship, testNode.getSingleRelationship( MyRelTypes.TEST, Direction.OUTGOING ) );
+        testNode.delete();
+        tx.getNodeById( node2.getId() ).delete();
+        testRelationship.delete();
+        tx.getNodeById( node3.getId() ).delete();
 
         // Finally
         rollback();

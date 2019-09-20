@@ -165,7 +165,6 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public Node[] getNodes()
     {
-        internalTransaction.kernelTransaction().assertOpen();
         return new Node[]{
                 internalTransaction.newNodeProxy( sourceId() ),
                 internalTransaction.newNodeProxy( targetId() )};
@@ -174,21 +173,18 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public Node getOtherNode( Node node )
     {
-        internalTransaction.kernelTransaction().assertOpen();
         return internalTransaction.newNodeProxy( getOtherNodeId( node.getId() ) );
     }
 
     @Override
     public Node getStartNode()
     {
-        internalTransaction.kernelTransaction().assertOpen();
         return internalTransaction.newNodeProxy( sourceId() );
     }
 
     @Override
     public Node getEndNode()
     {
-        internalTransaction.kernelTransaction().assertOpen();
         return internalTransaction.newNodeProxy( targetId() );
     }
 
@@ -223,7 +219,6 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public RelationshipType getType()
     {
-        internalTransaction.kernelTransaction().assertOpen();
         return internalTransaction.getRelationshipTypeById( typeId() );
     }
 

@@ -60,7 +60,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            deleted.delete();
+            tx.getNodeById( deleted.getId() ).delete();
 
             tx.commit();
         }

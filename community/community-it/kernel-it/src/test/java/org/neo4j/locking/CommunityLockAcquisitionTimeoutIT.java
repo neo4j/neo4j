@@ -114,7 +114,7 @@ public class CommunityLockAcquisitionTimeoutIT
                 {
                     try ( Transaction transaction1 = database.beginTx() )
                     {
-                        node.setProperty( TEST_PROPERTY_NAME, "b" );
+                        transaction1.getNodeById( node.getId() ).setProperty( TEST_PROPERTY_NAME, "b" );
                         transaction1.commit();
                     }
                     return null;

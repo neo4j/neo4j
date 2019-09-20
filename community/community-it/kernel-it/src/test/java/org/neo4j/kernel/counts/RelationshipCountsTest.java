@@ -121,7 +121,7 @@ class RelationshipCountsTest
         long during;
         try ( Transaction tx = db.beginTx() )
         {
-            rel.delete();
+            tx.getRelationshipById( rel.getId() ).delete();
             during = countsForRelationship( null, null, null );
             tx.commit();
         }
@@ -188,7 +188,7 @@ class RelationshipCountsTest
         {
             try ( Transaction txn = db.beginTx() )
             {
-                rel.delete();
+                txn.getRelationshipById( rel.getId() ).delete();
                 long whatThisThreadSees = countsForRelationship( null, null, null );
                 barrier.reached();
                 txn.commit();
@@ -258,6 +258,7 @@ class RelationshipCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
+            foo = tx.getNodeById( foo.getId() );
             for ( Relationship relationship : foo.getRelationships() )
             {
                 relationship.delete();
@@ -305,6 +306,7 @@ class RelationshipCountsTest
         {
             for ( Node node : nodes )
             {
+                node = tx.getNodeById( node.getId() );
                 for ( Relationship relationship : node.getRelationships() )
                 {
                     relationship.delete();
@@ -348,6 +350,7 @@ class RelationshipCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
+            foo = tx.getNodeById( foo.getId() );
             for ( Relationship relationship : foo.getRelationships() )
             {
                 relationship.delete();

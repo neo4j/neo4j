@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -100,7 +99,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     public abstract void createTestGraph( GraphDatabaseService graphDb );
 
     @BeforeEach
-    public void setupGraph() throws IOException, KernelException
+    public void setupGraph() throws KernelException
     {
         if ( testSupport == null )
         {

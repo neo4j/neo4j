@@ -98,7 +98,7 @@ class CompositeCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            foo.createRelationshipTo( bar, withName( "KNOWS" ) );
+            tx.getNodeById( foo.getId() ).createRelationshipTo( bar, withName( "KNOWS" ) );
 
             tx.commit();
         }
@@ -126,7 +126,7 @@ class CompositeCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            relationship.delete();
+            tx.getRelationshipById( relationship.getId() ).delete();
 
             tx.commit();
         }
@@ -156,7 +156,7 @@ class CompositeCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            foo.addLabel( label( "Foo" ) );
+            tx.getNodeById( foo.getId() ).addLabel( label( "Foo" ) );
 
             tx.commit();
         }
@@ -186,7 +186,7 @@ class CompositeCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            foo.removeLabel( label( "Foo" ) );
+            tx.getNodeById( foo.getId() ).removeLabel( label( "Foo" ) );
 
             tx.commit();
         }
@@ -216,6 +216,7 @@ class CompositeCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
+            foo = tx.getNodeById( foo.getId() );
             foo.addLabel( label( "Bar" ) );
             foo.createRelationshipTo( tx.createNode( label( "Foo" ) ), withName( "KNOWS" ) );
 
@@ -249,8 +250,8 @@ class CompositeCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            foo.removeLabel( label( "Bar" ) );
-            rel.delete();
+            tx.getNodeById( foo.getId() ).removeLabel( label( "Bar" ) );
+            tx.getRelationshipById( rel.getId() ).delete();
 
             tx.commit();
         }
@@ -282,8 +283,8 @@ class CompositeCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            foo.addLabel( label( "Bar" ) );
-            rel.delete();
+            tx.getNodeById( foo.getId() ).addLabel( label( "Bar" ) );
+            tx.getRelationshipById( rel.getId() ).delete();
 
             tx.commit();
         }
@@ -313,6 +314,7 @@ class CompositeCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
+            foo = tx.getNodeById( foo.getId() );
             foo.removeLabel( label( "Bar" ) );
             foo.createRelationshipTo( tx.createNode( label( "Foo" ) ), withName( "KNOWS" ) );
 
@@ -343,7 +345,7 @@ class CompositeCountsTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            foo.createRelationshipTo( bar, withName( "KNOWS" ) ).delete();
+            tx.getNodeById( foo.getId() ).createRelationshipTo( bar, withName( "KNOWS" ) ).delete();
 
             tx.commit();
         }

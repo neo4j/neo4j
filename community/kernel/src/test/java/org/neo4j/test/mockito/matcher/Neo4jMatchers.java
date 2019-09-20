@@ -69,6 +69,10 @@ public class Neo4jMatchers
             {
                 try ( Transaction tx = db.beginTx() )
                 {
+                    if ( inner instanceof TransactionalMatcher )
+                    {
+                        ((TransactionalMatcher) inner).setTransaction( tx );
+                    }
                     if ( inner.matches( item ) )
                     {
                         if ( successful )
@@ -98,26 +102,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<Node> hasLabel( final Label myLabel )
     {
-        return new TypeSafeDiagnosingMatcher<>()
-        {
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendValue( myLabel );
-            }
-
-            @Override
-            protected boolean matchesSafely( Node item, Description mismatchDescription )
-            {
-                boolean result = item.hasLabel( myLabel );
-                if ( !result )
-                {
-                    Set<String> labels = asLabelNameSet( item.getLabels() );
-                    mismatchDescription.appendText( labels.toString() );
-                }
-                return result;
-            }
-        };
+        return new LabelMatcher( myLabel );
     }
 
     public static TypeSafeDiagnosingMatcher<Node> hasLabels( String... expectedLabels )
@@ -142,28 +127,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<Node> hasLabels( final Set<String> expectedLabels )
     {
-        return new TypeSafeDiagnosingMatcher<>()
-        {
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( expectedLabels.toString() );
-            }
-
-            @Override
-            protected boolean matchesSafely( Node item, Description mismatchDescription )
-            {
-                Set<String> foundLabels = asLabelNameSet( item.getLabels() );
-
-                if ( foundLabels.size() == expectedLabels.size() && foundLabels.containsAll( expectedLabels ) )
-                {
-                    return true;
-                }
-
-                mismatchDescription.appendText( "was " + foundLabels.toString() );
-                return false;
-            }
-        };
+        return new LabelsMatcher( expectedLabels );
     }
 
     public static TypeSafeDiagnosingMatcher<Transaction> hasNoNodes( final Label withLabel )
@@ -220,11 +184,12 @@ public class Neo4jMatchers
         return Iterables.asSet( map( Label::name, enums ) );
     }
 
-    public static class PropertyValueMatcher extends TypeSafeDiagnosingMatcher<Entity>
+    public static class PropertyValueMatcher extends TypeSafeDiagnosingMatcher<Entity> implements TransactionalMatcher
     {
         private final PropertyMatcher propertyMatcher;
         private final String propertyName;
         private final Object expectedValue;
+        private Transaction transaction;
 
         private PropertyValueMatcher( PropertyMatcher propertyMatcher, String propertyName, Object expectedValue )
         {
@@ -240,7 +205,17 @@ public class Neo4jMatchers
             {
                 return false;
             }
-
+            if ( transaction != null )
+            {
+                if ( entity instanceof Node )
+                {
+                    entity = transaction.getNodeById( entity.getId() );
+                }
+                else
+                {
+                    entity = transaction.getRelationshipById( entity.getId() );
+                }
+            }
             Object foundValue = entity.getProperty( propertyName );
             if ( !propertyValuesEqual( expectedValue, foundValue ) )
             {
@@ -275,12 +250,19 @@ public class Neo4jMatchers
             return v.toString();
         }
 
+        @Override
+        public void setTransaction( Transaction transaction )
+        {
+            this.transaction = transaction;
+            this.propertyMatcher.setTransaction( transaction );
+        }
     }
 
-    public static class PropertyMatcher extends TypeSafeDiagnosingMatcher<Entity>
+    public static class PropertyMatcher extends TypeSafeDiagnosingMatcher<Entity> implements TransactionalMatcher
     {
 
         public final String propertyName;
+        private Transaction transaction;
 
         private PropertyMatcher( String propertyName )
         {
@@ -290,9 +272,20 @@ public class Neo4jMatchers
         @Override
         protected boolean matchesSafely( Entity entity, Description mismatchDescription )
         {
+            if ( transaction != null )
+            {
+                if ( entity instanceof Node )
+                {
+                    entity = transaction.getNodeById( entity.getId() );
+                }
+                else
+                {
+                    entity = transaction.getRelationshipById( entity.getId() );
+                }
+            }
             if ( !entity.hasProperty( propertyName ) )
             {
-                mismatchDescription.appendText( String.format( "found property container with property keys: %s",
+                mismatchDescription.appendText( String.format( "found entity with property keys: %s",
                         Iterables.asSet( entity.getPropertyKeys() ) ) );
                 return false;
             }
@@ -302,12 +295,18 @@ public class Neo4jMatchers
         @Override
         public void describeTo( Description description )
         {
-            description.appendText( String.format( "property container with property name '%s' ", propertyName ) );
+            description.appendText( String.format( "entity with property name '%s' ", propertyName ) );
         }
 
         public PropertyValueMatcher withValue( Object value )
         {
             return new PropertyValueMatcher( this, propertyName, value );
+        }
+
+        @Override
+        public void setTransaction( Transaction transaction )
+        {
+            this.transaction = transaction;
         }
     }
 
@@ -635,5 +634,85 @@ public class Neo4jMatchers
             result.add( Array.get( arrayValue, i ) );
         }
         return result;
+    }
+
+    @FunctionalInterface
+    private interface TransactionalMatcher
+    {
+        void setTransaction( Transaction transaction );
+    }
+
+    private static class LabelMatcher extends TypeSafeDiagnosingMatcher<Node> implements TransactionalMatcher
+    {
+        private final Label myLabel;
+        private Transaction transaction;
+
+        LabelMatcher( Label myLabel )
+        {
+            this.myLabel = myLabel;
+        }
+
+        @Override
+        public void describeTo( Description description )
+        {
+            description.appendValue( myLabel );
+        }
+
+        @Override
+        protected boolean matchesSafely( Node item, Description mismatchDescription )
+        {
+            var node = transaction.getNodeById( item.getId() );
+            boolean result = node.hasLabel( myLabel );
+            if ( !result )
+            {
+                Set<String> labels = asLabelNameSet( node.getLabels() );
+                mismatchDescription.appendText( labels.toString() );
+            }
+            return result;
+        }
+
+        @Override
+        public void setTransaction( Transaction transaction )
+        {
+            this.transaction = transaction;
+        }
+    }
+
+    private static class LabelsMatcher extends TypeSafeDiagnosingMatcher<Node> implements TransactionalMatcher
+    {
+        private final Set<String> expectedLabels;
+        private Transaction transaction;
+
+        LabelsMatcher( Set<String> expectedLabels )
+        {
+            this.expectedLabels = expectedLabels;
+        }
+
+        @Override
+        public void describeTo( Description description )
+        {
+            description.appendText( expectedLabels.toString() );
+        }
+
+        @Override
+        protected boolean matchesSafely( Node item, Description mismatchDescription )
+        {
+            var node = transaction.getNodeById( item.getId() );
+            Set<String> foundLabels = asLabelNameSet( node.getLabels() );
+
+            if ( foundLabels.size() == expectedLabels.size() && foundLabels.containsAll( expectedLabels ) )
+            {
+                return true;
+            }
+
+            mismatchDescription.appendText( "was " + foundLabels.toString() );
+            return false;
+        }
+
+        @Override
+        public void setTransaction( Transaction transaction )
+        {
+            this.transaction = transaction;
+        }
     }
 }

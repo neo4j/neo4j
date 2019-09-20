@@ -113,9 +113,10 @@ class TestIdReuse
 
         try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
+            var txNode = transaction.getNodeById( commonNode.getId() );
             for ( int i = 0; i < 10; i++ )
             {
-                commonNode.removeProperty( "key" + i );
+                txNode.removeProperty( "key" + i );
             }
             transaction.commit();
         }

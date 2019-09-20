@@ -137,6 +137,7 @@ class IndexCRUDIT
         // AND WHEN
         try ( Transaction tx = db.beginTx() )
         {
+            node = tx.getNodeById( node.getId() );
             node.addLabel( myLabel );
             tx.commit();
         }

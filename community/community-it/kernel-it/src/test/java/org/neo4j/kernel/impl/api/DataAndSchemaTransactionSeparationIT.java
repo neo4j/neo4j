@@ -149,12 +149,14 @@ class DataAndSchemaTransactionSeparationIT
         }
         try ( var tx = db.beginTx() )
         {
-            propertyWrite( Node.class, nodes.first(), "key1", "value1" ).apply( tx );
+            var node = tx.getNodeById( nodes.first().getId() );
+            propertyWrite( Node.class, node, "key1", "value1" ).apply( tx );
             tx.commit();
         }
         try ( var tx = db.beginTx() )
         {
-            propertyWrite( Relationship.class, relationship, "key1", "value1" ).apply( tx );
+            propertyWrite( Relationship.class,
+                    tx.getRelationshipById( relationship.getId() ), "key1", "value1" ).apply( tx );
             tx.commit();
         }
 
@@ -185,7 +187,14 @@ class DataAndSchemaTransactionSeparationIT
             @Override
             Object perform( Transaction transaction )
             {
-                return entity.getProperty( key );
+                if ( entity instanceof Node )
+                {
+                    return transaction.getNodeById( entity.getId() ).getProperty( key );
+                }
+                else
+                {
+                    return transaction.getRelationshipById( entity.getId() ).getProperty( key );
+                }
             }
         };
     }
@@ -198,7 +207,14 @@ class DataAndSchemaTransactionSeparationIT
             @Override
             Void perform( Transaction transaction )
             {
-                entity.setProperty( key, value );
+                if ( entity instanceof Node )
+                {
+                    transaction.getNodeById( entity.getId() ).setProperty( key, value );
+                }
+                else
+                {
+                    transaction.getRelationshipById( entity.getId() ).setProperty( key, value );
+                }
                 return null;
             }
         };
@@ -211,7 +227,7 @@ class DataAndSchemaTransactionSeparationIT
 
     private static Function<Transaction, Relationship> relate( final Pair<Node, Node> nodes )
     {
-        return graphDb -> nodes.first().createRelationshipTo( nodes.other(), withName( "RELATED" ) );
+        return tx -> tx.getNodeById( nodes.first().getId() ).createRelationshipTo( nodes.other(), withName( "RELATED" ) );
     }
 
     private abstract static class FailureRewrite<T> implements Function<Transaction, T>

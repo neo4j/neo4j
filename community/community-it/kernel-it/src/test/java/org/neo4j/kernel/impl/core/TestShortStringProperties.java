@@ -84,8 +84,9 @@ class TestShortStringProperties
 
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            assertEquals( "value", node.getProperty( "key" ) );
-            node.setProperty( "key", "other" );
+            var n = transaction.getNodeById( node.getId() );
+            assertEquals( "value", n.getProperty( "key" ) );
+            n.setProperty( "key", "other" );
             transaction.commit();
         }
 
@@ -105,6 +106,7 @@ class TestShortStringProperties
 
         try ( Transaction transaction = graphdb.beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
             assertEquals( LONG_STRING, node.getProperty( "key" ) );
             node.setProperty( "key", "value" );
             transaction.commit();
@@ -126,6 +128,7 @@ class TestShortStringProperties
 
         try ( Transaction transaction = graphdb.beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
             assertEquals( "value", node.getProperty( "key" ) );
             node.setProperty( "key", LONG_STRING );
             transaction.commit();
@@ -147,12 +150,16 @@ class TestShortStringProperties
 
         try ( Transaction transaction = graphdb.beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
             assertEquals( "value", node.getProperty( "key" ) );
 
             node.removeProperty( "key" );
             transaction.commit();
         }
 
-        assertThat( node, inTx( graphdb, not( hasProperty( "key" ) ) ) );
+        try ( Transaction transaction = graphdb.beginTx() )
+        {
+            assertThat( transaction.getNodeById( node.getId() ), not( hasProperty( "key" ) ) );
+        }
     }
 }

@@ -50,7 +50,7 @@ class TestCombinedPropertyTypes extends AbstractNeo4jTestCase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.delete();
+            transaction.getNodeById( node1.getId() ).delete();
             transaction.commit();
         }
     }
@@ -98,6 +98,7 @@ class TestCombinedPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
             node1.setProperty( "l1", 255 ); // Setting these low bits was triggering a bug in some date types decision on formatting
             node1.setProperty( key, value );
             transaction.commit();
@@ -105,7 +106,7 @@ class TestCombinedPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( value.asObjectCopy(), property );
             transaction.commit();
         }
@@ -116,6 +117,7 @@ class TestCombinedPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
             node1.setProperty( "l1", Long.MAX_VALUE );
             node1.setProperty( key, value );
             transaction.commit();
@@ -123,7 +125,9 @@ class TestCombinedPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            node1 = transaction.getNodeById( node1.getId() );
+
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( value.asObjectCopy(), property );
             transaction.commit();
         }

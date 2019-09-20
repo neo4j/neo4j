@@ -83,12 +83,12 @@ class ConsistentPropertyReadsIT
                         String key = keys[random.nextInt( keys.length )];
                         try ( Transaction tx = db.beginTx() )
                         {
-                            node.removeProperty( key );
+                            tx.getNodeById( node.getId() ).removeProperty( key );
                             tx.commit();
                         }
                         try ( Transaction tx = db.beginTx() )
                         {
-                            node.setProperty( key, values[random.nextInt( values.length )] );
+                            tx.getNodeById( node.getId() ).setProperty( key, values[random.nextInt( values.length )] );
                             tx.commit();
                         }
                     }
@@ -109,7 +109,7 @@ class ConsistentPropertyReadsIT
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
-                        String value = (String) nodes[random.nextInt( nodes.length )]
+                        String value = (String) tx.getNodeById( nodes[random.nextInt( nodes.length )].getId() )
                                 .getProperty( keys[random.nextInt( keys.length )], null );
                         assertTrue( value == null || ArrayUtil.contains( values, value ), value );
                         tx.commit();

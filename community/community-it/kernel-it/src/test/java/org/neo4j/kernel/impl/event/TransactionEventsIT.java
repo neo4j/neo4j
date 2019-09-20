@@ -365,6 +365,7 @@ class TransactionEventsIT
                 Node node = graph.randomNode();
                 if ( node != null )
                 {
+                    node = tx.getNodeById( node.getId() );
                     for ( Relationship relationship : node.getRelationships() )
                     {
                         graph.deleteRelationship( relationship );
@@ -385,6 +386,7 @@ class TransactionEventsIT
                 Node node = graph.randomNode();
                 if ( node != null )
                 {
+                    node = tx.getNodeById( node.getId() );
                     Label label = graph.randomLabel();
                     if ( !node.hasLabel( label ) )
                     {
@@ -403,6 +405,7 @@ class TransactionEventsIT
                 Node node = graph.randomNode();
                 if ( node != null )
                 {
+                    node = tx.getNodeById( node.getId() );
                     Label label = graph.randomLabel();
                     if ( node.hasLabel( label ) )
                     {
@@ -421,6 +424,7 @@ class TransactionEventsIT
                 Node node = graph.randomNode();
                 if ( node != null )
                 {
+                    node = tx.getNodeById( node.getId() );
                     String key = graph.randomPropertyKey();
                     Object valueBefore = node.getProperty( key, null );
                     Object value = graph.randomPropertyValue();
@@ -439,6 +443,7 @@ class TransactionEventsIT
                 if ( node != null )
                 {
                     String key = graph.randomPropertyKey();
+                    node = tx.getNodeById( node.getId() );
                     if ( node.hasProperty( key ) )
                     {
                         Object valueBefore = node.removeProperty( key );
@@ -456,6 +461,7 @@ class TransactionEventsIT
                 Relationship relationship = graph.randomRelationship();
                 if ( relationship != null )
                 {
+                    relationship = tx.getRelationshipById( relationship.getId() );
                     String key = graph.randomPropertyKey();
                     Object valueBefore = relationship.getProperty( key, null );
                     Object value = graph.randomPropertyValue();
@@ -473,6 +479,7 @@ class TransactionEventsIT
                 Relationship relationship = graph.randomRelationship();
                 if ( relationship != null )
                 {
+                    relationship = tx.getRelationshipById( relationship.getId() );
                     String key = graph.randomPropertyKey();
                     if ( relationship.hasProperty( key ) )
                     {
@@ -492,8 +499,8 @@ class TransactionEventsIT
                 {
                     createNode.perform( tx, graph, expectations );
                 }
-                Node node1 = graph.randomNode();
-                Node node2 = graph.randomNode();
+                Node node1 = tx.getNodeById( graph.randomNode().getId() );
+                Node node2 = tx.getNodeById( graph.randomNode().getId() );
                 Relationship relationship = graph.createRelationship( node1, node2, graph.randomRelationshipType() );
                 expectations.createdRelationship( relationship );
                 debug( relationship );
@@ -507,6 +514,7 @@ class TransactionEventsIT
                 Relationship relationship = graph.randomRelationship();
                 if ( relationship != null )
                 {
+                    relationship = tx.getRelationshipById( relationship.getId() );
                     graph.deleteRelationship( relationship );
                     expectations.deletedRelationship( relationship );
                     debug( relationship );

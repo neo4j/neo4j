@@ -91,6 +91,7 @@ class LabelRecoveryTest
         // WHEN
         try ( Transaction tx = database.beginTx() )
         {
+            node = tx.getNodeById( node.getId() );
             node.setProperty( "prop", "value" );
             tx.commit();
         }

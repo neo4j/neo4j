@@ -245,12 +245,14 @@ class TestTransactionEvents
                 tempRel.setProperty( "someproperty", 101010 );
                 tempNode.removeProperty( "nothing" );
 
+                node3 = tx.getNodeById( node3.getId() );
                 node3.setProperty( "test", "hello" );
                 node3.setProperty( "name", "No name" );
                 node3.delete();
                 expectedData.expectedDeletedNodes.add( node3 );
                 expectedData.removedProperty( node3, "name", "Node 3" );
 
+                node1 = tx.getNodeById( node1.getId() );
                 node1.setProperty( "new name", "A name" );
                 node1.setProperty( "new name", "A better name" );
                 expectedData.assignedProperty( node1, "new name", "A better name",
@@ -265,9 +267,11 @@ class TestTransactionEvents
                 node1.setProperty( "last name", "Hi" );
                 expectedData.assignedProperty( node1, "last name", "Hi", "Persson" );
 
+                rel2 = tx.getRelationshipById( rel2.getId() );
                 rel2.delete();
                 expectedData.expectedDeletedRelationships.add( rel2 );
 
+                rel1 = tx.getRelationshipById( rel1.getId() );
                 rel1.removeProperty( "number" );
                 expectedData.removedProperty( rel1, "number", 4.5D );
                 rel1.setProperty( "description", "Ignored" );
@@ -404,9 +408,9 @@ class TestTransactionEvents
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try ( Transaction tx = db.beginTx() )
         {
-            rel.delete();
-            node1.delete();
-            node2.delete();
+            tx.getRelationshipById( rel.getId() ).delete();
+            tx.getNodeById( node1.getId() ).delete();
+            tx.getNodeById( node2.getId() ).delete();
             tx.commit();
         }
         assertEquals( "stringvalue", listener.nodeProps.get( "test1" ) );
@@ -473,7 +477,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             // When
-            node.setProperty( key, value1 );
+            tx.getNodeById( node.getId() ).setProperty( key, value1 );
             tx.commit();
         }
         // Then
@@ -632,10 +636,10 @@ class TestTransactionEvents
             // when
             try ( Transaction tx = db.beginTx() )
             {
-                labels.remove( node1, "Foo" );
-                labels.remove( node2, "Bar" );
-                labels.remove( node3, "Baz" );
-                labels.remove( node3, "Bar" );
+                labels.remove( tx.getNodeById( node1.getId() ), "Foo" );
+                labels.remove( tx.getNodeById( node2.getId() ), "Bar" );
+                labels.remove( tx.getNodeById( node3.getId() ), "Baz" );
+                labels.remove( tx.getNodeById( node3.getId() ), "Bar" );
 
                 labels.activate();
                 tx.commit();
@@ -665,11 +669,11 @@ class TestTransactionEvents
                 {
                     for ( Relationship relationship : data.createdRelationships() )
                     {
-                        accessData( relationship );
+                        accessData( tx.getRelationshipById( relationship.getId() ) );
                     }
                     for ( PropertyEntry<Relationship> change : data.assignedRelationshipProperties() )
                     {
-                        accessData( change.entity() );
+                        accessData( tx.getRelationshipById( change.entity().getId() ) );
                     }
                     for ( PropertyEntry<Relationship> change : data.removedRelationshipProperties() )
                     {
@@ -707,6 +711,7 @@ class TestTransactionEvents
             // and WHEN
             try ( Transaction tx = db.beginTx() )
             {
+                relationship = tx.getRelationshipById( relationship.getId() );
                 relationship.setProperty( "name", "Smith" );
                 Relationship otherRelationship =
                         tx.createNode().createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
@@ -719,7 +724,7 @@ class TestTransactionEvents
             // and WHEN
             try ( Transaction tx = db.beginTx() )
             {
-                relationship.delete();
+                tx.getRelationshipById( relationship.getId() ).delete();
                 tx.commit();
             }
             // THEN
@@ -793,7 +798,7 @@ class TestTransactionEvents
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
-            count( tx.traversalDescription().traverse( root ) );
+            count( tx.traversalDescription().traverse( tx.getNodeById( root.getId() ) ) );
             tx.commit();
         }
     }
@@ -868,9 +873,10 @@ class TestTransactionEvents
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    for ( String key : node.getPropertyKeys() )
+                    var listenerNode = tx.getNodeById( node.getId() );
+                    for ( String key : listenerNode.getPropertyKeys() )
                     {   // Just to see if one can reach them
-                        node.getProperty( key );
+                        listenerNode.getProperty( key );
                     }
                     tx.commit();
                 }
@@ -881,7 +887,7 @@ class TestTransactionEvents
         {
             // WHEN/THEN
             tx.createNode();
-            node.setProperty( "five", "Six" );
+            tx.getNodeById( node.getId() ).setProperty( "five", "Six" );
             tx.commit();
         }
     }
@@ -917,7 +923,7 @@ class TestTransactionEvents
         } );
         try ( Transaction tx = db.beginTx() )
         {
-            relationship.delete();
+            tx.getRelationshipById( relationship.getId() ).delete();
             tx.commit();
         }
 

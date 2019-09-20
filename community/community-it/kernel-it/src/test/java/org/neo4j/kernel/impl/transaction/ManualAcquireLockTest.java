@@ -34,6 +34,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ImpermanentDbmsExtension
@@ -116,19 +117,13 @@ class ManualAcquireLockTest
 
         try ( Transaction transaction = db.beginTx() )
         {
-            Lock nodeLock = transaction.acquireWriteLock( node );
-            node.setProperty( key, "value" );
+            var txNode = transaction.getNodeById( node.getId() );
+            Lock nodeLock = transaction.acquireWriteLock( txNode );
+            txNode.setProperty( key, "value" );
             nodeLock.release();
 
             worker.beginTx();
-            try
-            {
-                worker.setProperty( node, key, "ksjd" );
-                fail( "Shouldn't be able to grab it" );
-            }
-            catch ( Exception ignored )
-            {
-            }
+            assertThrows( Exception.class, () -> worker.setProperty( txNode, key, "ksjd" ) );
             transaction.commit();
         }
 
@@ -197,7 +192,7 @@ class ManualAcquireLockTest
         {
             execute( state ->
             {
-                node.setProperty( key, value );
+                state.tx.getNodeById( node.getId() ).setProperty( key, value );
                 return null;
             }, 2, SECONDS );
         }

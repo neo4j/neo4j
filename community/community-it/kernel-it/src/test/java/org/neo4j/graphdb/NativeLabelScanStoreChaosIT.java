@@ -115,7 +115,7 @@ public class NativeLabelScanStoreChaosIT
     {
         try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            node.delete();
+            tx.getNodeById( node.getId() ).delete();
             tx.commit();
         }
     }

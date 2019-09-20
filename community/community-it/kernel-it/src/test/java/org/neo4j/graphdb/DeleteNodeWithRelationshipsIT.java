@@ -47,7 +47,7 @@ class DeleteNodeWithRelationshipsIT
 
         // And given a transaction deleting just the node
         Transaction tx = db.beginTx();
-        node.delete();
+        tx.getNodeById( node.getId() ).delete();
 
         ConstraintViolationException ex = assertThrows( ConstraintViolationException.class, tx::commit );
         assertEquals( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +

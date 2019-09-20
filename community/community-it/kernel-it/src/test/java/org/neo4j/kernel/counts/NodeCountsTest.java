@@ -94,7 +94,7 @@ class NodeCountsTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            one.delete();
+            tx.getNodeById( one.getId() ).delete();
             tx.commit();
         }
 
@@ -145,7 +145,7 @@ class NodeCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            one.delete();
+            tx.getNodeById( one.getId() ).delete();
             long nodeCount = countsForNode();
 
             // then

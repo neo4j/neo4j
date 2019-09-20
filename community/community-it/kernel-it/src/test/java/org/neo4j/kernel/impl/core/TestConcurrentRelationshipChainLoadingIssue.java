@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -33,6 +32,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
@@ -88,7 +88,7 @@ class TestConcurrentRelationshipChainLoadingIssue
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Iterables.count( node.getRelationships() );
+            Iterables.count( tx.getNodeById( node.getId() ).getRelationships() );
         }
     }
 
@@ -99,7 +99,7 @@ class TestConcurrentRelationshipChainLoadingIssue
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Assertions.assertEquals( relCount, count( node.getRelationships() ) );
+                assertEquals( relCount, count( tx.getNodeById( node.getId() ).getRelationships() ) );
             }
         } );
         race.go();

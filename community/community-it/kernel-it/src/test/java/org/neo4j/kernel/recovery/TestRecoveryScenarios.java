@@ -200,9 +200,10 @@ class TestRecoveryScenarios
     {
         try ( Transaction tx = db.beginTx() )
         {
+            var targetNode = tx.getNodeById( node.getId() );
             for ( Label label : labels )
             {
-                node.removeLabel( label );
+                targetNode.removeLabel( label );
             }
             tx.commit();
         }
@@ -212,7 +213,7 @@ class TestRecoveryScenarios
     {
         try ( Transaction tx = db.beginTx() )
         {
-            node.removeProperty( key );
+            tx.getNodeById( node.getId() ).removeProperty( key );
             tx.commit();
         }
     }
@@ -221,7 +222,7 @@ class TestRecoveryScenarios
     {
         try ( Transaction tx = db.beginTx() )
         {
-            node.addLabel( label );
+            tx.getNodeById( node.getId() ).addLabel( label );
             tx.commit();
         }
     }
@@ -295,7 +296,7 @@ class TestRecoveryScenarios
     {
         try ( Transaction tx = db.beginTx() )
         {
-            node.delete();
+            tx.getNodeById( node.getId() ).delete();
             tx.commit();
         }
     }
@@ -304,7 +305,7 @@ class TestRecoveryScenarios
     {
         try ( Transaction tx = db.beginTx() )
         {
-            node.setProperty( key, value );
+            tx.getNodeById( node.getId() ).setProperty( key, value );
             tx.commit();
         }
     }

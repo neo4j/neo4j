@@ -228,9 +228,10 @@ class NativeLabelScanStoreUpdateIT
     {
         try ( Transaction tx = db.beginTx() )
         {
+            var nodeById = tx.getNodeById( node.getId() );
             for ( Label label : labels )
             {
-                node.removeLabel( label );
+                nodeById.removeLabel( label );
             }
             tx.commit();
         }
@@ -240,7 +241,7 @@ class NativeLabelScanStoreUpdateIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            node.delete();
+            tx.getNodeById( node.getId() ).delete();
             tx.commit();
         }
     }
@@ -267,6 +268,7 @@ class NativeLabelScanStoreUpdateIT
     {
         try ( Transaction tx = db.beginTx() )
         {
+            node = tx.getNodeById( node.getId() );
             for ( Label label : labels )
             {
                 node.addLabel( label );

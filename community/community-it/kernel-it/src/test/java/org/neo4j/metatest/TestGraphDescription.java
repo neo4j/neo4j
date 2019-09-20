@@ -82,7 +82,7 @@ public class TestGraphDescription implements GraphHolder
         {
             try ( Transaction tx = graphdb.beginTx() )
             {
-                n = n.getSingleRelationship( RelationshipType.withName( "TO" ), Direction.OUTGOING ).getEndNode();
+                n = tx.getNodeById( n.getId() ).getSingleRelationship( RelationshipType.withName( "TO" ), Direction.OUTGOING ).getEndNode();
             }
         }
         assertEquals( graph.size(), unique.size() );
@@ -98,8 +98,8 @@ public class TestGraphDescription implements GraphHolder
 
         try ( Transaction tx = graphdb.beginTx() )
         {
-            assertTrue( a.hasLabel( label( "Person" ) ) );
-            assertTrue( b.hasLabel( label( "Banana" ) ) );
+            assertTrue( tx.getNodeById( a.getId() ).hasLabel( label( "Person" ) ) );
+            assertTrue( tx.getNodeById( b.getId() ).hasLabel( label( "Banana" ) ) );
         }
     }
 
@@ -113,9 +113,9 @@ public class TestGraphDescription implements GraphHolder
 
         try ( Transaction tx = graphdb.beginTx() )
         {
-            assertTrue( "Person label missing", a.hasLabel( label( "Person" ) ) );
-            assertTrue( "Banana label missing", b.hasLabel( label( "Banana" ) ) );
-            assertTrue( "Apple label missing", b.hasLabel( label( "Apple" ) ) );
+            assertTrue( "Person label missing", tx.getNodeById( a.getId() ).hasLabel( label( "Person" ) ) );
+            assertTrue( "Banana label missing", tx.getNodeById( b.getId() ).hasLabel( label( "Banana" ) ) );
+            assertTrue( "Apple label missing", tx.getNodeById( b.getId() ).hasLabel( label( "Apple" ) ) );
         }
     }
 
@@ -126,9 +126,9 @@ public class TestGraphDescription implements GraphHolder
         try ( Transaction tx = graphdb.beginTx() )
         {
             assertEquals( "Wrong graph size.", 2, graph.size() );
-            Node iNode = graph.get( "I" );
+            Node iNode = tx.getNodeById( graph.get( "I" ).getId() );
             assertNotNull( "The node 'I' was not defined", iNode );
-            Node you = graph.get( "you" );
+            Node you = tx.getNodeById( graph.get( "you" ).getId() );
             assertNotNull( "The node 'you' was not defined", you );
             assertEquals( "'I' has wrong 'name'.", myName, iNode.getProperty( "name" ) );
             assertEquals( "'you' has wrong 'name'.", "you",

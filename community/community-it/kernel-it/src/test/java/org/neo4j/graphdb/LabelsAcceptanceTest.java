@@ -117,24 +117,25 @@ class LabelsAcceptanceTest
         // POST "FOOBAR"
         try ( Transaction tx = db.beginTx() )
         {
-            node.addLabel( Labels.MY_LABEL );
+            tx.getNodeById( node.getId() ).addLabel( Labels.MY_LABEL );
             tx.commit();
         }
 
         // POST ["BAZQUX"]
         try ( Transaction tx = db.beginTx() )
         {
-            node.addLabel( label( "BAZQUX" ) );
+            tx.getNodeById( node.getId() ).addLabel( label( "BAZQUX" ) );
             tx.commit();
         }
         // PUT ["BAZQUX"]
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Label label : node.getLabels() )
+            var labeledNode = tx.getNodeById( node.getId() );
+            for ( Label label : labeledNode.getLabels() )
             {
-                node.removeLabel( label );
+                labeledNode.removeLabel( label );
             }
-            node.addLabel( label( "BAZQUX" ) );
+            labeledNode.addLabel( label( "BAZQUX" ) );
             tx.commit();
         }
 
@@ -142,7 +143,8 @@ class LabelsAcceptanceTest
         List<Label> labels = new ArrayList<>();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Label label : node.getLabels() )
+            var labeledNode = tx.getNodeById( node.getId() );
+            for ( Label label : labeledNode.getLabels() )
             {
                 labels.add( label );
             }
@@ -262,7 +264,7 @@ class LabelsAcceptanceTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            myNode.removeLabel( label );
+            tx.getNodeById( myNode.getId() ).removeLabel( label );
             tx.commit();
         }
 
@@ -317,7 +319,7 @@ class LabelsAcceptanceTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            myNode.removeLabel( label );
+            tx.getNodeById( myNode.getId() ).removeLabel( label );
             tx.commit();
         }
 
@@ -409,7 +411,7 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             node3 = tx.createNode( Labels.MY_LABEL );
-            node2.removeLabel( Labels.MY_LABEL );
+            tx.getNodeById( node2.getId() ).removeLabel( Labels.MY_LABEL );
             // extracted here to be asserted below
             nodesWithMyLabel = asSet( tx.findNodes( Labels.MY_LABEL ) );
             nodesWithMyOtherLabel = asSet( tx.findNodes( Labels.MY_OTHER_LABEL ) );
@@ -447,7 +449,7 @@ class LabelsAcceptanceTest
         Node node = createNode( db, Labels.MY_OTHER_LABEL );
         try ( Transaction tx = db.beginTx() )
         {
-            node.delete();
+            tx.getNodeById( node.getId() ).delete();
             tx.commit();
         }
 
@@ -473,7 +475,7 @@ class LabelsAcceptanceTest
             Node node = createNode( db, Labels.MY_OTHER_LABEL );
             try ( Transaction tx = db.beginTx() )
             {
-                node.delete();
+                tx.getNodeById( node.getId() ).delete();
                 tx.commit();
             }
 
@@ -517,7 +519,7 @@ class LabelsAcceptanceTest
             Node node = createNode( db, Labels.MY_LABEL );
             try ( Transaction tx = db.beginTx() )
             {
-                node.createRelationshipTo( node, relType ).setProperty( "prop", "val" );
+                tx.getNodeById( node.getId() ).createRelationshipTo( node, relType ).setProperty( "prop", "val" );
                 tx.commit();
             }
 
@@ -640,9 +642,10 @@ class LabelsAcceptanceTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
+            var labeledNode = tx.getNodeById( node.getId() );
             for ( int i = NUMBER_OF_PRESERVED_LABELS; i < TOTAL_NUMBER_OF_LABELS; i++ )
             {
-                node.removeLabel( label( "label:" + i ) );
+                labeledNode.removeLabel( label( "label:" + i ) );
             }
 
             tx.commit();
@@ -652,7 +655,8 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             List<String> labels = new ArrayList<>();
-            for ( Label label : node.getLabels() )
+            var labeledNode = tx.getNodeById( node.getId() );
+            for ( Label label : labeledNode.getLabels() )
             {
                 labels.add( label.name() );
             }

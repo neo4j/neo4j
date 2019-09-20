@@ -67,7 +67,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
         {
             for ( Node node : deleted )
             {
-                node.delete();
+                tx.getNodeById( node.getId() ).delete();
             }
             tx.commit();
         }

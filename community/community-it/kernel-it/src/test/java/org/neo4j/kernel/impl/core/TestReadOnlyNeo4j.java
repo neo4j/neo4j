@@ -116,8 +116,9 @@ class TestReadOnlyNeo4j
             assertEquals( node2, transaction.getNodeById( node2.getId() ) );
             assertEquals( rel, transaction.getRelationshipById( rel.getId() ) );
 
-            assertThat( node1, hasProperty( "key1" ).withValue( "value1" ) );
-            Relationship loadedRel = node1.getSingleRelationship( withName( "TEST" ), Direction.OUTGOING );
+            var loadedNode = transaction.getNodeById( node1.getId() );
+            assertThat( loadedNode, hasProperty( "key1" ).withValue( "value1" ) );
+            Relationship loadedRel = loadedNode.getSingleRelationship( withName( "TEST" ), Direction.OUTGOING );
             assertEquals( rel, loadedRel );
             assertThat( loadedRel, hasProperty( "key1" ).withValue( "value1" ) );
         }

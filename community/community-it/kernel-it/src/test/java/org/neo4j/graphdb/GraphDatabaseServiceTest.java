@@ -217,15 +217,15 @@ public class GraphDatabaseServiceTest
         Transaction t1Tx = db.beginTx();
         Transaction t2Tx = t2.execute( beginTx( db ) ).get();
         // (t1) <-- (n2)
-        n2.setProperty( "locked", "indeed" );
+        t1Tx.getNodeById( n2.getId() ).setProperty( "locked", "indeed" );
         // (t2) <-- (r1)
-        t2.execute( setProperty( r1, "locked", "absolutely" ) ).get();
+        t2.execute( setProperty( t2Tx.getRelationshipById( r1.getId() ), "locked", "absolutely" ) ).get();
         // (t2) --> (n2)
-        Future<Object> t2n2Wait = t2.execute( setProperty( n2, "locked", "In my dreams" ) );
+        Future<Object> t2n2Wait = t2.execute( setProperty( t2Tx.getNodeById( n2.getId() ), "locked", "In my dreams" ) );
         t2.get().waitUntilWaiting();
         // (t1) --> (r1) although delayed until commit, this is accomplished by deleting an adjacent
         //               relationship so that its surrounding relationships are locked at commit time.
-        r2.delete();
+        t1Tx.getRelationshipById( r2.getId() ).delete();
         try
         {
             t1Tx.commit();
@@ -276,8 +276,7 @@ public class GraphDatabaseServiceTest
         return state -> db.beginTx();
     }
 
-    private WorkerCommand<Void, Object> setProperty( final Entity entity,
-            final String key, final String value )
+    private WorkerCommand<Void, Object> setProperty( final Entity entity, final String key, final String value )
     {
         return state ->
         {
@@ -299,7 +298,7 @@ public class GraphDatabaseServiceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Relationship rel = node.createRelationshipTo( node, MyRelTypes.TEST );
+            Relationship rel = tx.getNodeById( node.getId() ).createRelationshipTo( node, MyRelTypes.TEST );
             tx.commit();
             return rel;
         }

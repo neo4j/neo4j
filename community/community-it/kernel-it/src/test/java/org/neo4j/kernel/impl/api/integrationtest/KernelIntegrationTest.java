@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -79,7 +78,6 @@ public abstract class KernelIntegrationTest
     private KernelTransaction kernelTransaction;
     private DbmsOperations dbmsOperations;
     protected DependencyResolver dependencyResolver;
-    protected DefaultValueMapper valueMapper;
     private DatabaseManagementService managementService;
 
     protected TokenWrite tokenWriteInNewTransaction() throws KernelException

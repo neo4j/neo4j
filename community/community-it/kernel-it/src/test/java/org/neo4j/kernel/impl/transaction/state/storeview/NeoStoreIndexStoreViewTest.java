@@ -356,10 +356,10 @@ class NeoStoreIndexStoreViewTest
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            aKnowsS.delete();
-            sKnowsA.delete();
-            alistair.delete();
-            stefan.delete();
+            tx.getRelationshipById( aKnowsS.getId() ).delete();
+            tx.getRelationshipById( sKnowsA.getId() ).delete();
+            tx.getNodeById( alistair.getId() ).delete();
+            tx.getNodeById( stefan.getId() ).delete();
             tx.commit();
         }
     }
@@ -397,7 +397,7 @@ class NeoStoreIndexStoreViewTest
         }
     }
 
-    class EntityUpdateCollectingVisitor implements Visitor<EntityUpdates,Exception>
+    static class EntityUpdateCollectingVisitor implements Visitor<EntityUpdates,Exception>
     {
         private final Set<EntityUpdates> updates = new HashSet<>();
 

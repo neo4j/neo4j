@@ -119,7 +119,7 @@ public class GraphDatabaseShutdownTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                node.addLabel( label( "ABC" ) );
+                tx.getNodeById( node.getId() ).addLabel( label( "ABC" ) );
                 nodeLockedLatch.countDown();
 
                 // Wait for T3 to start waiting for this node write lock
@@ -141,7 +141,7 @@ public class GraphDatabaseShutdownTest
                 nodeLockedLatch.await();
 
                 // T2 awaits this thread to get into a waiting state for this node write lock
-                node.addLabel( label( "DEF" ) );
+                tx.getNodeById( node.getId() ).addLabel( label( "DEF" ) );
 
                 shutdownCalled.await();
                 tx.commit();

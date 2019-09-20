@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.graphdb.event.TransactionEventListener;
+import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -56,20 +56,20 @@ class TestTransactionEventDeadlocks
             tx.commit();
         }
 
-        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new RelationshipCounterTransactionEventListener( node ) );
-
         try ( Transaction tx = graphdb.beginTx() )
         {
-            node.setProperty( "state", "not broken yet" );
-            node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "TEST" ) );
-            node.removeProperty( "state" );
+            var txNode = tx.getNodeById( node.getId() );
+            managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new RelationshipCounterTransactionEventListener( txNode ) );
+            txNode.setProperty( "state", "not broken yet" );
+            txNode.createRelationshipTo( tx.createNode(), RelationshipType.withName( "TEST" ) );
+            txNode.removeProperty( "state" );
             tx.commit();
         }
 
         assertThat( node, inTx( graphdb, hasProperty( "counter" ).withValue( 1L ) ) );
     }
 
-    private static class RelationshipCounterTransactionEventListener implements TransactionEventListener<Void>
+    private static class RelationshipCounterTransactionEventListener extends TransactionEventListenerAdapter<Void>
     {
         private final Node node;
 
@@ -86,21 +86,8 @@ class TestTransactionEventDeadlocks
             {
                 return null;
             }
-
             node.setProperty( "counter", ((Long) node.removeProperty( "counter" )) + 1 );
             return null;
-        }
-
-        @Override
-        public void afterCommit( TransactionData data, Void state, GraphDatabaseService databaseService )
-        {
-            // nothing
-        }
-
-        @Override
-        public void afterRollback( TransactionData data, Void state, GraphDatabaseService databaseService )
-        {
-            // nothing
         }
     }
 }

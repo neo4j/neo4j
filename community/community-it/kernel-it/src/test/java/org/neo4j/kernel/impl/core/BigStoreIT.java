@@ -137,7 +137,7 @@ class BigStoreIT
         {
             Node node = tx.createNode();
             setProperties( node, properties );
-            Relationship rel1 = refNode.createRelationshipTo( node, BIG_TYPE );
+            Relationship rel1 = tx.getNodeById( refNode.getId() ).createRelationshipTo( node, BIG_TYPE );
             setProperties( rel1, properties );
             Node highNode = tx.createNode();
             Relationship rel2 = node.createRelationshipTo( highNode, OTHER_TYPE );

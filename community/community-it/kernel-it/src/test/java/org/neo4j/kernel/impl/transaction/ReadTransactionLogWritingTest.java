@@ -139,17 +139,18 @@ class ReadTransactionLogWritingTest
 
     private Consumer<Transaction> getRelationships()
     {
-        return tx -> assertEquals( 1, Iterables.count( node.getRelationships() ) );
+        return tx -> assertEquals( 1, Iterables.count( tx.getNodeById( node.getId() ).getRelationships() ) );
     }
 
     private Consumer<Transaction> getNodesFromRelationship()
     {
         return tx ->
         {
-            relationship.getEndNode();
-            relationship.getStartNode();
-            relationship.getNodes();
-            relationship.getOtherNode( node );
+            var rel = tx.getRelationshipById( relationship.getId() );
+            rel.getEndNode();
+            rel.getStartNode();
+            rel.getNodes();
+            rel.getOtherNode( node );
         };
     }
 
@@ -169,8 +170,8 @@ class ReadTransactionLogWritingTest
             @Override
             public void accept( Transaction tx )
             {
-                getAllProperties( node );
-                getAllProperties( relationship );
+                getAllProperties( tx.getNodeById( node.getId() ) );
+                getAllProperties( tx.getRelationshipById( relationship.getId() ) );
             }
 
             private void getAllProperties( Entity entity )

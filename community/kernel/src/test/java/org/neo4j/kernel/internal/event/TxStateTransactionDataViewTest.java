@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -69,7 +68,8 @@ class TxStateTransactionDataViewTest
     private final ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
     private final Statement stmt = mock( Statement.class );
     private final StubStorageCursors ops = new StubStorageCursors();
-    private final KernelTransaction transaction = mock( KernelTransactionImplementation.class );
+    private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+    private final InternalTransaction internalTransaction = mock( InternalTransaction.class );
     private final TokenRead tokenRead = mock( TokenRead.class );
 
     private final TransactionState state = new TxState();
@@ -77,6 +77,7 @@ class TxStateTransactionDataViewTest
     @BeforeEach
     void setup() throws PropertyKeyIdNotFoundKernelException
     {
+        when( transaction.internalTransaction() ).thenReturn( internalTransaction );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( bridge.get( any( DatabaseId.class ) ) ).thenReturn( stmt );
         when( tokenRead.propertyKeyName( anyInt() ) ).thenAnswer( invocationOnMock ->
@@ -327,7 +328,6 @@ class TxStateTransactionDataViewTest
     @Test
     void shouldAccessExampleMetaData()
     {
-        final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.getMetaData() ).thenReturn( genericMap( "username", "Igor" ) );
         TxStateTransactionDataSnapshot transactionDataSnapshot =
                 new TxStateTransactionDataSnapshot( state, ops, transaction );
@@ -348,13 +348,14 @@ class TxStateTransactionDataViewTest
 
     private TxStateTransactionDataSnapshot snapshot()
     {
-        var transaction = mock( InternalTransaction.class );
-        when( transaction.newNodeProxy( anyLong() ) ).thenAnswer( invocation -> new NodeProxy( transaction, invocation.getArgument( 0 ) ) );
-        when( transaction.newRelationshipProxy( anyLong() ) )
-                .thenAnswer( invocation -> new RelationshipProxy( transaction, invocation.getArgument( 0 ) ) );
-        when( transaction.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )
-                .thenAnswer( invocation -> new RelationshipProxy( transaction, invocation.getArgument( 0 ), invocation.getArgument( 1 ),
+        when( internalTransaction.newNodeProxy( anyLong() ) )
+                .thenAnswer( invocation -> new NodeProxy( internalTransaction, invocation.getArgument( 0 ) ) );
+        when( internalTransaction.newRelationshipProxy( anyLong() ) )
+                .thenAnswer( invocation -> new RelationshipProxy( internalTransaction, invocation.getArgument( 0 ) ) );
+        when( internalTransaction.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )
+                .thenAnswer( invocation -> new RelationshipProxy( internalTransaction,
+                        invocation.getArgument( 0 ), invocation.getArgument( 1 ),
                         invocation.getArgument( 2 ), invocation.getArgument( 3 ) ) );
-        return new TxStateTransactionDataSnapshot( state, ops, this.transaction );
+        return new TxStateTransactionDataSnapshot( state, ops, transaction );
     }
 }

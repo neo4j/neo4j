@@ -194,10 +194,10 @@ public class NodeProxyTest extends EntityProxyTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            node.delete();
+            tx.getNodeById( node.getId() ).delete();
             try
             {
-                node.delete();
+                tx.getNodeById( node.getId() ).delete();
             }
             catch ( Exception e )
             {
@@ -231,7 +231,7 @@ public class NodeProxyTest extends EntityProxyTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            node.delete();
+            tx.getNodeById( node.getId() ).delete();
             tx.commit();
         }
 
@@ -240,7 +240,7 @@ public class NodeProxyTest extends EntityProxyTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                node.delete(); // should throw NotFoundException as this node is already deleted
+                tx.getNodeById( node.getId() ).delete(); // should throw NotFoundException as this node is already deleted
                 tx.commit();
             }
         } );
@@ -346,14 +346,14 @@ public class NodeProxyTest extends EntityProxyTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            node.setProperty( "prop", 1337.0 );
+            tx.getNodeById( node.getId() ).setProperty( "prop", 1337.0 );
             tx.commit();
         }
 
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( node.getProperty( "prop" ), instanceOf( Double.class ) );
+            assertThat( tx.getNodeById( node.getId() ).getProperty( "prop" ), instanceOf( Double.class ) );
         }
     }
 
@@ -374,7 +374,7 @@ public class NodeProxyTest extends EntityProxyTest
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( Iterables.asList( node.getRelationshipTypes() ),
+            assertThat( Iterables.asList( tx.getNodeById( node.getId() ).getRelationshipTypes() ),
                     equalTo( singletonList( RelationshipType.withName( "R" ) ) ) );
         }
     }

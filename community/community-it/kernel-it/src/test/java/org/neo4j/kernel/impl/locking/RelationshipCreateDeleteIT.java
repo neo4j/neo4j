@@ -75,6 +75,7 @@ class RelationshipCreateDeleteIT
                     try ( Transaction tx = db.beginTx() )
                     {
                         Node node = random.nextBoolean() ? a : b;
+                        node = tx.getNodeById( node.getId() );
                         for ( Relationship relationship : node.getRelationships() )
                         {
                             try
@@ -103,8 +104,8 @@ class RelationshipCreateDeleteIT
                     try ( Transaction tx = db.beginTx() )
                     {
                         boolean order = random.nextBoolean();
-                        Node start = order ? a : b;
-                        Node end = order ? b : a;
+                        Node start = tx.getNodeById( (order ? a : b).getId() );
+                        Node end = tx.getNodeById( (order ? b : a).getId() );
                         start.createRelationshipTo( end, MyRelTypes.TEST );
                         tx.commit();
                     }

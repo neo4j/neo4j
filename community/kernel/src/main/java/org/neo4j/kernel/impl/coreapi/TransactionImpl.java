@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -111,6 +112,7 @@ public class TransactionImpl implements InternalTransaction
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final QueryExecutionEngine executionEngine;
     private KernelTransaction transaction;
+    private boolean closed;
 
     public TransactionImpl( TokenHolders tokenHolders, TransactionalContextFactory contextFactory,
             DatabaseAvailabilityGuard availabilityGuard, QueryExecutionEngine executionEngine,
@@ -126,13 +128,13 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public void commit()
     {
-        safeTransactionOperation( KernelTransaction::commit );
+        safeTerminalOperation( KernelTransaction::commit );
     }
 
     @Override
     public void rollback()
     {
-        safeTransactionOperation( KernelTransaction::rollback );
+        safeTerminalOperation( KernelTransaction::rollback );
     }
 
     @Override
@@ -479,14 +481,15 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public void close()
     {
-        safeTransactionOperation( KernelTransaction::close );
+        safeTerminalOperation( KernelTransaction::close );
     }
 
-    private void safeTransactionOperation( TransactionalOperation operation )
+    private void safeTerminalOperation( TransactionalOperation operation )
     {
         try
         {
             operation.perform( transaction );
+            closed = true;
         }
         catch ( TransientFailureException e )
         {
@@ -547,6 +550,10 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public KernelTransaction kernelTransaction()
     {
+        if ( closed )
+        {
+            throw new NotInTransactionException( "The transaction has been closed." );
+        }
         return transaction;
     }
 

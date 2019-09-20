@@ -155,19 +155,19 @@ class TestNeo4j extends AbstractNeo4jTestCase
 
         try ( Transaction tx = getGraphDb().beginTx() )
         {
-            node.setProperty( "test", new String[] { "value1" } );
+            tx.getNodeById( node.getId() ).setProperty( "test", new String[] { "value1" } );
             tx.commit();
         }
 
         try ( Transaction tx = getGraphDb().beginTx() )
         {
-            node.setProperty( "test", new String[] { "value1", "value2" } );
+            tx.getNodeById( node.getId() ).setProperty( "test", new String[] { "value1", "value2" } );
             // no success, we wanna test rollback on this operation
         }
 
         try ( Transaction tx = getGraphDb().beginTx() )
         {
-            String[] value = (String[]) node.getProperty( "test" );
+            String[] value = (String[]) tx.getNodeById( node.getId() ).getProperty( "test" );
             assertEquals( 1, value.length );
             assertEquals( "value1", value[0] );
             tx.commit();
@@ -209,7 +209,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
                 assertNotNull( allNodesIterator.next() );
                 allNodesIterator.close();
 
-                newNode.delete();
+                transaction.getNodeById( newNode.getId() ).delete();
                 transaction.commit();
             }
             found = false;

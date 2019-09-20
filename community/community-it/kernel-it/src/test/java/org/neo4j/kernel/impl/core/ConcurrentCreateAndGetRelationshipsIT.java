@@ -146,10 +146,11 @@ class ConcurrentCreateAndGetRelationshipsIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
+                    var node = tx.getNodeById( parentNode.getId() );
                     // ArrayIndexOutOfBoundsException happens here
-                    Iterables.count( parentNode.getRelationships( RELTYPE, OUTGOING ) );
+                    Iterables.count( node.getRelationships( RELTYPE, OUTGOING ) );
 
-                    parentNode.createRelationshipTo( tx.createNode(), RELTYPE );
+                    node.createRelationshipTo( tx.createNode(), RELTYPE );
                     tx.commit();
                 }
                 catch ( Exception e )

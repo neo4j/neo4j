@@ -70,8 +70,11 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node2 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.createRelationshipTo( node2, MyRelTypes.TEST );
-            node1.delete();
+            var txNode1 = transaction.getNodeById( node1.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+
+            txNode1.createRelationshipTo( txNode2, MyRelTypes.TEST );
+            txNode1.delete();
             assertThrows( Exception.class, transaction::commit );
         }
     }
@@ -83,9 +86,12 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node2 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.createRelationshipTo( node2, MyRelTypes.TEST );
-            node2.delete();
-            node1.delete();
+            var txNode1 = transaction.getNodeById( node1.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+
+            txNode1.createRelationshipTo( txNode2, MyRelTypes.TEST );
+            txNode2.delete();
+            txNode1.delete();
             assertThrows( Exception.class, transaction::commit );
         }
     }
@@ -100,18 +106,26 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Relationship rel1;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Relationship rel0 = node0.createRelationshipTo( node1, MyRelTypes.TEST );
-            rel1 = node0.createRelationshipTo( node2, MyRelTypes.TEST );
-            node1.delete();
+            var txNode0 = transaction.getNodeById( node0.getId() );
+            var txNode1 = transaction.getNodeById( node1.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+
+            Relationship rel0 = txNode0.createRelationshipTo( txNode1, MyRelTypes.TEST );
+            rel1 = txNode0.createRelationshipTo( txNode2, MyRelTypes.TEST );
+            txNode1.delete();
             rel0.delete();
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node2.delete();
-            rel1.delete();
-            node0.delete();
+            var txNode0 = transaction.getNodeById( node0.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+            var txRel1 = transaction.getRelationshipById( rel1.getId() );
+
+            txNode2.delete();
+            txRel1.delete();
+            txNode0.delete();
             transaction.commit();
         }
     }
@@ -123,13 +137,14 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node2 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.delete();
-            assertThrows( Exception.class, () -> node1.createRelationshipTo( node2, MyRelTypes.TEST ) );
+            var txNode = transaction.getNodeById( node1.getId() );
+            txNode.delete();
+            assertThrows( Exception.class, () -> txNode.createRelationshipTo( node2, MyRelTypes.TEST ) );
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node2.delete();
-            node1.delete();
+            transaction.getNodeById( node2.getId() ).delete();
+            transaction.getNodeById( node1.getId() ).delete();
             transaction.commit();
         }
     }
@@ -140,8 +155,10 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.delete();
-            assertThrows( Exception.class, () -> node.setProperty( key, 1 ) );
+            var txNode = transaction.getNodeById( node.getId() );
+
+            txNode.delete();
+            assertThrows( Exception.class, () -> txNode.setProperty( key, 1 ) );
         }
     }
 
@@ -168,11 +185,12 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( key, 1 );
-            node.delete();
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.setProperty( key, 1 );
+            txNode.delete();
             assertThrows( Exception.class, () ->
             {
-                node.setProperty( key, 2 );
+                txNode.setProperty( key, 2 );
                 transaction.commit();
             } );
         }
@@ -185,15 +203,18 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node2 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            var txNode1 = transaction.getNodeById( node1.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+
+            Relationship rel = txNode1.createRelationshipTo( txNode2, MyRelTypes.TEST );
             rel.delete();
             assertThrows( Exception.class, () ->
             {
                 rel.setProperty( key, 1 );
                 transaction.commit();
             } );
-            node1.delete();
-            node2.delete();
+            txNode1.delete();
+            txNode2.delete();
             transaction.commit();
         }
     }
@@ -205,7 +226,10 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node2 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            var txNode1 = transaction.getNodeById( node1.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+
+            Relationship rel = txNode1.createRelationshipTo( txNode2, MyRelTypes.TEST );
             rel.setProperty( key, 1 );
             rel.delete();
             assertThrows( Exception.class, () ->
@@ -213,8 +237,8 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
                 rel.removeProperty( key );
                 transaction.commit();
             } );
-            node1.delete();
-            node2.delete();
+            txNode1.delete();
+            txNode2.delete();
             transaction.commit();
         }
     }
@@ -226,7 +250,10 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node2 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            var txNode = transaction.getNodeById( node1.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+
+            Relationship rel = txNode.createRelationshipTo( txNode2, MyRelTypes.TEST );
             rel.setProperty( key, 1 );
             rel.delete();
             assertThrows( Exception.class, () ->
@@ -234,8 +261,8 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
                 rel.setProperty( key, 2 );
                 transaction.commit();
             } );
-            node1.delete();
-            node2.delete();
+            txNode.delete();
+            txNode2.delete();
             transaction.commit();
         }
     }
@@ -246,10 +273,11 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node1 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.delete();
+            var txNode = transaction.getNodeById( node1.getId() );
+            txNode.delete();
             assertThrows( Exception.class, () ->
             {
-                node1.delete();
+                txNode.delete();
                 transaction.commit();
             } );
         }
@@ -262,10 +290,13 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node2 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            var txNode1 = transaction.getNodeById( node1.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+
+            Relationship rel = txNode1.createRelationshipTo( txNode2, MyRelTypes.TEST );
             rel.delete();
-            node1.delete();
-            node2.delete();
+            txNode1.delete();
+            txNode2.delete();
             assertThrows( Exception.class, () ->
             {
                 rel.delete();
@@ -288,7 +319,10 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node2 = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Relationship rel = node3.createRelationshipTo( node2, MyRelTypes.TEST );
+            var txNode3 = transaction.getNodeById( node3.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+
+            Relationship rel = txNode3.createRelationshipTo( txNode2, MyRelTypes.TEST );
             assertThrows( NotFoundException.class, () -> transaction.getNodeById( node1.getId() ) );
             assertThrows( Exception.class, () -> rel.setProperty( key, new Object() ) );
             assertThrows( Exception.class, transaction::commit );
@@ -304,43 +338,50 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Relationship rel2;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-            rel2 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-            node1.setProperty( "key1", "value1" );
+            var txNode = transaction.getNodeById( node1.getId() );
+            var txNode2 = transaction.getNodeById( node2.getId() );
+
+            rel1 = txNode.createRelationshipTo( txNode2, MyRelTypes.TEST );
+            rel2 = txNode.createRelationshipTo( txNode2, MyRelTypes.TEST );
+            txNode.setProperty( "key1", "value1" );
             rel1.setProperty( "key1", "value1" );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.delete();
-            assertThrows( NotFoundException.class, () -> node1.getProperty( "key1" ) );
-            assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
-            assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );
-            node2.delete();
-            assertThrows( NotFoundException.class, node2::delete );
-            assertThrows( NotFoundException.class, () -> node1.getProperty( "key1" ) );
-            assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
-            assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );
-            assertEquals( "value1", rel1.getProperty( "key1" ) );
-            rel1.delete();
-            assertThrows( NotFoundException.class, rel1::delete );
-            assertThrows( NotFoundException.class, () -> rel1.getProperty( "key1" ) );
-            assertThrows( NotFoundException.class, () -> rel1.setProperty( "key1", "value2" ) );
-            assertThrows( NotFoundException.class, () -> rel1.removeProperty( "key1" ) );
-            assertThrows( NotFoundException.class, () -> rel1.getProperty( "key1" ) );
-            assertThrows( NotFoundException.class, () -> rel1.setProperty( "key1", "value2" ) );
-            assertThrows( NotFoundException.class, () -> rel1.removeProperty( "key1" ) );
-            assertThrows( NotFoundException.class, () -> node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
-            assertThrows( NotFoundException.class, () -> node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
+            var node = transaction.getNodeById( node1.getId() );
+            var secondNode = transaction.getNodeById( node2.getId() );
+            var relationshipOne = transaction.getRelationshipById( rel1.getId() );
+            var relationshipTwo = transaction.getRelationshipById( rel2.getId() );
+            node.delete();
+            assertThrows( NotFoundException.class, () -> node.getProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> node.setProperty( "key1", "value2" ) );
+            assertThrows( NotFoundException.class, () -> node.removeProperty( "key1" ) );
+            secondNode.delete();
+            assertThrows( NotFoundException.class, secondNode::delete );
+            assertThrows( NotFoundException.class, () -> node.getProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> node.setProperty( "key1", "value2" ) );
+            assertThrows( NotFoundException.class, () -> node.removeProperty( "key1" ) );
+            assertEquals( "value1", relationshipOne.getProperty( "key1" ) );
+            relationshipOne.delete();
+            assertThrows( NotFoundException.class, relationshipOne::delete );
+            assertThrows( NotFoundException.class, () -> relationshipOne.getProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> relationshipOne.setProperty( "key1", "value2" ) );
+            assertThrows( NotFoundException.class, () -> relationshipOne.removeProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> relationshipOne.getProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> relationshipOne.setProperty( "key1", "value2" ) );
+            assertThrows( NotFoundException.class, () -> relationshipOne.removeProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> secondNode.createRelationshipTo( node, MyRelTypes.TEST ) );
+            assertThrows( NotFoundException.class, () -> secondNode.createRelationshipTo( node, MyRelTypes.TEST ) );
 
-            assertEquals( node1, rel1.getStartNode() );
-            assertEquals( node2, rel2.getEndNode() );
-            Node[] nodes = rel1.getNodes();
-            assertEquals( node1, nodes[0] );
-            assertEquals( node2, nodes[1] );
-            assertEquals( node2, rel1.getOtherNode( node1 ) );
-            rel2.delete();
+            assertEquals( node, relationshipOne.getStartNode() );
+            assertEquals( secondNode, relationshipTwo.getEndNode() );
+            Node[] nodes = relationshipOne.getNodes();
+            assertEquals( node, nodes[0] );
+            assertEquals( secondNode, nodes[1] );
+            assertEquals( secondNode, relationshipOne.getOtherNode( node ) );
+            relationshipTwo.delete();
         }
     }
 }

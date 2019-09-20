@@ -121,7 +121,7 @@ class RelationshipGroupStoreTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+            tx.getNodeById( node.getId() ).createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
             tx.commit();
         }
 

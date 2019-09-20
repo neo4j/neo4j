@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -83,12 +84,13 @@ class RelationshipChainPointerChasingTest
         Relationship[] relationships;
         try ( Transaction tx = db.beginTx() )
         {
-            relationships = asArray( Relationship.class, node.getRelationships() );
+            relationships = asArray( Relationship.class, tx.getNodeById( node.getId() ).getRelationships() );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
+            node = tx.getNodeById( node.getId() );
             // WHEN getting the relationship iterator, i.e. starting to traverse this relationship chain,
             // the cursor eagerly goes to the first relationship before we call #hasNexxt/#next.
             Iterator<Relationship> iterator = node.getRelationships().iterator();
@@ -129,6 +131,9 @@ class RelationshipChainPointerChasingTest
 
         try ( Transaction tx = db.beginTx() )
         {
+            node = tx.getNodeById( node.getId() );
+            relationshipInTheEnd = tx.getRelationshipById( relationshipInTheEnd.getId() );
+
             // WHEN getting the relationship iterator, the first group record will be read and held,
             // already pointing to the next group
             Iterator<Relationship> relationships = node.getRelationships().iterator();
@@ -164,21 +169,21 @@ class RelationshipChainPointerChasingTest
 
     private void deleteRelationshipsInSeparateThread( final Relationship... relationships ) throws InterruptedException
     {
-        executeTransactionInSeparateThread( () ->
+        executeTransactionInSeparateThread( tx ->
         {
             for ( Relationship relationship : relationships )
             {
-                relationship.delete();
+                tx.getRelationshipById( relationship.getId() ).delete();
             }
         } );
     }
 
-    private void executeTransactionInSeparateThread( final Runnable actionInsideTransaction ) throws InterruptedException
+    private void executeTransactionInSeparateThread( final Consumer<Transaction> actionInsideTransaction ) throws InterruptedException
     {
         Thread thread = new Thread( () -> {
             try ( Transaction tx = db.beginTx() )
             {
-                actionInsideTransaction.run();
+                actionInsideTransaction.accept( tx );
                 tx.commit();
             }
         } );

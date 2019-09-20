@@ -82,6 +82,7 @@ class RelationshipTestSupport
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
+            dead = tx.getRelationshipById( dead.getId() );
             Node node = dead.getEndNode();
             dead.delete();
             node.delete();

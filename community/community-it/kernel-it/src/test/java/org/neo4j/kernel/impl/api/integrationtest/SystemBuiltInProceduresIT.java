@@ -32,6 +32,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -439,7 +440,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         assertThrows( ProcedureException.class,
                 () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], transaction,
                         dependencyResolver, AnonymousContext.access().authorize(
-                        LoginContext.IdLookup.EMPTY, getDatabaseName() ), EMPTY_RESOURCE_MANAGER, valueMapper ) );
+                        LoginContext.IdLookup.EMPTY, getDatabaseName() ), EMPTY_RESOURCE_MANAGER, new DefaultValueMapper( transaction ) ) );
     }
 
     @Test

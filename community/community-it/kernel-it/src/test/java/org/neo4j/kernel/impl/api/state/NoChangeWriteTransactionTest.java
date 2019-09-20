@@ -48,6 +48,7 @@ class NoChangeWriteTransactionTest
         Node node = createEmptyNode( db );
         try ( Transaction tx = db.beginTx() )
         {
+            node = tx.getNodeById( node.getId() );
             node.addLabel( TestLabels.LABEL_ONE );
             node.removeLabel( TestLabels.LABEL_ONE );
             tx.commit();

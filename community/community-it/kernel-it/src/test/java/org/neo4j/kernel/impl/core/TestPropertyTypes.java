@@ -53,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 
 class TestPropertyTypes extends AbstractNeo4jTestCase
 {
@@ -71,12 +72,14 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testdouble";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, dValue );
+            transaction.getNodeById( node1.getId() ).setProperty( key, dValue );
             transaction.commit();
         }
         Double propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Double) node1.getProperty( key );
             assertEquals( dValue, propertyValue );
             dValue = 56784.3243d;
@@ -85,6 +88,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Double) node1.getProperty( key );
             assertEquals( dValue, propertyValue );
             transaction.commit();
@@ -92,12 +97,12 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.removeProperty( key );
+            transaction.getNodeById( node1.getId() ).removeProperty( key );
             transaction.commit();
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -109,13 +114,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testfloat";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, fValue );
+            transaction.getNodeById( node1.getId() ).setProperty( key, fValue );
             transaction.commit();
         }
 
         Float propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Float) node1.getProperty( key );
             assertEquals( fValue, propertyValue );
 
@@ -126,6 +133,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Float) node1.getProperty( key );
             assertEquals( fValue, propertyValue );
 
@@ -135,7 +144,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -147,13 +156,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testlong";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, lValue );
+            transaction.getNodeById( node1.getId() ).setProperty( key, lValue );
             transaction.commit();
         }
 
         Long propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Long) node1.getProperty( key );
             assertEquals( lValue, propertyValue );
 
@@ -164,6 +175,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Long) node1.getProperty( key );
             assertEquals( lValue, propertyValue );
 
@@ -173,6 +186,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             assertFalse( node1.hasProperty( key ) );
 
             node1.setProperty( "other", 123L );
@@ -182,7 +197,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertEquals( 123L, node1.getProperty( "other" ) );
+            assertEquals( 123L, transaction.getNodeById( node1.getId() ).getProperty( "other" ) );
             transaction.commit();
         }
     }
@@ -194,13 +209,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testing";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, iValue );
+            transaction.getNodeById( node1.getId() ).setProperty( key, iValue );
             transaction.commit();
         }
 
         Integer propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Integer) node1.getProperty( key );
             assertEquals( iValue, propertyValue );
 
@@ -211,6 +228,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Integer) node1.getProperty( key );
             assertEquals( iValue, propertyValue );
 
@@ -220,6 +239,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             assertFalse( node1.hasProperty( key ) );
 
             node1.setProperty( "other", 123L );
@@ -228,7 +249,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertEquals( 123L, node1.getProperty( "other" ) );
+            assertEquals( 123L, transaction.getNodeById( node1.getId() ).getProperty( "other" ) );
             transaction.commit();
         }
     }
@@ -241,13 +262,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         Byte bValue = b;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, bValue );
+            transaction.getNodeById( node1.getId() ).setProperty( key, bValue );
             transaction.commit();
         }
 
         Byte propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Byte) node1.getProperty( key );
             assertEquals( bValue, propertyValue );
 
@@ -258,6 +281,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Byte) node1.getProperty( key );
             assertEquals( bValue, propertyValue );
 
@@ -267,7 +292,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -279,13 +304,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testshort";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, sValue );
+            transaction.getNodeById( node1.getId() ).setProperty( key, sValue );
             transaction.commit();
         }
 
         Short propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Short) node1.getProperty( key );
             assertEquals( sValue, propertyValue );
 
@@ -296,6 +323,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Short) node1.getProperty( key );
             assertEquals( sValue, propertyValue );
 
@@ -305,7 +334,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -317,13 +346,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testchar";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, cValue );
+            transaction.getNodeById( node1.getId() ).setProperty( key, cValue );
             transaction.commit();
         }
 
         Character propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Character) node1.getProperty( key );
             assertEquals( cValue, propertyValue );
 
@@ -334,6 +365,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Character) node1.getProperty( key );
             assertEquals( cValue, propertyValue );
 
@@ -343,7 +376,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -354,13 +387,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testbool";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, Boolean.TRUE );
+            transaction.getNodeById( node1.getId() ).setProperty( key, Boolean.TRUE );
             transaction.commit();
         }
 
         Boolean propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Boolean) node1.getProperty( key );
             assertEquals( Boolean.TRUE, propertyValue );
 
@@ -370,6 +405,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (Boolean) node1.getProperty( key );
             assertEquals( Boolean.FALSE, propertyValue );
 
@@ -379,7 +416,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -387,17 +424,17 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     void testPointType()
     {
-        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
+        Point point = Values.pointValue( Cartesian, 1, 1 );
         String key = "location";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, point );
+            transaction.getNodeById( node1.getId() ).setProperty( key, point );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( point, property );
             transaction.commit();
         }
@@ -406,10 +443,12 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     void testPointTypeWithOneOtherProperty()
     {
-        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
+        Point point = Values.pointValue( Cartesian, 1, 1 );
         String key = "location";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             node1.setProperty( "prop1", 1 );
             node1.setProperty( key, point );
             transaction.commit();
@@ -417,7 +456,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( point, property );
             transaction.commit();
         }
@@ -426,10 +465,12 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     void testPointTypeWithTwoOtherProperties()
     {
-        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
+        Point point = Values.pointValue( Cartesian, 1, 1 );
         String key = "location";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             node1.setProperty( "prop1", 1 );
             node1.setProperty( "prop2", 2 );
             node1.setProperty( key, point );
@@ -438,7 +479,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( point, property );
             transaction.commit();
         }
@@ -451,12 +492,14 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "location";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, point );
+            transaction.getNodeById( node1.getId() ).setProperty( key, point );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             Object property = node1.getProperty( key );
             assertEquals( point, property );
             transaction.commit();
@@ -468,7 +511,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( "location", Values.unsafePointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1, 1 ) );
+            transaction.getNodeById( node1.getId() ).setProperty( "location",
+                    Values.unsafePointValue( Cartesian, 1, 1, 1, 1 ) );
             assertThrows( TransactionFailureException.class, transaction::commit );
         }
     }
@@ -481,12 +525,14 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testpointarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             Point[] propertyValue = (Point[]) node1.getProperty( key );
             assertEquals( array.length, propertyValue.length );
             for ( int i = 0; i < array.length; i++ )
@@ -500,7 +546,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -512,13 +558,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, date );
+            transaction.getNodeById( node1.getId() ).setProperty( key, date );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( date, property );
             transaction.commit();
         }
@@ -531,13 +577,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, date );
+            transaction.getNodeById( node1.getId() ).setProperty( key, date );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( date, property );
             transaction.commit();
         }
@@ -550,12 +596,14 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             LocalDate[] propertyValue = (LocalDate[]) node1.getProperty( key );
             assertEquals( array.length, propertyValue.length );
             for ( int i = 0; i < array.length; i++ )
@@ -569,7 +617,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -581,13 +629,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, time );
+            transaction.getNodeById( node1.getId() ).setProperty( key, time );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( time, property );
             transaction.commit();
         }
@@ -600,13 +648,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, time );
+            transaction.getNodeById( node1.getId() ).setProperty( key, time );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( time, property );
             transaction.commit();
         }
@@ -619,12 +667,14 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             LocalTime[] propertyValue = (LocalTime[]) node1.getProperty( key );
             assertEquals( array.length, propertyValue.length );
             for ( int i = 0; i < array.length; i++ )
@@ -638,7 +688,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -650,13 +700,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, dateTime );
+            transaction.getNodeById( node1.getId() ).setProperty( key, dateTime );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( dateTime, property );
             transaction.commit();
         }
@@ -670,12 +720,14 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             LocalDateTime[] propertyValue = (LocalDateTime[]) node1.getProperty( key );
             assertEquals( array.length, propertyValue.length );
             for ( int i = 0; i < array.length; i++ )
@@ -689,7 +741,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -701,13 +753,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, time );
+            transaction.getNodeById( node1.getId() ).setProperty( key, time );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( time, property );
             transaction.commit();
         }
@@ -721,6 +773,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         // array sizes 1 through 4
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             for ( OffsetTime[] array : new OffsetTime[][]{new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy()},
                     new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy(), TimeValue.time( 14, 34, 55, 3478, "+02:00" ).asObjectCopy()},
                     new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy(), TimeValue.time( 14, 34, 55, 3478, "+02:00" ).asObjectCopy(),
@@ -742,13 +796,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.removeProperty( key );
+            transaction.getNodeById( node1.getId() ).removeProperty( key );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -760,13 +814,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, duration );
+            transaction.getNodeById( node1.getId() ).setProperty( key, duration );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( duration, property );
             transaction.commit();
         }
@@ -780,12 +834,14 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             TemporalAmount[] propertyValue = (TemporalAmount[]) node1.getProperty( key );
             assertEquals( array.length, propertyValue.length );
             for ( int i = 0; i < array.length; i++ )
@@ -799,7 +855,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -811,13 +867,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, dateTime );
+            transaction.getNodeById( node1.getId() ).setProperty( key, dateTime );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( dateTime.asObjectCopy(), property );
             transaction.commit();
         }
@@ -831,12 +887,14 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             ZonedDateTime[] propertyValue = (ZonedDateTime[]) node1.getProperty( key );
             assertEquals( array.length, propertyValue.length );
             for ( int i = 0; i < array.length; i++ )
@@ -850,7 +908,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -862,13 +920,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "dt";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, dateTime );
+            transaction.getNodeById( node1.getId() ).setProperty( key, dateTime );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Object property = node1.getProperty( key );
+            Object property = transaction.getNodeById( node1.getId() ).getProperty( key );
             assertEquals( dateTime.asObjectCopy(), property );
             transaction.commit();
         }
@@ -883,12 +941,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
             ZonedDateTime[] propertyValue = (ZonedDateTime[]) node1.getProperty( key );
             assertEquals( array.length, propertyValue.length );
             for ( int i = 0; i < array.length; i++ )
@@ -902,7 +961,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -915,13 +974,14 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testintarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array1 );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array1 );
             transaction.commit();
         }
 
         int[] propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
             propertyValue = (int[]) node1.getProperty( key );
             assertEquals( array1.length, propertyValue.length );
             for ( int i = 0; i < array1.length; i++ )
@@ -935,6 +995,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
             propertyValue = (int[]) node1.getProperty( key );
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
@@ -948,7 +1009,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -961,13 +1022,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testintarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array1 );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array1 );
             transaction.commit();
         }
 
         short[] propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (short[]) node1.getProperty( key );
             assertEquals( array1.length, propertyValue.length );
             for ( int i = 0; i < array1.length; i++ )
@@ -981,6 +1044,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (short[]) node1.getProperty( key );
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
@@ -994,7 +1059,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -1007,13 +1072,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "teststringarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array1 );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array1 );
             transaction.commit();
         }
 
         String[] propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (String[]) node1.getProperty( key );
             assertEquals( array1.length, propertyValue.length );
             for ( int i = 0; i < array1.length; i++ )
@@ -1027,6 +1094,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (String[]) node1.getProperty( key );
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
@@ -1040,7 +1109,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -1053,13 +1122,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testboolarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array1 );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array1 );
             transaction.commit();
         }
 
         boolean[] propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (boolean[]) node1.getProperty( key );
             assertEquals( array1.length, propertyValue.length );
             for ( int i = 0; i < array1.length; i++ )
@@ -1073,6 +1144,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (boolean[]) node1.getProperty( key );
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
@@ -1086,7 +1159,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -1099,13 +1172,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testdoublearray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array1 );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array1 );
             transaction.commit();
         }
 
         double[] propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (double[]) node1.getProperty( key );
             assertEquals( array1.length, propertyValue.length );
             for ( int i = 0; i < array1.length; i++ )
@@ -1119,6 +1194,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (double[]) node1.getProperty( key );
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
@@ -1132,7 +1209,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -1145,13 +1222,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testfloatarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array1 );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array1 );
             transaction.commit();
         }
 
         float[] propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (float[]) node1.getProperty( key );
             assertEquals( array1.length, propertyValue.length );
             for ( int i = 0; i < array1.length; i++ )
@@ -1165,6 +1244,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (float[]) node1.getProperty( key );
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
@@ -1178,7 +1259,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -1191,13 +1272,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testlongarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array1 );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array1 );
             transaction.commit();
         }
 
         long[] propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (long[]) node1.getProperty( key );
             assertEquals( array1.length, propertyValue.length );
             for ( int i = 0; i < array1.length; i++ )
@@ -1211,6 +1294,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (long[]) node1.getProperty( key );
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
@@ -1224,7 +1309,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -1237,13 +1322,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testbytearray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array1 );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array1 );
             transaction.commit();
         }
 
         byte[] propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (byte[]) node1.getProperty( key );
             assertEquals( array1.length, propertyValue.length );
             for ( int i = 0; i < array1.length; i++ )
@@ -1257,6 +1344,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (byte[]) node1.getProperty( key );
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
@@ -1270,7 +1359,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -1283,13 +1372,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         String key = "testchararray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, array1 );
+            transaction.getNodeById( node1.getId() ).setProperty( key, array1 );
             transaction.commit();
         }
 
         char[] propertyValue;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (char[]) node1.getProperty( key );
             assertEquals( array1.length, propertyValue.length );
             for ( int i = 0; i < array1.length; i++ )
@@ -1303,6 +1394,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             propertyValue = (char[]) node1.getProperty( key );
             assertEquals( array2.length, propertyValue.length );
             for ( int i = 0; i < array2.length; i++ )
@@ -1316,7 +1409,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertFalse( node1.hasProperty( key ) );
+            assertFalse( transaction.getNodeById( node1.getId() ).hasProperty( key ) );
             transaction.commit();
         }
     }
@@ -1327,6 +1420,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
+
             node.setProperty( "1", 2 );
             node.setProperty( "2", "" );
             node.setProperty( "3", "" );
@@ -1335,6 +1430,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
+
             assertEquals( 2, node.getProperty( "1" ) );
             assertEquals( "", node.getProperty( "2" ) );
             assertEquals( "", node.getProperty( "3" ) );
@@ -1473,6 +1570,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         // GIVEN
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             String key = "key";
             // setting a property, then reading it back
             node1.setProperty( key, value );
@@ -1495,11 +1594,13 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         // setting a property, then reading it back
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.setProperty( key, value );
+            transaction.getNodeById( node1.getId() ).setProperty( key, value );
             transaction.commit();
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node1 = transaction.getNodeById( node1.getId() );
+
             Object readValue = node1.getProperty( key );
 
             // WHEN changing the value read back

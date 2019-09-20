@@ -561,8 +561,8 @@ class DatabaseRecoveryIT
                         {   // create relationship (w/ random prop)
                             if ( !nodes.isEmpty() )
                             {
-                                Relationship relationship = random.among( nodes )
-                                        .createRelationshipTo( random.among( nodes ), randomRelationshipType() );
+                                Relationship relationship = tx.getNodeById( random.among( nodes ).getId() )
+                                        .createRelationshipTo( tx.getNodeById( random.among( nodes ).getId() ), randomRelationshipType() );
                                 if ( random.nextBoolean() )
                                 {
                                     relationship.setProperty( randomKey(), random.nextValueAsObject() );
@@ -574,20 +574,21 @@ class DatabaseRecoveryIT
                     {   // change
                         if ( operation < 0.25 )
                         {   // add label
-                            random.among( nodes, node -> node.addLabel( randomLabel() ) );
+                            random.among( nodes, node -> tx.getNodeById( node.getId() ).addLabel( randomLabel() ) );
                         }
                         else if ( operation < 0.5 )
                         {   // remove label
-                            random.among( nodes, node -> node.removeLabel( randomLabel() ) );
+                            random.among( nodes, node -> tx.getNodeById( node.getId() ).removeLabel( randomLabel() ) );
                         }
                         else if ( operation < 0.75 )
                         {   // set node property
-                            random.among( nodes, node -> node.setProperty( randomKey(), random.nextValueAsObject() ) );
+                            random.among( nodes, node -> tx.getNodeById( node.getId() ).setProperty( randomKey(), random.nextValueAsObject() ) );
                         }
                         else
                         {   // set relationship property
-                            onRandomRelationship( nodes,
-                                    relationship -> relationship.setProperty( randomKey(), random.nextValueAsObject() ) );
+                            onRandomRelationship( nodes, relationship ->
+                                    tx.getRelationshipById( relationship.getId() ).setProperty( randomKey(),
+                                            random.nextValueAsObject() ), tx );
                         }
                     }
                     else
@@ -595,20 +596,22 @@ class DatabaseRecoveryIT
 
                         if ( operation < 0.25 )
                         {   // remove node property
-                            random.among( nodes, node -> node.removeProperty( randomKey() ) );
+                            random.among( nodes, node -> tx.getNodeById( node.getId() ).removeProperty( randomKey() ) );
                         }
                         else if ( operation < 0.5 )
                         {   // remove relationship property
-                            onRandomRelationship( nodes, relationship -> relationship.removeProperty( randomKey() ) );
+                            onRandomRelationship( nodes, relationship ->
+                                    relationship.removeProperty( randomKey() ), tx );
                         }
                         else if ( operation < 0.9 )
                         {   // delete relationship
-                            onRandomRelationship( nodes, Relationship::delete );
+                            onRandomRelationship( nodes, Relationship::delete, tx );
                         }
                         else
                         {   // delete node
                             random.among( nodes, node ->
                             {
+                                node = tx.getNodeById( node.getId() );
                                 for ( Relationship relationship : node.getRelationships() )
                                 {
                                     relationship.delete();
@@ -624,9 +627,9 @@ class DatabaseRecoveryIT
         }
     }
 
-    private void onRandomRelationship( List<Node> nodes, Consumer<Relationship> action )
+    private void onRandomRelationship( List<Node> nodes, Consumer<Relationship> action, Transaction transaction )
     {
-        random.among( nodes, node -> random.among( asList( node.getRelationships() ), action ) );
+        random.among( nodes, node -> random.among( asList( transaction.getNodeById( node.getId() ).getRelationships() ), action ) );
     }
 
     private RelationshipType randomRelationshipType()
@@ -701,7 +704,7 @@ class DatabaseRecoveryIT
                     {   // Delete node
                         if ( !nodes.isEmpty() )
                         {
-                            nodes.remove( random.nextInt( nodes.size() ) ).delete();
+                            tx.getNodeById( nodes.remove( random.nextInt( nodes.size() ) ).getId() ).delete();
                         }
                     }
                     else if ( operation < 0.3 )
@@ -718,19 +721,19 @@ class DatabaseRecoveryIT
                     }
                     else if ( operation < 0.4 )
                     {   // Remove label
-                        random.among( nodes, node -> node.removeLabel( label ) );
+                        random.among( nodes, node -> tx.getNodeById( node.getId() ).removeLabel( label ) );
                     }
                     else if ( operation < 0.6 )
                     {   // Add label
-                        random.among( nodes, node -> node.addLabel( label ) );
+                        random.among( nodes, node -> tx.getNodeById( node.getId() ).addLabel( label ) );
                     }
                     else if ( operation < 0.85 )
                     {   // Set property
-                        random.among( nodes, node -> node.setProperty( random.among( keys ), random.nextValueAsObject() ) );
+                        random.among( nodes, node -> tx.getNodeById( node.getId() ).setProperty( random.among( keys ), random.nextValueAsObject() ) );
                     }
                     else
                     {   // Remove property
-                        random.among( nodes, node -> node.removeProperty( random.among( keys ) ) );
+                        random.among( nodes, node -> tx.getNodeById( node.getId() ).removeProperty( random.among( keys ) ) );
                     }
                 }
                 tx.commit();

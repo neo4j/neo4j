@@ -53,6 +53,9 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         Node target = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            source = transaction.getNodeById( source.getId() );
+            target = transaction.getNodeById( target.getId() );
+
             source.createRelationshipTo( source, TEST );
             target.createRelationshipTo( target, TEST );
             source.createRelationshipTo( target, TEST );
@@ -61,6 +64,8 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            target = transaction.getNodeById( target.getId() );
+
             for ( Relationship rel : target.getRelationships() )
             {
                 rel.delete();
@@ -77,6 +82,8 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
+
             txCreateLoop( node );
             txCreateRel( transaction, node );
             txCreateLoop( node );
@@ -106,12 +113,14 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
             node.createRelationshipTo( node, TEST );
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
             for ( Direction dir : Direction.values() )
             {
                 int count = 0;
@@ -144,6 +153,8 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
             Node root = createNode();
             try ( Transaction transaction = getGraphDb().beginTx() )
             {
+                root = transaction.getNodeById( root.getId() );
+
                 for ( int i = 0; i < count; i++ )
                 {
                     if ( loop[i] )
@@ -195,6 +206,8 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         Relationship singleRelationship;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
+
             singleRelationship = node.createRelationshipTo( node, TEST );
             assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
             assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
@@ -204,6 +217,8 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
+
             assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
             assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
             assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
@@ -227,7 +242,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
             // And given a transaction deleting just the node
-            node.delete();
+            transaction.getNodeById( node.getId() ).delete();
 
             var e = assertThrows( ConstraintViolationException.class, transaction::commit );
             assertThat( e.getMessage(), equalTo( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
@@ -242,6 +257,8 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         Relationship relationship;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
+
             relationship = node.createRelationshipTo( node, TEST );
             transaction.commit();
         }
@@ -252,9 +269,11 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         {
             try ( Transaction transaction = getGraphDb().beginTx() )
             {
-                assertEquals( node, relationship.getOtherNode( node ) );
-                assertEquals( asList( node, node ), asList( relationship.getNodes() ) );
-                assertThrows( NotFoundException.class, () -> relationship.getOtherNode( transaction.createNode() ) );
+                node = transaction.getNodeById( node.getId() );
+                var rel = transaction.getRelationshipById( relationship.getId() );
+                assertEquals( node, rel.getOtherNode( node ) );
+                assertEquals( asList( node, node ), asList( rel.getNodes() ) );
+                assertThrows( NotFoundException.class, () -> rel.getOtherNode( transaction.createNode() ) );
                 transaction.commit();
             }
         }
@@ -266,17 +285,23 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
+
             node.createRelationshipTo( transaction.createNode(), TEST );
             transaction.commit();
         }
         Relationship relationship;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
+
             relationship = node.createRelationshipTo( node, TEST );
             transaction.commit();
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            node = transaction.getNodeById( node.getId() );
+
             assertEquals( relationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
             transaction.commit();
         }
@@ -296,7 +321,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
                     {
                         if ( delete[j] )
                         {
-                            relationships[j].delete();
+                            transaction.getRelationshipById( relationships[j].getId() ).delete();
                             relationships[j] = null;
                         }
                     }
@@ -351,9 +376,10 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         Relationship[] relationships = new Relationship[count];
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var node = transaction.getNodeById( root.getId() );
             for ( int i = 0; i < count; i++ )
             {
-                relationships[i] = root.createRelationshipTo( nodes[i], TEST );
+                relationships[i] = node.createRelationshipTo( nodes[i], TEST );
             }
             transaction.commit();
         }
@@ -371,11 +397,12 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         verifyRelationships( message, root, loops, relationships );
     }
 
-    private void verifyRelationships( String message, Node root,
+    private void verifyRelationships( String message, Node node,
         boolean[] loop, Relationship... relationships )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var root = transaction.getNodeById( node.getId() );
             for ( Direction dir : Direction.values() )
             {
                 Set<Relationship> expected = new HashSet<>();

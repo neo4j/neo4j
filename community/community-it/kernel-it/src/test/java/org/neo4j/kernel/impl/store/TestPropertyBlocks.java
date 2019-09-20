@@ -57,10 +57,11 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
             {
-                node.setProperty( "prop" + i, i );
-                assertEquals( i, node.getProperty( "prop" + i ) );
+                txNode.setProperty( "prop" + i, i );
+                assertEquals( i, txNode.getProperty( "prop" + i ) );
             }
             transaction.commit();
         }
@@ -68,15 +69,16 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
             {
-                assertEquals( i, node.getProperty( "prop" + i ) );
+                assertEquals( i, txNode.getProperty( "prop" + i ) );
             }
 
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
             {
-                assertEquals( i, node.removeProperty( "prop" + i ) );
-                assertFalse( node.hasProperty( "prop" + i ) );
+                assertEquals( i, txNode.removeProperty( "prop" + i ) );
+                assertFalse( txNode.hasProperty( "prop" + i ) );
             }
             transaction.commit();
         }
@@ -91,10 +93,11 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs() / 2; i++ )
             {
-                node.setProperty( "prop" + i, i * -1.0 );
-                assertEquals( i * -1.0, node.getProperty( "prop" + i ) );
+                txNode.setProperty( "prop" + i, i * -1.0 );
+                assertEquals( i * -1.0, txNode.getProperty( "prop" + i ) );
             }
             transaction.commit();
         }
@@ -103,15 +106,16 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs() / 2; i++ )
             {
-                assertEquals( i * -1.0, node.getProperty( "prop" + i ) );
+                assertEquals( i * -1.0, txNode.getProperty( "prop" + i ) );
             }
 
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs() / 2; i++ )
             {
-                assertEquals( i * -1.0, node.removeProperty( "prop" + i ) );
-                assertFalse( node.hasProperty( "prop" + i ) );
+                assertEquals( i * -1.0, txNode.removeProperty( "prop" + i ) );
+                assertFalse( txNode.hasProperty( "prop" + i ) );
             }
             transaction.commit();
         }
@@ -126,9 +130,10 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( int i = 0; i < 3 * PropertyType.getPayloadSizeLongs(); i++ )
             {
-                node.setProperty( "shortString" + i, String.valueOf( i ) );
+                txNode.setProperty( "shortString" + i, String.valueOf( i ) );
             }
             transaction.commit();
         }
@@ -141,7 +146,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
             {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
-                assertEquals( value, node.removeProperty( name ) );
+                assertEquals( value, transaction.getNodeById( node.getId() ).removeProperty( name ) );
             } );
             transaction.commit();
         }
@@ -149,18 +154,19 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         assertEquals( inUseBefore + 2, propertyRecordsInUse() );
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            middleRecordProps.forEach( nameAndValue -> assertFalse( node.hasProperty( nameAndValue.getOne() ) ) );
+            var txNode = transaction.getNodeById( node.getId() );
+            middleRecordProps.forEach( nameAndValue -> assertFalse( txNode.hasProperty( nameAndValue.getOne() ) ) );
             getPropertiesFromRecord( 0 ).forEach( nameAndValue ->
             {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
-                assertEquals( value, node.removeProperty( name ) );
+                assertEquals( value, txNode.removeProperty( name ) );
             } );
             getPropertiesFromRecord( 2 ).forEach( nameAndValue ->
             {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
-                assertEquals( value, node.removeProperty( name ) );
+                assertEquals( value, txNode.removeProperty( name ) );
             } );
             transaction.commit();
         }
@@ -207,21 +213,23 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
             {
-                node.setProperty( "prop" + i, i );
+                txNode.setProperty( "prop" + i, i );
             }
             transaction.commit();
         }
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             // Remove all but one and add one
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs() - 1; i++ )
             {
-                assertEquals( i, node.removeProperty( "prop" + i ) );
+                assertEquals( i, txNode.removeProperty( "prop" + i ) );
             }
-            node.setProperty( "profit", 5 );
+            txNode.setProperty( "profit", 5 );
             transaction.commit();
         }
 
@@ -229,8 +237,9 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         int remainingProperty = PropertyType.getPayloadSizeLongs() - 1;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertEquals( remainingProperty, node.getProperty( "prop" + remainingProperty ) );
-            assertEquals( 5, node.getProperty( "profit" ) );
+            var txNode = transaction.getNodeById( node.getId() );
+            assertEquals( remainingProperty, txNode.getProperty( "prop" + remainingProperty ) );
+            assertEquals( 5, txNode.getProperty( "profit" ) );
             transaction.commit();
         }
     }
@@ -244,7 +253,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "prop0", 0 );
+            transaction.getNodeById( node.getId() ).setProperty( "prop0", 0 );
             transaction.commit();
         }
 
@@ -253,11 +262,12 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             // Since integers take up one block, adding the remaining should not
             // create a new record.
             for ( int i = 1; i < PropertyType.getPayloadSizeLongs(); i++ )
             {
-                node.setProperty( "prop" + i, i );
+                txNode.setProperty( "prop" + i, i );
             }
             transaction.commit();
         }
@@ -266,10 +276,11 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             // Removing one and adding one of the same size should not create a new
             // record.
-            assertEquals( 0, node.removeProperty( "prop0" ) );
-            node.setProperty( "prop-1", -1 );
+            assertEquals( 0, txNode.removeProperty( "prop0" ) );
+            txNode.setProperty( "prop-1", -1 );
             transaction.commit();
         }
 
@@ -277,13 +288,14 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             // Removing two that take up 1 block and adding one that takes up 2
             // should not create a new record.
-            assertEquals( -1, node.removeProperty( "prop-1" ) );
+            assertEquals( -1, txNode.removeProperty( "prop-1" ) );
             // Hopefully prop1 exists, meaning payload is at least 16
-            assertEquals( 1, node.removeProperty( "prop1" ) );
+            assertEquals( 1, txNode.removeProperty( "prop1" ) );
             // A double value should do the trick
-            node.setProperty( "propDouble", 1.0 );
+            txNode.setProperty( "propDouble", 1.0 );
             transaction.commit();
         }
 
@@ -292,7 +304,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         // Adding just one now should create a new property record.
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "prop-2", -2 );
+            transaction.getNodeById( node.getId() ).setProperty( "prop-2", -2 );
             transaction.commit();
         }
         assertEquals( inUseBefore + 2, propertyRecordsInUse() );
@@ -305,25 +317,27 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         long inUseBefore = propertyRecordsInUse();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             /*
              * Fill up with doubles and the rest with ints - we assume
              * the former take up two blocks, the latter 1.
              */
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs() / 2; i++ )
             {
-                node.setProperty( "double" + i, i * 1.0 );
+                txNode.setProperty( "double" + i, i * 1.0 );
             }
             transaction.commit();
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             /*
              * I know this is stupid in that it is executed 0 or 1 times but it
              * is easier to maintain and change for different payload sizes.
              */
             for ( int i = 0; i < PropertyType.getPayloadSizeLongs() % 2; i++ )
             {
-                node.setProperty( "int" + i, i );
+                txNode.setProperty( "int" + i, i );
             }
             transaction.commit();
         }
@@ -334,7 +348,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         // We assume at least one double has been added
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.removeProperty( "double0" );
+            transaction.getNodeById( node.getId() ).removeProperty( "double0" );
             transaction.commit();
         }
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
@@ -342,8 +356,9 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
             // Do the actual substitution, check that no record is created
-            node.setProperty( "int-1", -1 );
-            node.setProperty( "int-2", -2 );
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.setProperty( "int-1", -1 );
+            txNode.setProperty( "int-2", -2 );
             transaction.commit();
         }
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
@@ -351,7 +366,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         // Finally, make sure we actually are with a full prop record
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "int-3", -3 );
+            transaction.getNodeById( node.getId() ).setProperty( "int-3", -3 );
             transaction.commit();
         }
         assertEquals( inUseBefore + 2, propertyRecordsInUse() );
@@ -371,9 +386,10 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         int stuffedIntegers = 0;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( ; stuffedIntegers < PropertyType.getPayloadSizeLongs(); stuffedIntegers++ )
             {
-                node.setProperty( "int" + stuffedIntegers, stuffedIntegers );
+                txNode.setProperty( "int" + stuffedIntegers, stuffedIntegers );
             }
             transaction.commit();
         }
@@ -385,15 +401,16 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             // Remove first and third
-            node.removeProperty( "int0" );
-            node.removeProperty( "int2" );
+            txNode.removeProperty( "int0" );
+            txNode.removeProperty( "int2" );
             transaction.commit();
         }
         // Add the two block thing.
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "theDouble", 1.0 );
+            transaction.getNodeById( node.getId() ).setProperty( "theDouble", 1.0 );
             transaction.commit();
         }
         // Let's make sure everything is in one record and with proper values.
@@ -401,14 +418,15 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertNull( node.getProperty( "int0", null ) );
-            assertEquals( 1, node.getProperty( "int1" ) );
-            assertNull( node.getProperty( "int2", null ) );
+            var txNode = transaction.getNodeById( node.getId() );
+            assertNull( txNode.getProperty( "int0", null ) );
+            assertEquals( 1, txNode.getProperty( "int1" ) );
+            assertNull( txNode.getProperty( "int2", null ) );
             for ( int i = 3; i < stuffedIntegers; i++ )
             {
-                assertEquals( i, node.getProperty( "int" + i ) );
+                assertEquals( i, txNode.getProperty( "int" + i ) );
             }
-            assertEquals( 1.0, node.getProperty( "theDouble" ) );
+            assertEquals( 1.0, txNode.getProperty( "theDouble" ) );
             transaction.commit();
         }
     }
@@ -422,9 +440,10 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         int stuffedBooleans = 0;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( ; stuffedBooleans < PropertyType.getPayloadSizeLongs(); stuffedBooleans++ )
             {
-                node.setProperty( "boolean" + stuffedBooleans, stuffedBooleans % 2 == 0 );
+                txNode.setProperty( "boolean" + stuffedBooleans, stuffedBooleans % 2 == 0 );
             }
             transaction.commit();
         }
@@ -433,7 +452,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "theExraOne", true );
+            transaction.getNodeById( node.getId() ).setProperty( "theExraOne", true );
             transaction.commit();
         }
 
@@ -441,9 +460,10 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( int i = 0; i < stuffedBooleans; i++ )
             {
-                assertEquals( Boolean.valueOf( i % 2 == 0 ), node.removeProperty( "boolean" + i ) );
+                assertEquals( Boolean.valueOf( i % 2 == 0 ), txNode.removeProperty( "boolean" + i ) );
             }
             transaction.commit();
         }
@@ -452,11 +472,12 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( int i = 0; i < stuffedBooleans; i++ )
             {
-                assertFalse( node.hasProperty( "boolean" + i ) );
+                assertFalse( txNode.hasProperty( "boolean" + i ) );
             }
-            assertEquals( Boolean.TRUE, node.getProperty( "theExraOne" ) );
+            assertEquals( Boolean.TRUE, txNode.getProperty( "theExraOne" ) );
             transaction.commit();
         }
     }
@@ -474,9 +495,10 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         int stuffedShortStrings = 0;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( ; stuffedShortStrings < 3 * PropertyType.getPayloadSizeLongs(); stuffedShortStrings++ )
             {
-                node.setProperty( "shortString" + stuffedShortStrings, String.valueOf( stuffedShortStrings ) );
+                txNode.setProperty( "shortString" + stuffedShortStrings, String.valueOf( stuffedShortStrings ) );
             }
             transaction.commit();
         }
@@ -488,8 +510,9 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertEquals( secondBlockInMiddleRecord.getTwo(), node.removeProperty( secondBlockInMiddleRecord.getOne() ) );
-            assertEquals( thirdBlockInMiddleRecord.getTwo(), node.removeProperty( thirdBlockInMiddleRecord.getOne() ) );
+            var txNode = transaction.getNodeById( node.getId() );
+            assertEquals( secondBlockInMiddleRecord.getTwo(), txNode.removeProperty( secondBlockInMiddleRecord.getOne() ) );
+            assertEquals( thirdBlockInMiddleRecord.getTwo(), txNode.removeProperty( thirdBlockInMiddleRecord.getOne() ) );
             transaction.commit();
         }
 
@@ -497,15 +520,16 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( int i = 0; i < stuffedShortStrings; i++ )
             {
                 if ( secondBlockInMiddleRecord.getTwo().equals( String.valueOf( i ) ) || thirdBlockInMiddleRecord.getTwo().equals( String.valueOf( i ) ) )
                 {
-                    assertFalse( node.hasProperty( "shortString" + i ) );
+                    assertFalse( txNode.hasProperty( "shortString" + i ) );
                 }
                 else
                 {
-                    assertEquals( String.valueOf( i ), node.getProperty( "shortString" + i ) );
+                    assertEquals( String.valueOf( i ), txNode.getProperty( "shortString" + i ) );
                 }
             }
             // Start deleting stuff. First, all the middle property blocks
@@ -514,10 +538,10 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
             for ( Pair<String,Object> prop : middleRecordProps )
             {
                 final String name = prop.getOne();
-                if ( node.hasProperty( name ) )
+                if ( txNode.hasProperty( name ) )
                 {
                     deletedProps++;
-                    node.removeProperty( name );
+                    txNode.removeProperty( name );
                 }
             }
 
@@ -529,18 +553,19 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            middleRecordProps.forEach( nameAndValue -> assertFalse( node.hasProperty( nameAndValue.getOne() ) ) );
+            var txNode = transaction.getNodeById( node.getId() );
+            middleRecordProps.forEach( nameAndValue -> assertFalse( txNode.hasProperty( nameAndValue.getOne() ) ) );
             getPropertiesFromRecord( 0 ).forEach( nameAndValue ->
             {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
-                assertEquals( value, node.removeProperty( name ) );
+                assertEquals( value, txNode.removeProperty( name ) );
             } );
             getPropertiesFromRecord( 2 ).forEach( nameAndValue ->
             {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
-                assertEquals( value, node.removeProperty( name ) );
+                assertEquals( value, txNode.removeProperty( name ) );
             } );
             transaction.commit();
         }
@@ -555,9 +580,10 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         int stuffedShortStrings = 0;
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             for ( ; stuffedShortStrings < PropertyType.getPayloadSizeLongs(); stuffedShortStrings++ )
             {
-                node.setProperty( "shortString" + stuffedShortStrings, String.valueOf( stuffedShortStrings ) );
+                txNode.setProperty( "shortString" + stuffedShortStrings, String.valueOf( stuffedShortStrings ) );
             }
             transaction.commit();
         }
@@ -566,31 +592,34 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.removeProperty( "shortString0" );
-            node.removeProperty( "shortString2" );
-            node.setProperty( "theDoubleOne", -1.0 );
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.removeProperty( "shortString0" );
+            txNode.removeProperty( "shortString2" );
+            txNode.setProperty( "theDoubleOne", -1.0 );
             transaction.commit();
         }
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
+
             for ( int i = 0; i < stuffedShortStrings; i++ )
             {
                 if ( i == 0 )
                 {
-                    assertFalse( node.hasProperty( "shortString" + i ) );
+                    assertFalse( txNode.hasProperty( "shortString" + i ) );
                 }
                 else if ( i == 2 )
                 {
-                    assertFalse( node.hasProperty( "shortString" + i ) );
+                    assertFalse( txNode.hasProperty( "shortString" + i ) );
                 }
                 else
                 {
-                    assertEquals( String.valueOf( i ), node.getProperty( "shortString" + i ) );
+                    assertEquals( String.valueOf( i ), txNode.getProperty( "shortString" + i ) );
                 }
             }
-            assertEquals( -1.0, node.getProperty( "theDoubleOne" ) );
+            assertEquals( -1.0, txNode.getProperty( "theDoubleOne" ) );
             transaction.commit();
         }
     }
@@ -603,9 +632,10 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "int1", 1 );
-            node.setProperty( "double1", 1.0 );
-            node.setProperty( "int2", 2 );
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.setProperty( "int1", 1 );
+            txNode.setProperty( "double1", 1.0 );
+            txNode.setProperty( "int2", 2 );
             transaction.commit();
         }
 
@@ -613,19 +643,19 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.removeProperty( "double1" );
+            transaction.getNodeById( node.getId() ).removeProperty( "double1" );
             transaction.commit();
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "double2", 1.0 );
+            transaction.getNodeById( node.getId() ).setProperty( "double2", 1.0 );
             transaction.commit();
         }
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "paddingBoolean", false );
+            transaction.getNodeById( node.getId() ).setProperty( "paddingBoolean", false );
             transaction.commit();
         }
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
@@ -640,14 +670,15 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "int1", 1 );
-            node.setProperty( "double1", 1.0 );
-            node.setProperty( "int2", 2 );
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.setProperty( "int1", 1 );
+            txNode.setProperty( "double1", 1.0 );
+            txNode.setProperty( "int2", 2 );
 
             int stuffedShortStrings = 0;
             for ( ; stuffedShortStrings < PropertyType.getPayloadSizeLongs(); stuffedShortStrings++ )
             {
-                node.setProperty( "shortString" + stuffedShortStrings, String.valueOf( stuffedShortStrings ) );
+                txNode.setProperty( "shortString" + stuffedShortStrings, String.valueOf( stuffedShortStrings ) );
             }
             transaction.commit();
         }
@@ -656,8 +687,9 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.removeProperty( "shortString" + 1 );
-            node.setProperty( "int3", 3 );
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.removeProperty( "shortString" + 1 );
+            txNode.setProperty( "int3", 3 );
             transaction.commit();
         }
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
@@ -672,10 +704,11 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             int stuffedShortStrings = 0;
             for ( ; stuffedShortStrings < PropertyType.getPayloadSizeLongs(); stuffedShortStrings++ )
             {
-                node.setProperty( "shortString" + stuffedShortStrings, String.valueOf( stuffedShortStrings ) );
+                txNode.setProperty( "shortString" + stuffedShortStrings, String.valueOf( stuffedShortStrings ) );
             }
             transaction.commit();
         }
@@ -683,7 +716,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "shortString1", 1.0 );
+            transaction.getNodeById( node.getId() ).setProperty( "shortString1", 1.0 );
             transaction.commit();
         }
     }
@@ -722,9 +755,10 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
             assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
             assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
 
-            assertEquals( (byte) -8, rel.getProperty( "theByte" ) );
-            assertEquals( -444345, rel.getProperty( "theInteger" ) );
-            assertEquals( Math.E, rel.getProperty( "theDoubleThatGrows" ) );
+            var txRel = transaction.getRelationshipById( rel.getId() );
+            assertEquals( (byte) -8, txRel.getProperty( "theByte" ) );
+            assertEquals( -444345, txRel.getProperty( "theInteger" ) );
+            assertEquals( Math.E, txRel.getProperty( "theDoubleThatGrows" ) );
             transaction.commit();
         }
     }
@@ -759,7 +793,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         {
             theData.add( 1L << 63 );
             Long[] value = theData.toArray( new Long[] {} );
-            rel.setProperty( "yoyo", value );
+            tx.getRelationshipById( rel.getId() ).setProperty( "yoyo", value );
             if ( withNewTx )
             {
                 tx.commit();
@@ -774,7 +808,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         Long[] value = theData.toArray( new Long[] {} );
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            rel.setProperty( "yoyo", value );
+            transaction.getRelationshipById( rel.getId() ).setProperty( "yoyo", value );
             transaction.commit();
         }
 
@@ -782,7 +816,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         {
             assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
             assertEquals( valueRecordsInUseAtStart + 1, dynamicArrayRecordsInUse() );
-            rel.setProperty( "filler", new long[]{1L << 63, 1L << 63, 1L << 63} );
+            transaction.getRelationshipById( rel.getId() ).setProperty( "filler", new long[]{1L << 63, 1L << 63, 1L << 63} );
             transaction.commit();
         }
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
@@ -814,11 +848,12 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txRel = transaction.getRelationshipById( rel.getId() );
             for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
             {
                 for ( int j = 1; j < propRecCount; j++ )
                 {
-                    assertEquals( j * 10 + i, rel.removeProperty( "int" + (j * 10 + i) ) );
+                    assertEquals( j * 10 + i, txRel.removeProperty( "int" + (j * 10 + i) ) );
                     if ( i == PropertyType.getPayloadSize() - 1 && j != propRecCount - 1 )
                     {
                         assertEquals( recordsInUseAtStart + (propRecCount - j), propertyRecordsInUse() );
@@ -837,7 +872,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
             {
                 for ( int j = 1; j < propRecCount; j++ )
                 {
-                    assertFalse( rel.hasProperty( "int" + (j * 10 + i) ) );
+                    assertFalse( txRel.hasProperty( "int" + (j * 10 + i) ) );
                 }
             }
             transaction.commit();
@@ -845,11 +880,12 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txRel = transaction.getRelationshipById( rel.getId() );
             for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
             {
                 for ( int j = 1; j < propRecCount; j++ )
                 {
-                    assertFalse( rel.hasProperty( "int" + (j * 10 + i) ) );
+                    assertFalse( txRel.hasProperty( "int" + (j * 10 + i) ) );
                 }
             }
             transaction.commit();
@@ -863,14 +899,16 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "rev_pos", "40000633e7ad67ff" );
-            assertEquals( "40000633e7ad67ff", node.getProperty( "rev_pos" ) );
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.setProperty( "rev_pos", "40000633e7ad67ff" );
+            assertEquals( "40000633e7ad67ff", txNode.getProperty( "rev_pos" ) );
             transaction.commit();
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "rev_pos", "40000633e7ad67ef" );
-            assertEquals( "40000633e7ad67ef", node.getProperty( "rev_pos" ) );
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.setProperty( "rev_pos", "40000633e7ad67ef" );
+            assertEquals( "40000633e7ad67ef", txNode.getProperty( "rev_pos" ) );
             transaction.commit();
         }
     }
@@ -888,7 +926,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         while ( dynamicStringRecordsInUse() == valueRecordsInUseAtStart )
         {
             data += counter++;
-            node.setProperty( "yoyo", data );
+            tx.getNodeById( node.getId() ).setProperty( "yoyo", data );
             if ( withNewTx )
             {
                 tx.commit();
@@ -901,7 +939,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         data = data.substring( 0, data.length() - 2 );
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "yoyo", data );
+            transaction.getNodeById( node.getId() ).setProperty( "yoyo", data );
             transaction.commit();
         }
 
@@ -910,7 +948,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "fillerBoolean", true );
+            transaction.getNodeById( node.getId() ).setProperty( "fillerBoolean", true );
             transaction.commit();
         }
 
@@ -932,21 +970,23 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "Double1", 1.0 );
-            node.setProperty( "Int1", 1 );
-            node.setProperty( "Int2", 2 );
-            node.setProperty( "Int2", 1.2 );
-            node.setProperty( "Int2", 2 );
-            node.setProperty( "Double3", 3.0 );
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.setProperty( "Double1", 1.0 );
+            txNode.setProperty( "Int1", 1 );
+            txNode.setProperty( "Int2", 2 );
+            txNode.setProperty( "Int2", 1.2 );
+            txNode.setProperty( "Int2", 2 );
+            txNode.setProperty( "Double3", 3.0 );
             transaction.commit();
         }
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            var txNode = transaction.getNodeById( node.getId() );
             assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
-            assertEquals( 1.0, node.getProperty( "Double1" ) );
-            assertEquals( 1, node.getProperty( "Int1" ) );
-            assertEquals( 2, node.getProperty( "Int2" ) );
-            assertEquals( 3.0, node.getProperty( "Double3" ) );
+            assertEquals( 1.0, txNode.getProperty( "Double1" ) );
+            assertEquals( 1, txNode.getProperty( "Int1" ) );
+            assertEquals( 2, txNode.getProperty( "Int2" ) );
+            assertEquals( 3.0, txNode.getProperty( "Double3" ) );
             transaction.commit();
         }
     }
@@ -958,22 +998,23 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         Node node = createNode();
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "one", 1 );
-            node.setProperty( "two", 2 );
-            node.setProperty( "three", 3 );
-            node.setProperty( "four", 4 );
+            var txNode = transaction.getNodeById( node.getId() );
+            txNode.setProperty( "one", 1 );
+            txNode.setProperty( "two", 2 );
+            txNode.setProperty( "three", 3 );
+            txNode.setProperty( "four", 4 );
             transaction.commit();
         }
         assertEquals( propcount + 1, propertyRecordsInUse(), "Invalid assumption: property record count" );
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( "final", 666 );
+            transaction.getNodeById( node.getId() ).setProperty( "final", 666 );
             transaction.commit();
         }
         assertEquals( propcount + 2, propertyRecordsInUse(), "Invalid assumption: property record count" );
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.delete();
+            transaction.getNodeById( node.getId() ).delete();
             transaction.commit();
         }
         assertEquals( propcount, propertyRecordsInUse(), "All property records should be freed" );

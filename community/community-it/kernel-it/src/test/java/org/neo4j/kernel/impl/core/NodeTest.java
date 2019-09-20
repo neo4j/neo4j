@@ -51,13 +51,14 @@ class NodeTest
     void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
     {
         // Given
-        Node node;
+        long nodeId;
 
         try ( Transaction transaction = db.beginTx() )
         {
-            node = transaction.createNode();
+            var node = transaction.createNode();
             Node node2 = transaction.createNode();
             node.createRelationshipTo( node2, RelationshipType.withName( "MAYOR_OF" ) );
+            nodeId = node.getId();
             transaction.commit();
         }
 
@@ -67,11 +68,12 @@ class NodeTest
         {
             try ( Transaction transaction = db.beginTx() )
             {
+                var node = transaction.getNodeById( nodeId );
                 node.delete();
                 transaction.commit();
             }
         } );
-        assertThat( exception.getMessage(), containsString( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
+        assertThat( exception.getMessage(), containsString( "Cannot delete node<" + nodeId + ">, because it still has relationships. " +
                 "To delete this node, you must first delete its relationships." ) );
     }
 
@@ -324,15 +326,17 @@ class NodeTest
     @Test
     void testAddPropertyThenDelete()
     {
-        Node node;
+        long nodeId;
         try ( Transaction transaction = db.beginTx() )
         {
-            node = transaction.createNode();
+            var node = transaction.createNode();
             node.setProperty( "test", "test" );
+            nodeId = node.getId();
             transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
         {
+            var node = transaction.getNodeById( nodeId );
             node.setProperty( "test2", "test2" );
             node.delete();
             transaction.commit();
@@ -342,15 +346,17 @@ class NodeTest
     @Test
     void testChangeProperty()
     {
-        Node node;
+        long nodeId;
         try ( Transaction transaction = db.beginTx() )
         {
-            node = transaction.createNode();
+            var node = transaction.createNode();
             node.setProperty( "test", "test1" );
+            nodeId = node.getId();
             transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
         {
+            var node = transaction.getNodeById( nodeId );
             node.setProperty( "test", "test2" );
             node.removeProperty( "test" );
             node.setProperty( "test", "test3" );
@@ -361,6 +367,7 @@ class NodeTest
         }
         try ( Transaction transaction = db.beginTx() )
         {
+            var node = transaction.getNodeById( nodeId );
             assertEquals( "test4", node.getProperty( "test" ) );
         }
     }
@@ -368,15 +375,17 @@ class NodeTest
     @Test
     void testChangeProperty2()
     {
-        Node node;
+        long nodeId;
         try ( Transaction transaction = db.beginTx() )
         {
-            node = transaction.createNode();
+            Node node = transaction.createNode();
             node.setProperty( "test", "test1" );
+            nodeId = node.getId();
             transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
         {
+            Node node = transaction.getNodeById( nodeId );
             node.removeProperty( "test" );
             node.setProperty( "test", "test3" );
             assertEquals( "test3", node.getProperty( "test" ) );
@@ -384,6 +393,7 @@ class NodeTest
         }
         try ( Transaction transaction = db.beginTx() )
         {
+            Node node = transaction.getNodeById( nodeId );
             assertEquals( "test3", node.getProperty( "test" ) );
             node.removeProperty( "test" );
             node.setProperty( "test", "test4" );
@@ -391,6 +401,7 @@ class NodeTest
         }
         try ( Transaction transaction = db.beginTx() )
         {
+            Node node = transaction.getNodeById( nodeId );
             assertEquals( "test4", node.getProperty( "test" ) );
         }
     }

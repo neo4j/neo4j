@@ -90,7 +90,7 @@ class LabelCountsTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            node.delete();
+            tx.getNodeById( node.getId() ).delete();
 
             tx.commit();
         }
@@ -117,7 +117,7 @@ class LabelCountsTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            node.delete();
+            tx.getNodeById( node.getId() ).delete();
 
             tx.commit();
         }
@@ -148,9 +148,9 @@ class LabelCountsTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            n1.addLabel( label( "Bar" ) );
-            n2.addLabel( label( "Bar" ) );
-            n3.addLabel( label( "Foo" ) );
+            tx.getNodeById( n1.getId() ).addLabel( label( "Bar" ) );
+            tx.getNodeById( n2.getId() ).addLabel( label( "Bar" ) );
+            tx.getNodeById( n3.getId() ).addLabel( label( "Foo" ) );
 
             tx.commit();
         }
@@ -181,9 +181,9 @@ class LabelCountsTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            n1.removeLabel( label( "Bar" ) );
-            n2.removeLabel( label( "Bar" ) );
-            n3.removeLabel( label( "Foo" ) );
+            tx.getNodeById( n1.getId() ).removeLabel( label( "Bar" ) );
+            tx.getNodeById( n2.getId() ).removeLabel( label( "Bar" ) );
+            tx.getNodeById( n3.getId() ).removeLabel( label( "Foo" ) );
 
             tx.commit();
         }

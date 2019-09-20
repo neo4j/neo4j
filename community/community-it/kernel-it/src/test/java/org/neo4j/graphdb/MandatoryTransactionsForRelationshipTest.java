@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.neo4j.graphdb.RelationshipType.withName;
 
+// TODO: misha
+@Disabled
 public class MandatoryTransactionsForRelationshipTest extends AbstractMandatoryTransactionsTest<Relationship>
 {
     @Test

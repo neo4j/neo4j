@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -37,7 +39,9 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class CompiledMaterializeValueMapperTest
 {
@@ -51,6 +55,16 @@ class CompiledMaterializeValueMapperTest
     private static final RelationshipValue directRelationshipValue =
             VirtualValues.relationshipValue( 12L, nodeProxyValue, directNodeValue, Values.stringValue( "TYPE" ), VirtualValues.EMPTY_MAP );
     private static final RelationshipReference relationshipReference = VirtualValues.relationship( 11L ); // Should equal relationshipProxyValue when converted
+
+    @BeforeEach
+    void setUp()
+    {
+        when( transaction.newNodeProxy( anyLong() ) )
+                .thenAnswer( (Answer<NodeProxy>) invocation -> new NodeProxy( transaction, invocation.getArgument( 0 ) ) );
+        when( transaction.newRelationshipProxy( anyLong() ) )
+                .thenAnswer( (Answer<RelationshipProxy>) invocation ->
+                        new RelationshipProxy( transaction, invocation.getArgument( 0 ) ) );
+    }
 
     @Test
     void shouldNotTouchValuesThatDoNotNeedConversion()

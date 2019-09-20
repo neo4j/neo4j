@@ -64,6 +64,7 @@ class PropertyTransactionStateTest
 
         try ( Transaction tx = db.beginTx() )
         {
+            node = tx.getNodeById( node.getId() );
             for ( int i = 0; i < 100; i++ )
             {
                 double[] data = (double[]) node.getProperty( "foo" );
@@ -89,6 +90,7 @@ class PropertyTransactionStateTest
 
         try ( Transaction tx = db.beginTx() )
         {
+            node = tx.getNodeById( node.getId() );
             node.setProperty( key, "one" );
             node.setProperty( key, "two" );
             assertEquals( "two", node.getProperty( key ) );

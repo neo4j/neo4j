@@ -53,6 +53,7 @@ class DenseNodeIT
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
+            root = tx.getNodeById( root.getId() );
             createRelationshipsOnNode( tx, root, 60 );
 
             // THEN
@@ -68,6 +69,8 @@ class DenseNodeIT
 
         try ( Transaction tx = db.beginTx() )
         {
+            root = tx.getNodeById( root.getId() );
+
             assertEquals( 100, root.getDegree() );
             assertEquals( 100, root.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
@@ -93,6 +96,7 @@ class DenseNodeIT
 
         try ( Transaction tx = db.beginTx() )
         {
+            root = tx.getNodeById( root.getId() );
             deleteRelationshipsFromNode( root, 80 );
 
             assertEquals( 20, root.getDegree() );
@@ -103,6 +107,7 @@ class DenseNodeIT
 
         try ( Transaction tx = db.beginTx() )
         {
+            root = tx.getNodeById( root.getId() );
             assertEquals( 20, root.getDegree() );
             assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
@@ -132,6 +137,7 @@ class DenseNodeIT
         // THEN
         try ( Transaction tx = db.beginTx() )
         {
+            root = tx.getNodeById( root.getId() );
             assertEquals( 20, root.getDegree() );
             assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
@@ -156,6 +162,8 @@ class DenseNodeIT
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
+            source = tx.getNodeById( source.getId() );
+            sink = tx.getNodeById( sink.getId() );
             createRelationshipsBetweenNodes( source, sink, 60 );
 
             // THEN
@@ -179,6 +187,9 @@ class DenseNodeIT
 
         try ( Transaction tx = db.beginTx() )
         {
+            source = tx.getNodeById( source.getId() );
+            sink = tx.getNodeById( sink.getId() );
+
             assertEquals( 100, source.getDegree() );
             assertEquals( 100, source.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, source.getDegree( Direction.INCOMING ) );
@@ -211,7 +222,7 @@ class DenseNodeIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            node.getRelationships().forEach( Relationship::delete );
+            tx.getNodeById( node.getId() ).getRelationships().forEach( Relationship::delete );
             tx.commit();
         }
 
@@ -219,13 +230,15 @@ class DenseNodeIT
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
-            rel = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
+            rel = tx.getNodeById( node.getId() ).createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             // THEN
+            node = tx.getNodeById( node.getId() );
+            rel = tx.getRelationshipById( rel.getId() );
             assertEquals( rel, single( node.getRelationships() ) );
             tx.commit();
         }

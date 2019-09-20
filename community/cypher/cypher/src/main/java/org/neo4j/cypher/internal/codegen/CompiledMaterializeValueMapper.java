@@ -71,7 +71,7 @@ public final class CompiledMaterializeValueMapper
 
     private static final class WritingMaterializeValueMapper extends AbstractMaterializeValueMapper
     {
-        private TransactionalProxyFactory proxySpi;
+        private final TransactionalProxyFactory proxySpi;
 
         WritingMaterializeValueMapper( TransactionalProxyFactory proxySpi )
         {

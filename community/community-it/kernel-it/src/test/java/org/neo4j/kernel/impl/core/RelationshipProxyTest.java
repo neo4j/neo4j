@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -64,7 +65,7 @@ public class RelationshipProxyTest extends EntityProxyTest
     void shouldBeAbleToReferToIdsBeyondMaxInt()
     {
         // GIVEN
-        var transaction = mock( InternalTransaction.class );
+        var transaction = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
         when( transaction.newNodeProxy( anyLong() ) ).then(
                 invocation -> nodeWithId( invocation.getArgument( 0 ) ) );
         when( transaction.getRelationshipTypeById( anyInt() ) ).then(
@@ -216,14 +217,14 @@ public class RelationshipProxyTest extends EntityProxyTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            relationship.setProperty( "prop", 1337.0 );
+            tx.getRelationshipById( relationship.getId() ).setProperty( "prop", 1337.0 );
             tx.commit();
         }
 
         // Then
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( relationship.getProperty( "prop" ), instanceOf( Double.class ) );
+            assertThat( tx.getRelationshipById( relationship.getId() ).getProperty( "prop" ), instanceOf( Double.class ) );
         }
     }
 

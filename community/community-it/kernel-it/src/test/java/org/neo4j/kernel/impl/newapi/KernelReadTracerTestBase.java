@@ -111,7 +111,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            deleted.delete();
+            tx.getNodeById( deleted.getId() ).delete();
             tx.commit();
         }
     }

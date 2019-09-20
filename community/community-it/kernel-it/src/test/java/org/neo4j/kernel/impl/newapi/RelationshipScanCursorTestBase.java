@@ -79,7 +79,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
         RELATIONSHIP_IDS = new ArrayList<>();
         try ( Transaction tx = graphDb.beginTx() )
         {
-            deleted.delete();
+            tx.getRelationshipById( deleted.getId() ).delete();
             for ( Relationship relationship : tx.getAllRelationships() )
             {
                 RELATIONSHIP_IDS.add( relationship.getId() );

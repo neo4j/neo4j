@@ -67,6 +67,7 @@ class RelationshipGroupStoreIT
 
         try ( Transaction tx = db.beginTx() )
         {
+            node = tx.getNodeById( node.getId() );
             for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
             {
                 assertEquals( 1, count( node.getRelationships( type( i ) ) ),

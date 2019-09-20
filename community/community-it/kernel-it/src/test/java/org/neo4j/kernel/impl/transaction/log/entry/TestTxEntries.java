@@ -79,7 +79,7 @@ class TestTxEntries
 
         try ( Transaction tx = db.beginTx() )
         {
-            node1.delete();
+            tx.getNodeById( node1.getId() ).delete();
             // Will throw exception, causing the tx to be rolledback.
             // InvalidRecordException coming, node1 has rels
             assertThrows( ConstraintViolationException.class, tx::commit );
@@ -87,7 +87,7 @@ class TestTxEntries
 
         try ( Transaction tx = db.beginTx() )
         {
-            node1.setProperty( "foo", "bar" );
+            tx.getNodeById( node1.getId() ).setProperty( "foo", "bar" );
             tx.commit();
         }
     }

@@ -30,6 +30,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
@@ -123,7 +124,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         RawIterator<AnyValue[],ProcedureException> callResult =
                 dbmsOperations()
                         .procedureCallDbms( procedureId, toArray( stringValue( searchString ) ), transaction, dependencyResolver,
-                                AUTH_DISABLED, EMPTY_RESOURCE_MANAGER, valueMapper );
+                                AUTH_DISABLED, EMPTY_RESOURCE_MANAGER, new DefaultValueMapper( transaction ) );
         return asList( callResult );
     }
 }

@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
@@ -182,7 +183,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
     {
         assertThrows( ProcedureException.class,
             () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], transaction, dependencyResolver, AnonymousContext.access().authorize(
-                LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, valueMapper ) );
+                LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, new DefaultValueMapper( transaction ) ) );
     }
 
     @Test

@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -57,7 +58,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 @RunWith( Parameterized.class )
 public class TestRelationshipCount
 {
-
     private static DatabaseManagementService managementService;
 
     @Parameterized.Parameters( name = "denseNodeThreshold={0}" )
@@ -114,6 +114,7 @@ public class TestRelationshipCount
             rels.get( type ).add( rel );
         }
         newTransaction();
+        node = tx.getNodeById( node.getId() );
         for ( int i = 0; i < 1000; i++, expectedRelCount++ )
         {
             node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
@@ -130,8 +131,7 @@ public class TestRelationshipCount
 
     private <T> Set<T> join( Set<T> set, Set<T> set2 )
     {
-        Set<T> result = new HashSet<>();
-        result.addAll( set );
+        Set<T> result = new HashSet<>( set );
         result.addAll( set2 );
         return result;
     }
@@ -151,7 +151,7 @@ public class TestRelationshipCount
         {
             node.createRelationshipTo( otherNode, RelType.INITIAL );
         }
-        testGetRelationshipTypes( node, new HashSet<>( asList( RelType.INITIAL.name() ) ) );
+        testGetRelationshipTypes( node, new HashSet<>( List.of( RelType.INITIAL.name() ) ) );
     }
 
     private void testGetRelationshipTypes( Node node, Set<String> expectedTypes )
@@ -163,6 +163,7 @@ public class TestRelationshipCount
         node.createRelationshipTo( tx.createNode(), RelType.TYPE1 );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
 
+        node = tx.getNodeById( node.getId() );
         Relationship rel = node.createRelationshipTo( tx.createNode(), RelType.TYPE2 );
         expectedTypes.add( RelType.TYPE2.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, false );
@@ -170,6 +171,7 @@ public class TestRelationshipCount
         expectedTypes.remove( RelType.TYPE2.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
 
+        node = tx.getNodeById( node.getId() );
         node.createRelationshipTo( tx.createNode(), RelType.TYPE2 );
         node.createRelationshipTo( tx.createNode(), RelType.TYPE2 );
         expectedTypes.add( RelType.TYPE2.name() );
@@ -177,6 +179,7 @@ public class TestRelationshipCount
         expectedTypes.add( MyRelTypes.TEST.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
 
+        node = tx.getNodeById( node.getId() );
         for ( Relationship r : node.getRelationships( RelType.TYPE1 ) )
         {
             assertExpectedRelationshipTypes( expectedTypes, node, false );
@@ -194,12 +197,12 @@ public class TestRelationshipCount
         {
             newTransaction();
         }
-        assertEquals( expectedTypes, Iterables.asSet( asStrings( node.getRelationshipTypes() ) ) );
+        assertEquals( expectedTypes, Iterables.asSet( asStrings( tx.getNodeById( node.getId() ).getRelationshipTypes() ) ) );
     }
 
     private Iterable<String> asStrings( Iterable<RelationshipType> relationshipTypes )
     {
-        return new IterableWrapper<String, RelationshipType>( relationshipTypes )
+        return new IterableWrapper<>( relationshipTypes )
         {
             @Override
             protected String underlyingObjectToObject( RelationshipType object )
@@ -223,6 +226,9 @@ public class TestRelationshipCount
         assertEquals( 2, node1.getDegree() );
         assertEquals( 1, node2.getDegree() );
         newTransaction();
+
+        node1 = tx.getNodeById( node1.getId() );
+        node2 = tx.getNodeById( node2.getId() );
         assertEquals( 2, node1.getDegree() );
         assertEquals( 1, node2.getDegree() );
 
@@ -241,9 +247,13 @@ public class TestRelationshipCount
             if ( i % 10 == 0 )
             {
                 newTransaction();
+                node1 = tx.getNodeById( node1.getId() );
+                node2 = tx.getNodeById( node2.getId() );
             }
         }
 
+        node1 = tx.getNodeById( node1.getId() );
+        node2 = tx.getNodeById( node2.getId() );
         for ( int i = 0; i < 2; i++ )
         {
             assertEquals( 1002, node1.getDegree() );
@@ -259,6 +269,8 @@ public class TestRelationshipCount
             assertEquals( 1, node1.getDegree( MyRelTypes.TEST2, Direction.OUTGOING ) );
             assertEquals( 0, node1.getDegree( MyRelTypes.TEST2, Direction.INCOMING ) );
             newTransaction();
+            node1 = tx.getNodeById( node1.getId() );
+            node2 = tx.getNodeById( node2.getId() );
         }
 
         for ( Relationship rel : node1.getRelationships() )
@@ -292,6 +304,9 @@ public class TestRelationshipCount
         assertEquals( 2, node.getDegree() );
         assertEquals( 1, otherNode.getDegree() );
         newTransaction();
+        node = tx.getNodeById( node.getId() );
+        otherNode = tx.getNodeById( otherNode.getId() );
+        rel2 = tx.getRelationshipById( rel2.getId() );
         assertEquals( 2, node.getDegree() );
         Relationship rel3 = node.createRelationshipTo( node, MyRelTypes.TEST_TRAVERSAL );
         assertEquals( 3, node.getDegree() );
@@ -359,6 +374,7 @@ public class TestRelationshipCount
             me.createRelationshipTo( tx.createNode(), RelType.INITIAL );
         }
         newTransaction();
+        me = tx.getNodeById( me.getId() );
         expectedCounts.get( RelType.INITIAL )[0] = initialSize;
 
         assertCounts( me, expectedCounts );
@@ -399,6 +415,7 @@ public class TestRelationshipCount
 
         assertCounts( me, expectedCounts );
         newTransaction();
+        me = tx.getNodeById( me.getId() );
         assertCounts( me, expectedCounts );
 
         // Delete one of each type/direction combination
@@ -445,6 +462,7 @@ public class TestRelationshipCount
 
         assertCounts( me, expectedCounts );
         newTransaction();
+        me = tx.getNodeById( me.getId() );
         assertCounts( me, expectedCounts );
 
         // Clean up

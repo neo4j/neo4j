@@ -62,7 +62,7 @@ class TestLengthyArrayPacking extends AbstractNeo4jTestCase
         assertEquals( arrayRecordsBefore + 1, dynamicArrayRecordsInUse() );
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertArrayEquals( arrayWhichUnpackedWouldFillTwoDynamicRecords, (int[]) node.getProperty( key ) );
+            assertArrayEquals( arrayWhichUnpackedWouldFillTwoDynamicRecords, (int[]) transaction.getNodeById( node.getId() ).getProperty( key ) );
             transaction.commit();
         }
     }
