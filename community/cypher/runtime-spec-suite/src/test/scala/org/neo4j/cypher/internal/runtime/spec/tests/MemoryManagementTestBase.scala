@@ -508,7 +508,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
 
     // when
     val (nodes, _) = circleGraph(1) // Just for size estimation
-    val input = infiniteNodeInput(estimateSize(E_NODE_VALUE))
+    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE))
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
