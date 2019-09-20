@@ -141,12 +141,6 @@ public class HttpCopier implements PushToCloudCommand.Copier
             switch ( status )
             {
                 case "running":
-                    boolean passedStartImportTimeout = System.currentTimeMillis() > importStartedTimeout;
-                    if ( passedStartImportTimeout )
-                    {
-                        throw new CommandFailed( "We're sorry, it couldn't be detected that the import was started, " +
-                                "please check the console for further details." );
-                    }
                     // It could happen that the very first call of this method is so fast, that the database is still in state
                     // "running". So we need to check if this is the case and ignore the result in that case and only
                     // take this result as valid, once the status loading or restoring was seen before.
@@ -155,6 +149,13 @@ public class HttpCopier implements PushToCloudCommand.Copier
                         statusProgress.rewindTo( 0 );
                         statusProgress.add( 3 );
                         statusProgress.done();
+                    } else {
+                        boolean passedStartImportTimeout = System.currentTimeMillis() > importStartedTimeout;
+                        if ( passedStartImportTimeout )
+                        {
+                            throw new CommandFailed( "We're sorry, it couldn't be detected that the import was started, " +
+                                    "please check the console for further details." );
+                        }
                     }
                     break;
                 case "loading":
