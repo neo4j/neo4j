@@ -95,7 +95,7 @@ check_java() {
   [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && version_command+=("${JAVA_MEMORY_OPTS[@]}")
 
   JAVA_VERSION=$("${version_command[@]}" 2>&1 | awk -F '"' '/version/ {print $2}')
-  if [[ $JAVA_VERSION = "1."* ]] || [[ $JAVA_VERSION = "11"* ]]; then
+  if [[ $JAVA_VERSION = "1."* ]]; then
     if [[ "${JAVA_VERSION}" < "1.8" ]]; then
       echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
       _show_java_help
@@ -103,6 +103,10 @@ check_java() {
     fi
     if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM"); then
       unsupported_runtime_warning
+    fi
+  elif [[ $JAVA_VERSION = "11"* ]]; then
+    if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM"); then
+       unsupported_runtime_warning
     fi
   else
       unsupported_runtime_warning
