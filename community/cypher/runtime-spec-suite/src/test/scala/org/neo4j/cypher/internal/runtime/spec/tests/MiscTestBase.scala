@@ -346,6 +346,37 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     runtimeResult should beColumns("a", "bs", "d").withRows(expected)
   }
 
+  test("should handle expand - aggregation - filter - expand ") {
+
+    //given
+    val paths = chainGraphs(11, "TO", "TO")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "bs", "d")
+      .expand("(c)-[r3*1..2]->(d)") // assuming we do not fuse var-expand
+      .expand("(a)-[r2]->(c)")
+      .filter("size(bs) > 0")
+      .aggregation(Seq("a AS a"), Seq("collect(b) AS bs"))
+      .expand("(a)-[r1]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    // when
+    val runtimeResult =  execute(logicalQuery, runtime)
+
+    //then
+    //this check is mostly for the morsel runtime, making sure we don't fail when fusing
+    logProvider.assertNone(inLog(any(classOf[String])).debug(containsString("Retrying physical planning")))
+
+    val expected =
+      for {
+        path: TestPath <- paths
+      } yield {
+        Array(path.startNode, Collections.singletonList(path.nodeAt(1)), path.endNode())
+      }
+
+    runtimeResult should beColumns("a", "bs", "d").withRows(expected)
+  }
+
   case object populated extends RowsMatcher {
     override def toString: String = "All entities should have been populated"
     override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
