@@ -46,6 +46,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
+import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
@@ -212,15 +213,36 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         assertExpectedException( expectedCause, expectedMessage, exception );
     }
 
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfIndexWithNameExistsWhenCreatingIndex( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( label ).on( secondPropertyKey ).withName( "name" ).create(),
+                ConstraintViolationException.class );
+        Class<IndexWithNameAlreadyExistsException> expectedCause = IndexWithNameAlreadyExistsException.class;
+        String expectedMessage = "There already exists an index called 'name'.";
+        assertExpectedException( expectedCause, expectedMessage, exception );
+    }
+
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfIndexWithNameExistsWhenCreatingUniquenessConstraint( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( secondPropertyKey ).withName( "name" ).create(),
+                ConstraintViolationException.class );
+        Class<IndexWithNameAlreadyExistsException> expectedCause = IndexWithNameAlreadyExistsException.class;
+        String expectedMessage = "There already exists an index called 'name'.";
+        assertExpectedException( expectedCause, expectedMessage, exception );
+    }
+
     //todo
-    // AlreadyConstrainedException
-    // X shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingIndex
-    // X shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingUniquenessConstraint
     // IndexWithNameAlreadyExist
-    // - shouldThrowIfIndexWithNameExistsWhenCreatingIndex
-    // - shouldThrowIfIndexWithNameExistsWhenCreatingUniquenessConstraint
-    // - shouldThrowIfIndexWithNameExistsWhenCreatingNodeKeyConstraint
-    // - shouldThrowIfIndexWithNameExistsWhenCreatingExistenceConstraint
+    // X shouldThrowIfIndexWithNameExistsWhenCreatingIndex
+    // X shouldThrowIfIndexWithNameExistsWhenCreatingUniquenessConstraint
     // ConstraintWithNameAlreadyExist
     // - shouldThrowIfConstraintWithNameExistsWhenCreatingIndex
     // - shouldThrowIfConstraintWithNameExistsWhenCreatingUniquenessConstraint
