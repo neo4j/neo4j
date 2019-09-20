@@ -269,9 +269,18 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
   }
 
   override def estimatedHeapUsage: Long = {
-    val usage = m.values.foldLeft(0L)(_ + _.estimatedHeapUsage())
-    if (cachedProperties != null) cachedProperties.values.foldLeft(usage)(_ + _.estimatedHeapUsage())
-    else usage
+    var total = 0L
+    val iterator = m.valuesIterator
+    while (iterator.hasNext) {
+      total += iterator.next().estimatedHeapUsage()
+    }
+    if (cachedProperties != null) {
+      val iterator = cachedProperties.valuesIterator
+      while (iterator.hasNext) {
+        total += iterator.next().estimatedHeapUsage()
+      }
+    }
+    total
   }
 
   private def cloneFromMap(newMap: MutableMap[String, AnyValue]): ExecutionContext = {
