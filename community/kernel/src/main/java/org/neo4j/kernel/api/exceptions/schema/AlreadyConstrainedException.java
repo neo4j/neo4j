@@ -35,7 +35,6 @@ public class AlreadyConstrainedException extends SchemaKernelException
     private static final String INDEX_CONTEXT_FORMAT = "There is a uniqueness constraint on %s, so an index is " +
                                                        "already created that matches this.";
 
-    private final String constraintName;
     private final ConstraintDescriptor constraint;
     private final OperationContext context;
 
@@ -43,16 +42,7 @@ public class AlreadyConstrainedException extends SchemaKernelException
             TokenNameLookup tokenNameLookup )
     {
         super( Status.Schema.ConstraintAlreadyExists, constructUserMessage( context, tokenNameLookup, constraint ) );
-        this.constraintName = null;
         this.constraint = constraint;
-        this.context = context;
-    }
-
-    public AlreadyConstrainedException( String constraintName, OperationContext context )
-    {
-        super( Status.Schema.ConstraintAlreadyExists, constructUserMessage( constraintName ) );
-        this.constraintName = constraintName;
-        this.constraint = null;
         this.context = context;
     }
 
@@ -72,21 +62,12 @@ public class AlreadyConstrainedException extends SchemaKernelException
         }
     }
 
-    private static String constructUserMessage( String constraintName )
-    {
-        return "A constraint or index already exists with this name: " + constraintName + ".";
-    }
-
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
         if ( constraint != null )
         {
             return constructUserMessage( context, tokenNameLookup, constraint );
-        }
-        if ( constraintName != null )
-        {
-            return constructUserMessage( constraintName );
         }
         return "Already constrained.";
     }
