@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.v4_0.frontend.helpers.{InputDataStreamTestIniti
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
+import scala.util.Random
+
 class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("INPUT DATA STREAM a, b, c RETURN *") {
@@ -69,6 +71,12 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
   test("INPUT DATA STREAM g, uid, cids, cid, p RETURN *") {
     new given().getLogicalPlanFor("INPUT DATA STREAM g, uid, cids, cid, p RETURN *")._2 should equal(
       Input(Seq("g", "uid", "cids", "cid", "p")))
+  }
+
+  test("INPUT DATA STREAM with large number of columns") {
+    val randomColumns = Random.shuffle(for (c <- 'a' to 'z'; n <- 1 to 10) yield s"$c$n")
+    new given().getLogicalPlanFor(s"INPUT DATA STREAM ${randomColumns.mkString(",")} RETURN *")._2 should equal(
+      Input(randomColumns))
   }
 
   override def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
