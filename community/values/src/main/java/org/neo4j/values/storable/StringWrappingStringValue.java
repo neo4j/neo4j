@@ -168,7 +168,8 @@ final class StringWrappingStringValue extends StringValue
     @Override
     protected long estimatedPayloadSize()
     {
-        return 48 + Character.BYTES * value.length();
+        // we leverage the fact that Character.BYTES is always 2 to speed up this computation.
+        return 48 + value.length() << 1;
     }
 
     private int ltrimIndex( String value )
