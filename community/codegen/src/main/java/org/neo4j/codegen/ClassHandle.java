@@ -69,4 +69,9 @@ public class ClassHandle extends TypeReference
     {
         return parent;
     }
+
+    public CodeGenerator generator()
+    {
+        return generator;
+    }
 }

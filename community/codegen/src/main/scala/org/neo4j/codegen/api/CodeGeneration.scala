@@ -33,6 +33,8 @@ import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.codegen.{CodeGenerator, CodeGeneratorOption, DisassemblyVisitor, TypeReference}
 
 import scala.collection.mutable.ArrayBuffer
+import org.neo4j.codegen.source.SourceCode.{PRINT_SOURCE, SOURCECODE}
+import org.neo4j.codegen._
 
 /**
   * Produces runnable code from an IntermediateRepresentation
@@ -192,7 +194,7 @@ object CodeGeneration {
     case ArrayLoad(array, offset) => codegen.Expression.arrayLoad(compileExpression(array, block), constant(offset))
 
     //Foo.BAR
-    case GetStatic(owner, typ, name) => getStatic(staticField(owner.getOrElse(block.owner()), typ, name))
+    case GetStatic(owner, typ, name) => getStatic(staticField(owner.getOrElse(block.classGenerator().handle()), typ, name))
 
     //condition ? onTrue : onFalse
     case Ternary(condition, onTrue, onFalse) =>
@@ -326,11 +328,41 @@ object CodeGeneration {
       codegen.Expression.unbox(compileExpression(expression, block))
 
     case Self => block.self()
+
+    case NewInstanceInnerClass(ExtendClass(className, overrides, params, methods, fields), args) =>
+      val parentClass: ClassHandle = block.classGenerator().handle()
+      val generator = parentClass.generator
+      val classHandle = beginBlock(generator.generateClass(overrides, parentClass.packageName(), className)) { clazz: codegen.ClassGenerator =>
+
+        beginBlock(clazz.generateConstructor(params.map(_.asCodeGen): _*)) { constructor =>
+          constructor.expression(Expression.invokeSuper(overrides, params.map(p => constructor.load(p.name)): _*))
+          fields.distinct.foreach {
+            case InstanceField(typ, name, initializer) =>
+              val reference = clazz.field(typ, name)
+              initializer.map(ir => compileExpression(ir, block)).foreach { value =>
+                block.put(block.self(), reference, value)
+              }
+            case StaticField(typ, name, _) =>
+              val field = clazz.publicStaticField(typ, name)
+              block.putStatic(field, Expression.getStatic(FieldReference.staticField(parentClass, field.`type`(), field.name())))
+          }
+        }
+        //methods
+        methods.foreach { m =>
+          compileMethodDeclaration(clazz, m)
+        }
+        clazz.handle()
+      }
+
+      val constructor = if (args.isEmpty) codegen.MethodReference.constructorReference(classHandle)
+      else codegen.MethodReference.constructorReference(classHandle, params.map(_.typ):_*)
+
+      codegen.Expression.invoke(codegen.Expression.newInstance(classHandle), constructor, args.map(compileExpression(_, block)):_*)
+
   }
 
   private def compileClassDeclaration(c: ClassDeclaration[_], generator: CodeGenerator): codegen.ClassHandle = {
     val handle = beginBlock(generator.generateClass(c.extendsClass.getOrElse(codegen.TypeReference.OBJECT), c.packageName, c.className, c.implementsInterfaces: _*)) { clazz: codegen.ClassGenerator =>
-      //clazz.generateConstructor(generateParametersWithNames(c.constructor.constructor.params): _*)
       generateConstructor(clazz,
                           c.fields,
                           c.constructorParameters,

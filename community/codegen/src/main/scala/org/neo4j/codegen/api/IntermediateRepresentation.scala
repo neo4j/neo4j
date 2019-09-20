@@ -354,6 +354,14 @@ case class GetStatic(owner: Option[codegen.TypeReference], output: codegen.TypeR
 case class NewInstance(constructor: Constructor, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
 
 /**
+  * Instantiate a new instance of an inner class
+  *
+  * @param clazz     the inner-class to instantiate
+  * @param arguments the arguments to the constructor
+  */
+case class NewInstanceInnerClass(clazz: ExtendClass, arguments: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
+
+/**
   * Instantiate a new array
   * @param baseType the type of the array elements
   * @param size the size of the array.
@@ -406,7 +414,27 @@ case class Cast(to: codegen.TypeReference, expression: IntermediateRepresentatio
   */
 case class InstanceOf(typ: codegen.TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation
 
+/**
+  * Returns `this`
+  */
 case object Self extends IntermediateRepresentation
+
+/**
+  * A class that extends another class.
+  *
+  * The extending class is assumed to share the same constructor signature as the class it extends.
+  *
+  * @param name the name of the new class
+  * @param overrides the class it extends
+  * @param parameters the parameters to the contructor of the class and super class
+  * @param methods the methods of the class
+  * @param fields the fields of the class.
+  */
+case class ExtendClass(name: String,
+                       overrides: TypeReference,
+                       parameters: Seq[Parameter],
+                       methods: Seq[MethodDeclaration],
+                       fields: Seq[Field])
 /**
   * Defines a method
   *
@@ -523,6 +551,12 @@ object IntermediateRepresentation {
                                                        in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
                                                        in6: Manifest[IN6], in7: Manifest[IN7]) =
     Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7))
+
+  def methodDeclaration[OUT](name: String,
+                             body: IntermediateRepresentation,
+                             locals: () => Seq[LocalVariable],
+                             parameters: Parameter*)(implicit out: Manifest[OUT]) =
+    MethodDeclaration(name, typeRef(out), parameters, body, locals)
 
   def param[TYPE](name: String)(implicit typ: Manifest[TYPE]): Parameter = Parameter(typeRef(typ), name)
 
@@ -715,6 +749,8 @@ object IntermediateRepresentation {
   def isNotNull(test: IntermediateRepresentation): IntermediateRepresentation = Not(IsNull(test))
 
   def newInstance(constructor: Constructor, params: IntermediateRepresentation*) = NewInstance(constructor, params)
+
+  def newInstance(inner: ExtendClass, params: IntermediateRepresentation*) = NewInstanceInnerClass(inner, params)
 
   def newArray(baseType: codegen.TypeReference, size: Int) = NewArray(baseType, size)
 
