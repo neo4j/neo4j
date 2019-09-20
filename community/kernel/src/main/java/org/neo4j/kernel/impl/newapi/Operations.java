@@ -966,9 +966,7 @@ public class Operations implements Write, SchemaWrite
         if ( indexWithSameSchema.getName().equals( name ) &&              // - Same name
              indexWithSameSchema.isUnique() == prototype.isUnique() )     // - Same index type
         {
-            //Todo exception message
-            // - include existing schema rule and the schema rule we tried to create
-            throw new EquivalentSchemaRuleAlreadyExistsException( "" );
+            throw new EquivalentSchemaRuleAlreadyExistsException( indexWithSameSchema, INDEX_CREATION, tokenNameLookup );
         }
 
         // Name conflict with other schema rule
@@ -1009,9 +1007,7 @@ public class Operations implements Write, SchemaWrite
             if ( constraint.equals( constraintWithSameSchema ) &&
                  constraint.getName().equals( constraintWithSameSchema.getName() ) )
             {
-                //Todo exception message
-                // - include existing schema rule and the schema rule we tried to create
-                throw new EquivalentSchemaRuleAlreadyExistsException( "" );
+                throw new EquivalentSchemaRuleAlreadyExistsException( constraintWithSameSchema, CONSTRAINT_CREATION, tokenNameLookup );
             }
         }
 

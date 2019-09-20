@@ -144,8 +144,8 @@ class SchemaAcceptanceTest
             }
             catch ( ConstraintViolationException e )
             {
-                // todo update with correct message from EquivalentSchemaRule...
-                assertEquals( "", e.getMessage() );
+                String indexDescription = "Index( 1, 'Index on :MY_LABEL (my_property_key)', GENERAL, :MY_LABEL(my_property_key), native-btree-1.0 )";
+                assertEquals( "An equivalent index already exists, '" + indexDescription + "'.", e.getMessage() );
             }
             tx.commit();
         }
@@ -499,12 +499,8 @@ class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            // todo Update message together with EquivalentSchemaRule...
-            assertEquals( "", e.getMessage() );
-//            assertEquals(
-//                    "Constraint already exists: CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT (my_label.my_property_key) " +
-//                            "IS UNIQUE",
-//                    e.getMessage() );
+            String indexDescription = "Constraint( UNIQUE, :MY_LABEL(my_property_key) )";
+            assertEquals( "An equivalent constraint already exists, '" + indexDescription + "'.", e.getMessage() );
         }
     }
 
@@ -541,9 +537,8 @@ class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            // todo update with EquivalentSchemaRule...
-            assertEquals( "", e.getMessage() );
-//            assertEquals( "There already exists an index :MY_LABEL(my_property_key).", e.getMessage() );
+            String indexDescription = "Index( 1, 'Index on :MY_LABEL (my_property_key)', GENERAL, :MY_LABEL(my_property_key), native-btree-1.0 )";
+            assertEquals( "An equivalent index already exists, '" + indexDescription + "'.", e.getMessage() );
         }
     }
 
