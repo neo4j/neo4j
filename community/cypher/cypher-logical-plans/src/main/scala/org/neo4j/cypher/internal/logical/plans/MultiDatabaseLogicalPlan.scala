@@ -65,7 +65,6 @@ case class CopyRolePrivileges(source: Option[SecurityAdministrationLogicalPlan],
 
 abstract class PrivilegePlan()(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
 
-// TODO not sure that we should use the ast class here
 case class AssertDbmsAdmin(action: AdminAction)(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertDatabaseAdmin(action: AdminAction, database: NormalizedDatabaseName)(implicit idGen: IdGen) extends PrivilegePlan
 

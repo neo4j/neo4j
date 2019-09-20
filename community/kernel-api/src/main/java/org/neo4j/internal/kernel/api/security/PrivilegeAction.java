@@ -207,6 +207,42 @@ public enum PrivilegeAction
                         return this == action;
                     }
                 }
+            },
+
+    GRAPH_ACTIONS
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case READ:
+                    case WRITE:
+                    case TRAVERSE:
+                        return true;
+                    default:
+                        return this == action;
+                    }
+                }
+            },
+
+    DATABASE_ACTIONS
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case ACCESS:
+                    case EXECUTE:
+                        return true;
+                    default:
+                        return SCHEMA.satisfies( action ) ||
+                               TOKEN.satisfies( action ) ||
+                               GRAPH_ACTIONS.satisfies( action ) ||
+                               this == action;
+                    }
+                }
             };
 
     /**
