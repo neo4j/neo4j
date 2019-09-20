@@ -23,6 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Iterator;
 import java.util.Queue;
@@ -41,6 +43,8 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
@@ -55,7 +59,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
-import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,7 +76,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
 @ImpermanentDbmsExtension
-class SchemaAcceptanceTest
+class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 {
     @Inject
     private GraphDatabaseService db;
@@ -129,54 +132,85 @@ class SchemaAcceptanceTest
         }
     }
 
-    @Test
-    void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx()
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfEquivalentIndexExist( SchemaTxStrategy txStrategy )
     {
-        // WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            Schema schema = tx.schema();
-            schema.indexFor( label ).on( propertyKey ).create();
-            try
-            {
-                schema.indexFor( label ).on( propertyKey ).create();
-                fail( "Should not have validated" );
-            }
-            catch ( ConstraintViolationException e )
-            {
-                String indexDescription = "Index( 1, 'Index on :MY_LABEL (my_property_key)', GENERAL, :MY_LABEL(my_property_key), native-btree-1.0 )";
-                assertEquals( "An equivalent index already exists, '" + indexDescription + "'.", e.getMessage() );
-            }
-            tx.commit();
-        }
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                ConstraintViolationException.class );
+        Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
+        String expectedMessage = "An equivalent index already exists, 'Index( 1, 'name', GENERAL, :MY_LABEL(my_property_key), native-btree-1.0 )'.";
+        assertExpectedException( expectedCause, expectedMessage, exception );
     }
 
-    @Test
-    void shouldThrowConstraintViolationIfAskedToIndexPropertyThatIsAlreadyIndexed()
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfEquivalentUniquenessConstraintExist( SchemaTxStrategy txStrategy )
     {
-        // GIVEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            var schema = tx.schema();
-            schema.indexFor( label ).on( propertyKey ).create();
-            tx.commit();
-        }
 
-        // WHEN
-        ConstraintViolationException caught = null;
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( label ).on( propertyKey ).create();
-            tx.commit();
-        }
-        catch ( ConstraintViolationException e )
-        {
-            caught = e;
-        }
-
-        // THEN
-        assertThat( caught, not( nullValue() ) );
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
+                ConstraintViolationException.class );
+        Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
+        String expectedMessage = "An equivalent constraint already exists, 'Constraint( UNIQUE, :MY_LABEL(my_property_key) )'.";
+        assertExpectedException( expectedCause, expectedMessage, exception );
     }
+
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfSchemaAlreadyIndexedWhenCreatingIndex( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "otherName" ).create(),
+                ConstraintViolationException.class );
+        Class<AlreadyIndexedException> expectedCause = AlreadyIndexedException.class;
+        String expectedMessage = "There already exists an index :MY_LABEL(my_property_key).";
+        assertExpectedException( expectedCause, expectedMessage, exception );
+    }
+
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfSchemaAlreadyIndexedWhenCreatingUniquenessConstraint( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "otherName" ).create(),
+                ConstraintViolationException.class );
+        Class<AlreadyIndexedException> expectedCause = AlreadyIndexedException.class;
+        String expectedMessage = "There already exists an index :MY_LABEL(my_property_key). A constraint cannot be created until the index has been dropped.";
+        assertExpectedException( expectedCause, expectedMessage, exception );
+    }
+
+    //todo
+    // All of those in same and separate tx
+    // ---
+    // EquivalentSchemaRuleExistsException
+    // X shouldThrowIfEquivalentIndexExist
+    // X shouldThrowIfEquivalentUniquenessConstraintExist
+    // AlreadyIndexedException
+    // X shouldThrowIfSchemaAlreadyIndexedWhenCreatingIndex
+    // X shouldThrowIfSchemaAlreadyIndexedWhenCreatingUniquenessConstraint
+    // AlreadyConstrainedException
+    // - shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingIndex
+    // - shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingUniquenessConstraint
+    // - shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingNodeKeyConstraint
+    // - shouldThrowIfSchemaAlreadyNodeKeyConstrainedWhenCreatingIndex
+    // - shouldThrowIfSchemaAlreadyNodeKeyConstrainedWhenCreatingUniquenessConstraint
+    // - shouldThrowIfSchemaAlreadyNodeKeyConstrainedWhenCreatingNodeKeyConstraint
+    // IndexWithNameAlreadyExist
+    // - shouldThrowIfIndexWithNameExistsWhenCreatingIndex
+    // - shouldThrowIfIndexWithNameExistsWhenCreatingUniquenessConstraint
+    // - shouldThrowIfIndexWithNameExistsWhenCreatingNodeKeyConstraint
+    // - shouldThrowIfIndexWithNameExistsWhenCreatingExistenceConstraint
+    // ConstraintWithNameAlreadyExist
+    // - shouldThrowIfConstraintWithNameExistsWhenCreatingIndex
+    // - shouldThrowIfConstraintWithNameExistsWhenCreatingUniquenessConstraint
+    // - shouldThrowIfConstraintWithNameExistsWhenCreatingNodeKeyConstraint
+    // - shouldThrowIfConstraintWithNameExistsWhenCreatingExistenceConstraint
 
     @Test
     void shouldThrowConstraintViolationIfAskedToCreateCompoundConstraint()
@@ -482,63 +516,6 @@ class SchemaAcceptanceTest
         {
             assertThat( e.getMessage(), containsString(
                     "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT (my_label.my_property_key) IS UNIQUE" ) );
-        }
-    }
-
-    @Test
-    void addingConstraintWhenAlreadyConstrainedGivesNiceError()
-    {
-        // GIVEN
-        createUniquenessConstraint( label, propertyKey );
-
-        // WHEN
-        try
-        {
-            createUniquenessConstraint( label, propertyKey );
-            fail( "Expected exception to be thrown" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            String indexDescription = "Constraint( UNIQUE, :MY_LABEL(my_property_key) )";
-            assertEquals( "An equivalent constraint already exists, '" + indexDescription + "'.", e.getMessage() );
-        }
-    }
-
-    @Test
-    void addingIndexWhenAlreadyConstrained()
-    {
-        // GIVEN
-        createUniquenessConstraint( label, propertyKey );
-
-        // WHEN
-        try
-        {
-            createIndex( db, label, propertyKey );
-            fail( "Expected exception to be thrown" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            assertEquals( "There is a uniqueness constraint on :MY_LABEL(my_property_key), so an index is already " +
-                          "created that matches this.", e.getMessage() );
-        }
-    }
-
-    @Test
-    void addingIndexWhenAlreadyIndexed()
-    {
-        // GIVEN
-        createIndex( db, label, propertyKey );
-
-        // WHEN
-        try
-        {
-            createIndex( db, label, propertyKey );
-            fail( "Expected exception to be thrown" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            String indexDescription = "Index( 1, 'Index on :MY_LABEL (my_property_key)', GENERAL, :MY_LABEL(my_property_key), native-btree-1.0 )";
-            assertEquals( "An equivalent index already exists, '" + indexDescription + "'.", e.getMessage() );
         }
     }
 
