@@ -237,12 +237,11 @@ public class HttpCopierTest
     }
 
     @Test
-    @Ignore
     public void shouldHandleConflictResponseFromInitiateUploadTargetAndContinueOnUserConsent() throws IOException, CommandFailed
     {
         ControlledOutsideWorld outsideWorld = new ControlledOutsideWorld( fs );
         outsideWorld.withPromptResponse( "my-username" ); // prompt for username
-        outsideWorld.withPasswordResponse( "hi".toCharArray() ); // prompt for password
+        outsideWorld.withPasswordResponse( "pass".toCharArray() ); // prompt for password
         outsideWorld.withPromptResponse( "y" ); // prompt for consent to overwrite db
         HttpCopier copier = new HttpCopier( outsideWorld );
         Path source = createDump();
@@ -265,13 +264,12 @@ public class HttpCopierTest
         authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user consent
-        verify( postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( notMatching( ".*Confirmed.*" ) ) );
-        verify( postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( containing( "Confirmed" ) ) );
+        verify( postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader("Confirmed", equalTo( "false" ) ) );
+        verify( postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader( "Confirmed", equalTo("true") ) );
     }
 
     @Test
-    @Ignore
-    public void shouldHandleConflictResponseFromInitiateUploadTargetWithoutUserConsent() throws IOException
+    public void shouldHandleConflictResponseFromAuthenticationWithoutUserConsent() throws IOException
     {
         ControlledOutsideWorld outsideWorld = new ControlledOutsideWorld( fs );
         outsideWorld.withPromptResponse( "my-username" ); // prompt for username
@@ -290,12 +288,11 @@ public class HttpCopierTest
                 () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user consent
-        verify( postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( notMatching( ".*Confirmed.*" ) ) );
-        verify( 0, postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( containing( "Confirmed" ) ) );
+        verify( postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader("Confirmed", equalTo( "false" ) ) );
+        verify( 0, postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader("Confirmed", equalTo( "true" ) ) );
     }
 
     @Test
-    @Ignore
     public void shouldHandleUnexpectedResponseFromInitiateUploadTargetRequest() throws IOException
     {
         ControlledOutsideWorld outsideWorld = new ControlledOutsideWorld( fs );
@@ -459,8 +456,7 @@ public class HttpCopierTest
         return post( urlEqualTo( "/import/auth" ) )
                 .withHeader( "Authorization", matching( "^Basic .*" ) )
                 .withHeader( "Accept", equalTo( "application/json" ) )
-                .withRequestBody( userConsent ? containing( "Confirmed" ) : notMatching( ".*Confirmed.*" ) );
-
+                .withHeader( "Confirmed", equalTo( userConsent ? "true" : "false" ));
     }
 
     private ResponseDefinitionBuilder successfulAuthorizationResponse( String authorizationTokenResponse )

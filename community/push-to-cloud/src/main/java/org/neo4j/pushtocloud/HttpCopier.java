@@ -186,6 +186,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 connection.setRequestMethod( "POST" );
                 connection.setRequestProperty( "Authorization", "Basic " + base64Encode( username, password ) );
                 connection.setRequestProperty( "Accept", "application/json" );
+                if ( consentConfirmed.booleanValue() )
+                {
+                    connection.setRequestProperty("Confirmed", "true");
+                }
+                else
+                {
+                    connection.setRequestProperty("Confirmed", "false");
+                }
                 int responseCode = connection.getResponseCode();
                 switch ( responseCode )
                 {
