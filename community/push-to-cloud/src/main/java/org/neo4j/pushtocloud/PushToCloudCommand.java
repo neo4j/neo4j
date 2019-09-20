@@ -67,7 +67,7 @@ public class PushToCloudCommand implements AdminCommand
                     "Optional: Password of the target database to push this database to. Prompt will ask for password if not provided. " +
                             "Alternatively NEO4J_PASSWORD environment variable can be used." ) )
             .withArgument( new OptionalNamedArg( ARG_CONFIRMED, "true/false", "false",
-                    "Optional: Confirmation that a non empty cloud database would be overwritten." ) );
+                    "Optional: Allow import to continue even if it will overwrite data in a non-empty cloud database." ) );
 
     private final Path homeDir;
     private final Path configDir;
