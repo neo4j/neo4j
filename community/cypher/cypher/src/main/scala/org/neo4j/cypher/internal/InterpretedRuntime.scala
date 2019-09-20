@@ -62,7 +62,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                  resultBuilderFactory,
                                  InterpretedRuntimeName,
                                  query.readOnly,
-                                 Nil)
+                                 IndexedSeq.empty)
   }
 
   /**

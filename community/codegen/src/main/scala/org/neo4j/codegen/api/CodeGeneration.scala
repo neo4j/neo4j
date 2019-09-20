@@ -32,6 +32,8 @@ import org.neo4j.codegen.source.SourceCode.PRINT_SOURCE
 import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.codegen.{CodeGenerator, CodeGeneratorOption, DisassemblyVisitor, TypeReference}
 
+import scala.collection.mutable.ArrayBuffer
+
 /**
   * Produces runnable code from an IntermediateRepresentation
   */
@@ -59,15 +61,15 @@ object CodeGeneration {
     }
   }
 
-  class CodeSaver(saveSource: Boolean, saveByteCode: Boolean) extends {
-    private var _source: Seq[(String, String)] = Seq.empty
-    private var _bytecode: Seq[(String, String)] = Seq.empty
+  class CodeSaver(saveSource: Boolean, saveByteCode: Boolean) {
+    private val _source: ArrayBuffer[(String, String)] = new ArrayBuffer()
+    private val _bytecode: ArrayBuffer[(String, String)] = new ArrayBuffer()
 
     private def sourceVisitor: SourceVisitor =
-      (reference: TypeReference, sourceCode: CharSequence) => _source = _source :+ (reference.name() -> sourceCode.toString)
+      (reference: TypeReference, sourceCode: CharSequence) => _source += (reference.name() -> sourceCode.toString)
 
     private def byteCodeVisitor: DisassemblyVisitor =
-      (className: String, disassembly: CharSequence) => _bytecode = _bytecode :+ (className -> disassembly.toString)
+      (className: String, disassembly: CharSequence) => _bytecode += (className -> disassembly.toString)
 
     def options: List[CodeGeneratorOption] = {
       var l: List[CodeGeneratorOption] = Nil
