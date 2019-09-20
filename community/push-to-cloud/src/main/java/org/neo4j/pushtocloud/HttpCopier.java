@@ -144,12 +144,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     // It could happen that the very first call of this method is so fast, that the database is still in state
                     // "running". So we need to check if this is the case and ignore the result in that case and only
                     // take this result as valid, once the status loading or restoring was seen before.
-                    if ( !firstRunning)
+                    if ( !firstRunning )
                     {
                         statusProgress.rewindTo( 0 );
                         statusProgress.add( 3 );
                         statusProgress.done();
-                    } else {
+                    }
+                    else
+                    {
                         boolean passedStartImportTimeout = System.currentTimeMillis() > importStartedTimeout;
                         if ( passedStartImportTimeout )
                         {
