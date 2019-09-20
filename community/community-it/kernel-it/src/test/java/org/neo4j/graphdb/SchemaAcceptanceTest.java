@@ -43,6 +43,7 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -185,22 +186,36 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         assertExpectedException( expectedCause, expectedMessage, exception );
     }
 
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingIndex( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "otherName" ).create(),
+                ConstraintViolationException.class );
+        Class<AlreadyConstrainedException> expectedCause = AlreadyConstrainedException.class;
+        String expectedMessage = "There is a uniqueness constraint on :MY_LABEL(my_property_key), so an index is already created that matches this.";
+        assertExpectedException( expectedCause, expectedMessage, exception );
+    }
+
+    @ParameterizedTest()
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingUniquenessConstraint( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "otherName" ).create(),
+                ConstraintViolationException.class );
+        Class<AlreadyConstrainedException> expectedCause = AlreadyConstrainedException.class;
+        String expectedMessage = "Constraint already exists: CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT (my_label.my_property_key) IS UNIQUE";
+        assertExpectedException( expectedCause, expectedMessage, exception );
+    }
+
     //todo
-    // All of those in same and separate tx
-    // ---
-    // EquivalentSchemaRuleExistsException
-    // X shouldThrowIfEquivalentIndexExist
-    // X shouldThrowIfEquivalentUniquenessConstraintExist
-    // AlreadyIndexedException
-    // X shouldThrowIfSchemaAlreadyIndexedWhenCreatingIndex
-    // X shouldThrowIfSchemaAlreadyIndexedWhenCreatingUniquenessConstraint
     // AlreadyConstrainedException
-    // - shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingIndex
-    // - shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingUniquenessConstraint
-    // - shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingNodeKeyConstraint
-    // - shouldThrowIfSchemaAlreadyNodeKeyConstrainedWhenCreatingIndex
-    // - shouldThrowIfSchemaAlreadyNodeKeyConstrainedWhenCreatingUniquenessConstraint
-    // - shouldThrowIfSchemaAlreadyNodeKeyConstrainedWhenCreatingNodeKeyConstraint
+    // X shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingIndex
+    // X shouldThrowIfSchemaAlreadyUniquenessConstrainedWhenCreatingUniquenessConstraint
     // IndexWithNameAlreadyExist
     // - shouldThrowIfIndexWithNameExistsWhenCreatingIndex
     // - shouldThrowIfIndexWithNameExistsWhenCreatingUniquenessConstraint
