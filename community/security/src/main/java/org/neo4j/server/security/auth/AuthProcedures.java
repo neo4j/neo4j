@@ -58,8 +58,9 @@ public class AuthProcedures
     public GraphDatabaseAPI graph;
 
     @SystemProcedure
+    @Deprecated
     @Description( "Create a new user." )
-    @Procedure( name = "dbms.security.createUser", mode = DBMS )
+    @Procedure( name = "dbms.security.createUser", mode = DBMS, deprecatedBy = "Administration command: CREATE USER" )
     public void createUser(
             @Name( "username" ) String username,
             @Name( "password" ) String password,
@@ -72,8 +73,9 @@ public class AuthProcedures
     }
 
     @SystemProcedure
+    @Deprecated
     @Description( "Delete the specified user." )
-    @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
+    @Procedure( name = "dbms.security.deleteUser", mode = DBMS, deprecatedBy = "Administration command: DROP USER" )
     public void deleteUser( @Name( "username" ) String username ) throws ProcedureException
     {
         var query = String.format( "DROP USER %s", escapeParameter( username ) );
@@ -100,8 +102,9 @@ public class AuthProcedures
 
     @SuppressWarnings( "AccessStaticViaInstance" )
     @SystemProcedure
+    @Deprecated
     @Description( "List all native users." )
-    @Procedure( name = "dbms.security.listUsers", mode = DBMS )
+    @Procedure( name = "dbms.security.listUsers", mode = DBMS, deprecatedBy = "Administration command: SHOW USERS" )
     public Stream<UserResult> listUsers() throws ProcedureException
     {
         var query = "SHOW USERS";
@@ -173,6 +176,6 @@ public class AuthProcedures
 
     private String escapeParameter( String input )
     {
-        return String.format("`%s`", input == null ? "" : input );
+        return String.format( "`%s`", input == null ? "" : input );
     }
 }

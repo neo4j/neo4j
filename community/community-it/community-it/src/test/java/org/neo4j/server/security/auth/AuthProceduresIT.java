@@ -23,11 +23,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +35,8 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -59,6 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.deprecatedName;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
@@ -141,7 +142,7 @@ public class AuthProceduresIT
     {
         // Given
         assertSuccess( admin, "CREATE USER andres SET PASSWORD 'banana'" );
-        LoginContext user = login("andres", "banana");
+        LoginContext user = login( "andres", "banana" );
 
         // Then
         assertThat( execute( user, "CALL dbms.procedures", r ->
@@ -194,6 +195,13 @@ public class AuthProceduresIT
     }
 
     @Test
+    void shouldGetDeprecatedNotificationForCreateUser()
+    {
+        assertNotification( admin, "explain CALL dbms.security.createUser('andres', '123')",
+                deprecatedProcedureNotification( "dbms.security.createUser", "Administration command: CREATE USER" ) );
+    }
+
+    @Test
     void shouldNotCreateUserIfInvalidUsername()
     {
         assertFail( admin, "CALL dbms.security.createUser('', '1234', true)", "The provided username is empty." );
@@ -233,6 +241,13 @@ public class AuthProceduresIT
             Set<Map<String,Object>> users = r.stream().collect( Collectors.toSet() );
             assertTrue( users.contains( Map.of( "user", "neo4j", "passwordChangeRequired", false ) ) );
         } );
+    }
+
+    @Test
+    void shouldGetDeprecatedNotificationForDeleteUser()
+    {
+        assertNotification( admin, "explain CALL dbms.security.deleteUser('andres')",
+                deprecatedProcedureNotification( "dbms.security.deleteUser", "Administration command: DROP USER" ) );
     }
 
     @Test
@@ -276,6 +291,13 @@ public class AuthProceduresIT
                 r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", emptyList() ) ) ), equalTo( "" ) );
     }
 
+    @Test
+    void shouldGetDeprecatedNotificationForListUsers()
+    {
+        assertNotification( admin, "explain CALL dbms.security.listUsers",
+                deprecatedProcedureNotification( "dbms.security.listUsers", "Administration command: SHOW USERS" ) );
+    }
+
     //---------- utility -----------
 
     private LoginContext login( String username, String password ) throws InvalidAuthTokenException
@@ -289,6 +311,26 @@ public class AuthProceduresIT
         {
             assert !r.hasNext();
         } );
+    }
+
+    private void assertNotification( LoginContext subject, String query, Notification wantedNotification )
+    {
+        try ( Transaction tx = systemDb.beginTransaction( KernelTransaction.Type.implicit, subject ) )
+        {
+            Result result = tx.execute( query );
+
+            Iterator<Notification> givenNotifications = result.getNotifications().iterator();
+            if ( givenNotifications.hasNext() )
+            {
+                assertEquals( wantedNotification, givenNotifications.next() ); // only checks first notification
+            }
+            else
+            {
+                fail( "Expected notifications from '" + query + "'" );
+            }
+
+            tx.commit();
+        }
     }
 
     private void assertSuccess( LoginContext subject, String query, Consumer<ResourceIterator<Map<String,Object>>> resultConsumer )
@@ -337,7 +379,7 @@ public class AuthProceduresIT
 
     protected String[] with( String[] strs, String... moreStr )
     {
-        return Stream.concat( Arrays.stream(strs), Arrays.stream( moreStr ) ).toArray( String[]::new );
+        return Stream.concat( Arrays.stream( strs ), Arrays.stream( moreStr ) ).toArray( String[]::new );
     }
 
     @SuppressWarnings( {"unchecked", "SameParameterValue"} )
@@ -370,5 +412,10 @@ public class AuthProceduresIT
                 assertEquals( value, expectedValue, String.format( "Wrong value for '%s', expected '%s', got '%s'", key, expectedValue, value ) );
             }
         }
+    }
+
+    private Notification deprecatedProcedureNotification( String oldName, String newName )
+    {
+        return DEPRECATED_PROCEDURE.notification( new InputPosition( 8, 1, 9 ), deprecatedName( oldName, newName ) );
     }
 }
