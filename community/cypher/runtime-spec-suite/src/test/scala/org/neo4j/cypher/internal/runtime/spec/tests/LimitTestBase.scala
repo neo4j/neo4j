@@ -152,6 +152,28 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     runtimeResult should beColumns("x").withRows(singleColumn(aNodes.flatMap(n => List().padTo(10, n))))
   }
 
+  test("should support limit on top of apply") {
+    // given
+    val nodesPerLabel = 50
+    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+    val limit = nodesPerLabel * nodesPerLabel - 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(limit)
+      .apply()
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x").withRows(rowCount(limit))
+  }
+
   test("should support reduce -> limit on the RHS of apply") {
     // given
     val nodesPerLabel = 100

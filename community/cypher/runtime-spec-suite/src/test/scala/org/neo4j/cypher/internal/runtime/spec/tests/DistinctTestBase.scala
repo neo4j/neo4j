@@ -156,4 +156,25 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
     val expected = for {a <- as; b <- bs.distinct} yield b
     runtimeResult should beColumns("b").withRows(singleColumn(expected))
   }
+
+  test("should support distinct on top of apply") {
+    // given
+    val nodesPerLabel = 50
+    val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .distinct("x AS x")
+      .apply()
+      .|.expandAll("(x)-->(y)")
+      .|.argument()
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x").withRows(aNodes.map(a => Array(a)))
+  }
 }
