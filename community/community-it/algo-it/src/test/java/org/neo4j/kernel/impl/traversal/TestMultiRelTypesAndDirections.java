@@ -60,9 +60,10 @@ class TestMultiRelTypesAndDirections extends TraversalTestBase
     {
         try ( Transaction transaction = beginTx() )
         {
-            final TraversalDescription description = traversalFactory.apply( transaction ).expand( PathExpanders.forTypeAndDirection( ONE, OUTGOING ) );
+            final TraversalDescription description = traversalFactory.apply( transaction )
+                    .expand( PathExpanders.forTypeAndDirection( ONE, OUTGOING ) );
             int i = 0;
-            for ( Path position : description.traverse( node( "A" ) ) )
+            for ( Path position : description.traverse( transaction.getNodeById( node( "A" ).getId() ) ) )
             {
                 assertEquals( i++, position.length() );
             }

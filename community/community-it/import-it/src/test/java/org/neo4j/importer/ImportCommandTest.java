@@ -2140,6 +2140,8 @@ class ImportCommandTest
                     // OK this is a relationship referring to a missing node, skip it
                     continue;
                 }
+                startNode = tx.getNodeById( startNode.getId() );
+                endNode = tx.getNodeById( endNode.getId() );
                 assertNotNull( findRelationship( startNode, endNode, relationship ), relationship.toString() );
             }
             tx.commit();

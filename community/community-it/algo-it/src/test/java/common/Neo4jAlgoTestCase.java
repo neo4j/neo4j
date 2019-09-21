@@ -98,7 +98,7 @@ public abstract class Neo4jAlgoTestCase
         int i = 0;
         for ( String id : nodeIds )
         {
-            nodes[i] = graph.getNode( tx, id );
+            nodes[i] = tx.getNodeById( graph.getNode( tx, id ).getId() );
             i++;
         }
         assertPath( path, nodes );

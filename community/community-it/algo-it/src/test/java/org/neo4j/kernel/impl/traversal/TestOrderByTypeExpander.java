@@ -76,13 +76,15 @@ class TestOrderByTypeExpander extends TraversalTestBase
         {
             PathExpander expander =
                     new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
-            Iterator<Node> itr = transaction.traversalDescription().depthFirst().expand(
-                    expander ).traverse( node( "A1" ) ).nodes().iterator();
+            Iterator<Node> itr = transaction.traversalDescription().depthFirst()
+                    .expand( expander )
+                    .traverse( transaction.getNodeById( node( "A1" ).getId() ) ).nodes().iterator();
             assertOrder( transaction, itr, "A1", "C1", "C2", "C3", "A2", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
 
             expander = new OrderedByTypeExpander().add( next ).add( firstComment ).add( comment );
-            itr = transaction.traversalDescription().depthFirst().expand(
-                    expander ).traverse( node( "A1" ) ).nodes().iterator();
+            itr = transaction.traversalDescription().depthFirst()
+                    .expand( expander )
+                    .traverse( transaction.getNodeById( node( "A1" ).getId() ) ).nodes().iterator();
             assertOrder( transaction, itr, "A1", "A2", "A3", "C7", "C8", "C9", "C4", "C5", "C6", "C1", "C2", "C3" );
         }
     }
@@ -97,7 +99,9 @@ class TestOrderByTypeExpander extends TraversalTestBase
                 .add( next, OUTGOING );
         try ( Transaction transaction = beginTx() )
         {
-            Iterator<Node> itr = transaction.traversalDescription().depthFirst().expand( expander ).traverse( node( "A2" ) ).nodes().iterator();
+            Iterator<Node> itr = transaction.traversalDescription().depthFirst()
+                    .expand( expander )
+                    .traverse( transaction.getNodeById( node( "A2" ).getId() ) ).nodes().iterator();
             assertOrder( transaction, itr, "A2", "A1", "C1", "C2", "C3", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
         }
     }
@@ -106,7 +110,7 @@ class TestOrderByTypeExpander extends TraversalTestBase
     {
         for ( String name : names )
         {
-            Node node = itr.next();
+            Node node = transaction.getNodeById( itr.next().getId() );
             assertEquals( getNodeWithName( transaction, name ), node, "expected " + name + ", was " + node.getProperty( "name" ) );
         }
         assertFalse( itr.hasNext() );

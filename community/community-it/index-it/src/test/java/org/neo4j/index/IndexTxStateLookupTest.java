@@ -269,7 +269,7 @@ public class IndexTxStateLookupTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            node.delete();
+            tx.getNodeById( node.getId() ).delete();
             tx.commit();
         }
     }

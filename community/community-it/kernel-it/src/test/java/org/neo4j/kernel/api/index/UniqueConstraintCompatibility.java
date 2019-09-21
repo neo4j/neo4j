@@ -288,7 +288,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 success );
 
         Transaction otherTx = db.beginTx();
-        a.removeLabel( label );
+        otherTx.getNodeById( a.getId() ).removeLabel( label );
         suspend( otherTx );
 
         // When
@@ -884,7 +884,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             @Override
             public void accept( Transaction transaction )
             {
-                node.setProperty( property, value );
+                transaction.getNodeById( node.getId() ).setProperty( property, value );
             }
         };
     }
@@ -896,7 +896,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             @Override
             public void accept( Transaction transaction )
             {
-                node.removeProperty( property );
+                transaction.getNodeById( node.getId() ).removeProperty( property );
             }
         };
     }
@@ -908,7 +908,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             @Override
             public void accept( Transaction transaction )
             {
-                node.addLabel( label );
+                transaction.getNodeById( node.getId() ).addLabel( label );
             }
         };
     }

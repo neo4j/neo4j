@@ -63,7 +63,7 @@ class TestMultiPruneEvaluators extends TraversalTestBase
         {
             TraversalDescription description = tx.traversalDescription().evaluator( Evaluators.all() )
                     .evaluator( toDepth( 1 ) ).evaluator( lessThanThreeRels );
-            for ( Path position : description.traverse( node( "a" ) ) )
+            for ( Path position : description.traverse( tx.getNodeById( node( "a" ).getId() ) ) )
             {
                 String name = (String) position.endNode().getProperty( "name" );
                 assertTrue( expectedNodes.remove( name ), name + " shouldn't have been returned" );

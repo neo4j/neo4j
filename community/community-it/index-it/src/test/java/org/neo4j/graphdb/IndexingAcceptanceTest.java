@@ -111,7 +111,7 @@ public class IndexingAcceptanceTest
         try ( Transaction tx = beansAPI.beginTx() )
         {
             // A big long value which will occupy two property blocks
-            myNode.setProperty( "key", bigValue );
+            tx.getNodeById( myNode.getId() ).setProperty( "key", bigValue );
             tx.commit();
         }
 
@@ -155,6 +155,7 @@ public class IndexingAcceptanceTest
 
         try ( Transaction transaction = beansAPI.beginTx() )
         {
+            myNode = transaction.getNodeById( myNode.getId() );
             // Then
             assertThat( myNode, hasProperty( "key2" ).withValue( LONG_STRING ) );
             assertThat( myNode, hasProperty( "key3" ).withValue( LONG_STRING ) );
@@ -204,6 +205,7 @@ public class IndexingAcceptanceTest
         // When
         try ( Transaction tx = beansAPI.beginTx() )
         {
+            myNode = tx.getNodeById( myNode.getId() );
             myNode.removeLabel( LABEL1 );
             myNode.addLabel( LABEL3 );
             myNode.setProperty( "name", "Einstein" );
@@ -212,6 +214,7 @@ public class IndexingAcceptanceTest
 
         try ( Transaction transaction = beansAPI.beginTx() )
         {
+            myNode = transaction.getNodeById( myNode.getId() );
             // Then
             assertThat( myNode, hasProperty( "name" ).withValue( "Einstein" ) );
             assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
@@ -241,6 +244,7 @@ public class IndexingAcceptanceTest
         // When
         try ( Transaction tx = beansAPI.beginTx() )
         {
+            myNode = tx.getNodeById( myNode.getId() );
             myNode.addLabel( LABEL3 );
             myNode.setProperty( "name", "Einstein" );
             myNode.removeLabel( LABEL1 );
@@ -250,6 +254,7 @@ public class IndexingAcceptanceTest
 
         try ( Transaction transaction = beansAPI.beginTx() )
         {
+            myNode = transaction.getNodeById( myNode.getId() );
             // Then
             assertThat( myNode, hasProperty( "name" ).withValue( "Feynman" ) );
             assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
@@ -317,7 +322,7 @@ public class IndexingAcceptanceTest
         try ( Transaction tx = beansAPI.beginTx() )
         {
             sizeBeforeDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
-            firstNode.delete();
+            tx.getNodeById( firstNode.getId() ).delete();
             sizeAfterDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
             tx.commit();
         }
@@ -341,7 +346,7 @@ public class IndexingAcceptanceTest
         try ( Transaction tx = beansAPI.beginTx() )
         {
             sizeBeforeDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
-            firstNode.delete();
+            tx.getNodeById( firstNode.getId() ).delete();
             sizeAfterDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
             tx.commit();
         }

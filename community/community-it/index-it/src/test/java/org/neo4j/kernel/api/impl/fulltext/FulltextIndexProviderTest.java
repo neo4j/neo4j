@@ -229,7 +229,9 @@ public class FulltextIndexProviderTest
         long secondRelId;
         try ( Transaction transaction = db.beginTx() )
         {
-            Relationship ho = node1.createRelationshipTo( node2, RelationshipType.withName( "ho" ) );
+            Relationship ho = transaction.getNodeById( node1.getId() )
+                    .createRelationshipTo( transaction.getNodeById( node2.getId() ),
+                            RelationshipType.withName( "ho" ) );
             secondRelId = ho.getId();
             ho.setProperty( "hej", "villa" );
             ho.setProperty( "ho", "value3" );

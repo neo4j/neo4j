@@ -130,7 +130,9 @@ class SmallestGraphEverTest extends TraversalTestBase
     {
         try ( Transaction transaction = beginTx() )
         {
-            Traverser traverser = traversalFactory.apply( transaction ).uniqueness( uniqueness ).traverse( node( "1" ) );
+            Traverser traverser = traversalFactory.apply( transaction )
+                    .uniqueness( uniqueness )
+                    .traverse( transaction.getNodeById( node( "1" ).getId() ) );
             assertNotEquals( 0, Iterables.count( traverser ), "empty traversal" );
         }
     }
@@ -141,7 +143,8 @@ class SmallestGraphEverTest extends TraversalTestBase
         try ( Transaction transaction = beginTx() )
         {
             TraversalDescription traversal = transaction.traversalDescription().evaluator( excludeStartPosition() );
-            assertEquals( 1, Iterables.count( traversal.traverse( node( "1" ) ).relationships() ) );
+            assertEquals( 1, Iterables.count( traversal
+                    .traverse( transaction.getNodeById( node( "1" ).getId() ) ).relationships() ) );
         }
     }
 }

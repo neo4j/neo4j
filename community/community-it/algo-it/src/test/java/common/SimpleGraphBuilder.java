@@ -63,6 +63,7 @@ public class SimpleGraphBuilder
         {
             for ( Node node : nodes.values() )
             {
+                node = transaction.getNodeById( node.getId() );
                 for ( Relationship relationship : node.getRelationships() )
                 {
                     relationship.delete();

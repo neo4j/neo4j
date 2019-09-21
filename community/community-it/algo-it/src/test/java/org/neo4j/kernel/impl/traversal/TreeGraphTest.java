@@ -66,7 +66,8 @@ class TreeGraphTest extends TraversalTestBase
     {
         try ( Transaction transaction = beginTx() )
         {
-            Traverser traverser = transaction.traversalDescription().traverse( node( "1" ) );
+            Traverser traverser = transaction.traversalDescription()
+                    .traverse( transaction.getNodeById( node( "1" ).getId() ) );
             int count = 0;
             for ( Node node : traverser.nodes() )
             {
@@ -82,7 +83,8 @@ class TreeGraphTest extends TraversalTestBase
     {
         try ( Transaction transaction = beginTx() )
         {
-            Traverser traverser = transaction.traversalDescription().traverse( node( "1" ) );
+            Traverser traverser = transaction.traversalDescription()
+                    .traverse( transaction.getNodeById( node( "1" ).getId() ) );
             int count = 0;
             for ( Relationship relationship : traverser.relationships() )
             {
@@ -99,7 +101,8 @@ class TreeGraphTest extends TraversalTestBase
 
         try ( Transaction transaction = beginTx() )
         {
-            Traverser traverser = transaction.traversalDescription().traverse( node( "1" ) );
+            Traverser traverser = transaction.traversalDescription()
+                    .traverse( transaction.getNodeById( node( "1" ).getId() ) );
             int count = 0;
             for ( Path path : traverser )
             {
@@ -122,7 +125,8 @@ class TreeGraphTest extends TraversalTestBase
 
         try ( Transaction tx = beginTx() )
         {
-            Traverser traverser = tx.traversalDescription().breadthFirst().traverse( node( "1" ) );
+            Traverser traverser = tx.traversalDescription()
+                    .breadthFirst().traverse( tx.getNodeById( node( "1" ).getId() ) );
             assertLevels( traverser, levels );
             tx.commit();
         }
@@ -134,7 +138,8 @@ class TreeGraphTest extends TraversalTestBase
 
         try ( Transaction transaction = beginTx() )
         {
-            Traverser traverser = transaction.traversalDescription().depthFirst().traverse( node( "1" ) );
+            Traverser traverser = transaction.traversalDescription().depthFirst()
+                    .traverse( transaction.getNodeById( node( "1" ).getId() ) );
             int i = 0;
             for ( Path pos : traverser )
             {
@@ -151,7 +156,9 @@ class TreeGraphTest extends TraversalTestBase
         List<String> encounteredNodes = new ArrayList<>();
         try ( Transaction tx = beginTx() )
         {
-            Traverser traverser = tx.traversalDescription().order( POSTORDER_DEPTH_FIRST ).traverse( node( "1" ) );
+            Traverser traverser = tx.traversalDescription()
+                    .order( POSTORDER_DEPTH_FIRST )
+                    .traverse( tx.getNodeById( node( "1" ).getId() ) );
             for ( Path pos : traverser )
             {
                 encounteredNodes.add( (String) pos.endNode().getProperty( "name" ) );
@@ -185,7 +192,8 @@ class TreeGraphTest extends TraversalTestBase
                 "9", "A", "B", "C", "D" ) ) );
         try ( Transaction tx = beginTx() )
         {
-            Traverser traverser = tx.traversalDescription().order( POSTORDER_BREADTH_FIRST ).traverse( node( "1" ) );
+            Traverser traverser = tx.traversalDescription().order( POSTORDER_BREADTH_FIRST )
+                    .traverse( tx.getNodeById( node( "1" ).getId() ) );
             assertLevels( traverser, levels );
             tx.commit();
         }

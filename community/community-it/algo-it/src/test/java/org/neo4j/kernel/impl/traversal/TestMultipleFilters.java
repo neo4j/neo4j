@@ -113,8 +113,9 @@ class TestMultipleFilters extends TraversalTestBase
                             .count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
 
             TraversalDescription description = transaction.traversalDescription().evaluator( mustBeConnectedToK );
-            expectNodes( description.traverse( node( "a" ) ), "b", "c" );
-            expectNodes( description.evaluator( mustNotHaveMoreThanTwoOutRels ).traverse( node( "a" ) ), "c" );
+            expectNodes( description.traverse( transaction.getNodeById( node( "a" ).getId() ) ), "b", "c" );
+            expectNodes( description.evaluator( mustNotHaveMoreThanTwoOutRels )
+                    .traverse( transaction.getNodeById( node( "a" ).getId() ) ), "c" );
         }
     }
 
@@ -126,14 +127,17 @@ class TestMultipleFilters extends TraversalTestBase
             MustBeConnectedToNodeFilter mustBeConnectedToC = new MustBeConnectedToNodeFilter( getNodeWithName( transaction, "c" ) );
             MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( transaction, "e" ) );
             // Nodes connected (OUTGOING) to c (which "a" is)
-            expectNodes( transaction.traversalDescription().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
+            var aNode = transaction.getNodeById( node( "a" ).getId() );
+            expectNodes( transaction.traversalDescription()
+                    .evaluator( mustBeConnectedToC )
+                    .traverse( aNode ), "a" );
             // Nodes connected (OUTGOING) to c AND e (which none is)
             expectNodes( transaction.traversalDescription().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE )
-                    .traverse( node( "a" ) ) );
+                    .traverse( aNode ) );
             // Nodes connected (OUTGOING) to c OR e (which "a" and "b" is)
             expectNodes( transaction.traversalDescription()
                     .evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) )
-                    .traverse( node( "a" ) ), "a", "b" );
+                    .traverse( aNode ), "a", "b" );
         }
     }
 }

@@ -96,7 +96,7 @@ class TestBestFirstSelectorFactory extends Neo4jAlgoTestCase
                     return next.length() == 0 ? 0 : evaluator.getCost( next.lastRelationship(), Direction.BOTH );
                 }
             };
-            Node a = graph.getNode( transaction, "a" );
+            Node a = transaction.getNodeById( graph.getNode( transaction, "a" ).getId() );
 
             Traverser traverser = new MonoDirectionalTraversalDescription().expand( expander ).order( factory ).uniqueness( uniqueness ).traverse( a );
 

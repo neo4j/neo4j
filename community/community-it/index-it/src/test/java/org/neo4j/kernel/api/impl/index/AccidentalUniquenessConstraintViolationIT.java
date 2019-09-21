@@ -75,16 +75,17 @@ class AccidentalUniquenessConstraintViolationIT
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            fourtyOne.delete();
-            fourtyTwo.setProperty( BAR, value2 );
+            tx.getNodeById( fourtyOne.getId() ).delete();
+            tx.getNodeById( fourtyTwo.getId() ).setProperty( BAR, value2 );
             tx.commit();
         }
 
         // then
         try ( Transaction tx = db.beginTx() )
         {
+            fourtyTwo = tx.getNodeById( fourtyTwo.getId() );
             assertEquals( value2, fourtyTwo.getProperty( BAR ) );
-            assertThrows( NotFoundException.class, () -> fourtyOne.getProperty( BAR ) );
+            assertThrows( NotFoundException.class, () -> tx.getNodeById( fourtyOne.getId() ).getProperty( BAR ) );
 
             assertEquals( fourtyTwo, tx.findNode( Foo, BAR, value2 ) );
             assertNull( tx.findNode( Foo, BAR, value1 ) );

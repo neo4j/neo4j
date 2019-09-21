@@ -122,7 +122,7 @@ public class UniqueIndexApplicationIT
         }
         try ( var transaction = db.beginTx() )
         {
-            node.setProperty( "key1", "value1" );
+            transaction.getNodeById( node.getId() ).setProperty( "key1", "value1" );
             transaction.commit();
         }
     }
@@ -140,7 +140,7 @@ public class UniqueIndexApplicationIT
         }
         try ( var transaction = db.beginTx() )
         {
-            node.addLabel( label( "Label1" ) );
+            transaction.getNodeById( node.getId() ).addLabel( label( "Label1" ) );
             transaction.commit();
         }
     }
@@ -156,12 +156,12 @@ public class UniqueIndexApplicationIT
         }
         try ( var transaction = db.beginTx() )
         {
-            node.addLabel( label( "Label1" ) );
+            transaction.getNodeById( node.getId() ).addLabel( label( "Label1" ) );
             transaction.commit();
         }
         try ( var transaction = db.beginTx() )
         {
-            node.setProperty( "key1", "value1" );
+            transaction.getNodeById( node.getId() ).setProperty( "key1", "value1" );
             transaction.commit();
         }
     }

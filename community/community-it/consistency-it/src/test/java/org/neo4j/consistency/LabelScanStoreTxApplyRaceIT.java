@@ -146,7 +146,7 @@ class LabelScanStoreTxApplyRaceIT
                         {
                             try ( Transaction tx = db.beginTx() )
                             {
-                                node.delete();
+                                tx.getNodeById( node.getId() ).delete();
                                 tx.commit();
                             }
                         }
@@ -191,7 +191,7 @@ class LabelScanStoreTxApplyRaceIT
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
-                        node.delete();
+                        tx.getNodeById( node.getId() ).delete();
                         tx.commit();
                     }
                     catch ( NotFoundException e )

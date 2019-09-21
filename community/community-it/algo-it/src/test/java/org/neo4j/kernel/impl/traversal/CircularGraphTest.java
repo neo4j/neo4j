@@ -67,7 +67,7 @@ class CircularGraphTest extends TraversalTestBase
                                 relIsOfType && (Long) path.endNode().getProperty( "timestamp" ) >= timestamp;
                         return Evaluation.of( relIsOfType, !prune );
                     } )
-                    .traverse( node( "1" ) )
+                    .traverse( tx2.getNodeById( node( "1" ).getId() ) )
                     .nodes().iterator();
 
             assertEquals( "2", nodes.next().getProperty( "name" ) );

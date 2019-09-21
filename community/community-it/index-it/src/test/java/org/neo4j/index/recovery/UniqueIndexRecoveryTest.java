@@ -165,7 +165,7 @@ public class UniqueIndexRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            unLabeledNode.addLabel( LABEL );
+            tx.getNodeById( unLabeledNode.getId() ).addLabel( LABEL );
             tx.commit();
         }
     }
@@ -174,7 +174,7 @@ public class UniqueIndexRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            labeledNode.setProperty( PROPERTY_KEY, PROPERTY_VALUE );
+            tx.getNodeById( labeledNode.getId() ).setProperty( PROPERTY_KEY, PROPERTY_VALUE );
             tx.commit();
         }
     }
@@ -183,7 +183,7 @@ public class UniqueIndexRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            labeledNode.removeProperty( PROPERTY_KEY );
+            tx.getNodeById( labeledNode.getId() ).removeProperty( PROPERTY_KEY );
             tx.commit();
         }
     }

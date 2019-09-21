@@ -68,11 +68,12 @@ class TestPath extends TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverse = transaction.traversalDescription().evaluator( atDepth( 4 ) ).traverse( node( "A" ) );
+            Traverser traverse = transaction.traversalDescription().evaluator( atDepth( 4 ) )
+                    .traverse( transaction.getNodeById( node( "A" ).getId() ) );
             try ( ResourceIterator<Path> resourceIterator = traverse.iterator() )
             {
                 Path path = resourceIterator.next();
-                assertPathIsCorrect( path );
+                assertPathIsCorrect( transaction, path );
             }
         }
     }
@@ -82,7 +83,9 @@ class TestPath extends TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverse = transaction.traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
+            a = transaction.getNodeById( a.getId() );
+            Traverser traverse = transaction.traversalDescription()
+                    .evaluator( atDepth( 0 ) ).traverse( a );
             Path path = getFirstPath( traverse );
             assertContains( path.reverseNodes(), a );
 
@@ -97,11 +100,13 @@ class TestPath extends TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Traverser traverser = transaction.traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
+            Traverser traverser = transaction.traversalDescription().evaluator( atDepth( 0 ) )
+                    .traverse( transaction.getNodeById( a.getId() ) );
             Path path = getFirstPath( traverser );
             assertFalse( path.reverseRelationships().iterator().hasNext() );
 
-            Traverser traverser2 = transaction.traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
+            Traverser traverser2 = transaction.traversalDescription().evaluator( atDepth( 4 ) )
+                    .traverse( transaction.getNodeById( a.getId() ) );
             Path path2 = getFirstPath( traverser2 );
             Node[] expectedNodes = {e, d, c, b, a};
             int index = 0;
@@ -126,7 +131,7 @@ class TestPath extends TraversalTestBase
             TraversalDescription side = transaction.traversalDescription().uniqueness( Uniqueness.NODE_PATH );
             bidirectional = transaction.bidirectionalTraversalDescription().mirroredSides( side );
             Path bidirectionalPath = getFirstPath( bidirectional.traverse( a, e ) );
-            assertPathIsCorrect( bidirectionalPath );
+            assertPathIsCorrect( transaction, bidirectionalPath );
 
             Path path = getFirstPath( bidirectional.traverse( a, e ) );
             Node node = path.startNode();
@@ -164,9 +169,9 @@ class TestPath extends TraversalTestBase
         }
     }
 
-    private void assertPathIsCorrect( Path path )
+    private void assertPathIsCorrect( Transaction transaction, Path path )
     {
-        Node a = node( "A" );
+        Node a = transaction.getNodeById( node( "A" ).getId() );
         Relationship to1 = getFistRelationship( a );
         Node b = to1.getEndNode();
         Relationship to2 = getFistRelationship( b );
