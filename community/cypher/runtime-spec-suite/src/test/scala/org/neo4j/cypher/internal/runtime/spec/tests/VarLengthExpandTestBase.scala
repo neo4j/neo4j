@@ -680,6 +680,23 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
+  test("should filter on node predicate on first node") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r:*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> "+g.start.getId))
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withNoRows()
+  }
+
   test("should filter on relationship predicate") {
     // given
     val g = sineGraph()
