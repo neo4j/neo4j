@@ -28,10 +28,10 @@ trait SampleGraphs {
 
   protected def createSteelfaceGraph(): Unit = {
     val users = (0 until 1000).map(i => createLabeledNode(Map("email" -> s"user$i@mail.com"), "User"))
-    graph.inTx {
-        users.take(500).foreach(user => user.setProperty("lastName", "Steelface"+user.getId))
-        users.take(300).foreach(user => user.setProperty("firstName", "Bob"+user.getId))
-      }
+    graph.withTx( tx => {
+        users.take(500).foreach(user => tx.getNodeById(user.getId).setProperty("lastName", "Steelface"+user.getId))
+        users.take(300).foreach(user => tx.getNodeById(user.getId).setProperty("firstName", "Bob"+user.getId))
+      } )
 
     val cars = (0 until 120).map(i => createLabeledNode(Map("number" -> i), "Car"))
 

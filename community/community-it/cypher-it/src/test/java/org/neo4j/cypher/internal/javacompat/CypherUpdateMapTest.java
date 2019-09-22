@@ -75,11 +75,13 @@ class CypherUpdateMapTest
             transaction.commit();
         }
 
-        Node node2 = getNodeByIdInTx( 0 );
-
-        assertThat( node2, inTxS( not( hasProperty( "key1" ) ) ) );
-        assertThat( node2, inTxS( not( hasProperty( "key2" ) ) ) );
-        assertThat( node2, inTxS( hasProperty( "key3" ).withValue( 5678 ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node2 = transaction.getNodeById( 0 );
+            assertThat( node2, not( hasProperty( "key1" ) ) );
+            assertThat( node2, not( hasProperty( "key2" ) ) );
+            assertThat( node2, hasProperty( "key3" ).withValue( 5678 ) );
+        }
     }
 
     <T> Matcher<? super T> inTxS( final Matcher<T> inner )

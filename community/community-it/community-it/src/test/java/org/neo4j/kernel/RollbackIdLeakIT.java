@@ -169,8 +169,8 @@ class RollbackIdLeakIT
 
             try ( Transaction tx = db.beginTx() )
             {
-                node2.delete();
-                relationship2.delete();
+                tx.getNodeById( node2.getId() ).delete();
+                tx.getRelationshipById( relationship2.getId() ).delete();
                 tx.commit();
             }
 

@@ -374,11 +374,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
 
     val rels = new ArrayBuffer[Relationship]
-    inTx { _ =>
+    inTx { tx =>
       val rType = RelationshipType.withName("R")
       for (i <- 0 until nNodes) {
-        val a = nodes(i)
-        val b = nodes((i + 1) % nNodes)
+        val a = tx.getNodeById(nodes(i).getId)
+        val b = tx.getNodeById(nodes((i + 1) % nNodes).getId)
         rels += a.createRelationshipTo(b, rType)
       }
     }

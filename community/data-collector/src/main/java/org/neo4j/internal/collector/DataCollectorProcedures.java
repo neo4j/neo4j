@@ -35,6 +35,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.values.ValueMapper;
 
 @SuppressWarnings( "WeakerAccess" )
 public class DataCollectorProcedures
@@ -47,6 +48,9 @@ public class DataCollectorProcedures
 
     @Context
     public ProcedureCallContext callContext;
+
+    @Context
+    public ValueMapper valueMapper;
 
     @Admin
     @SystemProcedure
@@ -76,7 +80,7 @@ public class DataCollectorProcedures
 
         case Sections.QUERIES:
             return QueriesSection.retrieve( dataCollector.getQueryCollector().getData(),
-                                            new PlainText( dataCollector.getValueMapper() ),
+                                            new PlainText( (ValueMapper.JavaMapper) valueMapper ),
                                             RetrieveConfig.of( config ).maxInvocations );
 
         default:

@@ -355,7 +355,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       n2 = nodes(r.nextInt(POPULATION))
     } {
       checkAndSwitch()
-      n1.createRelationshipTo(n2, REL)
+      tx.getNodeById(n1.getId).createRelationshipTo(n2, REL)
     }
 
     tx.commit()

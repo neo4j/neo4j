@@ -116,9 +116,9 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
   }
 
   private def nodeGetProperty(node: Node, property: String): Long = {
-    graph.inTx {
-      node.getProperty(property).asInstanceOf[Long]
-    }
+    graph.withTx( tx => {
+      tx.getNodeById(node.getId).getProperty(property).asInstanceOf[Long]
+    } )
   }
 
 }

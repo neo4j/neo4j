@@ -213,9 +213,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def createLabeledNode(props: Map[String, Any], labels: String*): Node = {
-    val n = createNode()
-
-    inTestTx {
+    graph.withTx( tx => {
+      val n = tx.createNode();
       labels.foreach {
         name => n.addLabel(Label.label(name))
       }
@@ -223,9 +222,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       props.foreach {
         case (k, v) => n.setProperty(k, v)
       }
-    }
-
-    n
+      n
+    } )
   }
 
   def createLabeledNode(labels: String*): Node = createLabeledNode(Map[String, Any](), labels: _*)
@@ -264,12 +262,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     })
   }
 
-  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = inTestTx {
-    val r = n1.createRelationshipTo(n2, RelationshipType.withName(relType))
-
+  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = graph.withTx( tx => {
+    val r = tx.getNodeById(n1.getId).createRelationshipTo(tx.getNodeById(n2.getId), RelationshipType.withName(relType))
     props.foreach((kv) => r.setProperty(kv._1, kv._2))
     r
-  }
+  } )
 
   def relate(x: ((String, String), String)): Relationship = inTestTx {
     x match {

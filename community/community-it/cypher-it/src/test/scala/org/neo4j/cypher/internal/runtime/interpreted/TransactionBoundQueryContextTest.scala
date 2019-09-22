@@ -209,8 +209,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tracer = transactionalContext.kernelStatisticProvider
     tracer.getPageCacheHits should equal(0)
 
-    creator.getNodeById(2)
-    creator.getNodeById(1)
+    tx.getNodeById(2)
+    tx.getNodeById(1)
     val accesses = tracer.getPageCacheHits + tracer.getPageCacheMisses
     assertThat(Long.box(accesses), greaterThan(Long.box(1L)))
 

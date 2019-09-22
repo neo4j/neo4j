@@ -70,6 +70,7 @@ import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.procedure.impl.ProcedureLoginContextTransformer;
 import org.neo4j.procedure.impl.ProcedureTransactionProvider;
 import org.neo4j.procedure.impl.TerminationGuardProvider;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
@@ -251,6 +252,7 @@ public class DatabaseManagementServiceFactory
         globalProcedures.registerComponent( DependencyResolver.class, Context::dependencyResolver, false );
         globalProcedures.registerComponent( KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false );
         globalProcedures.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
+        globalProcedures.registerComponent( ValueMapper.class, Context::valueMapper, true );
 
         // Register injected public API components
         globalProcedures.registerComponent( Log.class, ctx -> proceduresLog, true );

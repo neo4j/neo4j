@@ -158,10 +158,10 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     threads.foreach(_.join())
     exceptionsThrown.foreach(throw _)
 
-    graph.inTx {
-      n1.getRelationships.asScala.size should equal(1)
-      n2.getRelationships.asScala.size should equal(1)
-    }
+    graph.withTx( tx => {
+      tx.getNodeById(n1.getId).getRelationships.asScala.size should equal(1)
+      tx.getNodeById(n2.getId).getRelationships.asScala.size should equal(1)
+    } )
   }
 
   test("merge relationship - both end nodes matched") {
@@ -193,9 +193,9 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     threads.foreach(_.join())
     exceptionsThrown.foreach(throw _)
 
-    graph.inTx {
-      n1.getRelationships.asScala.size should equal(1)
-      n2.getRelationships.asScala.size should equal(1)
-    }
+    graph.withTx( tx =>  {
+      tx.getNodeById(n1.getId).getRelationships.asScala.size should equal(1)
+      tx.getNodeById(n2.getId).getRelationships.asScala.size should equal(1)
+    } )
   }
 }
