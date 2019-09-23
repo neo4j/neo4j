@@ -17,7 +17,6 @@
 package org.neo4j.pushtocloud;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -87,8 +86,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         {
             String bearerTokenHeader = "Bearer " + bearerToken;
             long crc32Sum = calculateCrc32HashOfFile( source );
-            MutableBoolean consentConfirmed = new MutableBoolean();
-            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, bearerTokenHeader, consentConfirmed );
+            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, bearerTokenHeader );
             URL uploadLocation = initiateResumableUpload( verbose, signedURL );
             long sourceLength = outsideWorld.fileSystem().getFileSize( source.toFile() );
 
@@ -118,7 +116,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             }
             uploadProgress.done();
 
-            triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), crc32Sum, bearerTokenHeader, consentConfirmed.booleanValue() );
+            triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), crc32Sum, bearerTokenHeader );
 
             doStatusPolling( verbose, consoleURL, bearerToken );
         }
@@ -136,6 +134,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         ProgressTrackingOutputStream.Progress statusProgress =
                 new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Import status", 3L ), 0 );
         boolean firstRunning = true;
+        long importStartedTimeout = System.currentTimeMillis() + 90 * 1000; // timeout to switch from first running to loading = 1.5 minute
         while ( !statusProgress.isDone() )
         {
             String status = getDatabaseStatus( verbose, safeUrl( consoleURL + "/import/status" ), bearerTokenHeader );
@@ -150,8 +149,17 @@ public class HttpCopier implements PushToCloudCommand.Copier
                         statusProgress.rewindTo( 0 );
                         statusProgress.add( 3 );
                         statusProgress.done();
-                        break;
                     }
+                    else
+                    {
+                        boolean passedStartImportTimeout = System.currentTimeMillis() > importStartedTimeout;
+                        if ( passedStartImportTimeout )
+                        {
+                            throw new CommandFailed( "We're sorry, it couldn't be detected that the import was started, " +
+                                    "please check the console for further details." );
+                        }
+                    }
+                    break;
                 case "loading":
                     firstRunning = false;
                     statusProgress.rewindTo( 0 );
@@ -176,7 +184,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     }
 
     @Override
-    public String authenticate( boolean verbose, String consoleUrl, String username, char[] password ) throws CommandFailed
+    public String authenticate( boolean verbose, String consoleUrl, String username, char[] password, boolean consentConfirmed ) throws CommandFailed
     {
         try
         {
@@ -187,6 +195,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 connection.setRequestMethod( "POST" );
                 connection.setRequestProperty( "Authorization", "Basic " + base64Encode( username, password ) );
                 connection.setRequestProperty( "Accept", "application/json" );
+                connection.setRequestProperty( "Confirmed", String.valueOf( consentConfirmed ) );
                 int responseCode = connection.getResponseCode();
                 switch ( responseCode )
                 {
@@ -198,6 +207,18 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     throw errorResponse( verbose, connection, "Invalid username/password credentials" );
                 case HTTP_FORBIDDEN:
                     throw errorResponse( verbose, connection, "The given credentials do not give administrative access to the target database" );
+                case HTTP_CONFLICT:
+                    // the cloud target database has already been populated with data, and importing the dump file would overwrite it.
+                    boolean consent =
+                            askForBooleanConsent( "A non-empty database already exists at the given location, would you like to overwrite that database?" );
+                    if ( consent )
+                    {
+                        return authenticate( verbose, consoleUrl, username, password, true );
+                    }
+                    else
+                    {
+                        throw errorResponse( verbose, connection, "No consent to overwrite database, aborting upload" );
+                    }
                 case HTTP_OK:
                     try ( InputStream responseData = connection.getInputStream() )
                     {
@@ -222,7 +243,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     /**
      * Communication with Neo4j's cloud console, resulting in some signed URI to do the actual upload to.
      */
-    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, String bearerToken, MutableBoolean consentConfirmed )
+    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, String bearerToken )
             throws IOException, CommandFailed
     {
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
@@ -236,7 +257,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             connection.setDoOutput( true );
             try ( OutputStream postData = connection.getOutputStream() )
             {
-                postData.write( buildCrc32WithConsentJson( crc32Sum, consentConfirmed.booleanValue() ).getBytes( UTF_8 ) );
+                postData.write( buildCrc32WithConsentJson( crc32Sum ).getBytes( UTF_8 ) );
             }
 
             // Read the response
@@ -249,19 +270,6 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw updatePluginErrorResponse( connection );
             case HTTP_UNAUTHORIZED:
                 throw errorResponse( verbose, connection, "The given authorization token is invalid or has expired" );
-            case HTTP_CONFLICT:
-                // the cloud target database has already been populated with data, and importing the dump file would overwrite it.
-                boolean consent =
-                        askForBooleanConsent( "A non-empty database already exists at the given location, would you like to overwrite that database?" );
-                if ( consent )
-                {
-                    consentConfirmed.setTrue();
-                    return initiateCopy( verbose, importURL, crc32Sum, bearerToken, consentConfirmed );
-                }
-                else
-                {
-                    throw errorResponse( verbose, connection, "No consent to overwrite database, aborting upload" );
-                }
             case HTTP_ACCEPTED:
                 // the import request was accepted, and the server has not seen this dump file, meaning the import request is a new operation.
                 return safeUrl( extractSignedURIFromResponse( verbose, connection ) );
@@ -351,7 +359,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private void triggerImportProtocol( boolean verbose, URL importURL, long crc32Sum, String bearerToken, boolean consentConfirmed )
+    private void triggerImportProtocol( boolean verbose, URL importURL, long crc32Sum, String bearerToken )
             throws IOException, CommandFailed
     {
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
@@ -363,7 +371,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             connection.setDoOutput( true );
             try ( OutputStream postData = connection.getOutputStream() )
             {
-                postData.write( buildCrc32WithConsentJson( crc32Sum, consentConfirmed ).getBytes( UTF_8 ) );
+                postData.write( buildCrc32WithConsentJson( crc32Sum ).getBytes( UTF_8 ) );
             }
 
             int responseCode = connection.getResponseCode();
@@ -461,9 +469,9 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private static String buildCrc32WithConsentJson( long crc32Sum, boolean consentConfirmed )
+    private static String buildCrc32WithConsentJson( long crc32Sum )
     {
-        return String.format( "{\"Crc32\":%d%s}", crc32Sum, consentConfirmed ? ", \"Confirmed\":true" : "" );
+        return String.format( "{\"Crc32\":%d}", crc32Sum );
     }
 
     private static void safeSkip( InputStream sourceStream, long position ) throws IOException
