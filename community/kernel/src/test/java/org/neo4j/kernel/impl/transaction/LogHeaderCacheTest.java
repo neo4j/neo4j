@@ -50,7 +50,7 @@ class LogHeaderCacheTest
         final LogHeaderCache cache = new LogHeaderCache( 2 );
 
         // when
-        cache.putHeader( 5, new LogHeader( 1, 3, StoreId.DEFAULT ) );
+        cache.putHeader( 5, new LogHeader( 1, 3, StoreId.UNKNOWN ) );
         final LogHeader logHeader = cache.getLogHeader( 5 );
 
         // then
@@ -64,7 +64,7 @@ class LogHeaderCacheTest
         final LogHeaderCache cache = new LogHeaderCache( 2 );
 
         // when
-        cache.putHeader( 5, new LogHeader( 1, 3, StoreId.DEFAULT ) );
+        cache.putHeader( 5, new LogHeader( 1, 3, StoreId.UNKNOWN ) );
         cache.clear();
         final LogHeader logHeader = cache.getLogHeader( 5 );
 

@@ -223,7 +223,7 @@ class RecoveryCorruptedTransactionLogIT
         logProvider.rawMessageMatcher().assertContains( "Fail to recover all transactions. Any later transactions after" +
                 " position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET + "} are unreadable and will be truncated." );
 
-        logFiles = buildDefaultLogFiles( new StoreId( 0 ) );
+        logFiles = buildDefaultLogFiles( StoreId.UNKNOWN );
         assertEquals( 0, logFiles.getHighestLogVersion() );
         ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
         assertEquals( 1, logEntriesDistribution.size() );
@@ -805,7 +805,7 @@ class RecoveryCorruptedTransactionLogIT
         LogFiles internalLogFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withLogVersionRepository( versionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( internalLogFiles ) )
         {

@@ -104,7 +104,7 @@ class TransactionLogFileRotateAndReadRaceIT
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
         LogFile logFile = logFiles.getLogFile();

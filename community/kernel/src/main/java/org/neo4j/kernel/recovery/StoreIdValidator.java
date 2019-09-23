@@ -47,7 +47,7 @@ class StoreIdValidator implements LogHeaderVisitor
         {
             return false; // false will stop the visitor
         }
-//        if ( StoreId.DEFAULT.equals( logHeader.storeId ) )
+//        if ( StoreId.UNKNOWN.equals( logHeader.storeId ) )
 //        {
 //            return false; // Old log format do not contain store id so we can't check consistency
 //        }

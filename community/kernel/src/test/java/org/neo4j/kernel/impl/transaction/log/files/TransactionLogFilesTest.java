@@ -222,7 +222,7 @@ class TransactionLogFilesTest
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
     }
 

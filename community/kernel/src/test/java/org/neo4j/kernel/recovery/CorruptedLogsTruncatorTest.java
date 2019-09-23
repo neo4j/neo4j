@@ -81,7 +81,7 @@ class CorruptedLogsTruncatorTest
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
         logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fs );

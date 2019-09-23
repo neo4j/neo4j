@@ -30,7 +30,8 @@ import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_VERSION_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_3_5;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_4_0;
 
 public class LogHeaderReader
 {
@@ -87,9 +88,8 @@ public class LogHeaderReader
         long logVersion = decodeLogVersion( encodedLogVersions );
 
         // The header's total length differs from versions
-        if ( logFormatVersion == 6 )
+        if ( logFormatVersion == LOG_VERSION_3_5 )
         {
-            // Version 6 contains one long with the last committed tx id
             if ( !safeRead( buffer, channel, Long.BYTES, strict, fileForAdditionalErrorInformationOrNull ) )
             {
                 return null;
@@ -97,7 +97,7 @@ public class LogHeaderReader
             long previousCommittedTx = buffer.getLong();
             return new LogHeader( logFormatVersion, logVersion, previousCommittedTx );
         }
-        if ( logFormatVersion == CURRENT_LOG_FORMAT_VERSION )
+        if ( logFormatVersion == LOG_VERSION_4_0 )
         {
             if ( !safeRead( buffer, channel, LOG_HEADER_SIZE - LOG_HEADER_VERSION_SIZE, strict, fileForAdditionalErrorInformationOrNull ) )
             {
@@ -105,6 +105,7 @@ public class LogHeaderReader
             }
             long previousCommittedTx = buffer.getLong();
             StoreId storeId = new StoreId( buffer.getLong(), buffer.getLong(), buffer.getLong(), buffer.getLong(), buffer.getLong() );
+            buffer.getLong(); // reserved
             return new LogHeader( logFormatVersion, logVersion, previousCommittedTx, storeId );
         }
 

@@ -95,7 +95,7 @@ class ReversedSingleFileTransactionCursorTest
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
         logFile = logFiles.getLogFile();

@@ -25,7 +25,7 @@ import java.util.Random;
 
 public final class StoreId
 {
-    public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1, -1 );
+    public static final StoreId UNKNOWN = new StoreId( -1, -1, -1, -1, -1 );
 
     private static final Random r = new SecureRandom();
 

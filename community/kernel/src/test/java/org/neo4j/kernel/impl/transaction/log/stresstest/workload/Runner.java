@@ -130,7 +130,7 @@ public class Runner implements Callable<Long>
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), STRICT ) )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
     }
 }

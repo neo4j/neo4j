@@ -37,10 +37,10 @@ public class LogHeader
      * The total size of the current header format.
      *
      * <pre>
-     *   |<-               LOG_HEADER_SIZE              ->|
-     *   |<-LOG_HEADER_VERSION_SIZE->|
-     *   --------------------------------------------------
-     *   |          version          | last tx | store id |
+     *   |<-                      LOG_HEADER_SIZE                  ->|
+     *   |<-LOG_HEADER_VERSION_SIZE->|                               |
+     *   |-----------------------------------------------------------|
+     *   |          version          | last tx | store id | reserved |
      *  </pre>
      */
     public static final int LOG_HEADER_SIZE = LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
@@ -57,7 +57,7 @@ public class LogHeader
 
     public LogHeader( byte logFormatVersion, long logVersion, long lastCommittedTxId )
     {
-        this( logFormatVersion, logVersion, lastCommittedTxId, null );
+        this( logFormatVersion, logVersion, lastCommittedTxId, StoreId.UNKNOWN );
     }
 
     public LogHeader( byte logFormatVersion, long logVersion, long lastCommittedTxId, StoreId storeId )

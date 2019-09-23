@@ -104,7 +104,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
                 .withLogEntryReader( logEntryReader() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
         life.start();
@@ -139,7 +139,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
                 .withLogEntryReader( logEntryReader() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
 
@@ -173,7 +173,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
                 .withLogEntryReader( logEntryReader() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
 
         life.start();
@@ -271,7 +271,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
                 .withLogEntryReader( logEntryReader() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.start();
         life.add( logFiles );

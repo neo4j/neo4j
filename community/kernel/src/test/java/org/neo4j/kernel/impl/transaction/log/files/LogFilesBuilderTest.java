@@ -137,7 +137,7 @@ class LogFilesBuilderTest
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogEntryReader( logEntryReader() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         logFiles.init();
         logFiles.start();

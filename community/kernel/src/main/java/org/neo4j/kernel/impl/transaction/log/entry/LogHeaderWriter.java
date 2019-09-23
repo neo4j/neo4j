@@ -37,6 +37,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
  *  log format     1 bytes
  *  last committed 8 bytes
  *  store id       40 bytes
+ *  reserved       8 bytes
  * </pre>
  */
 public class LogHeaderWriter
@@ -58,6 +59,7 @@ public class LogHeaderWriter
         channel.putLong( storeId.getStoreVersion() );
         channel.putLong( storeId.getUpgradeTime() );
         channel.putLong( storeId.getUpgradeTxId() );
+        channel.putLong( 0 /* reserved */ );
     }
 
     public static void writeLogHeader( StoreChannel channel, LogHeader logHeader ) throws IOException
@@ -71,6 +73,7 @@ public class LogHeaderWriter
         buffer.putLong( storeId.getStoreVersion() );
         buffer.putLong( storeId.getUpgradeTime() );
         buffer.putLong( storeId.getUpgradeTxId() );
+        buffer.putLong( 0 /* reserved */ );
         buffer.flip();
         channel.writeAll( buffer );
     }

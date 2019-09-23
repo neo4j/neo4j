@@ -475,7 +475,7 @@ class TransactionLogsRecoveryTest
               PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel,
                         ByteBuffer.allocate( 1024 ) ) )
         {
-            writeLogHeader( writableLogChannel, new LogHeader( logVersion, 2L, StoreId.DEFAULT ) );
+            writeLogHeader( writableLogChannel, new LogHeader( logVersion, 2L, StoreId.UNKNOWN ) );
             Consumer<LogPositionMarker> consumer = marker ->
             {
                 try

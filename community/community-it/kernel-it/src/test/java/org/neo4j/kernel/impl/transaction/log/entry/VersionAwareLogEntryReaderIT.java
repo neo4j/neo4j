@@ -89,7 +89,7 @@ class VersionAwareLogEntryReaderIT
                 .withLogEntryReader( entryReader )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
@@ -108,7 +108,7 @@ class VersionAwareLogEntryReaderIT
                 .withLogEntryReader( entryReader )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
@@ -131,7 +131,7 @@ class VersionAwareLogEntryReaderIT
                 .withLogEntryReader( entryReader )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
@@ -191,7 +191,7 @@ class VersionAwareLogEntryReaderIT
                 .withLogEntryReader( entryReader )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {

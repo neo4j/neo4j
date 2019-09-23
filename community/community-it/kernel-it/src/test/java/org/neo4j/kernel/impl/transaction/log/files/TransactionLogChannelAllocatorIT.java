@@ -109,6 +109,6 @@ class TransactionLogChannelAllocatorIT
                 new VersionAwareLogEntryReader(), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem,
-                NullLogProvider.getInstance(), DatabaseTracer.NULL, () -> StoreId.DEFAULT );
+                NullLogProvider.getInstance(), DatabaseTracer.NULL, () -> StoreId.UNKNOWN );
     }
 }

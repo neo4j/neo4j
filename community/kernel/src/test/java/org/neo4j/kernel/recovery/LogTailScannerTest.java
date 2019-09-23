@@ -104,7 +104,7 @@ class LogTailScannerTest
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
-                .withStoreId( new StoreId( 0 ) )
+                .withStoreId( StoreId.UNKNOWN )
                 .build();
         tailScanner = new LogTailScanner( logFiles, reader, monitors );
     }

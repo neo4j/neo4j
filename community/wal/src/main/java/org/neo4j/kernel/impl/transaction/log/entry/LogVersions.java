@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.neo4j.storageengine.api.StoreId;
+
 /**
  * Since from 2.2.4 and onwards there's only one version in town, namely {@link LogEntryVersion}.
  */
@@ -29,5 +31,21 @@ public class LogVersions
         // no instances are allowed
     }
 
-    public static final byte CURRENT_LOG_FORMAT_VERSION = 7;
+    /**
+     * Total 16 bytes
+     * - 8 bytes version
+     * - 8 bytes last committed tx id
+     */
+    public static final byte LOG_VERSION_3_5 = 6;
+
+    /**
+     * Total 64 bytes
+     * - 8 bytes version
+     * - 8 bytes last committed tx id
+     * - 40 bytes {@link StoreId}
+     * - 8 bytes reserved
+     */
+    public static final byte LOG_VERSION_4_0 = 7;
+
+    public static final byte CURRENT_LOG_FORMAT_VERSION = LOG_VERSION_4_0;
 }
