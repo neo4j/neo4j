@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.schema.IndexConfigCompleter;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 
 public interface IndexingProvidersService extends IndexConfigCompleter
@@ -38,10 +38,10 @@ public interface IndexingProvidersService extends IndexConfigCompleter
     /**
      * Validate that the given value tuple can be stored in the index associated with the given schema.
      *
-     * @param schema index schema of the target index
+     * @param index the target index
      * @param tuple value tuple to validate
      */
-    void validateBeforeCommit( SchemaDescriptor schema, Value[] tuple );
+    void validateBeforeCommit( IndexDescriptor index, Value[] tuple );
 
     /**
      * Validate the given index prototype, or throw an {@link IllegalArgumentException}.

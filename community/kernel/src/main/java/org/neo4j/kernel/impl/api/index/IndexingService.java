@@ -375,7 +375,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                         throw new IllegalStateException( "What? This index was seen during recovery just now, why isn't it available now?", e );
                     }
 
-                    if ( !proxy.getDescriptor().getOwningConstraintId().isPresent() )
+                    if ( proxy.getDescriptor().getOwningConstraintId().isEmpty() )
                     {
                         // Even though this is an index backing a uniqueness constraint, the uniqueness constraint wasn't created
                         // so there's no gain in waiting for this index.
@@ -558,7 +558,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * @throws KernelException potentially thrown from index updating.
      */
     @Override
-    public void applyUpdates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates ) throws KernelException
+    public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates ) throws KernelException
     {
         if ( state == State.NOT_STARTED )
         {
@@ -577,11 +577,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
     }
 
-    private void apply( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates, IndexUpdateMode updateMode ) throws KernelException
+    private void apply( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, IndexUpdateMode updateMode ) throws KernelException
     {
         try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
         {
-            for ( IndexEntryUpdate<SchemaDescriptor> indexUpdate : updates )
+            for ( IndexEntryUpdate<IndexDescriptor> indexUpdate : updates )
             {
                 processUpdate( updaterMap, indexUpdate );
             }
@@ -621,9 +621,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         populationStarter.startPopulation();
     }
 
-    private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<SchemaDescriptor> indexUpdate ) throws IndexEntryConflictException
+    private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<IndexDescriptor> indexUpdate ) throws IndexEntryConflictException
     {
-        IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey().schema() );
+        IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey() );
         if ( updater != null )
         {
             updater.process( indexUpdate );

@@ -153,7 +153,7 @@ class IndexTxStateUpdaterTest
 
         IndexingService indexingService = mock( IndexingService.class );
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( any( IndexDescriptor.class ) ) ).thenReturn( indexProxy );
 
         indexTxUpdater = new IndexTxStateUpdater( storageReader, readOps, indexingService );
     }

@@ -1085,7 +1085,7 @@ class OperationsTest
         IndexingProvidersService indexingProvidersService = mock( IndexingProvidersService.class );
         when( indexingProvidersService.indexProviderByName( anyString() ) ).thenReturn( mock( IndexProviderDescriptor.class ) );
         AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
-        when( allStoreHolder.index( any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
+        when( allStoreHolder.index( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
         when( allStoreHolder.indexGetForName( any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
         when( allStoreHolder.constraintsGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),

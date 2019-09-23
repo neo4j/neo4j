@@ -139,12 +139,14 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
         // GIVEN
         int label;
         int propertyKey;
+        LabelSchemaDescriptor schema;
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
+            schema = SchemaDescriptor.forLabel( label, propertyKey );
+            tx.schemaWrite().indexCreate( schema );
             tx.commit();
         }
 
@@ -154,7 +156,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             assertThrows( LocksNotFrozenException.class, tx::thawLocks );
 
             // THEN
-            assertAllowedLocks( label, propertyKey, tx );
+            assertAllowedLocks( tx, schema );
         }
     }
 

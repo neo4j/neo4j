@@ -174,19 +174,24 @@ public class SchemaCache
         }
     }
 
-    public IndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
+    public IndexDescriptor getIndex( long id )
     {
-        return schemaCacheState.indexDescriptor( descriptor );
+        return schemaCacheState.getIndex( id );
+    }
+
+    public Iterator<IndexDescriptor> indexesForSchema( SchemaDescriptor descriptor )
+    {
+        return schemaCacheState.indexesForSchema( descriptor );
     }
 
     Iterator<IndexDescriptor> indexDescriptorsForLabel( int labelId )
     {
-        return schemaCacheState.indexDescriptorsForLabel( labelId );
+        return schemaCacheState.indexForLabel( labelId );
     }
 
     Iterator<IndexDescriptor> indexDescriptorsForRelationshipType( int relationshipType )
     {
-        return schemaCacheState.indexDescriptorsForRelationshipType( relationshipType );
+        return schemaCacheState.indexForRelationshipType( relationshipType );
     }
 
     IndexDescriptor indexDescriptorForName( String name )
@@ -199,7 +204,7 @@ public class SchemaCache
         return schemaCacheState.constraintByName( name );
     }
 
-    public Set<SchemaDescriptor> getIndexesRelatedTo(
+    public Set<IndexDescriptor> getIndexesRelatedTo(
             long[] changedEntityTokens, long[] unchangedEntityTokens, int[] properties,
             boolean propertyListIsComplete, EntityType entityType )
     {
@@ -236,8 +241,8 @@ public class SchemaCache
         private final MutableLongObjectMap<ConstraintDescriptor> constraintRuleById;
 
         private final Map<SchemaDescriptor,IndexDescriptor> indexDescriptors;
-        private final SchemaDescriptorLookupSet<SchemaDescriptor> indexDescriptorsByNode;
-        private final SchemaDescriptorLookupSet<SchemaDescriptor> indexDescriptorsByRelationship;
+        private final SchemaDescriptorLookupSet<IndexDescriptor> indexDescriptorsByNode;
+        private final SchemaDescriptorLookupSet<IndexDescriptor> indexDescriptorsByRelationship;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByNode;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByRelationship;
         private final Map<String,IndexDescriptor> indexDescriptorsByName;
@@ -278,7 +283,7 @@ public class SchemaCache
             this.uniquenessConstraintsByNode = new SchemaDescriptorLookupSet<>();
             this.uniquenessConstraintsByRelationship = new SchemaDescriptorLookupSet<>();
             // Now fill the node/relationship sets
-            this.indexDescriptorById.forEachValue( index -> selectIndexSetByEntityType( index.schema().entityType() ).add( index.schema() ) );
+            this.indexDescriptorById.forEachValue( index -> selectIndexSetByEntityType( index.schema().entityType() ).add( index ) );
             this.constraintRuleById.forEachValue( this::cacheUniquenessConstraint );
             this.indexDescriptorsByName = new HashMap<>( schemaCacheState.indexDescriptorsByName );
             this.constrainsByName = new HashMap<>( schemaCacheState.constrainsByName );
@@ -336,9 +341,15 @@ public class SchemaCache
             return constraints.iterator();
         }
 
-        IndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
+        IndexDescriptor getIndex( long id )
         {
-            return indexDescriptors.get( descriptor );
+            return indexDescriptorById.get( id );
+        }
+
+        Iterator<IndexDescriptor> indexesForSchema( SchemaDescriptor descriptor )
+        {
+            IndexDescriptor index = indexDescriptors.get( descriptor );
+            return index == null ? Iterators.emptyResourceIterator() : Iterators.iterator( index );
         }
 
         IndexDescriptor indexDescriptorByName( String name )
@@ -351,19 +362,17 @@ public class SchemaCache
             return constrainsByName.get( name );
         }
 
-        Iterator<IndexDescriptor> indexDescriptorsForLabel( int labelId )
+        Iterator<IndexDescriptor> indexForLabel( int labelId )
         {
-            return Iterators.map( indexDescriptors::get,
-                    getSchemaRelatedTo( indexDescriptorsByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator() );
+            return getSchemaRelatedTo( indexDescriptorsByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator();
         }
 
-        Iterator<IndexDescriptor> indexDescriptorsForRelationshipType( int relationshipType )
+        Iterator<IndexDescriptor> indexForRelationshipType( int relationshipType )
         {
-            return Iterators.map( indexDescriptors::get,
-                    getSchemaRelatedTo( indexDescriptorsByRelationship, new long[]{relationshipType}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator() );
+            return getSchemaRelatedTo( indexDescriptorsByRelationship, new long[]{relationshipType}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator();
         }
 
-        Set<SchemaDescriptor> getIndexesRelatedTo( EntityType entityType, long[] changedEntityTokens,
+        Set<IndexDescriptor> getIndexesRelatedTo( EntityType entityType, long[] changedEntityTokens,
                 long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
         {
             return getSchemaRelatedTo( selectIndexSetByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, properties,
@@ -430,7 +439,7 @@ public class SchemaCache
                     selectUniquenessConstraintSetByEntityType( entityType ).has( label );
         }
 
-        private SchemaDescriptorLookupSet<SchemaDescriptor> selectIndexSetByEntityType( EntityType entityType )
+        private SchemaDescriptorLookupSet<IndexDescriptor> selectIndexSetByEntityType( EntityType entityType )
         {
             switch ( entityType )
             {
@@ -478,7 +487,7 @@ public class SchemaCache
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
                 indexDescriptorsByName.put( rule.getName(), index );
-                selectIndexSetByEntityType( schemaDescriptor.entityType() ).add( schemaDescriptor );
+                selectIndexSetByEntityType( schemaDescriptor.entityType() ).add( index );
             }
         }
 
@@ -500,7 +509,7 @@ public class SchemaCache
                 SchemaDescriptor schema = index.schema();
                 indexDescriptors.remove( schema );
                 indexDescriptorsByName.remove( index.getName(), index );
-                selectIndexSetByEntityType( schema.entityType() ).remove( schema );
+                selectIndexSetByEntityType( schema.entityType() ).remove( index );
             }
         }
     }

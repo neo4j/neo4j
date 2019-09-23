@@ -36,7 +36,6 @@ import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -158,7 +157,7 @@ class OnlineIndexUpdatesTest
 
         onlineIndexUpdates.feed( nodeGroup( nodeCommand, propertyCommand ), relationshipGroup( null ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
-        Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator = onlineIndexUpdates.iterator();
+        Iterator<IndexEntryUpdate<IndexDescriptor>> iterator = onlineIndexUpdates.iterator();
         assertEquals( iterator.next(), IndexEntryUpdate.remove( nodeId, indexDescriptor, propertyValue, null, null ) );
         assertFalse( iterator.hasNext() );
     }
@@ -187,7 +186,7 @@ class OnlineIndexUpdatesTest
 
         onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
-        Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator = onlineIndexUpdates.iterator();
+        Iterator<IndexEntryUpdate<IndexDescriptor>> iterator = onlineIndexUpdates.iterator();
         assertEquals( iterator.next(), IndexEntryUpdate.remove( relId, indexDescriptor, propertyValue, null, null ) );
         assertFalse( iterator.hasNext() );
     }

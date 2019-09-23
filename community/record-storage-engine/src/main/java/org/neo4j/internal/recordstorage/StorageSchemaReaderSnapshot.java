@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Iterator;
 
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -39,7 +38,7 @@ class StorageSchemaReaderSnapshot implements StorageSchemaReader
     @Override
     public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
     {
-        return Iterators.iterator( schema.indexDescriptor( descriptor ) );
+        return schema.indexesForSchema( descriptor );
     }
 
     @Override

@@ -27,7 +27,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -56,7 +56,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     private final SchemaCache schemaCache;
     private final PropertyPhysicalToLogicalConverter converter;
     private final StorageReader reader;
-    private final Collection<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
+    private final Collection<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
     private StorageNodeCursor nodeCursor;
     private StorageRelationshipScanCursor relationshipCursor;
 
@@ -70,7 +70,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
+    public Iterator<IndexEntryUpdate<IndexDescriptor>> iterator()
     {
         return updates.iterator();
     }
@@ -110,7 +110,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     private void eagerlyGatherUpdates( EntityUpdates.Builder entityUpdatesBuilder, EntityType entityType )
     {
         EntityUpdates entityUpdates = entityUpdatesBuilder.build();
-        Iterable<SchemaDescriptor> relatedIndexes = schemaCache.getIndexesRelatedTo(
+        Iterable<IndexDescriptor> relatedIndexes = schemaCache.getIndexesRelatedTo(
                 entityUpdates.entityTokensChanged(),
                 entityUpdates.entityTokensUnchanged(),
                 entityUpdates.propertiesChanged(),

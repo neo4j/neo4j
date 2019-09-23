@@ -628,11 +628,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 {
                     for ( EntityUpdates update : updates )
                     {
-                        Iterable<SchemaDescriptor> relatedIndexes = schemaCache.getIndexesRelatedTo(
+                        Iterable<IndexDescriptor> relatedIndexes = schemaCache.getIndexesRelatedTo(
                                 update.entityTokensChanged(),
                                 update.entityTokensUnchanged(),
                                 update.propertiesChanged(), false, EntityType.NODE );
-                        Iterable<IndexEntryUpdate<SchemaDescriptor>> entryUpdates = update.forIndexKeys( relatedIndexes, reader, EntityType.NODE );
+                        Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates = update.forIndexKeys( relatedIndexes, reader, EntityType.NODE );
                         indexService.applyUpdates( entryUpdates );
                     }
                 }

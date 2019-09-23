@@ -66,9 +66,9 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
     /**
      * Returns all indexes (including unique) related to a property, any of the labels and the entity type.
      */
-    Collection<SchemaDescriptor> indexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType );
+    Collection<IndexDescriptor> indexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType );
 
-    Collection<SchemaDescriptor> indexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType );
+    Collection<IndexDescriptor> indexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType );
 
     Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] labels, int propertyKeyId, EntityType entityType );
 

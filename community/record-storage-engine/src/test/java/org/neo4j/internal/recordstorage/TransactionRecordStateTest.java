@@ -54,7 +54,6 @@ import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -373,12 +372,12 @@ class TransactionRecordStateTest
         // WHEN
         recordState = newTransactionRecordState();
         addLabelsToNode( recordState, nodeId, oneLabelId );
-        Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        var indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, rule1.schema(), value1 ),
-                add( nodeId, rule2.schema(), value2 ) ),
+                add( nodeId, rule1, value1 ),
+                add( nodeId, rule2, value2 ) ),
                 asSet( single( indexUpdates ) ) );
     }
 
@@ -400,12 +399,12 @@ class TransactionRecordStateTest
         recordState = newTransactionRecordState();
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, secondLabelId );
-        Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        var indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, rule1.schema(), value2 ),
-                add( nodeId, rule2.schema(), value1, value2 ) ),
+                add( nodeId, rule1, value2 ),
+                add( nodeId, rule2, value1, value2 ) ),
                 asSet( single( indexUpdates ) ) );
     }
 
@@ -426,10 +425,10 @@ class TransactionRecordStateTest
         // WHEN
         recordState = newTransactionRecordState();
         removeLabelsFromNode( recordState, nodeId, oneLabelId );
-        Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        var indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        assertEquals( asSet( remove( nodeId, rule.schema(), value1 ) ), asSet( single( indexUpdates ) ) );
+        assertEquals( asSet( remove( nodeId, rule, value1 ) ), asSet( single( indexUpdates ) ) );
     }
 
     @Test
@@ -450,12 +449,12 @@ class TransactionRecordStateTest
         recordState = newTransactionRecordState();
         recordState.nodeRemoveProperty( nodeId, propertyId1 );
         removeLabelsFromNode( recordState, nodeId, secondLabelId );
-        Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        var indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         assertEquals( asSet(
-                remove( nodeId, rule1.schema(), value1 ),
-                remove( nodeId, rule2.schema(), value1 ) ),
+                remove( nodeId, rule1, value1 ),
+                remove( nodeId, rule2, value1 ) ),
                 asSet( single( indexUpdates ) ) );
     }
 
@@ -477,12 +476,12 @@ class TransactionRecordStateTest
         recordState = newTransactionRecordState();
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         removeLabelsFromNode( recordState, nodeId, secondLabelId );
-        Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        var indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, rule2.schema(), value2 ),
-                remove( nodeId, rule3.schema(), value1 ) ),
+                add( nodeId, rule2, value2 ),
+                remove( nodeId, rule3, value1 ) ),
                 asSet( single( indexUpdates ) ) );
     }
 
@@ -508,13 +507,13 @@ class TransactionRecordStateTest
         recordState = newTransactionRecordState();
         recordState.nodeChangeProperty( nodeId, propertyId1, newValue1 );
         recordState.nodeChangeProperty( nodeId, propertyId2, newValue2 );
-        Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        var indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         assertEquals( asSet(
-                change( nodeId, rule1.schema(), value1, newValue1 ),
-                change( nodeId, rule2.schema(), value2, newValue2 ),
-                change( nodeId, rule3.schema(), array( value1, value2 ), array( newValue1, newValue2 ) ) ),
+                change( nodeId, rule1, value1, newValue1 ),
+                change( nodeId, rule2, value2, newValue2 ),
+                change( nodeId, rule3, array( value1, value2 ), array( newValue1, newValue2 ) ) ),
                 asSet( single( indexUpdates ) ) );
     }
 
@@ -538,13 +537,13 @@ class TransactionRecordStateTest
         recordState = newTransactionRecordState();
         recordState.nodeRemoveProperty( nodeId, propertyId1 );
         recordState.nodeRemoveProperty( nodeId, propertyId2 );
-        Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        var indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         assertEquals( asSet(
-                remove( nodeId, rule1.schema(), value1 ),
-                remove( nodeId, rule2.schema(), value2 ),
-                remove( nodeId, rule3.schema(), value1, value2 ) ),
+                remove( nodeId, rule1, value1 ),
+                remove( nodeId, rule2, value2 ),
+                remove( nodeId, rule3, value1, value2 ) ),
                 asSet( single( indexUpdates ) ) );
     }
 
@@ -800,13 +799,13 @@ class TransactionRecordStateTest
         addLabelsToNode( recordState, nodeId, oneLabelId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
-        Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> updates = indexUpdatesOf( neoStores, recordState );
+        var updates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         assertEquals( asSet(
-                add( nodeId, rule1.schema(), value1 ),
-                add( nodeId, rule2.schema(), value2 ),
-                add( nodeId, rule3.schema(), value1, value2 ) ),
+                add( nodeId, rule1, value1 ),
+                add( nodeId, rule2, value2 ),
+                add( nodeId, rule3, value1, value2 ) ),
                 asSet( single( updates ) ) );
     }
 
@@ -1466,20 +1465,20 @@ class TransactionRecordStateTest
         assertEquals( types.length, cursor, "Not enough relationship group records found in chain for " + node );
     }
 
-    private Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )
+    private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )
             throws IOException, TransactionFailureException
     {
         return indexUpdatesOf( neoStores, transaction( state ) );
     }
 
-    private Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdatesOf( NeoStores neoStores, CommandsToApply transaction )
+    private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf( NeoStores neoStores, CommandsToApply transaction )
             throws IOException
     {
         PropertyCommandsExtractor extractor = new PropertyCommandsExtractor();
         transaction.accept( extractor );
 
         StorageReader reader = new RecordStorageReader( neoStores );
-        List<Iterable<IndexEntryUpdate<SchemaDescriptor>>> updates = new ArrayList<>();
+        List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates = new ArrayList<>();
         OnlineIndexUpdates onlineIndexUpdates =
                 new OnlineIndexUpdates( neoStores.getNodeStore(), schemaCache, new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ), reader );
         onlineIndexUpdates.feed( extractor.getNodeCommands(), extractor.getRelationshipCommands() );

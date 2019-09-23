@@ -27,7 +27,7 @@ import java.util.List;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.NestingIterator;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.util.concurrent.Work;
@@ -64,12 +64,12 @@ public class IndexUpdatesWork implements Work<IndexUpdateListener,IndexUpdatesWo
         }
     }
 
-    private Iterable<IndexEntryUpdate<SchemaDescriptor>> combinedUpdates()
+    private Iterable<IndexEntryUpdate<IndexDescriptor>> combinedUpdates()
     {
         return () -> new NestingIterator<>( updates.iterator() )
         {
             @Override
-            protected Iterator<IndexEntryUpdate<SchemaDescriptor>> createNestedIterator( IndexUpdates item )
+            protected Iterator<IndexEntryUpdate<IndexDescriptor>> createNestedIterator( IndexUpdates item )
             {
                 return item.iterator();
             }

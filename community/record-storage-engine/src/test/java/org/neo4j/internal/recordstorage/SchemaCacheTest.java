@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -51,6 +52,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -220,16 +222,16 @@ class SchemaCacheTest
         // Given
         SchemaCache cache = newSchemaCache();
 
+        IndexDescriptor expected;
         cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
-        cache.addSchemaRule( newIndexRule( 2L, 1, 3 ) );
+        cache.addSchemaRule( expected = newIndexRule( 2L, 1, 3 ) );
         cache.addSchemaRule( newIndexRule( 3L, 2, 2 ) );
 
         // When
-        LabelSchemaDescriptor schema = forLabel( 1, 3 );
-        IndexDescriptor descriptor = cache.indexDescriptor( schema );
+        IndexDescriptor actual = single( cache.indexesForSchema( forLabel( 1, 3 ) ) );
 
         // Then
-        assertThat( descriptor.schema(), equalTo( schema ) );
+        assertThat( actual, equalTo( expected ) );
     }
 
     @Test
@@ -262,10 +264,10 @@ class SchemaCacheTest
         SchemaCache schemaCache = newSchemaCache();
 
         // When
-        IndexDescriptor schemaIndexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
+        Iterator<IndexDescriptor> iterator = schemaCache.indexesForSchema( forLabel( 1, 1 ) );
 
         // Then
-        assertNull( schemaIndexDescriptor );
+        assertFalse( iterator.hasNext() );
     }
 
     @Test
@@ -406,7 +408,7 @@ class SchemaCacheTest
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema3_4.schema(), node35_8.schema() ) );
+                containsInAnyOrder( schema3_4, node35_8 ) );
     }
 
     @Test
@@ -415,7 +417,7 @@ class SchemaCacheTest
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat(
                 cache.getIndexesRelatedTo( noEntityToken, entityTokens( 3, 4, 5 ), properties( 4 ), false, NODE ),
-                containsInAnyOrder( schema3_4.schema() ) );
+                containsInAnyOrder( schema3_4 ) );
     }
 
     @Test
@@ -423,7 +425,7 @@ class SchemaCacheTest
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), entityTokens( 3, 4 ), properties(), false, NODE ),
-                containsInAnyOrder( schema5_6_7.schema(), schema5_8.schema(), node35_8.schema() ) );
+                containsInAnyOrder( schema5_6_7, schema5_8, node35_8 ) );
     }
 
     @Test
@@ -432,7 +434,7 @@ class SchemaCacheTest
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat(
                 cache.getIndexesRelatedTo( entityTokens( 3 ), entityTokens( 4, 5 ), properties( 7 ), false, NODE ),
-                containsInAnyOrder( schema3_4.schema(), schema5_6_7.schema(), node35_8.schema() ) );
+                containsInAnyOrder( schema3_4, schema5_6_7, node35_8 ) );
     }
 
     @Test
@@ -441,11 +443,11 @@ class SchemaCacheTest
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat(
                 cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties( 4 ), false, NODE ),
-                containsInAnyOrder( schema3_4.schema(), node35_8.schema() ) );
+                containsInAnyOrder( schema3_4, node35_8 ) );
 
         assertThat(
                 cache.getIndexesRelatedTo( noEntityToken, entityTokens( 5 ), properties( 6, 7 ), false, NODE ),
-                containsInAnyOrder( schema5_6_7.schema() ) );
+                containsInAnyOrder( schema5_6_7 ) );
     }
 
     @Test
@@ -453,13 +455,13 @@ class SchemaCacheTest
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( noEntityToken, noEntityToken, properties(), false, NODE ),
-                emptyIterableOf( SchemaDescriptor.class ) );
+                emptyIterableOf( IndexDescriptor.class ) );
 
         assertTrue( cache.getIndexesRelatedTo( entityTokens( 2 ), noEntityToken, properties(), false, NODE ).isEmpty() );
 
         assertThat(
                 cache.getIndexesRelatedTo( noEntityToken, entityTokens( 2 ), properties( 1 ), false, NODE ),
-                emptyIterableOf( SchemaDescriptor.class ) );
+                emptyIterableOf( IndexDescriptor.class ) );
 
         assertTrue( cache.getIndexesRelatedTo( entityTokens( 2 ), entityTokens( 2 ), properties( 1 ), false, NODE ).isEmpty() );
     }
@@ -469,10 +471,10 @@ class SchemaCacheTest
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema3_4.schema(), node35_8.schema() ) );
+                containsInAnyOrder( schema3_4, node35_8 ) );
 
         assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema5_8.schema(), schema5_6_7.schema(), node35_8.schema() ) );
+                containsInAnyOrder( schema5_8, schema5_6_7, node35_8 ) );
     }
 
     @Test
@@ -480,10 +482,10 @@ class SchemaCacheTest
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, RELATIONSHIP ),
-                containsInAnyOrder( rel35_8.schema() ) );
+                containsInAnyOrder( rel35_8 ) );
 
         assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, RELATIONSHIP ),
-                containsInAnyOrder( rel35_8.schema() ) );
+                containsInAnyOrder( rel35_8 ) );
     }
 
     @Test
@@ -492,15 +494,15 @@ class SchemaCacheTest
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         cache.removeSchemaRule( node35_8.getId() );
         assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema3_4.schema() ) );
+                containsInAnyOrder( schema3_4 ) );
         assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, RELATIONSHIP ),
-                containsInAnyOrder( rel35_8.schema() ) );
+                containsInAnyOrder( rel35_8 ) );
 
         cache.removeSchemaRule( 7 );
         assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, NODE ),
-                containsInAnyOrder( schema5_8.schema(), schema5_6_7.schema() ) );
+                containsInAnyOrder( schema5_8, schema5_6_7 ) );
         assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), noEntityToken, properties(), false, RELATIONSHIP ),
-                containsInAnyOrder( rel35_8.schema() ) );
+                containsInAnyOrder( rel35_8 ) );
 
     }
 
@@ -595,9 +597,9 @@ class SchemaCacheTest
         cache.addSchemaRule( index3 );
 
         assertEquals( List.of( index1, index2, index3 ), completed );
-        assertEquals( capability, cache.indexDescriptor( index1.schema() ).getCapability() );
-        assertEquals( capability, cache.indexDescriptor( index2.schema() ).getCapability() );
-        assertEquals( capability, cache.indexDescriptor( index3.schema() ).getCapability() );
+        assertEquals( capability, cache.getIndex( index1.getId() ).getCapability() );
+        assertEquals( capability, cache.getIndex( index2.getId() ).getCapability() );
+        assertEquals( capability, cache.getIndex( index3.getId() ).getCapability() );
     }
 
     @Test
@@ -611,7 +613,7 @@ class SchemaCacheTest
         assertTrue( cache.hasConstraintRule( constraintId ) );
         assertTrue( cache.hasConstraintRule( constraint ) );
         assertFalse( cache.hasConstraintRule( indexId ) );
-        assertTrue( cache.hasIndex( index.schema() ) );
+        assertTrue( cache.hasIndex( index ) );
     }
 
     @Test

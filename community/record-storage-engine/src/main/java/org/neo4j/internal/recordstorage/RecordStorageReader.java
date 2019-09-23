@@ -27,7 +27,6 @@ import java.util.function.Function;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -91,7 +90,7 @@ public class RecordStorageReader implements StorageReader
     @Override
     public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
     {
-        return Iterators.iterator( schemaCache.indexDescriptor( descriptor ) );
+        return schemaCache.indexesForSchema( descriptor );
     }
 
     @Override
@@ -131,13 +130,13 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public Collection<SchemaDescriptor> indexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
+    public Collection<IndexDescriptor> indexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
     {
         return schemaCache.getIndexesRelatedTo( EMPTY_LONG_ARRAY, labels, new int[]{propertyKeyId}, false, entityType );
     }
 
     @Override
-    public Collection<SchemaDescriptor> indexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType )
+    public Collection<IndexDescriptor> indexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType )
     {
         return schemaCache.getIndexesRelatedTo( labels, PrimitiveLongCollections.EMPTY_LONG_ARRAY, propertyKeyIds, true, entityType );
     }
