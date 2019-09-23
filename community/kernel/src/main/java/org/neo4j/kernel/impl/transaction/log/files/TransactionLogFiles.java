@@ -129,7 +129,14 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     @Override
     public LogHeader extractHeader( long version ) throws IOException
     {
-        return readLogHeader( fileSystem, getLogFileForVersion( version ) );
+        LogHeader logHeader = logHeaderCache.getLogHeader( version );
+        if ( logHeader == null )
+        {
+            logHeader = readLogHeader( fileSystem, getLogFileForVersion( version ) );
+            logHeaderCache.putHeader( version, logHeader );
+        }
+
+        return logHeader;
     }
 
     @Override

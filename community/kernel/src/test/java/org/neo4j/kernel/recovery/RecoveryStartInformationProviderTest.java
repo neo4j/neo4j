@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider.Monitor;
+import org.neo4j.storageengine.api.StoreId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -71,7 +72,7 @@ class RecoveryStartInformationProviderTest
         LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
         when( tailScanner.getTailInformation() )
                 .thenReturn( new LogTailInformation( new CheckPoint( checkPointLogPosition ), true, 10L, logVersion,
-                        currentLogVersion, LogEntryVersion.LATEST_VERSION ) );
+                        currentLogVersion, LogEntryVersion.LATEST_VERSION, StoreId.UNKNOWN ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( tailScanner, monitor ).get();

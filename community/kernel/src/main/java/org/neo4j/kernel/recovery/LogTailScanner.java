@@ -37,8 +37,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.Math.min;
 import static java.lang.Math.subtractExact;
@@ -97,10 +99,13 @@ public class LogTailScanner
         {
             oldestVersionFound = version;
             CheckPoint latestCheckPoint = null;
+            StoreId storeId = StoreId.UNKNOWN;
             try ( LogVersionedStoreChannel channel = logFiles.openForVersion( version );
                   ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel );
                   LogEntryCursor cursor = new LogEntryCursor( logEntryReader, readAheadLogChannel ) )
             {
+                LogHeader logHeader = logFiles.extractHeader( version );
+                storeId = logHeader.storeId;
                 LogEntry entry;
                 while ( cursor.next() )
                 {
@@ -155,7 +160,7 @@ public class LogTailScanner
             if ( latestCheckPoint != null )
             {
                 return checkpointTailInformation( highestLogVersion, latestStartEntry, oldestVersionFound,
-                        latestLogEntryVersion, latestCheckPoint, corruptedTransactionLogs );
+                        latestLogEntryVersion, latestCheckPoint, corruptedTransactionLogs, storeId );
             }
 
             version--;
@@ -235,9 +240,9 @@ public class LogTailScanner
         }
     }
 
-    protected LogTailInformation checkpointTailInformation( long highestLogVersion, LogEntryStart latestStartEntry,
+    LogTailInformation checkpointTailInformation( long highestLogVersion, LogEntryStart latestStartEntry,
             long oldestVersionFound, LogEntryVersion latestLogEntryVersion, CheckPoint latestCheckPoint,
-            boolean corruptedTransactionLogs ) throws IOException
+            boolean corruptedTransactionLogs, StoreId storeId ) throws IOException
     {
         LogPosition checkPointLogPosition = latestCheckPoint.getLogPosition();
         ExtractedTransactionRecord transactionRecord = extractFirstTxIdAfterPosition( checkPointLogPosition, highestLogVersion );
@@ -247,7 +252,7 @@ public class LogTailScanner
                         (latestStartEntry.getStartPosition().compareTo( latestCheckPoint.getLogPosition() ) >= 0));
         boolean corruptedLogs = transactionRecord.isFailure() || corruptedTransactionLogs;
         return new LogTailInformation( latestCheckPoint, corruptedLogs || startRecordAfterCheckpoint,
-                firstTxIdAfterPosition, oldestVersionFound, highestLogVersion, latestLogEntryVersion );
+                firstTxIdAfterPosition, oldestVersionFound, highestLogVersion, latestLogEntryVersion, storeId );
     }
 
     /**
@@ -420,17 +425,18 @@ public class LogTailScanner
         public final long currentLogVersion;
         public final LogEntryVersion latestLogEntryVersion;
         private final boolean recordAfterCheckpoint;
+        public final StoreId lastStoreId; // StoreId of the transaction log that contains the checkpoint entry
 
         public LogTailInformation( boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint,
                 long oldestLogVersionFound, long currentLogVersion,
                 LogEntryVersion latestLogEntryVersion )
         {
             this( null, recordAfterCheckpoint, firstTxIdAfterLastCheckPoint, oldestLogVersionFound, currentLogVersion,
-                    latestLogEntryVersion );
+                    latestLogEntryVersion, StoreId.UNKNOWN );
         }
 
         LogTailInformation( CheckPoint lastCheckPoint, boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint,
-                long oldestLogVersionFound, long currentLogVersion, LogEntryVersion latestLogEntryVersion )
+                long oldestLogVersionFound, long currentLogVersion, LogEntryVersion latestLogEntryVersion, StoreId lastStoreId )
         {
             this.lastCheckPoint = lastCheckPoint;
             this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
@@ -438,6 +444,7 @@ public class LogTailScanner
             this.currentLogVersion = currentLogVersion;
             this.latestLogEntryVersion = latestLogEntryVersion;
             this.recordAfterCheckpoint = recordAfterCheckpoint;
+            this.lastStoreId = lastStoreId;
         }
 
         public boolean commitsAfterLastCheckpoint()

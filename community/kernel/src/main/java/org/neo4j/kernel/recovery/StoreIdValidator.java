@@ -29,9 +29,9 @@ import static org.neo4j.util.FeatureToggles.flag;
 /**
  * Helper to validate that the store id of the transaction logs match the current store we are doing recovery on
  */
-class StoreIdValidator implements LogHeaderVisitor
+public class StoreIdValidator implements LogHeaderVisitor
 {
-    private static final boolean ignoreStoreId = flag( StoreIdValidator.class, "ignoreStoreId", false );
+    public static final boolean IGNORE_STORE_ID = flag( StoreIdValidator.class, "ignoreStoreId", false );
 
     private final StoreId storeStoreId;
 
@@ -43,7 +43,7 @@ class StoreIdValidator implements LogHeaderVisitor
     @Override
     public boolean visit( LogHeader logHeader, LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog )
     {
-        if ( ignoreStoreId )
+        if ( IGNORE_STORE_ID )
         {
             return false; // false will stop the visitor
         }

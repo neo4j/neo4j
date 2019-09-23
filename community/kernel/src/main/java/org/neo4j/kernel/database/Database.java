@@ -175,6 +175,7 @@ import static org.neo4j.kernel.database.DatabaseFileHelper.filesToDeleteOnTrunca
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
+import static org.neo4j.kernel.recovery.StoreIdValidator.IGNORE_STORE_ID;
 
 public class Database extends LifecycleAdapter
 {
@@ -370,6 +371,8 @@ public class Database extends LifecycleAdapter
                     new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( fail_on_corrupted_log_files ) );
             LogVersionUpgradeChecker.check( tailScanner, databaseConfig );
 
+            validateStoreId( tailScanner );
+
             performRecovery( fs, databasePageCache, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
                     extensionFactories,
                     Optional.of( tailScanner ) );
@@ -480,6 +483,23 @@ public class Database extends LifecycleAdapter
          */
         databaseHealth.healed();
         started = true;
+    }
+
+    private void validateStoreId( LogTailScanner tailScanner ) throws IOException
+    {
+        if ( !IGNORE_STORE_ID )
+        {
+            StoreId txStoreId = tailScanner.getTailInformation().lastStoreId;
+            if ( !StoreId.UNKNOWN.equals( txStoreId ) )
+            {
+                StoreId storeId = storageEngineFactory.storeId( databaseLayout, databasePageCache );
+                if ( !storeId.equals( txStoreId ) )
+                {
+                    throw new RuntimeException( "Mismatching store id. Store StoreId: " + storeId +
+                            ". Transaction log StoreId: " + txStoreId );
+                }
+            }
+        }
     }
 
     private LifeSupport initializeExtensions( Dependencies dependencies )

@@ -295,7 +295,7 @@ class LogTailScannerTest
             new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
         LogTailInformation logTailInformation = tailScanner.checkpointTailInformation( endLogVersion, startEntry,
-            endLogVersion, latestLogEntryVersion, checkPoint, false );
+            endLogVersion, latestLogEntryVersion, checkPoint, false, StoreId.UNKNOWN );
 
         assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, endLogVersion, logTailInformation );
     }

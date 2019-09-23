@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 public class LogHeaderCache
 {
-    private final LruCache<Long /*log version*/,LogHeader /*last committed tx*/> logHeaderCache;
+    private final LruCache<Long,LogHeader> logHeaderCache;
 
     public LogHeaderCache( int headerCacheSize )
     {
