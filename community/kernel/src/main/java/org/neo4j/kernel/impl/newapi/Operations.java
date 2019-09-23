@@ -963,8 +963,8 @@ public class Operations implements Write, SchemaWrite
         // Equivalent index
         IndexDescriptor indexWithSameSchema = allStoreHolder.index( prototype.schema() );
         String name = prototypeName.get();
-        if ( indexWithSameSchema.getName().equals( name ) &&              // - Same name
-             indexWithSameSchema.isUnique() == prototype.isUnique() )     // - Same index type
+        if ( indexWithSameSchema.getName().equals( name ) &&
+             indexWithSameSchema.isUnique() == prototype.isUnique() )
         {
             throw new EquivalentSchemaRuleAlreadyExistsException( indexWithSameSchema, INDEX_CREATION, tokenNameLookup );
         }
@@ -1037,7 +1037,7 @@ public class Operations implements Write, SchemaWrite
 
     private void assertSchemaRuleWithNameDoesNotExist( String name ) throws IndexWithNameAlreadyExistsException, ConstraintWithNameAlreadyExistsException
     {
-        // Check constraints first because some of them will also be backed by constraint
+        // Check constraints first because some of them will also be backed by indexes
         final ConstraintDescriptor constraintWithSameName = allStoreHolder.constraintGetForName( name );
         if ( constraintWithSameName != null )
         {
@@ -1260,7 +1260,7 @@ public class Operations implements Write, SchemaWrite
 
     private static boolean propertyHasChanged( Value lhs, Value rhs )
     {
-        //It is not enough to check equality here since by our equality semantics `int == tofloat(int)` is `true`
+        //It is not enough to check equality here since by our equality semantics `int == toFloat(int)` is `true`
         //so by only checking for equality users cannot change type of property without also "changing" the value.
         //Hence the extra type check here.
         return !lhs.isSameValueTypeAs( rhs ) || !lhs.equals( rhs );
