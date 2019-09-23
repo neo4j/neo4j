@@ -524,15 +524,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case GrantDatabaseAction(_, action, database, roleName) =>
         val (dbName, actionName) = Prettifier.extractDbScope(database, action)
-        PlanDescriptionImpl(id, "GrantTraverse", NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
+        PlanDescriptionImpl(id, "GrantDatabaseAction", NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
 
       case DenyDatabaseAction(_, action, database, roleName) =>
         val (dbName, actionName) = Prettifier.extractDbScope(database, action)
-        PlanDescriptionImpl(id, "DenyTraverse", NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
+        PlanDescriptionImpl(id, "DenyDatabaseAction", NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
 
       case RevokeDatabaseAction(_, action, database, roleName, revokeType) =>
         val (dbName, actionName) = Prettifier.extractDbScope(database, action)
-        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeTraverse", revokeType), NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
+        PlanDescriptionImpl(id, Prettifier.revokeOperation("RevokeDatabaseAction", revokeType), NoChildren, Seq(DatabaseAction(actionName), Database(dbName), Role(roleName)), variables)
 
       case GrantTraverse(_, database, qualifier, roleName) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
