@@ -22,6 +22,7 @@ package org.neo4j.db;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 
 import org.neo4j.configuration.Config;
@@ -49,19 +50,20 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.Exceptions.findCauseOrSuppressed;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
-@EphemeralTestDirectoryExtension
+@TestDirectoryExtension
 class DatabaseStartupTest
 {
     @Inject
@@ -150,6 +152,47 @@ class DatabaseStartupTest
             Optional<Throwable> upgradeException = findCauseOrSuppressed( dbStateService.causeOfFailure( databaseService.databaseId() ).get(),
                     e -> e instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
             assertTrue( upgradeException.isPresent() );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void startDatabaseWithWrongTransactionFilesShouldFail() throws IOException
+    {
+        // Create a store
+        File storeDirectory = testDirectory.storeDir();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        DatabaseLayout databaseLayout = db.databaseLayout();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode();
+            tx.commit();
+        }
+        managementService.shutdown();
+
+        // Change store id component
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+                ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
+                PageCache pageCache = createPageCache( fileSystem, scheduler ) )
+        {
+            long newTime = System.currentTimeMillis() + 1;
+            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime );
+        }
+
+        // Try to start
+        managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
+        try
+        {
+            db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            assertFalse( db.isAvailable( 10 ) );
+            DatabaseManager<?> databaseManager = getDatabaseManager( db );
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseLayout.getDatabaseName() ).get();
+            assertTrue( databaseContext.isFailed() );
+            assertTrue( databaseContext.failureCause().getCause().getMessage().contains( "Mismatching store id" ) );
         }
         finally
         {

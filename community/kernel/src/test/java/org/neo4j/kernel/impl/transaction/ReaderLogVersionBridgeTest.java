@@ -103,7 +103,8 @@ class ReaderLogVersionBridgeTest
                     buffer.putLong( 3 );
                     buffer.putLong( 4 );
                     buffer.putLong( 5 );
-                    return Long.BYTES * 6;
+                    buffer.putLong( 0 ); // reserved
+                    return Long.BYTES * 7;
                 }
                 throw new AssertionError( "Should only be called twice." );
             }

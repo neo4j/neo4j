@@ -140,7 +140,8 @@ class LogHeaderReaderTest
                     buffer.putLong( expectedStoreId.getStoreVersion() );
                     buffer.putLong( expectedStoreId.getUpgradeTime() );
                     buffer.putLong( expectedStoreId.getUpgradeTxId() );
-                    return Long.BYTES * 6;
+                    buffer.putLong( 0 ); // reserved
+                    return Long.BYTES * 7;
                 }
                 throw new AssertionError( "Should only be called 3 times" );
             }

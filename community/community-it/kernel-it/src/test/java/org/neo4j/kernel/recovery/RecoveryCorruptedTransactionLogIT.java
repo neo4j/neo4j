@@ -251,7 +251,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void startWithTransactionLogsWithDataAfterLastEntryAndCorruptedLogsRecoveryEnabled() throws IOException
     {
-        long initialTransactionOffset = 1110;
+        long initialTransactionOffset = HEADER_OFFSET + 1054;
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         logFiles = buildDefaultLogFiles( database.storeId() );
@@ -345,7 +345,8 @@ class RecoveryCorruptedTransactionLogIT
 
         logProvider.rawMessageMatcher().assertContains( "Fail to read transaction log version 0." );
         logProvider.internalToStringMessageMatcher().assertContains(
-                "Transaction log files with version 0 has 50 unreadable bytes. Was able to read upto " + (1072 + HEADER_OFFSET) + " but 1178 is available." );
+                "Transaction log files with version 0 has 50 unreadable bytes. Was able to read upto " + (1072 + HEADER_OFFSET) +
+                        " but " + (1122 + HEADER_OFFSET) + " is available." );
         logProvider.rawMessageMatcher().assertContains(
                 "Recovery required from position LogPosition{logVersion=0, byteOffset=" + (1054 + HEADER_OFFSET)  + "}" );
     }
