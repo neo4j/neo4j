@@ -576,7 +576,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 asList( native30Index1, native30Index2, nativeBtree10Index ), internalLogProvider, userLogProvider,
-                IndexingService.NO_MONITOR, schemaState, indexStatisticsStore,false );
+                IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, false );
 
         // when
         indexingService.init();

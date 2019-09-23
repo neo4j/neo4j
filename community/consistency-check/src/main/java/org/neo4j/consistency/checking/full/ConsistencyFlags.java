@@ -37,7 +37,6 @@ public class ConsistencyFlags
             boolean checkIndexStructure,
             boolean checkLabelScanStore,
             boolean checkPropertyOwners )
-
     {
         this.checkGraph = checkGraph;
         this.checkIndexes = checkIndexes;
