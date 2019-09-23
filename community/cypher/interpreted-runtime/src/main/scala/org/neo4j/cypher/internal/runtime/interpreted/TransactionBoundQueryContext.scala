@@ -49,7 +49,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
+import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
 import org.neo4j.kernel.api.{ResourceManager => _, _}
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
@@ -714,7 +714,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     try {
       IdempotentResult(ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)))
     } catch {
-      case _: AlreadyIndexedException =>
+      case _: EquivalentSchemaRuleAlreadyExistsException =>
         val indexReference = ktx.schemaRead().index(labelId, propertyKeyIds:_*)
         if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
           val message = ktx.schemaRead().indexGetFailure(indexReference)
@@ -733,7 +733,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), null)
     true
   } catch {
-    case _: AlreadyConstrainedException => false
+    case _: EquivalentSchemaRuleAlreadyExistsException => false
   }
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
@@ -744,7 +744,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), null)
     true
   } catch {
-    case _: AlreadyConstrainedException => false
+    case _: EquivalentSchemaRuleAlreadyExistsException => false
   }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
@@ -757,7 +757,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         SchemaDescriptor.forLabel(labelId, propertyKeyId), null)
       true
     } catch {
-      case _: AlreadyConstrainedException => false
+      case _: EquivalentSchemaRuleAlreadyExistsException => false
     }
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
@@ -770,7 +770,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         SchemaDescriptor.forRelType(relTypeId, propertyKeyId), null)
       true
     } catch {
-      case _: AlreadyConstrainedException => false
+      case _: EquivalentSchemaRuleAlreadyExistsException => false
     }
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
