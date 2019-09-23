@@ -377,19 +377,19 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query. " +
                   "If enabled, calling `dbms.listQueries` will display the allocated bytes. " +
-                  "If enabled, the maximum allocated bytes of a query can be limited using `dbms.query_memory_max`. " +
+                  "If enabled, the maximum allocated bytes of a query can be limited using `dbms.query_max_allocations`. " +
                   "This can also be logged in the query log by using `dbms.logs.query.allocation_logging_enabled`." )
     public static final Setting<Boolean> track_query_allocation =
             newBuilder( "dbms.track_query_allocation", BOOL, true ).dynamic().build();
 
-    @Description( "The maximum amount of heap memory to use in a transaction, in bytes (or kilobytes with the 'k' " +
-                  "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'. If a transaction exceeds this limit, it will " +
-                  "be terminated. Determining the current heap memory used by a transaction is a rough estimate and not " +
-                  "an exact measurement. If no memory limit is configured, transactions will be allowed to use as much heap " +
-                  "memory as needed. This could potentially lead to transactions consuming more heap memory than available, " +
+    @Description( "The maximum amount of heap memory allocations to for cypher to perform on a single query, in bytes (or kilobytes with the 'k' " +
+                  "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'. If a query exceeds this limit, it will " +
+                  "be terminated. Determining the heap memory allocations done by a query is a rough estimate and not " +
+                  "an exact measurement. If no memory limit is configured, queries will be allowed to allocate as much heap " +
+                  "memory as needed. This could potentially lead to queries consuming more heap memory than available, " +
                   "which will kill the Neo4j server." )
     public static final Setting<Long> query_max_memory =
-            newBuilder( "dbms.query_memory_max", BYTES, BYTES.parse( "0" ) ).addConstraint( min( 0L ) ).dynamic().build();
+            newBuilder( "cypher.query_max_allocations", BYTES, BYTES.parse( "0" ) ).addConstraint( min( 0L ) ).dynamic().build();
 
     @Description( "Enable tracing of morsel runtime scheduler." )
     @Internal
