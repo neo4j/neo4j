@@ -39,7 +39,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   test("createIndex") {
     // WHEN
-    execute("CREATE INDEX ON :Person(name)")
+    execute("CREATE INDEX FOR (n:Person) ON (n.name)")
 
     // THEN
     graph.withTx(tx => {
@@ -49,10 +49,10 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   test("createIndexShouldBeIdempotent") {
     // GIVEN
-    execute("CREATE INDEX ON :Person(name)")
+    execute("CREATE INDEX FOR (n:Person) ON (n.name)")
 
     // WHEN
-    execute("CREATE INDEX ON :Person(name)")
+    execute("CREATE INDEX FOR (n:Person) ON (n.name)")
 
     // THEN no exception is thrown
   }
@@ -62,7 +62,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     val graph = createDbWithFailedIndex
     try {
       // WHEN THEN
-      val e = intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
+      val e = intercept[FailedIndexException](execute("CREATE INDEX FOR (n:Person) ON (n.name)"))
       e.getMessage should include (org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_MESSAGE)
     } finally {
       managementService.shutdown()
@@ -71,7 +71,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   test("dropIndex") {
     // GIVEN
-    execute("CREATE INDEX ON :Person(name)")
+    execute("CREATE INDEX FOR (n:Person) ON (n.name)")
 
     // WHEN
     execute("DROP INDEX ON :Person(name)")
@@ -123,7 +123,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     graph = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     eengine = createEngine(graph)
     execute("create (:Person {name:42})")
-    execute("CREATE INDEX ON :Person(name)")
+    execute("CREATE INDEX FOR (n:Person) ON (n.name)")
     val tx = graph.getGraphDatabaseService.beginTx()
     try {
       tx.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)

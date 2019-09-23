@@ -2339,7 +2339,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( "CREATE INDEX ON :Person(name)" ).close();
+            tx.execute( "CREATE INDEX FOR (n:Person) ON (n.name)" ).close();
             tx.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
             tx.commit();
         }
@@ -2367,7 +2367,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( "CREATE INDEX ON :Person(name)" ).close();
+            tx.execute( "CREATE INDEX FOR (n:Person) ON (n.name)" ).close();
             tx.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
             tx.commit();
         }

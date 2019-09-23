@@ -282,7 +282,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
             db.executeTransactionally( "Call db.awaitIndexes()" );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' RETURN n" );
         } );
@@ -293,7 +293,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
             db.executeTransactionally( "Call db.awaitIndexes()" );
             assertNotifications( version + "EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n",
                     containsItem( dynamicPropertyWarning ));
@@ -305,7 +305,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
             db.executeTransactionally( "Call db.awaitIndexes()" );
             try ( Transaction tx = db.beginTx() )
             {
@@ -350,7 +350,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         {
             for ( String query : queries )
             {
-                db.executeTransactionally( "CREATE INDEX ON :Person(name)" );
+                db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
                 db.executeTransactionally( "Call db.awaitIndexes()" );
                 assertNotifications( version + query, containsItem( dynamicPropertyWarning ) );
             }
@@ -362,7 +362,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
             db.executeTransactionally( "Call db.awaitIndexes()" );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] <> 'value' RETURN n" );
         } );
@@ -373,7 +373,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
             db.executeTransactionally( "Call db.awaitIndexes()" );
 
             assertNotifications( version + "EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n",
@@ -386,8 +386,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.executeTransactionally( "CREATE INDEX ON :Person(name)" );
-            db.executeTransactionally( "CREATE INDEX ON :Jedi(weapon)" );
+            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
+            db.executeTransactionally( "CREATE INDEX FOR (n:Jedi) ON (n.weapon)" );
             db.executeTransactionally( "Call db.awaitIndexes()" );
 
             assertNotifications( version + "EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n",

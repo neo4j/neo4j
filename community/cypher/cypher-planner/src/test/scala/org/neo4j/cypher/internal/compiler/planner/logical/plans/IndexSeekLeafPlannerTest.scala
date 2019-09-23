@@ -168,7 +168,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         in(prop("m", "prop"), listOf(litFoo))
       )
 
-      // CREATE INDEX ON :Awesome(prop,prop2)
+      // CREATE INDEX FOR (n:Awesome) ON (n.prop, n.prop2)
       indexOn("Awesome", "prop", "prop2")
 
     }.withLogicalPlanningContext { (cfg, ctx) =>

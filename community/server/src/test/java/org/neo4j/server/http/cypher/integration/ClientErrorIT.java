@@ -79,7 +79,7 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                         Status.Statement.NotSystemDatabaseError
                 },
                 new Object[]{
-                        "CREATE INDEX ON :Person(name)",
+                        "CREATE INDEX FOR (n:Person) ON (n.name)",
                         Status.Transaction.ForbiddenDueToTransactionType
                 },
                 new Object[]{
@@ -101,7 +101,7 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
     public static void prepareDatabase()
     {
         POST( txCommitUri(), quotedJson(
-                "{'statements': [{'statement': 'CREATE INDEX ON :Book(name)'}]}" ) );
+                "{'statements': [{'statement': 'CREATE INDEX FOR (n:Book) ON (n.name)'}]}" ) );
 
         POST( txCommitUri(), quotedJson(
                 "{'statements': [{'statement': 'CREATE CONSTRAINT ON (b:Book) ASSERT b.isbn IS UNIQUE'}]}" ) );

@@ -113,7 +113,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       SchemaWriteExecutionPlan("DropConstraint", ctx => ctx.dropNamedConstraint(name))
 
     // CREATE INDEX ON :LABEL(prop)
-    // CREATE INDEX name ON :LABEL(prop)
+    // CREATE INDEX FOR (n:LABEL) ON (n.prop)
+    // CREATE INDEX name FOR (n:LABEL) ON (n.prop)
     case CreateIndex(label, props, name) => (_, _) =>
       SchemaWriteExecutionPlan("CreateIndex", ctx => {
               val labelId = ctx.getOrCreateLabelId(label.name)
