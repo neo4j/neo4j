@@ -76,7 +76,6 @@ public enum PrivilegeAction
 
     // Some grouping actions that represent super-sets of other actions
 
-    // TODO UNIT TEST ME!!!!!!!!!!
     ADMIN
             {
                 public boolean satisfies( PrivilegeAction action )
