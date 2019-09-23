@@ -19,6 +19,7 @@ package org.neo4j.pushtocloud;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
@@ -74,6 +75,7 @@ public class HttpCopierTest
 
     private static final int TEST_PORT = 8080;
     private static final String TEST_CONSOLE_URL = "http://localhost:" + TEST_PORT;
+    private static final String STATUS_POLLING_PASSED_FIRST_CALL = "Passed first";
 
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
@@ -93,13 +95,14 @@ public class HttpCopierTest
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false )
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
-        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
+        wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
+        wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
         authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
@@ -121,7 +124,7 @@ public class HttpCopierTest
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
         Path source = createDump();
-        wireMock.stubFor( authenticationRequest().willReturn( aResponse()
+        wireMock.stubFor( authenticationRequest( false ).willReturn( aResponse()
                 .withStatus( HTTP_UNAUTHORIZED ) ) );
 
         // when/then
@@ -135,7 +138,7 @@ public class HttpCopierTest
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
         Path source = createDump();
-        wireMock.stubFor( authenticationRequest().willReturn( aResponse()
+        wireMock.stubFor( authenticationRequest( false ).willReturn( aResponse()
                 .withStatus( HTTP_NOT_FOUND ) ) );
 
         // when/then
@@ -155,9 +158,9 @@ public class HttpCopierTest
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
 
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( "abc", false ).willReturn( aResponse()
+        wireMock.stubFor( initiateUploadTargetRequest( "abc" ).willReturn( aResponse()
                 .withStatus( HTTP_NOT_FOUND ) ) );
 
         // when/then
@@ -177,8 +180,8 @@ public class HttpCopierTest
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
 
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false )
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
@@ -197,7 +200,7 @@ public class HttpCopierTest
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
         Path source = createDump();
-        wireMock.stubFor( authenticationRequest().willReturn( aResponse()
+        wireMock.stubFor( authenticationRequest( false ).willReturn( aResponse()
                 .withStatus( HTTP_FORBIDDEN ) ) );
 
         // when/then
@@ -211,7 +214,7 @@ public class HttpCopierTest
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
         Path source = createDump();
-        wireMock.stubFor( authenticationRequest().willReturn( aResponse()
+        wireMock.stubFor( authenticationRequest( false ).willReturn( aResponse()
                 .withStatus( HTTP_INTERNAL_ERROR ) ) );
 
         // when/then
@@ -225,8 +228,8 @@ public class HttpCopierTest
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
         Path source = createDump();
         String token = "abc";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( token ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( token, false ).willReturn( aResponse()
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( token ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( token ).willReturn( aResponse()
                 .withStatus( HTTP_UNAUTHORIZED ) ) );
 
         // when/then
@@ -239,6 +242,7 @@ public class HttpCopierTest
     {
         ControlledOutsideWorld outsideWorld = new ControlledOutsideWorld( fs );
         outsideWorld.withPromptResponse( "my-username" ); // prompt for username
+        outsideWorld.withPasswordResponse( "pass".toCharArray() ); // prompt for password
         outsideWorld.withPromptResponse( "y" ); // prompt for consent to overwrite db
         HttpCopier copier = new HttpCopier( outsideWorld );
         Path source = createDump();
@@ -246,27 +250,28 @@ public class HttpCopierTest
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false ).willReturn( aResponse()
+        wireMock.stubFor( authenticationRequest( true ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( authenticationRequest( false ).willReturn( aResponse()
                 .withStatus( HTTP_CONFLICT ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, true )
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         // and just the rest of the responses so that the upload can continue w/o failing
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
-        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
+        wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
+        wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
         authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user consent
-        verify( postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( notMatching( ".*Confirmed.*" ) ) );
-        verify( postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( containing( "Confirmed" ) ) );
+        verify( postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader("Confirmed", equalTo( "false" ) ) );
+        verify( postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader( "Confirmed", equalTo("true") ) );
     }
 
     @Test
-    public void shouldHandleConflictResponseFromInitiateUploadTargetWithoutUserConsent() throws IOException
+    public void shouldHandleConflictResponseFromAuthenticationWithoutUserConsent() throws IOException
     {
         ControlledOutsideWorld outsideWorld = new ControlledOutsideWorld( fs );
         outsideWorld.withPromptResponse( "my-username" ); // prompt for username
@@ -275,10 +280,9 @@ public class HttpCopierTest
         Path source = createDump();
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false ).willReturn( aResponse()
-                .withStatus( HTTP_CONFLICT ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, true )
+        wireMock.stubFor( authenticationRequest(false).willReturn( aResponse().withStatus( HTTP_CONFLICT ) ) );
+        wireMock.stubFor( authenticationRequest(true).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse)
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
 
         // when
@@ -286,8 +290,8 @@ public class HttpCopierTest
                 () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
 
         // then there should be one request w/o the user consent and then (since the user entered 'y') one w/ user consent
-        verify( postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( notMatching( ".*Confirmed.*" ) ) );
-        verify( 0, postRequestedFor( urlEqualTo( "/import" ) ).withRequestBody( containing( "Confirmed" ) ) );
+        verify( postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader("Confirmed", equalTo( "false" ) ) );
+        verify( 0, postRequestedFor( urlEqualTo( "/import/auth" ) ).withHeader("Confirmed", equalTo( "true" ) ) );
     }
 
     @Test
@@ -299,8 +303,8 @@ public class HttpCopierTest
         HttpCopier copier = new HttpCopier( outsideWorld );
         Path source = createDump();
         String authorizationTokenResponse = "abc";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false ).willReturn( aResponse()
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse ).willReturn( aResponse()
                 .withStatus( HTTP_BAD_GATEWAY ) ) );
 
         // when
@@ -315,8 +319,8 @@ public class HttpCopierTest
         Path source = createDump();
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false )
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( aResponse()
                 .withStatus( HTTP_INTERNAL_ERROR ) ) );
@@ -337,8 +341,8 @@ public class HttpCopierTest
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false )
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, 0, sourceLength ).willReturn( aResponse()
@@ -348,7 +352,8 @@ public class HttpCopierTest
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, firstUploadLength, sourceLength )
                 .willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
-        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
+        wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
+        wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
         authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
@@ -377,8 +382,8 @@ public class HttpCopierTest
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false )
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, 0, sourceLength ).willReturn( aResponse()
@@ -386,7 +391,8 @@ public class HttpCopierTest
         wireMock.stubFor( getResumablePositionRequest( sourceLength, uploadLocationPath )
                 .willReturn( uploadCompleteGetResumablePositionResponse() ) );
         wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
-        wireMock.stubFor( statusPollingRequest( authorizationTokenResponse ).willReturn( successfulDatabaseRunningResponse() ) );
+        wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
+        wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 
         // when
         authenticateAndCopy( copier, source, "user", "pass".toCharArray() );
@@ -410,8 +416,8 @@ public class HttpCopierTest
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false )
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
@@ -434,8 +440,8 @@ public class HttpCopierTest
         String authorizationTokenResponse = "abc";
         String signedURIPath = "/signed";
         String uploadLocationPath = "/upload";
-        wireMock.stubFor( authenticationRequest().willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
-        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse, false )
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( aResponse()
@@ -449,11 +455,12 @@ public class HttpCopierTest
         Mockito.verify( sleeper, atLeast( 30 ) ).sleep( anyLong() );
     }
 
-    private MappingBuilder authenticationRequest()
+    private MappingBuilder authenticationRequest( boolean userConsent )
     {
         return post( urlEqualTo( "/import/auth" ) )
                 .withHeader( "Authorization", matching( "^Basic .*" ) )
-                .withHeader( "Accept", equalTo( "application/json" ) );
+                .withHeader( "Accept", equalTo( "application/json" ) )
+                .withHeader( "Confirmed", equalTo( userConsent ? "true" : "false" ));
     }
 
     private ResponseDefinitionBuilder successfulAuthorizationResponse( String authorizationTokenResponse )
@@ -463,13 +470,12 @@ public class HttpCopierTest
                 .withBody( format( "{\"Token\":\"%s\"}", authorizationTokenResponse ) );
     }
 
-    private MappingBuilder initiateUploadTargetRequest( String authorizationTokenResponse, boolean userConsent )
+    private MappingBuilder initiateUploadTargetRequest( String authorizationTokenResponse )
     {
         return post( urlEqualTo( "/import" ) )
                 .withHeader( "Content-Type", equalTo( "application/json" ) )
                 .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) )
-                .withHeader( "Accept", equalTo( "application/json" ) )
-                .withRequestBody( userConsent ? containing( "Confirmed" ) : notMatching( ".*Confirmed.*" ) );
+                .withHeader( "Accept", equalTo( "application/json" ) );
     }
 
     private ResponseDefinitionBuilder successfulInitiateUploadTargetResponse( String signedURIPath )
@@ -515,13 +521,33 @@ public class HttpCopierTest
                 .withStatus( HTTP_OK );
     }
 
-    private MappingBuilder statusPollingRequest( String authorizationTokenResponse )
+    private MappingBuilder firstStatusPollingRequest( String authorizationTokenResponse )
     {
         return get( urlEqualTo( "/import/status" ) )
-                .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) );
+                .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) )
+                .willReturn( firstSuccessfulDatabaseRunningResponse() )
+                .inScenario( "test" )
+                .whenScenarioStateIs( Scenario.STARTED )
+                .willSetStateTo( STATUS_POLLING_PASSED_FIRST_CALL );
     }
 
-    private ResponseDefinitionBuilder successfulDatabaseRunningResponse()
+    private ResponseDefinitionBuilder firstSuccessfulDatabaseRunningResponse()
+    {
+        return aResponse()
+                .withBody( "{\"Status\":\"loading\"}" )
+                .withStatus( HTTP_OK );
+    }
+
+    private MappingBuilder secondStatusPollingRequest( String authorizationTokenResponse )
+    {
+        return get( urlEqualTo( "/import/status" ) )
+                .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) )
+                .willReturn( secondSuccessfulDatabaseRunningResponse() )
+                .inScenario( "test" )
+                .whenScenarioStateIs( STATUS_POLLING_PASSED_FIRST_CALL );
+    }
+
+    private ResponseDefinitionBuilder secondSuccessfulDatabaseRunningResponse()
     {
         return aResponse()
                 .withBody( "{\"Status\":\"running\"}" )
@@ -586,7 +612,7 @@ public class HttpCopierTest
 
     private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path source, String username, char[] password ) throws CommandFailed
     {
-        String bearerToken = copier.authenticate( false, TEST_CONSOLE_URL, username, password );
+        String bearerToken = copier.authenticate( false, TEST_CONSOLE_URL, username, password, false );
         copier.copy( false, TEST_CONSOLE_URL, source, bearerToken );
     }
 
