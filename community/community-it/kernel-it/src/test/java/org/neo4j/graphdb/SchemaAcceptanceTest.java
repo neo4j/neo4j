@@ -820,6 +820,18 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
+    @Test
+    void propertyExistenceConstraintsOnRelationshipMustNotBeAvailableInCommunityEdition()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintCreator constraintCreator = db.schema().constraintFor( relType ).assertPropertyExists( propertyKey );
+            ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, constraintCreator::create );
+            assertThat( exception.getMessage(), containsString( "Enterprise Edition" ) );
+            tx.commit();
+        }
+    }
+
     private static String alreadyExistsIndexMessage( String indexName )
     {
         return "There already exists an index called '" + indexName + "'";

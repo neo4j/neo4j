@@ -44,4 +44,10 @@ public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstr
     {
         return actions.createPropertyExistenceConstraint( name, type, propertyKey );
     }
+
+    @Override
+    public ConstraintCreator withName( String name )
+    {
+        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey );
+    }
 }

@@ -32,6 +32,7 @@ public class SchemaAcceptanceTestBase
     protected final String secondPropertyKey = "my_second_property_key";
     protected Label label = Labels.MY_LABEL;
     protected Label otherLabel = Labels.MY_OTHER_LABEL;
+    protected RelationshipType relType = RelationshipType.withName( "relType" );
 
     protected <EXCEPTION extends Throwable, CAUSE extends Throwable> void assertExpectedException( Class<CAUSE> expectedCause, String expectedMessage,
             EXCEPTION exception )
