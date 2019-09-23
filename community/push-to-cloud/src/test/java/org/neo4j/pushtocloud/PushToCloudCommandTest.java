@@ -89,7 +89,7 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
-        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), any() );
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), anyBoolean() );
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
     }
 
@@ -115,7 +115,7 @@ public class PushToCloudCommandTest
                 arg( ARG_CONFIRMED, "true" ) ) );
 
         // then
-        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), eq( true ) );
+        verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), anyBoolean() );
         verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
     }
 
@@ -441,7 +441,7 @@ public class PushToCloudCommandTest
 
         // then
         InOrder inOrder = inOrder( copier, dumper );
-        inOrder.verify( copier ).authenticate( anyBoolean(), anyString(), anyString(), any(), any() );
+        inOrder.verify( copier ).authenticate( anyBoolean(), anyString(), anyString(), any(), anyBoolean() );
         inOrder.verify( dumper ).dumpDatabase( anyString(), any() );
         inOrder.verify( copier ).copy( anyBoolean(), anyString(), any(), anyString() );
     }
@@ -449,7 +449,7 @@ public class PushToCloudCommandTest
     private Copier mockedTargetCommunicator() throws CommandFailed
     {
         Copier copier = mock( Copier.class );
-        when( copier.authenticate( anyBoolean(), any(), any(), any(), any() ) ).thenReturn( "abc" );
+        when( copier.authenticate( anyBoolean(), any(), any(), any(), anyBoolean() ) ).thenReturn( "abc" );
         return copier;
     }
 
