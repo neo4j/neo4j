@@ -25,6 +25,7 @@ import org.neo4j.codegen.Expression._
 import org.neo4j.codegen.FieldReference.{field, staticField}
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen.TypeReference.OBJECT
+import org.neo4j.codegen._
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.bytecode.ByteCode.PRINT_BYTECODE
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
@@ -34,7 +35,6 @@ import org.neo4j.codegen.{CodeGenerator, CodeGeneratorOption, DisassemblyVisitor
 
 import scala.collection.mutable.ArrayBuffer
 import org.neo4j.codegen.source.SourceCode.{PRINT_SOURCE, SOURCECODE}
-import org.neo4j.codegen._
 
 /**
   * Produces runnable code from an IntermediateRepresentation
@@ -339,12 +339,12 @@ object CodeGeneration {
           fields.distinct.foreach {
             case InstanceField(typ, name, initializer) =>
               val reference = clazz.field(typ, name)
-              initializer.map(ir => compileExpression(ir, block)).foreach { value =>
-                block.put(block.self(), reference, value)
+              initializer.map(ir => compileExpression(ir, constructor)).foreach { value =>
+                constructor.put(constructor.self(), reference, value)
               }
             case StaticField(typ, name, _) =>
               val field = clazz.publicStaticField(typ, name)
-              block.putStatic(field, Expression.getStatic(FieldReference.staticField(parentClass, field.`type`(), field.name())))
+              constructor.putStatic(field, Expression.getStatic(FieldReference.staticField(parentClass, field.`type`(), field.name())))
           }
         }
         //methods
