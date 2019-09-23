@@ -109,13 +109,11 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def semanticCheckWithImports(outer: SemanticState): SemanticCheck = {
     def importVariables: SemanticCheck =
-      importWith match {
-        case Some(wth) =>
-          withState(outer)(wth.semanticCheck) chain
-            wth.semanticCheckContinuation(outer.currentScope.scope)
-        case None =>
-          SemanticCheckResult.success
-      }
+      importWith.foldSemanticCheck(wth =>
+        withState(outer)(wth.semanticCheck) chain
+          wth.semanticCheckContinuation(outer.currentScope.scope) chain
+          recordCurrentScope(wth)
+      )
 
     checkCorrelatedSubQueriesFeature chain
     checkLeadingFrom(outer) chain
