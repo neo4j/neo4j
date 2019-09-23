@@ -377,7 +377,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query. " +
                   "If enabled, calling `dbms.listQueries` will display the allocated bytes. " +
-                  "If enabled, the maximum allocated bytes of a query can be limited using `dbms.query_max_allocations`. " +
+                  "If enabled, the maximum allocated bytes of a query can be limited using `cypher.query_max_allocations`. " +
                   "This can also be logged in the query log by using `dbms.logs.query.allocation_logging_enabled`." )
     public static final Setting<Boolean> track_query_allocation =
             newBuilder( "dbms.track_query_allocation", BOOL, false ).dynamic().build();
