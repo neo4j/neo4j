@@ -174,7 +174,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     }
 
     @Override
-    public String authenticate( boolean verbose, String consoleUrl, String username, char[] password, Boolean consentConfirmed ) throws CommandFailed
+    public String authenticate( boolean verbose, String consoleUrl, String username, char[] password, boolean consentConfirmed ) throws CommandFailed
     {
         try
         {

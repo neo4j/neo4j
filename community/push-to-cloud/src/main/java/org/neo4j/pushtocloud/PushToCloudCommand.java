@@ -238,7 +238,7 @@ public class PushToCloudCommand implements AdminCommand
          * @return a bearer token to pass into {@link #copy(boolean, String, Path, String)} later on.
          * @throws CommandFailed on authentication failure or some other unexpected failure.
          */
-        String authenticate( boolean verbose, String consoleURL, String username, char[] password, Boolean consentConfirmed ) throws CommandFailed;
+        String authenticate( boolean verbose, String consoleURL, String username, char[] password, boolean consentConfirmed ) throws CommandFailed;
 
         /**
          * Copies the given dump to the console URI.
