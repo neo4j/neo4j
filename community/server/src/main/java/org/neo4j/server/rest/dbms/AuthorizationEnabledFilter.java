@@ -58,8 +58,6 @@ import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
 
 public class AuthorizationEnabledFilter extends AuthorizationFilter
 {
-    private static final Pattern PASSWORD_CHANGE_WHITELIST = Pattern.compile( "/user/.*" );
-
     private final Supplier<AuthManager> authManagerSupplier;
     private final Log log;
     private final List<Pattern> uriWhitelist;
@@ -121,12 +119,9 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
             switch ( securityContext.subject().getAuthenticationResult() )
             {
             case PASSWORD_CHANGE_REQUIRED:
-                if ( !PASSWORD_CHANGE_WHITELIST.matcher( path ).matches() )
-                {
-                    passwordChangeRequired( username, baseURL( request ) ).accept( response );
-                    return;
-                }
-                // fall through
+                // Fall through
+                // You should be able to authenticate with PASSWORD_CHANGE_REQUIRED but will be stopped
+                // from the server side if you try to do anything else than changing you own password.
             case SUCCESS:
                 try
                 {
@@ -211,15 +206,6 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
                         "message", message ) ) ) );
     }
 
-    private static ThrowingConsumer<HttpServletResponse, IOException> passwordChangeRequired( final String username, final String baseURL )
-    {
-        URI path = UriBuilder.fromUri( baseURL ).path( format( "/user/%s/password", username ) ).build();
-        return error( 403,
-                map( "errors", singletonList( map(
-                        "code", Status.Security.Forbidden.code().serialize(),
-                        "message", "User is required to change their password." ) ), "password_change", path.toString() ) );
-    }
-
     /**
      * In order to avoid browsers popping up an auth box when using the Neo4j Browser, it sends us a special header.
      * When we get that special header, we send a crippled authentication challenge back that the browser does not
@@ -247,17 +233,6 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
                 res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"" );
             };
         }
-    }
-
-    private String baseURL( HttpServletRequest request )
-    {
-        StringBuffer url = request.getRequestURL();
-        String baseURL = url.substring( 0, url.length() - request.getRequestURI().length() ) + "/";
-
-        return XForwardUtil.externalUri(
-                baseURL,
-                request.getHeader( X_FORWARD_HOST_HEADER_KEY ),
-                request.getHeader( X_FORWARD_PROTO_HEADER_KEY ) );
     }
 
     private boolean whitelisted( String path )

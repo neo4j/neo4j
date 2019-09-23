@@ -196,30 +196,7 @@ public class AuthorizationFilterTest
     }
 
     @Test
-    public void shouldAuthorizeWhenPasswordChangeRequiredForWhitelistedPath() throws Exception
-    {
-        // Given
-        final AuthorizationEnabledFilter filter = newFilter();
-        String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
-        BasicLoginContext loginContext = mock( BasicLoginContext.class );
-        AuthSubject authSubject = mock( AuthSubject.class );
-        when( servletRequest.getMethod() ).thenReturn( "GET" );
-        when( servletRequest.getContextPath() ).thenReturn( "/user/foo" );
-        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( authTokenArgumentMatcher( authToken( "foo", "bar" ) ) ) ).thenReturn( loginContext );
-        when( loginContext.subject() ).thenReturn( authSubject );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
-
-        // When
-        filter.doFilter( servletRequest, servletResponse, filterChain );
-
-        // Then
-        verify( filterChain ).doFilter(
-                eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest, AUTH_DISABLED ) ), same( servletResponse ) );
-    }
-
-    @Test
-    public void shouldNotAuthorizeWhenPasswordChangeRequired() throws Exception
+    public void shouldAuthorizeWhenPasswordChangeRequired() throws Exception
     {
         // Given
         final AuthorizationEnabledFilter filter = newFilter();
@@ -239,15 +216,8 @@ public class AuthorizationFilterTest
         filter.doFilter( servletRequest, servletResponse, filterChain );
 
         // Then
-        verifyNoMoreInteractions( filterChain );
-        verify( servletResponse ).setStatus( 403 );
-        verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
-                containsString( "\"password_change\" : \"http://bar.baz:7474/user/foo/password\"" ) );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
-                containsString( "\"code\" : \"Neo.ClientError.Security.Forbidden\"" ) );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ),
-                containsString( "\"message\" : \"User is required to change their password.\"" ) );
+        verify( filterChain ).doFilter(
+                eq( new AuthorizedRequestWrapper( BASIC_AUTH, "foo", servletRequest, AUTH_DISABLED ) ), same( servletResponse ) );
     }
 
     @Test

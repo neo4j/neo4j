@@ -63,9 +63,9 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
 
         HTTP.Response response = runQuery( "neo4j", "neo4j" );
 
-        assertEquals( FORBIDDEN.getStatusCode(), response.status() );
+        assertEquals( OK.getStatusCode(), response.status() );
         assertCorsHeaderPresent( response );
-        assertThat( response.content().toString(), containsString( "password_change" ) );
+        assertPermissionErrorAtDataAccess( response );
     }
 
     @Test
@@ -73,7 +73,7 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
     {
         startServer( true );
         HTTP.Response passwordChangeResponse = changePassword( "neo4j", "neo4j", "newPassword" );
-        assertEquals( NO_CONTENT.getStatusCode(), passwordChangeResponse.status() );
+        assertEquals( OK.getStatusCode(), passwordChangeResponse.status() );
         assertCorsHeaderPresent( passwordChangeResponse );
 
         HTTP.Response queryResponse = runQuery( "neo4j", "newPassword" );
@@ -150,8 +150,9 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
 
     private HTTP.Response changePassword( String username, String oldPassword, String newPassword )
     {
-        HTTP.RawPayload passwordChange = quotedJson( "{'password': '" + newPassword + "'}" );
-        return HTTP.withBasicAuth( username, oldPassword ).POST( passwordURL( username ), passwordChange );
+        HTTP.RawPayload passwordChange = query( String.format( "ALTER CURRENT USER SET PASSWORD FROM '%s' TO '%s'",
+                oldPassword, newPassword ) );
+        return HTTP.withBasicAuth( username, oldPassword ).POST( txCommitURL( "system" ), passwordChange );
     }
 
     private HTTP.Response runQuery( String username, String password )
