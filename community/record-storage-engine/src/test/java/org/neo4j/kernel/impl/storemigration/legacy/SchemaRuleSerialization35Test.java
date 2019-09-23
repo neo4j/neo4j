@@ -63,7 +63,9 @@ class SchemaRuleSerialization35Test
 
     private static final String PROVIDER_KEY = "index-provider";
     private static final String PROVIDER_VERSION = "1.0";
+    private static final String PROVIDER_VERSION_25 = "25.0";
     private static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( PROVIDER_KEY, PROVIDER_VERSION );
+    private static final IndexProviderDescriptor PROVIDER_25 = new IndexProviderDescriptor( PROVIDER_KEY, PROVIDER_VERSION_25 );
 
     private static IndexPrototype indexPrototype( boolean isUnique, String name, int labelId, int... propertyIds )
     {
@@ -464,8 +466,7 @@ class SchemaRuleSerialization35Test
     {
         // GIVEN
         long ruleId = 24;
-        IndexPrototype index = forLabel( 512, 4 );
-        String providerVersion = "25.0";
+        IndexPrototype prototype = forLabel( 512, 4 ).withIndexProvider( PROVIDER_25 );
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
@@ -473,10 +474,10 @@ class SchemaRuleSerialization35Test
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( index ) );
-        assertThat( deserialized.schema(), equalTo( index.schema() ) );
+        assertThat( deserialized, equalTo( prototype.withName( name ).materialise( ruleId ) ) );
+        assertThat( deserialized.schema(), equalTo( prototype.schema() ) );
         assertThat( deserialized.getIndexProvider().getKey(), equalTo( PROVIDER_KEY ) );
-        assertThat( deserialized.getIndexProvider().getVersion(), equalTo( providerVersion ) );
+        assertThat( deserialized.getIndexProvider().getVersion(), equalTo( PROVIDER_VERSION_25 ) );
         assertThat( deserialized.getName(), is( name ) );
         assertTrue( deserialized.getOwningConstraintId().isEmpty() );
     }
@@ -486,8 +487,7 @@ class SchemaRuleSerialization35Test
         // GIVEN
         long ruleId = 33;
         long constraintId = 11;
-        IndexPrototype index = uniqueForLabelProto( 61, 988 );
-        String providerVersion = "25.0";
+        IndexPrototype prototype = uniqueForLabelProto( 61, 988 ).withIndexProvider( PROVIDER_25 );
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
@@ -495,10 +495,10 @@ class SchemaRuleSerialization35Test
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( index ) );
-        assertThat( deserialized.schema(), equalTo( index.schema() ) );
+        assertThat( deserialized, equalTo( prototype.withName( name ).materialise( ruleId ) ) );
+        assertThat( deserialized.schema(), equalTo( prototype.schema() ) );
         assertThat( deserialized.getIndexProvider().getKey(), equalTo( PROVIDER_KEY ) );
-        assertThat( deserialized.getIndexProvider().getVersion(), equalTo( providerVersion ) );
+        assertThat( deserialized.getIndexProvider().getVersion(), equalTo( PROVIDER_VERSION_25 ) );
         assertThat( deserialized.getOwningConstraintId().isPresent(), equalTo( true ) );
         assertThat( deserialized.getOwningConstraintId().getAsLong(), equalTo( constraintId ) );
         assertThat( deserialized.getName(), is( name ) );

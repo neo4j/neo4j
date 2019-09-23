@@ -44,7 +44,6 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
         assertFalse( indexRule.isUnique() );
         assertThat( indexRule.schema(), equalTo( prototype.schema() ) );
-        assertThat( indexRule, equalTo( prototype ) );
         assertThat( indexRule.getIndexProvider(), equalTo( PROVIDER ) );
         assertException( indexRule.getOwningConstraintId()::getAsLong, NoSuchElementException.class );
     }
@@ -60,7 +59,6 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
         assertTrue( indexRule.isUnique() );
         assertThat( indexRule.schema(), equalTo( prototype.schema() ) );
-        assertThat( indexRule, equalTo( prototype ) );
         assertThat( indexRule.getIndexProvider(), equalTo( PROVIDER ) );
         assertTrue( indexRule.getOwningConstraintId().isEmpty() );
 
@@ -92,13 +90,18 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
     private void assertEqualityByDescriptor( IndexPrototype descriptor )
     {
         IndexDescriptor rule1 = descriptor.withName( "a" ).materialise( RULE_ID );
-        IndexDescriptor rule2 = descriptor.withName( "b" ).materialise( RULE_ID_2 );
+        IndexDescriptor rule2 = descriptor.withName( "a" ).materialise( RULE_ID );
 
         BiFunction<SchemaDescriptor,IndexProviderDescriptor,IndexPrototype> factory =
                 descriptor.isUnique() ? IndexPrototype::uniqueForSchema : IndexPrototype::forSchema;
-        IndexDescriptor rule3 = factory.apply( descriptor.schema(), descriptor.getIndexProvider() ).withName( "c" ).materialise( RULE_ID );
+        IndexDescriptor rule3 = factory.apply( descriptor.schema(), descriptor.getIndexProvider() ).withName( "a" ).materialise( RULE_ID );
 
         assertEquality( rule1, rule2 );
         assertEquality( rule1, rule3 );
+
+        IndexDescriptor rule4 = descriptor.withName( "b" ).materialise( RULE_ID );
+        IndexDescriptor rule5 = descriptor.withName( "a" ).materialise( RULE_ID_2 );
+        assertInequality( rule1, rule4 );
+        assertInequality( rule1, rule5 );
     }
 }

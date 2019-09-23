@@ -21,6 +21,8 @@ package org.neo4j.internal.schema;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
@@ -160,27 +162,28 @@ class IndexDescriptorTest
     };
 
     @Test
-    void indexDescriptorsShouldEqualTheirPrototypes()
+    void indexDescriptorsMustBeDistinctBySchema()
     {
-        IndexPrototype[] prototypes = Stream.of( SCHEMAS )
+        IndexDescriptor[] indexes = Stream.of( SCHEMAS )
                 .flatMap( schema -> Stream.of( IndexPrototype.forSchema( schema ), IndexPrototype.uniqueForSchema( schema ) ) )
-                .toArray( IndexPrototype[]::new );
+                .map( prototype -> prototype.withName( "index" ).materialise( 0 ) )
+                .toArray( IndexDescriptor[]::new );
 
-        for ( int i = 0; i < prototypes.length; i++ )
+        Set<IndexDescriptor> indexSet = new HashSet<>();
+        for ( IndexDescriptor index : indexes )
         {
-            IndexRef<?> prototype = prototypes[i];
-            IndexRef<?> index = prototypes[i].withName( "index_" + i ).materialise( 0 );
-            if ( !index.equals( prototype ) )
+            if ( !indexSet.add( index ) )
             {
-                fail( index + " was not equal to its prototype " + prototype + " at index (" + i + ", _)");
-            }
-            for ( int j = i + 1; j < prototypes.length; j++ )
-            {
-                prototype = prototypes[j];
-                if ( index.equals( prototype ) )
+                IndexDescriptor existing = null;
+                for ( IndexDescriptor candidate : indexSet )
                 {
-                    fail( index + " was equal to a different prototype " + prototype + " at index (" + i + ", " + j + ")");
+                    if ( candidate.equals( index ) )
+                    {
+                        existing = candidate;
+                        break;
+                    }
                 }
+                fail( "Index descriptor equality collision: " + existing + " and " + index );
             }
         }
     }
