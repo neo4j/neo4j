@@ -51,7 +51,6 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
   test("should handle null values, one column") {
     // when
     val nodes = select(nodeGraph(sizeHint), nullProbability = 0.52)
-    val input = inputValues(nodes.map(n => Array[Any](n)): _*)
     val limit = nodes.size - 1
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -60,7 +59,9 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      inputValues(nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
+    })
 
     // then
     val expected = nodes.sortBy(n => if (n == null) Long.MaxValue else n.getId).take(limit)

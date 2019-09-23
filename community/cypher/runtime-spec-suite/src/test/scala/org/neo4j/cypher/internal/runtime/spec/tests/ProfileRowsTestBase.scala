@@ -73,7 +73,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   test("should profile rows of input + produce results") {
     // given
     val nodes = nodeGraph(sizeHint)
-    val input = inputColumns(sizeHint / 4, 4, i => nodes(i % nodes.size))
+    inputColumns(sizeHint / 4, 4, i => nodes(i % nodes.size))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -81,7 +81,10 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .input(Seq("x"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, input)
+    val runtimeResult = profile(logicalQuery, runtime, generateData = tx => {
+      inputColumns(sizeHint / 4, 4,
+        i => tx.getNodeById(nodes(i % nodes.size).getId)).stream()
+    })
     consume(runtimeResult)
 
     // then

@@ -152,15 +152,37 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
+              generateData: Transaction => InputDataStream): RecordingRuntimeResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val result = runtimeTestSupport.run(logicalQuery, runtime, (_, result) => result, subscriber, profile = false, generateData)
+    RecordingRuntimeResult(result, subscriber)
+  }
+
+  def execute(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT],
               input: InputDataStream,
               subscriber: QuerySubscriber): RuntimeResult =
     runtimeTestSupport.run(logicalQuery, runtime, input, (_, result) => result, subscriber, profile = false)
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
+              subscriber: QuerySubscriber,
+              generateData: Transaction => InputDataStream): RuntimeResult =
+    runtimeTestSupport.run(logicalQuery, runtime, (_, result) => result, subscriber, profile = false, generateData)
+
+  def execute(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT],
               inputStream: InputDataStream): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
     val result = runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result,subscriber, profile = false)
+    RecordingRuntimeResult(result, subscriber)
+  }
+
+  def profile(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT],
+              generateData: Transaction => InputDataStream): RecordingRuntimeResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val result = runtimeTestSupport.run(logicalQuery, runtime, (_, result) => result, subscriber, profile = true, generateData)
     RecordingRuntimeResult(result, subscriber)
   }
 

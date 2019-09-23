@@ -214,7 +214,9 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         .input(Seq("x"))
         .build()
 
-      val runtimeResult = execute(logicalQuery, runtime, input = inputValues(nodes.take(nInputNodes).map(Array[Any](_)):_*))
+      val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+        inputValues(nodes.take(nInputNodes).map(n => tx.getNodeById(n.getId)).map(Array[Any](_)):_*).stream()
+      })
 
       // then
       val expected = for {

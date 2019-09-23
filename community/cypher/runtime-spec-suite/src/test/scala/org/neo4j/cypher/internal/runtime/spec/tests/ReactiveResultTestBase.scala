@@ -226,21 +226,25 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
       .expand("(x)-->(y)")
       .input(nodes = Seq("x"))
       .build()
-    val stream = batchedInputValues(1, nodes.map(Array[Any](_)): _*).stream()
+    var resultStream:BufferInputStream = null;
 
     // When
-    val result = execute(logicalQuery, runtime, stream, new TestSubscriber)
+    val result = execute(logicalQuery, runtime, new TestSubscriber, generateData = tx => {
+      val attachedNodes = nodes.map(n => tx.getNodeById(n.getId))
+      resultStream = batchedInputValues(1, attachedNodes.map(Array[Any](_)): _*).stream()
+      resultStream
+    })
 
     // Then
     result.request(1)
     result.await() shouldBe true
     //we shouldn't have exhausted the entire input
-    stream.hasMore shouldBe true
+    resultStream.hasMore shouldBe true
 
     //However if we demand the rest of the data we should
     result.request(9999)
     result.await() shouldBe false
-    stream.hasMore shouldBe false
+    resultStream.hasMore shouldBe false
   }
 
   test("should only call onResult once") {

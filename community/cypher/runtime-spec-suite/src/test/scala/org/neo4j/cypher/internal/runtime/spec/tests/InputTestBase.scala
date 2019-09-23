@@ -38,20 +38,22 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y", "z"))
       .build()
 
-    val input =
-      inputValues(
+    var resultInput:InputValues = null
+
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      resultInput = inputValues(
         Array(11, 12, 13),
         Array(21, 22, 23),
         Array(31, 32, 33))
-      .and(
-        Array("11", "12", "13"),
-        nodes.toArray
-      )
-
-    val runtimeResult = execute(logicalQuery, runtime, input)
+        .and(
+          Array("11", "12", "13"),
+          nodes.map(n => tx.getNodeById(n.getId)).toArray
+        )
+      resultInput.stream()
+    })
 
     // then
-    runtimeResult should beColumns("x", "y", "z").withRows(input.flatten)
+    runtimeResult should beColumns("x", "y", "z").withRows(resultInput.flatten)
   }
 
   test("should retain input value order") {

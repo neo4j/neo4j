@@ -422,7 +422,6 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
     val rels = connect(nodes, relTuples)
 
-    val input = inputValues(nodes.map(Array[Any](_)):_*)
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
@@ -430,7 +429,9 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      inputValues(nodes.map(n => tx.getNodeById(n.getId)).map(Array[Any](_)):_*).stream()
+    })
 
     // then
     val expected = relTuples.zip(rels).map {
