@@ -164,6 +164,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
+    public void executeTransactionally( String query, Map<String,Object> parameters ) throws QueryExecutionException
+    {
+        executeTransactionally( query, parameters, EMPTY_CONSUMER );
+    }
+
+    @Override
     public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer ) throws QueryExecutionException
     {
         executeTransactionally( query, parameters, resultConsumer, config.get( transaction_timeout ) );

@@ -86,6 +86,16 @@ public interface GraphDatabaseService
     void executeTransactionally( String query ) throws QueryExecutionException;
 
     /**
+     * Executes query in a separate transaction.
+     * Capable to execute periodic commit queries.
+     *
+     * @param query The query to execute
+     * @param parameters Parameters for the query
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    void executeTransactionally( String query, Map<String,Object> parameters ) throws QueryExecutionException;
+
+    /**
      * Executes query in a separate transaction and allow to query result to be consumed by provided {@link ResultConsumer}.
      * Capable to execute periodic commit queries.
      *

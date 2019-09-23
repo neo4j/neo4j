@@ -33,7 +33,6 @@ import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.graphdb.ResultConsumer.EMPTY_CONSUMER;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 @DbmsExtension
@@ -68,7 +67,7 @@ class TransactionalQueryExecutionIT
     @Test
     void executeQueryWithParametersTransactionally()
     {
-        db.executeTransactionally( "CREATE (n:NODE) SET n = $data RETURN n", map( "data", map( "key", "value" ) ), EMPTY_CONSUMER );
+        db.executeTransactionally( "CREATE (n:NODE) SET n = $data RETURN n", map( "data", map( "key", "value" ) ) );
 
         try ( var transaction = db.beginTx() )
         {

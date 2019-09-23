@@ -70,4 +70,5 @@ public class EmbeddedDbmsRule extends DbmsRule
     {
         return new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
     }
+
 }

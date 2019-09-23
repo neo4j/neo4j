@@ -142,6 +142,12 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
+    public void executeTransactionally( String query, Map<String,Object> parameters ) throws QueryExecutionException
+    {
+        getGraphDatabaseAPI().executeTransactionally( query, parameters );
+    }
+
+    @Override
     public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer ) throws QueryExecutionException
     {
         getGraphDatabaseAPI().executeTransactionally( query, parameters, resultConsumer );
