@@ -319,6 +319,35 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin("bar", "secondPassword", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
+  test("should fail when replacing current user") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    executeOnSystem("neo4j", "neo4j", "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'bar'")
+    execute("SHOW USERS").toSet should be(Set(user("neo4j", passwordChangeRequired = false)))
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      executeOnSystem("neo4j", "bar", "CREATE OR REPLACE USER neo4j SET PASSWORD 'baz'")
+      // THEN
+    } should have message "Failed to delete the specified user 'neo4j': Deleting yourself is not allowed."
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j", passwordChangeRequired = false))
+    testUserLogin("neo4j", "bar", AuthenticationResult.SUCCESS)
+    testUserLogin("neo4j", "baz", AuthenticationResult.FAILURE)
+  }
+
+  test("should get syntax exception when using both replace and if not exists") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    // WHEN
+    val exception = the[SyntaxException] thrownBy {
+      execute("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'pass'")
+    }
+    // THEN
+    exception.getMessage should include("Failed to create the specified user 'foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`.")
+  }
+
   test("should fail when creating user when not on system database") {
     the[DatabaseAdministrationException] thrownBy {
       // WHEN
