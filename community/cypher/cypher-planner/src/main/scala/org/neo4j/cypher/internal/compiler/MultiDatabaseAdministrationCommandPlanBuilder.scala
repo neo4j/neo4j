@@ -50,10 +50,10 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
-    def planSchema(source: Option[PrivilegePlan],
-                   roleNames: Seq[String],
-                   action: AdminAction,
-                   planAction: (Option[PrivilegePlan], String, AdminAction) => Option[PrivilegePlan]): Option[PrivilegePlan] = {
+    def planDatabasePrivileges(source: Option[PrivilegePlan],
+                               roleNames: Seq[String],
+                               action: AdminAction,
+                               planAction: (Option[PrivilegePlan], String, AdminAction) => Option[PrivilegePlan]): Option[PrivilegePlan] = {
       def planActions(source: Option[PrivilegePlan], roleName: String, g: AdminAction*): Option[PrivilegePlan] = g.foldLeft(source) {
         case (plan, act) => planAction(plan, roleName, act)
       }
@@ -62,6 +62,11 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case IndexManagementAction => planActions(source, roleName, CreateIndexAction, DropIndexAction)
           case ConstraintManagementAction => planActions(source, roleName, CreateConstraintAction, DropConstraintAction)
           case TokenManagementAction => planActions(source, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
+          case AllDatabaseAction => planActions(source, roleName,
+            AccessDatabaseAction, StartDatabaseAction, StopDatabaseAction,
+            CreateIndexAction, DropIndexAction,
+            CreateConstraintAction, DropConstraintAction,
+            CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
           case _ => planAction(source, roleName, action)
         }
       }
@@ -196,21 +201,21 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // GRANT ACCESS/START/STOP ON DATABASE foo TO role
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
-        planSchema(
+        planDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
           (plan, role, act) => Some(plans.GrantDatabaseAction(plan, act, database, role))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY ACCESS/START/STOP ON DATABASE foo TO role
       case c@DenyPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
-        planSchema(
+        planDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
           (plan, role, act) => Some(plans.DenyDatabaseAction(plan, act, database, role))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE ACCESS/START/STOP ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
-        planSchema(
+        planDatabasePrivileges(
           Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
           (plan, role, act) => Some(plans.RevokeDatabaseAction(plan, act, database, role, revokeType))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))

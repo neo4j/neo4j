@@ -266,6 +266,7 @@ case object CreateNodeLabelAction extends DatabaseAction
 case object CreateRelationshipTypeAction extends DatabaseAction
 case object CreatePropertyKeyAction extends DatabaseAction
 case object TokenManagementAction extends DatabaseAction
+case object AllDatabaseAction extends DatabaseAction
 
 sealed trait UserManagementAction extends AdminAction
 

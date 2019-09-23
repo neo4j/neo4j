@@ -480,6 +480,7 @@ object Prettifier {
     case CreateRelationshipTypeAction => "CREATE NEW RELATIONSHIP TYPE"
     case CreatePropertyKeyAction => "CREATE NEW PROPERTY NAME"
     case TokenManagementAction => "NAME MANAGEMENT"
+    case AllDatabaseAction => "ALL DATABASE PRIVILEGES"
     case _ => "<unknown>"
   }
 

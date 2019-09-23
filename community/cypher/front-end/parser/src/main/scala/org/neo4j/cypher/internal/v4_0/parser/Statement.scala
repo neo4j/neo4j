@@ -417,7 +417,8 @@ trait Statement extends Parser
       group(keyword("CREATE NEW") ~~ optional(keyword("NODE")) ~~ keyword("LABEL")) ~~~> (_ => ast.CreateNodeLabelAction) |
       group(keyword("CREATE NEW") ~~ optional(keyword("RELATIONSHIP")) ~~ keyword("TYPE")) ~~~> (_ => ast.CreateRelationshipTypeAction) |
       group(keyword("CREATE NEW") ~~ optional(keyword("PROPERTY")) ~~ keyword("NAME")) ~~~> (_ => ast.CreatePropertyKeyAction) |
-      group(keyword("NAME") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.TokenManagementAction)
+      group(keyword("NAME") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.TokenManagementAction) |
+      group(keyword("ALL") ~~ optional(optional(keyword("DATABASE")) ~~ keyword("PRIVILEGES"))) ~~~> (_ => ast.AllDatabaseAction)
   )
 
   private def Graph: Rule1[GraphScope] = rule("on a database/graph")(
