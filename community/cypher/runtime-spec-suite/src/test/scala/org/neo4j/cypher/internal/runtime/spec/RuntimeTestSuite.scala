@@ -230,10 +230,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def bipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relType: String): (Seq[Node], Seq[Node]) = {
     val aNodes = nodeGraph(nNodes, aLabel)
     val bNodes = nodeGraph(nNodes, bLabel)
-    inTx { _ =>
+    inTx { tx =>
       val relationshipType = RelationshipType.withName(relType)
       for {a <- aNodes; b <- bNodes} {
-        a.createRelationshipTo(b, relationshipType)
+        tx.getNodeById(a.getId).createRelationshipTo(tx.getNodeById(b.getId), relationshipType)
       }
     }
     (aNodes, bNodes)
@@ -402,9 +402,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     */
   def randomlyConnect(nodes: Seq[Node], connectivities: Connectivity*): Seq[NodeConnections] = {
     val random = new Random(12345)
-    inTx { _ =>
+    inTx { tx =>
       for (from <- nodes) yield {
-
+        val source = tx.getNodeById(from.getId)
         val relationshipsByType =
           for {
             c <- connectivities
@@ -415,14 +415,14 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
             val endNodes =
               for (_ <- 0 until numConnections) yield {
-                val to = nodes(random.nextInt(nodes.length))
-                from.createRelationshipTo(to, relType)
+                val to = tx.getNodeById(nodes(random.nextInt(nodes.length)).getId)
+                source.createRelationshipTo(to, relType)
                 to
               }
             (c.relType, endNodes)
           }
 
-        NodeConnections(from, relationshipsByType.toMap)
+        NodeConnections(source, relationshipsByType.toMap)
       }
     }
   }
@@ -456,7 +456,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     try {
       val result = rels.map {
         case (from, to, typ) =>
-          nodes(from).createRelationshipTo(nodes(to), RelationshipType.withName(typ))
+          tx.getNodeById(nodes(from).getId)
+            .createRelationshipTo(tx.getNodeById(nodes(to).getId), RelationshipType.withName(typ))
       }
       tx.commit()
       result

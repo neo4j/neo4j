@@ -46,7 +46,10 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.filter{ _.hasProperty("calories") }
+    val tx = runtimeTestSupport.txHolder.get()
+    val expected = nodes.filter {
+      node => tx.getNodeById(node.getId).hasProperty("calories")
+    }
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
@@ -67,7 +70,8 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.filter{ _.hasProperty("calories") }
+    val tx = runtimeTestSupport.txHolder.get()
+    val expected = nodes.filter{ node => tx.getNodeById(node.getId).hasProperty("calories") }
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
@@ -89,7 +93,11 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.filter{ n => n.hasProperty("calories") && n.hasProperty("taste") }
+    val tx = runtimeTestSupport.txHolder.get()
+    val expected = nodes.filter{ n => {
+      val node = tx.getNodeById(n.getId)
+      node.hasProperty("calories") && node.hasProperty("taste")
+    } }
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
@@ -111,7 +119,8 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
+    val tx = runtimeTestSupport.txHolder.get()
+    val expected = nodes.map(n => tx.getNodeById(n.getId)).zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
     runtimeResult should beColumns("x", "calories").withRows(expected)
   }
 
@@ -133,7 +142,8 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
+    val tx = runtimeTestSupport.txHolder.get()
+    val expected = nodes.map(n => tx.getNodeById(n.getId)).zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
     runtimeResult should beColumns("x", "calories").withRows(expected)
   }
 }

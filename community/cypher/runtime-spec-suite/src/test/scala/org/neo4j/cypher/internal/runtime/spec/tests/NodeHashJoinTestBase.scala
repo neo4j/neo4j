@@ -197,8 +197,9 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
+    val tx = runtimeTestSupport.txHolder.get()
     val expectedResultRows = for {node <- withAllLabels
-                                  i = node.getProperty("prop").asInstanceOf[Int]
+                                  i = tx.getNodeById(node.getId).getProperty("prop").asInstanceOf[Int]
                                   if i % 20 == 0 && i <= 80
     } yield Array(node)
 
