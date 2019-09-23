@@ -124,7 +124,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     void deprecatedDropIndexSyntax()
     {
-        assertNotifications( "EXPLAIN DROP INDEX ON :Label(prop)", containsItem( deprecatedCreateIndexSyntax ) );
+        assertNotifications( "EXPLAIN DROP INDEX ON :Label(prop)", containsItem( deprecatedDropIndexSyntax ) );
     }
 
     // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
@@ -246,7 +246,8 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
             deprecation( "The parameter syntax `{param}` is deprecated, please use `$param` instead" );
 
     private Matcher<Notification> deprecatedCreateIndexSyntax =
-            deprecation( "The create index syntax `CREATE INDEX ON :Label(property)` is deprecated, please use `CREATE INDEX FOR (n:Label) ON (n.property)` instead" );
+            deprecation( "The create index syntax `CREATE INDEX ON :Label(property)` is deprecated, " +
+                    "please use `CREATE INDEX FOR (n:Label) ON (n.property)` instead" );
 
     private Matcher<Notification> deprecatedDropIndexSyntax =
             deprecation( "The drop index syntax `DROP INDEX ON :Label(property)` is deprecated, please use `DROP INDEX index_name` instead" );
