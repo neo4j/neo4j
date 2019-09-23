@@ -58,6 +58,7 @@ public class SecurityContext implements LoginContext
      */
     public boolean allowsAdminAction( AdminActionOnResource action )
     {
+        assertCredentialsNotExpired();
         return true;
     }
 

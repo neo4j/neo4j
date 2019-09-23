@@ -24,6 +24,7 @@ import java.util.Collections
 
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME}
 import org.neo4j.exceptions._
+import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.{QueryExecutionException, Result}
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -716,6 +717,34 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       // THEN
     } should have message
       "This is an administration command and it should be executed against the system database: ALTER CURRENT USER SET PASSWORD"
+  }
+
+  test("should not be able to run administration commands with password change required") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE REQUIRED")
+
+    // WHEN
+    val e = the[AuthorizationViolationException] thrownBy {
+      executeOnSystem("foo", "bar", "SHOW USERS")
+    }
+
+    // THEN
+    e.getMessage should startWith("Permission denied.")
+  }
+
+  test("should not be able to run database queries with password change required") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE REQUIRED")
+
+    // WHEN
+    val e = the[AuthorizationViolationException] thrownBy {
+      executeOn( DEFAULT_DATABASE_NAME, "foo", "bar", "MATCH (n) RETURN n")
+    }
+
+    // THEN
+    e.getMessage should startWith("Permission denied.")
   }
 
   // helper methods
