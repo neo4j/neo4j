@@ -171,7 +171,7 @@ final case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[Str
 
 abstract class PrivilegeType(val name: String)
 
-final case class DatabasePrivilege(action: DatabaseAction)(val position: InputPosition) extends PrivilegeType("ACCESS")
+final case class DatabasePrivilege(action: DatabaseAction)(val position: InputPosition) extends PrivilegeType("DATABASE_PRIVILEGE")
 
 final case class TraversePrivilege()(val position: InputPosition) extends PrivilegeType("TRAVERSE")
 
@@ -256,6 +256,16 @@ case object StartDatabaseAction extends DatabaseAction
 case object StopDatabaseAction extends DatabaseAction
 case object CreateDatabaseAction extends DatabaseAction
 case object DropDatabaseAction extends DatabaseAction
+case object CreateIndexAction extends DatabaseAction
+case object DropIndexAction extends DatabaseAction
+case object IndexManagementAction extends DatabaseAction
+case object CreateConstraintAction extends DatabaseAction
+case object DropConstraintAction extends DatabaseAction
+case object ConstraintManagementAction extends DatabaseAction
+case object CreateNodeLabelAction extends DatabaseAction
+case object CreateRelationshipTypeAction extends DatabaseAction
+case object CreatePropertyKeyAction extends DatabaseAction
+case object TokenManagementAction extends DatabaseAction
 
 sealed trait UserManagementAction extends AdminAction
 

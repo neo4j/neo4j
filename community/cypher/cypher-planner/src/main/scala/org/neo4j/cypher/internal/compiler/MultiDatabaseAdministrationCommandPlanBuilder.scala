@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerConte
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, PrivilegePlan, ResolvedCall, SecurityAdministrationLogicalPlan}
 import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
-import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.ast.{IndexManagementAction, _}
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
@@ -50,6 +50,22 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
+    def planSchema(source: Option[PrivilegePlan],
+                   roleNames: Seq[String],
+                   action: AdminAction,
+                   planAction: (Option[PrivilegePlan], String, AdminAction) => Option[PrivilegePlan]): Option[PrivilegePlan] = {
+      def planActions(source: Option[PrivilegePlan], roleName: String, g: AdminAction*): Option[PrivilegePlan] = g.foldLeft(source) {
+        case (plan, act) => planAction(plan, roleName, act)
+      }
+      roleNames.foldLeft(Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+        case (source, roleName) => action match {
+          case IndexManagementAction => planActions(source, roleName, CreateIndexAction, DropIndexAction)
+          case ConstraintManagementAction => planActions(source, roleName, CreateConstraintAction, DropConstraintAction)
+          case TokenManagementAction => planActions(source, roleName, CreateNodeLabelAction, CreateRelationshipTypeAction, CreatePropertyKeyAction)
+          case _ => planAction(source, roleName, action)
+        }
+      }
+    }
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // SHOW USERS
       case _: ShowUsers =>
@@ -180,21 +196,24 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // GRANT ACCESS/START/STOP ON DATABASE foo TO role
       case c@GrantPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
-        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
-          case (source, roleName) => Some(plans.GrantDatabaseAction(source, action, database, roleName))
-        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+        planSchema(
+          Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
+          (plan, role, act) => Some(plans.GrantDatabaseAction(plan, act, database, role))
+        ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY ACCESS/START/STOP ON DATABASE foo TO role
       case c@DenyPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
-        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan])) {
-          case (source, roleName) => Some(plans.DenyDatabaseAction(source, action, database, roleName))
-        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+        planSchema(
+          Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
+          (plan, role, act) => Some(plans.DenyDatabaseAction(plan, act, database, role))
+        ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE ACCESS/START/STOP ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
-        roleNames.foldLeft(Some(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan])) {
-          case (source, roleName) => Some(plans.RevokeDatabaseAction(source, action, database, roleName, revokeType))
-        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+        planSchema(
+          Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
+          (plan, role, act) => Some(plans.RevokeDatabaseAction(plan, act, database, role, revokeType))
+        ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
       case c@GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>

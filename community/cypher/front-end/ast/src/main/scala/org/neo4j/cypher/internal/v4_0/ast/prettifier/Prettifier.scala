@@ -470,6 +470,16 @@ object Prettifier {
     case AccessDatabaseAction => "ACCESS"
     case StartDatabaseAction => "START"
     case StopDatabaseAction => "STOP"
+    case CreateIndexAction => "CREATE INDEX"
+    case DropIndexAction => "CREATE INDEX"
+    case IndexManagementAction => "INDEX MANAGEMENT"
+    case CreateConstraintAction => "CREATE CONSTRAINT"
+    case DropConstraintAction => "CREATE CONSTRAINT"
+    case ConstraintManagementAction => "CONSTRAINT MANAGEMENT"
+    case CreateNodeLabelAction => "CREATE NEW NODE LABEL"
+    case CreateRelationshipTypeAction => "CREATE NEW RELATIONSHIP TYPE"
+    case CreatePropertyKeyAction => "CREATE NEW PROPERTY NAME"
+    case TokenManagementAction => "NAME MANAGEMENT"
     case _ => "<unknown>"
   }
 

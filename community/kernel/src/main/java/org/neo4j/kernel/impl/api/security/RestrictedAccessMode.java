@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 
 /**
  * Access mode that restricts the original access mode with the restricting mode. Allows things that both the
@@ -43,15 +44,21 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsTokenCreates()
+    public boolean allowsTokenCreates( PrivilegeAction action )
     {
-        return original.allowsTokenCreates() && wrapping.allowsTokenCreates();
+        return original.allowsTokenCreates( action ) && wrapping.allowsTokenCreates( action );
     }
 
     @Override
     public boolean allowsSchemaWrites()
     {
         return original.allowsSchemaWrites() && wrapping.allowsSchemaWrites();
+    }
+
+    @Override
+    public boolean allowsSchemaWrites( PrivilegeAction action )
+    {
+        return original.allowsSchemaWrites( action ) && wrapping.allowsSchemaWrites( action );
     }
 
     @Override

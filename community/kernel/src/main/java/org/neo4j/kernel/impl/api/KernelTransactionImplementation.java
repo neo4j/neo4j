@@ -57,6 +57,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
@@ -873,10 +874,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
+        //TODO: Consider removing this since we re-check with fine graned a few lines below
         assertAllowsSchemaWrites();
 
         upgradeToSchemaWrites();
-        return operations;
+        return new RestrictedSchemaWrite( operations, securityContext() );
     }
 
     @Override
@@ -973,12 +975,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    public final void assertAllowsTokenCreates()
+    public final void assertAllowsTokenCreates( PrivilegeAction action )
     {
         AccessMode accessMode = securityContext().mode();
-        if ( !accessMode.allowsTokenCreates() )
+        if ( !accessMode.allowsTokenCreates( action ) )
         {
-            throw accessMode.onViolation( format( "Token create operations are not allowed for %s.", securityContext().description() ) );
+            throw accessMode.onViolation( format( "'%s' operations are not allowed for %s.", action.toString(), securityContext().description() ) );
         }
     }
 

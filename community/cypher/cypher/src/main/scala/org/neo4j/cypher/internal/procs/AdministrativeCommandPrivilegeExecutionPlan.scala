@@ -62,6 +62,15 @@ object AdminActionMapper {
     case CreateDatabaseAction => KernelPrivilegeAction.CREATE_DATABASE
     case DropDatabaseAction => KernelPrivilegeAction.DROP_DATABASE
 
+    case CreateIndexAction => KernelPrivilegeAction.CREATE_INDEX
+    case DropIndexAction => KernelPrivilegeAction.DROP_INDEX
+    case CreateConstraintAction => KernelPrivilegeAction.CREATE_CONSTRAINT
+    case DropConstraintAction => KernelPrivilegeAction.DROP_CONSTRAINT
+
+    case CreateNodeLabelAction => KernelPrivilegeAction.CREATE_LABEL
+    case CreateRelationshipTypeAction => KernelPrivilegeAction.CREATE_RELTYPE
+    case CreatePropertyKeyAction => KernelPrivilegeAction.CREATE_PROPERTYKEY
+
     case ShowUserAction => KernelPrivilegeAction.SHOW_USER
     case CreateUserAction => KernelPrivilegeAction.CREATE_USER
     case AlterUserAction => KernelPrivilegeAction.ALTER_USER
@@ -84,6 +93,15 @@ object AdminActionMapper {
     case KernelPrivilegeAction.STOP_DATABASE => StopDatabaseAction
     case KernelPrivilegeAction.CREATE_DATABASE => CreateDatabaseAction
     case KernelPrivilegeAction.DROP_DATABASE => DropDatabaseAction
+
+    case KernelPrivilegeAction.CREATE_INDEX => CreateIndexAction
+    case KernelPrivilegeAction.DROP_INDEX => DropIndexAction
+    case KernelPrivilegeAction.CREATE_CONSTRAINT => CreateConstraintAction
+    case KernelPrivilegeAction.DROP_CONSTRAINT => DropConstraintAction
+
+    case KernelPrivilegeAction.CREATE_LABEL => CreateNodeLabelAction
+    case KernelPrivilegeAction.CREATE_RELTYPE => CreateRelationshipTypeAction
+    case KernelPrivilegeAction.CREATE_PROPERTYKEY => CreatePropertyKeyAction
 
     case KernelPrivilegeAction.SHOW_USER => ShowUserAction
     case KernelPrivilegeAction.CREATE_USER => CreateUserAction

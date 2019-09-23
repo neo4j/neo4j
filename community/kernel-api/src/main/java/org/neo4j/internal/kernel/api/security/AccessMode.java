@@ -88,13 +88,19 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsTokenCreates()
+        public boolean allowsTokenCreates( PrivilegeAction action )
         {
             return token;
         }
 
         @Override
         public boolean allowsSchemaWrites()
+        {
+            return schema;
+        }
+
+        @Override
+        public boolean allowsSchemaWrites( PrivilegeAction action )
         {
             return schema;
         }
@@ -191,8 +197,9 @@ public interface AccessMode
     }
 
     boolean allowsWrites();
-    boolean allowsTokenCreates();
+    boolean allowsTokenCreates( PrivilegeAction action );
     boolean allowsSchemaWrites();
+    boolean allowsSchemaWrites( PrivilegeAction action );
 
     /** true if all nodes can be traversed */
     boolean allowsTraverseAllLabels();

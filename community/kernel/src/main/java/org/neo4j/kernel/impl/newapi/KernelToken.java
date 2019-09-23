@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernel
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -59,13 +60,13 @@ public class KernelToken implements Token
     @Override
     public int labelGetOrCreateForName( String labelName ) throws KernelException
     {
-        return getOrCreateForName( tokenHolders.labelTokens(), labelName );
+        return getOrCreateForName( tokenHolders.labelTokens(), PrivilegeAction.CREATE_LABEL, labelName );
     }
 
     @Override
     public void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws KernelException
     {
-        getOrCreateForNames( tokenHolders.labelTokens(), labelNames, labelIds );
+        getOrCreateForNames( tokenHolders.labelTokens(), PrivilegeAction.CREATE_LABEL, labelNames, labelIds );
     }
 
     @Override
@@ -101,25 +102,25 @@ public class KernelToken implements Token
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
-        return getOrCreateForName( tokenHolders.propertyKeyTokens(), propertyKeyName );
+        return getOrCreateForName( tokenHolders.propertyKeyTokens(), PrivilegeAction.CREATE_PROPERTYKEY, propertyKeyName );
     }
 
     @Override
     public void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids ) throws KernelException
     {
-        getOrCreateForNames( tokenHolders.propertyKeyTokens(), propertyKeys, ids );
+        getOrCreateForNames( tokenHolders.propertyKeyTokens(), PrivilegeAction.CREATE_PROPERTYKEY, propertyKeys, ids );
     }
 
     @Override
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException
     {
-        return getOrCreateForName( tokenHolders.relationshipTypeTokens(), relationshipTypeName );
+        return getOrCreateForName( tokenHolders.relationshipTypeTokens(), PrivilegeAction.CREATE_RELTYPE, relationshipTypeName );
     }
 
     @Override
     public void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids ) throws KernelException
     {
-        getOrCreateForNames( tokenHolders.relationshipTypeTokens(), relationshipTypes, ids );
+        getOrCreateForNames( tokenHolders.relationshipTypeTokens(), PrivilegeAction.CREATE_RELTYPE, relationshipTypes, ids );
     }
 
     @Override
@@ -245,7 +246,7 @@ public class KernelToken implements Token
         return name;
     }
 
-    private int getOrCreateForName( TokenHolder tokens, String name ) throws KernelException
+    private int getOrCreateForName( TokenHolder tokens, PrivilegeAction action, String name ) throws KernelException
     {
         ktx.assertOpen();
         int id = tokens.getIdByName( checkValidTokenName( name ) );
@@ -253,11 +254,11 @@ public class KernelToken implements Token
         {
             return id;
         }
-        ktx.assertAllowsTokenCreates();
+        ktx.assertAllowsTokenCreates( action );
         return tokens.getOrCreateId( name );
     }
 
-    private void getOrCreateForNames( TokenHolder tokenHolder, String[] names, int[] ids ) throws KernelException
+    private void getOrCreateForNames( TokenHolder tokenHolder, PrivilegeAction action, String[] names, int[] ids ) throws KernelException
     {
         ktx.assertOpen();
         assertSameLength( names, ids );
@@ -266,7 +267,7 @@ public class KernelToken implements Token
             ids[i] = tokenHolder.getIdByName( checkValidTokenName( names[i] ) );
             if ( ids[i] == NO_TOKEN )
             {
-                ktx.assertAllowsTokenCreates();
+                ktx.assertAllowsTokenCreates( action );
                 tokenHolder.getOrCreateIds( names, ids );
                 return;
             }
