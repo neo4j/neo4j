@@ -970,7 +970,7 @@ public class Operations implements Write, SchemaWrite
         }
 
         // Name conflict with other schema rule
-        assertSchemaRuleWithNameDoesNotExist( name );
+        assertSchemaRuleWithNameDoesNotExist( name, null );
 
         // Already constrained
         final Iterator<ConstraintDescriptor> constraintWithSameSchema = allStoreHolder.constraintsGetForSchema( prototype.schema() );
@@ -1012,7 +1012,7 @@ public class Operations implements Write, SchemaWrite
         }
 
         // Name conflict with other schema rule
-        assertSchemaRuleWithNameDoesNotExist( name );
+        assertSchemaRuleWithNameDoesNotExist( name, constraint );
 
         // Already constrained
         for ( ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema )
@@ -1030,12 +1030,19 @@ public class Operations implements Write, SchemaWrite
             IndexDescriptor indexWithSameSchema = allStoreHolder.index( constraint.schema() );
             if ( indexWithSameSchema != IndexDescriptor.NO_INDEX )
             {
+                // todo remove this bit once we remove support for adopting half applied constraints
+                if ( isIndexFromHalfAppliedConstraint( indexWithSameSchema, constraint ) )
+                {
+                    return;
+                }
+
                 throw new AlreadyIndexedException( constraint.schema(), CONSTRAINT_CREATION );
             }
         }
     }
 
-    private void assertSchemaRuleWithNameDoesNotExist( String name ) throws IndexWithNameAlreadyExistsException, ConstraintWithNameAlreadyExistsException
+    private void assertSchemaRuleWithNameDoesNotExist( String name, ConstraintDescriptor constraintDescriptor )
+            throws IndexWithNameAlreadyExistsException, ConstraintWithNameAlreadyExistsException
     {
         // Check constraints first because some of them will also be backed by indexes
         final ConstraintDescriptor constraintWithSameName = allStoreHolder.constraintGetForName( name );
@@ -1046,8 +1053,34 @@ public class Operations implements Write, SchemaWrite
         final IndexDescriptor indexWithSameName = allStoreHolder.indexGetForName( name );
         if ( indexWithSameName != IndexDescriptor.NO_INDEX )
         {
+            // todo remove this bit once we remove support for adopting half applied constraints
+            if ( constraintDescriptor != null && isIndexFromHalfAppliedConstraint( indexWithSameName, constraintDescriptor ) )
+            {
+                // Simply return and be happy this will be removed in the future
+                return;
+            }
             throw new IndexWithNameAlreadyExistsException( name );
         }
+    }
+
+    private boolean isIndexFromHalfAppliedConstraint( IndexDescriptor index, ConstraintDescriptor constraint )
+    {
+        // OK so we found an index that collide with constraint in some way.
+        // This might be a left-over from a previously failed constraints creation.
+        // Check if it matches the index that would back the constraint we are trying to create.
+        // - existing index is a uniqueness index
+        // - existing index name match that of constraint
+        // - existing index schema match that of constraint
+        // - existing index does not already have owning constraint
+        return index.isUnique() &&
+               index.getName().equals( constraint.getName() ) &&
+               index.schema().equals( constraint.schema() ) &&
+               !constraintIndexHasOwner( index );
+    }
+
+    private boolean constraintIndexHasOwner( IndexDescriptor index )
+    {
+        return allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null;
     }
 
     @Override
