@@ -44,7 +44,8 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
         Read reads = tx.dataRead();
 
         // Then
-        assertNotNull( reads );    }
+        assertNotNull( reads );
+    }
 
     @Test
     void shouldAllowTokenReadsInAccessMode()
