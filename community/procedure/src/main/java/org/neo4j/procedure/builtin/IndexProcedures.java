@@ -95,25 +95,29 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName ) throws ProcedureException
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexName, String indexSpecification, String providerName ) throws ProcedureException
     {
-        return createIndex( indexSpecification, providerName, "index created",
-                ( schemaWrite, descriptor, provider ) -> schemaWrite.indexCreate( descriptor, provider, null ) );
+        return createIndex( indexName, indexSpecification, providerName,
+                "index created", ( schemaWrite, name, descriptor, provider ) -> schemaWrite.indexCreate( descriptor, provider, name ) );
     }
 
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String indexSpecification, String providerName ) throws ProcedureException
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String constraintName, String indexSpecification, String providerName )
+            throws ProcedureException
     {
-        return createIndex( indexSpecification, providerName, "uniqueness constraint online",
-                ( schemaWrite, descriptor, provider ) -> schemaWrite.uniquePropertyConstraintCreate( descriptor, provider, null ) );
+        return createIndex( constraintName, indexSpecification, providerName,
+                "uniqueness constraint online",
+                ( schemaWrite, name, descriptor, provider ) -> schemaWrite.uniquePropertyConstraintCreate( descriptor, provider, name ) );
     }
 
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String indexSpecification, String providerName ) throws ProcedureException
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String constraintName, String indexSpecification, String providerName )
+            throws ProcedureException
     {
-        return createIndex( indexSpecification, providerName, "node key constraint online",
-                ( schemaWrite, descriptor, provider ) -> schemaWrite.nodeKeyConstraintCreate( descriptor, provider, null ) );
+        return createIndex( constraintName, indexSpecification, providerName,
+                "node key constraint online",
+                ( schemaWrite, name, descriptor, provider ) -> schemaWrite.nodeKeyConstraintCreate( descriptor, provider, name ) );
     }
 
-    private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName, String statusMessage,
+    private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String name, String indexSpecification, String providerName, String statusMessage,
             IndexCreator indexCreator ) throws ProcedureException
     {
         assertProviderNameNotNull( providerName );
@@ -124,8 +128,8 @@ public class IndexProcedures implements AutoCloseable
         {
             SchemaWrite schemaWrite = ktx.schemaWrite();
             LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
-            indexCreator.create( schemaWrite, labelSchemaDescriptor, providerName );
-            return Stream.of( new BuiltInProcedures.SchemaIndexInfo( indexSpecification, providerName, statusMessage ) );
+            indexCreator.create( schemaWrite, name, labelSchemaDescriptor, providerName );
+            return Stream.of( new BuiltInProcedures.SchemaIndexInfo( name, indexSpecification, providerName, statusMessage ) );
         }
         catch ( KernelException e )
         {
@@ -305,6 +309,6 @@ public class IndexProcedures implements AutoCloseable
     @FunctionalInterface
     private interface IndexCreator
     {
-        void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName ) throws KernelException;
+        void create( SchemaWrite schemaWrite, String name, LabelSchemaDescriptor descriptor, String providerName ) throws KernelException;
     }
 }

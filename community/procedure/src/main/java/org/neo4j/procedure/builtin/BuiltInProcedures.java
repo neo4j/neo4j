@@ -443,13 +443,14 @@ public class BuiltInProcedures
             "YIELD index, providerName, status" )
     @Procedure( name = "db.createIndex", mode = SCHEMA )
     public Stream<SchemaIndexInfo> createIndex(
+            @Name( "indexName" ) String indexName,
             @Name( "index" ) String index,
             @Name( "providerName" ) String providerName )
             throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            return indexProcedures.createIndex( index, providerName );
+            return indexProcedures.createIndex( indexName, index, providerName );
         }
     }
 
@@ -458,13 +459,14 @@ public class BuiltInProcedures
             "YIELD index, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
+            @Name( "indexName" ) String constraintName,
             @Name( "index" ) String index,
             @Name( "providerName" ) String providerName )
             throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            return indexProcedures.createUniquePropertyConstraint( index, providerName );
+            return indexProcedures.createUniquePropertyConstraint( constraintName, index, providerName );
         }
     }
 
@@ -616,12 +618,14 @@ public class BuiltInProcedures
 
     public static class SchemaIndexInfo
     {
+        public final String name;
         public final String index;
         public final String providerName;
         public final String status;
 
-        public SchemaIndexInfo( String index, String providerName, String status )
+        public SchemaIndexInfo( String name, String index, String providerName, String status )
         {
+            this.name = name;
             this.index = index;
             this.providerName = providerName;
             this.status = status;
