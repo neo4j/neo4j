@@ -36,7 +36,7 @@ public class DropIndexFailureException extends SchemaKernelException
 
     public DropIndexFailureException( SchemaDescriptor descriptor, SchemaKernelException cause )
     {
-        super( Status.Schema.IndexDropFailed, format( message, descriptor.userDescription( idTokenNameLookup ), cause.getMessage() ), cause );
+        super( Status.Schema.IndexDropFailed, format( message, "on " + descriptor.userDescription( idTokenNameLookup ), cause.getMessage() ), cause );
         this.descriptor = descriptor;
         this.name = null;
     }
