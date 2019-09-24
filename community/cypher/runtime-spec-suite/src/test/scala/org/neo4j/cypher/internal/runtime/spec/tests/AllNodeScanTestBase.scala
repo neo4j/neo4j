@@ -96,6 +96,11 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
     val expected = for {x <- nodes; y <- nodes; z <- nodes} yield Array(y, z, x)
     runtimeResult should beColumns("y", "z", "x").withRows(expected)
   }
+}
+
+// Supported by interpreted, slotted, morsel, parallel
+trait AllNodeScanWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
+  self: AllNodeScanTestBase[CONTEXT] =>
 
   test("should handle allNodeScan and filter") {
     // given
