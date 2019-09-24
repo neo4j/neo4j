@@ -65,6 +65,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case AssertDbmsAdmin(action) => (_, _, securityContext) =>
       AdministrativeCommandPrivilegeExecutionPlan(securityContext, action, DatabaseScope.ALL)
 
+    case AssertDbmsAdminAndNotCurrentUser(action, userName) => (_, _, securityContext) =>
+      AdministrativeCommandPrivilegeExecutionPlan(securityContext, action, DatabaseScope.ALL, Some(userName))
+
     case AssertDatabaseAdmin(action, database) => (_, _, securityContext) =>
       AdministrativeCommandPrivilegeExecutionPlan(securityContext, action, new DatabaseScope(database.name()))
 

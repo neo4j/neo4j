@@ -29,10 +29,12 @@ import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.{AdminActionOnResource, SecurityContext, PrivilegeAction => KernelPrivilegeAction}
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
-case class AdministrativeCommandPrivilegeExecutionPlan(securityContext: SecurityContext, action: AdminAction, database: DatabaseScope) extends ExecutionPlan {
+case class AdministrativeCommandPrivilegeExecutionPlan(securityContext: SecurityContext, action: AdminAction, database: DatabaseScope,
+                                                       userName: Option[String] = None) extends ExecutionPlan {
   override def run(ctx: QueryContext,
                    doProfile: Boolean,
                    params: MapValue,
@@ -40,6 +42,9 @@ case class AdministrativeCommandPrivilegeExecutionPlan(securityContext: Security
                    ignore: InputDataStream,
                    subscriber: QuerySubscriber): RuntimeResult = {
     if (securityContext.allowsAdminAction(new AdminActionOnResource(AdminActionMapper.asKernelAction(action), database))) {
+      userName.foreach(name => if( securityContext.subject().hasUsername(name))
+        throw new InvalidArgumentsException(s"Failed to alter the specified user '$name': Changing your own activation status is not allowed.")
+      )
       NoRuntimeResult(subscriber)
     } else {
       throw new AuthorizationViolationException(PERMISSION_DENIED)

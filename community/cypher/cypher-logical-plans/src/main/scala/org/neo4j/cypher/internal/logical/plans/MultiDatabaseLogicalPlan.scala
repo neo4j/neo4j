@@ -67,6 +67,7 @@ abstract class PrivilegePlan()(implicit idGen: IdGen) extends SecurityAdministra
 
 case class AssertDbmsAdmin(action: AdminAction)(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertDatabaseAdmin(action: AdminAction, database: NormalizedDatabaseName)(implicit idGen: IdGen) extends PrivilegePlan
+case class AssertDbmsAdminAndNotCurrentUser(action: AdminAction, userName: String)(implicit idGen: IdGen) extends PrivilegePlan
 
 case class GrantDbmsAction(source: Option[PrivilegePlan], action: AdminAction, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class DenyDbmsAction(source: Option[PrivilegePlan], action: AdminAction, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan

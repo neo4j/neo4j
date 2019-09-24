@@ -112,14 +112,25 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
       // ALTER USER foo
       case c@AlterUser(userName, Some(initialStringPassword), initialParameterPassword, requirePasswordChange, suspended) =>
+        val assertionSubPlan =
+        if(suspended.isDefined){
+          plans.AssertDbmsAdminAndNotCurrentUser(AlterUserAction, userName)
+        } else {
+          plans.AssertDbmsAdmin(AlterUserAction)
+        }
         Some(plans.LogSystemCommand(
-          plans.AlterUser(Some(plans.AssertDbmsAdmin(AlterUserAction)), userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended),
+          plans.AlterUser(Some(assertionSubPlan), userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
-
       // ALTER USER foo
       case c@AlterUser(userName, None, initialParameterPassword, requirePasswordChange, suspended) =>
+        val assertionSubPlan =
+          if(suspended.isDefined){
+            plans.AssertDbmsAdminAndNotCurrentUser(AlterUserAction, userName)
+          } else {
+            plans.AssertDbmsAdmin(AlterUserAction)
+          }
         Some(plans.LogSystemCommand(
-          plans.AlterUser(Some(plans.AssertDbmsAdmin(AlterUserAction)), userName, None, initialParameterPassword, requirePasswordChange, suspended),
+          plans.AlterUser(Some(assertionSubPlan), userName, None, initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
