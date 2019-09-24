@@ -1090,8 +1090,8 @@ class IndexingServiceTest
             {
                 barrier.reached();
             }
-        }, index );
-        when( indexProvider.getInitialState( index ) ).thenReturn( POPULATING );
+        }, indexRule );
+        when( indexProvider.getInitialState( indexRule ) ).thenReturn( POPULATING );
 
         life.init();
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -1113,8 +1113,8 @@ class IndexingServiceTest
             barrier.await();
             // Wait for the index to come online, otherwise we'll race the failed flip below with its flip and sometimes the POPULATING -> ONLINE
             // flip will win and make the index NOT fail and therefor hanging this test awaiting on the exceptionBarrier below
-            waitForIndexesToComeOnline( indexing, index );
-            IndexProxy indexProxy = indexing.getIndexProxy( index );
+            waitForIndexesToComeOnline( indexing, indexRule );
+            IndexProxy indexProxy = indexing.getIndexProxy( indexRule );
             assertThat( indexProxy, instanceOf( ContractCheckingIndexProxy.class ) );
             ContractCheckingIndexProxy contractCheckingIndexProxy = (ContractCheckingIndexProxy) indexProxy;
             IndexProxy delegate = contractCheckingIndexProxy.getDelegate();
@@ -1122,13 +1122,13 @@ class IndexingServiceTest
             FlippableIndexProxy flippableIndexProxy = (FlippableIndexProxy) delegate;
             Exception expectedCause = new Exception( "index was failed on purpose" );
             IndexPopulationFailure indexFailure = IndexPopulationFailure.failure( expectedCause );
-            flippableIndexProxy.flipTo( new FailedIndexProxy( index, "string", mock( IndexPopulator.class ),
+            flippableIndexProxy.flipTo( new FailedIndexProxy( indexRule, "string", mock( IndexPopulator.class ),
                 indexFailure, mock( IndexStatisticsStore.class ), internalLogProvider ) );
             barrier.release();
             exceptionBarrier.await();
 
             internalLogProvider.rawMessageMatcher().assertContains( expectedCause.getMessage() );
-            internalLogProvider.rawMessageMatcher().assertContains( format( "Index %s entered %s state ", index.toString(), FAILED ) );
+            internalLogProvider.rawMessageMatcher().assertContains( format( "Index %s entered %s state ", indexRule.toString(), FAILED ) );
         }
         finally
         {
@@ -1352,6 +1352,7 @@ class IndexingServiceTest
         // This test should still fail below when verifying interactions with the proxy and monitor tho.
         when( indexProxy.getState() ).thenReturn( POPULATING, POPULATING, POPULATING, POPULATING, ONLINE );
         when( indexProxyCreator.createRecoveringIndexProxy( any() ) ).thenReturn( indexProxy );
+        when( indexProxyCreator.createFailedIndexProxy( any(), any() ) ).thenReturn( indexProxy );
         when( indexProxyCreator.createPopulatingIndexProxy( any(), anyBoolean(), any(), any() ) ).thenReturn( indexProxy );
         MultiPopulatorFactory multiPopulatorFactory = forConfig( Config.defaults( multi_threaded_schema_index_population_enabled, false ) );
         JobScheduler scheduler = mock( JobScheduler.class );
@@ -1368,8 +1369,6 @@ class IndexingServiceTest
         indexingService.start();
 
         // then it should be able to start without awaiting the completion of the population of the index
-        verify( indexProxyCreator, times( 1 ) ).createRecoveringIndexProxy( any() );
-        verify( indexProxyCreator, times( 1 ) ).createPopulatingIndexProxy( any(), anyBoolean(), any(), any() );
         verify( indexProxy, never() ).awaitStoreScanCompleted( anyLong(), any() );
         verify( monitor, never() ).awaitingPopulationOfRecoveredIndex( any() );
     }
