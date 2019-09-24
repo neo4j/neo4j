@@ -37,8 +37,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.SplittableRandom;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -347,7 +349,8 @@ class RecordStorageMigratorIT
 
         // When we migrate it to the new store format.
         String versionToMigrateTo = getVersionToMigrateTo( check );
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo );
+        ProgressReporter reporter = progressMonitor.startSection( "section" );
+        migrator.migrate( databaseLayout, migrationLayout, reporter, versionToMigrateFrom, versionToMigrateTo );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
 
         generatedRules.sort( Comparator.comparingLong( SchemaRule::getId ) );
@@ -361,6 +364,10 @@ class RecordStorageMigratorIT
             SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders );
             List<SchemaRule> migratedRules = new ArrayList<>();
             storage.getAll().iterator().forEachRemaining( migratedRules::add );
+
+            // Nerf the rule names, since migration may change those around.
+            migratedRules = migratedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );
+            generatedRules = generatedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );
 
             assertThat( migratedRules, equalTo( generatedRules ) );
         }
