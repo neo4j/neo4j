@@ -290,10 +290,10 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a", "b1", "b2")
+      .produceResults("a", "r1", "r2")
       .apply()
       .|.cartesianProduct()
-      .|.|.expand("(a)<-[r2]-(b2)")
+      .|.|.expand("(a)-[r2]->(b2)")
       .|.|.argument("a")
       .|.expand("(a)-[r1]->(b1)")
       .|.argument("a")
@@ -304,13 +304,11 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedResultRows = for {a <- nodes if a != null
-                                  rel1 <- a.getRelationships(Direction.OUTGOING).asScala
-                                  b1 = rel1.getOtherNode(a)
-                                  rel2 <- a.getRelationships(Direction.INCOMING).asScala
-                                  b2 = rel2.getOtherNode(a)
-    } yield Array(a, b1, b2)
+                                  r1 <- a.getRelationships(Direction.OUTGOING).asScala
+                                  r2 <- a.getRelationships(Direction.OUTGOING).asScala
+    } yield Array(a, r1, r2)
 
-    runtimeResult should beColumns("a", "b1", "b2").withRows(expectedResultRows)
+    runtimeResult should beColumns("a", "r1", "r2").withRows(expectedResultRows)
   }
 
   test("should join with double sort and limit after join") {
