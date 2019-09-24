@@ -175,7 +175,7 @@ public class RandomSchema implements Supplier<SchemaRule>
         prototype = prototype.withName( nextName() );
 
         long ruleId = nextRuleIdForIndex();
-        IndexDescriptor index = prototype.withName( "index_" + ruleId ).materialise( ruleId );
+        IndexDescriptor index = prototype.materialise( ruleId );
 
         if ( isUnique && rng.nextBoolean() )
         {
@@ -255,7 +255,7 @@ public class RandomSchema implements Supplier<SchemaRule>
         {
             name = ((TextValue) values.nextValueOfTypes( textTypes )).stringValue().trim();
         }
-        while ( name.isEmpty() || name.isBlank() ); // Avoid generating empty names.
+        while ( name.isEmpty() || name.isBlank() || name.contains( "\0" ) ); // Avoid generating empty names.
         return name;
     }
 
