@@ -150,7 +150,7 @@ InModuleScope Neo4j-Management {
 
     Context "Server Invoke - Additional Java Parameters" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-         -NeoConfSettings 'dbms.logs.gc.enabled=true'
+         -NeoConfSettings @('dbms.logs.gc.enabled=true', 'dbms.jvm.additional=-DmyProperty1=a;b;c')
 
       $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall
       $jvmArgs = ($prunsrv.args | Where-Object { $_ -match '^\"--JvmOptions=' })
@@ -162,6 +162,10 @@ InModuleScope Neo4j-Management {
       # dbms.logs.gc.enabled=true is specified in the mock so -Xloggc:... should be present in the Prunsrv command
       It "should set GCLogfile in Prunsrv if specified in neo4j.conf" {
         $jvmArgs | Should Match ([regex]::Escape('-Xloggc:'))
+      }
+
+      It "should escape ; characters in additional java parameters" {
+        $jvmArgs | Should Match ([regex]::Escape("-DmyProperty1=a';'b';'c"))
       }
     }
 
