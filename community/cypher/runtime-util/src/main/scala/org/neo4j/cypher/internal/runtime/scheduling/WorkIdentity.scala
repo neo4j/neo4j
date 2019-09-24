@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 object WorkIdentity {
-  def fromPlan(plan: LogicalPlan): WorkIdentity =
-    WorkIdentityImpl(plan.id, plan.getClass.getSimpleName)
+  def fromPlan(plan: LogicalPlan, postfix: String = ""): WorkIdentity =
+    WorkIdentityImpl(plan.id, plan.getClass.getSimpleName + postfix)
 
   def fromFusedPlans(fusedPlans: Iterable[LogicalPlan]): WorkIdentity = {
     WorkIdentityImpl(fusedPlans.head.id, s"Fused(${fusedPlans.map(_.getClass.getSimpleName).mkString("->")})")
