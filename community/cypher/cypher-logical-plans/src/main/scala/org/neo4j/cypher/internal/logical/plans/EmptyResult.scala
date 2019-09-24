@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 /*
  * Produce zero rows, regardless of source.
  */
-case class EmptyResult(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class EmptyResult(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
