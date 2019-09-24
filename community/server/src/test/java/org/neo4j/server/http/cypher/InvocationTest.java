@@ -40,6 +40,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -231,7 +232,7 @@ public class InvocationTest
     }
 
     @Test
-    public void shouldCommitSinglePeriodicCommitStatement() throws Exception
+    public void shouldCommitSinglePeriodicCommitStatement()
     {
         // given
         String queryText = "USING PERIODIC COMMIT CREATE()";
@@ -450,6 +451,35 @@ public class InvocationTest
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeFailure( Status.Transaction.TransactionStartFailed, "Something went wrong" );
+        outputOrder.verify( outputEventStream ).writeTransactionInfo( TransactionNotificationState.NO_TRANSACTION, uriScheme.txCommitUri( 1337L ), -1 );
+        verifyNoMoreInteractions( outputEventStream );
+    }
+
+    @Test
+    public void shouldHandleAuthorizationErrorWhenStartingTransaction()
+    {
+        // given
+        when( kernel.newTransaction( any(), any(), any(), anyLong() ) ).thenThrow( new AuthorizationViolationException( "Forbidden" ) );
+
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
+        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
+
+        InputEventStream inputEventStream = mock( InputEventStream.class );
+        Statement statement = new Statement( "query", map() );
+        when( inputEventStream.read() ).thenReturn( statement, null );
+
+        mockDefaultResult();
+
+        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+
+        // when
+        invocation.execute( outputEventStream );
+
+        // then
+        verifyNoMoreInteractions( log );
+
+        InOrder outputOrder = inOrder( outputEventStream );
+        outputOrder.verify( outputEventStream ).writeFailure( Status.Security.Forbidden, "Forbidden" );
         outputOrder.verify( outputEventStream ).writeTransactionInfo( TransactionNotificationState.NO_TRANSACTION, uriScheme.txCommitUri( 1337L ), -1 );
         verifyNoMoreInteractions( outputEventStream );
     }

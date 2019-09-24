@@ -111,6 +111,11 @@ class Invocation
             transactionHandle.ensureActiveTransaction();
             transactionNotificationState = TransactionNotificationState.OPEN;
         }
+        catch ( AuthorizationViolationException se )
+        {
+            handleNeo4jError( se.status(), se );
+            return false;
+        }
         catch ( Exception e )
         {
 
