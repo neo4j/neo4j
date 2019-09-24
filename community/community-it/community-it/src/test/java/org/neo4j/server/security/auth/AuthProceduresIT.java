@@ -111,6 +111,13 @@ public class AuthProceduresIT
     }
 
     @Test
+    void shouldGetDeprecatedNotificationForChangePasswordProcedure()
+    {
+        assertNotification( admin, "explain CALL dbms.security.changePassword('abc123')",
+                deprecatedProcedureNotification( "dbms.security.changePassword", "Administration command: ALTER CURRENT USER SET PASSWORD" ) );
+    }
+
+    @Test
     void shouldChangePassword() throws Throwable
     {
         // Given

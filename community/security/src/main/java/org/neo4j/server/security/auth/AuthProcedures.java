@@ -83,8 +83,9 @@ public class AuthProcedures
     }
 
     @SystemProcedure
+    @Deprecated
     @Description( "Change the current user's password." )
-    @Procedure( name = "dbms.security.changePassword", mode = DBMS )
+    @Procedure( name = "dbms.security.changePassword", mode = DBMS, deprecatedBy = "Administration command: ALTER CURRENT USER SET PASSWORD" )
     public void changePassword( @Name( "password" ) String password ) throws ProcedureException
     {
         throw new ProcedureException( FeatureDeprecationWarning, "This procedure is no longer available, use: 'ALTER CURRENT USER SET PASSWORD'" );
