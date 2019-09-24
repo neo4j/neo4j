@@ -117,19 +117,27 @@ function Get-Neo4jPrunsrv
         Write-Verbose "Reading JVM settings from configuration"
         # Try neo4j.conf first, but then fallback to neo4j-wrapper.conf for backwards compatibility reasons
         $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
-        if ($setting -ne $null) {
-          $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add $setting.value)
-        } else {
+        if ($setting -eq $null) {
           $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
-          if ($setting -ne $null) {
-            $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add $setting.value)
+        }
+
+        if ($setting -ne $null) {
+          # Procrun expects us to split each option with `;` if these characters are used inside the actual option values
+          # that will cause problems in parsing. To overcome the problem, we need to escape those characters by placing 
+          # them inside single quotes.
+          $settingsEscaped = @()
+          foreach ($option in $setting.value) {
+            $settingsEscaped += $option -replace "([;])",'''$1'''
           }
+
+          $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add $settingsEscaped)
         }
 
         # Pass through appropriate args from Java invocation to Prunsrv
         # These options take priority over settings in the wrapper
         Write-Verbose "Reading JVM settings from console java invocation"
-        $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add ($JavaCMD.args | Where-Object { $_ -match '(^-D|^-X)' }))
+        $cmdSettings = ($JavaCMD.args | Where-Object { $_ -match '(^-D|^-X)' } | % { $_ -replace "([;])",'''$1''' })
+        $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add $cmdSettings)
 
         $PrunArgs += @("`"--StartMode=jvm`"",
           "`"--StartMethod=start`"",
