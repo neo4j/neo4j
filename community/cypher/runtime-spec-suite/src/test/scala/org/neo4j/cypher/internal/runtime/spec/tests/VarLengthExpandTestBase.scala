@@ -697,6 +697,24 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("y").withNoRows()
   }
 
+  test("should filter on node predicate on first node from reference") {
+    // given
+    val g = sineGraph()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(X)-[r:*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> "+g.start.getId))
+      .projection("x AS X")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withNoRows()
+  }
+
   test("should filter on relationship predicate") {
     // given
     val g = sineGraph()
@@ -741,7 +759,146 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
+  test("should handle predicate accessing start node") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
+      .input(nodes = Seq("x"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 0 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle expand into with predicate accessing end node") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", expandMode = ExpandInto, nodePredicate = Predicate("n", "'END' IN labels(y)"))
+      .input(nodes = Seq("x", "y"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected: IndexedSeq[Array[Node]] = paths.map(p => Array(p.startNode, p.endNode()))
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle predicate accessing start node when reference") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
+      .input(variables = Seq("x"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    // then
+    val expected =
+    for {
+      path <- paths
+      length <- 0 to 5
+    } yield Array(path.startNode, path.take(length).endNode())
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle expand into with predicate accessing end node when reference") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", expandMode = ExpandInto, nodePredicate = Predicate("n", "'END' IN labels(y)"))
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected: IndexedSeq[Array[Node]] = paths.map(p => Array(p.startNode, p.endNode()))
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle predicate accessing reference in context") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "id(n) >= zero"))
+      .projection("0 AS zero")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 0 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle predicate accessing node in context") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "id(other) >= 0"))
+      .projection("0 AS zero")
+      .input(nodes = Seq("x", "other"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 0 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
   // HELPERS
 
-  private def closestMultipleOf(sizeHint: Int, div: Int) = (sizeHint / div) * div
+  def closestMultipleOf(sizeHint: Int, div: Int) = (sizeHint / div) * div
 }
