@@ -66,7 +66,7 @@
     <maven.compiler.target>11</maven.compiler.target>
     <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
     <lucene.version>8.2.0</lucene.version>
-    <bouncycastle.version>1.62</bouncycastle.version>
+    <bouncycastle.version>1.63</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <test.runner.jvm/>
     <test.runner.jvm.settings.additional/>
@@ -108,7 +108,7 @@
     <opencypher.version>1.0.0-M14</opencypher.version>
     <caffeine.version>2.8.0</caffeine.version>
     <required.maven.version>3.5.4</required.maven.version>
-    <jackson.version>2.9.9</jackson.version>
+    <jackson.version>2.9.10</jackson.version>
 	<amazon-sdk.version>1.11.524</amazon-sdk.version>
     <guava.version>28.0-jre</guava.version>
   </properties>
@@ -1436,7 +1436,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.9.9.3</version> <!-- contains security fixes -->
+        <version>${jackson.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
