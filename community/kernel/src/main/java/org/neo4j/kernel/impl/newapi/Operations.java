@@ -1200,7 +1200,8 @@ public class Operations implements Write, SchemaWrite
         }
         else
         {
-            throw new NoSuchConstraintException( schema );
+            throw new DropConstraintFailureException( "on " + schema.userDescription( tokenNameLookup ),
+                    new NoSuchConstraintException( schema.userDescription( tokenNameLookup ) ) );
         }
     }
 

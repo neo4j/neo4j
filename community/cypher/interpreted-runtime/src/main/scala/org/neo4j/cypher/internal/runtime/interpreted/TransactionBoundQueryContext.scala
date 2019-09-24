@@ -49,7 +49,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.exceptions.schema.{EquivalentSchemaRuleAlreadyExistsException, NoSuchConstraintException, NoSuchIndexException}
+import org.neo4j.kernel.api.exceptions.schema._
 import org.neo4j.kernel.api.{ResourceManager => _, _}
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
@@ -732,7 +732,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def dropIndexRule(name: String): Unit = {
     val ktx = transactionalContext.kernelTransaction
     val index = ktx.schemaRead().indexGetForName(name)
-    if (index == IndexDescriptor.NO_INDEX) throw new NoSuchIndexException(name)
+    if (index == IndexDescriptor.NO_INDEX) throw new DropIndexFailureException(name, new NoSuchIndexException(name))
     ktx.schemaWrite().indexDrop(index)
   }
 
@@ -787,7 +787,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def dropNamedConstraint(name: String): Unit = {
     val ktx = transactionalContext.kernelTransaction
     val constraint = ktx.schemaRead().constraintGetForName(name)
-    if (constraint == null) throw new NoSuchConstraintException(name)
+    if (constraint == null) throw new DropConstraintFailureException(name, new NoSuchConstraintException(name))
     ktx.schemaWrite().constraintDrop(constraint)
   }
 

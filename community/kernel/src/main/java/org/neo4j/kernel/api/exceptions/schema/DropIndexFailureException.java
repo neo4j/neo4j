@@ -31,19 +31,33 @@ import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 public class DropIndexFailureException extends SchemaKernelException
 {
     private final SchemaDescriptor descriptor;
-    private static final String message = "Unable to drop index on %s: %s";
+    private final String name;
+    private static final String message = "Unable to drop index %s: %s";
 
     public DropIndexFailureException( SchemaDescriptor descriptor, SchemaKernelException cause )
     {
-        super( Status.Schema.IndexDropFailed, format( message, descriptor.userDescription( idTokenNameLookup ),
-                        cause.getMessage() ), cause );
+        super( Status.Schema.IndexDropFailed, format( message, descriptor.userDescription( idTokenNameLookup ), cause.getMessage() ), cause );
         this.descriptor = descriptor;
+        this.name = null;
+    }
+
+    public DropIndexFailureException( String name, SchemaKernelException cause )
+    {
+        super( Status.Schema.IndexDropFailed, format( message, name, cause.getMessage() ), cause );
+        this.descriptor = null;
+        this.name = name;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( message, descriptor.userDescription( tokenNameLookup ),
-                ((KernelException) getCause()).getUserMessage( tokenNameLookup ) );
+        if ( descriptor == null )
+        {
+            return format( message, name, ((KernelException) getCause()).getUserMessage( tokenNameLookup ) );
+        }
+        else
+        {
+            return format( message, "on " + descriptor.userDescription( tokenNameLookup ), ((KernelException) getCause()).getUserMessage( tokenNameLookup ) );
+        }
     }
 }

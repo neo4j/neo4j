@@ -35,6 +35,16 @@ public class DropConstraintFailureException extends SchemaKernelException
         this.constraint = constraint;
     }
 
+    public DropConstraintFailureException( String nameOrSchema, Throwable cause )
+    {
+        // nameOrSchema is just 'name' or 'on schema'
+        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint %s: %s", nameOrSchema, cause.getMessage() );
+        this.constraint = null;
+    }
+
+    /*
+     * Returns null if the exception was created with name.
+     */
     public ConstraintDescriptor constraint()
     {
         return constraint;
@@ -43,13 +53,20 @@ public class DropConstraintFailureException extends SchemaKernelException
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        String message = "Unable to drop " + constraint.userDescription( tokenNameLookup );
-        if ( getCause() instanceof KernelException )
+        if ( constraint == null )
         {
-            KernelException cause = (KernelException) getCause();
-
-            return String.format( "%s:%n%s", message, cause.getUserMessage( tokenNameLookup ) );
+            return getMessage();
         }
-        return message;
+        else
+        {
+            String message = "Unable to drop " + constraint.userDescription( tokenNameLookup );
+            if ( getCause() instanceof KernelException )
+            {
+                KernelException cause = (KernelException) getCause();
+
+                return String.format( "%s:%n%s", message, cause.getUserMessage( tokenNameLookup ) );
+            }
+            return message;
+        }
     }
 }
