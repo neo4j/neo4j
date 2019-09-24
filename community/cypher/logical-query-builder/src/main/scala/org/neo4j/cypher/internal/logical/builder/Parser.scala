@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import org.neo4j.cypher.internal.v4_0.ast.UnresolvedCall
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.parser.Expressions
+import org.neo4j.cypher.internal.v4_0.parser.{Expressions, ProcedureCalls}
 import org.neo4j.cypher.internal.v4_0.util.{ASTNode, Rewriter, topDown}
 import org.parboiled.scala.{ReportingParseRunner, Rule1}
 
-object ExpressionParser {
+object Parser {
   val injectCachedNodeProperties: Rewriter = topDown(Rewriter.lift {
     case ContainerIndex(Variable("cache"), Property(v@Variable(node), pkn:PropertyKeyName)) =>
       CachedProperty(node, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
@@ -33,33 +34,43 @@ object ExpressionParser {
     case a:ASTNode => a.dup(a.children.toSeq :+ AbstractLogicalPlanBuilder.pos)
   })
 
-  def cleanup(expression: Expression): Expression =
-    injectCachedNodeProperties.andThen(invalidateInputPositions)(expression).asInstanceOf[Expression]
+  def cleanup[T <: ASTNode](in: T): T =
+    injectCachedNodeProperties.andThen(invalidateInputPositions)(in).asInstanceOf[T]
 
   private val regex = s"(.+) [Aa][Ss] ([a-zA-Z0-9` @]+)".r
-  private val expParser = new ExpressionParser
+  private val parser = new Parser
 
   def parseProjections(projections: String*): Map[String, Expression] = {
     projections.map {
-      case regex(ExpressionParser(expression), alias) => (VariableParser.unescaped(alias), expression)
+      case regex(Parser(expression), alias) => (VariableParser.unescaped(alias), expression)
       case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a projection")
     }.toMap
   }
 
-  def parseExpression(text: String): Expression = expParser.parse(text)
+  def parseExpression(text: String): Expression = parser.parseExpression(text)
 
-  def unapply(arg: String): Option[Expression] = Some(expParser.parse(arg))
+  def parseProcedureCall(text: String): UnresolvedCall = parser.parseProcedureCall(text)
 
+  def unapply(arg: String): Option[Expression] = Some(parser.parseExpression(arg))
 }
 
-class ExpressionParser extends Expressions {
-  private val parser: Rule1[Expression] = Expression
+private class Parser extends Expressions with ProcedureCalls {
+  private val expressionParser: Rule1[Expression] = Expression
+  private val procedureCallParser: Rule1[UnresolvedCall] = Call
 
-  def parse(text: String): Expression = {
-    val res = ReportingParseRunner(parser).run(text)
+  def parseExpression(text: String): Expression = {
+    val res = ReportingParseRunner(expressionParser).run(text)
     res.result match {
-      case Some(e) => ExpressionParser.cleanup(e)
+      case Some(e) => Parser.cleanup(e)
       case None => throw new IllegalArgumentException(s"Could not parse expression: ${res.parseErrors}")
+    }
+  }
+
+  def parseProcedureCall(text: String): UnresolvedCall = {
+    val res = ReportingParseRunner(procedureCallParser).run(s"CALL $text")
+    res.result match {
+      case Some(e) => Parser.cleanup(e)
+      case None => throw new IllegalArgumentException(s"Could not parse procedure call: ${res.parseErrors}")
     }
   }
 }

@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
-import org.neo4j.cypher.internal.logical.builder.TokenResolver
+import org.neo4j.cypher.internal.logical.builder.Resolver
+import org.neo4j.cypher.internal.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.runtime.{InputDataStream, InputDataStreamTestSupport, NoInput, QueryStatistics}
+import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, ExecutionPlan, LogicalQuery, RuntimeContext}
@@ -65,7 +67,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   with AstConstructionTestSupport
   with InputDataStreamTestSupport
   with BeforeAndAfterEach
-  with TokenResolver {
+  with Resolver {
 
   var managementService: DatabaseManagementService = _
   var graphDb: GraphDatabaseService = _
@@ -125,6 +127,26 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     val tx = graphDb.beginTx()
     try {
       val result = tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().propertyKey(prop)
+      tx.commit()
+      result
+    } finally tx.close()
+  }
+
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = {
+    val tx = graphDb.beginTx()
+    try {
+      val ktx = tx.asInstanceOf[InternalTransaction].kernelTransaction()
+      val result = TransactionBoundPlanContext.procedureSignature(ktx, name)
+      tx.commit()
+      result
+    } finally tx.close()
+  }
+
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
+    val tx = graphDb.beginTx()
+    try {
+      val ktx = tx.asInstanceOf[InternalTransaction].kernelTransaction()
+      val result = TransactionBoundPlanContext.functionSignature(ktx, name)
       tx.commit()
       result
     } finally tx.close()

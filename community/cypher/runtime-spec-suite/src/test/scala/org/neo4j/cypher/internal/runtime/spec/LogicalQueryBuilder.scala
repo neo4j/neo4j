@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.LogicalQuery
-import org.neo4j.cypher.internal.logical.builder.{AbstractLogicalPlanBuilder, TokenResolver}
+import org.neo4j.cypher.internal.logical.builder.{AbstractLogicalPlanBuilder, Resolver}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.util.Cardinality
 /**
   * Test help utility for hand-writing logical queries.
   */
-class LogicalQueryBuilder(tokenResolver: TokenResolver)
+class LogicalQueryBuilder(tokenResolver: Resolver)
   extends AbstractLogicalPlanBuilder[LogicalQuery, LogicalQueryBuilder](tokenResolver) {
 
   private var semanticTable = new SemanticTable()

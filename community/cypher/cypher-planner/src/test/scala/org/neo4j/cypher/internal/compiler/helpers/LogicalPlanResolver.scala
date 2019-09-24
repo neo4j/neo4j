@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import org.neo4j.cypher.internal.logical.builder.TokenResolver
+import org.neo4j.cypher.internal.logical.builder.Resolver
+import org.neo4j.cypher.internal.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 import scala.collection.mutable.ArrayBuffer
 
-class LogicalPlanTokenResolver extends TokenResolver {
+class LogicalPlanResolver extends Resolver {
   private val labels = new ArrayBuffer[String]()
   private val properties = new ArrayBuffer[String]()
 
@@ -46,4 +47,8 @@ class LogicalPlanTokenResolver extends TokenResolver {
       index
     }
   }
+
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = ???
+
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???
 }

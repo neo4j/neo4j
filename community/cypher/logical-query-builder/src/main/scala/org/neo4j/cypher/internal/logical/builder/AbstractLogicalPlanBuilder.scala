@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength, CreateNode}
+import org.neo4j.cypher.internal.ir.{CreateNode, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Predicate, pos}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
@@ -30,21 +30,25 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId, Seque
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Used by [[AbstractLogicalPlanBuilder]] to resolve tokens
+  * Used by [[AbstractLogicalPlanBuilder]] to resolve tokens and procedures
   */
-trait TokenResolver {
+trait Resolver {
   /**
     * Obtain the token of a label by name.
     */
   def getLabelId(label: String): Int
 
   def getPropertyKeyId(prop: String): Int
+
+  def procedureSignature(name: QualifiedName): ProcedureSignature
+
+  def functionSignature(name: QualifiedName): Option[UserFunctionSignature]
 }
 
 /**
   * Test help utility for hand-writing objects needing logical plans.
   */
-abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](protected val tokenResolver: TokenResolver) {
+abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](protected val resolver: Resolver) {
 
   self: IMPL =>
 
@@ -109,6 +113,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def procedureCall(call: String): IMPL = {
+    val uc = Parser.parseProcedureCall(call)
+    appendAtCurrentIndent(UnaryOperator(lp => ProcedureCall(lp, ResolvedCall(resolver.procedureSignature)(uc))(_)))
+    self
+  }
+
   def optional(protectedSymbols: String*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Optional(lp, protectedSymbols.toSet)(_)))
     self
@@ -154,7 +164,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val p = PatternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
-        val pred = predicate.map(ExpressionParser.parseExpression)
+        val pred = predicate.map(Parser.parseExpression)
         appendAtCurrentIndent(UnaryOperator(lp => OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, pred)(_)))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
@@ -166,7 +176,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val p = PatternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
-        val pred = predicate.map(ExpressionParser.parseExpression)
+        val pred = predicate.map(Parser.parseExpression)
         appendAtCurrentIndent(UnaryOperator(lp => OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto, pred)(_)))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
@@ -234,25 +244,25 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def unwind(projectionString: String): IMPL = {
-    val (name, expression) = ExpressionParser.parseProjections(projectionString).head
+    val (name, expression) = Parser.parseProjections(projectionString).head
     appendAtCurrentIndent(UnaryOperator(lp => UnwindCollection(lp, name, expression)(_)))
     self
   }
 
   def projection(projectionStrings: String*): IMPL = {
-    val projections = ExpressionParser.parseProjections(projectionStrings: _*)
+    val projections = Parser.parseProjections(projectionStrings: _*)
     appendAtCurrentIndent(UnaryOperator(lp => Projection(lp, projections)(_)))
     self
   }
 
   def distinct(projectionStrings: String*): IMPL = {
-    val projections = ExpressionParser.parseProjections(projectionStrings: _*)
+    val projections = Parser.parseProjections(projectionStrings: _*)
     appendAtCurrentIndent(UnaryOperator(lp => Distinct(lp, projections)(_)))
     self
   }
 
   def orderedDistinct(orderToLeverage: Seq[Expression], projectionStrings: String*): IMPL = {
-    val projections = ExpressionParser.parseProjections(projectionStrings: _*)
+    val projections = Parser.parseProjections(projectionStrings: _*)
     appendAtCurrentIndent(UnaryOperator(lp => OrderedDistinct(lp, projections, orderToLeverage)(_)))
     self
   }
@@ -344,8 +354,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                         argumentIds: Set[String] = Set.empty,
                         unique: Boolean = false,
                         customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
-    val label = tokenResolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
-    val propIds = PartialFunction(tokenResolver.getPropertyKeyId)
+    val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
+    val propIds = PartialFunction(resolver.getPropertyKeyId)
     val planBuilder = (idGen: IdGen) => {
       val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique, customQueryExpression)(idGen)
       newNode(varFor(plan.idName))
@@ -357,15 +367,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def aggregation(groupingExpressions: Seq[String],
                   aggregationExpression: Seq[String]): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => Aggregation(lp,
-      ExpressionParser.parseProjections(groupingExpressions: _*),
-      ExpressionParser.parseProjections(aggregationExpression: _*))(_)))
+      Parser.parseProjections(groupingExpressions: _*),
+      Parser.parseProjections(aggregationExpression: _*))(_)))
 
   def orderedAggregation(groupingExpressions: Seq[String],
                          aggregationExpression: Seq[String],
                          orderToLeverage: Seq[Expression]): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => OrderedAggregation(lp,
-      ExpressionParser.parseProjections(groupingExpressions: _*),
-      ExpressionParser.parseProjections(aggregationExpression: _*),
+      Parser.parseProjections(groupingExpressions: _*),
+      Parser.parseProjections(aggregationExpression: _*),
       orderToLeverage)(_)))
 
   def apply(): IMPL =
@@ -386,27 +396,27 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def cacheProperties(properties: String*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => CacheProperties(source,
-      properties.map(ExpressionParser.parseExpression(_).asInstanceOf[LogicalProperty]).toSet)(_)))
+      properties.map(Parser.parseExpression(_).asInstanceOf[LogicalProperty]).toSet)(_)))
   }
 
   def setProperty(entity: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetProperty(source, ExpressionParser.parseExpression(entity), PropertyKeyName(propertyKey)(pos), ExpressionParser.parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetProperty(source, Parser.parseExpression(entity), PropertyKeyName(propertyKey)(pos), Parser.parseExpression(value))(_)))
   }
 
   def setNodeProperty(node: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), ExpressionParser.parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), Parser.parseExpression(value))(_)))
   }
 
   def setRelationshipProperty(relationship: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), ExpressionParser.parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), Parser.parseExpression(value))(_)))
   }
 
   def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetNodePropertiesFromMap(source, node, ExpressionParser.parseExpression(map), removeOtherProps)(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetNodePropertiesFromMap(source, node, Parser.parseExpression(map), removeOtherProps)(_)))
   }
 
   def setRelationshipPropertiesFromMap(relationship: String, map: String, removeOtherProps: Boolean): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipPropertiesFromMap(source, relationship, ExpressionParser.parseExpression(map), removeOtherProps)(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipPropertiesFromMap(source, relationship, Parser.parseExpression(map), removeOtherProps)(_)))
   }
 
   def create(nodes: CreateNode*): IMPL = {
@@ -418,7 +428,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def valueHashJoin(predicate: String): IMPL = {
-    val expression = ExpressionParser.parseExpression(predicate)
+    val expression = Parser.parseExpression(predicate)
     expression match {
       case e: Equals =>
         appendAtCurrentIndent(BinaryOperator((left, right) => ValueHashJoin(left, right, e)(_)))
@@ -442,7 +452,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def filter(predicateStrings: String*): IMPL = {
-    val predicates = predicateStrings.map(ExpressionParser.parseExpression)
+    val predicates = predicateStrings.map(Parser.parseExpression)
     appendAtCurrentIndent(UnaryOperator(lp => Selection(predicates, lp)(_)))
   }
 
@@ -531,7 +541,7 @@ object AbstractLogicalPlanBuilder {
       if (entity == "") {
         None
       } else {
-        Some(VariablePredicate(Variable(entity)(pos), ExpressionParser.parseExpression(predicate)))
+        Some(VariablePredicate(Variable(entity)(pos), Parser.parseExpression(predicate)))
       }
     }
   }

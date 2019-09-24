@@ -32,6 +32,7 @@ import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.{InternalIndexState, procs, _}
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, IndexLimitation, IndexOrder, IndexValueCapability, SchemaDescriptor}
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.values.storable.ValueCategory
 
 import scala.collection.JavaConverters._
@@ -43,6 +44,47 @@ object TransactionBoundPlanContext {
     val statistics = TransactionBoundGraphStatistics(tc.dataRead, tc.schemaRead)
 
     new TransactionBoundPlanContext(tc, logger, InstrumentedGraphStatistics(statistics, new MutableGraphStatisticsSnapshot()))
+  }
+
+  def procedureSignature(tx: KernelTransaction, name: QualifiedName): ProcedureSignature = {
+    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
+    val procedures = tx.procedures()
+    val handle = procedures.procedureGet(kn)
+    val signature = handle.signature()
+    val input = signature.inputSignature().asScala
+      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
+      .toIndexedSeq
+    val output = if (signature.isVoid) None else Some(
+      signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
+    val deprecationInfo = asOption(signature.deprecated())
+    val mode = asCypherProcMode(signature.mode(), signature.allowed())
+    val description = asOption(signature.description())
+    val warning = asOption(signature.warning())
+
+    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, signature.eager(), handle.id(), signature.systemProcedure())
+  }
+
+  def functionSignature(tx: KernelTransaction, name: QualifiedName): Option[UserFunctionSignature] = {
+    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
+    val procedures = tx.procedures()
+    val func = procedures.functionGet(kn)
+
+    val (fcn, aggregation) = if (func != null) (func, false)
+    else (procedures.aggregationFunctionGet(kn), true)
+    if (fcn == null) None
+    else {
+      val signature = fcn.signature()
+      val input = signature.inputSignature().asScala
+        .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
+        .toIndexedSeq
+      val output = asCypherType(signature.outputType())
+      val deprecationInfo = asOption(signature.deprecated())
+      val description = asOption(signature.description())
+
+      Some(UserFunctionSignature(name, input, output, deprecationInfo,
+        signature.allowed(), description, isAggregate = aggregation,
+        id = fcn.id(), threadSafe = fcn.threadSafe()))
+    }
   }
 }
 
@@ -173,46 +215,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = {
-    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
-    val procedures = tc.kernelTransaction.procedures()
-    val handle = procedures.procedureGet(kn)
-    val signature = handle.signature()
-    val input = signature.inputSignature().asScala
-      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
-      .toIndexedSeq
-    val output = if (signature.isVoid) None else Some(
-      signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
-    val deprecationInfo = asOption(signature.deprecated())
-    val mode = asCypherProcMode(signature.mode(), signature.allowed())
-    val description = asOption(signature.description())
-    val warning = asOption(signature.warning())
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name)
 
-    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, signature.eager(), handle.id(), signature.systemProcedure())
-  }
-
-  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
-    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
-    val procedures = tc.kernelTransaction.procedures()
-    val func = procedures.functionGet(kn)
-
-    val (fcn, aggregation) = if (func != null) (func, false)
-    else (procedures.aggregationFunctionGet(kn), true)
-    if (fcn == null) None
-    else {
-      val signature = fcn.signature()
-      val input = signature.inputSignature().asScala
-        .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
-        .toIndexedSeq
-      val output = asCypherType(signature.outputType())
-      val deprecationInfo = asOption(signature.deprecated())
-      val description = asOption(signature.description())
-
-      Some(UserFunctionSignature(name, input, output, deprecationInfo,
-                                 signature.allowed(), description, isAggregate = aggregation,
-                                 id = fcn.id(), threadSafe = fcn.threadSafe()))
-    }
-  }
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
 
   override def notificationLogger(): InternalNotificationLogger = logger
 }
