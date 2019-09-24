@@ -57,7 +57,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       def planActions(source: Option[PrivilegePlan], roleName: String, g: AdminAction*): Option[PrivilegePlan] = g.foldLeft(source) {
         case (plan, act) => planAction(plan, roleName, act)
       }
-      roleNames.foldLeft(Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan])) {
+      roleNames.foldLeft(source) {
         case (source, roleName) => action match {
           case IndexManagementAction => planActions(source, roleName, CreateIndexAction, DropIndexAction)
           case ConstraintManagementAction => planActions(source, roleName, CreateConstraintAction, DropConstraintAction)
@@ -209,14 +209,14 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
       // DENY ACCESS/START/STOP ON DATABASE foo TO role
       case c@DenyPrivilege(DatabasePrivilege(action), _, database, _, roleNames) =>
         planDatabasePrivileges(
-          Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
+          Option(plans.AssertDbmsAdmin(DenyPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
           (plan, role, act) => Some(plans.DenyDatabaseAction(plan, act, database, role))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE ACCESS/START/STOP ON DATABASE foo FROM role
       case c@RevokePrivilege(DatabasePrivilege(action), _, database, _, roleNames, revokeType) =>
         planDatabasePrivileges(
-          Option(plans.AssertDbmsAdmin(GrantPrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
+          Option(plans.AssertDbmsAdmin(RevokePrivilegeAction).asInstanceOf[PrivilegePlan]), roleNames, action,
           (plan, role, act) => Some(plans.RevokeDatabaseAction(plan, act, database, role, revokeType))
         ).map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 

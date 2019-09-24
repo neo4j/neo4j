@@ -208,38 +208,45 @@ trait Statement extends Parser
 
   //`GRANT ACCESS/START/STOP ON DATABASE foo TO role`
   //`GRANT CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
+  //`GRANT CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
   //`GRANT CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
-  def GrantDatabasePrivilege: Rule1[GrantPrivilege] = rule("CATALOG GRANT ACCESS/START/STOP") {
+  def GrantDatabasePrivilege: Rule1[GrantPrivilege] = rule("CATALOG GRANT Database & Schema privileges") {
     group(keyword("GRANT") ~~ DatabaseAction ~~ Database ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.GrantPrivilege.databaseAction( databaseAction, scope, grantees))
   }
 
   //`DENY ACCESS/START/STOP ON DATABASE foo TO role`
   //`DENY CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
+  //`DENY CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
   //`DENY CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
-  def DenyDatabasePrivilege: Rule1[DenyPrivilege] = rule("CATALOG DENY ACCESS/START/STOP") {
+  def DenyDatabasePrivilege: Rule1[DenyPrivilege] = rule("CATALOG DENY Database & Schema privileges") {
     group(keyword("DENY") ~~ DatabaseAction ~~ Database ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.DenyPrivilege.databaseAction( databaseAction, scope, grantees))
   }
 
   //`REVOKE GRANT ACCESS/START/STOP ON DATABASE foo FROM role`
   //`REVOKE GRANT CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
+  //`REVOKE GRANT CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
   //`REVOKE GRANT CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
-  def RevokeGrantDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT ACCESS/START/STOP") {
+  def RevokeGrantDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT Database & Schema privileges") {
     group(keyword("REVOKE GRANT") ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.RevokePrivilege.databaseGrantedAction( databaseAction, scope, grantees))
   }
 
   //`REVOKE DENY ACCESS/START/STOP ON DATABASE foo FROM role`
   //`REVOKE DENY CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
+  //`REVOKE DENY CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
   //`REVOKE DENY CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
-  def RevokeDenyDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY ACCESS/START/STOP") {
+  def RevokeDenyDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY Database & Schema privileges") {
     group(keyword("REVOKE DENY") ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.RevokePrivilege.databaseDeniedAction( databaseAction, scope, grantees))
   }
 
-  //`REVOKE TRAVERSE ON DATABASE foo FROM role`
-  def RevokeDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE ACCESS/START/STOP") {
+  //`REVOKE ACCESS/START/STOP ON DATABASE foo FROM role`
+  //`REVOKE CREATE INDEX/DROP INDEX/INDEX MANAGEMENT ON DATABASE foo TO role`
+  //`REVOKE CREATE CONSTRAINT/DROP CONSTRAINT/CONSTRAINT MANAGEMENT ON DATABASE foo TO role`
+  //`REVOKE CREATE NEW NODE LABEL/RELATIONSHIP TYPE/PROPERTY NAME ON DATABASE foo TO role`
+  def RevokeDatabasePrivilege: Rule1[RevokePrivilege] = rule("CATALOG REVOKE Database & Schema privileges") {
     group(keyword("REVOKE") ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((databaseAction, scope, grantees) => ast.RevokePrivilege.databaseAction( databaseAction, scope, grantees))
   }
@@ -404,7 +411,7 @@ trait Statement extends Parser
         keyword("*") ~~~> ast.AllGraphsScope())
   )
 
-  private def DatabaseAction: Rule1[DatabaseAction] = rule("start/stop/create/drop a database and index and token management")(
+  private def DatabaseAction: Rule1[DatabaseAction] = rule("start/stop/create/drop a database and index, constraint and token management")(
     keyword("ACCESS") ~~~> (_ => ast.AccessDatabaseAction) |
       keyword("START") ~~~> (_ => ast.StartDatabaseAction) |
       keyword("STOP") ~~~> (_ => ast.StopDatabaseAction) |
