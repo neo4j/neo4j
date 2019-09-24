@@ -19,7 +19,14 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription.TotalHits
+
 object renderSummary extends (InternalPlanDescription => String) {
   def apply(plan: InternalPlanDescription): String =
-    "Total database accesses: " + plan.totalDbHits.getOrElse("?")
+    "Total database accesses: " + (plan.totalDbHits match {
+      case TotalHits(0, false) => "0"
+      case TotalHits(0, true) => "?"
+      case TotalHits(x, false) => x.toString
+      case TotalHits(x, true) => s"$x + ?"
+    })
 }

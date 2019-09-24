@@ -46,6 +46,7 @@ import scala.collection.Iterator
 abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   protected def singleDbHit[A](value: A): A = value
+  protected def unknownDbHits[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
 
   protected def manyDbHits(value: LongIterator): LongIterator = value
@@ -241,16 +242,16 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
   override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    singleDbHit(inner.callReadOnlyProcedure(id, args, allowed, context))
+    unknownDbHits(inner.callReadOnlyProcedure(id, args, allowed, context))
 
   override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    singleDbHit(inner.callReadWriteProcedure(id, args, allowed, context))
+    unknownDbHits(inner.callReadWriteProcedure(id, args, allowed, context))
 
   override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    singleDbHit(inner.callSchemaWriteProcedure(id, args, allowed, context))
+    unknownDbHits(inner.callSchemaWriteProcedure(id, args, allowed, context))
 
   override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    inner.callDbmsProcedure(id, args, allowed, context)
+    unknownDbHits(inner.callDbmsProcedure(id, args, allowed, context))
 
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     singleDbHit(inner.callFunction(id, args, allowed))

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.plandescription
 import java.util
 
 import org.neo4j.cypher.internal.plandescription.Arguments._
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription.TotalHits
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
@@ -75,14 +76,11 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def orderedVariables: Seq[String] = variables.toIndexedSeq.sorted
 
-  def totalDbHits: Option[Long] = {
-    val allMaybeDbHits: Seq[Option[Long]] = flatten.map {
-      plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x }
+  def totalDbHits: TotalHits = {
+    val allMaybeDbHits: Seq[TotalHits] = flatten.map {
+      plan: InternalPlanDescription => plan.arguments.collectFirst{ case DbHits(x) => TotalHits(x, uncertain = false) }.getOrElse(TotalHits(0, uncertain = true))
     }
-
-    allMaybeDbHits.reduce[Option[Long]] {
-      case (a: Option[Long], b: Option[Long]) => for (aVal <- a; bVal <- b) yield aVal + bVal
-    }
+    allMaybeDbHits.reduce(_ + _)
   }
 
   //Implement public Java API here=
@@ -103,15 +101,23 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   override def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
 
   override def getProfilerStatistics: ExecutionPlanDescription.ProfilerStatistics = new ProfilerStatistics {
-    override def getDbHits: Long = extract { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+    override def hasRows: Boolean = arguments.exists(_.isInstanceOf[Rows])
 
-    override def getRows: Long = extract { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+    override def hasDbHits: Boolean = arguments.exists(_.isInstanceOf[DbHits])
 
-    override def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }.getOrElse(0)
+    override def hasPageCacheStats: Boolean = arguments.exists(_.isInstanceOf[PageCacheHits]) && arguments.exists(_.isInstanceOf[PageCacheMisses])
 
-    override def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }.getOrElse(0)
+    override def hasTime: Boolean = arguments.exists(_.isInstanceOf[Time])
 
-    override def getTime: Long = extract { case Time(value) => value }.getOrElse(0)
+    override def getDbHits: Long = extract { case DbHits(count) => count }.getOrElse(throw new InternalException("Db hits were not recorded."))
+
+    override def getRows: Long = extract { case Rows(count) => count }.getOrElse(throw new InternalException("Rows were not recorded."))
+
+    override def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }.getOrElse(throw new InternalException("Page cache stats were not recorded."))
+
+    override def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }.getOrElse(throw new InternalException("Page cache stats were not recorded."))
+
+    override def getTime: Long = extract { case Time(value) => value }.getOrElse(throw new InternalException("Time was not recorded."))
 
     private def extract(f: PartialFunction[Argument, Long]): Option[Long] = arguments.collectFirst(f)
   }
@@ -119,6 +125,9 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 }
 
 object InternalPlanDescription {
+  case class TotalHits(hits: Long, uncertain: Boolean) {
+    def +(other: TotalHits) = TotalHits(this.hits + other.hits, this.uncertain || other.uncertain)
+  }
 
   def error(msg: String): InternalPlanDescription =
     PlanDescriptionImpl(Id.INVALID_ID, msg, NoChildren, Nil, Set.empty)

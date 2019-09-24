@@ -53,12 +53,24 @@ class ExecutionPlanConverter
         if ( hasProfilerStatistics )
         {
             ExecutionPlanDescription.ProfilerStatistics profile = plan.getProfilerStatistics();
-            out.add( "dbHits", longValue( profile.getDbHits() ) );
-            out.add( "pageCacheHits", longValue( profile.getPageCacheHits() ) );
-            out.add( "pageCacheMisses", longValue( profile.getPageCacheMisses() ) );
-            out.add( "pageCacheHitRatio", doubleValue( profile.getPageCacheHitRatio() ) );
-            out.add( "rows", longValue( profile.getRows() ) );
-            out.add( "time", longValue( profile.getTime() ) );
+            if ( profile.hasDbHits() )
+            {
+                out.add( "dbHits", longValue( profile.getDbHits() ) );
+            }
+            if ( profile.hasPageCacheStats() )
+            {
+                out.add( "pageCacheHits", longValue( profile.getPageCacheHits() ) );
+                out.add( "pageCacheMisses", longValue( profile.getPageCacheMisses() ) );
+                out.add( "pageCacheHitRatio", doubleValue( profile.getPageCacheHitRatio() ) );
+            }
+            if ( profile.hasRows() )
+            {
+                out.add( "rows", longValue( profile.getRows() ) );
+            }
+            if ( profile.hasTime() )
+            {
+                out.add( "time", longValue( profile.getTime() ) );
+            }
         }
         return out.build();
     }

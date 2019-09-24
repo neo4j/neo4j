@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator,
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext}
 import org.neo4j.cypher.internal.v4_0.util.AssertionRunner
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.storageengine.api.RelationshipVisitor
@@ -132,8 +133,13 @@ trait Counter {
   protected var _count = 0L
   def count: Long = _count
 
-  def increment() {
-    _count += 1L
+  def increment(): Unit = {
+    if (count != OperatorProfile.NO_DATA)
+      _count += 1L
+  }
+
+  def invalidate(): Unit = {
+    _count = OperatorProfile.NO_DATA
   }
 }
 
@@ -143,6 +149,11 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
 
   override protected def singleDbHit[A](value: A): A = {
     increment()
+    value
+  }
+
+  override protected def unknownDbHits[A](value: A): A = {
+    invalidate()
     value
   }
 

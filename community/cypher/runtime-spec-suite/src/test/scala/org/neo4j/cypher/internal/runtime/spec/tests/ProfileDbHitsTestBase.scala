@@ -23,19 +23,19 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.runtime.spec.interpreted.LegacyDbHitsTestBase
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
-import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                   edition: Edition[CONTEXT],
                                   runtime: CypherRuntime[CONTEXT],
-                                  sizeHint: Int,
+                                  val sizeHint: Int,
                                   costOfGetPropertyChain: Int, // the reported dbHits for getting the property chain
                                   costOfPropertyJumpedOverInChain: Int, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
                                   costOfProperty: Int, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
                                   costOfLabelLookup: Int, // the reported dbHits for finding the id of a label
                                   costOfExpand: Int, // the reported dbHits for expanding a one-relationship node
                                   costOfRelationshipTypeLookup: Int // the reported dbHits for finding the id of a relationship type
-                                                         ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should profile dbHits of all nodes scan") {
     // given
@@ -466,5 +466,29 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(1).dbHits() should be (sizeHint *
       ((costOfGetPropertyChain + costOfProperty) // first prop in chain
       + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) // second prop in chain
+  }
+}
+
+trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileDbHitsTestBase[CONTEXT] =>
+
+  test("should profile dbHits of procedure call") {
+    // given
+    nodeGraph(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("label")
+      .procedureCall("db.labels() YIELD label")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() shouldBe OperatorProfile.NO_DATA // procedure call
+    queryProfile.operatorProfile(2).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
   }
 }

@@ -347,6 +347,30 @@ class AbstractCypherAdapterStreamTest
         return plan( name, args, identifiers, new ExecutionPlanDescription.ProfilerStatistics()
         {
             @Override
+            public boolean hasRows()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean hasDbHits()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean hasPageCacheStats()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean hasTime()
+            {
+                return true;
+            }
+
+            @Override
             public long getRows()
             {
                 return rows;
