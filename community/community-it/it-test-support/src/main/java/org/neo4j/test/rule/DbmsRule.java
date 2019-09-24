@@ -33,7 +33,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.ResultConsumer;
+import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.Schema;
@@ -148,16 +148,16 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
-    public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer ) throws QueryExecutionException
+    public <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer ) throws QueryExecutionException
     {
-        getGraphDatabaseAPI().executeTransactionally( query, parameters, resultConsumer );
+        return getGraphDatabaseAPI().executeTransactionally( query, parameters, resultTransformer );
     }
 
     @Override
-    public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer, Duration timeout )
+    public <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer, Duration timeout )
             throws QueryExecutionException
     {
-        getGraphDatabaseAPI().executeTransactionally( query, parameters, resultConsumer, timeout );
+        return getGraphDatabaseAPI().executeTransactionally( query, parameters, resultTransformer, timeout );
     }
 
     @Override

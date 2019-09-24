@@ -96,29 +96,30 @@ public interface GraphDatabaseService
     void executeTransactionally( String query, Map<String,Object> parameters ) throws QueryExecutionException;
 
     /**
-     * Executes query in a separate transaction and allow to query result to be consumed by provided {@link ResultConsumer}.
+     * Executes query in a separate transaction and allow to query result to be consumed by provided {@link ResultTransformer}.
      * Capable to execute periodic commit queries.
      *
      * @param query The query to execute
      * @param parameters Parameters for the query
-     * @param resultConsumer Query results consumer
+     * @param resultTransformer Query results consumer
      * @throws QueryExecutionException If the query contains errors
      */
-    void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer ) throws QueryExecutionException;
+    <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer ) throws QueryExecutionException;
 
     /**
-     * Executes query in a separate transaction and allows query result to be consumed by provided {@link ResultConsumer}.
+     * Executes query in a separate transaction and allows query result to be consumed by provided {@link ResultTransformer}.
      * If query will not gonna be able to complete within provided timeout time interval it will be terminated.
      *
      * Capable to execute periodic commit queries.
      *
      * @param query The query to execute
      * @param parameters Parameters for the query
-     * @param resultConsumer Query results consumer
+     * @param resultTransformer Query results consumer
      * @param timeout Maximum duration of underlying transaction
      * @throws QueryExecutionException If the query contains errors
      */
-    void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer, Duration timeout ) throws QueryExecutionException;
+    <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer,
+            Duration timeout ) throws QueryExecutionException;
 
     /**
      * Returns the {@link Schema schema manager} where all things related to schema,

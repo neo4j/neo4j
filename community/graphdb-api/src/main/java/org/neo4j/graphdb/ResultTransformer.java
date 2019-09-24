@@ -19,22 +19,22 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.neo4j.annotations.api.PublicApi;
 
 /**
- * Interface used in {@link GraphDatabaseService} for consuming results of queries that are executed by the database service in
+ * Interface used in {@link GraphDatabaseService} for consuming and tranforming results of queries that are executed by the database service in
  * separate isolated managed transaction.
  * Implementations should be able to process query results but should be aware that {@link Result} itself
  * and any other transactional entities will not gonna be usable after transaction completion.
  */
 @PublicApi
 @FunctionalInterface
-public interface ResultConsumer extends Consumer<Result>
+public interface ResultTransformer<T> extends Function<Result, T>
 {
     /**
      * Result consumer that does nothing
      */
-    ResultConsumer EMPTY_CONSUMER = result -> { };
+    ResultTransformer<Void> EMPTY_TRANSFORMER = result -> null;
 }

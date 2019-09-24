@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.ResultConsumer;
+import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.Schema;
@@ -67,7 +67,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
-import static org.neo4j.graphdb.ResultConsumer.EMPTY_CONSUMER;
+import static org.neo4j.graphdb.ResultTransformer.EMPTY_TRANSFORMER;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
@@ -160,10 +160,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public void executeTransactionally( String query ) throws QueryExecutionException
     {
-        executeTransactionally( query, emptyMap(), EMPTY_CONSUMER );
+        executeTransactionally( query, emptyMap(), EMPTY_TRANSFORMER );
     }
 
     @Override
+<<<<<<< HEAD
     public void executeTransactionally( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
         executeTransactionally( query, parameters, EMPTY_CONSUMER );
@@ -171,22 +172,27 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
     @Override
     public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer ) throws QueryExecutionException
+=======
+    public <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer ) throws QueryExecutionException
+>>>>>>> Return transformation result from executeTransactionally
     {
-        executeTransactionally( query, parameters, resultConsumer, config.get( transaction_timeout ) );
+        return executeTransactionally( query, parameters, resultTransformer, config.get( transaction_timeout ) );
     }
 
     @Override
-    public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer, Duration timeout )
+    public <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer, Duration timeout )
             throws QueryExecutionException
     {
+        T transformedResult;
         try ( var internalTransaction = beginTransaction( Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout.toMillis(), MILLISECONDS ) )
         {
             try ( var result = execute( internalTransaction, query, ValueUtils.asParameterMapValue( parameters ) ) )
             {
-                resultConsumer.accept( result );
+                transformedResult = resultTransformer.apply( result );
             }
             internalTransaction.commit();
         }
+        return transformedResult;
     }
 
     public Result execute( InternalTransaction transaction, String query, MapValue parameters )

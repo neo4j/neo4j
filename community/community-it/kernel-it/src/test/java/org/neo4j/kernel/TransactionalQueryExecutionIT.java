@@ -26,13 +26,14 @@ import java.util.Collections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.ResultConsumer;
+import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.graphdb.ResultTransformer.EMPTY_TRANSFORMER;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 @DbmsExtension
@@ -59,9 +60,7 @@ class TransactionalQueryExecutionIT
         db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
         db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
         db.executeTransactionally( "CREATE (n:CONSUMABLE)" );
-        var countingResultVisitor = new CountingResultConsumer();
-        db.executeTransactionally( "MATCH (n:CONSUMABLE) RETURN n", Collections.emptyMap(), countingResultVisitor );
-        assertEquals( 4L, countingResultVisitor.getNodeCounter() );
+        assertEquals( 4, db.executeTransactionally( "MATCH (n:CONSUMABLE) RETURN n", Collections.emptyMap(), new CountingResultTransformer() ) );
     }
 
     @Test
@@ -83,18 +82,12 @@ class TransactionalQueryExecutionIT
         }
     }
 
-    private static class CountingResultConsumer implements ResultConsumer
+    private static class CountingResultTransformer implements ResultTransformer<Integer>
     {
-        private int nodeCounter;
-
-        int getNodeCounter()
-        {
-            return nodeCounter;
-        }
-
         @Override
-        public void accept( Result result )
+        public Integer apply( Result result )
         {
+            int nodeCounter = 0;
             while ( result.hasNext() )
             {
                 var row = result.next();
@@ -103,6 +96,7 @@ class TransactionalQueryExecutionIT
                     nodeCounter++;
                 }
             }
+            return nodeCounter;
         }
     }
 }
