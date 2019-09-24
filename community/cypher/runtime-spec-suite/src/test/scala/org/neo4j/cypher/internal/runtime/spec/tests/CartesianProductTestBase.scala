@@ -311,6 +311,29 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a", "r1", "r2").withRows(expectedResultRows)
   }
 
+    test("should join with limit on rhs") {
+      val nodesPerLabel = Math.sqrt(sizeHint).toInt
+      val limit = nodesPerLabel - 1
+      val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
+      val nodes = select(aNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+      val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "y", "z")
+        .cartesianProduct()
+        .|.limit(limit)
+        .|.expand("(y)--(z)")
+        .|.allNodeScan("y")
+        .input(nodes = Seq("x"))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+      // then
+      runtimeResult should beColumns("x", "y", "z").withRows(rowCount(nodes.size * limit))
+    }
+
   test("should join with double sort and limit after join") {
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
@@ -366,6 +389,37 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(rowCount(limitCount))
   }
 
-  // TODO test join on rhs of cartesian
-  // TODO test limit on rhs of cartesian
+  test("should support cartesian product with hash-join on RHS") {
+    // given
+    val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y1", "y2", "z")
+      .cartesianProduct()
+      .|.nodeHashJoin("z")
+      .|.|.expand("(y2)-[r2]-(z)")
+      .|.|.allNodeScan("y2")
+      .|.expand("(y1)-[r1]->(z)")
+      .|.allNodeScan("y1")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expectedResultRows =
+      for {
+        x <- nodes
+        y1 <- unfilteredNodes
+        r1 <- y1.getRelationships(Direction.OUTGOING).asScala
+        z = r1.getOtherNode(y1)
+        r2 <- z.getRelationships(Direction.BOTH).asScala
+        y2 = r2.getOtherNode(z)
+      } yield Array(x, y1, y2, r1.getOtherNode(y1))
+
+    runtimeResult should beColumns("x", "y1", "y2", "z").withRows(expectedResultRows)
+  }
 }
