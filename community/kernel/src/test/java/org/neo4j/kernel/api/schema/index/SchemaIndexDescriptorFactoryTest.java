@@ -76,11 +76,13 @@ class SchemaIndexDescriptorFactoryTest
         IndexDescriptor desc2;
         desc1 = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         desc2 = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
-        assertEquality( desc1, desc2 );
+        assertEquality( desc1.schema(), desc2.schema() );
+        assertEquality( desc1.isUnique(), desc2.isUnique() );
 
         desc1 = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         desc2 = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        assertEquality( desc1, desc2 );
+        assertEquality( desc1.schema(), desc2.schema() );
+        assertEquality( desc1.isUnique(), desc2.isUnique() );
     }
 
     @Test

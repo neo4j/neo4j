@@ -45,7 +45,10 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 import org.neo4j.internal.helpers.collection.Visitable;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,6 +61,10 @@ class DbStructureInvocationTracingAcceptanceTest
     private static final String packageName = "org.neo4j.kernel.impl.util.data";
     private static final String className = "XXYYZZData";
     private static final String classNameWithPackage = packageName + "." + className;
+    public static final IndexDescriptor INDEX_PERSON_AGE = TestIndexDescriptorFactory.forLabel( 0, 1 );
+    public static final IndexDescriptor INDEX_PERSON_NAME_LASTNAME = TestIndexDescriptorFactory.uniqueForLabel( 0, 0, 2 );
+    public static final UniquenessConstraintDescriptor CONSTRAINT_PARTY_NAME = ConstraintDescriptorFactory.uniqueForLabel( 1, 0 );
+    public static final NodeKeyConstraintDescriptor CONSTRAINT_PERSON_NAME_LASTNAME = ConstraintDescriptorFactory.nodeKeyForLabel( 0, 1, 2 );
 
     @Test
     void outputCompilesWithoutErrors() throws IOException
@@ -131,10 +138,10 @@ class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitPropertyKey( 1, "age" );
         visitor.apply( null ).visitRelationshipType( 0, "ACCEPTS" );
         visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
-        visitor.apply( null ).visitIndex( TestIndexDescriptorFactory.forLabel( 0, 1 ), ":Person(age)", 0.5d, 1L );
-        visitor.apply( null ).visitIndex( TestIndexDescriptorFactory.uniqueForLabel( 0, 0, 2 ), ":Person(name, lastName)", 0.5d, 1L );
-        visitor.apply( null ).visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 1, 0 ), ":Party(name)" );
-        visitor.apply( null ).visitNodeKeyConstraint( ConstraintDescriptorFactory.nodeKeyForLabel( 0, 1, 2 ), ":Person(name, lastName)" );
+        visitor.apply( null ).visitIndex( INDEX_PERSON_AGE, ":Person(age)", 0.5d, 1L );
+        visitor.apply( null ).visitIndex( INDEX_PERSON_NAME_LASTNAME, ":Person(name, lastName)", 0.5d, 1L );
+        visitor.apply( null ).visitUniqueConstraint( CONSTRAINT_PARTY_NAME, ":Party(name)" );
+        visitor.apply( null ).visitNodeKeyConstraint( CONSTRAINT_PERSON_NAME_LASTNAME, ":Person(name, lastName)" );
         visitor.apply( null ).visitAllNodesCount( 55 );
         visitor.apply( null ).visitNodeCount( 0, "Person", 50 );
         visitor.apply( null ).visitNodeCount( 0, "Party", 5 );

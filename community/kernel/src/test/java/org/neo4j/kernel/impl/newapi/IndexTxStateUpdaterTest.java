@@ -102,7 +102,7 @@ class IndexTxStateUpdaterTest
         {
             long[] labels = invocationOnMock.getArgument( 0 );
             int propertyKeyId = invocationOnMock.getArgument( 1 );
-            Set<SchemaDescriptor> descriptors = new HashSet<>();
+            Set<IndexDescriptor> descriptors = new HashSet<>();
             for ( IndexDescriptor index : indexes )
             {
                 SchemaDescriptor schema = index.schema();
@@ -110,7 +110,7 @@ class IndexTxStateUpdaterTest
                 {
                     if ( schema.propertySchemaType() == PropertySchemaType.COMPLETE_ALL_TOKENS )
                     {
-                        descriptors.add( schema );
+                        descriptors.add( index );
                     }
                 }
             }
@@ -120,7 +120,7 @@ class IndexTxStateUpdaterTest
         {
             long[] labels = invocationOnMock.getArgument( 0 );
             int[] propertyKeyIds = invocationOnMock.getArgument( 1 );
-            Set<SchemaDescriptor> descriptors = new HashSet<>();
+            Set<IndexDescriptor> descriptors = new HashSet<>();
             for ( IndexDescriptor index : indexes )
             {
                 if ( index.schema().isAffected( labels ) )
@@ -132,7 +132,7 @@ class IndexTxStateUpdaterTest
                     }
                     if ( containsAll )
                     {
-                        descriptors.add( index.schema() );
+                        descriptors.add( index );
                     }
                 }
             }

@@ -654,7 +654,7 @@ public class TransactionImpl implements InternalTransaction
         while ( iterator.hasNext() )
         {
             IndexDescriptor index = iterator.next();
-            if ( index.schema().getIndexType().getKind() == IndexKind.GENERAL )
+            if ( index.getIndexType().getKind() != IndexKind.GENERAL )
             {
                 // Skip special indexes, such as the full-text indexes, because they can't handle all the queries we might throw at them.
                 continue;
@@ -771,7 +771,7 @@ public class TransactionImpl implements InternalTransaction
         while ( iterator.hasNext() )
         {
             IndexDescriptor index = iterator.next();
-            if ( index.schema().getIndexType().getKind() == IndexKind.GENERAL )
+            if ( index.getIndexType().getKind() == IndexKind.GENERAL )
             {
                 return index;
             }

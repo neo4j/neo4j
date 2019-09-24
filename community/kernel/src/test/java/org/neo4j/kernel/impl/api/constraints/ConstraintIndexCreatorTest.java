@@ -90,7 +90,7 @@ class ConstraintIndexCreatorTest
     private static final long INDEX_ID = 0L;
 
     private final LabelSchemaDescriptor schema = forLabel( LABEL_ID, PROPERTY_KEY_ID );
-    private final UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
+    private final UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema ).withName( "constraint" );
     private final IndexDescriptor index = IndexPrototype.uniqueForSchema( schema ).withName( "constraint" ).materialise( INDEX_ID );
     private final SchemaRead schemaRead = schemaRead();
     private final SchemaWrite schemaWrite = mock( SchemaWrite.class );
@@ -106,6 +106,7 @@ class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         when( indexProxy.getDescriptor() ).thenReturn( index );
+        when( schemaRead.indexGetForName( constraint.getName() ) ).thenReturn( IndexDescriptor.NO_INDEX );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         // when
@@ -113,7 +114,7 @@ class ConstraintIndexCreatorTest
 
         // then
         assertEquals( INDEX_ID, constraintIndex.getId() );
-        verify( schemaRead ).index( schema );
+        verify( schemaRead ).indexGetForName( constraint.getName() );
         verifyNoMoreInteractions( schemaRead );
         verify( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
     }
@@ -122,13 +123,13 @@ class ConstraintIndexCreatorTest
     void shouldDropIndexIfPopulationFails() throws Exception
     {
         // given
-
         StubKernel kernel = new StubKernel();
 
         IndexingService indexingService = mock( IndexingService.class );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         when( indexProxy.getDescriptor() ).thenReturn( index );
+        when( schemaRead.indexGetForName( constraint.getName() ) ).thenReturn( IndexDescriptor.NO_INDEX, index );
 
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
         doThrow( new IndexPopulationFailedKernelException( "some index", cause ) )
@@ -149,7 +150,7 @@ class ConstraintIndexCreatorTest
         assertEquals( 2, kernel.transactions.size() );
         KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
         verify( tx1 ).indexUniqueCreate( eq( constraint ), eq( getDefaultProvider() ) );
-        verify( schemaRead, times( 2 ) ).index( schema );
+        verify( schemaRead, times( 2 ) ).indexGetForName( constraint.getName() );
         verifyNoMoreInteractions( schemaRead );
         KernelTransactionImplementation kti2 = kernel.transactions.get( 1 );
         verify( kti2 ).addIndexDoDropToTxState( index );
@@ -182,8 +183,8 @@ class ConstraintIndexCreatorTest
 
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
-
         when( schemaRead.index( schema ) ).thenReturn( Iterators.emptyResourceIterator() );
+        when( schemaRead.indexGetForName( constraint.getName() ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
@@ -200,17 +201,19 @@ class ConstraintIndexCreatorTest
     }
 
     @Test
-    void shouldThrowOnExistingOrphanedConstraintIndex() throws Exception
+    void shouldThrowOnExistingOrphanedConstraintIndexWithSameName() throws Exception
     {
         // given
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
         long orphanedConstraintIndexId = 111;
-        IndexDescriptor orphanedIndex = IndexPrototype.uniqueForSchema( schema ).withName( "constraint" ).materialise( orphanedConstraintIndexId );
+        String orphanedName = "constraint";
+        IndexDescriptor orphanedIndex = IndexPrototype.uniqueForSchema( schema ).withName( orphanedName ).materialise( orphanedConstraintIndexId );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( orphanedIndex ) ).thenReturn( indexProxy );
         when( schemaRead.index( schema ) ).thenReturn( Iterators.iterator( orphanedIndex ) );
+        when( schemaRead.indexGetForName( orphanedName ) ).thenReturn( orphanedIndex );
         when( schemaRead.indexGetOwningUniquenessConstraintId( orphanedIndex ) )
                 .thenReturn( null ); // which means it has no owner
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
@@ -221,7 +224,37 @@ class ConstraintIndexCreatorTest
 
         // then
         assertEquals( 0, kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
-        verify( schemaRead ).index( schema );
+        verify( schemaRead ).indexGetForName( constraint.getName() );
+        verifyNoMoreInteractions( schemaRead );
+    }
+
+    @Test
+    void shouldIgnoreExistingOrphanedConstraintIndexWithDifferentName() throws Exception
+    {
+        // given
+        IndexingService indexingService = mock( IndexingService.class );
+        StubKernel kernel = new StubKernel();
+
+        long orphanedConstraintIndexId = 111;
+        String orphanedName = "blabla";
+        IndexDescriptor orphanedIndex = IndexPrototype.uniqueForSchema( schema ).withName( orphanedName ).materialise( orphanedConstraintIndexId );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexingService.getIndexProxy( orphanedIndex ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
+        when( schemaRead.index( schema ) ).thenReturn( Iterators.iterator( orphanedIndex ) );
+        when( schemaRead.indexGetForName( constraint.getName() ) ).thenReturn( IndexDescriptor.NO_INDEX );
+        when( schemaRead.indexGetForName( orphanedName ) ).thenReturn( orphanedIndex );
+        when( schemaRead.indexGetOwningUniquenessConstraintId( orphanedIndex ) )
+                .thenReturn( null ); // which means it has no owner
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
+
+        // when
+        KernelTransactionImplementation transaction = createTransaction();
+        creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() );
+
+        // then
+        assertEquals( 1, kernel.transactions.size() );
+        verify( schemaRead ).indexGetForName( constraint.getName() );
         verifyNoMoreInteractions( schemaRead );
     }
 
@@ -234,6 +267,7 @@ class ConstraintIndexCreatorTest
 
         long constraintIndexOwnerId = 222;
         when( schemaRead.index( schema ) ).thenReturn( Iterators.iterator( index ) );
+        when( schemaRead.indexGetForName( constraint.getName() ) ).thenReturn( index );
         when( schemaRead.indexGetOwningUniquenessConstraintId( index ) ).thenReturn( constraintIndexOwnerId ); // which means there's an owner
         when( tokenRead.nodeLabelName( LABEL_ID ) ).thenReturn( "MyLabel" );
         when( tokenRead.propertyKeyName( PROPERTY_KEY_ID ) ).thenReturn( "MyKey" );
@@ -248,7 +282,7 @@ class ConstraintIndexCreatorTest
 
         // then
         assertEquals( 0, kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
-        verify( schemaRead ).index( schema );
+        verify( schemaRead ).indexGetForName( constraint.getName() );
         verifyNoMoreInteractions( schemaRead );
     }
 
@@ -263,6 +297,7 @@ class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "Groovy", "1.2" );
+        when( schemaRead.indexGetForName( constraint.getName() ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
@@ -272,7 +307,7 @@ class ConstraintIndexCreatorTest
         assertEquals( 1, kernel.transactions.size() );
         KernelTransactionImplementation transactionInstance = kernel.transactions.get( 0 );
         verify( transactionInstance ).indexUniqueCreate( eq( constraint ), eq( providerDescriptor.name() ) );
-        verify( schemaRead ).index( schema );
+        verify( schemaRead ).indexGetForName( constraint.getName() );
         verifyNoMoreInteractions( schemaRead );
     }
 
@@ -285,6 +320,7 @@ class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
         when( indexProxy.getDescriptor() ).thenReturn( index );
+        when( schemaRead.indexGetForName( constraint.getName() ) ).thenReturn( IndexDescriptor.NO_INDEX );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
         KernelTransactionImplementation transaction = createTransaction();
 
