@@ -118,6 +118,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The drop index syntax `DROP INDEX ON :Label(property)` is deprecated, please use `DROP INDEX index_name` instead"
     ),
+    DEPRECATED_DROP_CONSTRAINT_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The drop constraint by schema syntax `DROP CONSTRAINT ON ...` is deprecated, please use `DROP CONSTRAINT constraint_name` instead"
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,

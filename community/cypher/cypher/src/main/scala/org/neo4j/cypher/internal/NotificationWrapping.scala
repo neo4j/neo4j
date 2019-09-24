@@ -71,6 +71,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedDropIndexSyntax(pos) =>
       NotificationCode.DEPRECATED_DROP_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedDropConstraintSyntax(pos) =>
+      NotificationCode.DEPRECATED_DROP_CONSTRAINT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCompiledRuntimeNotification =>
       NotificationCode.DEPRECATED_COMPILED_RUNTIME.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>

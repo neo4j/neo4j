@@ -127,6 +127,30 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
         assertNotifications( "EXPLAIN DROP INDEX ON :Label(prop)", containsItem( deprecatedDropIndexSyntax ) );
     }
 
+    @Test
+    void deprecatedDropNodeKeyConstraintSyntax()
+    {
+        assertNotifications( "EXPLAIN DROP CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NODE KEY", containsItem( deprecatedDropConstraintSyntax ) );
+    }
+
+    @Test
+    void deprecatedDropUniquenessConstraintSyntax()
+    {
+        assertNotifications( "EXPLAIN DROP CONSTRAINT ON (n:Label) ASSERT n.prop IS UNIQUE", containsItem( deprecatedDropConstraintSyntax ) );
+    }
+
+    @Test
+    void deprecatedDropNodePropertyExistenceConstraintSyntax()
+    {
+        assertNotifications( "EXPLAIN DROP CONSTRAINT ON (n:Label) ASSERT EXISTS (n.prop)", containsItem( deprecatedDropConstraintSyntax ) );
+    }
+
+    @Test
+    void deprecatedDropRelationshipPropertyExistenceConstraintSyntax()
+    {
+        assertNotifications( "EXPLAIN DROP CONSTRAINT ON ()-[r:Type]-() ASSERT EXISTS (r.prop)", containsItem( deprecatedDropConstraintSyntax ) );
+    }
+
     // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 
     @Test
@@ -251,6 +275,10 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
 
     private Matcher<Notification> deprecatedDropIndexSyntax =
             deprecation( "The drop index syntax `DROP INDEX ON :Label(property)` is deprecated, please use `DROP INDEX index_name` instead" );
+
+    private Matcher<Notification> deprecatedDropConstraintSyntax =
+            deprecation( "The drop constraint by schema syntax `DROP CONSTRAINT ON ...` is deprecated, " +
+                    "please use `DROP CONSTRAINT constraint_name` instead" );
 
     private Matcher<Notification> deprecatedLengthOnNonPath =
             deprecation( "Using 'length' on anything that is not a path is deprecated, please use 'size' instead" );
