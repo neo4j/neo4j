@@ -1001,7 +1001,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public Writer<KEY,VALUE> writer() throws IOException
     {
-        assertRecoveryCleanSuccessful();
         writer.initialize();
         changesSinceLastCheckpoint = true;
         return writer;
@@ -1198,7 +1197,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
             boolean success = false;
             try
             {
-                lock.writerLock();
+                // Block here until cleaning has completed, if cleaning was required
+                lock.writerAndCleanerLock();
+                assertRecoveryCleanSuccessful();
                 cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
@@ -1305,7 +1306,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                         ", but writer is already closed." );
             }
             closeCursor();
-            lock.writerUnlock();
+            lock.writerAndCleanerUnlock();
         }
 
         private void closeCursor()
