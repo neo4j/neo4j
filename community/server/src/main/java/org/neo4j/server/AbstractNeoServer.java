@@ -109,10 +109,6 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private static final long ROUNDING_SECOND = 1000L;
 
-    private static final Pattern[] DEFAULT_URI_WHITELIST = new Pattern[]{
-            Pattern.compile( "/browser.*" ),
-            Pattern.compile( "/" )
-    };
     private final Pattern[] authWhitelist;
     public static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
 
@@ -166,7 +162,7 @@ public abstract class AbstractNeoServer implements NeoServer
         httpsListenAddress = listenAddressFor( config, httpsConnector );
         httpsAdvertisedAddress = advertisedAddressFor( config, httpsConnector );
 
-        this.authWhitelist = parseAuthWhitelist( DEFAULT_URI_WHITELIST, config );
+        this.authWhitelist = parseAuthWhitelist( config );
 
         database = new LifecycleManagingDatabase( config, graphFactory, dependencies );
         this.availabilityGuardSupplier = ((LifecycleManagingDatabase) database)::getAvailabilityGuard;
@@ -503,14 +499,13 @@ public abstract class AbstractNeoServer implements NeoServer
         return connector == null ? null : config.get( connector.advertised_address );
     }
 
-    private static Pattern[] parseAuthWhitelist( Pattern[] defaultWhitelist, Config config )
+    private static Pattern[] parseAuthWhitelist( Config config )
     {
         List<String> whitelist = config.get( ServerSettings.http_auth_whitelist );
-        Pattern[] patterns = new Pattern[defaultWhitelist.length + whitelist.size()];
-        System.arraycopy( defaultWhitelist, 0, patterns, 0, defaultWhitelist.length );
+        Pattern[] patterns = new Pattern[whitelist.size()];
         for ( int i = 0; i < whitelist.size(); i++ )
         {
-            patterns[defaultWhitelist.length + i] = Pattern.compile( whitelist.get( i ) );
+            patterns[i] = Pattern.compile( whitelist.get( i ) );
         }
         return patterns;
     }

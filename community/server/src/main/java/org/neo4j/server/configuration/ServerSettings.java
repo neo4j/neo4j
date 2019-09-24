@@ -199,6 +199,7 @@ public class ServerSettings implements LoadableConfig
                   "Value is expected to contain directives like 'max-age', 'includeSubDomains' and 'preload'." )
     public static final Setting<String> http_strict_transport_security = setting( "dbms.security.http_strict_transport_security", STRING, NO_DEFAULT );
 
+    @Internal
     @Description( "Defines a list of patterns of http endpoints where Neo4j authentication is not required to fetch content." )
     public static final Setting<List<String>> http_auth_whitelist =
             setting( "dbms.security.http_auth_whitelist",
@@ -206,7 +207,7 @@ public class ServerSettings implements LoadableConfig
                                         .map( String::trim )
                                         .filter( StringUtils::isNotEmpty )
                                         .collect( Collectors.toList() ),
-                     EMPTY );
+                     "/,/browser.*" );
 
     @Internal
     @Description( "Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this " +

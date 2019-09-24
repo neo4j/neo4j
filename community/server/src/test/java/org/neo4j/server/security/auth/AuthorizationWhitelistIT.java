@@ -19,11 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import com.sun.deploy.config.SecuritySettings;
 import org.junit.After;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
