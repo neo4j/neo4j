@@ -248,6 +248,14 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
                 IndexProvider provider = providerMap.lookup( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( descriptor );
+
+                IndexPopulationFailure failure = null;
+                if ( descriptor.isUnique() && descriptor.getOwningConstraintId().isEmpty() )
+                {
+                    initialState = FAILED;
+                    failure = IndexPopulationFailure.failure( "constraint index not associated with an owning constraint '" + descriptor.getName() + "'." );
+                }
+
                 indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( descriptor ) );
 
                 internalLog.debug( indexStateInfo( "init", initialState, descriptor ) );
@@ -264,7 +272,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                     break;
                 case FAILED:
                     monitor.initialState( descriptor, FAILED );
-                    IndexPopulationFailure failure = failure( provider.getPopulationFailure( descriptor ) );
+                    if ( failure == null )
+                    {
+                        failure = failure( provider.getPopulationFailure( descriptor ) );
+                    }
                     indexProxy = indexProxyCreator.createFailedIndexProxy( descriptor, failure );
                     break;
                 default:
