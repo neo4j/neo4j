@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
 @ExtendWith( RandomExtension.class )
+@TestInstance( TestInstance.Lifecycle.PER_CLASS )
 public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
 {
     private static final int N_NODES = 10000;

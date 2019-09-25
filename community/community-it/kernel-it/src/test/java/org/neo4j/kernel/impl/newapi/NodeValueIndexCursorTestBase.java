@@ -953,8 +953,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
-        int badLabel = token.nodeLabel( "BAD_LABEL" );
-        int badProp = token.propertyKey( "badProp" );
+        int badLabel = label + 1000;
+        int badProp = prop + 1000;
 
         assertFalse( schemaRead.index( SchemaDescriptor.forLabel( badLabel, prop ) ).hasNext(), "bad label" );
         assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, badProp ) ).hasNext(), "bad prop" );

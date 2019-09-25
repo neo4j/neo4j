@@ -990,7 +990,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                     {
                         try
                         {
-                            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                            tx.schema().awaitIndexesOnline( 20, TimeUnit.MINUTES );
                         }
                         catch ( Exception e )
                         {
