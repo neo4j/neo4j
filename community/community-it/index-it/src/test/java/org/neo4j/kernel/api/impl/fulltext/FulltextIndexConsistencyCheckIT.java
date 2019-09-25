@@ -71,7 +71,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
@@ -87,13 +87,15 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asC
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.SKIP_ONLINE_UPDATES;
 import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class FulltextIndexConsistencyCheckIT
 {
     @Inject
     private FileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private DatabaseManagementServiceBuilder builder;
     private GraphDatabaseService database;
@@ -641,7 +643,7 @@ class FulltextIndexConsistencyCheckIT
 
     private ConsistencyCheckService.Result checkConsistency() throws ConsistencyCheckIncompleteException
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         Config config = Config.defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory().toPath() );
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, ProgressMonitorFactory.NONE,

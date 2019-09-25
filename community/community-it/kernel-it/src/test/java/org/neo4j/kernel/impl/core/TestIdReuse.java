@@ -28,26 +28,29 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@EphemeralTestDirectoryExtension
+@EphemeralNeo4jLayoutExtension
 class TestIdReuse
 {
     @Inject
     private EphemeralFileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void makeSureIdsGetsReusedForPropertyStore()
     {
-        makeSureIdsGetsReused( testDirectory.databaseLayout().propertyStore(), 10, 200 );
+        makeSureIdsGetsReused( databaseLayout.propertyStore(), 10, 200 );
     }
 
     @Test
@@ -58,7 +61,7 @@ class TestIdReuse
         {
             array[i] = 0xFFFFFFFFFFFFL + i;
         }
-        makeSureIdsGetsReused( testDirectory.databaseLayout().propertyArrayStore(), array, 20 );
+        makeSureIdsGetsReused( databaseLayout.propertyArrayStore(), array, 20 );
     }
 
     @Test
@@ -69,7 +72,7 @@ class TestIdReuse
         {
             string += "something else " + i;
         }
-        makeSureIdsGetsReused( testDirectory.databaseLayout().propertyStringStore(), string, 20 );
+        makeSureIdsGetsReused( databaseLayout.propertyStringStore(), string, 20 );
     }
 
     private void makeSureIdsGetsReused( File storeFile, Object value, int iterations )

@@ -46,7 +46,7 @@ import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -56,14 +56,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class KernelDiagnosticsIT
 {
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
 
     @Inject
     private FileSystemAbstraction fs;
+
+    @Inject
+    private Neo4jLayout neo4jLayout;
 
     @Test
     void shouldIncludeNativeIndexFilesInTotalMappedSize()
@@ -72,7 +75,7 @@ class KernelDiagnosticsIT
         for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
         {
             // given
-            Neo4jLayout layout = directory.neo4jLayout( String.valueOf( i++ ) );
+            Neo4jLayout layout = neo4jLayout;
             createIndexInIsolatedDbInstance( layout.homeDirectory(), schemaIndex );
 
             // when

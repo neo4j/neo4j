@@ -42,10 +42,9 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.util.VisibleForTesting;
@@ -56,8 +55,6 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
 import static org.eclipse.collections.impl.tuple.Tuples.pair;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.importer.CsvImporter.DEFAULT_REPORT_FILE_NAME;
@@ -212,12 +209,7 @@ public class ImportCommand extends AbstractCommand
         try
         {
             final var databaseConfig = loadNeo4jConfig();
-            final var databaseLayout = DatabaseLayout.of(
-                    databaseConfig.get( neo4j_home ).toFile(),
-                    databaseConfig.get( databases_root_path ).toFile(),
-                    LayoutConfig.of( databaseConfig ),
-                    database
-            );
+            final var databaseLayout = Neo4jLayout.of( databaseConfig ).databaseLayout( database );
             final var csvConfig = csvConfiguration();
             final var importConfig = importConfiguration();
 

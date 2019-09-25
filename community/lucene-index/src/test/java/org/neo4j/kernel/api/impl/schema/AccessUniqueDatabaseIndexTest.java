@@ -30,6 +30,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
@@ -39,8 +40,8 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
@@ -52,13 +53,15 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
-@EphemeralTestDirectoryExtension
+@EphemeralNeo4jLayoutExtension
 class AccessUniqueDatabaseIndexTest
 {
     @Inject
     private EphemeralFileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1000, 100 ) ).withName( "a" ).materialise( 0 );
 
@@ -155,7 +158,7 @@ class AccessUniqueDatabaseIndexTest
     private PartitionedIndexStorage getIndexStorage()
     {
         IndexProviderDescriptor descriptor = new IndexProviderDescriptor( NATIVE30.providerKey(), NATIVE30.providerVersion() );
-        IndexDirectoryStructure parent = directoriesByProvider( testDirectory.databaseDir() ).forProvider( descriptor );
+        IndexDirectoryStructure parent = directoriesByProvider( databaseLayout.databaseDirectory() ).forProvider( descriptor );
         IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, fileSystem,
                 directoriesBySubProvider( parent ).forProvider( LuceneIndexProvider.DESCRIPTOR ) );
         return storageFactory.indexStorageOf( 1 );

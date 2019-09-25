@@ -164,7 +164,7 @@ public class DatabaseManagementServiceFactory
         }
         catch ( Throwable throwable )
         {
-            String message = "Error starting database server at " + globalModule.getNeo4jLayout().storeDirectory();
+            String message = "Error starting database server at " + globalModule.getNeo4jLayout().databasesDirectory();
             startupException = new RuntimeException( message, throwable );
             internalLog.error( message, throwable );
         }

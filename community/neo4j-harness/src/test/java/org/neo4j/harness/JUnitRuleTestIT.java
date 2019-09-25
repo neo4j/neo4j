@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.rule.Neo4jRule;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -122,8 +121,8 @@ public class JUnitRuleTestIT
     public void shouldRuleWorkWithExistingDirectory() throws Throwable
     {
         // given a root folder, create /databases/neo4j folders.
-        Neo4jLayout oldLayout = testDirectory.neo4jLayout( "old" );
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( oldLayout.homeDirectory() ).build();
+        File oldLayout = testDirectory.homeDir( "old" );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( oldLayout ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction transaction = db.beginTx() )
@@ -137,8 +136,8 @@ public class JUnitRuleTestIT
         }
 
         // When a rule with an pre-populated graph db directory is used
-        Neo4jLayout newLayout = testDirectory.neo4jLayout( "new" );
-        final Neo4jRule ruleWithDirectory = new Neo4jRule( newLayout.homeDirectory() ).copyFrom( oldLayout.homeDirectory() );
+        File newLayout = testDirectory.homeDir( "new" );
+        final Neo4jRule ruleWithDirectory = new Neo4jRule( newLayout ).copyFrom( oldLayout );
         Statement statement = ruleWithDirectory.apply( new Statement()
         {
             @Override

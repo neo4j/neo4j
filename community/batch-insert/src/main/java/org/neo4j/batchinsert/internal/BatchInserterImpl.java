@@ -89,6 +89,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -170,9 +171,11 @@ import org.neo4j.values.storable.Value;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.neo4j.collection.PrimitiveLongCollections.map;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
@@ -247,9 +250,12 @@ public class BatchInserterImpl implements BatchInserter
                        Config fromConfig, Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
         rejectAutoUpgrade( fromConfig );
+        Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         this.config = Config.newBuilder()
                 .setDefaults( getDefaultParams() )
-                .set( neo4j_home, databaseLayout.databaseDirectory().toPath().toAbsolutePath() )
+                .set( neo4j_home, layout.homeDirectory().toPath() )
+                .set( databases_root_path, layout.databasesDirectory().toPath() )
+                .set( transaction_logs_root_path, layout.txLogsDirectory().toPath() )
                 .set( logs_directory, Path.of( "" ) )
                 .fromConfig( fromConfig )
                 .build();

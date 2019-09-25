@@ -27,6 +27,6 @@ public class GlobalExtensionContext extends BaseExtensionContext
 {
     public GlobalExtensionContext( Neo4jLayout storeLayout, DatabaseInfo databaseInfo, DependencySatisfier satisfier )
     {
-        super( storeLayout.storeDirectory(), databaseInfo, satisfier );
+        super( storeLayout.databasesDirectory(), databaseInfo, satisfier );
     }
 }

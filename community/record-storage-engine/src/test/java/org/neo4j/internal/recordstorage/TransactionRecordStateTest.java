@@ -59,6 +59,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -86,6 +87,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -126,6 +128,7 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
+@EphemeralNeo4jLayoutExtension
 @EphemeralPageCacheExtension
 class TransactionRecordStateTest
 {
@@ -150,6 +153,8 @@ class TransactionRecordStateTest
     private TestDirectory testDirectory;
     @Inject
     private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private NeoStores neoStores;
     private IdGeneratorFactory idGeneratorFactory;
@@ -173,7 +178,7 @@ class TransactionRecordStateTest
     private NeoStores createStores( Config config, RecordFormats formats )
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
-        var storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, idGeneratorFactory, pageCache, fs,
+        var storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs,
                 formats, NullLogProvider.getInstance() );
         return storeFactory.openAllNeoStores( true );
     }

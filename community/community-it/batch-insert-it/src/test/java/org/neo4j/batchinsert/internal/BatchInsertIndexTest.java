@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
@@ -51,7 +52,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -65,13 +66,15 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provi
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class BatchInsertIndexTest
 {
     @Inject
     private FileSystemAbstraction  fs;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private DatabaseManagementService managementService;
 
@@ -181,7 +184,7 @@ class BatchInsertIndexTest
 
     private BatchInserter newBatchInserter( Config config ) throws Exception
     {
-        return BatchInserters.inserter( testDirectory.databaseLayout(), fs, config );
+        return BatchInserters.inserter( databaseLayout, fs, config );
     }
 
     private GraphDatabaseService graphDatabaseService( Config config )

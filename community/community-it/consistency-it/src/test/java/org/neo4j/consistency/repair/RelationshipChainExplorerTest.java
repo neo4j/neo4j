@@ -36,12 +36,14 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -51,6 +53,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 public class RelationshipChainExplorerTest
 {
     private static final int degreeTwoNodes = 10;
@@ -61,6 +64,8 @@ public class RelationshipChainExplorerTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private StoreAccess store;
 
@@ -154,7 +159,7 @@ public class RelationshipChainExplorerTest
             transaction.commit();
         }
         managementService.shutdown();
-        StoreAccess storeAccess = new StoreAccess( fileSystem, pageCache, testDirectory.databaseLayout(), Config.defaults() );
+        StoreAccess storeAccess = new StoreAccess( fileSystem, pageCache, databaseLayout, Config.defaults() );
         return storeAccess.initialize();
     }
 

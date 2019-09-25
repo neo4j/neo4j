@@ -128,7 +128,8 @@ public class StoreUpgrader
             // TODO: System database does not (yet) support migration, remove this when it does!
             return;
         }
-        DatabaseLayout migrationStructure = DatabaseLayout.of( layout.getNeo4jLayout().homeDirectory(), layout.databaseDirectory(), MIGRATION_DIRECTORY );
+
+        DatabaseLayout migrationStructure = DatabaseLayout.ofFlat( layout.file( MIGRATION_DIRECTORY ) );
 
         cleanupLegacyLeftOverDirsIn( layout.databaseDirectory() );
 

@@ -56,6 +56,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
@@ -77,6 +78,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class OnlineIndexUpdatesTest
 {
     private static final int ENTITY_TOKEN = 1;
@@ -89,6 +91,8 @@ class OnlineIndexUpdatesTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private NodeStore nodeStore;
     private RelationshipStore relationshipStore;
@@ -103,7 +107,6 @@ class OnlineIndexUpdatesTest
     void setUp() throws IOException
     {
         life = new LifeSupport();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults();
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =

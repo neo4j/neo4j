@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.database;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
@@ -57,7 +58,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static java.util.Optional.of;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -83,6 +83,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -97,6 +100,14 @@ public class DatabaseTest
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
+    private DatabaseLayout databaseLayout;
+
+    @Before
+    public void setUp()
+    {
+        databaseLayout = DatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) );
+    }
+
     @Test
     public void databaseHealthShouldBeHealedOnStart() throws Throwable
     {
@@ -108,7 +119,7 @@ public class DatabaseTest
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( databaseHealth );
 
-            database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
+            database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     dependencies );
 
             databaseHealth.panic( new Throwable() );
@@ -130,7 +141,8 @@ public class DatabaseTest
     public void dropDataOfNotStartedDatabase()
     {
         File customTxLogsRoot = directory.directory( "customTxLogs" );
-        DatabaseLayout databaseLayout = directory.databaseLayout( () -> of( customTxLogsRoot ) );
+        Config cfg = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( cfg );
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ) );
 
         database.start();
@@ -150,7 +162,8 @@ public class DatabaseTest
     public void truncateNotStartedDatabase()
     {
         File customTxLogsRoot = directory.directory( "truncateCustomTxLogs" );
-        DatabaseLayout databaseLayout = directory.databaseLayout( () -> of( customTxLogsRoot ) );
+        Config cfg = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( cfg );
         Database database = databaseRule.getDatabase( databaseLayout, fs, pageCacheRule.getPageCache( fs ) );
 
         database.start();
@@ -175,7 +188,7 @@ public class DatabaseTest
     public void doNotFlushDataFilesOnDatabaseTruncate()
     {
         FilesCollectionPageCache pageCache = new FilesCollectionPageCache( pageCacheRule, fs );
-        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
 
         database.start();
         database.truncate();
@@ -195,7 +208,8 @@ public class DatabaseTest
     public void filesRecreatedAfterTruncate()
     {
         File customTxLogsRoot = directory.directory( "truncateCustomTxLogs" );
-        DatabaseLayout databaseLayout = directory.databaseLayout( () -> of( customTxLogsRoot ) );
+        Config cfg = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( cfg );
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ) );
 
         database.start();
@@ -227,7 +241,7 @@ public class DatabaseTest
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         PageCacheConfig pageCacheConfig = PageCacheConfig.config().withTracer( pageCacheTracer );
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get(), pageCacheConfig ) );
-        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
 
         database.start();
         verify( pageCache, never() ).flushAndForce();
@@ -244,7 +258,8 @@ public class DatabaseTest
     public void removeDatabaseDataAndLogsOnDrop()
     {
         File customTxLogsRoot = directory.directory( "customTxLogs" );
-        DatabaseLayout databaseLayout = directory.databaseLayout( () -> of( customTxLogsRoot ) );
+        Config cfg = Config.newBuilder().set( neo4j_home, directory.homeDir().toPath() ).set( transaction_logs_root_path, customTxLogsRoot.toPath() ).build();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( cfg );
         Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ) );
 
         database.start();
@@ -265,7 +280,7 @@ public class DatabaseTest
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         PageCacheConfig pageCacheConfig = PageCacheConfig.config().withTracer( pageCacheTracer );
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get(), pageCacheConfig ) );
-        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
 
         database.start();
         verify( pageCache, never() ).flushAndForce();
@@ -294,7 +309,7 @@ public class DatabaseTest
         } )
         .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt() );
 
-        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
         files.clear();
 
         database.start();
@@ -326,7 +341,7 @@ public class DatabaseTest
         } )
         .when( pageCache ).map( any( File.class ), any( VersionContextSupplier.class ), anyInt() );
 
-        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache );
         files.clear();
 
         database.start();
@@ -350,7 +365,7 @@ public class DatabaseTest
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( health );
-        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache, dependencies );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCache, dependencies );
 
         database.start();
         verify( pageCache, never() ).flushAndForce();
@@ -373,7 +388,7 @@ public class DatabaseTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( idGeneratorFactory, config, logService );
 
-        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(),
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(),
                 pageCache, dependencies );
 
         try
@@ -404,7 +419,7 @@ public class DatabaseTest
                 .assertHealthy( IOException.class ); // <- this is a trick to simulate a failure during checkpointing
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( databaseHealth );
-        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs, pageCache, dependencies );
+        Database database = databaseRule.getDatabase( databaseLayout, fs, pageCache, dependencies );
         database.start();
 
         try
@@ -424,7 +439,7 @@ public class DatabaseTest
     public void shouldHaveDatabaseLogServiceInDependencyResolver()
     {
         Dependencies dependencies = new Dependencies();
-        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ), dependencies );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ), dependencies );
 
         database.start();
 

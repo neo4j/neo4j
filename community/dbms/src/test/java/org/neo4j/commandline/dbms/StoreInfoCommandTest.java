@@ -76,7 +76,7 @@ class StoreInfoCommandTest
     {
         Path homeDir = testDirectory.directory( "home-dir" ).toPath();
         databaseDirectory = homeDir.resolve( "data/databases/foo" );
-        databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
+        databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
         Files.createDirectories( databaseDirectory );
 
         out = mock( PrintStream.class );

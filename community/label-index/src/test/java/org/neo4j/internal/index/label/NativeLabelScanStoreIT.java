@@ -29,12 +29,14 @@ import java.util.Random;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -45,6 +47,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, LifeExtension.class} )
 class NativeLabelScanStoreIT
 {
@@ -58,6 +61,8 @@ class NativeLabelScanStoreIT
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private NativeLabelScanStore store;
 
@@ -67,7 +72,7 @@ class NativeLabelScanStoreIT
     @BeforeEach
     void before()
     {
-        store = life.add( new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, FullStoreChangeStream.EMPTY,
+        store = life.add( new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY,
                 false, new Monitors(), RecoveryCleanupWorkCollector.immediate(),
                 // a bit of random pageSize
                 Math.min( pageCache.pageSize(), 256 << random.nextInt( 5 ) ) ) );

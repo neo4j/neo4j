@@ -61,6 +61,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -102,9 +103,9 @@ import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -127,7 +128,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class DatabaseRecoveryIT
 {
@@ -136,7 +137,11 @@ class DatabaseRecoveryIT
     @Inject
     private TestDirectory directory;
     @Inject
+    private DatabaseLayout databaseLayout;
+    @Inject
     private DefaultFileSystemAbstraction fileSystem;
+    @Inject
+    private Neo4jLayout neo4jLayout;
     @Inject
     private RandomRule random;
     @RegisterExtension
@@ -436,8 +441,8 @@ class DatabaseRecoveryIT
             }
         } );
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homeDir() ).setFileSystem( crashedFs ).setExternalDependencies( dependencies ).setMonitors(
-                        monitors ).impermanent().build();
+                new TestDatabaseManagementServiceBuilder( directory.homeDir() ).setFileSystem( crashedFs ).setExternalDependencies(
+                        dependencies ).setMonitors( monitors ).impermanent().build();
 
         managementService.shutdown();
 
@@ -448,7 +453,7 @@ class DatabaseRecoveryIT
         {
             // Here we verify that the neostore contents, record by record are exactly the same when comparing
             // the store as it was right after the checkpoint with the store as it was right after reverse recovery completed.
-            assertSameStoreContents( checkPointFs, reversedFs.get(), directory.databaseLayout() );
+            assertSameStoreContents( checkPointFs, reversedFs.get(), databaseLayout );
         }
         finally
         {
@@ -790,9 +795,11 @@ class DatabaseRecoveryIT
 
     private DatabaseLayout copyStore() throws IOException
     {
-        DatabaseLayout restoreDbLayout = directory.neo4jLayout( "restore-db" ).databaseLayout( DEFAULT_DATABASE_NAME );
-        copy( fileSystem, directory.databaseLayout().getTransactionLogsDirectory(), restoreDbLayout.getTransactionLogsDirectory() );
-        copy( fileSystem, directory.databaseLayout().databaseDirectory(), restoreDbLayout.databaseDirectory() );
+        DatabaseLayout restoreDbLayout = Neo4jLayout.of( directory.homeDir( "restore-db" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        fileSystem.mkdirs( restoreDbLayout.databaseDirectory() );
+        fileSystem.mkdirs( restoreDbLayout.getTransactionLogsDirectory() );
+        copy( fileSystem, databaseLayout.getTransactionLogsDirectory(), restoreDbLayout.getTransactionLogsDirectory() );
+        copy( fileSystem, databaseLayout.databaseDirectory(), restoreDbLayout.databaseDirectory() );
         return restoreDbLayout;
     }
 
@@ -803,14 +810,14 @@ class DatabaseRecoveryIT
         fs.copyRecursively( fromDirectory, toDirectory );
     }
 
-    private GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
+    private GraphDatabaseAPI startDatabase( File homeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
     {
 
         if ( managementService != null )
         {
             managementService.shutdown();
         }
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir )
+        managementService = new TestDatabaseManagementServiceBuilder( homeDir )
                 .setFileSystem( fs )
                 .setExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
                 .impermanent()
@@ -821,19 +828,19 @@ class DatabaseRecoveryIT
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private GraphDatabaseService startDatabase( File storeDir )
+    private GraphDatabaseService startDatabase( File homeDir )
     {
         if ( managementService != null )
         {
             managementService.shutdown();
         }
-        managementService = getManagementService( storeDir );
+        managementService = getManagementService( homeDir );
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private DatabaseManagementService getManagementService( File storeDir )
+    private DatabaseManagementService getManagementService( File homeDir )
     {
-        return new TestDatabaseManagementServiceBuilder( storeDir ).setInternalLogProvider( logProvider ).build();
+        return new TestDatabaseManagementServiceBuilder( homeDir ).setInternalLogProvider( logProvider ).build();
     }
 
     public class UpdateCapturingIndexProvider extends IndexProvider.Delegating

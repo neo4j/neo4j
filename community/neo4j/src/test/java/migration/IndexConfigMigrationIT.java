@@ -50,6 +50,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -58,7 +59,7 @@ import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.config.CrsConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -86,9 +87,12 @@ import static org.neo4j.values.storable.Values.COMPARATOR;
 /**
  * This test should verify that index configurations from a 3.5 store stay intact when opened again, with migration if needed.
  */
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class IndexConfigMigrationIT
 {
+    @Inject
+    private DatabaseLayout databaseLayout;
+
     private enum MinMaxSetting
     {
         wgs84Min( CrsConfig.group( WGS84 ).min, List.of( -1.0, -2.0 ) ),
@@ -179,7 +183,7 @@ class IndexConfigMigrationIT
     }
 
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
 
     private static File tempStoreDirectory() throws IOException
     {
@@ -218,10 +222,10 @@ class IndexConfigMigrationIT
     @Test
     void shouldHaveCorrectDataAndIndexConfiguration() throws IOException, IndexNotFoundKernelException
     {
-        File databaseDir = directory.databaseDir();
+        File databaseDir = databaseLayout.databaseDirectory();
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
-        DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( directory.homeDir() )
+        DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true );
         DatabaseManagementService dbms = builder.build();
         try

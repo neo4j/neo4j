@@ -33,6 +33,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -56,12 +58,15 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 @EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 class ApplyRecoveredTransactionsTest
 {
     @Inject
     private PageCache pageCache;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private EphemeralFileSystemAbstraction fs;
 
@@ -73,7 +78,7 @@ class ApplyRecoveredTransactionsTest
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         StoreFactory storeFactory =
-                new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance() );
+                new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 

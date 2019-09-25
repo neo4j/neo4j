@@ -38,6 +38,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.archive.CompressionFormat;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 
@@ -45,8 +46,6 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.configuration.LayoutConfig.of;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;
@@ -80,8 +79,7 @@ public class DumpCommand extends AbstractCommand
         Path archive = calculateArchive( database, to.toAbsolutePath() );
 
         Config config = buildConfig();
-        Path storeDirectory = getDatabaseDirectory( config );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( neo4j_home ).toFile(), storeDirectory.toFile(), of( config ), database );
+        DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database );
 
         try
         {

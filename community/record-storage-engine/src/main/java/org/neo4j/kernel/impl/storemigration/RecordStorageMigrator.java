@@ -173,6 +173,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId );
         LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId );
         // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
+        fileSystem.mkdirs( migrationLayout.databaseDirectory() );
         writeLastTxInformation( migrationLayout, lastTxInfo );
         writeLastTxLogPosition( migrationLayout, lastTxLogPosition );
 

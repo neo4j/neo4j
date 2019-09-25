@@ -26,6 +26,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGroupPosition;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -50,6 +52,7 @@ import static org.mockito.Mockito.spy;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 class RelationshipGroupGetterTest
 {
     @Inject
@@ -58,13 +61,15 @@ class RelationshipGroupGetterTest
     private PageCache pageCache;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void shouldAbortLoadingGroupChainIfComeTooFar()
     {
         // GIVEN a node with relationship group chain 2-->4-->10-->23
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(),
                 new DefaultIdGeneratorFactory( fs, immediate()  ), pageCache, fs, logProvider );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {

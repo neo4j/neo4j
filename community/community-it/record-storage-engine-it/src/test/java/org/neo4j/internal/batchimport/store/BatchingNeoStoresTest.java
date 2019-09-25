@@ -38,6 +38,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -76,6 +77,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -102,6 +104,7 @@ import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class BatchingNeoStoresTest
 {
     private static final RelationshipType RELTYPE = RelationshipType.withName( "TEST" );
@@ -112,6 +115,8 @@ class BatchingNeoStoresTest
     private PageCache pageCache;
     @Inject
     private FileSystemAbstraction fileSystem;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void shouldNotOpenStoreWithNodesOrRelationshipsInIt() throws Exception
@@ -125,7 +130,7 @@ class BatchingNeoStoresTest
             try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
             {
                 RecordFormats recordFormats = selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
-                try ( BatchingNeoStores store = batchingNeoStores( fileSystem, testDirectory.databaseLayout(), recordFormats, Configuration.DEFAULT,
+                try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, recordFormats, Configuration.DEFAULT,
                         NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler ) )
                 {
                     store.createNew();
@@ -149,7 +154,7 @@ class BatchingNeoStoresTest
         RecordFormats recordFormats = LATEST_RECORD_FORMATS;
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
-              BatchingNeoStores store = batchingNeoStores( fileSystem, testDirectory.databaseLayout(),
+              BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout,
               recordFormats, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler ) )
         {
             store.createNew();
@@ -169,7 +174,7 @@ class BatchingNeoStoresTest
             // given all the stores with some records in them
             testDirectory.cleanup();
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
-                    PageCacheTracer.NULL, testDirectory.databaseLayout(), LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    PageCacheTracer.NULL, databaseLayout, LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults() ) )
             {
                 stores.createNew();
@@ -181,7 +186,7 @@ class BatchingNeoStoresTest
 
             // when opening and pruning all except the one we test
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
-                    PageCacheTracer.NULL, testDirectory.databaseLayout(), LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    PageCacheTracer.NULL, databaseLayout, LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults() ) )
             {
                 stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
@@ -209,7 +214,7 @@ class BatchingNeoStoresTest
         // given
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), formats, Configuration.DEFAULT,
+                pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -229,7 +234,7 @@ class BatchingNeoStoresTest
         // given
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), formats, Configuration.DEFAULT,
+                pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -249,7 +254,7 @@ class BatchingNeoStoresTest
         // given
         RecordFormats formats = LATEST_RECORD_FORMATS;
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), formats, Configuration.DEFAULT,
+                pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -323,7 +328,7 @@ class BatchingNeoStoresTest
                     new DelegatingTokenHolder( relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
             IndexConfigCompleter indexConfigCompleter = index -> index;
             RecordStorageEngine storageEngine = life.add(
-                    new RecordStorageEngine( testDirectory.databaseLayout(), Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
+                    new RecordStorageEngine( databaseLayout, Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
                             tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),

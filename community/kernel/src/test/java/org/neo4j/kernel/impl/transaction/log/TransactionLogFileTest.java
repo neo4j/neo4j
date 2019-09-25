@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableClosableChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
@@ -43,7 +44,7 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -61,12 +62,14 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
 class TransactionLogFileTest
 {
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
@@ -79,7 +82,7 @@ class TransactionLogFileTest
     @Test
     void skipLogFileWithoutHeader() throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -104,7 +107,7 @@ class TransactionLogFileTest
     void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception
     {
         // GIVEN
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -117,7 +120,7 @@ class TransactionLogFileTest
         life.shutdown();
 
         // THEN
-        File file =  LogFilesBuilder.logFilesBasedOnlyBuilder( directory.databaseLayout().getTransactionLogsDirectory(), fileSystem )
+        File file =  LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
                 .withLogEntryReader( logEntryReader() )
                 .build().getLogFileForVersion( 1L );
         LogHeader header = readLogHeader( fileSystem, file );
@@ -129,7 +132,7 @@ class TransactionLogFileTest
     void shouldWriteSomeDataIntoTheLog() throws Exception
     {
         // GIVEN
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -160,7 +163,7 @@ class TransactionLogFileTest
     void shouldReadOlderLogs() throws Exception
     {
         // GIVEN
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -207,7 +210,7 @@ class TransactionLogFileTest
     void shouldVisitLogFile() throws Exception
     {
         // GIVEN
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -245,7 +248,7 @@ class TransactionLogFileTest
     {
         // GIVEN a file which returns 1/2 log header size worth of bytes
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -267,7 +270,7 @@ class TransactionLogFileTest
     {
         // GIVEN a file which returns 1/2 log header size worth of bytes
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
@@ -291,7 +294,7 @@ class TransactionLogFileTest
     @Test
     void closeChannelThrowExceptionOnAttemptToAppendTransactionLogRecords() throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )

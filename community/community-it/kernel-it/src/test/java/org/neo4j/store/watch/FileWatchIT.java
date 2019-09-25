@@ -47,7 +47,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
@@ -57,7 +56,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.time.Duration.ofMinutes;
@@ -66,24 +65,23 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class FileWatchIT
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private AssertableLogProvider logProvider;
     private GraphDatabaseService database;
-    private DatabaseLayout databaseLayout;
     private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp()
     {
-        Neo4jLayout customLayout = testDirectory.neo4jLayout( "customStore" );
-        databaseLayout = customLayout.databaseLayout( DEFAULT_DATABASE_NAME );
         logProvider = new AssertableLogProvider();
-        managementService = new TestDatabaseManagementServiceBuilder( customLayout.homeDirectory() ).setInternalLogProvider( logProvider ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setInternalLogProvider( logProvider ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -261,7 +259,7 @@ class FileWatchIT
             DatabaseManagementService service = null;
             try
             {
-                service = new TestDatabaseManagementServiceBuilder( testDirectory.databaseLayout( "failed-start-db" ).databaseDirectory() )
+                service = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir( "failed-start-db" ) )
                         .setInternalLogProvider( logProvider )
                         .setFileSystem( new NonWatchableFileSystemAbstraction() )
                         .setConfig( GraphDatabaseSettings.filewatcher_enabled, false )

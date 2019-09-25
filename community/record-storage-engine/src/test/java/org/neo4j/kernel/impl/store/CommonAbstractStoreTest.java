@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -69,6 +70,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class CommonAbstractStoreTest
 {
     private static final int PAGE_SIZE = 32;
@@ -94,6 +96,9 @@ class CommonAbstractStoreTest
 
     @Inject
     private TestDirectory dir;
+
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @BeforeEach
     void setUpMocks() throws IOException
@@ -176,7 +181,6 @@ class CommonAbstractStoreTest
     void shouldDeleteOnCloseIfOpenOptionsSaysSo() throws IOException
     {
         // GIVEN
-        DatabaseLayout databaseLayout = dir.databaseLayout();
         File nodeStore = databaseLayout.nodeStore();
         File idFile = databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
         TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ),

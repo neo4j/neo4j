@@ -36,6 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.PageCache;
@@ -53,9 +54,9 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
@@ -77,7 +78,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
-@EphemeralTestDirectoryExtension
+@EphemeralNeo4jLayoutExtension
 class MetaDataStoreTest
 {
     @RegisterExtension
@@ -86,6 +87,8 @@ class MetaDataStoreTest
     private EphemeralFileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private PageCache pageCache;
     private boolean fakePageCursorOverflow;
@@ -557,7 +560,7 @@ class MetaDataStoreTest
 
     private File createMetaDataFile() throws IOException
     {
-        File file = testDirectory.databaseLayout().metadataStore();
+        File file = databaseLayout.metadataStore();
         fs.write( file ).close();
         return file;
     }
@@ -748,7 +751,7 @@ class MetaDataStoreTest
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
-                new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
+                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
                         pageCacheWithFakeOverflow, fs, logProvider );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }

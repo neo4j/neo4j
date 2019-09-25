@@ -34,7 +34,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,11 +45,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class ExtensionContextTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
+    @Inject
+    private Neo4jLayout neo4jLayout;
 
     @Test
     void shouldConsultUnsatisfiedDependencyHandlerOnMissingDependencies()
@@ -101,15 +105,13 @@ class ExtensionContextTest
     @Test
     void globalContextRootDirectoryEqualToStoreDirectory()
     {
-        Neo4jLayout storeLayout = testDirectory.neo4jLayout();
-        GlobalExtensionContext context = new GlobalExtensionContext( storeLayout, DatabaseInfo.TOOL, new Dependencies() );
-        assertSame( storeLayout.storeDirectory(), context.directory() );
+        GlobalExtensionContext context = new GlobalExtensionContext( neo4jLayout, DatabaseInfo.TOOL, new Dependencies() );
+        assertSame( neo4jLayout.databasesDirectory(), context.directory() );
     }
 
     @Test
     void databaseContextRootDirectoryEqualToDatabaseDirectory()
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         DatabaseExtensionContext context = new DatabaseExtensionContext( databaseLayout, DatabaseInfo.TOOL, new Dependencies() );
         assertSame( databaseLayout.databaseDirectory(), context.directory() );
     }

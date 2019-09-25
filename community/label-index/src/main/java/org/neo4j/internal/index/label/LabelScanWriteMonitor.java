@@ -385,7 +385,7 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
             return;
         }
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( new File( arguments.orphans().get( 0 ) ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( new File( arguments.orphans().get( 0 ) ) );
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         TxFilter txFilter = parseTxFilter( arguments.get( ARG_TXFILTER, null ) );
         PrintStream out = System.out;

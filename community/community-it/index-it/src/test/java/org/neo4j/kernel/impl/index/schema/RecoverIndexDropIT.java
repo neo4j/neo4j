@@ -31,6 +31,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -52,7 +53,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,7 +72,7 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
  * before the command had been applied and so the files would still remain, and not be dropped either when that command
  * was recovered.
  */
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class RecoverIndexDropIT
 {
     private static final String KEY = "key";
@@ -80,6 +81,8 @@ class RecoverIndexDropIT
     private DefaultFileSystemAbstraction fs;
     @Inject
     private TestDirectory directory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void shouldDropIndexOnRecovery() throws IOException
@@ -90,7 +93,7 @@ class RecoverIndexDropIT
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         createIndex( db );
         managementService.shutdown();
-        appendDropTransactionToTransactionLog( directory.databaseLayout().getTransactionLogsDirectory(), dropTransaction );
+        appendDropTransactionToTransactionLog( databaseLayout.getTransactionLogsDirectory(), dropTransaction );
 
         // when recovering this (the drop transaction with the index file intact)
         Monitors monitors = new Monitors();

@@ -47,6 +47,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -81,8 +82,8 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -101,7 +102,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_S
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class RecoveryCorruptedTransactionLogIT
 {
@@ -109,6 +110,8 @@ class RecoveryCorruptedTransactionLogIT
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory directory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private RandomRule random;
 
@@ -803,7 +806,7 @@ class RecoveryCorruptedTransactionLogIT
     private void addCorruptedCommandsToLastLogFile() throws IOException
     {
         PositiveLogFilesBasedLogVersionRepository versionRepository = new PositiveLogFilesBasedLogVersionRepository( logFiles );
-        LogFiles internalLogFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+        LogFiles internalLogFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( versionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( StoreId.UNKNOWN )
@@ -851,7 +854,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private LogFiles buildDefaultLogFiles( StoreId storeId ) throws IOException
     {
-        return LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+        return LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( storeId )

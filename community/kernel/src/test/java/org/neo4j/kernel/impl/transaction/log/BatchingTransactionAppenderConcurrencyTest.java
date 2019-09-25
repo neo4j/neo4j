@@ -50,6 +50,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -75,9 +76,9 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
@@ -91,7 +92,7 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
-@EphemeralTestDirectoryExtension
+@EphemeralNeo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
 public class BatchingTransactionAppenderConcurrencyTest
 {
@@ -101,6 +102,8 @@ public class BatchingTransactionAppenderConcurrencyTest
     private LifeSupport life;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final LogFiles logFiles = mock( TransactionLogFiles.class );
@@ -231,7 +234,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, efs );
         life.add( new FileSystemLifecycleAdapter( fs ) );
         Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
-        LogFiles logFiles = LogFilesBuilder.builder( testDirectory.databaseLayout(), fs )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
@@ -291,7 +294,7 @@ public class BatchingTransactionAppenderConcurrencyTest
 
         life.add( new FileSystemLifecycleAdapter( fs ) );
         DatabaseHealth slowPanicDatabaseHealth = new SlowPanickingDatabaseHealth( panicLatch, adversaryLatch );
-        LogFiles logFiles = LogFilesBuilder.builder( testDirectory.databaseLayout(), fs )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )

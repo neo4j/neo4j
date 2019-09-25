@@ -211,7 +211,7 @@ class DatabaseFileListingTest
 
     private void verifyLogFilesWithCustomPathListing( Path path ) throws IOException
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.databaseDir( "customDb" ) )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir( "customDb" ) )
                 .setConfig( GraphDatabaseSettings.transaction_logs_root_path, path )
                 .build();
         GraphDatabaseAPI graphDatabase = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

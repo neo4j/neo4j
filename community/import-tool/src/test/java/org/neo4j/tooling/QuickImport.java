@@ -162,7 +162,7 @@ public class QuickImport
             {
                 System.out.println( "Seed " + randomSeed );
                 final JobScheduler jobScheduler = life.add( createScheduler() );
-                consumer = BatchImporterFactory.withHighestPriority().instantiate( DatabaseLayout.of( dir ), fileSystem, null, importConfig,
+                consumer = BatchImporterFactory.withHighestPriority().instantiate( DatabaseLayout.ofFlat( dir ), fileSystem, null, importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible(), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler, Collector.EMPTY,
                         TransactionLogsInitializer.INSTANCE );

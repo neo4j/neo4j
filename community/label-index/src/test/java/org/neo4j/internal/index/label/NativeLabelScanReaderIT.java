@@ -27,15 +27,16 @@ import java.util.BitSet;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.toIntExact;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,6 +48,7 @@ import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, LifeExtension.class} )
 class NativeLabelScanReaderIT
 {
@@ -57,7 +59,7 @@ class NativeLabelScanReaderIT
     @Inject
     private PageCache pageCache;
     @Inject
-    private TestDirectory testDirectory;
+    private DatabaseLayout databaseLayout;
     @Inject
     private FileSystemAbstraction fileSystem;
 
@@ -83,7 +85,7 @@ class NativeLabelScanReaderIT
     {
         // given
         NativeLabelScanStore store = life.add(
-                new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, EMPTY, false, new Monitors(), immediate() ) );
+                new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate() ) );
         int labelId = 1;
         int highNodeId = 100_000;
         BitSet expected = new BitSet( highNodeId );

@@ -28,6 +28,7 @@ import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingProp
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.api.NamedToken;
@@ -52,6 +54,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class BatchingTokenRepositoryTest
 {
     @Inject
@@ -60,6 +63,8 @@ class BatchingTokenRepositoryTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void shouldDedupLabelIds()
@@ -115,7 +120,7 @@ class BatchingTokenRepositoryTest
     {
         // given
 
-        try ( NeoStores stores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
+        try ( NeoStores stores = new StoreFactory( databaseLayout, Config.defaults(),
                 new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance() ).openNeoStores( true,
                 StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {

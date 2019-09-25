@@ -42,12 +42,13 @@ import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.DataFactories;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -56,16 +57,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class ImportPanicIT
 {
     private static final int BUFFER_SIZE = 1000;
 
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
     @Inject
     private RandomRule random;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     /**
      * There was this problem where some steps and in particular parallel CSV input parsing that
@@ -76,7 +79,7 @@ class ImportPanicIT
     {
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), directory.getFileSystem(), null,
+            BatchImporter importer = new ParallelBatchImporter( databaseLayout, testDirectory.getFileSystem(), null,
                 Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
                 Config.defaults(), StandardV3_4.RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, EmptyLogFilesInitializer.INSTANCE );
             Iterable<DataFactory> nodeData =
@@ -114,9 +117,9 @@ class ImportPanicIT
 
     private File nodeCsvFileWithBrokenEntries() throws IOException
     {
-        File file = directory.file( "broken-node-data.csv" );
+        File file = testDirectory.file( "broken-node-data.csv" );
         try ( PrintWriter writer = new PrintWriter(
-            directory.getFileSystem().openAsWriter( file, StandardCharsets.UTF_8, false ) ) )
+            testDirectory.getFileSystem().openAsWriter( file, StandardCharsets.UTF_8, false ) ) )
         {
             writer.println( ":ID,name" );
             int numberOfLines = BUFFER_SIZE * 10;

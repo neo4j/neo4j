@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -46,7 +47,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -65,16 +66,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * This test tries to reproduce this race. It will not produce false negatives, but sometimes false positives
  * since it's non-deterministic.
  */
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
 class TransactionLogFileRotateAndReadRaceIT
 {
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
     @Inject
     private LifeSupport life;
     @Inject
     private FileSystemAbstraction fs;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 
@@ -100,7 +103,7 @@ class TransactionLogFileRotateAndReadRaceIT
     {
         // GIVEN
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )

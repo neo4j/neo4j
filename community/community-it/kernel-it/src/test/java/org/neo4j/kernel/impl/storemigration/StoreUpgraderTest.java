@@ -38,10 +38,10 @@ import java.util.stream.Collectors;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -71,6 +71,7 @@ import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -93,17 +94,21 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 public class StoreUpgraderTest
 {
     private static final String INTERNAL_LOG_FILE = "debug.log";
 
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
+    @Inject
+    private Neo4jLayout neo4jLayout;
     @Inject
     private PageCache pageCache;
     @Inject
@@ -135,8 +140,8 @@ public class StoreUpgraderTest
     private void init( RecordFormats formats ) throws IOException
     {
         String version = formats.storeVersion();
-        databaseLayout = directory.databaseLayout( "db_" + version );
-        prepareDatabaseDirectory = directory.directory( "prepare_" + version );
+        databaseLayout = neo4jLayout.databaseLayout( "db-" + version );
+        prepareDatabaseDirectory = testDirectory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, databaseLayout, prepareDatabaseDirectory );
     }
 
@@ -170,7 +175,7 @@ public class StoreUpgraderTest
     void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly( RecordFormats formats ) throws IOException
     {
         init( formats );
-        File comparisonDirectory = directory.directory(
+        File comparisonDirectory = testDirectory.directory(
             "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
         fileSystem.deleteRecursively( comparisonDirectory );
@@ -186,7 +191,7 @@ public class StoreUpgraderTest
     void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly( RecordFormats formats ) throws IOException
     {
         init( formats );
-        File comparisonDirectory = directory.directory(
+        File comparisonDirectory = testDirectory.directory(
             "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
         fileSystem.deleteRecursively( comparisonDirectory );
@@ -346,13 +351,17 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        File txRoot = directory.directory( "customTxRoot" );
+        File txRoot = testDirectory.directory( "customTxRoot" );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
-            .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() ).build();
-        DatabaseLayout migrationLayout = DatabaseLayout.of( config.get( neo4j_home ).toFile(), databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
+                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() )
+                .set( default_database, databaseLayout.getDatabaseName() )
+                .build();
+        DatabaseLayout migrationLayout = DatabaseLayout.of( config );
+
         newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
             .migrateIfNeeded( migrationLayout );
 
@@ -373,13 +382,16 @@ public class StoreUpgraderTest
     {
         init( formats );
 
-        File txRoot = directory.directory( "customTxRoot" );
+        File txRoot = testDirectory.directory( "customTxRoot" );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
-            .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() ).build();
-        DatabaseLayout migrationLayout = DatabaseLayout.of(  config.get( neo4j_home ).toFile(), databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
+                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() )
+                .set( default_database, databaseLayout.getDatabaseName() )
+                .build();
+        DatabaseLayout migrationLayout = DatabaseLayout.of( config );
 
         File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
         assertTrue( fileSystem.mkdir( databaseTransactionLogsHome ) );

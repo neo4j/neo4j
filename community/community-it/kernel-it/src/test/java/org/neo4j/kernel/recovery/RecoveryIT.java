@@ -35,6 +35,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -72,15 +74,20 @@ import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class RecoveryIT
 {
     private static final int TEN_KB = (int) ByteUnit.kibiBytes( 10 );
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private Neo4jLayout neo4jLayout;
+    @Inject
+    private DatabaseLayout databaseLayout;
     private DatabaseManagementService managementService;
 
     @Test
@@ -91,13 +98,13 @@ class RecoveryIT
         managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
-        assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
     }
 
     @Test
     void recoveryNotRequiredWhenDatabaseNotFound() throws Exception
     {
-        DatabaseLayout absentDatabase = directory.databaseLayout( "absent" );
+        DatabaseLayout absentDatabase = neo4jLayout.databaseLayout( "absent" );
         assertFalse( isRecoveryRequired( fileSystem, absentDatabase, defaults() ) );
     }
 
@@ -108,7 +115,6 @@ class RecoveryIT
         managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
-        DatabaseLayout databaseLayout = directory.databaseLayout();
         assertFalse( isRecoveryRequired( databaseLayout, defaults() ) );
     }
 
@@ -282,11 +288,11 @@ class RecoveryIT
         removeLastCheckpointRecordFromLastLogFile();
 
         assertEquals( 0, countCheckPointsInTransactionLogs() );
-        assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
 
         startStopDatabase();
 
-        assertFalse( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
         // we will have 2 checkpoints: first will be created after successful recovery and another on shutdown
         assertEquals( 2, countCheckPointsInTransactionLogs() );
     }
@@ -330,7 +336,7 @@ class RecoveryIT
         removeTransactionLogs();
 
         startStopDatabaseWithForcedRecovery();
-        assertFalse( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
         // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
         assertEquals( 2, countCheckPointsInTransactionLogs() );
 
@@ -341,7 +347,7 @@ class RecoveryIT
     void startDatabaseWithRemovedMultipleTransactionLogFiles() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -355,7 +361,7 @@ class RecoveryIT
 
         startStopDatabaseWithForcedRecovery();
 
-        assertFalse( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
         // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
         assertEquals( 2, countCheckPointsInTransactionLogs() );
     }
@@ -364,7 +370,7 @@ class RecoveryIT
     void killAndStartDatabaseAfterTransactionLogsRemoval() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -375,7 +381,7 @@ class RecoveryIT
         managementService.shutdown();
 
         removeTransactionLogs();
-        assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
         assertEquals( 0, countTransactionLogFiles() );
 
         DatabaseManagementService forcedRecoveryManagementService = forcedRecoveryManagement();
@@ -389,7 +395,7 @@ class RecoveryIT
 
         startStopDatabase();
 
-        assertFalse( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
         // we will have 3 checkpoints: one from logs before recovery, second will be created as part of recovery and another on shutdown
         assertEquals( 3, countCheckPointsInTransactionLogs() );
     }
@@ -398,7 +404,7 @@ class RecoveryIT
     void killAndStartDatabaseAfterTransactionLogsRemovalWithSeveralFilesWithoutCheckpoint() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -412,7 +418,7 @@ class RecoveryIT
 
         assertEquals( 4, countTransactionLogFiles() );
         assertEquals( 0, countCheckPointsInTransactionLogs() );
-        assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
 
         startStopDatabase();
         assertEquals( 2, countCheckPointsInTransactionLogs() );
@@ -421,7 +427,7 @@ class RecoveryIT
 
         startStopDatabase();
 
-        assertFalse( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
         // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
         assertEquals( 2, countCheckPointsInTransactionLogs() );
     }
@@ -430,7 +436,7 @@ class RecoveryIT
     void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -444,7 +450,7 @@ class RecoveryIT
 
         assertEquals( 4, countTransactionLogFiles() );
         assertEquals( 0, countCheckPointsInTransactionLogs() );
-        assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertTrue( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
 
         startStopDatabase();
         assertEquals( 2, countCheckPointsInTransactionLogs() );
@@ -452,7 +458,7 @@ class RecoveryIT
 
         startStopDatabase();
 
-        assertFalse( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
         // we will have 2 checkpoints here because offset in both of them will be the same and 2 will be truncated instead since truncation is based on position
         // next start-stop cycle will have transaction between so we will have 3 checkpoints as expected.
         assertEquals( 2, countCheckPointsInTransactionLogs() );
@@ -464,7 +470,7 @@ class RecoveryIT
         removeLastCheckpointRecordFromLastLogFile();
         startStopDatabase();
 
-        assertFalse( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertFalse( isRecoveryRequired( fileSystem, databaseLayout, defaults() ) );
         assertEquals( 3, countCheckPointsInTransactionLogs() );
     }
 
@@ -525,7 +531,6 @@ class RecoveryIT
 
     private void recoverDatabase() throws Exception
     {
-        DatabaseLayout databaseLayout = directory.databaseLayout();
         assertTrue( isRecoveryRequired( databaseLayout, defaults() ) );
         performRecovery( databaseLayout );
         assertFalse( isRecoveryRequired( databaseLayout, defaults() ) );
@@ -557,7 +562,7 @@ class RecoveryIT
 
     private LogFiles buildLogFiles() throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( directory.databaseLayout().getTransactionLogsDirectory(), fileSystem ).build();
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem ).build();
     }
 
     private void removeTransactionLogs() throws IOException
@@ -637,7 +642,7 @@ class RecoveryIT
 
     private GraphDatabaseAPI createDatabase()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                 .setConfig( logical_log_rotation_threshold, logical_log_rotation_threshold.defaultValue() )
                 .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -651,7 +656,7 @@ class RecoveryIT
 
     private DatabaseManagementService forcedRecoveryManagement()
     {
-        return new TestDatabaseManagementServiceBuilder( directory.homeDir() ).setConfig( fail_on_missing_files, false ).build();
+        return new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setConfig( fail_on_missing_files, false ).build();
     }
 
     private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )

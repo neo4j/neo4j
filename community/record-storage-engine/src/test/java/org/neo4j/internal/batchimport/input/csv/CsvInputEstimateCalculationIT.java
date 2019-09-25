@@ -70,8 +70,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -96,7 +96,7 @@ import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class CsvInputEstimateCalculationIT
 {
@@ -107,7 +107,10 @@ class CsvInputEstimateCalculationIT
     private RandomRule random;
 
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
+
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void shouldCalculateCorrectEstimates() throws Exception
@@ -121,7 +124,6 @@ class CsvInputEstimateCalculationIT
                 GraphDatabaseSettings.array_block_size.defaultValue(), 0 ) );
 
         // when
-        DatabaseLayout databaseLayout = directory.databaseLayout();
         Config config = Config.defaults();
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
@@ -179,7 +181,7 @@ class CsvInputEstimateCalculationIT
 
     private long sizeOf( DatabaseFile file )
     {
-        return directory.databaseLayout().file( file ).length();
+        return databaseLayout.file( file ).length();
     }
 
     private Input generateData() throws IOException
@@ -231,7 +233,7 @@ class CsvInputEstimateCalculationIT
     private DataFactory generateData( Header.Factory factory, MutableLong start, long count,
             long nodeCount, String headerString, String fileName, Groups groups ) throws IOException
     {
-        File file = directory.file( fileName );
+        File file = testDirectory.file( fileName );
         Header header = factory.create( charSeeker( wrap( headerString ), COMMAS, false ), COMMAS, IdType.INTEGER, groups );
         Distribution<String> distribution = new Distribution<>( new String[] {"Token"} );
         Deserialization<String> deserialization = new StringDeserialization( COMMAS );

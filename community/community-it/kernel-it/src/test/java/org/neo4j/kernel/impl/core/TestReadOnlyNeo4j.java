@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -165,7 +166,7 @@ class TestReadOnlyNeo4j
 
     private void deleteIndexFolder()
     {
-        File databaseDir = testDirectory.databaseDir();
+        File databaseDir = Neo4jLayout.of( testDirectory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory();
         fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ) );
     }
 

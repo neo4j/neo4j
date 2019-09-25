@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -49,6 +50,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
 @EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 class StoreFactoryTest
 {
     @Inject
@@ -57,6 +59,8 @@ class StoreFactoryTest
     private TestDirectory testDirectory;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private NeoStores neoStores;
     private IdGeneratorFactory idGeneratorFactory;
@@ -70,7 +74,6 @@ class StoreFactoryTest
     private StoreFactory storeFactory( Config config, OpenOption... openOptions )
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fileSystem, pageCache, logProvider );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, openOptions );
     }
@@ -126,18 +129,18 @@ class StoreFactoryTest
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );
-        assertTrue( fileSystem.listFiles( testDirectory.databaseDir() ).length >= StoreType.values().length );
+        assertTrue( fileSystem.listFiles( databaseLayout.databaseDirectory() ).length >= StoreType.values().length );
 
         // THEN
         neoStores.close();
-        assertEquals( 0, fileSystem.listFiles( testDirectory.databaseDir() ).length );
+        assertEquals( 0, fileSystem.listFiles( databaseLayout.databaseDirectory() ).length );
     }
 
     @Test
     void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
     {
         StoreFactory storeFactory = storeFactory( Config.defaults() );
-        fileSystem.write( testDirectory.databaseLayout().file( "neostore.nodestore.db.labels" ) );
+        fileSystem.write( databaseLayout.file( "neostore.nodestore.db.labels" ) );
         storeFactory.openAllNeoStores( true ).close();
     }
 
@@ -146,7 +149,7 @@ class StoreFactoryTest
     {
         StoreFactory storeFactory = storeFactory( Config.defaults() );
         storeFactory.openAllNeoStores( true ).close();
-        for ( File f : fileSystem.listFiles( testDirectory.databaseDir() ) )
+        for ( File f : fileSystem.listFiles( databaseLayout.databaseDirectory() ) )
         {
             if ( !f.getName().endsWith( ".id" ) )
             {

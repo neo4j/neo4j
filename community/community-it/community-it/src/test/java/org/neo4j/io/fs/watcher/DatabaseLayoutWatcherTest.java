@@ -29,8 +29,9 @@ import java.nio.file.WatchKey;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,11 +41,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class DatabaseLayoutWatcherTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     private DatabaseLayoutWatcher watcher;
     private FileWatcher fileWatcher;
     private FileWatchEventListener eventListener;
@@ -59,7 +62,7 @@ class DatabaseLayoutWatcherTest
         };
 
         FileWatchEventListenerFactory listenerFactory = set -> eventListener;
-        watcher = new DatabaseLayoutWatcher( fileWatcher, testDirectory.databaseLayout(), listenerFactory );
+        watcher = new DatabaseLayoutWatcher( fileWatcher, databaseLayout, listenerFactory );
     }
 
     @Test
@@ -69,7 +72,7 @@ class DatabaseLayoutWatcherTest
 
         watcher.start();
 
-        verify( fileWatcher ).watch( testDirectory.databaseDir() );
+        verify( fileWatcher ).watch( databaseLayout.databaseDirectory() );
         verify( fileWatcher ).watch( testDirectory.homeDir() );
         verify( fileWatcher ).addFileWatchEventListener( eventListener );
     }

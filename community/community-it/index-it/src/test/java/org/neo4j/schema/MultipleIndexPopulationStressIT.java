@@ -57,6 +57,8 @@ import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
 import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -81,6 +83,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.multi_threaded_schema_index_population_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.GeneratingInputIterator.EMPTY_ITERABLE;
@@ -168,8 +171,12 @@ public class MultipleIndexPopulationStressIT
         // WHEN creating the indexes under stressful updates
         populateDbAndIndexes( nodeCount, multiThreaded );
         ConsistencyCheckService cc = new ConsistencyCheckService();
-        Result result = cc.runFullConsistencyCheck( directory.databaseLayout(),
-                Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
+        Config config = Config.newBuilder()
+                .set( neo4j_home, directory.homeDir().toPath() )
+                .set( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .build();
+        Result result = cc.runFullConsistencyCheck( DatabaseLayout.of( config ),
+                config,
                 NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
         dropIndexes();
@@ -302,12 +309,13 @@ public class MultipleIndexPopulationStressIT
 
     private void createRandomData( int count ) throws Exception
     {
-        Config config = Config.defaults();
+        Config config = Config.defaults( neo4j_home, directory.homeDir().toPath() );
         RecordFormats recordFormats = RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
         try ( RandomDataInput input = new RandomDataInput( count );
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null, DEFAULT,
+            DatabaseLayout layout = Neo4jLayout.of( directory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME );
+            BatchImporter importer = new ParallelBatchImporter( layout, fileSystemRule.get(), null, DEFAULT,
                     NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
                     TransactionLogsInitializer.INSTANCE );
             importer.doImport( input );

@@ -36,6 +36,7 @@ import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -60,8 +61,8 @@ class FileLockerTest
 
     static Stream<LockerFactory> lockerFactories()
     {
-        return Stream.of( ( fs, directory ) -> new GlobalLocker( fs, directory.neo4jLayout() ),
-                ( fs, directory ) -> new DatabaseLocker( fs, directory.databaseLayout() ) );
+        return Stream.of( ( fs, directory ) -> new GlobalLocker( fs, Neo4jLayout.of( directory.homeDir() ) ),
+                ( fs, directory ) -> new DatabaseLocker( fs, Neo4jLayout.of( directory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME ) ) );
     }
 
     @ParameterizedTest

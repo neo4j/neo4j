@@ -37,6 +37,8 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
@@ -64,7 +66,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     public TestDatabaseManagementServiceBuilder()
     {
-        this( null );
+        super( null );
         setUserLogProvider( NullLogProvider.getInstance() );
     }
 
@@ -72,6 +74,20 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     {
         super( homeDirectory );
         setUserLogProvider( NullLogProvider.getInstance() );
+    }
+
+    public TestDatabaseManagementServiceBuilder( Neo4jLayout layout )
+    {
+        super( layout.homeDirectory() );
+        setConfig( GraphDatabaseSettings.databases_root_path, layout.databasesDirectory().toPath() );
+        setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.txLogsDirectory().toPath() );
+        setUserLogProvider( NullLogProvider.getInstance() );
+    }
+
+    public TestDatabaseManagementServiceBuilder( DatabaseLayout layout )
+    {
+        this( layout.getNeo4jLayout() );
+        setConfig( GraphDatabaseSettings.default_database, layout.getDatabaseName() );
     }
 
     @Override

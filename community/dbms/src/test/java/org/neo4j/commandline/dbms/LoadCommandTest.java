@@ -35,7 +35,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Optional;
 
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
@@ -47,10 +46,11 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -70,10 +70,11 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class LoadCommandTest
 {
     @Inject
@@ -95,8 +96,11 @@ class LoadCommandTest
 
     private void prepareFooDatabaseDirectory() throws IOException
     {
-        Config config = Config.newBuilder().set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() ).build();
-        File databaseDirectory = DatabaseLayout.of( config.get( neo4j_home ).toFile(), config.get( databases_root_path ).toFile(), "foo" ).databaseDirectory();
+        Config config = Config.newBuilder()
+                .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
+                .set( default_database, "foo" )
+                .build();
+        File databaseDirectory  = DatabaseLayout.of( config ).databaseDirectory();
         testDirectory.getFileSystem().mkdirs( databaseDirectory );
     }
 
@@ -138,7 +142,7 @@ class LoadCommandTest
     void shouldLoadTheDatabaseFromTheArchive() throws CommandFailedException, IOException, IncorrectFormat
     {
         execute( "foo", archive );
-        DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data/databases/foo" ),
+        DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data/databases" ), "foo",
                 homeDir.resolve( "data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME ) );
         verify( loader ).load( archive, databaseLayout );
     }
@@ -154,7 +158,7 @@ class LoadCommandTest
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo", archive );
-        DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir, transactionLogsDir );
+        DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir.getParent(), "foo", transactionLogsDir );
         verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
@@ -169,7 +173,7 @@ class LoadCommandTest
                         formatProperty( transaction_logs_root_path, txLogsDir ) ) );
 
         execute( "foo", archive );
-        DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir, txLogsDir );
+        DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir.getParent(), "foo", txLogsDir );
         verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
@@ -237,7 +241,7 @@ class LoadCommandTest
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
         Files.createDirectories( databaseDirectory );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               Locker locker = new DatabaseLocker( fileSystem, databaseLayout ) )
@@ -293,12 +297,12 @@ class LoadCommandTest
 
     private DatabaseLayout createDatabaseLayout( Path storePath, String databaseName, Path transactionLogsPath )
     {
-        return DatabaseLayout.of( testDirectory.homeDir(), storePath.toFile(), () -> Optional.of( transactionLogsPath.toFile() ), databaseName );
-    }
-
-    private DatabaseLayout createDatabaseLayout( Path databasePath, Path transactionLogsPath )
-    {
-        return DatabaseLayout.of( testDirectory.homeDir(), databasePath.toFile(), () -> Optional.of( transactionLogsPath.toFile() ) );
+        Config config = Config.newBuilder()
+                .set( neo4j_home, homeDir.toAbsolutePath() )
+                .set( databases_root_path, storePath.toAbsolutePath() )
+                .set( transaction_logs_root_path, transactionLogsPath.toAbsolutePath() )
+                .build();
+        return Neo4jLayout.of( config ).databaseLayout( databaseName );
     }
 
     private void execute( String database, Path archive )

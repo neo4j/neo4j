@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -47,8 +48,8 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -61,7 +62,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class RelationshipGroupStoreTest
 {
     @RegisterExtension
@@ -70,6 +71,8 @@ class RelationshipGroupStoreTest
     private FileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     private int defaultThreshold;
     private GraphDatabaseAPI db;
     private DatabaseManagementService managementService;
@@ -168,7 +171,7 @@ class RelationshipGroupStoreTest
         {
             config.set( dense_node_threshold, customThreshold );
         }
-        return new StoreFactory( testDirectory.databaseLayout(), config.build(), new DefaultIdGeneratorFactory( fs, immediate() ),
+        return new StoreFactory( databaseLayout, config.build(), new DefaultIdGeneratorFactory( fs, immediate() ),
                 pageCache, fs, NullLogProvider.getInstance() );
     }
 

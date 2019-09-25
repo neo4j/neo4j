@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -49,11 +49,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 public class TransactionAppenderStressTest
 {
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void concurrentTransactionAppendingTest() throws Exception
@@ -61,13 +63,13 @@ public class TransactionAppenderStressTest
         int threads = 10;
         Callable<Long> runner = new Builder()
                 .with( untilTimeExpired( 10, SECONDS ) )
-                .withWorkingDirectory( directory.databaseLayout() )
+                .withWorkingDirectory( databaseLayout )
                 .withNumThreads( threads )
                 .build();
 
         long appendedTxs = runner.call();
 
-        assertEquals( new TransactionIdChecker( directory.databaseLayout().getTransactionLogsDirectory() ).parseAllTxLogs(), appendedTxs );
+        assertEquals( new TransactionIdChecker( databaseLayout.getTransactionLogsDirectory() ).parseAllTxLogs(), appendedTxs );
     }
 
     public static class Builder

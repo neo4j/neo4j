@@ -31,23 +31,26 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class RecoveryLogIT
 {
     @Inject
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
+    @Inject
+    private DatabaseLayout databaseLayout;
     private DatabaseManagementService managementService;
 
     @AfterEach
@@ -64,7 +67,6 @@ class RecoveryLogIT
     {
         //Create database with forced recovery
         File tmpLogDir = testDirectory.directory("logs");
-        var databaseLayout = testDirectory.databaseLayout();
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 

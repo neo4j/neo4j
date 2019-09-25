@@ -31,12 +31,14 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -50,6 +52,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
 @EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class RecordPropertyCursorTest
 {
@@ -59,6 +62,8 @@ class RecordPropertyCursorTest
     private TestDirectory testDirectory;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private NeoStores neoStores;
     private PropertyCreator creator;
@@ -69,7 +74,7 @@ class RecordPropertyCursorTest
     void setup()
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate() );
-        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), idGeneratorFactory,
+        neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory,
                 pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() ).openAllNeoStores( true );
         creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         owner = neoStores.getNodeStore().newRecord();

@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.lock.ResourceLocker;
@@ -46,6 +47,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RecordStorageEngineRule;
@@ -65,6 +67,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
  * Base class for disk layer tests, which test read-access to committed data.
  */
 @EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 public abstract class RecordStorageReaderTestBase
 {
     private static final ResourceLocker IGNORE_LOCKING = ( tracer, resourceType, resourceIds ) -> {};
@@ -77,6 +80,8 @@ public abstract class RecordStorageReaderTestBase
     private FileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     final Label label1 = label( "FirstLabel" );
     final Label label2 = label( "SecondLabel" );
@@ -99,7 +104,7 @@ public abstract class RecordStorageReaderTestBase
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         RecordStorageEngineRule.Builder builder =
-                storageEngineRule.getWith( fs, pageCache, testDirectory.databaseLayout() ).tokenHolders( tokenHolders );
+                storageEngineRule.getWith( fs, pageCache, databaseLayout ).tokenHolders( tokenHolders );
 
         builder = modify( builder );
         this.storageEngine = builder.build();

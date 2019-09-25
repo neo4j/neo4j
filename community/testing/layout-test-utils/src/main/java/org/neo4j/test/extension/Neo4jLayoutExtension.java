@@ -17,33 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration;
+package org.neo4j.test.extension;
 
-import java.io.File;
-import java.util.Optional;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.io.layout.StoreLayoutConfig;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import static java.util.Optional.ofNullable;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 
-public class LayoutConfig implements StoreLayoutConfig
+@Target( {ElementType.TYPE, ElementType.METHOD} )
+@Retention( RetentionPolicy.RUNTIME )
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectorySupportExtension.class, Neo4jLayoutSupportExtension.class} )
+public @interface Neo4jLayoutExtension
 {
-    private final Config config;
-
-    public static LayoutConfig of( Config config )
-    {
-        return new LayoutConfig( config );
-    }
-
-    private LayoutConfig( Config config )
-    {
-        this.config = config;
-    }
-
-    @Override
-    public Optional<File> getTransactionLogsRootDirectory()
-    {
-        return ofNullable( config.get( transaction_logs_root_path ).toFile() );
-    }
 }

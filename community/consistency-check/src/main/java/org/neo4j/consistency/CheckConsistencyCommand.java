@@ -37,21 +37,19 @@ import org.neo4j.commandline.dbms.DatabaseLockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.ArgGroup;
@@ -118,14 +116,11 @@ public class CheckConsistencyCommand extends AbstractCommand
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
+
             DatabaseLayout databaseLayout = Optional.ofNullable( target.backup )
-                    .map( Path::toFile ).map( DatabaseLayout::of )
-                    .orElseGet( () -> DatabaseLayout.of(
-                            config.get( neo4j_home ).toFile(),
-                            config.get( databases_root_path ).toFile(),
-                            LayoutConfig.of( config ),
-                            target.database )
-                    );
+                    .map( Path::toFile ).map( DatabaseLayout::ofFlat )
+                    .orElseGet( () -> Neo4jLayout.of( config ).databaseLayout( target.database ) );
+
             checkDatabaseExistence( databaseLayout );
             try ( Closeable lock = DatabaseLockChecker.check( databaseLayout ) )
             {

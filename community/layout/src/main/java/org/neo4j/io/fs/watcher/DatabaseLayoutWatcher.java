@@ -79,8 +79,8 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         watch( databaseLayout.databaseDirectory() );
         watch( databaseLayout.getTransactionLogsDirectory() );
-        watch( layout.storeDirectory() );
-        watch( layout.transactionLogsRootDirectory() );
+        watch( layout.databasesDirectory() );
+        watch( layout.txLogsDirectory() );
         watch( layout.homeDirectory() );
         startWatching();
     }

@@ -29,6 +29,7 @@ import java.util.Collection;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -51,8 +52,8 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -66,7 +67,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHA
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, LifeExtension.class} )
 class ReversedSingleFileTransactionCursorTest
 {
@@ -74,6 +75,8 @@ class ReversedSingleFileTransactionCursorTest
     private FileSystemAbstraction fs;
     @Inject
     private TestDirectory directory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private LifeSupport life;
     @Inject
@@ -91,7 +94,7 @@ class ReversedSingleFileTransactionCursorTest
     {
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
-        logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
+        logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )

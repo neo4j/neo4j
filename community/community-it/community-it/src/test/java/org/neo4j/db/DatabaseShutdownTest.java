@@ -50,26 +50,28 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@EphemeralTestDirectoryExtension
+@EphemeralNeo4jLayoutExtension
 class DatabaseShutdownTest
 {
     @Inject
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fs;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush factory =
                 new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory(), fs );
         DatabaseManagementService managementService = factory.build();

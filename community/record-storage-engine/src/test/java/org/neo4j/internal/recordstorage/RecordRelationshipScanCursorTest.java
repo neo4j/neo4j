@@ -30,6 +30,7 @@ import java.util.Set;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -49,6 +51,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class RecordRelationshipScanCursorTest
 {
@@ -62,6 +65,8 @@ class RecordRelationshipScanCursorTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private NeoStores neoStores;
 
@@ -176,8 +181,7 @@ class RecordRelationshipScanCursorTest
 
     private StoreFactory getStoreFactory()
     {
-        return new StoreFactory(
-                testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate() ),
+        return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate() ),
                 pageCache, fileSystem, NullLogProvider.getInstance() );
     }
 

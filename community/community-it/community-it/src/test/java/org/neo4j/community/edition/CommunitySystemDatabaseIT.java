@@ -202,7 +202,7 @@ class CommunitySystemDatabaseIT
         DatabaseManagementService managementService = null;
         try
         {
-            File disabledSystemDbDirectory = testDirectory.databaseDir( "withSystemDd" );
+            File disabledSystemDbDirectory = testDirectory.homeDir( "withSystemDd" );
             managementService = new TestDatabaseManagementServiceBuilder( disabledSystemDbDirectory ).build();
             databaseWithSystemDb = managementService.database( DEFAULT_DATABASE_NAME );
             DatabaseManager<?> databaseManager = getDatabaseManager( databaseWithSystemDb );

@@ -35,8 +35,6 @@ import java.nio.file.Paths;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.consistency.CheckConsistencyCommand;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -45,11 +43,12 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -63,23 +62,24 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class CheckConsistencyCommandIT
 {
     @Inject
-    private TestDirectory testDir;
+    private TestDirectory testDirectory;
+    @Inject
+    private Neo4jLayout neo4jLayout;
     private Path homeDir;
+    private Path confPath;
 
     @BeforeEach
     void setUp()
     {
-        homeDir = testDir.directory( "home" ).toPath();
-        prepareDatabase( homeDir, Config.defaults() );
+        homeDir = testDirectory.homeDir().toPath();
+        confPath = testDirectory.directory( "conf" ).toPath();
+        prepareDatabase( neo4jLayout.databaseLayout( "mydb" ) );
     }
 
     @Test
@@ -149,12 +149,10 @@ class CheckConsistencyCommandIT
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
-        File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, LayoutConfig.of( config ), "mydb" );
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -176,12 +174,11 @@ class CheckConsistencyCommandIT
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
-        File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, LayoutConfig.of( config ), "mydb" );
-        testDir.getFileSystem().mkdirs( databaseLayout.databaseDirectory() );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
+
+        testDirectory.getFileSystem().mkdirs( databaseLayout.databaseDirectory() );
 
         try ( Closeable lock = DatabaseLockChecker.check( databaseLayout ) )
         {
@@ -197,12 +194,10 @@ class CheckConsistencyCommandIT
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
-        File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, LayoutConfig.of( config ), "mydb" );
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -225,7 +220,7 @@ class CheckConsistencyCommandIT
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
         when( consistencyCheckService
                 .runFullConsistencyCheck( any( DatabaseLayout.class ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
@@ -249,7 +244,7 @@ class CheckConsistencyCommandIT
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
@@ -271,7 +266,7 @@ class CheckConsistencyCommandIT
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
@@ -293,7 +288,7 @@ class CheckConsistencyCommandIT
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
@@ -314,7 +309,7 @@ class CheckConsistencyCommandIT
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
@@ -335,7 +330,7 @@ class CheckConsistencyCommandIT
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any( ConsistencyFlags.class ) ) )
@@ -356,7 +351,7 @@ class CheckConsistencyCommandIT
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
         File backupPath = new File( homeDir.toFile(), "dir/does/not/exist" );
 
@@ -373,11 +368,10 @@ class CheckConsistencyCommandIT
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
-        File databasesFolder = getDatabasesFolder( homeDir );
-        DatabaseLayout backupLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, NOT_CONFIGURED, "backup" );
+        DatabaseLayout backupLayout = Neo4jLayout.ofFlat( testDirectory.directory( "backup" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
         prepareBackupDatabase( backupLayout );
         CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( backupLayout ), any( Config.class ),
@@ -398,32 +392,13 @@ class CheckConsistencyCommandIT
 
     private void prepareBackupDatabase( DatabaseLayout backupLayout ) throws IOException
     {
-        testDir.getFileSystem().deleteRecursively( homeDir.toFile() );
-        prepareDatabase( backupLayout, Config.defaults( transaction_logs_root_path, backupLayout.getNeo4jLayout().storeDirectory().toPath() ) );
+        testDirectory.getFileSystem().deleteRecursively( homeDir.toFile() );
+        prepareDatabase( backupLayout );
     }
 
-    private static File getDatabasesFolder( Path homeDir )
+    private void prepareDatabase( DatabaseLayout databaseLayout )
     {
-        return Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() ).get( databases_root_path ).toFile();
-    }
-
-    private void prepareDatabase( Path homeDir, Config config )
-    {
-        File databasesFolder = getDatabasesFolder( homeDir );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), databasesFolder, LayoutConfig.of( config ), "mydb" );
-        prepareDatabase( databaseLayout, config );
-    }
-
-    private void prepareDatabase( DatabaseLayout databaseLayout, Config config )
-    {
-        File databaseDirectory = databaseLayout.databaseDirectory();
-        String databaseName = databaseDirectory.getName();
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( databaseDirectory.getParentFile().getParentFile().getParentFile() )
-                        .setConfig( config )
-                        .setConfig( default_database, databaseName )
-                        .setConfig( databases_root_path, databases_root_path.defaultValue() )
-                        .build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         managementService.shutdown();
     }
 }

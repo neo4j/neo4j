@@ -50,6 +50,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -90,6 +91,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
@@ -141,7 +143,8 @@ public class DatabaseCompositeIndexAccessorTest
         deps.satisfyDependencies( pageCache, jobScheduler, fileSystemRule, new SimpleLogService( logProvider ), new Monitors(), CONFIG,
                 RecoveryCleanupWorkCollector.ignore() );
         dir.prepareDirectory( DatabaseCompositeIndexAccessorTest.class, "null" );
-        DatabaseExtensionContext context = new DatabaseExtensionContext( dir.databaseLayout(), DatabaseInfo.UNKNOWN, deps );
+        Config config = Config.defaults( neo4j_home, dir.homeDir().toPath() );
+        DatabaseExtensionContext context = new DatabaseExtensionContext( DatabaseLayout.of( config ), DatabaseInfo.UNKNOWN, deps );
         DatabaseExtensions extensions = new DatabaseExtensions( context, indexProviderFactories, deps, ExtensionFailureStrategies.fail() );
 
         extensions.init();

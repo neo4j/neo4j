@@ -110,6 +110,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.counts_store_rotation_timeout;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -145,8 +146,8 @@ public class NeoStoresTest
     @Before
     public void setUpNeoStores()
     {
-        databaseLayout = dir.databaseLayout();
-        Config config = Config.defaults();
+        Config config = Config.defaults( neo4j_home, dir.homeDir().toPath() );
+        databaseLayout = DatabaseLayout.of( config );
         pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs.get(), NullLogProvider.getInstance() );
         sf.openAllNeoStores( true ).close();
@@ -512,8 +513,8 @@ public class NeoStoresTest
     @Test
     public void testSetBlockSize()
     {
-        DatabaseLayout databaseLayout = dir.databaseLayout( "small_store" );
-        initializeStores( databaseLayout, Map.of( GraphDatabaseSettings.string_block_size, 62, GraphDatabaseSettings.array_block_size, 302) );
+        DatabaseLayout smallStore = databaseLayout.getNeo4jLayout().databaseLayout( "small_store" );
+        initializeStores( smallStore, Map.of( GraphDatabaseSettings.string_block_size, 62, GraphDatabaseSettings.array_block_size, 302) );
         assertEquals( 62 + DynamicRecordFormat.RECORD_HEADER_SIZE,
                 pStore.getStringStore().getRecordSize() );
         assertEquals( 302 + DynamicRecordFormat.RECORD_HEADER_SIZE,
@@ -527,7 +528,6 @@ public class NeoStoresTest
         FileSystemAbstraction fileSystem = fs.get();
         File storeDir = dir.homeDir();
         createShutdownTestDatabase( fileSystem, storeDir );
-        DatabaseLayout databaseLayout = dir.databaseLayout();
         assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10 ) );
         assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12 ) );
 
@@ -586,7 +586,7 @@ public class NeoStoresTest
         // given
         Config config = Config.defaults();
         PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
-        StoreFactory sf = new StoreFactory( dir.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get(), immediate() ),
+        StoreFactory sf = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs.get(), immediate() ),
                 pageCache, fs.get(), LOG_PROVIDER );
 
         // when
@@ -615,7 +615,7 @@ public class NeoStoresTest
     @Test
     public void shouldInitializeTheTxIdToOne()
     {
-        StoreFactory factory = getStoreFactory( Config.defaults(), dir.databaseLayout(), fs.get(), LOG_PROVIDER );
+        StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fs.get(), LOG_PROVIDER );
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
             neoStores.getMetaDataStore();
@@ -632,7 +632,6 @@ public class NeoStoresTest
     public void shouldThrowUnderlyingStorageExceptionWhenFailingToLoadStorage()
     {
         FileSystemAbstraction fileSystem = fs.get();
-        DatabaseLayout databaseLayout = dir.databaseLayout();
         StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fileSystem, LOG_PROVIDER );
 
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )

@@ -30,12 +30,11 @@ import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
@@ -52,6 +52,7 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -71,6 +72,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.setRecord;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class StoreMigratorTest
 {
@@ -80,6 +82,10 @@ class StoreMigratorTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private Neo4jLayout neo4jLayout;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private RandomRule random;
     private JobScheduler jobScheduler;
@@ -107,7 +113,7 @@ class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         File neoStore = databaseLayout.metadataStore();
         neoStore.createNewFile();
 
@@ -134,7 +140,7 @@ class StoreMigratorTest
     {
         // given
         long txId = 42;
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         File neoStore = databaseLayout.metadataStore();
         neoStore.createNewFile();
         Config config = mock( Config.class );
@@ -167,7 +173,7 @@ class StoreMigratorTest
     {
         // given
         long txId = 1;
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         File neoStore = databaseLayout.metadataStore();
         neoStore.createNewFile();
         Config config = mock( Config.class );
@@ -194,9 +200,9 @@ class StoreMigratorTest
         RecordStorageMigrator migrator = newStoreMigrator();
         TransactionId writtenTxId = new TransactionId( random.nextLong(), random.nextLong(), random.nextLong() );
 
-        migrator.writeLastTxInformation( testDirectory.databaseLayout(), writtenTxId );
+        migrator.writeLastTxInformation( databaseLayout, writtenTxId );
 
-        TransactionId readTxId = migrator.readLastTxInformation( testDirectory.databaseLayout() );
+        TransactionId readTxId = migrator.readLastTxInformation( databaseLayout );
 
         assertEquals( writtenTxId, readTxId );
     }
@@ -207,9 +213,9 @@ class StoreMigratorTest
         RecordStorageMigrator migrator = newStoreMigrator();
         LogPosition writtenLogPosition = new LogPosition( random.nextLong(), random.nextLong() );
 
-        migrator.writeLastTxLogPosition( testDirectory.databaseLayout(), writtenLogPosition );
+        migrator.writeLastTxLogPosition( databaseLayout, writtenLogPosition );
 
-        LogPosition readLogPosition = migrator.readLastTxLogPosition( testDirectory.databaseLayout() );
+        LogPosition readLogPosition = migrator.readLastTxLogPosition( databaseLayout );
 
         assertEquals( writtenLogPosition, readLogPosition );
     }
@@ -219,14 +225,14 @@ class StoreMigratorTest
     {
         // Prepare migrator and file
         RecordStorageMigrator migrator = newStoreMigrator();
-        DatabaseLayout dbLayout = testDirectory.databaseLayout();
+        DatabaseLayout dbLayout = databaseLayout;
         File neoStore = dbLayout.metadataStore();
         neoStore.createNewFile();
 
         // Monitor what happens
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
-        migrator.migrate( dbLayout, testDirectory.databaseLayout( "migrationDir" ), progressReporter,
+        migrator.migrate( dbLayout, neo4jLayout.databaseLayout( "migrationDir" ), progressReporter,
                 StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION );
 
         // Should not have started any migration
@@ -237,14 +243,11 @@ class StoreMigratorTest
     {
         Config config = Config.defaults( transaction_logs_root_path, customLogsLocation );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout( LayoutConfig.of( config ) );
-        File neoStore = databaseLayout.metadataStore();
 
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
                         .setConfig( transaction_logs_root_path, customLogsLocation )
                         .build();
-        GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
@@ -253,6 +256,8 @@ class StoreMigratorTest
                 transaction.commit();
             }
         }
+        DatabaseLayout databaseLayout = database.databaseLayout();
+        File neoStore = databaseLayout.metadataStore();
         managementService.shutdown();
 
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,

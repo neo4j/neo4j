@@ -35,11 +35,13 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundExcepti
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
@@ -53,6 +55,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 
 @SuppressWarnings( "unchecked" )
 @EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 class SchemaStorageTest
 {
     private static final String LABEL1 = "Label1";
@@ -67,6 +70,8 @@ class SchemaStorageTest
     @Inject
     private TestDirectory testDirectory;
     @Inject
+    private DatabaseLayout databaseLayout;
+    @Inject
     private EphemeralFileSystemAbstraction fs;
 
     private SchemaStorage storage;
@@ -75,7 +80,7 @@ class SchemaStorageTest
     @BeforeEach
     void before()
     {
-        var storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
+        var storeFactory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
             pageCache, fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN,
             StoreType.RELATIONSHIP_TYPE_TOKEN );

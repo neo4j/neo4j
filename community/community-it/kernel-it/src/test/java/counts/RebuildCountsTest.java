@@ -46,8 +46,8 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
@@ -61,7 +61,7 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-@EphemeralTestDirectoryExtension
+@EphemeralNeo4jLayoutExtension
 class RebuildCountsTest
 {
     private static final int ALIENS = 16;
@@ -73,6 +73,8 @@ class RebuildCountsTest
     private EphemeralFileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
@@ -185,7 +187,7 @@ class RebuildCountsTest
 
     private void deleteCounts( FileSystemAbstraction snapshot )
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         assertTrue( snapshot.deleteFile( databaseLayout.countStore() ) );
     }
 

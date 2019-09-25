@@ -35,25 +35,27 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
 class CsvImporterTest
 {
     @Inject
     private TestDirectory testDir;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void writesReportToSpecifiedReportFile() throws Exception
     {
-        DatabaseLayout databaseLayout = testDir.databaseLayout( "db" );
+
         File logDir = testDir.directory( "logs" );
         File reportLocation = testDir.file( "the_report" );
 

@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -37,8 +38,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -48,9 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.configuration.LayoutConfig.of;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class RecoveryRequiredCheckerTest
 {
     @RegisterExtension
@@ -59,15 +59,15 @@ class RecoveryRequiredCheckerTest
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private File storeDir;
-    private DatabaseLayout databaseLayout;
     private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
 
     @BeforeEach
     void setup()
     {
-        databaseLayout = testDirectory.databaseLayout();
         storeDir = testDirectory.homeDir();
     }
 
@@ -115,14 +115,17 @@ class RecoveryRequiredCheckerTest
     void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
     {
         File customTransactionLogsLocation = testDirectory.directory( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
-        Config config = Config.defaults( transaction_logs_root_path, customTransactionLogsLocation.toPath().toAbsolutePath() );
+        Config config = Config.newBuilder()
+                .set( GraphDatabaseSettings.neo4j_home, testDirectory.homeDir().toPath() )
+                .set( transaction_logs_root_path, customTransactionLogsLocation.toPath().toAbsolutePath() )
+                .build();
         recoverBrokenStoreWithConfig( config );
     }
 
     @Test
     void shouldNotWantToRecoverEmptyStore() throws Exception
     {
-        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.directory( "dir-without-store" ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( testDirectory.directory( "dir-without-store" ) );
 
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
         RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
@@ -237,7 +240,7 @@ class RecoveryRequiredCheckerTest
 
             RecoveryRequiredChecker recoveryChecker = getRecoveryChecker( ephemeralFs, pageCache, storageEngineFactory, config );
 
-            assertThat( recoveryChecker.isRecoveryRequiredAt( testDirectory.databaseLayout( of( config ) ) ), is( true ) );
+            assertThat( recoveryChecker.isRecoveryRequiredAt( DatabaseLayout.of( config ) ), is( true ) );
 
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                         .setFileSystem( ephemeralFs )

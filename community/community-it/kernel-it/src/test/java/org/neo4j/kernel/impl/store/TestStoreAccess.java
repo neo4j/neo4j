@@ -28,11 +28,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,7 +41,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
-@EphemeralTestDirectoryExtension
+@EphemeralNeo4jLayoutExtension
 class TestStoreAccess
 {
     @RegisterExtension
@@ -49,6 +50,8 @@ class TestStoreAccess
     private EphemeralFileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void openingThroughStoreAccessShouldNotTriggerRecovery() throws Throwable
@@ -58,7 +61,7 @@ class TestStoreAccess
             assertTrue( isUnclean( snapshot ), "Store should be unclean" );
 
             PageCache pageCache = pageCacheExtension.getPageCache( snapshot );
-            new StoreAccess( snapshot, pageCache, testDirectory.databaseLayout(), Config.defaults() ).initialize().close();
+            new StoreAccess( snapshot, pageCache, databaseLayout, Config.defaults() ).initialize().close();
             assertTrue( isUnclean( snapshot ), "Store should be unclean" );
         }
     }
@@ -82,6 +85,6 @@ class TestStoreAccess
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws Exception
     {
-        return isRecoveryRequired( fileSystem, testDirectory.databaseLayout(), defaults() );
+        return isRecoveryRequired( fileSystem, databaseLayout, defaults() );
     }
 }

@@ -63,7 +63,7 @@ public class StoreInfoCommand extends AbstractCommand
     {
         Validators.CONTAINS_EXISTING_DATABASE.validate( storePath );
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( storePath );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( storePath );
         try ( Closeable ignored = DatabaseLockChecker.check( databaseLayout );
                 JobScheduler jobScheduler = createInitialisedScheduler();
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( ctx.fs(), jobScheduler ) )

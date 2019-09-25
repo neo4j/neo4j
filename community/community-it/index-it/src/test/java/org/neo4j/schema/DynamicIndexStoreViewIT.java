@@ -38,23 +38,31 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
-class DynamicIndexStoreViewIT
+public class DynamicIndexStoreViewIT
 {
     @Inject
+    private SuppressOutput suppressOutput;
+
+    @Inject
     private TestDirectory testDirectory;
+
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void populateDbWithConcurrentUpdates() throws Exception
@@ -115,7 +123,7 @@ class DynamicIndexStoreViewIT
             managementService.shutdown();
             ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
             Config config = Config.defaults(  GraphDatabaseSettings.pagecache_memory, "8m" );
-            consistencyCheckService.runFullConsistencyCheck( testDirectory.databaseLayout(), config,
+            consistencyCheckService.runFullConsistencyCheck( databaseLayout, config,
                     ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.out ), false );
         }
     }

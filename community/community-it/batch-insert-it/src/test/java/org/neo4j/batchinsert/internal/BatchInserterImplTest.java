@@ -46,7 +46,7 @@ import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,19 +63,21 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class BatchInserterImplTest
 {
     @Inject
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void testHonorsPassedInParams() throws Exception
     {
         BatchInserter inserter =
-                BatchInserters.inserter( testDirectory.databaseLayout(), fileSystem, defaults( pagecache_memory, "280K" ) );
+                BatchInserters.inserter( databaseLayout, fileSystem, defaults( pagecache_memory, "280K" ) );
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
         inserter.shutdown();
@@ -87,8 +89,6 @@ class BatchInserterImplTest
     @Test
     void testCreatesLockFile() throws Exception
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-
         BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem );
         try
         {
@@ -104,7 +104,7 @@ class BatchInserterImplTest
     void testFailsOnExistingStoreLockFile() throws IOException
     {
         // Given
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout( "any" );
+
         try ( Locker lock = new DatabaseLocker( fileSystem, databaseLayout ) )
         {
             lock.checkLock();
@@ -119,7 +119,7 @@ class BatchInserterImplTest
     void shouldCorrectlyMarkHighIds() throws Exception
     {
         // given
-        DatabaseLayout layout = testDirectory.databaseLayout();
+        DatabaseLayout layout = databaseLayout;
         BatchInserter inserter = BatchInserters.inserter( layout, fileSystem, defaults( pagecache_memory, "8m" ) );
         Map<String,Object> properties = new HashMap<>();
         properties.put( "name", "Just some name" );

@@ -35,20 +35,19 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
@@ -75,7 +74,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
@@ -86,11 +84,13 @@ import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class MemoryRecommendationsCommandTest
 {
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
+    @Inject
+    private Neo4jLayout neo4jLayout;
 
     @Test
     void printUsageHelp()
@@ -195,14 +195,14 @@ class MemoryRecommendationsCommandTest
     void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
     {
         PrintStream output = mock( PrintStream.class );
-        Path homeDir = directory.homeDir().toPath();
+        Path homeDir = testDirectory.homeDir().toPath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         configDir.toFile().mkdirs();
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
 
-        MemoryRecommendationsCommand command =
-                new MemoryRecommendationsCommand( new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), directory.getFileSystem() ) );
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
+                new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
 
         CommandLine.populateCommand( command, "--memory=8g" );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
@@ -238,22 +238,18 @@ class MemoryRecommendationsCommandTest
     void mustPrintMinimalPageCacheMemorySettingForConfiguredDb() throws Exception
     {
         // given
-        Path homeDir = directory.homeDir().toPath();
+        Path homeDir = testDirectory.homeDir().toPath();
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         String databaseName = "mydb";
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
-        Config config = Config.newBuilder()
-                .fromFile( configFile.toFile() )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir ).build();
-        File rootPath = config.get( databases_root_path ).toFile();
-        DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), rootPath, databaseName );
-        DatabaseLayout systemLayout = DatabaseLayout.of( homeDir.toFile(), rootPath, SYSTEM_DATABASE_NAME );
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( databaseName );
+        DatabaseLayout systemLayout = neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME );
         createDatabaseWithNativeIndexes( databaseLayout );
         PrintStream output = mock( PrintStream.class );
-        MemoryRecommendationsCommand command =
-                new MemoryRecommendationsCommand( new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), directory.getFileSystem() ) );
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
+                new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
         String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
 
@@ -279,7 +275,7 @@ class MemoryRecommendationsCommandTest
     void includeAllDatabasesToMemoryRecommendations() throws IOException
     {
         PrintStream output = mock( PrintStream.class );
-        Path homeDir = directory.homeDir().toPath();
+        Path homeDir = testDirectory.homeDir().toPath();
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
@@ -288,25 +284,21 @@ class MemoryRecommendationsCommandTest
 
         long totalPageCacheSize = 0;
         long totalLuceneIndexesSize = 0;
-        Config config = Config.newBuilder()
-                .fromFile( configFile.toFile() )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir ).build();
-        File rootDirectory = config.get( databases_root_path ).toFile();
         for ( int i = 0; i < 5; i++ )
         {
-            DatabaseLayout databaseLayout = DatabaseLayout.of( homeDir.toFile(), rootDirectory, "db" + i );
+            DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "db" + i );
             createDatabaseWithNativeIndexes( databaseLayout );
             long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
             totalPageCacheSize += expectedSizes[0];
             totalLuceneIndexesSize += expectedSizes[1];
         }
-        DatabaseLayout systemLayout = DatabaseLayout.of( homeDir.toFile(), rootDirectory, SYSTEM_DATABASE_NAME );
+        DatabaseLayout systemLayout = neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME );
         long[] expectedSizes = calculatePageCacheFileSize( systemLayout );
         totalPageCacheSize += expectedSizes[0];
         totalLuceneIndexesSize += expectedSizes[1];
 
-        MemoryRecommendationsCommand command =
-                new MemoryRecommendationsCommand( new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), directory.getFileSystem() ) );
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
+                new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
 
         CommandLine.populateCommand( command, "--memory=8g" );
 

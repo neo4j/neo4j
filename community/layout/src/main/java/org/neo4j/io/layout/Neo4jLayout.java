@@ -22,15 +22,17 @@ package org.neo4j.io.layout;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
 
 /**
  * File layout representation of neo4j instance that provides the ability to reference any store
@@ -73,24 +75,39 @@ public class Neo4jLayout
     private static final String STORE_LOCK_FILENAME = "store_lock";
 
     private final File homeDirectory;
-    private final File storeDirectory;
-    private final StoreLayoutConfig layoutConfig;
+    private final File databasesDirectory;
+    private final File txLogsDirectory;
 
-    public static Neo4jLayout of( File homeDirectory, File storeDirectory )
+    public static Neo4jLayout of( File homeDirectory )
     {
-        return of( homeDirectory, storeDirectory, NOT_CONFIGURED  );
+        File canonicalHome = FileUtils.getCanonicalFile( homeDirectory );
+        return of( Config.defaults( GraphDatabaseSettings.neo4j_home, canonicalHome.toPath().toAbsolutePath() ) );
     }
 
-    public static Neo4jLayout of( File homeDirectory, File storeDirectory, StoreLayoutConfig config )
+    public static Neo4jLayout of( Config config )
     {
-        return new Neo4jLayout( homeDirectory, storeDirectory, config );
+        File homeDirectory = config.get( GraphDatabaseSettings.neo4j_home ).toFile();
+        File databasesRootDirectory = config.get( GraphDatabaseSettings.databases_root_path ).toFile();
+        File txLogsRootDirectory = config.get( GraphDatabaseSettings.transaction_logs_root_path ).toFile();
+        return new Neo4jLayout( homeDirectory, databasesRootDirectory, txLogsRootDirectory );
     }
 
-    private Neo4jLayout( File homeDirectory, File rootStoreDirectory, StoreLayoutConfig layoutConfig )
+    public static Neo4jLayout ofFlat( File homeDirectory )
+    {
+        Path home = homeDirectory.toPath().toAbsolutePath();
+        Config config = Config.newBuilder()
+                .set( GraphDatabaseSettings.neo4j_home, home )
+                .set( GraphDatabaseSettings.transaction_logs_root_path, home )
+                .set( GraphDatabaseSettings.databases_root_path, home )
+                .build();
+        return of( config );
+    }
+
+    private Neo4jLayout( File homeDirectory, File databasesRootDirectory, File txLogsRootDirectory )
     {
         this.homeDirectory = FileUtils.getCanonicalFile( homeDirectory );
-        this.storeDirectory = FileUtils.getCanonicalFile( rootStoreDirectory );
-        this.layoutConfig = layoutConfig;
+        this.databasesDirectory = FileUtils.getCanonicalFile( databasesRootDirectory );
+        this.txLogsDirectory = FileUtils.getCanonicalFile( txLogsRootDirectory );
     }
 
     /**
@@ -101,7 +118,7 @@ public class Neo4jLayout
      */
     public Collection<DatabaseLayout> databaseLayouts()
     {
-        File[] directories = storeDirectory.listFiles( File::isDirectory );
+        File[] directories = databasesDirectory.listFiles( File::isDirectory );
         if ( ArrayUtils.isEmpty( directories ) )
         {
             return emptyList();
@@ -125,9 +142,9 @@ public class Neo4jLayout
      * Databases root directory where all databases are located.
      * @return all databases root directory
      */
-    public File storeDirectory()
+    public File databasesDirectory()
     {
-        return storeDirectory;
+        return databasesDirectory;
     }
 
     /**
@@ -139,23 +156,14 @@ public class Neo4jLayout
         return homeDirectory;
     }
 
-    /**
-     * Configuration of store layout
-     * @return layout config
-     */
-    StoreLayoutConfig getLayoutConfig()
+    public File txLogsDirectory()
     {
-        return layoutConfig;
-    }
-
-    public File transactionLogsRootDirectory()
-    {
-        return getLayoutConfig().getTransactionLogsRootDirectory().orElse( storeDirectory() );
+        return txLogsDirectory;
     }
 
     public File storeLockFile()
     {
-        return new File( storeDirectory, STORE_LOCK_FILENAME );
+        return new File( databasesDirectory, STORE_LOCK_FILENAME );
     }
 
     @Override
@@ -170,18 +178,20 @@ public class Neo4jLayout
             return false;
         }
         Neo4jLayout that = (Neo4jLayout) o;
-        return Objects.equals( storeDirectory, that.storeDirectory );
+        return Objects.equals( homeDirectory, that.homeDirectory ) && Objects.equals( databasesDirectory, that.databasesDirectory ) &&
+                Objects.equals( txLogsDirectory, that.txLogsDirectory );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( storeDirectory );
+        return Objects.hash( homeDirectory, databasesDirectory, txLogsDirectory );
     }
 
     @Override
     public String toString()
     {
-        return "Neo4jLayout{" + "storeDirectory=" + storeDirectory + ", transactionLogsRootDirectory=" + layoutConfig.getTransactionLogsRootDirectory() + '}';
+        return String.format( "Neo4JLayout{ homeDir=%s, databasesDir=%s, txLogsDir=%s}",
+                homeDirectory.toString(), databasesDirectory.toString(), txLogsDirectory.toString() );
     }
 }

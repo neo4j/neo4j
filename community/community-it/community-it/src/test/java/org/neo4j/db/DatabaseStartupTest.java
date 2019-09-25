@@ -50,7 +50,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
@@ -62,22 +62,24 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.helpers.Exceptions.findCauseOrSuppressed;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class DatabaseStartupTest
 {
     @Inject
     FileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void startTheDatabaseWithWrongVersionShouldFailWithUpgradeNotAllowed() throws Throwable
     {
         // given
         // create a store
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        File storeDirectory = testDirectory.homeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
+
+        File homeDirectory = testDirectory.homeDir();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDirectory ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -95,7 +97,7 @@ class DatabaseStartupTest
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ) );
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( homeDirectory ).build();
         GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -118,9 +120,9 @@ class DatabaseStartupTest
     {
         // given
         // create a store
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        File storeDirectory = testDirectory.homeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
+
+        File homeDirectory = testDirectory.homeDir();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDirectory ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -139,7 +141,7 @@ class DatabaseStartupTest
                     MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( storeDirectory )
+        managementService = new TestDatabaseManagementServiceBuilder( homeDirectory )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true )
                 .build();
         GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -162,8 +164,8 @@ class DatabaseStartupTest
     void startDatabaseWithWrongTransactionFilesShouldFail() throws IOException
     {
         // Create a store
-        File storeDirectory = testDirectory.storeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
+        File homeDir = testDirectory.homeDir();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDir ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseLayout databaseLayout = db.databaseLayout();
         try ( Transaction tx = db.beginTx() )
@@ -183,7 +185,7 @@ class DatabaseStartupTest
         }
 
         // Try to start
-        managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( homeDir ).build();
         try
         {
             db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

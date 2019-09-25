@@ -73,6 +73,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -80,9 +81,9 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -116,7 +117,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( { RandomExtension.class, SuppressOutputExtension.class} )
 @ResourceLock( Resources.SYSTEM_OUT )
 class ImportCommandTest
@@ -128,6 +129,8 @@ class ImportCommandTest
 
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private RandomRule random;
     @Inject
@@ -1697,7 +1700,7 @@ class ImportCommandTest
         int stringBlockSize = 12;
         File dbConfig = file( "neo4j.properties" );
         store( stringMap(
-                databases_root_path.name(), testDirectory.databaseLayout().getNeo4jLayout().storeDirectory().getAbsolutePath(),
+                databases_root_path.name(), databaseLayout.getNeo4jLayout().databasesDirectory().getAbsolutePath(),
                 GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
                 GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ),
                 transaction_logs_root_path.name(), getTransactionLogsRoot() ), dbConfig );
@@ -1863,7 +1866,7 @@ class ImportCommandTest
             // THEN the store files should be there
             for ( StoreType storeType : StoreType.values() )
             {
-                assertTrue( testDirectory.databaseLayout().file( storeType.getDatabaseFile() ).exists() );
+                assertTrue( databaseLayout.file( storeType.getDatabaseFile() ).exists() );
             }
 
             List<String> errorLines = suppressOutput.getErrorVoice().lines();
@@ -2383,12 +2386,12 @@ class ImportCommandTest
 
     private File file( String localname )
     {
-        return testDirectory.databaseLayout().file( localname );
+        return databaseLayout.file( localname );
     }
 
     private File badFile()
     {
-        return testDirectory.databaseLayout().file( CsvImporter.DEFAULT_REPORT_FILE_NAME );
+        return databaseLayout.file( CsvImporter.DEFAULT_REPORT_FILE_NAME );
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,
@@ -2502,7 +2505,7 @@ class ImportCommandTest
 
     private String getTransactionLogsRoot()
     {
-        return testDirectory.databaseLayout().getTransactionLogsDirectory().getParentFile().getAbsolutePath();
+        return databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath();
     }
 
     private File prepareDefaultConfigFile() throws IOException

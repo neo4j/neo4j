@@ -42,6 +42,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -54,6 +55,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -65,6 +67,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class CountsComputerTest
 {
     private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
@@ -76,6 +79,8 @@ class CountsComputerTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private DatabaseManagementServiceBuilder dbBuilder;
 
@@ -288,7 +293,7 @@ class CountsComputerTest
 
     private File countsStoreFile()
     {
-        return testDirectory.databaseLayout().countStore();
+        return databaseLayout.countStore();
     }
 
     private static long getLastTxId( GraphDatabaseAPI db )
@@ -333,7 +338,7 @@ class CountsComputerTest
 
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder ) throws IOException
     {
-        return new GBPTreeCountsStore( pageCache, testDirectory.databaseLayout().countStore(), immediate(), builder, false, GBPTreeCountsStore.NO_MONITOR );
+        return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), immediate(), builder, false, GBPTreeCountsStore.NO_MONITOR );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId )
@@ -346,7 +351,7 @@ class CountsComputerTest
         cleanupCountsForRebuilding();
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER );
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();

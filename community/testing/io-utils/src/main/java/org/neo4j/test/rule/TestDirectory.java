@@ -30,16 +30,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.util.Optional;
 import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.layout.StoreLayoutConfig;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -56,22 +51,14 @@ import static java.lang.String.format;
  *     @Test
  *     public void shouldDoSomething()
  *     {
- *       File storeDir = dir.databaseDir();
- *       // do stuff with store dir
+ *       File storeDir = dir.homeDir();
+ *       // do stuff with home dir
  *     }
  *   }
  * </pre>
- *
- * Be aware that all functionality regarding directory layout provided by this class,
- * i.e Neo4JLayout, DatabaseLayout, StoreDir, HomeDir, DatabaseDir etc.. is reflecting a default setup.
- * The configuration passed to the DatabaseManagementService is the source of truth,
- * and any custom configuration may cause a mismatch.
  */
 public class TestDirectory extends ExternalResource
 {
-    private static final String DEFAULT_DATABASE_DIRECTORY = "neo4j";
-    private static final Path DEFAULT_TX_LOGS_LOCATION = Path.of( "data", "tx-logs" );
-    private static final Path DEFAULT_DATABASES_LOCATION = Path.of( "data", "databases" );
 
     /**
      * This value is mixed into the hash string, along with the test name,
@@ -90,8 +77,6 @@ public class TestDirectory extends ExternalResource
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
     private File testDirectory;
-    private Neo4jLayout defaultNeo4jLayout;
-    private DatabaseLayout defaultDatabaseLayout;
 
     private TestDirectory( FileSystemAbstraction fileSystem )
     {
@@ -179,6 +164,11 @@ public class TestDirectory extends ExternalResource
         return testDirectory;
     }
 
+    public File homeDir( String homeDirName )
+    {
+        return directory( homeDirName );
+    }
+
     public boolean isInitialised()
     {
         return testDirectory != null;
@@ -201,80 +191,6 @@ public class TestDirectory extends ExternalResource
         File file = file( name, path );
         ensureFileExists( file );
         return file;
-    }
-
-    public File databaseDir()
-    {
-        return databaseLayout().databaseDirectory();
-    }
-
-    public Neo4jLayout neo4jLayout()
-    {
-        return defaultNeo4jLayout;
-    }
-
-    public Neo4jLayout neo4jLayout( String name )
-    {
-        File home = directory( name );
-        File storeDirectory = home.toPath().resolve( DEFAULT_DATABASES_LOCATION ).toFile();
-        Neo4jLayout layout = Neo4jLayout.of( home, storeDirectory, createTestStoreLayout( home ) );
-        createDirectory( layout.databaseLayout( DEFAULT_DATABASE_DIRECTORY ) );
-        return layout;
-    }
-
-    public DatabaseLayout databaseLayout()
-    {
-        createDirectory( defaultDatabaseLayout );
-        return defaultDatabaseLayout;
-    }
-
-    public DatabaseLayout databaseLayout( StoreLayoutConfig storeLayoutConfig )
-    {
-        return databaseLayout( DEFAULT_DATABASE_DIRECTORY, storeLayoutConfig );
-    }
-
-    public DatabaseLayout databaseLayout( String databaseName, StoreLayoutConfig storeLayoutConfig )
-    {
-        File storeDirectory = testDirectory.toPath().resolve( DEFAULT_DATABASES_LOCATION ).toFile();
-        DatabaseLayout databaseLayout = Neo4jLayout.of( testDirectory, storeDirectory, storeLayoutConfig ).databaseLayout( databaseName );
-        createDirectory( databaseLayout );
-        return databaseLayout;
-    }
-
-    public DatabaseLayout databaseLayout( File storeDir, StoreLayoutConfig storeLayoutConfig )
-    {
-        DatabaseLayout databaseLayout = Neo4jLayout.of( testDirectory, storeDir, storeLayoutConfig ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
-        createDirectory( databaseLayout );
-        return databaseLayout;
-    }
-
-    public DatabaseLayout databaseLayout( String name )
-    {
-        DatabaseLayout databaseLayout = defaultNeo4jLayout.databaseLayout( name );
-        createDirectory( databaseLayout );
-        return databaseLayout;
-    }
-
-    public File storeDir()
-    {
-        return defaultNeo4jLayout.storeDirectory();
-    }
-
-    public File homeDir( String homeDirName )
-    {
-        return directory( homeDirName );
-    }
-
-    public File databaseDir( File storeDirectory )
-    {
-        File databaseDirectory = databaseLayout( storeDirectory, createTestStoreLayout( testDirectory ) ).databaseDirectory();
-        createDirectory( databaseDirectory );
-        return databaseDirectory;
-    }
-
-    public File databaseDir( String customStoreDirectoryName )
-    {
-        return databaseDir( homeDir( customStoreDirectoryName ) );
     }
 
     public void cleanup() throws IOException
@@ -303,8 +219,7 @@ public class TestDirectory extends ExternalResource
                 fileSystem.deleteRecursively( testDirectory );
             }
             testDirectory = null;
-            defaultNeo4jLayout = null;
-            defaultDatabaseLayout = null;
+
         }
         finally
         {
@@ -323,9 +238,7 @@ public class TestDirectory extends ExternalResource
             test = "static";
         }
         testDirectory = prepareDirectoryForTest( test );
-        defaultNeo4jLayout =
-                Neo4jLayout.of( testDirectory, testDirectory.toPath().resolve( DEFAULT_DATABASES_LOCATION ).toFile(), createTestStoreLayout( testDirectory ) );
-        defaultDatabaseLayout = defaultNeo4jLayout.databaseLayout( DEFAULT_DATABASE_DIRECTORY );
+
     }
 
     public File prepareDirectoryForTest( String test ) throws IOException
@@ -345,12 +258,6 @@ public class TestDirectory extends ExternalResource
     private void directoryForDescription( Description description ) throws IOException
     {
         prepareDirectory( description.getTestClass(), description.getMethodName() );
-    }
-
-    private void createDirectory( DatabaseLayout databaseLayout )
-    {
-        createDirectory( databaseLayout.databaseDirectory() );
-        createDirectory( databaseLayout.getTransactionLogsDirectory() );
     }
 
     private void ensureFileExists( File file )
@@ -455,11 +362,6 @@ public class TestDirectory extends ExternalResource
         return testClassBaseFolder;
     }
 
-    private TestDirectoryLayoutConfig createTestStoreLayout( File layoutRoot )
-    {
-        return new TestDirectoryLayoutConfig( layoutRoot );
-    }
-
     private static File locateTarget( Class<?> owningTest )
     {
         try
@@ -476,23 +378,5 @@ public class TestDirectory extends ExternalResource
             // ignored
         }
         return new File( "target" );
-    }
-
-    private class TestDirectoryLayoutConfig implements StoreLayoutConfig
-    {
-        private final File layoutRoot;
-
-        TestDirectoryLayoutConfig( File layoutRoot )
-        {
-            this.layoutRoot = layoutRoot;
-        }
-
-        @Override
-        public Optional<File> getTransactionLogsRootDirectory()
-        {
-            File txLogsRoot = layoutRoot.toPath().resolve( DEFAULT_TX_LOGS_LOCATION ).toFile();
-            TestDirectory.this.createDirectory( txLogsRoot );
-            return Optional.of( txLogsRoot );
-        }
     }
 }

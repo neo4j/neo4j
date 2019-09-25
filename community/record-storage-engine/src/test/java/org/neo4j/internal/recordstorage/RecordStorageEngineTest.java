@@ -54,6 +54,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RecordStorageEngineRule;
@@ -76,6 +77,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 class RecordStorageEngineTest
 {
     @Inject
@@ -84,6 +86,8 @@ class RecordStorageEngineTest
     private PageCache pageCache;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private final Health databaseHealth = mock( DatabaseHealth.class );
     private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
@@ -113,7 +117,7 @@ class RecordStorageEngineTest
     void panicOnExceptionDuringCommandsApply()
     {
         IllegalStateException failure = new IllegalStateException( "Too many open files" );
-        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache, testDirectory.databaseLayout() )
+        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache, databaseLayout )
                 .databaseHealth( databaseHealth )
                 .transactionApplierTransformer( facade -> transactionApplierFacadeTransformer( facade, failure ) )
                 .build();
@@ -162,7 +166,7 @@ class RecordStorageEngineTest
             }
         };
 
-        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache2, testDirectory.databaseLayout() ).build();
+        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache2, databaseLayout ).build();
         engine.flushAndForce( limiter );
 
         assertThat( observedLimiter.get(), sameInstance( limiter ) );
@@ -175,7 +179,6 @@ class RecordStorageEngineTest
         final Collection<StoreFileMetadata> files = engine.listStorageFiles();
         Set<File> currentFiles = files.stream().map( StoreFileMetadata::file ).collect( Collectors.toSet() );
         // current engine files should contain everything except another count store file and label scan store
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Set<File> allPossibleFiles = databaseLayout.storeFiles();
         allPossibleFiles.remove( databaseLayout.labelScanStore() );
         allPossibleFiles.remove( databaseLayout.indexStatisticsStore() );
@@ -227,7 +230,7 @@ class RecordStorageEngineTest
     private RecordStorageEngineRule.Builder recordStorageEngineBuilder()
     {
         return storageEngineRule
-                .getWith( fs, pageCache, testDirectory.databaseLayout() )
+                .getWith( fs, pageCache, databaseLayout )
                 .databaseHealth( databaseHealth );
     }
 

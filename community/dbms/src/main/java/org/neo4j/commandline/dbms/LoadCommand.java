@@ -33,16 +33,14 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.locker.FileLockException;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.wrapIOException;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.io.fs.FileUtils.deletePathRecursively;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static picocli.CommandLine.Command;
@@ -79,8 +77,7 @@ public class LoadCommand extends AbstractCommand
     {
         Config config = buildConfig();
 
-        DatabaseLayout databaseLayout =
-                DatabaseLayout.of( config.get( neo4j_home ).toFile(), config.get( databases_root_path ).toFile(), LayoutConfig.of( config ), database );
+        DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database );
         databaseLayout.databaseDirectory().mkdirs();
         try ( Closeable check = DatabaseLockChecker.check( databaseLayout ) )
         {

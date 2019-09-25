@@ -17,22 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.layout;
+package org.neo4j.test.extension;
 
-import java.io.File;
-import java.util.Optional;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-/**
- * {@link Neo4jLayout} configuration object.
- */
-@FunctionalInterface
-public interface StoreLayoutConfig
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
+
+@Target( {ElementType.TYPE, ElementType.METHOD} )
+@Retention( RetentionPolicy.RUNTIME )
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectorySupportExtension.class, Neo4jLayoutSupportExtension.class} )
+public @interface EphemeralNeo4jLayoutExtension
 {
-    StoreLayoutConfig NOT_CONFIGURED = Optional::empty;
-
-    /**
-     * Root directory where all transaction logs of this store are located.
-     * @return transaction logs root directory or empty optional if not configured.
-     */
-    Optional<File> getTransactionLogsRootDirectory();
 }

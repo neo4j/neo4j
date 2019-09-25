@@ -37,20 +37,22 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.importer.ImportCommandTest.assertExceptionContains;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
 class ImportNumericalFailureTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     static List<String[]> parameters()
     {
@@ -92,7 +94,7 @@ class ImportNumericalFailureTest
     @MethodSource( value = "parameters" )
     void failImportOnInvalidData( String type, String val, String expectedError ) throws Exception
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         File data = file( databaseLayout, fileName( "whitespace.csv" ) );
         try ( PrintStream writer = new PrintStream( data ) )
         {

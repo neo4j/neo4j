@@ -33,6 +33,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -44,8 +45,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -61,14 +62,16 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class RelationshipGroupDefragmenterTest
 {
     private static final Configuration CONFIG = Configuration.DEFAULT;
 
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private RandomRule random;
 
@@ -88,8 +91,7 @@ class RelationshipGroupDefragmenterTest
     {
         this.units = units;
         jobScheduler = new ThreadPoolJobScheduler();
-        stores = BatchingNeoStores.batchingNeoStores( directory.getFileSystem(),
-            directory.databaseLayout(), format, CONFIG, NullLogService.getInstance(),
+        stores = BatchingNeoStores.batchingNeoStores( testDirectory.getFileSystem(), databaseLayout, format, CONFIG, NullLogService.getInstance(),
             AdditionalInitialIds.EMPTY, Config.defaults(), jobScheduler );
         stores.createNew();
     }

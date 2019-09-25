@@ -89,13 +89,10 @@ import org.neo4j.time.SystemNanoClock;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
-import static org.neo4j.configuration.LayoutConfig.of;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 
 /**
@@ -142,8 +139,7 @@ public class GlobalModule
         globalClock = globalDependencies.satisfyDependency( createClock() );
         globalLife = createLife();
 
-        File storeDirectory = globalConfig.get( databases_root_path ).toFile();
-        this.neo4jLayout = Neo4jLayout.of( globalConfig.get( neo4j_home ).toFile(), storeDirectory, of( globalConfig ) );
+        this.neo4jLayout = Neo4jLayout.of( globalConfig );
 
         this.globalConfig = globalDependencies.satisfyDependency( globalConfig );
 

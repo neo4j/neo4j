@@ -33,8 +33,10 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -57,6 +59,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFor
 import static org.neo4j.logging.internal.NullLogService.getInstance;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class ImportLogicTest
 {
@@ -68,16 +71,18 @@ class ImportLogicTest
     private PageCache pageCache;
     @Inject
     private RandomRule random;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void closeImporterWithoutDiagnosticState() throws IOException
     {
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
-        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL,
-                testDirectory.databaseLayout(), defaultFormat(), DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults() ) )
+        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
+                getInstance(), AdditionalInitialIds.EMPTY, defaults() ) )
         {
             //noinspection EmptyTryBlock
-            try ( ImportLogic logic = new ImportLogic( testDirectory.databaseLayout(), stores, DEFAULT, defaults(), getInstance(), monitor,
+            try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
                     defaultFormat(), Collector.EMPTY, NO_MONITOR ) )
             {
                 // nothing to run in this import
@@ -146,8 +151,8 @@ class ImportLogicTest
     {
         // given
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
-        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL,
-                testDirectory.databaseLayout(), defaultFormat(), DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults() ) )
+        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
+                getInstance(), AdditionalInitialIds.EMPTY, defaults() ) )
         {
             // when
             DataStatistics.RelationshipTypeCount[] relationshipTypeCounts = new DataStatistics.RelationshipTypeCount[]
@@ -156,7 +161,7 @@ class ImportLogicTest
                             new DataStatistics.RelationshipTypeCount( 1, 66 )
                     };
             DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
-            try ( ImportLogic logic = new ImportLogic( testDirectory.databaseLayout(), stores, DEFAULT, defaults(), getInstance(), monitor,
+            try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
                     defaultFormat(), Collector.EMPTY, NO_MONITOR ) )
             {
                 logic.putState( dataStatistics );

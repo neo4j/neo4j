@@ -67,7 +67,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
@@ -93,12 +93,14 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class IndexRecoveryIT
 {
     private static final Duration TIMEOUT = Duration.ofMinutes( 5 );
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     private GraphDatabaseAPI db;
     private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
     private final ExtensionFactory<?> mockedIndexProviderFactory =
@@ -164,7 +166,7 @@ class IndexRecoveryIT
             {
                 when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
                         indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
-                boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), testDirectory.databaseLayout(), defaults() );
+                boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), databaseLayout, defaults() );
                 monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
                 // When
                 startDb();
@@ -346,7 +348,7 @@ class IndexRecoveryIT
     {
         try
         {
-            DatabaseLayout layout = testDirectory.databaseLayout();
+            DatabaseLayout layout = databaseLayout;
             FileUtils.copyRecursively( layout.databaseDirectory(), new File( snapshotDir, "data" ) );
             FileUtils.copyRecursively( layout.getTransactionLogsDirectory(), new File( snapshotDir, "tx-logs" ) );
         }
@@ -360,7 +362,7 @@ class IndexRecoveryIT
     {
         try
         {
-            DatabaseLayout layout = testDirectory.databaseLayout();
+            DatabaseLayout layout = databaseLayout;
             FileUtils.deleteRecursively( layout.databaseDirectory() );
             FileUtils.deleteRecursively( layout.getTransactionLogsDirectory() );
             FileUtils.copyRecursively( new File( snapshotDir, "data" ), layout.databaseDirectory() );

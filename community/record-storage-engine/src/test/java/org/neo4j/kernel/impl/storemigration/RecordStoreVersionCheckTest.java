@@ -35,6 +35,7 @@ import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.StoreVersionCheck.Outcome;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -44,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class RecordStoreVersionCheckTest
 {
     @Inject
@@ -52,6 +54,8 @@ class RecordStoreVersionCheckTest
     protected FileSystemAbstraction fileSystem;
     @Inject
     protected PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void shouldFailIfFileDoesNotExist()
@@ -72,7 +76,7 @@ class RecordStoreVersionCheckTest
     void shouldReportShortFileDoesNotHaveSpecifiedVersion() throws IOException
     {
         // given
-        metaDataFileContaining( testDirectory.databaseLayout(), fileSystem, "nothing interesting" );
+        metaDataFileContaining( databaseLayout, fileSystem, "nothing interesting" );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
@@ -123,7 +127,7 @@ class RecordStoreVersionCheckTest
 
     private File emptyFile( FileSystemAbstraction fs ) throws IOException
     {
-        File shortFile = testDirectory.databaseLayout().metadataStore();
+        File shortFile = databaseLayout.metadataStore();
         fs.deleteFile( shortFile );
         fs.write( shortFile ).close();
         return shortFile;
@@ -141,6 +145,6 @@ class RecordStoreVersionCheckTest
 
     private RecordStoreVersionCheck newStoreVersionCheck()
     {
-        return new RecordStoreVersionCheck( fileSystem, pageCache, testDirectory.databaseLayout(), NullLogProvider.getInstance(), Config.defaults() );
+        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults() );
     }
 }

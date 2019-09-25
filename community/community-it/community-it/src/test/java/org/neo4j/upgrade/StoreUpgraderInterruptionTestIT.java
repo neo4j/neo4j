@@ -110,7 +110,7 @@ public class StoreUpgraderInterruptionTestIT
     public void setUpLabelScanStore()
     {
         jobScheduler = new ThreadPoolJobScheduler();
-        workingDatabaseLayout = directory.databaseLayout();
+        workingDatabaseLayout = DatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) );
         prepareDirectory = directory.directory( "prepare" );
         legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
     }

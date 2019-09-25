@@ -27,22 +27,25 @@ import java.util.Collections;
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class GitHub1304Test
 {
     @Inject
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws IOException
     {
-        BatchInserter batchInserter = BatchInserters.inserter( testDirectory.databaseLayout(), fileSystem );
+        BatchInserter batchInserter = BatchInserters.inserter( databaseLayout, fileSystem );
 
         long nodeId = batchInserter.createNode( Collections.emptyMap() );
 

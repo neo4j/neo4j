@@ -40,24 +40,27 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
 class ConcurrentChangesOnEntitiesTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private final CyclicBarrier barrier = new CyclicBarrier( 2 );
     private final AtomicReference<Exception> ex = new AtomicReference<>();
@@ -199,7 +202,7 @@ class ConcurrentChangesOnEntitiesTest
         LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
         assertDoesNotThrow( () ->
         {
-            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( testDirectory.databaseLayout(), Config.defaults(),
+            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, Config.defaults(),
                     ProgressMonitorFactory.textual( System.err ), logProvider, false );
             Assertions.assertTrue( result.isSuccessful() );
         } );

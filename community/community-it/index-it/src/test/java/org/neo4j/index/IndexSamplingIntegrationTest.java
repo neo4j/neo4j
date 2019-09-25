@@ -34,6 +34,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -41,7 +42,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.allOf;
@@ -53,11 +54,13 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.fs.FileUtils.deleteFile;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class IndexSamplingIntegrationTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private final Label label = Label.label( "Person" );
     private final String property = "name";
@@ -251,6 +254,6 @@ class IndexSamplingIntegrationTest
     private void triggerIndexResamplingOnNextStartup()
     {
         // Trigger index resampling on next at startup
-        deleteFile( testDirectory.databaseLayout().countStore() );
+        deleteFile( databaseLayout.countStore() );
     }
 }

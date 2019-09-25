@@ -28,9 +28,10 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static co.unruly.matchers.OptionalMatchers.empty;
@@ -44,13 +45,15 @@ import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.io.fs.FileSystemUtils.isEmptyOrNonExistingDirectory;
 import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class DatabaseManagementServiceBuilderIT
 {
     @Inject
     private FileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private Neo4jLayout neo4jLayout;
 
     @Test
     void startSystemAndDefaultDatabase()
@@ -97,14 +100,13 @@ class DatabaseManagementServiceBuilderIT
     @Test
     void notConfiguredDatabasesRootPath()
     {
-        File homeDir = testDirectory.homeDir();
-        File storeDir = testDirectory.storeDir();
+        Neo4jLayout layout = neo4jLayout;
 
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( homeDir ).build();
+        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( layout.homeDirectory() ).build();
         try
         {
-            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( storeDir, DEFAULT_DATABASE_NAME ) ) );
-            assertFalse( isEmptyOrNonExistingDirectory( fs, new File( storeDir, SYSTEM_DATABASE_NAME ) ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory() ) );
+            assertFalse( isEmptyOrNonExistingDirectory( fs, layout.databaseLayout( SYSTEM_DATABASE_NAME ).databaseDirectory() ) );
         }
         finally
         {

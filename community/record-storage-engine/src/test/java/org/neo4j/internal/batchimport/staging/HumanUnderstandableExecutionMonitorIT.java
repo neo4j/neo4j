@@ -39,10 +39,12 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -60,6 +62,7 @@ import static org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutio
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
 @ResourceLock( Resources.SYSTEM_OUT )
 class HumanUnderstandableExecutionMonitorIT
@@ -71,6 +74,8 @@ class HumanUnderstandableExecutionMonitorIT
     private RandomRule random;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
@@ -90,7 +95,7 @@ class HumanUnderstandableExecutionMonitorIT
         // when
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            new ParallelBatchImporter( testDirectory.databaseLayout(), fileSystem, pageCache, Configuration.DEFAULT, NullLogService.getInstance(), monitor,
+            new ParallelBatchImporter( databaseLayout, fileSystem, pageCache, Configuration.DEFAULT, NullLogService.getInstance(), monitor,
                     EMPTY, defaults(), LATEST_RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, EmptyLogFilesInitializer.INSTANCE )
                     .doImport( input );
 

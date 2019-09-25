@@ -92,9 +92,8 @@ public class StoreUpgradeOnStartupTest
     {
         fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        Neo4jLayout layout = testDir.neo4jLayout( "working_" + version );
-        workingHomeDir = layout.homeDirectory();
-        workingDatabaseLayout = layout.databaseLayout( DEFAULT_DATABASE_NAME );
+        workingHomeDir = testDir.homeDir( "working_" + version );
+        workingDatabaseLayout = Neo4jLayout.of( workingHomeDir ).databaseLayout( DEFAULT_DATABASE_NAME );
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(), Config.defaults() );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );

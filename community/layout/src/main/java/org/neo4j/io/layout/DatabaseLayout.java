@@ -28,8 +28,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
-import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileUtils;
 
 /**
  * File layout representation of the particular database. Facade for any kind of file lookup for a particular database storage implementation.
@@ -49,49 +50,34 @@ public class DatabaseLayout
     private final Neo4jLayout neo4jLayout;
     private final String databaseName;
 
-    public static DatabaseLayout of( Neo4jLayout storeLayout, String databaseName )
+    public static DatabaseLayout ofFlat( File databaseDirectory )
     {
-        return new DatabaseLayout( storeLayout, databaseName );
+        File canonical = FileUtils.getCanonicalFile( databaseDirectory );
+        File home = canonical.getParentFile();
+        String dbName = canonical.getName();
+        return Neo4jLayout.ofFlat( home ).databaseLayout( dbName );
     }
 
-    public static DatabaseLayout of( File databaseDirectory )
+    public static DatabaseLayout of( Config config )
     {
-        return of( getCanonicalFile( databaseDirectory ).getParentFile().getParentFile().getParentFile(), databaseDirectory, NOT_CONFIGURED );
+        return Neo4jLayout.of( config ).databaseLayout( config.get( GraphDatabaseSettings.default_database ) );
     }
 
-    public static DatabaseLayout of( File homeDirectory, File databaseDirectory )
+    static DatabaseLayout of( Neo4jLayout neo4jLayout, String databaseName )
     {
-        return of( homeDirectory, databaseDirectory, NOT_CONFIGURED );
-    }
-
-    public static DatabaseLayout of( File homeDirectory, File databaseDirectory, StoreLayoutConfig config )
-    {
-        File canonicalFile = getCanonicalFile( databaseDirectory );
-        return of( homeDirectory, canonicalFile.getParentFile(), config, canonicalFile.getName() );
-    }
-
-    public static DatabaseLayout of( File homeDirectory, File rootDirectory, String databaseName )
-    {
-        return of( homeDirectory, rootDirectory, NOT_CONFIGURED, databaseName );
-    }
-
-    public static DatabaseLayout of( File homeDirectory, File storeDirectory, StoreLayoutConfig config, String databaseName )
-    {
-        return new DatabaseLayout( Neo4jLayout.of( homeDirectory, storeDirectory, config ), databaseName );
+        return new DatabaseLayout( neo4jLayout, databaseName );
     }
 
     protected DatabaseLayout( Neo4jLayout neo4jLayout, String databaseName )
     {
         this.neo4jLayout = neo4jLayout;
-        this.databaseDirectory = getCanonicalFile( new File( neo4jLayout.storeDirectory(), databaseName ) );
+        this.databaseDirectory = FileUtils.getCanonicalFile( new File( neo4jLayout.databasesDirectory(), databaseName ) );
         this.databaseName = databaseName;
     }
 
     public File getTransactionLogsDirectory()
     {
-        return neo4jLayout.getLayoutConfig().getTransactionLogsRootDirectory()
-                .map( root -> new File( root, getDatabaseName() ) )
-                .orElse( databaseDirectory() );
+        return new File( neo4jLayout.txLogsDirectory(), getDatabaseName() );
     }
 
     public File databaseLockFile()

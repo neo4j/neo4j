@@ -25,7 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -34,17 +34,18 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Optional.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class TransactionLogsInSeparateLocationIT
 {
     @Inject
@@ -56,7 +57,11 @@ class TransactionLogsInSeparateLocationIT
     void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException
     {
         File txDirectory = testDirectory.directory( "transaction-logs" );
-        DatabaseLayout layout = testDirectory.databaseLayout( () -> of( txDirectory ) );
+        Config config = Config.newBuilder()
+                .set( neo4j_home, testDirectory.homeDir().toPath() )
+                .set( transaction_logs_root_path, txDirectory.toPath().toAbsolutePath() )
+                .build();
+        DatabaseLayout layout = DatabaseLayout.of( config );
         performTransactions( txDirectory.toPath().toAbsolutePath(), layout.databaseDirectory() );
         verifyTransactionLogs( layout.getTransactionLogsDirectory(), layout.databaseDirectory() );
     }
@@ -65,7 +70,7 @@ class TransactionLogsInSeparateLocationIT
     {
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( storeDir )
-                        .setConfig( GraphDatabaseSettings.transaction_logs_root_path, txPath )
+                        .setConfig( transaction_logs_root_path, txPath )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         for ( int i = 0; i < 10; i++ )

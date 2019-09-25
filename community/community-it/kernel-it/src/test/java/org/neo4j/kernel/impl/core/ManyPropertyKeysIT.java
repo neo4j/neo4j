@@ -34,6 +34,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.Kernel;
@@ -51,6 +52,7 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -63,12 +65,15 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
  * as well as concurrent creation of property keys.
  */
 @PageCacheExtension
+@Neo4jLayoutExtension
 class ManyPropertyKeysIT
 {
     @Inject
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private PageCache pageCache;
     private DatabaseManagementService managementService;
@@ -127,7 +132,7 @@ class ManyPropertyKeysIT
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
     {
 
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(),
                 new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();

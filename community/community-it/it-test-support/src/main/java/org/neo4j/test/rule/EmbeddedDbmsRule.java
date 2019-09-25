@@ -24,8 +24,10 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
  * JUnit @Rule for configuring, creating and managing an embedded database instance.
@@ -56,7 +58,7 @@ public class EmbeddedDbmsRule extends DbmsRule
     @Override
     public DatabaseLayout databaseLayout()
     {
-        return testDirectory.databaseLayout();
+        return Neo4jLayout.of( testDirectory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME );
     }
 
     @Override

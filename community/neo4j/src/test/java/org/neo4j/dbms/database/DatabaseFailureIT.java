@@ -28,9 +28,11 @@ import java.io.IOException;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.matchers.NestedThrowableMatcher;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -44,11 +46,15 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.noOpSystemGraphInitializer;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class DatabaseFailureIT
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
+    @Inject
+    private Neo4jLayout neo4jLayout;
     private GraphDatabaseAPI database;
     private DatabaseManagementService managementService;
 
@@ -68,7 +74,7 @@ class DatabaseFailureIT
     void startWhenDefaultDatabaseFailedToStart() throws IOException
     {
         managementService.shutdown();
-        deleteDirectory( testDirectory.databaseLayout().getTransactionLogsDirectory() );
+        deleteDirectory( databaseLayout.getTransactionLogsDirectory() );
 
         database = startDatabase();
         DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
@@ -80,7 +86,7 @@ class DatabaseFailureIT
     void failToStartWhenSystemDatabaseFailedToStart() throws IOException
     {
         managementService.shutdown();
-        deleteDirectory( testDirectory.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
+        deleteDirectory( neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME ).getTransactionLogsDirectory() );
 
         Exception startException = assertThrows( Exception.class, this::startDatabase );
         assertThat( startException, new NestedThrowableMatcher( UnableToStartDatabaseException.class ) );

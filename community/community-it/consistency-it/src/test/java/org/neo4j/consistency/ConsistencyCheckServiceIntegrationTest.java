@@ -66,6 +66,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -86,6 +87,7 @@ import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
 public class ConsistencyCheckServiceIntegrationTest
 {
@@ -95,6 +97,8 @@ public class ConsistencyCheckServiceIntegrationTest
     private PageCache pageCache;
     @Inject
     private FileSystemAbstraction fs;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private GraphStoreFixture fixture;
     private DatabaseManagementService managementService;
@@ -256,7 +260,7 @@ public class ConsistencyCheckServiceIntegrationTest
     void shouldReportMissingSchemaIndex() throws Exception
     {
         // given
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         GraphDatabaseService gds = getGraphDatabaseService( testDirectory.homeDir() );
 
         Label label = Label.label( "label" );
@@ -287,8 +291,6 @@ public class ConsistencyCheckServiceIntegrationTest
     @Test
     void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-
         Label label = Label.label( "label" );
         String propKey = "propKey";
 
@@ -396,7 +398,6 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         File tmpLogDir = new File( testDirectory.homeDir(), "logs" );
         fs.mkdir( tmpLogDir );
-        var databaseLayout = testDirectory.databaseLayout();
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setConfig( settings() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -430,7 +431,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         Map<Setting<?>, Object> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory, "8m" );
-        defaults.put( GraphDatabaseSettings.logs_directory, testDirectory.databaseDir().toPath() );
+        defaults.put( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory().toPath() );
         defaults.put( record_format, getRecordFormatName() );
         return defaults;
     }

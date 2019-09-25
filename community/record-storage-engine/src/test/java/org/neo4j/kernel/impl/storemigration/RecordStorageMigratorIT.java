@@ -23,6 +23,7 @@ import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -54,6 +55,7 @@ import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -78,6 +80,7 @@ import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -89,6 +92,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class RecordStorageMigratorIT
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";
@@ -98,9 +102,13 @@ class RecordStorageMigratorIT
     private static final int MAX_LABEL_ID = 100;
 
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
+
+    private DatabaseLayout migrationLayout;
 
     private final MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
     private final JobScheduler jobScheduler = new ThreadPoolJobScheduler();
@@ -112,6 +120,12 @@ class RecordStorageMigratorIT
                 StandardV3_4.STORE_VERSION,
                 new LogPosition( 3, 385 ),
                 txInfoAcceptanceOnIdAndTimestamp( 42, 1548441268467L ) ) );
+    }
+
+    @BeforeEach
+    void setup()
+    {
+        migrationLayout = Neo4jLayout.of( testDirectory.homeDir( MIGRATION_DIRECTORY ) ).databaseLayout( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach
@@ -126,9 +140,8 @@ class RecordStorageMigratorIT
         throws Exception
     {
         // GIVEN a legacy database
-        DatabaseLayout databaseLayout = directory.databaseLayout();
-        File prepare = directory.directory( "prepare" );
-        var fs = directory.getFileSystem();
+        File prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
@@ -137,7 +150,6 @@ class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // WHEN simulating resuming the migration
@@ -155,9 +167,9 @@ class RecordStorageMigratorIT
     void shouldBeAbleToMigrateWithoutErrors( String version, LogPosition expectedLogPosition, Function<TransactionId, Boolean> txIdComparator ) throws Exception
     {
         // GIVEN a legacy database
-        DatabaseLayout databaseLayout = directory.databaseLayout();
-        File prepare = directory.directory( "prepare" );
-        var fs = directory.getFileSystem();
+
+        File prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
@@ -167,7 +179,6 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -187,9 +198,9 @@ class RecordStorageMigratorIT
         throws Exception
     {
         // GIVEN a legacy database
-        DatabaseLayout databaseLayout = directory.databaseLayout();
-        File prepare = directory.directory( "prepare" );
-        var fs = directory.getFileSystem();
+
+        File prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
@@ -198,7 +209,6 @@ class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
@@ -219,9 +229,9 @@ class RecordStorageMigratorIT
         throws Throwable
     {
         // GIVEN a legacy database
-        DatabaseLayout databaseLayout = directory.databaseLayout();
-        File prepare = directory.directory( "prepare" );
-        var fs = directory.getFileSystem();
+
+        File prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
@@ -230,7 +240,6 @@ class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -245,9 +254,9 @@ class RecordStorageMigratorIT
         throws Exception
     {
         // given
-        DatabaseLayout databaseLayout = directory.databaseLayout();
-        File prepare = directory.directory( "prepare" );
-        var fs = directory.getFileSystem();
+
+        File prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
@@ -256,7 +265,6 @@ class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
 
         // when
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -270,9 +278,9 @@ class RecordStorageMigratorIT
     void mustMigrateSchemaStoreToNewFormat( String version, LogPosition expectedLogPosition, Function<TransactionId, Boolean> txIdComparator ) throws Exception
     {
         // Given we have an old store full of random schema rules.
-        DatabaseLayout databaseLayout = directory.databaseLayout();
-        File prepare = directory.directory( "prepare" );
-        var fs = directory.getFileSystem();
+
+        File prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
@@ -345,7 +353,6 @@ class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
 
         // When we migrate it to the new store format.
         String versionToMigrateTo = getVersionToMigrateTo( check );

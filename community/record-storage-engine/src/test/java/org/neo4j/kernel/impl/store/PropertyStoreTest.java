@@ -29,6 +29,7 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -36,9 +37,9 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,7 +52,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
-@EphemeralTestDirectoryExtension
+@EphemeralNeo4jLayoutExtension
 class PropertyStoreTest
 {
     @RegisterExtension
@@ -60,6 +61,8 @@ class PropertyStoreTest
     private EphemeralFileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private File storeFile;
     private File idFile;
@@ -67,8 +70,8 @@ class PropertyStoreTest
     @BeforeEach
     void setup()
     {
-        storeFile = testDirectory.databaseLayout().propertyStore();
-        idFile = testDirectory.databaseLayout().idPropertyStore();
+        storeFile = databaseLayout.propertyStore();
+        idFile = databaseLayout.idPropertyStore();
     }
 
     @Test

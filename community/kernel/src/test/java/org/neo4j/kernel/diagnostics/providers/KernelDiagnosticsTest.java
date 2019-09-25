@@ -36,7 +36,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -45,14 +45,16 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 @ExtendWith( DefaultFileSystemExtension.class )
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class KernelDiagnosticsTest
 {
     @Inject
     DefaultFileSystemAbstraction fs;
 
     @Inject
-    TestDirectory directory;
+    TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void shouldPrintDiskUsage() throws IOException
@@ -82,7 +84,7 @@ class KernelDiagnosticsTest
         StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, directory.databaseLayout() );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
         logProvider.rawMessageMatcher().assertContains( "Storage files stored on file store: " );
@@ -94,8 +96,8 @@ class KernelDiagnosticsTest
         // file structure:
         //   storeDir/indexDir/indexFile (1 kB)
         //   storeDir/neostore (3 kB)
-        File storeDir = directory.directory( "storeDir" );
-        DatabaseLayout layout = DatabaseLayout.of( storeDir );
+        File storeDir = testDirectory.directory( "storeDir" );
+        DatabaseLayout layout = DatabaseLayout.ofFlat( storeDir );
         File indexDir = directory( storeDir, "indexDir" );
         file( indexDir, "indexFile", (int) kibiBytes( 1 ) );
         file( storeDir, layout.metadataStore().getName(), (int) kibiBytes( 3 ) );

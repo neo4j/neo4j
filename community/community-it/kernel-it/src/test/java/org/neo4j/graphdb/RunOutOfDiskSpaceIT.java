@@ -29,14 +29,15 @@ import java.io.IOException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.limited.LimitedFilesystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -47,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class RunOutOfDiskSpaceIT
 {
     @RegisterExtension
@@ -56,6 +57,8 @@ class RunOutOfDiskSpaceIT
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
+    @Inject
+    private DatabaseLayout databaseLayout;
     private LimitedFilesystemAbstraction limitedFs;
     private GraphDatabaseAPI database;
     private DatabaseManagementService managementService;
@@ -99,7 +102,7 @@ class RunOutOfDiskSpaceIT
         managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
-        File neoStore = testDirectory.databaseLayout().metadataStore();
+        File neoStore = databaseLayout.metadataStore();
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 
@@ -140,7 +143,7 @@ class RunOutOfDiskSpaceIT
         managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
-        File neoStore = testDirectory.databaseLayout().metadataStore();
+        File neoStore = databaseLayout.metadataStore();
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 

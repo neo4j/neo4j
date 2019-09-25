@@ -55,6 +55,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -194,8 +195,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             LogProvider logProvider = NullLogProvider.getInstance();
             Config config = Config.defaults( GraphDatabaseSettings.read_only, readOnly );
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
-            StoreFactory storeFactory = new StoreFactory(
-                    testDirectory.databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider );
+            StoreFactory storeFactory = new StoreFactory( databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider );
             neoStore = storeFactory.openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
@@ -282,7 +282,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     public DatabaseLayout databaseLayout()
     {
-        return testDirectory.databaseLayout();
+        return Neo4jLayout.of( testDirectory.homeDir() ).databaseLayout( DEFAULT_DATABASE_NAME );
     }
 
     public Statistics getAccessStatistics()

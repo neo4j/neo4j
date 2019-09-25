@@ -27,10 +27,12 @@ import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -46,10 +48,13 @@ import static org.neo4j.internal.index.label.FullStoreChangeStream.EMPTY;
 import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class NativeLabelScanStoreRebuildTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
@@ -72,7 +77,7 @@ class NativeLabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         NativeLabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, EMPTY, false, monitors, immediate() );
+                new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, monitors, immediate() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -92,7 +97,7 @@ class NativeLabelScanStoreRebuildTest
         RecordingMonitor monitor = new RecordingMonitor();
         monitors.addMonitorListener( monitor );
 
-        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem,
+        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem,
                 EMPTY, true, monitors, ignore() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
@@ -112,7 +117,7 @@ class NativeLabelScanStoreRebuildTest
         RecordingMonitor monitor = new RecordingMonitor();
         monitors.addMonitorListener( monitor );
 
-        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem,
+        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem,
                 EMPTY, true, monitors, ignore() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
@@ -129,7 +134,7 @@ class NativeLabelScanStoreRebuildTest
         existingData.add( NodeLabelUpdate.labelChanges( 1, new long[0], new long[]{2, 1} ) );
         FullStoreChangeStream changeStream = asStream( existingData );
         NativeLabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, changeStream, false, new Monitors(), immediate() );
+                new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, changeStream, false, new Monitors(), immediate() );
         try
         {
             nativeLabelScanStore.init();
@@ -148,7 +153,7 @@ class NativeLabelScanStoreRebuildTest
         NativeLabelScanStore nativeLabelScanStore = null;
         try
         {
-            nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, THROWING_STREAM, false,
+            nativeLabelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, THROWING_STREAM, false,
                     new Monitors(), immediate() );
 
             nativeLabelScanStore.init();

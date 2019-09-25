@@ -66,7 +66,7 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,13 +89,15 @@ import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQ
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class TransactionLogsRecoveryTest
 {
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
-    private TestDirectory directory;
+    private DatabaseLayout databaseLayout;
+    @Inject
+    private TestDirectory testDirectory;
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 5L, 0,
             BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
@@ -114,8 +116,7 @@ class TransactionLogsRecoveryTest
     @BeforeEach
     void setUp() throws Exception
     {
-        storeDir = directory.homeDir();
-        DatabaseLayout databaseLayout = directory.databaseLayout();
+        storeDir = testDirectory.homeDir();
         logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )

@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.stream.Collectors.toList;
@@ -41,17 +41,21 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class DatabaseLayoutTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private Neo4jLayout neo4jLayout;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void databaseLayoutForAbsoluteFile()
     {
-        File databaseDir = testDirectory.homeDir();
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDir );
+        File databaseDir = testDirectory.directory( "neo4j" );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDir );
         assertEquals( databaseLayout.databaseDirectory(), databaseDir );
     }
 
@@ -59,52 +63,50 @@ class DatabaseLayoutTest
     void databaseLayoutResolvesLinks() throws IOException
     {
         Path basePath = testDirectory.homeDir().toPath();
-        File databaseDir = testDirectory.databaseDir("notAbsolute");
+        File databaseDir = databaseLayout.databaseDirectory();
         Path linkPath = basePath.resolve( "link" );
         Path symbolicLink = Files.createSymbolicLink( linkPath, databaseDir.toPath() );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( symbolicLink.toFile() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( symbolicLink.toFile() );
         assertEquals( databaseLayout.databaseDirectory(), databaseDir );
     }
 
     @Test
     void databaseLayoutUseCanonicalRepresentation()
     {
-        File storeDir = testDirectory.homeDir( "notCanonical" );
-        Path basePath = testDirectory.databaseDir( storeDir ).toPath();
-        Path notCanonicalPath = basePath.resolve( "../anotherDatabase" );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( notCanonicalPath.toFile() );
-        File expectedDirectory = Neo4jLayout.of( testDirectory.homeDir(), storeDir ).databaseLayout( "anotherDatabase" ).databaseDirectory();
-        assertEquals( expectedDirectory, databaseLayout.databaseDirectory() );
+        File dbDir = testDirectory.directory( "notCanonical" );
+        Path notCanonicalPath = dbDir.toPath().resolve( "../anotherDatabase" ) ;
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( notCanonicalPath.toFile() );
+        assertEquals( testDirectory.directory( "anotherDatabase" ), databaseLayout.databaseDirectory() );
     }
 
     @Test
     void databaseLayoutForName()
     {
         String databaseName = "testDatabase";
-        Neo4jLayout storeLayout = testDirectory.neo4jLayout();
-        DatabaseLayout testDatabase = DatabaseLayout.of( storeLayout, databaseName );
-        assertEquals( new File( storeLayout.storeDirectory(), databaseName ), testDatabase.databaseDirectory() );
+        Neo4jLayout storeLayout = neo4jLayout;
+        DatabaseLayout testDatabase = storeLayout.databaseLayout( databaseName );
+        assertEquals( new File( storeLayout.databasesDirectory(), databaseName ), testDatabase.databaseDirectory() );
     }
 
     @Test
     void databaseLayoutForFolderAndName()
     {
         String database = "database";
-        DatabaseLayout databaseLayout = DatabaseLayout.of( testDirectory.homeDir(), testDirectory.storeDir(), database );
-        assertEquals( testDirectory.databaseLayout( database ).databaseDirectory(), databaseLayout.databaseDirectory() );
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( database );
+        assertEquals( database, databaseLayout.databaseDirectory().getName() );
     }
 
     @Test
     void databaseLayoutProvideCorrectDatabaseName()
     {
-        assertEquals( "neo4j", testDirectory.databaseLayout().getDatabaseName() );
-        assertEquals( "testDb", testDirectory.databaseLayout( "testDb" ).getDatabaseName() );
+        assertEquals( "neo4j", databaseLayout.getDatabaseName() );
+        assertEquals( "testDb", neo4jLayout.databaseLayout( "testDb" ).getDatabaseName() );
     }
 
     @Test
     void storeFilesHaveExpectedNames()
     {
-        DatabaseLayout layout = testDirectory.databaseLayout();
+        DatabaseLayout layout = databaseLayout;
         assertEquals( "neostore", layout.metadataStore().getName() );
         assertEquals( "neostore.counts.db", layout.countStore().getName() );
         assertEquals( "neostore.labelscanstore.db", layout.labelScanStore().getName() );
@@ -127,7 +129,7 @@ class DatabaseLayoutTest
     @Test
     void idFilesHaveExpectedNames()
     {
-        DatabaseLayout layout = testDirectory.databaseLayout();
+        DatabaseLayout layout = databaseLayout;
         assertEquals( "neostore.id", layout.idMetadataStore().getName() );
         assertEquals( "neostore.labeltokenstore.db.id", layout.idLabelTokenStore().getName() );
         assertEquals( "neostore.labeltokenstore.db.names.id", layout.idLabelTokenNamesStore().getName() );
@@ -148,7 +150,7 @@ class DatabaseLayoutTest
     @Test
     void allStoreFiles()
     {
-        DatabaseLayout layout = testDirectory.databaseLayout();
+        DatabaseLayout layout = databaseLayout;
         Set<String> files = layout.storeFiles().stream().map( File::getName ).collect( toSet() );
         assertThat( files, hasItem( "neostore" ) );
         assertThat( files, hasItem( "neostore.counts.db" ) );
@@ -172,7 +174,7 @@ class DatabaseLayoutTest
     @Test
     void allFilesContainsStoreFiles()
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         DatabaseFile nodeStore = DatabaseFile.NODE_STORE;
         List<File> allNodeStoreFile = databaseLayout.allFiles( nodeStore ).collect( toList() );
         File nodeStoreStoreFile = databaseLayout.file( nodeStore );
@@ -182,7 +184,7 @@ class DatabaseLayoutTest
     @Test
     void allFilesContainsIdFileIfPresent()
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         DatabaseFile nodeStore = DatabaseFile.NODE_STORE;
         List<File> allNodeStoreFile = databaseLayout.allFiles( nodeStore ).collect( toList() );
         File nodeStoreIdFile = databaseLayout.idFile( nodeStore ).get();
@@ -192,7 +194,7 @@ class DatabaseLayoutTest
     @Test
     void lookupFileByDatabaseFile()
     {
-        DatabaseLayout layout = testDirectory.databaseLayout();
+        DatabaseLayout layout = databaseLayout;
         DatabaseFile[] databaseFiles = DatabaseFile.values();
         for ( DatabaseFile databaseFile : databaseFiles )
         {
@@ -206,7 +208,7 @@ class DatabaseLayoutTest
     @Test
     void lookupIdFileByDatabaseFile()
     {
-        DatabaseLayout layout = testDirectory.databaseLayout();
+        DatabaseLayout layout = databaseLayout;
         DatabaseFile[] databaseFiles = DatabaseFile.values();
         for ( DatabaseFile databaseFile : databaseFiles )
         {

@@ -94,6 +94,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.TokenHolders;
@@ -136,6 +137,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class BatchInsertTest
 {
     private static final IndexProviderDescriptor DESCRIPTOR = TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -178,6 +180,8 @@ class BatchInsertTest
     private FileSystemAbstraction fs;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private DatabaseManagementService managementService;
 
@@ -580,11 +584,11 @@ class BatchInsertTest
     @Test
     void messagesLogGetsClosed() throws IOException
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
         BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs,
-                Config.defaults( neo4j_home, databaseLayout.databaseDirectory().toPath().toAbsolutePath() ) );
+                Config.defaults( neo4j_home, testDirectory.homeDir().toPath() ) );
         inserter.shutdown();
-        assertTrue( new File( databaseLayout.databaseDirectory(), INTERNAL_LOG_FILE ).delete() );
+        assertTrue( new File( databaseLayout.getNeo4jLayout().homeDirectory(), INTERNAL_LOG_FILE ).delete() );
     }
 
     @ParameterizedTest
@@ -1396,7 +1400,7 @@ class BatchInsertTest
 
     private BatchInserter newBatchInserter( int denseNodeThreshold ) throws Exception
     {
-        return BatchInserters.inserter( testDirectory.databaseLayout(), fs, configuration( denseNodeThreshold ) );
+        return BatchInserters.inserter( databaseLayout, fs, configuration( denseNodeThreshold ) );
     }
 
     private BatchInserter newBatchInserterWithIndexProvider( ExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor, int denseNodeThreshold )
@@ -1404,7 +1408,7 @@ class BatchInsertTest
     {
         Config configuration = configuration( denseNodeThreshold );
         configuration.set( GraphDatabaseSettings.default_schema_provider, providerDescriptor.name() );
-        return BatchInserters.inserter( testDirectory.databaseLayout(), fs, configuration, singletonList( provider ) );
+        return BatchInserters.inserter( databaseLayout, fs, configuration, singletonList( provider ) );
     }
 
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter, int denseNodeThreshold )
@@ -1420,7 +1424,7 @@ class BatchInsertTest
 
     private LabelScanStore getLabelScanStore()
     {
-        return new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fs,
+        return new NativeLabelScanStore( pageCache, databaseLayout, fs,
                 FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.immediate() );
     }
 

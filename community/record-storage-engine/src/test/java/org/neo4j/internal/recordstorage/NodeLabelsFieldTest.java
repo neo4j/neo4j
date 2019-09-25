@@ -42,6 +42,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
@@ -54,6 +55,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -71,6 +73,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.util.Bits.bits;
 
 @EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class NodeLabelsFieldTest
 {
@@ -80,6 +83,8 @@ class NodeLabelsFieldTest
     private RandomRule random;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private NeoStores neoStores;
     private NodeStore nodeStore;
@@ -88,7 +93,7 @@ class NodeLabelsFieldTest
     void startUp()
     {
         Config config = Config.defaults( GraphDatabaseSettings.label_block_size, 60 );
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config,
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, config,
                 new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate() ),
                 pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );

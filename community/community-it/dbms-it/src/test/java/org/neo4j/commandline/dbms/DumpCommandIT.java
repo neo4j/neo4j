@@ -44,19 +44,19 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -78,16 +78,19 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.dbms.archive.CompressionFormat.ZSTD;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class DumpCommandIT
 {
     @Inject
     private TestDirectory testDirectory;
+
+    @Inject
+    private Neo4jLayout neo4jLayout;
+    private DatabaseLayout databaseLayout;
 
     private Path homeDir;
     private Path configDir;
@@ -98,12 +101,13 @@ class DumpCommandIT
     @BeforeEach
     void setUp()
     {
-        homeDir = testDirectory.directory( "home-dir" ).toPath();
+        homeDir = testDirectory.homeDir().toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
         archive = testDirectory.file( "some-archive.dump" ).toPath();
         dumper = mock( Dumper.class );
-        putStoreInDirectory( buildConfig(), homeDir.resolve( "data/databases/foo" ) );
-        databaseDirectory = homeDir.resolve( "data/databases/foo" );
+        databaseLayout = neo4jLayout.databaseLayout( "foo" );
+        databaseDirectory = databaseLayout.databaseDirectory().toPath();
+        putStoreInDirectory( buildConfig(), databaseDirectory );
     }
 
     private Config buildConfig()
@@ -194,7 +198,7 @@ class DumpCommandIT
     void shouldRespectTheDatabaseLock() throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               Locker locker = new DatabaseLocker( fileSystem, databaseLayout ) )
         {
@@ -208,8 +212,6 @@ class DumpCommandIT
     @Test
     void databaseThatRequireRecoveryIsNotDumpable() throws IOException
     {
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout( "foo", LayoutConfig.of( config ) );
         testDirectory.getFileSystem().mkdirs( databaseLayout.getTransactionLogsDirectory() );
         File logFile = new File( databaseLayout.getTransactionLogsDirectory(), TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
 
@@ -255,7 +257,7 @@ class DumpCommandIT
     @DisabledOnOs( OS.WINDOWS )
     void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
-        DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
+        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( databaseDirectory.toFile() );
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
             try ( Closeable ignored = withPermissions( databaseLayout.databaseLockFile().toPath(), emptySet() ) )
@@ -270,7 +272,7 @@ class DumpCommandIT
     void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
             throws Exception
     {
-        File lockFile = DatabaseLayout.of( new File( "." ) ).databaseLockFile();
+        File lockFile = DatabaseLayout.ofFlat( new File( "." ) ).databaseLockFile();
         doAnswer( invocation ->
         {
             Predicate<Path> exclude = invocation.getArgument( 4 );
@@ -348,7 +350,7 @@ class DumpCommandIT
     private static void assertCanLockDatabase( Path databaseDirectory ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              Locker locker = new DatabaseLocker( fileSystem, DatabaseLayout.of( databaseDirectory.toFile() ) ) )
+              Locker locker = new DatabaseLocker( fileSystem, DatabaseLayout.ofFlat( databaseDirectory.toFile() ) ) )
         {
             locker.checkLock();
         }
@@ -360,7 +362,6 @@ class DumpCommandIT
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParent().getParent().getParent().toFile() )
                 .setConfig( config )
                 .setConfig( default_database, databaseName )
-                .setConfig( databases_root_path, databases_root_path.defaultValue() )
                 .build();
         managementService.shutdown();
     }

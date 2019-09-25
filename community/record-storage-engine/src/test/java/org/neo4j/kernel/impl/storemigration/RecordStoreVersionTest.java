@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -49,10 +51,13 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class RecordStoreVersionTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     @Inject
     private PageCache pageCache;
 
@@ -62,7 +67,7 @@ class RecordStoreVersionTest
         @BeforeEach
         void setup() throws IOException
         {
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, testDirectory.databaseLayout().databaseDirectory() );
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
         }
 
         boolean storeFilesUpgradable( RecordStoreVersionCheck check )
@@ -99,7 +104,7 @@ class RecordStoreVersionTest
 
         private RecordStoreVersionCheck getVersionCheck()
         {
-            return new RecordStoreVersionCheck( pageCache, testDirectory.databaseLayout(), Standard.LATEST_RECORD_FORMATS, Config.defaults() );
+            return new RecordStoreVersionCheck( pageCache, databaseLayout, Standard.LATEST_RECORD_FORMATS, Config.defaults() );
         }
     }
 
@@ -111,9 +116,9 @@ class RecordStoreVersionTest
     private void setupUnsupported( String version ) throws IOException
         {
             // doesn't matter which version we pick we are changing it to the wrong one...
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, testDirectory.databaseLayout().databaseDirectory() );
-            changeVersionNumber( testDirectory.getFileSystem(), testDirectory.databaseLayout().metadataStore(), version );
-            File metadataStore = testDirectory.databaseLayout().metadataStore();
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
+            changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore(), version );
+            File metadataStore = databaseLayout.metadataStore();
             MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ) );
         }
 
@@ -151,7 +156,7 @@ class RecordStoreVersionTest
 
     private RecordStoreVersionCheck getVersionCheck()
     {
-        return new RecordStoreVersionCheck( pageCache, testDirectory.databaseLayout(), Standard.LATEST_RECORD_FORMATS, Config.defaults() );
+        return new RecordStoreVersionCheck( pageCache, databaseLayout, Standard.LATEST_RECORD_FORMATS, Config.defaults() );
     }
 }
 

@@ -60,6 +60,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -86,6 +87,7 @@ import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 public class NativeLabelScanStoreTest
 {
@@ -97,6 +99,8 @@ public class NativeLabelScanStoreTest
     private PageCache pageCache;
     @Inject
     private RandomRule random;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private static final long[] NO_LABELS = new long[0];
 
@@ -121,7 +125,7 @@ public class NativeLabelScanStoreTest
         when( monitors.newMonitor( LabelScanStore.Monitor.class ) ).thenReturn( LabelScanStore.Monitor.EMPTY );
         doThrow( new RuntimeException( expectedMessage ) ).when( monitors ).addMonitorListener( any() );
 
-        LabelScanStore scanStore = getLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, true, monitors );
+        LabelScanStore scanStore = getLabelScanStore( fileSystem, databaseLayout, EMPTY, true, monitors );
         RuntimeException exception = assertThrows( RuntimeException.class, scanStore::init );
         assertEquals( expectedMessage, exception.getMessage() );
         scanStore.shutdown();
@@ -134,7 +138,7 @@ public class NativeLabelScanStoreTest
         // label scan store init but no start
         LifeSupport life = new LifeSupport();
         TrackingMonitor monitor = new TrackingMonitor();
-        life.add( createLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, false, monitor ) );
+        life.add( createLabelScanStore( fileSystem, databaseLayout, EMPTY, false, monitor ) );
         life.init();
         assertTrue( monitor.noIndexCalled );
         monitor.reset();
@@ -143,7 +147,7 @@ public class NativeLabelScanStoreTest
         // when
         // starting label scan store again
         life = new LifeSupport();
-        life.add( createLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, false, monitor ) );
+        life.add( createLabelScanStore( fileSystem, databaseLayout, EMPTY, false, monitor ) );
         life.init();
 
         // then
@@ -159,13 +163,13 @@ public class NativeLabelScanStoreTest
     void shouldRestartPopulationIfIndexFileWasNeverFullyInitialized() throws IOException
     {
         // given
-        File labelScanStoreFile = NativeLabelScanStore.getLabelScanStoreFile( testDirectory.databaseLayout() );
+        File labelScanStoreFile = NativeLabelScanStore.getLabelScanStoreFile( databaseLayout );
         fileSystem.write( labelScanStoreFile ).close();
         TrackingMonitor monitor = new TrackingMonitor();
         LifeSupport life = new LifeSupport();
 
         // when
-        life.add( createLabelScanStore( fileSystem, testDirectory.databaseLayout(), EMPTY, false, monitor ) );
+        life.add( createLabelScanStore( fileSystem, databaseLayout, EMPTY, false, monitor ) );
         life.start();
 
         // then
@@ -520,7 +524,7 @@ public class NativeLabelScanStoreTest
 
     private Matcher<Iterable<? super File>> hasLabelScanStore()
     {
-        return Matchers.hasItem( Matchers.equalTo( testDirectory.databaseLayout().labelScanStore() ) );
+        return Matchers.hasItem( Matchers.equalTo( databaseLayout.labelScanStore() ) );
     }
 
     private void corruptIndex( DatabaseLayout databaseLayout ) throws IOException
@@ -630,7 +634,7 @@ public class NativeLabelScanStoreTest
         life = new LifeSupport();
         monitor = new TrackingMonitor();
 
-        store = createLabelScanStore( fileSystem, testDirectory.databaseLayout(), asStream( existingData ), readOnly,
+        store = createLabelScanStore( fileSystem, databaseLayout, asStream( existingData ), readOnly,
                                       monitor );
         life.add( store );
 
@@ -641,7 +645,7 @@ public class NativeLabelScanStoreTest
     private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data ) throws IOException
     {
         shutdown();
-        corruptIndex( testDirectory.databaseLayout() );
+        corruptIndex( databaseLayout );
         start( data, false );
     }
 

@@ -68,7 +68,7 @@ public class Validators
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            if ( !isExistingDatabase( fileSystem, DatabaseLayout.of( dbDir ) ) )
+            if ( !isExistingDatabase( fileSystem, DatabaseLayout.ofFlat( dbDir ) ) )
             {
                 throw new IllegalArgumentException( "Directory '" + dbDir + "' does not contain a database" );
             }

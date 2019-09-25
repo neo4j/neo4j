@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -44,6 +45,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
+@Neo4jLayoutExtension
 class NeoStoreOpenFailureTest
 {
     @Inject
@@ -52,11 +54,12 @@ class NeoStoreOpenFailureTest
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void mustCloseAllStoresIfNeoStoresFailToOpen()
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults();
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         LogProvider logProvider = NullLogProvider.getInstance();

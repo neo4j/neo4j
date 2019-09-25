@@ -28,10 +28,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,18 +42,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.batchinsert.BatchInserters.inserter;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class BatchInsertersTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void automaticallyCloseCreatedFileSystemOnShutdown() throws Exception
     {
-        verifyInserterFileSystemClose( inserter( testDirectory.databaseLayout() ) );
-        verifyInserterFileSystemClose( inserter( testDirectory.databaseLayout(), getConfig() ) );
-        verifyInserterFileSystemClose( inserter( testDirectory.databaseLayout(), getConfig(), getExtensions() ) );
+        verifyInserterFileSystemClose( inserter( databaseLayout ) );
+        verifyInserterFileSystemClose( inserter( databaseLayout, getConfig() ) );
+        verifyInserterFileSystemClose( inserter( databaseLayout, getConfig(), getExtensions() ) );
     }
 
     @Test
@@ -60,9 +63,9 @@ class BatchInsertersTest
     {
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
-            verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs ), fs );
-            verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig() ), fs );
-            verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig(), getExtensions() ), fs );
+            verifyProvidedFileSystemOpenAfterShutdown( inserter( databaseLayout, fs ), fs );
+            verifyProvidedFileSystemOpenAfterShutdown( inserter( databaseLayout, fs, getConfig() ), fs );
+            verifyProvidedFileSystemOpenAfterShutdown( inserter( databaseLayout, fs, getConfig(), getExtensions() ), fs );
         }
     }
 

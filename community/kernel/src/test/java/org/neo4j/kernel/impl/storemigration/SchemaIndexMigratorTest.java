@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -28,11 +29,15 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -43,14 +48,25 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
+@TestDirectoryExtension
 class SchemaIndexMigratorTest
 {
+    @Inject
+    private TestDirectory testDirectory;
+
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final File home = mock( File.class );
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
-    private final DatabaseLayout databaseLayout = DatabaseLayout.of( home, new File( "store" ), DEFAULT_DATABASE_NAME );
-    private final DatabaseLayout migrationLayout = DatabaseLayout.of( home, new File( "migrationDir" ), DEFAULT_DATABASE_NAME );
+    private DatabaseLayout databaseLayout;
+    private DatabaseLayout migrationLayout;
+
+    @BeforeEach
+    void setup()
+    {
+        databaseLayout = Neo4jLayout.of( testDirectory.directory( "store" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        migrationLayout = Neo4jLayout.of( testDirectory.directory( "migrationDir" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+    }
 
     @Test
     void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException

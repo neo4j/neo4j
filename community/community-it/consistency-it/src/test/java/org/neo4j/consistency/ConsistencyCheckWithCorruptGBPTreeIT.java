@@ -552,7 +552,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                 indexWithNumberData( db, label );
             } );
 
-            final File[] indexFiles = schemaIndexFiles( fs, testDirectory.databaseDir(), NATIVE30 );
+            DatabaseLayout layout = DatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome.toPath() ) );
+
+            final File[] indexFiles = schemaIndexFiles( fs, layout.databaseDirectory(), NATIVE30 );
             final List<File> files = corruptIndexes( fs, true, ( tree, inspection ) -> {
                 long leafNode = inspection.getLeafNodes().get( 1 );
                 long internalNode = inspection.getInternalNodes().get( 0 );
@@ -562,7 +564,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
             assertTrue( files.size() > 0, "Expected number of corrupted files to be more than one." );
             ConsistencyCheckService.Result result =
-                    runConsistencyCheck( fs, neo4jHome, testDirectory.databaseLayout(), NullLogProvider.getInstance(), NONE, DEFAULT );
+                    runConsistencyCheck( fs, neo4jHome, layout, NullLogProvider.getInstance(), NONE, DEFAULT );
             for ( File file : files )
             {
                 assertResultContainsMessage( fs, result,

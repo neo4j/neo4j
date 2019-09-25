@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -52,13 +52,15 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_3_5;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_3_5;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class TransactionLogFilesTest
 {
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
     private final String filename = "filename";
 
     @Test
@@ -72,7 +74,6 @@ class TransactionLogFilesTest
         final File versionFileName = files.getLogFileForVersion( version );
 
         // then
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         final File expected = createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) );
         assertEquals( expected, versionFileName );
     }
@@ -112,7 +113,6 @@ class TransactionLogFilesTest
     {
         // given
         LogFiles files = createLogFiles();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
         fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
         fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "2" ) ) ).close();
@@ -143,7 +143,6 @@ class TransactionLogFilesTest
         // given
         LogFiles files = createLogFiles();
 
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "1" ) ) ).close();
         fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "some", "4" ) ) ).close();
         fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( "3" ) ) ).close();
@@ -162,7 +161,6 @@ class TransactionLogFilesTest
     {
         // given
         LogFiles files = createLogFiles();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
         fileSystem.write( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
         fileSystem.write( databaseLayout.file( filename ) ).close();
@@ -225,7 +223,6 @@ class TransactionLogFilesTest
     void emptyFileWithoutEntriesDoesNotHaveThem() throws IOException
     {
         LogFiles logFiles = createLogFiles();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         String file = getVersionedLogFileName( "1" );
         fileSystem.write( createTransactionLogFile( databaseLayout, file ) ).close();
         assertFalse( logFiles.hasAnyEntries( 1 ) );
@@ -270,7 +267,7 @@ class TransactionLogFilesTest
     private LogFiles createLogFiles() throws IOException
     {
         return LogFilesBuilder
-                .builder( testDirectory.databaseLayout(), fileSystem )
+                .builder( databaseLayout, fileSystem )
                 .withLogFileName( filename )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )

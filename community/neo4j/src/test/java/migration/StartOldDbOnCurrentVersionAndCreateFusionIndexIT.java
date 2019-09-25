@@ -55,6 +55,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -63,7 +64,7 @@ import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
@@ -79,7 +80,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.test.Unzip.unzip;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 {
     private static final String ZIP_FILE_3_5 = "3_5-db.zip";
@@ -115,7 +116,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private static final Provider DEFAULT_PROVIDER = Provider.BTREE_10_40;
 
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Disabled( "Here as reference for how 3.5 db was created" )
     @Test
@@ -170,11 +173,11 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private void shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( String zippedDbName, Provider highestProviderInOldVersion ) throws Exception
     {
         // given
-        File targetDirectory = directory.databaseDir();
+        File targetDirectory = databaseLayout.databaseDirectory();
         unzip( getClass(), zippedDbName, targetDirectory );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         // when
-        File storeDir = directory.homeDir();
+        File storeDir = testDirectory.homeDir();
         managementService = setupDb( storeDir, indexRecoveryTracker );
         GraphDatabaseAPI db = getDefaultDatabase();
         // then

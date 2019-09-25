@@ -32,7 +32,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.abs;
@@ -45,42 +45,43 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 public class LabelScanWriteMonitorTest
 {
     @Inject
     private DefaultFileSystemAbstraction fs;
     @Inject
-    public TestDirectory directory;
+    public TestDirectory testDirectory;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private String baseName;
 
     @BeforeEach
     void before()
     {
-        baseName = LabelScanWriteMonitor.writeLogBaseFile( directory.databaseLayout() ).getName();
+        baseName = LabelScanWriteMonitor.writeLogBaseFile( databaseLayout ).getName();
     }
 
     @Test
     void shouldRotateExistingFileOnOpen()
     {
         // given
-        LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, directory.databaseLayout() );
+        LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, databaseLayout );
         writeMonitor.close();
 
         // when
-        LabelScanWriteMonitor secondWriteMonitor = new LabelScanWriteMonitor( fs, directory.databaseLayout() );
+        LabelScanWriteMonitor secondWriteMonitor = new LabelScanWriteMonitor( fs, databaseLayout );
         secondWriteMonitor.close();
 
         // then
-        assertEquals( 2, requireNonNull( directory.databaseDir().listFiles( ( dir, name ) -> name.startsWith( baseName ) ) ).length );
+        assertEquals( 2, requireNonNull( databaseLayout.databaseDirectory().listFiles( ( dir, name ) -> name.startsWith( baseName ) ) ).length );
     }
 
     @Test
     void shouldLogAndDumpData() throws IOException
     {
         // given
-        DatabaseLayout databaseLayout = this.directory.databaseLayout();
         LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, databaseLayout );
         LabelScanValue value = new LabelScanValue();
         writeMonitor.range( 3, 0 );
@@ -182,9 +183,9 @@ public class LabelScanWriteMonitorTest
     void shouldRotateAtConfiguredThreshold()
     {
         // given
-        File storeDir = this.directory.databaseDir();
+        File storeDir = databaseLayout.databaseDirectory();
         int rotationThreshold = 1_000;
-        LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, directory.databaseLayout(), rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS );
+        LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, databaseLayout, rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS );
 
         // when
         for ( int i = 0; requireNonNull( storeDir.listFiles() ).length < 5; i++ )
@@ -208,10 +209,10 @@ public class LabelScanWriteMonitorTest
     void shouldPruneAtConfiguredThreshold()
     {
         // given
-        File storeDir = this.directory.databaseDir();
+        File storeDir = databaseLayout.databaseDirectory();
         long pruneThreshold = 200;
         LabelScanWriteMonitor writeMonitor =
-                new LabelScanWriteMonitor( fs, directory.databaseLayout(), 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS );
+                new LabelScanWriteMonitor( fs, databaseLayout, 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS );
 
         // when
         long startTime = currentTimeMillis();

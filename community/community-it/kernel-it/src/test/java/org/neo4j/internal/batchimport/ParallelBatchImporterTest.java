@@ -76,9 +76,9 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -100,7 +100,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
 @ResourceLock( Resources.SYSTEM_OUT )
 public class ParallelBatchImporterTest
@@ -112,13 +112,15 @@ public class ParallelBatchImporterTest
     private static final int NUMBER_OF_ID_GROUPS = 5;
 
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
     @Inject
     private RandomRule random;
     @Inject
     private FileSystemAbstraction fs;
     @Inject
     private SuppressOutput suppressOutput;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private InputIdGenerator inputIdGenerator;
     private final Configuration config = new Configuration()
@@ -169,7 +171,6 @@ public class ParallelBatchImporterTest
         // GIVEN
         ExecutionMonitor processorAssigner = ProcessorAssignmentStrategies.eagerRandomSaturation( config.maxNumberOfProcessors() );
         CapturingMonitor monitor = new CapturingMonitor( processorAssigner );
-        DatabaseLayout databaseLayout = directory.databaseLayout();
 
         boolean successful = false;
         Groups groups = new Groups();
@@ -200,7 +201,7 @@ public class ParallelBatchImporterTest
                             NODE_COUNT * TOKENS.length / 2 ), groups ) );
 
             // THEN
-            DatabaseManagementService managementService = getDBMSBuilder( directory.homeDir() ).build();
+            DatabaseManagementService managementService = getDBMSBuilder( testDirectory.homeDir() ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {

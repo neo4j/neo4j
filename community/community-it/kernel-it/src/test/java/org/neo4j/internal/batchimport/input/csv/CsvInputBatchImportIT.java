@@ -78,6 +78,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
@@ -87,8 +88,8 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -112,7 +113,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFor
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
 class CsvInputBatchImportIT
 {
@@ -120,11 +121,13 @@ class CsvInputBatchImportIT
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
 
     @Inject
-    private TestDirectory directory;
+    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
     private RandomRule random;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private static final Supplier<ZoneId> testDefaultTimeZone = () -> ZoneId.of( "Asia/Shanghai" );
 
@@ -139,7 +142,7 @@ class CsvInputBatchImportIT
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler() )
         {
             BatchImporter importer =
-                    new ParallelBatchImporter( directory.databaseLayout(), fileSystem, null, smallBatchSizeConfig(), NullLogService.getInstance(),
+                    new ParallelBatchImporter( databaseLayout, fileSystem, null, smallBatchSizeConfig(), NullLogService.getInstance(),
                             ExecutionMonitors.invisible(), EMPTY, dbConfig, defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY,
                             TransactionLogsInitializer.INSTANCE );
             List<InputEntity> nodeData = randomNodeData();
@@ -215,7 +218,7 @@ class CsvInputBatchImportIT
 
     private File relationshipDataAsFile( List<InputEntity> relationshipData ) throws IOException
     {
-        File file = directory.file( "relationships.csv" );
+        File file = testDirectory.file( "relationships.csv" );
         try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
@@ -232,7 +235,7 @@ class CsvInputBatchImportIT
 
     private File nodeDataAsFile( List<InputEntity> nodeData ) throws IOException
     {
-        File file = directory.file( "nodes.csv" );
+        File file = testDirectory.file( "nodes.csv" );
         try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
@@ -307,7 +310,7 @@ class CsvInputBatchImportIT
                 expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
