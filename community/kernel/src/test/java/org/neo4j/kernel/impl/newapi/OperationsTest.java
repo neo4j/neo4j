@@ -628,7 +628,8 @@ class OperationsTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
         when( indexingService.getIndexProxy( constraintIndex ) ).thenReturn( indexProxy );
-        when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.constraintsGetForSchema( descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.indexGetForSchema( descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when
         operations.uniquePropertyConstraintCreate( descriptor, "constraint name" );
@@ -969,6 +970,7 @@ class OperationsTest
         when( tokenHolders.propertyKeyTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "PropA", 1 ) );
         when( tokenHolders.propertyKeyTokens().getTokenById( 2 ) ).thenReturn( new NamedToken( "PropB", 2 ) );
         storageReaderWithoutConstraints();
+        when( storageReader.indexGetForSchema( any() ) ).thenReturn( Collections.emptyIterator() );
         operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ) );
         operations.indexCreate( SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {2, 3}, new int[] {1, 2} ), null );
         operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", null );
