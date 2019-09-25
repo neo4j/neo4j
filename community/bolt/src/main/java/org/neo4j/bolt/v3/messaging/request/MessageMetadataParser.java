@@ -119,13 +119,13 @@ public final class MessageMetadataParser
     private static class TransactionMetadataWriter extends BaseToObjectValueWriter<RuntimeException>
     {
         @Override
-        protected Node newNodeProxyById( long id )
+        protected Node newNodeEntityById( long id )
         {
             throw new UnsupportedOperationException( "Transaction metadata should not contain nodes" );
         }
 
         @Override
-        protected Relationship newRelationshipProxyById( long id )
+        protected Relationship newRelationshipEntityById( long id )
         {
             throw new UnsupportedOperationException( "Transaction metadata should not contain relationships" );
         }

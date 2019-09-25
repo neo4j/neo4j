@@ -90,13 +90,13 @@ public class MessageMatchers
     {
 
         @Override
-        protected Node newNodeProxyById( long id )
+        protected Node newNodeEntityById( long id )
         {
             return null;
         }
 
         @Override
-        protected Relationship newRelationshipProxyById( long id )
+        protected Relationship newRelationshipEntityById( long id )
         {
             return null;
         }

@@ -53,7 +53,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     {
         if ( value instanceof NodeEntityWrappingNodeValue )
         { // this is the back door through which "virtual nodes" slip
-            return ((NodeEntityWrappingNodeValue) value).nodeProxy();
+            return ((NodeEntityWrappingNodeValue) value).nodeEntity();
         }
         return new NodeEntity( transaction, value.id() );
     }
@@ -63,7 +63,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     {
         if ( value instanceof RelationshipEntityWrappingValue )
         { // this is the back door through which "virtual relationships" slip
-            return ((RelationshipEntityWrappingValue) value).relationshipProxy();
+            return ((RelationshipEntityWrappingValue) value).relationshipEntity();
         }
         return new RelationshipEntity( transaction, value.id() );
     }

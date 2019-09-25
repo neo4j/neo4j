@@ -35,8 +35,8 @@ import org.neo4j.values.virtual.{MapValue, MapValueBuilder, VirtualValues}
 object ValueConversion {
   def getValueConverter(cType: CypherType): Any => AnyValue = {
     val converter: Any => AnyValue = cType match {
-      case CTNode => n => ValueUtils.fromNodeProxy(n.asInstanceOf[Node])
-      case CTRelationship => r => ValueUtils.fromRelationshipProxy(r.asInstanceOf[Relationship])
+      case CTNode => n => ValueUtils.fromNodeEntity(n.asInstanceOf[Node])
+      case CTRelationship => r => ValueUtils.fromRelationshipEntity(r.asInstanceOf[Relationship])
       case CTBoolean => b => Values.booleanValue(b.asInstanceOf[Boolean])
       case CTFloat => d => Values.doubleValue(d.asInstanceOf[Double])
       case CTInteger => l => Values.longValue(l.asInstanceOf[Long])
@@ -78,8 +78,8 @@ object ValueConversion {
     case f: Float => Values.doubleValue(f)
     case n: Number => Values.longValue(n.longValue())
     case b: Boolean => Values.booleanValue(b)
-    case n: Node => ValueUtils.fromNodeProxy(n)
-    case r: Relationship => ValueUtils.fromRelationshipProxy(r)
+    case n: Node => ValueUtils.fromNodeEntity(n)
+    case r: Relationship => ValueUtils.fromRelationshipEntity(r)
     case p: Path => ValueUtils.fromPath(p)
     case p: Point => ValueUtils.asPointValue(p)
     case p: Geometry => ValueUtils.asGeometryValue(p)

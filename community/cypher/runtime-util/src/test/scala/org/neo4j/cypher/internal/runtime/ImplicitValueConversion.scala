@@ -74,9 +74,9 @@ object ImplicitValueConversion {
   implicit def toMapValue(m: java.util.Map[String, Any]): MapValue =
     ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
 
-  implicit def toNodeValue(n: Node): NodeValue = ValueUtils.fromNodeProxy(n)
+  implicit def toNodeValue(n: Node): NodeValue = ValueUtils.fromNodeEntity(n)
 
-  implicit def toRelationshipValue(r: Relationship): RelationshipValue = ValueUtils.fromRelationshipProxy(r)
+  implicit def toRelationshipValue(r: Relationship): RelationshipValue = ValueUtils.fromRelationshipEntity(r)
 
   implicit def toPathValue(p: Path): PathValue = ValueUtils.fromPath(p)
 

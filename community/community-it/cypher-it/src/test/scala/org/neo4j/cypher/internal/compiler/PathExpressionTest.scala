@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.values.virtual.PathValue
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
@@ -58,8 +58,8 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
       expression(m, state).asInstanceOf[PathValue]
     }
 
-    result.startNode() should equal(fromNodeProxy(a))
-    result.endNode() should equal(fromNodeProxy(c))
+    result.startNode() should equal(fromNodeEntity(a))
+    result.endNode() should equal(fromNodeEntity(c))
     result should have size 2
   }
 }

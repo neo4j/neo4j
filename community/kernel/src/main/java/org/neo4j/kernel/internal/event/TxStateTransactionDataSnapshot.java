@@ -228,17 +228,17 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             } );
             state.addedAndRemovedRelationships().getRemoved().each( relId ->
             {
-                Relationship relationshipProxy = relationship( relId );
-                relationship.single( relId );
-                if ( relationship.next() )
+                Relationship relationship = relationship( relId );
+                this.relationship.single( relId );
+                if ( this.relationship.next() )
                 {
-                    relationship.properties( properties );
+                    this.relationship.properties( properties );
                     while ( properties.next() )
                     {
                         try
                         {
                             removedRelationshipProperties.add(
-                                    new RelationshipPropertyEntryView( relationshipProxy, tokenRead.propertyKeyName( properties.propertyKey() ), null,
+                                    new RelationshipPropertyEntryView( relationship, tokenRead.propertyKeyName( properties.propertyKey() ), null,
                                             properties.propertyValue() ) );
                         }
                         catch ( PropertyKeyIdNotFoundKernelException e )
@@ -279,21 +279,21 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             }
             for ( RelationshipState relState : state.modifiedRelationships() )
             {
-                Relationship relationshipProxy = relationship( relState.getId() );
+                Relationship relationship = relationship( relState.getId() );
                 Iterator<StorageProperty> added = relState.addedAndChangedProperties();
                 while ( added.hasNext() )
                 {
                     StorageProperty property = added.next();
-                    assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationshipProxy,
+                    assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             tokenRead.propertyKeyName( property.propertyKeyId() ), property.value(),
-                            committedValue( relState, property.propertyKeyId(), relationship, properties ) ) );
+                            committedValue( relState, property.propertyKeyId(), this.relationship, properties ) ) );
                 }
                 relState.removedProperties().each( id ->
                 {
                     try
                     {
-                        final RelationshipPropertyEntryView entryView = new RelationshipPropertyEntryView( relationshipProxy, tokenRead.propertyKeyName( id ),
-                                null, committedValue( relState, id, relationship, properties ) );
+                        final RelationshipPropertyEntryView entryView = new RelationshipPropertyEntryView( relationship, tokenRead.propertyKeyName( id ),
+                                null, committedValue( relState, id, this.relationship, properties ) );
                         removedRelationshipProperties.add( entryView );
                     }
                     catch ( PropertyKeyIdNotFoundKernelException e )
@@ -333,7 +333,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private Relationship relationship( long relId )
     {
-        RelationshipEntity relationship = internalTransaction.newRelationshipProxy( relId );
+        RelationshipEntity relationship = internalTransaction.newRelationshipEntity( relId );
         if ( !state.relationshipVisit( relId, relationship ) )
         {   // This relationship has been created or changed in this transaction
             RelationshipEntity cached = relationshipsReadFromStore.get( relId );

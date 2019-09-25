@@ -140,12 +140,12 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
         Node[] nodeProxies = new Node[nodes.length];
         for ( int i = 0; i < nodes.length; i++ )
         {
-            nodeProxies[i] = proxySpi.newNodeProxy( nodes[i].id() );
+            nodeProxies[i] = proxySpi.newNodeEntity( nodes[i].id() );
         }
         Relationship[] relationship = new Relationship[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
         {
-            relationship[i] = proxySpi.newRelationshipProxy( relationships[i].id() );
+            relationship[i] = proxySpi.newRelationshipEntity( relationships[i].id() );
         }
         writeValue( new Path()
         {

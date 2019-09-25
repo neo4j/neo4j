@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Shorte
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.values.virtual.PathValue
 
 import scala.collection.mutable
@@ -56,8 +56,8 @@ class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
       val number_of_relationships_in_path = resultPath.size()
 
       number_of_relationships_in_path should equal(2)
-      resultPath.startNode() should equal(fromNodeProxy(a))
-      resultPath.endNode() should equal(fromNodeProxy(d))
+      resultPath.startNode() should equal(fromNodeEntity(a))
+      resultPath.endNode() should equal(fromNodeEntity(d))
     })
   }
 }

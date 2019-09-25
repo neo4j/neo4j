@@ -305,13 +305,13 @@ public abstract class CompiledConversionUtils
         else if ( anyValue instanceof PrimitiveNodeStream )
         {
             return VirtualValues.fromList( ((PrimitiveNodeStream) anyValue).longStream()
-                    .mapToObj( id -> (AnyValue) ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( id ) ) )
+                    .mapToObj( id -> (AnyValue) ValueUtils.fromNodeEntity( proxySpi.newNodeEntity( id ) ) )
                     .collect( Collectors.toList() ) );
         }
         else if ( anyValue instanceof PrimitiveRelationshipStream )
         {
             return VirtualValues.fromList( ((PrimitiveRelationshipStream) anyValue).longStream()
-                    .mapToObj( id -> (AnyValue) ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( id ) ) )
+                    .mapToObj( id -> (AnyValue) ValueUtils.fromRelationshipEntity( proxySpi.newRelationshipEntity( id ) ) )
                     .collect( Collectors.toList() ) );
         }
         else if ( anyValue instanceof LongStream )
@@ -370,7 +370,7 @@ public abstract class CompiledConversionUtils
             {
                 return (AnyValue) anyValue;
             }
-            return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
+            return ValueUtils.fromNodeEntity( proxySpi.newNodeEntity( ((VirtualNodeValue) anyValue).id() ) );
         }
         if ( anyValue instanceof VirtualRelationshipValue )
         {
@@ -378,7 +378,7 @@ public abstract class CompiledConversionUtils
             {
                 return (AnyValue) anyValue;
             }
-            return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
+            return ValueUtils.fromRelationshipEntity( proxySpi.newRelationshipEntity( ((VirtualRelationshipValue) anyValue).id() ) );
         }
         // If it is a list or map, run it through a ValueMapper that will create proxy objects for entities if needed.
         // This will first do a dry run and return as it is if no conversion is needed.
@@ -402,11 +402,11 @@ public abstract class CompiledConversionUtils
         }
         else if ( anyValue instanceof VirtualNodeValue )
         {
-            return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
+            return ValueUtils.fromNodeEntity( proxySpi.newNodeEntity( ((VirtualNodeValue) anyValue).id() ) );
         }
         else if ( anyValue instanceof Node )
         {
-            return ValueUtils.fromNodeProxy( (Node) anyValue );
+            return ValueUtils.fromNodeEntity( (Node) anyValue );
         }
         throw new IllegalArgumentException( "Do not know how to materialize node value from type " + anyValue.getClass().getName() );
     }
@@ -420,11 +420,11 @@ public abstract class CompiledConversionUtils
         }
         else if ( anyValue instanceof VirtualRelationshipValue )
         {
-            return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
+            return ValueUtils.fromRelationshipEntity( proxySpi.newRelationshipEntity( ((VirtualRelationshipValue) anyValue).id() ) );
         }
         else if ( anyValue instanceof Relationship )
         {
-            return ValueUtils.fromRelationshipProxy( (Relationship) anyValue );
+            return ValueUtils.fromRelationshipEntity( (Relationship) anyValue );
         }
         throw new IllegalArgumentException( "Do not know how to materialize relationship value from type " + anyValue.getClass().getName() );
     }
@@ -632,11 +632,11 @@ public abstract class CompiledConversionUtils
         }
         if ( object instanceof NodeEntityWrappingNodeValue )
         {
-            return Values.of( ((NodeEntityWrappingNodeValue) object).nodeProxy().getProperty( key ) );
+            return Values.of( ((NodeEntityWrappingNodeValue) object).nodeEntity().getProperty( key ) );
         }
         if ( object instanceof RelationshipEntityWrappingValue )
         {
-            return Values.of( ((RelationshipEntityWrappingValue) object).relationshipProxy().getProperty( key ) );
+            return Values.of( ((RelationshipEntityWrappingValue) object).relationshipEntity().getProperty( key ) );
         }
         if ( object instanceof Entity ) // Entity that is not wrapped by an AnyValue
         {

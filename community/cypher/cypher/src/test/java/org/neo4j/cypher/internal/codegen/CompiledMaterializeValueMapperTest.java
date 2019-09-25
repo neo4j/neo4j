@@ -47,21 +47,21 @@ class CompiledMaterializeValueMapperTest
 {
     private static final InternalTransaction transaction = mock( InternalTransaction.class );
 
-    private static final NodeValue nodeProxyValue = ValueUtils.fromNodeProxy( new NodeEntity( transaction, 1L ) );
+    private static final NodeValue nodeEntityValue = ValueUtils.fromNodeEntity( new NodeEntity( transaction, 1L ) );
     private static final NodeValue directNodeValue = VirtualValues.nodeValue( 2L, Values.stringArray(), VirtualValues.EMPTY_MAP );
-    private static final NodeReference nodeReference = VirtualValues.node( 1L ); // Should equal nodeProxyValue when converted
+    private static final NodeReference nodeReference = VirtualValues.node( 1L ); // Should equal nodeEntityValue when converted
 
-    private static final RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipEntity( transaction, 11L ) );
+    private static final RelationshipValue relationshipEntityValue = ValueUtils.fromRelationshipEntity( new RelationshipEntity( transaction, 11L ) );
     private static final RelationshipValue directRelationshipValue =
-            VirtualValues.relationshipValue( 12L, nodeProxyValue, directNodeValue, Values.stringValue( "TYPE" ), VirtualValues.EMPTY_MAP );
-    private static final RelationshipReference relationshipReference = VirtualValues.relationship( 11L ); // Should equal relationshipProxyValue when converted
+            VirtualValues.relationshipValue( 12L, nodeEntityValue, directNodeValue, Values.stringValue( "TYPE" ), VirtualValues.EMPTY_MAP );
+    private static final RelationshipReference relationshipReference = VirtualValues.relationship( 11L ); // Should equal relationshipEntityValue when converted
 
     @BeforeEach
     void setUp()
     {
-        when( transaction.newNodeProxy( anyLong() ) )
+        when( transaction.newNodeEntity( anyLong() ) )
                 .thenAnswer( (Answer<NodeEntity>) invocation -> new NodeEntity( transaction, invocation.getArgument( 0 ) ) );
-        when( transaction.newRelationshipProxy( anyLong() ) )
+        when( transaction.newRelationshipEntity( anyLong() ) )
                 .thenAnswer( (Answer<RelationshipEntity>) invocation ->
                         new RelationshipEntity( transaction, invocation.getArgument( 0 ) ) );
     }
@@ -70,14 +70,14 @@ class CompiledMaterializeValueMapperTest
     void shouldNotTouchValuesThatDoNotNeedConversion()
     {
         // Given
-        ListValue nodeList = VirtualValues.list( nodeProxyValue, directNodeValue );
-        ListValue relationshipList = VirtualValues.list( relationshipProxyValue, directRelationshipValue );
-        MapValue nodeMap = VirtualValues.map( new String[]{"a", "b"}, new AnyValue[]{nodeProxyValue, directNodeValue} );
-        MapValue relationshipMap = VirtualValues.map( new String[]{"a", "b"}, new AnyValue[]{relationshipProxyValue, directRelationshipValue} );
+        ListValue nodeList = VirtualValues.list( nodeEntityValue, directNodeValue );
+        ListValue relationshipList = VirtualValues.list( relationshipEntityValue, directRelationshipValue );
+        MapValue nodeMap = VirtualValues.map( new String[]{"a", "b"}, new AnyValue[]{nodeEntityValue, directNodeValue} );
+        MapValue relationshipMap = VirtualValues.map( new String[]{"a", "b"}, new AnyValue[]{relationshipEntityValue, directRelationshipValue} );
 
         // Verify
-        verifyDoesNotTouchValue( nodeProxyValue );
-        verifyDoesNotTouchValue( relationshipProxyValue );
+        verifyDoesNotTouchValue( nodeEntityValue );
+        verifyDoesNotTouchValue( relationshipEntityValue );
         verifyDoesNotTouchValue( directNodeValue );
         verifyDoesNotTouchValue( directRelationshipValue );
         verifyDoesNotTouchValue( nodeList );
@@ -95,25 +95,25 @@ class CompiledMaterializeValueMapperTest
     void shouldConvertValuesWithVirtualEntities()
     {
         // Given
-        ListValue nodeList = VirtualValues.list( nodeProxyValue, directNodeValue, nodeReference );
-        ListValue expectedNodeList = VirtualValues.list( nodeProxyValue, directNodeValue, nodeProxyValue );
+        ListValue nodeList = VirtualValues.list( nodeEntityValue, directNodeValue, nodeReference );
+        ListValue expectedNodeList = VirtualValues.list( nodeEntityValue, directNodeValue, nodeEntityValue );
 
-        ListValue relationshipList = VirtualValues.list( relationshipProxyValue, directRelationshipValue, relationshipReference );
-        ListValue expectedRelationshipList = VirtualValues.list( relationshipProxyValue, directRelationshipValue, relationshipProxyValue );
+        ListValue relationshipList = VirtualValues.list( relationshipEntityValue, directRelationshipValue, relationshipReference );
+        ListValue expectedRelationshipList = VirtualValues.list( relationshipEntityValue, directRelationshipValue, relationshipEntityValue );
 
-        MapValue nodeMap = VirtualValues.map( new String[]{"a", "b", "c"}, new AnyValue[]{nodeProxyValue, directNodeValue, nodeReference} );
-        MapValue expectedNodeMap = VirtualValues.map( new String[]{"a", "b", "c"}, new AnyValue[]{nodeProxyValue, directNodeValue, nodeProxyValue} );
+        MapValue nodeMap = VirtualValues.map( new String[]{"a", "b", "c"}, new AnyValue[]{nodeEntityValue, directNodeValue, nodeReference} );
+        MapValue expectedNodeMap = VirtualValues.map( new String[]{"a", "b", "c"}, new AnyValue[]{nodeEntityValue, directNodeValue, nodeEntityValue} );
 
         MapValue relationshipMap =
-                VirtualValues.map( new String[]{"a", "b", "c"}, new AnyValue[]{relationshipProxyValue, directRelationshipValue, relationshipReference} );
+                VirtualValues.map( new String[]{"a", "b", "c"}, new AnyValue[]{relationshipEntityValue, directRelationshipValue, relationshipReference} );
         MapValue expectedRelationshipMap =
-                VirtualValues.map( new String[]{"a", "b", "c"}, new AnyValue[]{relationshipProxyValue, directRelationshipValue, relationshipProxyValue} );
+                VirtualValues.map( new String[]{"a", "b", "c"}, new AnyValue[]{relationshipEntityValue, directRelationshipValue, relationshipEntityValue} );
 
         ListValue nestedNodeList = VirtualValues.list( nodeList, nodeMap, nodeReference );
-        ListValue expectedNestedNodeList = VirtualValues.list( expectedNodeList, expectedNodeMap, nodeProxyValue );
+        ListValue expectedNestedNodeList = VirtualValues.list( expectedNodeList, expectedNodeMap, nodeEntityValue );
 
         ListValue nestedRelationshipList = VirtualValues.list( relationshipList, relationshipMap, relationshipReference );
-        ListValue expectedNestedRelationshipList = VirtualValues.list( expectedRelationshipList, expectedRelationshipMap, relationshipProxyValue );
+        ListValue expectedNestedRelationshipList = VirtualValues.list( expectedRelationshipList, expectedRelationshipMap, relationshipEntityValue );
 
         MapValue nestedNodeMap = VirtualValues.map( new String[]{"a", "b", "c"}, new AnyValue[]{nodeList, nodeMap, nestedNodeList} );
         MapValue expectedNestedNodeMap =

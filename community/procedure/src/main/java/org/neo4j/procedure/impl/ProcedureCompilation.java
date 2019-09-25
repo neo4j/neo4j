@@ -972,12 +972,12 @@ public final class ProcedureCompilation
         }
         else if ( type.equals( NODE ) )
         {
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, NodeValue.class, "fromNodeProxy", Node.class ),
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, NodeValue.class, "fromNodeEntity", Node.class ),
                     expression ));
         }
         else if ( type.equals( RELATIONSHIP ) )
         {
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, RelationshipValue.class, "fromRelationshipProxy",
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, RelationshipValue.class, "fromRelationshipEntity",
                     Relationship.class ), expression ));
         }
         else if ( type.equals( PATH ) )

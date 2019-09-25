@@ -348,11 +348,11 @@ class TxStateTransactionDataViewTest
 
     private TxStateTransactionDataSnapshot snapshot()
     {
-        when( internalTransaction.newNodeProxy( anyLong() ) )
+        when( internalTransaction.newNodeEntity( anyLong() ) )
                 .thenAnswer( invocation -> new NodeEntity( internalTransaction, invocation.getArgument( 0 ) ) );
-        when( internalTransaction.newRelationshipProxy( anyLong() ) )
+        when( internalTransaction.newRelationshipEntity( anyLong() ) )
                 .thenAnswer( invocation -> new RelationshipEntity( internalTransaction, invocation.getArgument( 0 ) ) );
-        when( internalTransaction.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )
+        when( internalTransaction.newRelationshipEntity( anyLong(), anyLong(), anyInt(), anyLong() ) )
                 .thenAnswer( invocation -> new RelationshipEntity( internalTransaction,
                         invocation.getArgument( 0 ), invocation.getArgument( 1 ),
                         invocation.getArgument( 2 ), invocation.getArgument( 3 ) ) );

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
 import org.neo4j.values.virtual.RelationshipValue
 
 class ExpandAllPipeTest extends CypherFunSuite {
@@ -60,8 +60,8 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1),
-                                  "b" -> fromNodeProxy(endNode1)))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1),
+                                  "b" -> fromNodeEntity(endNode1)))
   }
 
   test("should return no relationships for types that have not been defined yet") {
@@ -76,7 +76,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer((invocationOnMock: InvocationOnMock) => {
       val arg = invocationOnMock.getArgument[Array[Int]](2)
       if (arg == null || arg.isEmpty) Iterator.empty
-      else Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2))
+      else Iterator(fromRelationshipEntity(relationship1), fromRelationshipEntity(relationship2))
     })
 
     val pipe = ExpandAllPipe(newMockedPipe("a", row("a"-> startNode)), "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes(Array("FOO", "BAR")))()
@@ -114,8 +114,8 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val first :: second :: Nil = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship2), "b" -> fromNodeProxy(endNode2)))
+    first.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship2), "b" -> fromNodeEntity(endNode2)))
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
@@ -134,8 +134,8 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val first :: second :: Nil = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(selfRelationship), "b" -> fromNodeProxy(startNode)))
+    first.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(selfRelationship), "b" -> fromNodeEntity(startNode)))
   }
 
   test("given empty input, should return empty output") {
@@ -167,7 +167,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
   }
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values.map(v => (v._1, ValueUtils.of(v._2))): _*)
@@ -175,7 +175,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
   private def mockRelationships(rels: Relationship*) = {
     val query = mock[QueryContext]
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {
-      def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = rels.iterator.map(fromRelationshipProxy)
+      def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = rels.iterator.map(fromRelationshipEntity)
     })
     query
   }

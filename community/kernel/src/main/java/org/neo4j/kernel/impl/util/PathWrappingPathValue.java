@@ -38,19 +38,19 @@ public class PathWrappingPathValue extends PathValue
     @Override
     public NodeValue startNode()
     {
-        return ValueUtils.fromNodeProxy( path.startNode() );
+        return ValueUtils.fromNodeEntity( path.startNode() );
     }
 
     @Override
     public NodeValue endNode()
     {
-        return ValueUtils.fromNodeProxy( path.endNode() );
+        return ValueUtils.fromNodeEntity( path.endNode() );
     }
 
     @Override
     public RelationshipValue lastRelationship()
     {
-        return ValueUtils.fromRelationshipProxy( path.lastRelationship() );
+        return ValueUtils.fromRelationshipEntity( path.lastRelationship() );
     }
 
     @Override
@@ -61,7 +61,7 @@ public class PathWrappingPathValue extends PathValue
         int i = 0;
         for ( Node node : path.nodes() )
         {
-            values[i++] = ValueUtils.fromNodeProxy( node );
+            values[i++] = ValueUtils.fromNodeEntity( node );
         }
         return values;
     }
@@ -74,7 +74,7 @@ public class PathWrappingPathValue extends PathValue
         int i = 0;
         for ( Relationship relationship : path.relationships() )
         {
-            values[i++] = ValueUtils.fromRelationshipProxy( relationship );
+            values[i++] = ValueUtils.fromRelationshipEntity( relationship );
         }
         return values;
     }

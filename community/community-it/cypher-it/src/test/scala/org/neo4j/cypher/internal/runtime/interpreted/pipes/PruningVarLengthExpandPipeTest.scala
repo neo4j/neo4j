@@ -107,7 +107,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     graph.withTx { tx =>
       withQueryState(graph, tx, Array.empty, { queryState =>
         pipeUnderTest.createResults(queryState).map(_.getByName("to")).toSet should equal(
-          nodes.slice(min, max + 1).map(fromNodeProxy).toSet // Slice is excluding the end, whereas ()-[*3..5]->() is including
+          nodes.slice(min, max + 1).map(fromNodeEntity).toSet // Slice is excluding the end, whereas ()-[*3..5]->() is including
         )
       })
     }
@@ -164,7 +164,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       withQueryState(graph, tx, Array.empty, { queryState =>
         pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
           List(
-            Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
+            Map("from" -> fromNodeEntity(n1), "to" -> fromNodeEntity(n4))
           )
         )
       })
@@ -200,7 +200,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       withQueryState(graph, tx, Array.empty, { queryState =>
         pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
           List(
-            Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
+            Map("from" -> fromNodeEntity(n1), "to" -> fromNodeEntity(n4))
         ))
       })
     }
@@ -284,14 +284,14 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, Array.empty, { queryState =>
-        pipeUnderTest.createResults(queryState).map(_.toMap).toSet should equal(nodes.tail.map(n => Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n))).toSet)
+        pipeUnderTest.createResults(queryState).map(_.toMap).toSet should equal(nodes.tail.map(n => Map("from" -> fromNodeEntity(n1), "to" -> fromNodeEntity(n))).toSet)
       })
     }
   }
 
   test("multiple start nodes") {
     val nodes = (0 to 10) map (_ => createNode())
-    val nodeValues = nodes.map(fromNodeProxy)
+    val nodeValues = nodes.map(fromNodeEntity)
     nodes.tail.foldLeft(nodes.head) {
       case (x: Node, y: Node) =>
         relate(x, y)

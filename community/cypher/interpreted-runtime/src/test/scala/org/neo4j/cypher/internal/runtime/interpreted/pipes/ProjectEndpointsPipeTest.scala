@@ -24,14 +24,13 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.impl.util.ValueUtils.{asListOfEdges, fromNodeProxy}
+import org.neo4j.kernel.impl.util.ValueUtils.{asListOfEdges, fromNodeEntity}
 import org.neo4j.values.AnyValue
 
 import scala.collection.mutable
@@ -243,7 +242,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // then
     result should beEquivalentTo(List(
-      Map("r" -> asListOfEdges(rels.toArray), "a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node4))
+      Map("r" -> asListOfEdges(rels.toArray), "a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node4))
     ))
   }
 

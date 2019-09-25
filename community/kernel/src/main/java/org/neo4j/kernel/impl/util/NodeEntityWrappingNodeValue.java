@@ -45,7 +45,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue
         this.node = node;
     }
 
-    public Node nodeProxy()
+    public Node nodeEntity()
     {
         return node;
     }

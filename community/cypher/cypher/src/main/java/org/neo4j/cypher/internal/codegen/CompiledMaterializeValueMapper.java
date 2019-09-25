@@ -87,7 +87,7 @@ public final class CompiledMaterializeValueMapper
             {
                 return value;
             }
-            return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( value.id() ) );
+            return ValueUtils.fromNodeEntity( proxySpi.newNodeEntity( value.id() ) );
         }
 
         @Override
@@ -97,7 +97,7 @@ public final class CompiledMaterializeValueMapper
             {
                 return value;
             }
-            return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( value.id() ) );
+            return ValueUtils.fromRelationshipEntity( proxySpi.newRelationshipEntity( value.id() ) );
         }
 
         // Recurse through maps and sequences

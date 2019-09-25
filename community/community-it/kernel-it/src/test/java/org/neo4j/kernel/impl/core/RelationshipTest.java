@@ -66,7 +66,7 @@ public class RelationshipTest extends EntityTest
     {
         // GIVEN
         var transaction = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
-        when( transaction.newNodeProxy( anyLong() ) ).then(
+        when( transaction.newNodeEntity( anyLong() ) ).then(
                 invocation -> nodeWithId( invocation.getArgument( 0 ) ) );
         when( transaction.getRelationshipTypeById( anyInt() ) ).then(
                 invocation -> new NamedToken( "whatever", invocation.getArgument( 0 ) ) );

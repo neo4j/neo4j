@@ -69,9 +69,9 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         stack.push( new ObjectWriter() );
     }
 
-    protected abstract Node newNodeProxyById( long id );
+    protected abstract Node newNodeEntityById( long id );
 
-    protected abstract Relationship newRelationshipProxyById( long id );
+    protected abstract Relationship newRelationshipEntityById( long id );
 
     protected abstract Point newPoint( CoordinateReferenceSystem crs, double[] coordinate );
 
@@ -99,7 +99,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     {
         if ( nodeId >= 0 )
         {
-            writeValue( newNodeProxyById( nodeId ) );
+            writeValue( newNodeEntityById( nodeId ) );
         }
     }
 
@@ -121,7 +121,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     {
         if ( relId >= 0 )
         {
-            writeValue( newRelationshipProxyById( relId ) );
+            writeValue( newRelationshipEntityById( relId ) );
         }
     }
 
@@ -168,12 +168,12 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         Node[] nodeProxies = new Node[nodes.length];
         for ( int i = 0; i < nodes.length; i++ )
         {
-            nodeProxies[i] = newNodeProxyById( nodes[i].id() );
+            nodeProxies[i] = newNodeEntityById( nodes[i].id() );
         }
         Relationship[] relationship = new Relationship[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
         {
-            relationship[i] = newRelationshipProxyById( relationships[i].id() );
+            relationship[i] = newRelationshipEntityById( relationships[i].id() );
         }
         writeValue( new Path()
         {

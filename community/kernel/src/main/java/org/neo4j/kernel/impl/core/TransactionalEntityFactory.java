@@ -23,11 +23,11 @@ import org.neo4j.graphdb.RelationshipType;
 
 public interface TransactionalEntityFactory
 {
-    RelationshipEntity newRelationshipProxy( long id );
+    RelationshipEntity newRelationshipEntity( long id );
 
-    RelationshipEntity newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );
+    RelationshipEntity newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId );
 
-    NodeEntity newNodeProxy( long nodeId );
+    NodeEntity newNodeEntity( long nodeId );
 
     RelationshipType getRelationshipTypeById( int type );
 }

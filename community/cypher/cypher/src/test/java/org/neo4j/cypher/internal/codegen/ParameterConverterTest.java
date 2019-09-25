@@ -88,14 +88,14 @@ class ParameterConverterTest
     void setup()
     {
         TransactionalEntityFactory manager = mock( TransactionalEntityFactory.class );
-        when( manager.newNodeProxy( anyLong() ) ).thenAnswer( invocationOnMock ->
+        when( manager.newNodeEntity( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
             long id = invocationOnMock.getArgument( 0 );
             NodeEntity mock = mock( NodeEntity.class );
             when( mock.getId() ).thenReturn( id );
             return mock;
         } );
-        when( manager.newRelationshipProxy( anyLong() ) ).thenAnswer( invocationOnMock ->
+        when( manager.newRelationshipEntity( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
             long id = invocationOnMock.getArgument( 0 );
             RelationshipEntity mock = mock( RelationshipEntity.class );

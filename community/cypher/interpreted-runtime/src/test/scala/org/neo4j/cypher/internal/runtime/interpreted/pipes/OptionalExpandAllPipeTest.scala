@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.RelationshipValue
@@ -58,8 +58,8 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1),
-                              "b" -> fromNodeProxy(endNode1)))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1),
+                              "b" -> fromNodeEntity(endNode1)))
   }
 
   test("should support optional expand from a node with no relationships") {
@@ -73,7 +73,7 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> NO_VALUE, "b" -> NO_VALUE))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> NO_VALUE, "b" -> NO_VALUE))
   }
 
   test("should support optional expand from a node with relationships that do not match the predicates") {
@@ -88,7 +88,7 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> NO_VALUE, "b" -> NO_VALUE))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> NO_VALUE, "b" -> NO_VALUE))
   }
 
   test("should support expand between two nodes with multiple relationships") {
@@ -102,8 +102,8 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val first :: second :: Nil = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship2), "b" -> fromNodeProxy(endNode2)))
+    first.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship2), "b" -> fromNodeEntity(endNode2)))
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
@@ -117,8 +117,8 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val first :: second :: Nil = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(selfRelationship), "b" -> fromNodeProxy(startNode)))
+    first.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(selfRelationship), "b" -> fromNodeEntity(startNode)))
   }
 
   test("given empty input, should return empty output") {
@@ -149,7 +149,7 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
   private def mockRelationships(rels: Relationship*) {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {
-      def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = rels.iterator.map(fromRelationshipProxy)
+      def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = rels.iterator.map(fromRelationshipEntity)
     })
   }
 

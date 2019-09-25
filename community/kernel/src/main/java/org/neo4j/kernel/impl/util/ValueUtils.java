@@ -79,11 +79,11 @@ public final class ValueUtils
             {
                 if ( object instanceof Node )
                 {
-                    return fromNodeProxy( (Node) object );
+                    return fromNodeEntity( (Node) object );
                 }
                 else if ( object instanceof Relationship )
                 {
-                    return fromRelationshipProxy( (Relationship) object );
+                    return fromRelationshipEntity( (Relationship) object );
                 }
                 else
                 {
@@ -205,11 +205,11 @@ public final class ValueUtils
     {
         if ( container instanceof Node )
         {
-            return fromNodeProxy( (Node) container );
+            return fromNodeEntity( (Node) container );
         }
         else if ( container instanceof Relationship )
         {
-            return fromRelationshipProxy( (Relationship) container );
+            return fromRelationshipEntity( (Relationship) container );
         }
         else
         {
@@ -221,7 +221,7 @@ public final class ValueUtils
     public static ListValue asListOfEdges( Iterable<Relationship> rels )
     {
         return VirtualValues.list( StreamSupport.stream( rels.spliterator(), false )
-                .map( ValueUtils::fromRelationshipProxy ).toArray( RelationshipValue[]::new ) );
+                .map( ValueUtils::fromRelationshipEntity ).toArray( RelationshipValue[]::new ) );
     }
 
     public static ListValue asListOfEdges( Relationship[] rels )
@@ -229,7 +229,7 @@ public final class ValueUtils
         RelationshipValue[] relValues = new RelationshipValue[rels.length];
         for ( int i = 0; i < relValues.length; i++ )
         {
-            relValues[i] = fromRelationshipProxy( rels[i] );
+            relValues[i] = fromRelationshipEntity( rels[i] );
         }
         return VirtualValues.list( relValues );
     }
@@ -262,12 +262,12 @@ public final class ValueUtils
         return builder.build();
     }
 
-    public static NodeValue fromNodeProxy( Node node )
+    public static NodeValue fromNodeEntity( Node node )
     {
         return new NodeEntityWrappingNodeValue( node );
     }
 
-    public static RelationshipValue fromRelationshipProxy( Relationship relationship )
+    public static RelationshipValue fromRelationshipEntity( Relationship relationship )
     {
         return new RelationshipEntityWrappingValue( relationship );
     }
@@ -315,7 +315,7 @@ public final class ValueUtils
         }
         if ( object instanceof Node )
         {
-            return fromNodeProxy( (Node) object );
+            return fromNodeEntity( (Node) object );
         }
         throw new IllegalArgumentException(
                 "Cannot produce a node from " + object.getClass().getName() );
@@ -329,7 +329,7 @@ public final class ValueUtils
         }
         if ( object instanceof Relationship )
         {
-            return fromRelationshipProxy( (Relationship) object );
+            return fromRelationshipEntity( (Relationship) object );
         }
         throw new IllegalArgumentException(
                 "Cannot produce a relationship from " + object.getClass().getName() );

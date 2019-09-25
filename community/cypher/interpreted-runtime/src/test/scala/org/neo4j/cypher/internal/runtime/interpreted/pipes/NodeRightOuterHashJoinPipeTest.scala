@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TestableIterator}
-import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
-import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
+import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TestableIterator}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
+import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
 
 class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPipeTestSupport {
 
@@ -35,20 +35,20 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
     val queryState = QueryStateHelper.empty
 
     val right = newMockedPipe(
-                             row("b" -> fromNodeProxy(node1)),
-                             row("b" -> fromNodeProxy(node2)))
+                             row("b" -> fromNodeEntity(node1)),
+                             row("b" -> fromNodeEntity(node2)))
 
     val left = newMockedPipe(
-      row("b" -> fromNodeProxy(node2), "a" -> intValue(2)),
-      row("b" -> fromNodeProxy(node3), "a" -> intValue(3)))
+      row("b" -> fromNodeEntity(node2), "a" -> intValue(2)),
+      row("b" -> fromNodeEntity(node3), "a" -> intValue(3)))
 
     // when
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("a"))().createResults(queryState)
 
     // then
     result.map(_.toMap).toList should equal(List(
-      Map("b" -> fromNodeProxy(node1), "a" -> NO_VALUE),
-      Map("b" -> fromNodeProxy(node2), "a" -> intValue(2))
+      Map("b" -> fromNodeEntity(node1), "a" -> NO_VALUE),
+      Map("b" -> fromNodeEntity(node2), "a" -> intValue(2))
     ))
   }
 
@@ -58,21 +58,21 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
     val bPropLeft = prop("b", "prop1")
     val left = newMockedPipe(
-      rowWith("b" -> fromNodeProxy(node1)).cached(bPropLeft -> intValue(-1)),
-      rowWith("b" -> fromNodeProxy(node2)).cached(bPropLeft -> intValue(-2)))
+      rowWith("b" -> fromNodeEntity(node1)).cached(bPropLeft -> intValue(-1)),
+      rowWith("b" -> fromNodeEntity(node2)).cached(bPropLeft -> intValue(-2)))
 
     val bPropRight = prop("b", "prop2")
     val right = newMockedPipe(
-      rowWith("b" -> fromNodeProxy(node2)).cached(bPropRight -> intValue(12)),
-      rowWith("b" -> fromNodeProxy(node3)).cached(bPropRight -> intValue(13)))
+      rowWith("b" -> fromNodeEntity(node2)).cached(bPropRight -> intValue(12)),
+      rowWith("b" -> fromNodeEntity(node3)).cached(bPropRight -> intValue(13)))
 
     // when
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set.empty)().createResults(queryState).toSeq
 
     // then
     result.map(_.toMap) should equal(Seq(
-      Map("b" -> fromNodeProxy(node2)),
-      Map("b" -> fromNodeProxy(node3))
+      Map("b" -> fromNodeEntity(node2)),
+      Map("b" -> fromNodeEntity(node3))
     ))
     result.map(_.getCachedProperty(bPropLeft)) should be(Seq(intValue(-2), null))
     result.map(_.getCachedProperty(bPropRight)) should be(Seq(intValue(12), intValue(13)))
@@ -83,21 +83,21 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
     val queryState = QueryStateHelper.empty
 
     val right = newMockedPipe(
-      row("b" -> fromNodeProxy(node1), "a" -> intValue(10)),
-      row("b" -> fromNodeProxy(node2), "a" -> intValue(20)))
+      row("b" -> fromNodeEntity(node1), "a" -> intValue(10)),
+      row("b" -> fromNodeEntity(node2), "a" -> intValue(20)))
 
     val left = newMockedPipe(
-      row("b" -> fromNodeProxy(node2), "c" -> intValue(30)),
-      row("b" -> fromNodeProxy(node2), "c" -> intValue(40)))
+      row("b" -> fromNodeEntity(node2), "c" -> intValue(30)),
+      row("b" -> fromNodeEntity(node2), "c" -> intValue(40)))
 
     // when
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.map(_.toMap).toList should equal(List(
-      Map("a" -> intValue(10), "b" -> fromNodeProxy(node1), "c" -> NO_VALUE),
-      Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> intValue(30)),
-      Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> intValue(40))
+      Map("a" -> intValue(10), "b" -> fromNodeEntity(node1), "c" -> NO_VALUE),
+      Map("a" -> intValue(20), "b" -> fromNodeEntity(node2), "c" -> intValue(30)),
+      Map("a" -> intValue(20), "b" -> fromNodeEntity(node2), "c" -> intValue(40))
     ))
   }
 
@@ -124,9 +124,9 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
     val queryState = QueryStateHelper.empty
 
     val right = newMockedPipe(
-      row("b" -> fromNodeProxy(node1), "a" -> intValue(10)),
-      row("b" -> fromNodeProxy(node2), "a" -> intValue(20)),
-      row("b" -> fromNodeProxy(node3), "a" -> intValue(30)))
+      row("b" -> fromNodeEntity(node1), "a" -> intValue(10)),
+      row("b" -> fromNodeEntity(node2), "a" -> intValue(20)),
+      row("b" -> fromNodeEntity(node3), "a" -> intValue(30)))
 
     val left = newMockedPipe()
 
@@ -135,9 +135,9 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
 
     // then
     result.map(_.toMap).toList should equal(List(
-      Map("a" -> intValue(10), "b" -> fromNodeProxy(node1), "c" -> NO_VALUE),
-      Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> NO_VALUE),
-      Map("a" -> intValue(30), "b" -> fromNodeProxy(node3), "c" -> NO_VALUE)
+      Map("a" -> intValue(10), "b" -> fromNodeEntity(node1), "c" -> NO_VALUE),
+      Map("a" -> intValue(20), "b" -> fromNodeEntity(node2), "c" -> NO_VALUE),
+      Map("a" -> intValue(30), "b" -> fromNodeEntity(node3), "c" -> NO_VALUE)
     ))
   }
 
@@ -146,23 +146,23 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
     val queryState = QueryStateHelper.empty
 
     val right = newMockedPipe(
-      row("b" -> fromNodeProxy(node1), "a" -> intValue(10)),
+      row("b" -> fromNodeEntity(node1), "a" -> intValue(10)),
       row("b" -> NO_VALUE,  "a" -> intValue(20)),
-      row("b" -> fromNodeProxy(node3), "a" -> intValue(30)))
+      row("b" -> fromNodeEntity(node3), "a" -> intValue(30)))
 
     val left = newMockedPipe(
-      row("b" -> fromNodeProxy(node1), "c" -> intValue(10)),
-      row("b" -> fromNodeProxy(node2), "c" -> intValue(20)),
-      row("b" -> fromNodeProxy(node3), "c" -> intValue(30)))
+      row("b" -> fromNodeEntity(node1), "c" -> intValue(10)),
+      row("b" -> fromNodeEntity(node2), "c" -> intValue(20)),
+      row("b" -> fromNodeEntity(node3), "c" -> intValue(30)))
 
     // when
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.map(_.toMap).toList should equal(List(
-      Map("a" -> intValue(10), "b" -> fromNodeProxy(node1), "c" -> intValue(10)),
+      Map("a" -> intValue(10), "b" -> fromNodeEntity(node1), "c" -> intValue(10)),
       Map("a" -> intValue(20), "b" -> NO_VALUE , "c" -> NO_VALUE),
-      Map("a" -> intValue(30), "b" -> fromNodeProxy(node3), "c" -> intValue(30))
+      Map("a" -> intValue(30), "b" -> fromNodeEntity(node3), "c" -> intValue(30))
     ))
   }
 
@@ -171,23 +171,23 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
     val queryState = QueryStateHelper.empty
 
     val right = newMockedPipe(
-      row("b" -> fromNodeProxy(node1), "a" -> intValue(10)),
-      row("b" -> fromNodeProxy(node2), "a" -> intValue(20)),
-      row("b" -> fromNodeProxy(node3), "a" -> intValue(30)))
+      row("b" -> fromNodeEntity(node1), "a" -> intValue(10)),
+      row("b" -> fromNodeEntity(node2), "a" -> intValue(20)),
+      row("b" -> fromNodeEntity(node3), "a" -> intValue(30)))
 
     val left = newMockedPipe(
       row("b" -> NO_VALUE,  "c" -> intValue(10)),
-      row("b" -> fromNodeProxy(node2), "c" -> intValue(20)),
-      row("b" -> fromNodeProxy(node3), "c" -> intValue(30)))
+      row("b" -> fromNodeEntity(node2), "c" -> intValue(20)),
+      row("b" -> fromNodeEntity(node3), "c" -> intValue(30)))
 
     // when
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
     result.map(_.toMap).toList should equal(List(
-      Map("a" -> intValue(10), "b" -> fromNodeProxy(node1), "c" -> NO_VALUE),
-      Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> intValue(20)),
-      Map("a" -> intValue(30), "b" -> fromNodeProxy(node3), "c" -> intValue(30))
+      Map("a" -> intValue(10), "b" -> fromNodeEntity(node1), "c" -> NO_VALUE),
+      Map("a" -> intValue(20), "b" -> fromNodeEntity(node2), "c" -> intValue(20)),
+      Map("a" -> intValue(30), "b" -> fromNodeEntity(node3), "c" -> intValue(30))
     ))
   }
 
@@ -215,29 +215,29 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
     val queryState = QueryStateHelper.empty
 
     val right = newMockedPipe(
-      row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node2), "c" -> intValue(1)),
-      row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(2)),
-      row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(3)),
-      row("a" -> fromNodeProxy(node2), "b" -> fromNodeProxy(node3), "c" -> intValue(4)),
-      row("a" -> fromNodeProxy(node1), "b" -> NO_VALUE,  "c" -> intValue(5)))
+      row("a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node2), "c" -> intValue(1)),
+      row("a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node3), "c" -> intValue(2)),
+      row("a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node3), "c" -> intValue(3)),
+      row("a" -> fromNodeEntity(node2), "b" -> fromNodeEntity(node3), "c" -> intValue(4)),
+      row("a" -> fromNodeEntity(node1), "b" -> NO_VALUE,  "c" -> intValue(5)))
 
 
     val left = newMockedPipe(
-      row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node2), "d" -> intValue(1)),
-      row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "d" -> intValue(2)),
-      row("a" -> fromNodeProxy(node3), "b" -> fromNodeProxy(node3), "d" -> intValue(3)),
-      row("a" -> NO_VALUE, "b" -> fromNodeProxy(node3),  "d" -> intValue(4)))
+      row("a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node2), "d" -> intValue(1)),
+      row("a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node3), "d" -> intValue(2)),
+      row("a" -> fromNodeEntity(node3), "b" -> fromNodeEntity(node3), "d" -> intValue(3)),
+      row("a" -> NO_VALUE, "b" -> fromNodeEntity(node3),  "d" -> intValue(4)))
 
     // when
     val result = NodeRightOuterHashJoinPipe(Set("a","b"), left, right, Set("d"))().createResults(queryState)
 
     // then
     result.map(_.toMap).toList should equal(List(
-      Map("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node2), "c" -> intValue(1), "d" -> intValue(1)),
-      Map("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(2), "d" -> intValue(2)),
-      Map("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(3), "d" -> intValue(2)),
-      Map("a" -> fromNodeProxy(node2), "b" -> fromNodeProxy(node3), "c" -> intValue(4), "d" -> NO_VALUE),
-      Map("a" -> fromNodeProxy(node1), "b" -> NO_VALUE, "c" -> intValue(5), "d" -> NO_VALUE)
+      Map("a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node2), "c" -> intValue(1), "d" -> intValue(1)),
+      Map("a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node3), "c" -> intValue(2), "d" -> intValue(2)),
+      Map("a" -> fromNodeEntity(node1), "b" -> fromNodeEntity(node3), "c" -> intValue(3), "d" -> intValue(2)),
+      Map("a" -> fromNodeEntity(node2), "b" -> fromNodeEntity(node3), "c" -> intValue(4), "d" -> NO_VALUE),
+      Map("a" -> fromNodeEntity(node1), "b" -> NO_VALUE, "c" -> intValue(5), "d" -> NO_VALUE)
     ))
   }
 }

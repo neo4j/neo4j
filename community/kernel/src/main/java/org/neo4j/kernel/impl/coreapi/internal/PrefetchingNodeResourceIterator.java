@@ -60,9 +60,9 @@ abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
             close();
             throw new NoSuchElementException(  );
         }
-        Node nodeProxy = nodeFactory.make( next );
+        Node node = nodeFactory.make( next );
         next = fetchNext();
-        return nodeProxy;
+        return node;
     }
 
     @Override

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
 import org.neo4j.values.virtual.RelationshipValue
 
 class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
@@ -56,8 +56,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1),
-                              "b" -> fromNodeProxy(endNode1)))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1),
+                              "b" -> fromNodeEntity(endNode1)))
   }
 
   test("should return no relationships for types that have not been defined yet") {
@@ -70,10 +70,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
         val dir = invocationOnMock.getArgument[SemanticDirection](1)
         (nodeId, dir) match {
           case (0, SemanticDirection.INCOMING) => Iterator.empty
-          case (0, _) => Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2),
-                                  fromRelationshipProxy(relationship3), fromRelationshipProxy(selfRelationship))
+          case (0, _) => Iterator(fromRelationshipEntity(relationship1), fromRelationshipEntity(relationship2),
+                                  fromRelationshipEntity(relationship3), fromRelationshipEntity(selfRelationship))
           case (2, SemanticDirection.OUTGOING) => Iterator.empty
-          case (2, _) => Iterator(fromRelationshipProxy(relationship1))
+          case (2, _) => Iterator(fromRelationshipEntity(relationship1))
           case (id, d) => throw new AssertionError(
             s"I am only a mocked hack, not a real database. I have no clue about $id and $d")
         }
@@ -111,8 +111,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     val first :: second :: Nil = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship2), "b" -> fromNodeProxy(endNode2)))
+    first.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship2), "b" -> fromNodeEntity(endNode2)))
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
@@ -128,8 +128,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     val first :: second :: Nil = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(selfRelationship), "b" -> fromNodeProxy(startNode)))
+    first.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(selfRelationship), "b" -> fromNodeEntity(startNode)))
   }
 
   test("given empty input, should return empty output") {
@@ -189,8 +189,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // Then
     results.map(_.toMap) should contain theSameElementsAs List(
-      Map("n" -> fromNodeProxy(node1), "k" -> fromNodeProxy(node0), "r1" -> fromRelationshipProxy(rel1), "r2" -> fromRelationshipProxy(rel1)),
-      Map("n" -> fromNodeProxy(node0), "k" -> fromNodeProxy(node1), "r1" -> fromRelationshipProxy(rel0), "r2" -> fromRelationshipProxy(rel0)))
+      Map("n" -> fromNodeEntity(node1), "k" -> fromNodeEntity(node0), "r1" -> fromRelationshipEntity(rel1), "r2" -> fromRelationshipEntity(rel1)),
+      Map("n" -> fromNodeEntity(node0), "k" -> fromNodeEntity(node1), "r1" -> fromRelationshipEntity(rel0), "r2" -> fromRelationshipEntity(rel0)))
   }
 
   test("should work for bidirectional relationships") {
@@ -212,10 +212,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // Then
     results should contain theSameElementsAs List(
-      Map("n" -> fromNodeProxy(node1), "k" -> fromNodeProxy(node0), "r1" -> fromRelationshipProxy(rel0), "r2" -> fromRelationshipProxy(rel1)),
-      Map("n" -> fromNodeProxy(node1), "k" -> fromNodeProxy(node0), "r1" -> fromRelationshipProxy(rel1), "r2" -> fromRelationshipProxy(rel1)),
-      Map("n" -> fromNodeProxy(node0), "k" -> fromNodeProxy(node1), "r1" -> fromRelationshipProxy(rel1), "r2" -> fromRelationshipProxy(rel0)),
-      Map("n" -> fromNodeProxy(node0), "k" -> fromNodeProxy(node1), "r1" -> fromRelationshipProxy(rel0), "r2" -> fromRelationshipProxy(rel0)))
+      Map("n" -> fromNodeEntity(node1), "k" -> fromNodeEntity(node0), "r1" -> fromRelationshipEntity(rel0), "r2" -> fromRelationshipEntity(rel1)),
+      Map("n" -> fromNodeEntity(node1), "k" -> fromNodeEntity(node0), "r1" -> fromRelationshipEntity(rel1), "r2" -> fromRelationshipEntity(rel1)),
+      Map("n" -> fromNodeEntity(node0), "k" -> fromNodeEntity(node1), "r1" -> fromRelationshipEntity(rel1), "r2" -> fromRelationshipEntity(rel0)),
+      Map("n" -> fromNodeEntity(node0), "k" -> fromNodeEntity(node1), "r1" -> fromRelationshipEntity(rel0), "r2" -> fromRelationshipEntity(rel0)))
 
     // relationships should be cached after the first call
     verify(query).getRelationshipsForIds(any(), mockEq(SemanticDirection.BOTH), mockEq(null))
@@ -238,7 +238,7 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
       case (node, rels) =>
         when(query.getRelationshipsForIds(node.getId, direction, null)).thenAnswer(
           new Answer[Iterator[RelationshipValue]] {
-            def answer(invocation: InvocationOnMock) = rels.iterator.map(fromRelationshipProxy)
+            def answer(invocation: InvocationOnMock) = rels.iterator.map(fromRelationshipEntity)
           })
 
         when(query.nodeGetDegree(node.getId, direction, null)).thenReturn(rels.size)

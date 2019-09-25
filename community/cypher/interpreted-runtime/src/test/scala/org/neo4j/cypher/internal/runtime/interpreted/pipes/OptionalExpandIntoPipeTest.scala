@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeEntity, fromRelationshipEntity}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -62,7 +62,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
   }
 
   test("should support optional expand from a node with no relationships") {
@@ -76,7 +76,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> NO_VALUE, "b" -> fromNodeProxy(endNode1)))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> NO_VALUE, "b" -> fromNodeEntity(endNode1)))
   }
 
   test("should find null when two nodes have no shared relationships but do have some rels") {
@@ -91,7 +91,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     // then
     val single :: Nil = result
 
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> NO_VALUE, "b" -> fromNodeProxy(endNode2)))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> NO_VALUE, "b" -> fromNodeEntity(endNode2)))
   }
 
   test("should filter out relationships not matching the end node") {
@@ -106,7 +106,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship2), "b" -> fromNodeProxy(endNode2)))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship2), "b" -> fromNodeEntity(endNode2)))
   }
 
   test("should support optional expand from a node with relationships that do not match the predicates") {
@@ -121,7 +121,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val single :: Nil = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> NO_VALUE, "b" -> fromNodeProxy(endNode1)))
+    single.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> NO_VALUE, "b" -> fromNodeEntity(endNode1)))
   }
 
   test("should support expand between two nodes with multiple relationships") {
@@ -132,14 +132,14 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
         val dir = invocation.getArgument[SemanticDirection](1)
         (node, dir) match {
           case (start, SemanticDirection.OUTGOING) if start == startNode.getId =>
-            Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2),
-                     fromRelationshipProxy(relationship3), fromRelationshipProxy(selfRelationship))
+            Iterator(fromRelationshipEntity(relationship1), fromRelationshipEntity(relationship2),
+                     fromRelationshipEntity(relationship3), fromRelationshipEntity(selfRelationship))
           case (start, SemanticDirection.INCOMING) if start == endNode1.getId =>
-            Iterator(fromRelationshipProxy(relationship1))
+            Iterator(fromRelationshipEntity(relationship1))
           case (start, SemanticDirection.INCOMING) if start == endNode2.getId =>
-            Iterator(fromRelationshipProxy(relationship2))
+            Iterator(fromRelationshipEntity(relationship2))
           case (start, SemanticDirection.INCOMING) if start == endNode3.getId =>
-            Iterator(fromRelationshipProxy(relationship3))
+            Iterator(fromRelationshipEntity(relationship3))
           case _ => Iterator.empty
 
         }
@@ -155,8 +155,8 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val first :: second :: Nil = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship2), "b" -> fromNodeProxy(endNode2)))
+    first.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship2), "b" -> fromNodeEntity(endNode2)))
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
@@ -172,8 +172,8 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val first :: second :: Nil = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(selfRelationship), "b" -> fromNodeProxy(startNode)))
+    first.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(relationship1), "b" -> fromNodeEntity(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeEntity(startNode), "r" -> fromRelationshipEntity(selfRelationship), "b" -> fromNodeEntity(startNode)))
   }
 
   test("given empty input, should return empty output") {
@@ -197,7 +197,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes.empty, None)().createResults(queryState).toList
 
     // then
-    result.map(_.toMap) should equal(List(Map("a" -> fromNodeProxy(node), "r" -> NO_VALUE, "b" -> NO_VALUE)))
+    result.map(_.toMap) should equal(List(Map("a" -> fromNodeEntity(node), "r" -> NO_VALUE, "b" -> NO_VALUE)))
   }
 
   test("expand null into something should return nulled row") {
@@ -209,7 +209,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, RelationshipTypes.empty, None)().createResults(queryState).toList
 
     // then
-    result.map(_.toMap) should equal(List(Map("a" -> NO_VALUE, "r" -> NO_VALUE, "b" -> fromNodeProxy(node))))
+    result.map(_.toMap) should equal(List(Map("a" -> NO_VALUE, "r" -> NO_VALUE, "b" -> fromNodeEntity(node))))
   }
 
   test("expand null into null should return nulled row") {
@@ -241,7 +241,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     result.map(_.toMap) should equal(List(
-      Map("a" -> fromNodeProxy(startNode), "b" -> fromNodeProxy(endNode1), "r" -> fromRelationshipProxy(rel1))))
+      Map("a" -> fromNodeEntity(startNode), "b" -> fromNodeEntity(endNode1), "r" -> fromRelationshipEntity(rel1))))
   }
 
   test("should register owning pipe") {
@@ -260,7 +260,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
   private def mockRelationships(rels: Relationship*) {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {
-      def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = rels.iterator.map(fromRelationshipProxy)
+      def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = rels.iterator.map(fromRelationshipEntity)
     })
   }
 

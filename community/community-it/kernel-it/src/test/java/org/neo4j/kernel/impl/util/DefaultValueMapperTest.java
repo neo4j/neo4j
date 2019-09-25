@@ -183,12 +183,12 @@ class DefaultValueMapperTest
 
     private NodeValue[] asNodeValues( Node... nodes )
     {
-        return Arrays.stream( nodes ).map( ValueUtils::fromNodeProxy ).toArray( NodeValue[]::new );
+        return Arrays.stream( nodes ).map( ValueUtils::fromNodeEntity ).toArray( NodeValue[]::new );
     }
 
     private RelationshipValue[] asRelationshipsValues( Relationship... relationships )
     {
-        return Arrays.stream( relationships ).map( ValueUtils::fromRelationshipProxy )
+        return Arrays.stream( relationships ).map( ValueUtils::fromRelationshipEntity )
                 .toArray( RelationshipValue[]::new );
     }
 }

@@ -104,12 +104,12 @@ class PathImplTest
     @Test
     void testPathReverseNodes()
     {
-        when( transaction.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
+        when( transaction.newNodeEntity( Mockito.anyLong() ) ).thenAnswer( new NodeAnswer() );
 
-        Path path = new PathImpl.Builder( createNodeProxy( 1 ) )
-                                .push( createRelationshipProxy( 1, 2 ) )
-                                .push( createRelationshipProxy( 2, 3 ) )
-                                .build( new PathImpl.Builder( createNodeProxy( 3 ) ) );
+        Path path = new PathImpl.Builder( createNodeEntity( 1 ) )
+                                .push( createRelationshipEntity( 1, 2 ) )
+                                .push( createRelationshipEntity( 2, 3 ) )
+                                .build( new PathImpl.Builder( createNodeEntity( 3 ) ) );
 
         Iterable<Node> nodes = path.reverseNodes();
         List<Node> nodeList = Iterables.asList( nodes );
@@ -123,12 +123,12 @@ class PathImplTest
     @Test
     void testPathNodes()
     {
-        when( transaction.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
+        when( transaction.newNodeEntity( Mockito.anyLong() ) ).thenAnswer( new NodeAnswer() );
 
-        Path path = new PathImpl.Builder( createNodeProxy( 1 ) )
-                .push( createRelationshipProxy( 1, 2 ) )
-                .push( createRelationshipProxy( 2, 3 ) )
-                .build( new PathImpl.Builder( createNodeProxy( 3 ) ) );
+        Path path = new PathImpl.Builder( createNodeEntity( 1 ) )
+                .push( createRelationshipEntity( 1, 2 ) )
+                .push( createRelationshipEntity( 2, 3 ) )
+                .build( new PathImpl.Builder( createNodeEntity( 3 ) ) );
 
         Iterable<Node> nodes = path.nodes();
         List<Node> nodeList = Iterables.asList( nodes );
@@ -139,12 +139,12 @@ class PathImplTest
         assertEquals( 3, nodeList.get( 2 ).getId() );
     }
 
-    private RelationshipEntity createRelationshipProxy( int startNodeId, int endNodeId )
+    private RelationshipEntity createRelationshipEntity( int startNodeId, int endNodeId )
     {
         return new RelationshipEntity( transaction, 1L, startNodeId, 1, endNodeId );
     }
 
-    private NodeEntity createNodeProxy( int nodeId )
+    private NodeEntity createNodeEntity( int nodeId )
     {
         return new NodeEntity( transaction, nodeId );
     }
@@ -166,12 +166,12 @@ class PathImplTest
         return relationship;
     }
 
-    private class NodeProxyAnswer implements Answer<NodeEntity>
+    private class NodeAnswer implements Answer<NodeEntity>
     {
         @Override
         public NodeEntity answer( InvocationOnMock invocation )
         {
-            return createNodeProxy( ((Number) invocation.getArgument( 0 )).intValue() );
+            return createNodeEntity( ((Number) invocation.getArgument( 0 )).intValue() );
         }
     }
 }

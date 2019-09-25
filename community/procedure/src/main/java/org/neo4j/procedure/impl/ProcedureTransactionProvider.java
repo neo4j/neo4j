@@ -282,21 +282,21 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
-        public RelationshipEntity newRelationshipProxy( long id )
+        public RelationshipEntity newRelationshipEntity( long id )
         {
-            return transaction.newRelationshipProxy( id );
+            return transaction.newRelationshipEntity( id );
         }
 
         @Override
-        public RelationshipEntity newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
+        public RelationshipEntity newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId )
         {
-            return transaction.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
+            return transaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId );
         }
 
         @Override
-        public NodeEntity newNodeProxy( long nodeId )
+        public NodeEntity newNodeEntity( long nodeId )
         {
-            return transaction.newNodeProxy( nodeId );
+            return transaction.newNodeEntity( nodeId );
         }
 
         @Override

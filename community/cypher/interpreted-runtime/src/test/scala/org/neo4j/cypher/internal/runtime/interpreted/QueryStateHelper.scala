@@ -94,8 +94,8 @@ object QueryStateHelper extends MockitoSugar {
 
   private def toObject(any: AnyValue) = {
     val writer = new BaseToObjectValueWriter[RuntimeException] {
-      override protected def newNodeProxyById(id: Long): Node = ???
-      override protected def newRelationshipProxyById(id: Long): Relationship = ???
+      override protected def newNodeEntityById(id: Long): Node = ???
+      override protected def newRelationshipEntityById(id: Long): Relationship = ???
       override protected def newPoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Point = ???
     }
     any.writeTo(writer)

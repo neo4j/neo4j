@@ -142,7 +142,7 @@ public class TransactionImpl implements InternalTransaction
     {
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            return newNodeProxy( transaction.dataWrite().nodeCreate() );
+            return newNodeEntity( transaction.dataWrite().nodeCreate() );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -166,7 +166,7 @@ public class TransactionImpl implements InternalTransaction
 
             Write write = transaction.dataWrite();
             long nodeId = write.nodeCreateWithLabels( labelIds );
-            return newNodeProxy( nodeId );
+            return newNodeEntity( nodeId );
         }
         catch ( ConstraintValidationException e )
         {
@@ -199,7 +199,7 @@ public class TransactionImpl implements InternalTransaction
                 throw new NotFoundException( format( "Node %d not found", id ),
                         new EntityNotFoundException( EntityType.NODE, id ) );
             }
-            return newNodeProxy( id );
+            return newNodeEntity( id );
         }
     }
 
@@ -251,7 +251,7 @@ public class TransactionImpl implements InternalTransaction
                 throw new NotFoundException( format( "Relationship %d not found", id ),
                         new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
             }
-            return newRelationshipProxy( id );
+            return newRelationshipEntity( id );
         }
     }
 
@@ -417,7 +417,7 @@ public class TransactionImpl implements InternalTransaction
                 {
                     if ( cursor.next() )
                     {
-                        return newNodeProxy( cursor.nodeReference() );
+                        return newNodeEntity( cursor.nodeReference() );
                     }
                     else
                     {
@@ -452,7 +452,7 @@ public class TransactionImpl implements InternalTransaction
                 {
                     if ( cursor.next() )
                     {
-                        return newRelationshipProxy( cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.type(),
+                        return newRelationshipEntity( cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.type(),
                                 cursor.targetNodeReference() );
                     }
                     else
@@ -594,19 +594,19 @@ public class TransactionImpl implements InternalTransaction
     }
 
     @Override
-    public RelationshipEntity newRelationshipProxy( long id )
+    public RelationshipEntity newRelationshipEntity( long id )
     {
         return new RelationshipEntity( this, id );
     }
 
     @Override
-    public RelationshipEntity newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
+    public RelationshipEntity newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId )
     {
         return new RelationshipEntity( this, id, startNodeId, typeId, endNodeId );
     }
 
     @Override
-    public NodeEntity newNodeProxy( long nodeId )
+    public NodeEntity newNodeEntity( long nodeId )
     {
         return new NodeEntity( this, nodeId );
     }
@@ -645,7 +645,7 @@ public class TransactionImpl implements InternalTransaction
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
 
-                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeEntity );
             }
             catch ( KernelException e )
             {
@@ -672,7 +672,7 @@ public class TransactionImpl implements InternalTransaction
                 nodeCursor,
                 propertyCursor,
                 statement,
-                this::newNodeProxy,
+                this::newNodeEntity,
                 queries );
     }
 
@@ -698,7 +698,7 @@ public class TransactionImpl implements InternalTransaction
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
-                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeEntity );
             }
             catch ( KernelException e )
             {
@@ -740,7 +740,7 @@ public class TransactionImpl implements InternalTransaction
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
-        return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
+        return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeEntity );
     }
 
     private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )

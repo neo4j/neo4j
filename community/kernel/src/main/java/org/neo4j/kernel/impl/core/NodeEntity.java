@@ -569,7 +569,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         try
         {
             long relationshipId = transaction.dataWrite().relationshipCreate( nodeId, relationshipTypeId, otherNode.getId() );
-            return internalTransaction.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
+            return internalTransaction.newRelationshipEntity( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
         }
         catch ( EntityNotFoundException e )
         {
@@ -853,6 +853,6 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public Relationship relationship( long id, long startNodeId, int typeId, long endNodeId )
     {
-        return internalTransaction.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
+        return internalTransaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId );
     }
 }

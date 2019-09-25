@@ -46,7 +46,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
         this.relationship = relationship;
     }
 
-    public Relationship relationshipProxy()
+    public Relationship relationshipEntity()
     {
         return relationship;
     }
@@ -152,7 +152,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
                 start = startNode;
                 if ( start == null )
                 {
-                    start = startNode = ValueUtils.fromNodeProxy( relationship.getStartNode() );
+                    start = startNode = ValueUtils.fromNodeEntity( relationship.getStartNode() );
                 }
             }
         }
@@ -170,7 +170,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
                 end = endNode;
                 if ( end == null )
                 {
-                    end = endNode = ValueUtils.fromNodeProxy( relationship.getEndNode() );
+                    end = endNode = ValueUtils.fromNodeEntity( relationship.getEndNode() );
                 }
             }
         }
@@ -182,8 +182,8 @@ public class RelationshipEntityWrappingValue extends RelationshipValue
     {
         if ( node instanceof NodeEntityWrappingNodeValue )
         {
-            Node proxy = ((NodeEntityWrappingNodeValue) node).nodeProxy();
-            return ValueUtils.fromNodeProxy( relationship.getOtherNode( proxy ) );
+            Node proxy = ((NodeEntityWrappingNodeValue) node).nodeEntity();
+            return ValueUtils.fromNodeEntity( relationship.getOtherNode( proxy ) );
         }
         else
         {

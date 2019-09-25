@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListL
 import org.neo4j.cypher.internal.runtime.{NodeOperations, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.values.virtual.NodeValue
 
 class NodeByIdSeekPipeTest extends CypherFunSuite {
@@ -37,10 +37,10 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
   test("should seek node by id") {
     // given
     val id = 17
-    val node = nodeProxy(17)
+    val node = nodeMock(17)
     val nodeOps = mock[NodeOperations]
     when(nodeOps.getByIdIfExists(17)).thenAnswer(new Answer[Option[NodeValue]] {
-      override def answer(invocation: InvocationOnMock): Option[NodeValue] = Some(fromNodeProxy(node))
+      override def answer(invocation: InvocationOnMock): Option[NodeValue] = Some(fromNodeEntity(node))
     })
 
     val queryContext = mock[QueryContext]
@@ -51,21 +51,21 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val result = NodeByIdSeekPipe("a", SingleSeekArg(Literal(id)))().createResults(queryState)
 
     // then
-    result.map(_.getByName("a")).toList should equal(List(fromNodeProxy(node)))
+    result.map(_.getByName("a")).toList should equal(List(fromNodeEntity(node)))
   }
 
   test("should seek nodes by multiple ids") {
     // given
-    val node1 = nodeProxy(42)
-    val node2 = nodeProxy(21)
-    val node3 = nodeProxy(11)
+    val node1 = nodeMock(42)
+    val node2 = nodeMock(21)
+    val node3 = nodeMock(11)
     val nodeOps = mock[NodeOperations]
 
     when(nodeOps.getByIdIfExists(ArgumentMatchers.anyLong())).thenAnswer(new Answer[Option[NodeValue]] {
       override def answer(invocation: InvocationOnMock): Option[NodeValue] = invocation.getArgument[Long](0) match {
-        case 42 => Some(fromNodeProxy(node1))
-        case 21 => Some(fromNodeProxy(node2))
-        case 11 => Some(fromNodeProxy(node3))
+        case 42 => Some(fromNodeEntity(node1))
+        case 21 => Some(fromNodeEntity(node2))
+        case 11 => Some(fromNodeEntity(node3))
         case _ => fail()
       }
     })
@@ -79,10 +79,10 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))().createResults(queryState)
 
     // then
-    result.map(_.getByName("a")).toList should equal(List(fromNodeProxy(node1), fromNodeProxy(node2), fromNodeProxy(node3)))
+    result.map(_.getByName("a")).toList should equal(List(fromNodeEntity(node1), fromNodeEntity(node2), fromNodeEntity(node3)))
   }
 
-  private def nodeProxy(id: Long) = {
+  private def nodeMock(id: Long) = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
     node

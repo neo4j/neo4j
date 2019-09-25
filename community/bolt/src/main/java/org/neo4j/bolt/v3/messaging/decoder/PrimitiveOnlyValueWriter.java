@@ -69,13 +69,13 @@ public class PrimitiveOnlyValueWriter extends BaseToObjectValueWriter<RuntimeExc
     }
 
     @Override
-    protected Node newNodeProxyById( long id )
+    protected Node newNodeEntityById( long id )
     {
         throw new UnsupportedOperationException( "INIT message metadata should not contain nodes" );
     }
 
     @Override
-    protected Relationship newRelationshipProxyById( long id )
+    protected Relationship newRelationshipEntityById( long id )
     {
         throw new UnsupportedOperationException( "INIT message metadata should not contain relationships" );
     }

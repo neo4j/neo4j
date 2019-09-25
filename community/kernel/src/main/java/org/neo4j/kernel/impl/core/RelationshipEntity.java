@@ -166,26 +166,26 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     public Node[] getNodes()
     {
         return new Node[]{
-                internalTransaction.newNodeProxy( sourceId() ),
-                internalTransaction.newNodeProxy( targetId() )};
+                internalTransaction.newNodeEntity( sourceId() ),
+                internalTransaction.newNodeEntity( targetId() )};
     }
 
     @Override
     public Node getOtherNode( Node node )
     {
-        return internalTransaction.newNodeProxy( getOtherNodeId( node.getId() ) );
+        return internalTransaction.newNodeEntity( getOtherNodeId( node.getId() ) );
     }
 
     @Override
     public Node getStartNode()
     {
-        return internalTransaction.newNodeProxy( sourceId() );
+        return internalTransaction.newNodeEntity( sourceId() );
     }
 
     @Override
     public Node getEndNode()
     {
-        return internalTransaction.newNodeProxy( targetId() );
+        return internalTransaction.newNodeEntity( targetId() );
     }
 
     @Override
