@@ -268,18 +268,18 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     r
   } )
 
-  def relate(x: ((String, String), String)): Relationship = inTestTx {
+  def relate(x: ((String, String), String)): Relationship = graph.withTx( tx => {
     x match {
       case ((from, relType), to) => {
-        val f = node(from)
-        val t = node(to)
+        val f = tx.getNodeById(node(tx, from).getId)
+        val t = tx.getNodeById(node(tx, to).getId)
         f.createRelationshipTo(t, RelationshipType.withName(relType))
       }
     }
-  }
+  } )
 
-  def node(name: String): Node = {
-    nodes.find(_.getProperty("name") == name).get
+  def node( transaction: Transaction, name: String): Node = {
+    nodes.find(n => transaction.getNodeById(n.getId).getProperty("name") == name).get
   }
 
   def relType(name: String): RelationshipType = graph.withTx( tx => tx.getAllRelationshipTypes.asScala.find(_.name() == name).get )

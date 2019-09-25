@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Entity, Node, Result}
+import org.neo4j.graphdb.{Entity, Node, Relationship, Result}
 import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -31,10 +31,13 @@ abstract class ExecutionEngineFunSuite
 
   case class haveProperty(propName: String) extends Matcher[Entity] {
     def apply(left: Entity): MatchResult = {
-
-      val result = graph.inTx {
-        left.hasProperty(propName)
-      }
+      val result = graph.withTx( tx => {
+        val entity = left match {
+          case _: Node => tx.getNodeById(left.getId)
+          case _: Relationship => tx.getRelationshipById(left.getId)
+        }
+        entity.hasProperty(propName)
+      } )
 
       MatchResult(
         result,
@@ -45,7 +48,13 @@ abstract class ExecutionEngineFunSuite
 
     def withValue(value: Any) = this and new Matcher[Entity] {
       def apply(left: Entity): MatchResult = {
-        val propValue = graph.inTx(left.getProperty(propName))
+        val propValue = graph.withTx( tx => {
+          val entity = left match {
+            case _: Node => tx.getNodeById(left.getId)
+            case _: Relationship => tx.getRelationshipById(left.getId)
+          }
+          entity.getProperty(propName)
+        } )
         val result = propValue == value
         MatchResult(
           result,
