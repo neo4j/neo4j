@@ -225,33 +225,15 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
 
         IndexDescriptor that = (IndexDescriptor) o;
 
-        if ( id != that.id )
-        {
-            return false;
-        }
-        if ( isUnique != that.isUnique )
-        {
-            return false;
-        }
-        if ( !name.equals( that.name ) )
-        {
-            return false;
-        }
-        if ( !schema.equals( that.schema ) )
-        {
-            return false;
-        }
-        return indexProvider.equals( that.indexProvider );
+        return isUnique == that.isUnique && schema.equals( that.schema );
     }
 
     @Override
     public int hashCode()
     {
-        int result = (int) (id ^ (id >>> 32));
-        result = 31 * result + name.hashCode();
+        int result = 1;
         result = 31 * result + schema.hashCode();
         result = 31 * result + (isUnique ? 1 : 0);
-        result = 31 * result + indexProvider.hashCode();
         return result;
     }
 

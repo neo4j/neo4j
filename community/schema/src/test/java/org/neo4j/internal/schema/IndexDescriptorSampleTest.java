@@ -101,7 +101,7 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
 
         IndexDescriptor rule4 = descriptor.withName( "b" ).materialise( RULE_ID );
         IndexDescriptor rule5 = descriptor.withName( "a" ).materialise( RULE_ID_2 );
-        assertInequality( rule1, rule4 );
-        assertInequality( rule1, rule5 );
+        assertEquality( rule1, rule4 );
+        assertEquality( rule1, rule5 );
     }
 }
