@@ -571,9 +571,9 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "entirely in memory. The only drawback of this setting is that longer checkpoint times " +
                   "may lead to slightly longer recovery times in case of a database or system crash. " +
                   "A lower number means lower IO pressure, and consequently longer checkpoint times. " +
-                  "The configuration can also be commented out to remove the limitation entirely, and " +
-                  "let the checkpointer flush data as fast as the hardware will go. " +
-                  "Set this to -1 to disable the IOPS limit." )
+                  "Set this to -1 to disable the IOPS limit and remove the limitation entirely; " +
+                  "this will let the checkpointer flush data as fast as the hardware will go. " +
+                  "Removing the setting, or commenting it out, will set the default value of 300." )
     public static final Setting<Integer> check_point_iops_limit = setting( "dbms.checkpoint.iops.limit", INTEGER, "300" );
 
     // Auto Indexing
