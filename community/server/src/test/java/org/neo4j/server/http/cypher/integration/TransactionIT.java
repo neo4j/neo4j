@@ -22,7 +22,6 @@ package org.neo4j.server.http.cypher.integration;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -74,8 +73,6 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
-//TODO misha
-@Ignore
 public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
 {
     private ExecutorService executors;

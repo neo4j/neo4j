@@ -44,6 +44,7 @@ import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
 
@@ -230,14 +231,20 @@ public class Neo4jJsonCodec extends ObjectMapper
             TransactionStateChecker txStateChecker )
             throws IOException
     {
+        var kti = container.getBridge().getKernelTransactionBoundToThisThread( true, container.getDb().databaseId() );
         if ( value instanceof Node )
         {
-            writeNodeOrRelationship( out, value, txStateChecker.isNodeDeletedInCurrentTx( value.getId() ) );
+            var entity = kti instanceof KernelTransactionImplementation ?
+                         ((KernelTransactionImplementation) kti).internalTransaction().getNodeById( value.getId() )
+                        : value;
+            writeNodeOrRelationship( out, entity, txStateChecker.isNodeDeletedInCurrentTx( value.getId() ) );
         }
         else if ( value instanceof Relationship )
         {
-            writeNodeOrRelationship( out, value,
-                    txStateChecker.isRelationshipDeletedInCurrentTx( value.getId() ) );
+            var entity = kti instanceof KernelTransactionImplementation ?
+                         ((KernelTransactionImplementation) kti).internalTransaction().getRelationshipById( value.getId() )
+                                                                        : value;
+            writeNodeOrRelationship( out, entity, txStateChecker.isRelationshipDeletedInCurrentTx( value.getId() ) );
         }
         else
         {
