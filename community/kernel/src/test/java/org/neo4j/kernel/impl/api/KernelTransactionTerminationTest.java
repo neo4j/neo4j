@@ -25,8 +25,7 @@ import org.junit.jupiter.api.Timeout;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -64,6 +63,8 @@ import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
 
 import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,6 +85,7 @@ class KernelTransactionTerminationTest
     void transactionCantBeTerminatedAfterItIsClosed() throws Throwable
     {
         runTwoThreads(
+            () -> {},
             tx -> tx.markForTermination( Status.Transaction.TransactionMarkedAsFailed ),
             tx ->
             {
@@ -99,8 +101,15 @@ class KernelTransactionTerminationTest
     {
         BlockingQueue<Boolean> committerToTerminator = new LinkedBlockingQueue<>( 1 );
         BlockingQueue<TerminatorAction> terminatorToCommitter = new LinkedBlockingQueue<>( 1 );
+        AtomicBoolean t1Done = new AtomicBoolean();
 
         runTwoThreads(
+            () ->
+            {
+                committerToTerminator.clear();
+                terminatorToCommitter.clear();
+                t1Done.set( false );
+            },
             tx ->
             {
                 Boolean terminatorShouldAct = committerToTerminator.poll();
@@ -110,17 +119,21 @@ class KernelTransactionTerminationTest
                     action.executeOn( tx );
                     assertTrue( terminatorToCommitter.add( action ) );
                 }
+                t1Done.set( true );
             },
             tx ->
             {
-                tx.initialize();
                 CommitterAction committerAction = CommitterAction.random();
                 if ( committerToTerminator.offer( true ) )
                 {
-                    TerminatorAction terminatorAction;
+                    TerminatorAction terminatorAction = null;
                     try
                     {
-                        terminatorAction = terminatorToCommitter.poll( 1, TimeUnit.SECONDS );
+                        // This loop optimizes the wait instead of waiting potentially a long time for T1 when it would lose the race and not do anything
+                        while ( !t1Done.get() && terminatorAction == null )
+                        {
+                            terminatorAction = terminatorToCommitter.poll( 10, MILLISECONDS );
+                        }
                     }
                     catch ( InterruptedException e )
                     {
@@ -136,29 +149,24 @@ class KernelTransactionTerminationTest
         );
     }
 
-    private void runTwoThreads( Consumer<TestKernelTransaction> thread1Action,
+    private void runTwoThreads(
+            Runnable cleaner,
+            Consumer<TestKernelTransaction> thread1Action,
             Consumer<TestKernelTransaction> thread2Action ) throws Throwable
     {
-        TestKernelTransaction tx = TestKernelTransaction.create().initialize();
-        AtomicLong t1Count = new AtomicLong();
-        AtomicLong t2Count = new AtomicLong();
-        long endTime = currentTimeMillis() + TEST_RUN_TIME_SECS * 1000;
+        TestKernelTransaction tx = TestKernelTransaction.create();
+        long endTime = currentTimeMillis() + SECONDS.toMillis( TEST_RUN_TIME_SECS );
         int limit = 20_000;
-
-        Race race = new Race();
-        race.withEndCondition(
-                () -> ((t1Count.get() >= limit) && (t2Count.get() >= limit)) || (currentTimeMillis() >= endTime) );
-        race.addContestant( () ->
+        for ( int i = 0; i < limit && currentTimeMillis() < endTime; i++ )
         {
-            thread1Action.accept( tx );
-            t1Count.incrementAndGet();
-        } );
-        race.addContestant( () ->
-        {
-            thread2Action.accept( tx );
-            t2Count.incrementAndGet();
-        } );
-        race.go();
+            cleaner.run();
+            tx.initialize();
+            Race race = new Race().withRandomStartDelays( 0, 10 );
+            race.withEndCondition( () -> currentTimeMillis() >= endTime );
+            race.addContestant( () -> thread1Action.accept( tx ), 1 );
+            race.addContestant( () -> thread2Action.accept( tx ), 1 );
+            race.go();
+        }
     }
 
     private static void close( KernelTransaction tx )
