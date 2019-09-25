@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.scheduler;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -49,10 +50,10 @@ import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -401,6 +402,7 @@ class CentralJobSchedulerTest
         assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups().map( ag -> ag.group ).collect( toList() ) );
     }
 
+    @Timeout( value = 20, unit = SECONDS )
     @Test
     void shouldProfileGroup() throws InterruptedException
     {
@@ -409,16 +411,20 @@ class CentralJobSchedulerTest
         scheduler.schedule( Group.CHECKPOINT, checkpointLatch::await );
         Profiler profiler = Profiler.profiler();
         scheduler.profileGroup( Group.CHECKPOINT, profiler );
-        Thread.sleep( 1000 );
+
+        String printedProfile;
+        do
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream out = new PrintStream( baos );
+            profiler.printProfile( out, "Test Title" );
+            out.flush();
+            printedProfile = baos.toString();
+        }
+        while ( !printedProfile.contains( "BinaryLatch.await" ) );
+
         checkpointLatch.release();
         profiler.finish();
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( baos );
-        profiler.printProfile( out, "Test Title" );
-        out.flush();
-
-        assertThat( baos.toString(), containsString( "BinaryLatch.await" ) );
     }
 
     private void awaitFirstInvocation() throws InterruptedException
