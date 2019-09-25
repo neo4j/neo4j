@@ -37,8 +37,11 @@ import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.collection.IsIn.isIn;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.api.exceptions.Status.Security.CredentialsExpired;
+import static org.neo4j.kernel.api.exceptions.Status.Security.Forbidden;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class CommunityServerTestBase extends ExclusiveServerTestBase
@@ -62,6 +65,7 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         server.start();
     }
 
+    @SuppressWarnings( "SameParameterValue" )
     void startServer( boolean authEnabled, String accessControlAllowOrigin ) throws IOException
     {
         server = CommunityServerBuilder.serverOnRandomPorts()
@@ -88,12 +92,12 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
 
     protected void assertPermissionErrorAtDataAccess( HTTP.Response response ) throws JsonParseException
     {
-        assertPermissionError( response, Collections.singletonList( "Neo.DatabaseError.Transaction.TransactionStartFailed" ) );
+        assertPermissionError( response, Collections.singletonList( CredentialsExpired.code().serialize() ) );
     }
 
     void assertPermissionErrorAtSystemAccess( HTTP.Response response ) throws JsonParseException
     {
-        List<String> possibleErrors = Arrays.asList( "Neo.ClientError.Security.CredentialsExpired", "Neo.ClientError.Security.Forbidden" );
+        List<String> possibleErrors = Arrays.asList( CredentialsExpired.code().serialize(), Forbidden.code().serialize() );
         assertPermissionError( response, possibleErrors );
     }
 
@@ -103,7 +107,7 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         assertThat( response.get( "errors" ).size(), equalTo( 1 ) );
 
         JsonNode firstError = response.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), isIn( errors ) );
+        assertThat( firstError.get( "code" ).asText(), is(in( errors ) ) );
 
         assertThat( firstError.get( "message" ).asText(), startsWith( "Permission denied." ) );
     }
