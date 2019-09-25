@@ -40,7 +40,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory;
-import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue;
+import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipProxyWrappingValue;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -630,9 +630,9 @@ public abstract class CompiledConversionUtils
             MapValue map = (MapValue) object;
             return map.get( key );
         }
-        if ( object instanceof NodeProxyWrappingNodeValue )
+        if ( object instanceof NodeEntityWrappingNodeValue )
         {
-            return Values.of( ((NodeProxyWrappingNodeValue) object).nodeProxy().getProperty( key ) );
+            return Values.of( ((NodeEntityWrappingNodeValue) object).nodeProxy().getProperty( key ) );
         }
         if ( object instanceof RelationshipProxyWrappingValue )
         {

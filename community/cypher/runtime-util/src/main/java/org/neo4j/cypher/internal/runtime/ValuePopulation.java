@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
-import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue;
+import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipProxyWrappingValue;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
@@ -37,9 +37,9 @@ public final class ValuePopulation
 
     public static AnyValue populate( AnyValue value )
     {
-        if ( value instanceof NodeProxyWrappingNodeValue )
+        if ( value instanceof NodeEntityWrappingNodeValue )
         {
-            ((NodeProxyWrappingNodeValue) value).populate();
+            ((NodeEntityWrappingNodeValue) value).populate();
         }
         else if ( value instanceof RelationshipProxyWrappingValue )
         {
@@ -74,9 +74,9 @@ public final class ValuePopulation
 
     public static NodeValue populate( NodeValue value )
     {
-        if ( value instanceof NodeProxyWrappingNodeValue )
+        if ( value instanceof NodeEntityWrappingNodeValue )
         {
-            ((NodeProxyWrappingNodeValue) value).populate();
+            ((NodeEntityWrappingNodeValue) value).populate();
         }
         return value;
     }

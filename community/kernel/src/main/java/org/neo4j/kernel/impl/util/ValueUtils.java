@@ -264,7 +264,7 @@ public final class ValueUtils
 
     public static NodeValue fromNodeProxy( Node node )
     {
-        return new NodeProxyWrappingNodeValue( node );
+        return new NodeEntityWrappingNodeValue( node );
     }
 
     public static RelationshipValue fromRelationshipProxy( Relationship relationship )

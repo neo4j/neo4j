@@ -51,9 +51,9 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     @Override
     public Node mapNode( VirtualNodeValue value )
     {
-        if ( value instanceof NodeProxyWrappingNodeValue )
+        if ( value instanceof NodeEntityWrappingNodeValue )
         { // this is the back door through which "virtual nodes" slip
-            return ((NodeProxyWrappingNodeValue) value).nodeProxy();
+            return ((NodeEntityWrappingNodeValue) value).nodeProxy();
         }
         return new NodeEntity( transaction, value.id() );
     }

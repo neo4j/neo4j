@@ -24,10 +24,11 @@ import java.util.Collections
 import org.hamcrest.CoreMatchers.any
 import org.hamcrest.Matchers.containsString
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.logging.AssertableLogProvider.inLog
+import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RowsMatcher, RuntimeTestSuite}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ArithmeticException
-import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
-import org.neo4j.logging.AssertableLogProvider.inLog
+import org.neo4j.kernel.impl.util.{NodeEntityWrappingNodeValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{NodeReference, RelationshipReference}
 
@@ -159,7 +160,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
       rows.forall(row => row.forall {
         case _: NodeReference => false
-        case n: NodeProxyWrappingNodeValue => n.isPopulated
+        case n: NodeEntityWrappingNodeValue => n.isPopulated
         case _ : RelationshipReference => false
         case r: RelationshipProxyWrappingValue => r.isPopulated
         case _ => true

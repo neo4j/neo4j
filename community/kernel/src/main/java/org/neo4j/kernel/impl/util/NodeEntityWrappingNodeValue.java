@@ -33,13 +33,13 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class NodeProxyWrappingNodeValue extends NodeValue
+public class NodeEntityWrappingNodeValue extends NodeValue
 {
     private final Node node;
     private volatile TextArray labels;
     private volatile MapValue properties;
 
-    NodeProxyWrappingNodeValue( Node node )
+    NodeEntityWrappingNodeValue( Node node )
     {
         super( node.getId() );
         this.node = node;

@@ -180,9 +180,9 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     @Override
     public NodeValue otherNode( VirtualNodeValue node )
     {
-        if ( node instanceof NodeProxyWrappingNodeValue )
+        if ( node instanceof NodeEntityWrappingNodeValue )
         {
-            Node proxy = ((NodeProxyWrappingNodeValue) node).nodeProxy();
+            Node proxy = ((NodeEntityWrappingNodeValue) node).nodeProxy();
             return ValueUtils.fromNodeProxy( relationship.getOtherNode( proxy ) );
         }
         else
