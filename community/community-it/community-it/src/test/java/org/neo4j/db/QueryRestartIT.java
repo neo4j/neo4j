@@ -71,6 +71,7 @@ class QueryRestartIT
         checkpoint();
 
         testCursorContext = TestVersionContext.testCursorContext( managementService, DEFAULT_DATABASE_NAME );
+        testCursorContext.onlyCareAboutCurrentThread();
         testContextSupplier.setCursorContext( testCursorContext );
     }
 

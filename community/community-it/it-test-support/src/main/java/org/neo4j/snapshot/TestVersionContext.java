@@ -21,10 +21,12 @@ package org.neo4j.snapshot;
 
 import java.io.PrintStream;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -40,6 +42,7 @@ public class TestVersionContext extends TransactionVersionContext
     private boolean stayDirty;
     private Exception lastMarkAsDirtyCall;
     private Exception additionalAttemptsCall;
+    private volatile Predicate<Thread> threadFilter = Predicates.alwaysTrue();
 
     private TestVersionContext( LongSupplier transactionIdSupplier )
     {
@@ -55,6 +58,12 @@ public class TestVersionContext extends TransactionVersionContext
     @Override
     public void markAsDirty()
     {
+        if ( !threadFilter.test( Thread.currentThread() ) )
+        {
+            // From some other background thread, ignore this
+            return;
+        }
+
         super.markAsDirty();
         if ( !stayDirty )
         {
@@ -109,6 +118,12 @@ public class TestVersionContext extends TransactionVersionContext
     public void stayDirty( boolean stayDirty )
     {
         this.stayDirty = stayDirty;
+    }
+
+    public void onlyCareAboutCurrentThread()
+    {
+        Thread threadToFilterOn = Thread.currentThread();
+        threadFilter = t -> t.equals( threadToFilterOn );
     }
 
     public static TestVersionContext testCursorContext( DatabaseManagementService managementService,  String databaseName )
