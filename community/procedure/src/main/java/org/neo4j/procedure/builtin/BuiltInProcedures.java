@@ -459,7 +459,7 @@ public class BuiltInProcedures
             "YIELD index, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
-            @Name( "indexName" ) String constraintName,
+            @Name( "constraintName" ) String constraintName,
             @Name( "index" ) String index,
             @Name( "providerName" ) String providerName )
             throws ProcedureException

@@ -96,11 +96,14 @@ public interface ProcedureITBase
                         "WRITE", false ), proc( "db.createRelationshipType", "(newRelationshipType :: STRING?) :: VOID", "Create a RelationshipType",
                         stringArray( "editor", "publisher", "architect", "admin" ), "WRITE", false ),
                 proc( "dbms.clearQueryCaches", "() :: (value :: STRING?)", "Clears all query caches.", stringArray( "admin" ), "DBMS" ),
-                proc( "db.createIndex", "(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                proc( "db.createIndex",
+                        "(indexName :: STRING?, index :: STRING?, providerName :: STRING?) :: (name :: STRING?, index :: STRING?, providerName :: STRING?, " +
+                                "status :: STRING?)",
                         "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
                                 "YIELD index, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.createUniquePropertyConstraint",
-                        "(index :: STRING?, providerName :: STRING?) :: " + "(index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                        "(constraintName :: STRING?, index :: STRING?, providerName :: STRING?) :: " +
+                                "(name :: STRING?, index :: STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a unique property constraint with index backed by specified index provider " +
                                 "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
                                 "YIELD index, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),

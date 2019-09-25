@@ -412,11 +412,11 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void checkCommunityProceduresThatAreNotAllowedOnSystem()
     {
         List<String> queries = List.of(
-                "CALL db.createIndex(':Person(name)', 'lucene+native-2.0')",
+                "CALL db.createIndex('MyIndex', ':Person(name)', 'lucene+native-2.0')",
                 "CALL db.createLabel('Foo')",
                 "CALL db.createProperty('bar')",
                 "CALL db.createRelationshipType('BAZ')",
-                "CALL db.createUniquePropertyConstraint(':Person(name)', 'lucene+native-2.0')",
+                "CALL db.createUniquePropertyConstraint('MyConstraint', ':Person(name)', 'lucene+native-2.0')",
                 "CALL db.index.fulltext.createNodeIndex('businessNameIndex', ['Business'],['name'])",
                 "CALL db.index.fulltext.createRelationshipIndex('businessNameIndex', ['Business'],['name'])",
                 "CALL dbms.setTXMetaData( { User: 'Sascha' } )",
