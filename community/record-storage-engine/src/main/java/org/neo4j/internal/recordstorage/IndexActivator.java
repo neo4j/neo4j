@@ -51,11 +51,11 @@ public class IndexActivator implements AutoCloseable
     {
         if ( indexesToActivate != null )
         {
-            for ( IndexDescriptor indexId : indexesToActivate )
+            for ( IndexDescriptor index : indexesToActivate )
             {
                 try
                 {
-                    listener.activateIndex( indexId );
+                    listener.activateIndex( index );
                 }
                 catch ( KernelException e )
                 {

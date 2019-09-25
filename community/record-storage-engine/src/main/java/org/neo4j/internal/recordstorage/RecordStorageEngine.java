@@ -279,6 +279,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         // Have these command appliers as separate try-with-resource to have better control over
         // point between closing this and the locks above
+        CommandsToApply initialBatch = batch;
         try ( IndexActivator indexActivator = new IndexActivator( indexUpdateListener );
               LockGroup locks = new LockGroup();
               BatchTransactionApplier batchApplier = applier( mode, indexActivator ) )
@@ -294,8 +295,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
         catch ( Throwable cause )
         {
-            TransactionApplyKernelException kernelException =
-                    new TransactionApplyKernelException( cause, "Failed to apply transaction: %s", batch );
+            TransactionApplyKernelException kernelException = new TransactionApplyKernelException(
+                    cause, "Failed to apply transaction: %s", batch == null ? initialBatch : batch );
             databaseHealth.panic( kernelException );
             throw kernelException;
         }

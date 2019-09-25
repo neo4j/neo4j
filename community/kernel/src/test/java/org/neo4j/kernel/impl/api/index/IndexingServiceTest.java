@@ -1058,7 +1058,7 @@ class IndexingServiceTest
     }
 
     @Test
-    void constraintIndexesWithoutConstraintsMustGetFailedProxies() throws Exception
+    void constraintIndexesWithoutConstraintsMustGetPopulatingProxies() throws Exception
     {
         // given
         long indexId = 1;
@@ -1070,7 +1070,7 @@ class IndexingServiceTest
         life.start();
 
         // then
-        assertEquals( FAILED, indexing.getIndexProxy( index ).getState() );
+        assertEquals( POPULATING, indexing.getIndexProxy( index ).getState() );
     }
 
     @Test

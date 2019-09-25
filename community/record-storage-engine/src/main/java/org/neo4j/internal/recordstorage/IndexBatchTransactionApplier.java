@@ -245,7 +245,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     if ( indexRule.isUnique() )
                     {
                         // Register activations into the IndexActivator instead of IndexingService to avoid deadlock
-                        // that could insue for applying batches of transactions where a previous transaction in the same
+                        // that could ensue for applying batches of transactions where a previous transaction in the same
                         // batch acquires a low-level commit lock that prevents the very same index population to complete.
                         indexActivator.activateIndex( indexRule );
                     }
