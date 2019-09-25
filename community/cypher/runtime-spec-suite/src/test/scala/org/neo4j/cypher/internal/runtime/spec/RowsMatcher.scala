@@ -34,10 +34,11 @@ object Rows {
 
   def pretty(a: IndexedSeq[Array[AnyValue]]): String = {
     val sb = new StringBuilder
-    if (a.isEmpty)
+    if (a.isEmpty) {
       sb ++= "<NO ROWS>"
-    else
+    } else {
      sb ++= s"<${a.size} rows>\n"
+    }
 
     // There is a bug in IntelliJ that falsely displays a test as green if there is too much output in certain cases. (It is still red in maven though)
     // This .take(1000) is too avoid that situation
