@@ -330,8 +330,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().indexDrop( index );
             SchemaReadCore schemaReadAfter = transaction.schemaRead().snapshot();
 
-            assertThat( schemaReadBefore.index( labelDescriptor( label, prop2 ) ), equalTo( NO_INDEX ) );
-            assertThat( schemaReadAfter.index( labelDescriptor( label, prop2 ) ), equalTo( NO_INDEX ) );
+            assertFalse( schemaReadBefore.index( labelDescriptor( label, prop2 ) ).hasNext() );
+            assertFalse( schemaReadAfter.index( labelDescriptor( label, prop2 ) ).hasNext() );
         }
     }
 
