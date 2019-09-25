@@ -465,6 +465,11 @@
                     thing to do.
                   </justification>
                 </item>
+                <item>
+                  <code>java.annotation.attributeValueChanged</code>
+                  <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_iops_limit</new>
+                  <justification>Updating documentation</justification>
+                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
