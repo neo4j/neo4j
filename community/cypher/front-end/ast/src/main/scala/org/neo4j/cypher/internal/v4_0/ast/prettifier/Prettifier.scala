@@ -279,6 +279,7 @@ case class Prettifier(expr: ExpressionStringifier) {
     case u: Unwind => asString(u)
     case u: UnresolvedCall => asString(u)
     case s: SetClause => asString(s)
+    case r: Remove => asString(r)
     case d: Delete => asString(d)
     case m: Merge => asString(m)
     case l: LoadCSV => asString(l)
@@ -403,6 +404,15 @@ case class Prettifier(expr: ExpressionStringifier) {
       case _ => s.asCanonicalStringVal
     }
     s"SET ${items.mkString(", ")}"
+  }
+
+  private def asString(r: Remove): String = {
+    val items = r.items.map {
+      case RemovePropertyItem(prop) => s"${expr(prop)}"
+      case RemoveLabelItem(variable, labels) => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
+      case _ => r.asCanonicalStringVal
+    }
+    s"REMOVE ${items.mkString(", ")}"
   }
 
   private def asString(v: LoadCSV): String = {
