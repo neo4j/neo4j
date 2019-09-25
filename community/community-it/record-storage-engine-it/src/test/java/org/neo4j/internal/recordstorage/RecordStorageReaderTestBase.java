@@ -169,8 +169,10 @@ public abstract class RecordStorageReaderTestBase
     {
         IndexDescriptor index = createUniqueIndex( label, propertyKey );
         TxState txState = new TxState();
-        UniquenessConstraintDescriptor constraint =
-                ConstraintDescriptorFactory.uniqueForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ).withName( index.getName() );
+        int labelId = getOrCreateLabelId( label );
+        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
+        constraint = constraint.withName( index.getName() ).withOwnedIndexId( index.getId() );
         txState.constraintDoAdd( constraint );
         apply( txState );
     }
@@ -179,8 +181,10 @@ public abstract class RecordStorageReaderTestBase
     {
         IndexDescriptor index = createUniqueIndex( label, propertyKey );
         TxState txState = new TxState();
-        NodeKeyConstraintDescriptor constraint =
-                ConstraintDescriptorFactory.nodeKeyForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ).withName( index.getName() );
+        int labelId = getOrCreateLabelId( label );
+        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyId );
+        constraint = constraint.withName( index.getName() ).withOwnedIndexId( index.getId() );
         txState.constraintDoAdd( constraint );
         apply( txState );
     }
