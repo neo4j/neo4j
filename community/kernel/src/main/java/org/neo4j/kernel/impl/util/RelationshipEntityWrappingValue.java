@@ -32,7 +32,7 @@ import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class RelationshipProxyWrappingValue extends RelationshipValue
+public class RelationshipEntityWrappingValue extends RelationshipValue
 {
     private final Relationship relationship;
     private volatile TextValue type;
@@ -40,7 +40,7 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     private volatile NodeValue startNode;
     private volatile NodeValue endNode;
 
-    RelationshipProxyWrappingValue( Relationship relationship )
+    RelationshipEntityWrappingValue( Relationship relationship )
     {
         super( relationship.getId() );
         this.relationship = relationship;

@@ -269,7 +269,7 @@ public final class ValueUtils
 
     public static RelationshipValue fromRelationshipProxy( Relationship relationship )
     {
-        return new RelationshipProxyWrappingValue( relationship );
+        return new RelationshipEntityWrappingValue( relationship );
     }
 
     public static PathValue fromPath( Path path )

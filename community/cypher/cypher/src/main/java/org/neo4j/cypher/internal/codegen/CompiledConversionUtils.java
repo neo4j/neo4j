@@ -41,7 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
-import org.neo4j.kernel.impl.util.RelationshipProxyWrappingValue;
+import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Equality;
@@ -634,9 +634,9 @@ public abstract class CompiledConversionUtils
         {
             return Values.of( ((NodeEntityWrappingNodeValue) object).nodeProxy().getProperty( key ) );
         }
-        if ( object instanceof RelationshipProxyWrappingValue )
+        if ( object instanceof RelationshipEntityWrappingValue )
         {
-            return Values.of( ((RelationshipProxyWrappingValue) object).relationshipProxy().getProperty( key ) );
+            return Values.of( ((RelationshipEntityWrappingValue) object).relationshipProxy().getProperty( key ) );
         }
         if ( object instanceof Entity ) // Entity that is not wrapped by an AnyValue
         {

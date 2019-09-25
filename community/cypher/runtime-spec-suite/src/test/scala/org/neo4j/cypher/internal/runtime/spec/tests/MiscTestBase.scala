@@ -28,7 +28,7 @@ import org.neo4j.logging.AssertableLogProvider.inLog
 import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RowsMatcher, RuntimeTestSuite}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ArithmeticException
-import org.neo4j.kernel.impl.util.{NodeEntityWrappingNodeValue, RelationshipProxyWrappingValue}
+import org.neo4j.kernel.impl.util.{NodeEntityWrappingNodeValue, RelationshipEntityWrappingValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{NodeReference, RelationshipReference}
 
@@ -162,7 +162,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
         case _: NodeReference => false
         case n: NodeEntityWrappingNodeValue => n.isPopulated
         case _ : RelationshipReference => false
-        case r: RelationshipProxyWrappingValue => r.isPopulated
+        case r: RelationshipEntityWrappingValue => r.isPopulated
         case _ => true
       })
     }

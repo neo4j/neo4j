@@ -61,9 +61,9 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     @Override
     public Relationship mapRelationship( VirtualRelationshipValue value )
     {
-        if ( value instanceof RelationshipProxyWrappingValue )
+        if ( value instanceof RelationshipEntityWrappingValue )
         { // this is the back door through which "virtual relationships" slip
-            return ((RelationshipProxyWrappingValue) value).relationshipProxy();
+            return ((RelationshipEntityWrappingValue) value).relationshipProxy();
         }
         return new RelationshipEntity( transaction, value.id() );
     }
