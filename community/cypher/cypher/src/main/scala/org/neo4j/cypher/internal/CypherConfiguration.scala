@@ -57,7 +57,7 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.morsel_scheduler_trace_filename).toFile,
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
       CypherOperatorEngineOption(config.get(GraphDatabaseSettings.cypher_operator_engine).toString),
-      config.get(GraphDatabaseSettings.cypher_morsel_use_interpreted_pipes),
+      CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseSettings.cypher_morsel_use_interpreted_pipes).toString),
       new ConfigMemoryTrackingController(config)
     )
   }
@@ -124,7 +124,7 @@ case class CypherConfiguration(version: CypherVersion,
                                schedulerTracingFile: File,
                                recompilationLimit: Int,
                                operatorEngine: CypherOperatorEngineOption,
-                               useInterpretedPipes: CypherMorselUseInterpretedPipes,
+                               interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
                                memoryTrackingController: MemoryTrackingController) {
 
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
@@ -134,7 +134,7 @@ case class CypherConfiguration(version: CypherVersion,
       morselSizeBig = morselSizeBig,
       schedulerTracing = toSchedulerTracingConfiguration(doSchedulerTracing, schedulerTracingFile),
       lenientCreateRelationship = lenientCreateRelationship,
-      useInterpretedPipes = useInterpretedPipes,
+      interpretedPipesFallback = interpretedPipesFallback,
       memoryTrackingController = memoryTrackingController
     )
 
