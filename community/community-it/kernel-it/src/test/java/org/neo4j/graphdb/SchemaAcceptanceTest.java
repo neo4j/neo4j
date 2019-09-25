@@ -412,7 +412,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
-    void shouldRecreateDroppedIndex()
+    void recreatingDroppedIndexMustProduceNewDefinition()
     {
         // GIVEN
         Node node = createNode( db, propertyKey, "Neo", label );
@@ -425,8 +425,16 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         dropIndex( index );
 
         // WHEN recreating that index
-        createIndex( db, label, propertyKey );
-        waitForIndex( db, index );
+        IndexDefinition newIndex = createIndex( db, label, propertyKey );
+        try
+        {
+            waitForIndex( db, index );
+        }
+        catch ( NotFoundException e )
+        {
+            assertThat( e.getMessage(), containsString( "No index was found" ) );
+        }
+        waitForIndex( db, newIndex );
 
         try ( Transaction transaction = db.beginTx() )
         {
