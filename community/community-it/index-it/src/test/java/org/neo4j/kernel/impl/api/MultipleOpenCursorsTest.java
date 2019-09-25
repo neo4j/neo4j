@@ -37,6 +37,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -44,7 +45,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -427,12 +428,6 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected IndexDescriptor extractIndexDescriptor()
-        {
-            return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
-        }
-
-        @Override
         boolean supportRangeQuery()
         {
             return false;
@@ -476,9 +471,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( Transaction tx )
+        IndexDefinition doCreateIndex( Transaction tx )
         {
-            tx.schema().indexFor( indexLabel ).on( stringProp1 ).on( stringProp2 ).create();
+            return tx.schema().indexFor( indexLabel ).on( stringProp1 ).on( stringProp2 ).create();
         }
     }
 
@@ -488,12 +483,6 @@ public class MultipleOpenCursorsTest
                 String stringProp2 )
         {
             super( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
-        }
-
-        @Override
-        protected IndexDescriptor extractIndexDescriptor()
-        {
-            return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
         }
 
         @Override
@@ -539,9 +528,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( Transaction tx )
+        IndexDefinition doCreateIndex( Transaction tx )
         {
-            tx.schema().indexFor( indexLabel ).on( numberProp1 ).on( numberProp2 ).create();
+            return tx.schema().indexFor( indexLabel ).on( numberProp1 ).on( numberProp2 ).create();
         }
     }
 
@@ -551,12 +540,6 @@ public class MultipleOpenCursorsTest
                 String stringProp2 )
         {
             super( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
-        }
-
-        @Override
-        protected IndexDescriptor extractIndexDescriptor()
-        {
-            return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
         }
 
         @Override
@@ -610,9 +593,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( Transaction tx )
+        IndexDefinition doCreateIndex( Transaction tx )
         {
-            tx.schema().indexFor( indexLabel ).on( stringProp1 ).create();
+            return tx.schema().indexFor( indexLabel ).on( stringProp1 ).create();
         }
     }
 
@@ -622,12 +605,6 @@ public class MultipleOpenCursorsTest
                 String stringProp2 )
         {
             super( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
-        }
-
-        @Override
-        protected IndexDescriptor extractIndexDescriptor()
-        {
-            return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
         }
 
         @Override
@@ -681,9 +658,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( Transaction tx )
+        IndexDefinition doCreateIndex( Transaction tx )
         {
-            tx.schema().indexFor( indexLabel ).on( numberProp1 ).create();
+            return tx.schema().indexFor( indexLabel ).on( numberProp1 ).create();
         }
     }
 
@@ -763,16 +740,14 @@ public class MultipleOpenCursorsTest
                 stringPropId2 = tokenRead.propertyKey( stringProp2 );
                 tx.commit();
             }
-            indexDescriptor = extractIndexDescriptor();
         }
-
-        protected abstract IndexDescriptor extractIndexDescriptor();
 
         void createIndex( DbmsRule db )
         {
             try ( Transaction tx = db.beginTx() )
             {
-                doCreateIndex( tx );
+                IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) doCreateIndex( tx );
+                indexDescriptor = indexDefinition.getIndexReference();
                 tx.commit();
             }
             try ( Transaction tx = db.beginTx() )
@@ -812,7 +787,7 @@ public class MultipleOpenCursorsTest
 
         abstract void assertExactResult( List<Long> result );
 
-        abstract void doCreateIndex( Transaction tx );
+        abstract IndexDefinition doCreateIndex( Transaction tx );
 
         NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
         {

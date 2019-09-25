@@ -146,7 +146,7 @@ class IndexConstraintsTest
                     tx.commit();
                 }
                 // then
-                try ( Transaction transaction = graphDb.beginTx() )
+                try ( Transaction ignored = graphDb.beginTx() )
                 {
                     assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Index should exist" );
                 }
@@ -158,7 +158,7 @@ class IndexConstraintsTest
                     tx.commit();
                 }
                 // then
-                try ( Transaction transaction = graphDb.beginTx() )
+                try ( Transaction ignored = graphDb.beginTx() )
                 {
                     assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Index should exist" );
                 }
@@ -170,7 +170,7 @@ class IndexConstraintsTest
                     tx.commit();
                 }
                 // then
-                try ( Transaction transaction = graphDb.beginTx() )
+                try ( Transaction ignored = graphDb.beginTx() )
                 {
                     assertNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Index should be removed" );
                 }
@@ -223,7 +223,7 @@ class IndexConstraintsTest
             tx.rollback();
         }
         // then
-        try ( Transaction transaction = graphDb.beginTx() )
+        try ( Transaction ignored = graphDb.beginTx() )
         {
             assertNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should not have constraint index" );
         }
@@ -244,7 +244,7 @@ class IndexConstraintsTest
                     tx.commit();
                 }
                 // then
-                try ( Transaction transaction = graphDb.beginTx() )
+                try ( Transaction ignored = graphDb.beginTx() )
                 {
                     assertNotNull( getConstraint( transaction, LABEL, PROPERTY_KEY ), "Constraint should exist" );
                     assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should have constraint index" );
@@ -258,7 +258,7 @@ class IndexConstraintsTest
                     tx.commit();
                 }
 
-                try ( Transaction transaction = graphDb.beginTx() )
+                try ( Transaction ignored = graphDb.beginTx() )
                 {
                     // then
                     assertNotNull( getConstraint( transaction, LABEL, PROPERTY_KEY ), "Constraint should exist" );
@@ -271,7 +271,7 @@ class IndexConstraintsTest
                     recreate( tx, getConstraint( tx, LABEL, PROPERTY_KEY ), times ).drop();
                     tx.commit();
                 }
-                try ( Transaction transaction = graphDb.beginTx() )
+                try ( Transaction ignored = graphDb.beginTx() )
                 {
                     // then
                     assertNull( getConstraint( transaction, LABEL, PROPERTY_KEY ), "Constraint should be removed" );

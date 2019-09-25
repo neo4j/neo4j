@@ -29,15 +29,17 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
@@ -95,7 +97,7 @@ class CompositeStringLengthValidationIT
         String secondSlot = random.nextAlphaNumericString( secondSlotLength, secondSlotLength );
 
         // given
-        createIndex( KEY, KEY2 );
+        IndexDescriptor index = createIndex( KEY, KEY2 );
 
         Node node;
         try ( Transaction tx = db.beginTx() )
@@ -109,14 +111,12 @@ class CompositeStringLengthValidationIT
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            int labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
             int propertyKeyId1 = ktx.tokenRead().propertyKey( KEY );
             int propertyKeyId2 = ktx.tokenRead().propertyKey( KEY2 );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                IndexReadSession index = ktx.dataRead().indexReadSession(
-                        TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2 ) );
-                ktx.dataRead().nodeIndexSeek( index,
+                IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
+                ktx.dataRead().nodeIndexSeek( indexReadSession,
                                               cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId1, firstSlot ),
                                               IndexQuery.exact( propertyKeyId2, secondSlot ) );
                 assertTrue( cursor.next() );
@@ -155,8 +155,9 @@ class CompositeStringLengthValidationIT
         }
     }
 
-    private void createIndex( String... keys )
+    private IndexDescriptor createIndex( String... keys )
     {
+        IndexDefinition indexDefinition;
         try ( Transaction tx = db.beginTx() )
         {
             IndexCreator indexCreator = tx.schema().indexFor( LABEL );
@@ -164,7 +165,7 @@ class CompositeStringLengthValidationIT
             {
                 indexCreator = indexCreator.on( key );
             }
-            indexCreator.create();
+            indexDefinition = indexCreator.create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -172,5 +173,6 @@ class CompositeStringLengthValidationIT
             tx.schema().awaitIndexesOnline( 10, SECONDS );
             tx.commit();
         }
+        return ((IndexDefinitionImpl) indexDefinition).getIndexReference();
     }
 }

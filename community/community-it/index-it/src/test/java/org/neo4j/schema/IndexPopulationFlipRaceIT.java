@@ -27,9 +27,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
@@ -41,6 +41,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
 @DbmsExtension
@@ -148,8 +149,8 @@ class IndexPopulationFlipRaceIT
             int keyAId = tx.tokenRead().propertyKey( keyA( i ) );
             int labelBId = tx.tokenRead().nodeLabel( labelB( i ).name() );
             int keyBId = tx.tokenRead().propertyKey( keyB( i ) );
-            IndexDescriptor indexA = TestIndexDescriptorFactory.forLabel( labelAId, keyAId );
-            IndexDescriptor indexB = TestIndexDescriptorFactory.forLabel( labelBId, keyBId );
+            IndexDescriptor indexA = single( tx.schemaRead().index( SchemaDescriptor.forLabel( labelAId, keyAId ) ) );
+            IndexDescriptor indexB = single( tx.schemaRead().index( SchemaDescriptor.forLabel( labelBId, keyBId ) ) );
 
             for ( int j = 0; j < NODES_PER_INDEX; j++ )
             {
