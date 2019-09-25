@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +57,7 @@ import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnProperty;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationship;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationshipGroup;
 
+@TestInstance( TestInstance.Lifecycle.PER_CLASS )
 public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
     private long foo;

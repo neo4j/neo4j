@@ -24,8 +24,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
-import java.io.File;
-
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Read;
@@ -57,7 +55,6 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 @ResourceLock( SHARED_RESOURCE )
 public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport>
 {
-    protected static File folder;
     protected static KernelAPIReadTestSupport testSupport;
     protected KernelTransaction tx;
     protected Read read;
