@@ -50,8 +50,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -59,7 +57,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -68,7 +65,6 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.token.TokenHolders;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Values;
 
@@ -79,7 +75,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.neo4j.internal.helpers.ArrayUtil.single;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
@@ -215,10 +210,6 @@ public class IndexStatisticsTest
         IndexDescriptor index = createPersonNameIndex();
         awaitIndexesOnline();
 
-        SchemaRuleAccess schemaRuleAccess =
-                SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ) );
-        long indexId = single( schemaRuleAccess.indexGetForSchema( index ) ).getId();
-
         // when
         dropIndex( index );
 
@@ -230,12 +221,12 @@ public class IndexStatisticsTest
         }
         catch ( IndexNotFoundKernelException e )
         {
-            DoubleLongRegister actual = getIndexingStatisticsStore().indexSample( indexId, Registers.newDoubleLongRegister() );
+            DoubleLongRegister actual = getIndexingStatisticsStore().indexSample( index.getId(), Registers.newDoubleLongRegister() );
             assertDoubleLongEquals( 0L, 0L, actual );
         }
 
         // and then index size and index updates are zero on disk
-        DoubleLongRegister actual = getIndexingStatisticsStore().indexUpdatesAndSize( indexId, Registers.newDoubleLongRegister() );
+        DoubleLongRegister actual = getIndexingStatisticsStore().indexUpdatesAndSize( index.getId(), Registers.newDoubleLongRegister() );
         assertDoubleLongEquals( 0L, 0L, actual );
     }
 
@@ -556,7 +547,7 @@ public class IndexStatisticsTest
         return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).readSecond();
     }
 
-    private long indexUpdates( IndexDescriptor reference  ) throws IndexNotFoundKernelException
+    private long indexUpdates( IndexDescriptor reference ) throws IndexNotFoundKernelException
     {
         return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference ).readFirst();
     }
@@ -623,11 +614,6 @@ public class IndexStatisticsTest
         }
     }
 
-    private NeoStores neoStores()
-    {
-        return resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-    }
-
     private <T> T resolveDependency( Class<T> clazz )
     {
         return db.getDependencyResolver().resolveDependency( clazz );
@@ -635,7 +621,7 @@ public class IndexStatisticsTest
 
     private void awaitIndexesOnline()
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline(3, TimeUnit.MINUTES );
         }

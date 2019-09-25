@@ -636,6 +636,7 @@ public class AllStoreHolder extends Read
         assertValidIndex( index );
         acquireSharedSchemaLock( index );
         ktx.assertOpen();
+        indexingService.getIndexProxy( index ); // Throws if the index has been dropped.
         DoubleLongRegister output = indexStatisticsStore.indexSample( index.getId(), Registers.newDoubleLongRegister() );
         long unique = output.readFirst();
         long size = output.readSecond();
