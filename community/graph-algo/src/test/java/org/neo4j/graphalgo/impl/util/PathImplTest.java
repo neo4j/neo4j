@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
@@ -144,9 +144,9 @@ class PathImplTest
         return new RelationshipProxy( transaction, 1L, startNodeId, 1, endNodeId );
     }
 
-    private NodeProxy createNodeProxy( int nodeId )
+    private NodeEntity createNodeProxy( int nodeId )
     {
-        return new NodeProxy( transaction, nodeId );
+        return new NodeEntity( transaction, nodeId );
     }
 
     private static Node createNode( long nodeId )
@@ -166,10 +166,10 @@ class PathImplTest
         return relationship;
     }
 
-    private class NodeProxyAnswer implements Answer<NodeProxy>
+    private class NodeProxyAnswer implements Answer<NodeEntity>
     {
         @Override
-        public NodeProxy answer( InvocationOnMock invocation )
+        public NodeEntity answer( InvocationOnMock invocation )
         {
             return createNodeProxy( ((Number) invocation.getArgument( 0 )).intValue() );
         }

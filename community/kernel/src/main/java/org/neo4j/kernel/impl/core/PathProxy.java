@@ -129,13 +129,13 @@ public class PathProxy implements Path
     @Override
     public Node startNode()
     {
-        return new NodeProxy( internalTransaction, nodes[0] );
+        return new NodeEntity( internalTransaction, nodes[0] );
     }
 
     @Override
     public Node endNode()
     {
-        return new NodeProxy( internalTransaction, nodes[nodes.length - 1] );
+        return new NodeEntity( internalTransaction, nodes[nodes.length - 1] );
     }
 
     @Override
@@ -217,7 +217,7 @@ public class PathProxy implements Path
             @Override
             public Node next()
             {
-                return new NodeProxy( internalTransaction, nodes[i++] );
+                return new NodeEntity( internalTransaction, nodes[i++] );
             }
         };
     }
@@ -238,7 +238,7 @@ public class PathProxy implements Path
             @Override
             public Node next()
             {
-                return new NodeProxy( internalTransaction, nodes[--i] );
+                return new NodeEntity( internalTransaction, nodes[--i] );
             }
         };
     }
@@ -274,7 +274,7 @@ public class PathProxy implements Path
                 else
                 {
                     relationship = true;
-                    return new NodeProxy( internalTransaction, nodes[i] );
+                    return new NodeEntity( internalTransaction, nodes[i] );
                 }
             }
         };

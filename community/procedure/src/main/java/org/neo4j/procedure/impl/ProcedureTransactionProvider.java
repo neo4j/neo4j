@@ -43,7 +43,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.Context;
-import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
@@ -294,7 +294,7 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
-        public NodeProxy newNodeProxy( long nodeId )
+        public NodeEntity newNodeProxy( long nodeId )
         {
             return transaction.newNodeProxy( nodeId );
         }

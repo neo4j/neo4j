@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.NamedThreadFactory.named;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
-public class NodeProxyTest extends EntityProxyTest
+public class NodeEntityTest extends EntityTest
 {
     private final String PROPERTY_KEY = "PROPERTY_KEY";
 
@@ -384,30 +384,30 @@ public class NodeProxyTest extends EntityProxyTest
     {
         // given
         var transaction = mockedTransactionWithDepletedTokens();
-        NodeProxy nodeProxy = new NodeProxy( transaction, 5 );
+        NodeEntity nodeEntity = new NodeEntity( transaction, 5 );
 
         // when
-        assertThrows( ConstraintViolationException.class, () -> nodeProxy.addLabel( Label.label( "Label" ) ) );
+        assertThrows( ConstraintViolationException.class, () -> nodeEntity.addLabel( Label.label( "Label" ) ) );
     }
 
     @Test
     void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
     {
         // given
-        NodeProxy nodeProxy = new NodeProxy( mockedTransactionWithDepletedTokens(), 5 );
+        NodeEntity nodeEntity = new NodeEntity( mockedTransactionWithDepletedTokens(), 5 );
 
         // when
-        assertThrows( ConstraintViolationException.class, () -> nodeProxy.setProperty( "key", "value" ) );
+        assertThrows( ConstraintViolationException.class, () -> nodeEntity.setProperty( "key", "value" ) );
     }
 
     @Test
     void shouldThrowCorrectExceptionOnRelationshipTypeTokensExceeded() throws KernelException
     {
         // given
-        NodeProxy nodeProxy = new NodeProxy( mockedTransactionWithDepletedTokens(), 5 );
+        NodeEntity nodeEntity = new NodeEntity( mockedTransactionWithDepletedTokens(), 5 );
 
         // when
-        assertThrows( ConstraintViolationException.class, () -> nodeProxy.setProperty( "key", "value" ) );
+        assertThrows( ConstraintViolationException.class, () -> nodeEntity.setProperty( "key", "value" ) );
     }
 
     private void createNodeWith( String key )

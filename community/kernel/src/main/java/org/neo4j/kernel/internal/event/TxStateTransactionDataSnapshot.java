@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StorageEntityCursor;
@@ -356,7 +356,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private Iterable<Node> map2Nodes( LongIterable ids )
     {
-        return ids.asLazy().collect( id -> new NodeProxy( internalTransaction, id ) );
+        return ids.asLazy().collect( id -> new NodeEntity( internalTransaction, id ) );
     }
 
     private Iterable<Relationship> map2Rels( LongIterable ids )
@@ -428,7 +428,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         @Override
         public Node entity()
         {
-            return new NodeProxy( internalTransaction, nodeId );
+            return new NodeEntity( internalTransaction, nodeId );
         }
 
         @Override
@@ -540,7 +540,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         @Override
         public Node node()
         {
-            return new NodeProxy( internalTransaction, nodeId );
+            return new NodeEntity( internalTransaction, nodeId );
         }
 
         @Override

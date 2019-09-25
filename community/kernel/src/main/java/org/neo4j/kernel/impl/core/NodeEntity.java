@@ -71,12 +71,12 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgo
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 
-public class NodeProxy implements Node, RelationshipFactory<Relationship>
+public class NodeEntity implements Node, RelationshipFactory<Relationship>
 {
     private final InternalTransaction internalTransaction;
     private final long nodeId;
 
-    public NodeProxy( InternalTransaction internalTransaction, long nodeId )
+    public NodeEntity( InternalTransaction internalTransaction, long nodeId )
     {
         this.internalTransaction = internalTransaction;
         this.nodeId = nodeId;
@@ -84,9 +84,9 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
 
     public static boolean isDeletedInCurrentTransaction( Node node )
     {
-        if ( node instanceof NodeProxy )
+        if ( node instanceof NodeEntity )
         {
-            NodeProxy proxy = (NodeProxy) node;
+            NodeEntity proxy = (NodeEntity) node;
             KernelTransaction ktx = proxy.internalTransaction.kernelTransaction();
             try ( Statement ignore = ktx.acquireStatement() )
             {

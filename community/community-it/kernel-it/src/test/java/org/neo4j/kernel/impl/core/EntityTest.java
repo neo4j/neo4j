@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 @ImpermanentDbmsExtension
-public abstract class EntityProxyTest
+public abstract class EntityTest
 {
     @Inject
     GraphDatabaseService db;

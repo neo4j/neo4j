@@ -27,7 +27,7 @@ public interface TransactionalEntityFactory
 
     RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );
 
-    NodeProxy newNodeProxy( long nodeId );
+    NodeEntity newNodeProxy( long nodeId );
 
     RelationshipType getRelationshipTypeById( int type );
 }

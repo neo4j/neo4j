@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.coreapi.internal;
 
-import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.NodeEntity;
 
 public interface NodeFactory
 {
-    NodeProxy make( long id );
+    NodeEntity make( long id );
 }

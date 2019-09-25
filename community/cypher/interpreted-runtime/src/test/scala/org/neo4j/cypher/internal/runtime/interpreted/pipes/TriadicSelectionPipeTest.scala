@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.kernel.impl.core.NodeProxy
+import org.neo4j.kernel.impl.core.NodeEntity
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.NodeValue
@@ -155,7 +155,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
 
   private def createFakeDataWith(keys: Array[String], data: (Int, List[Any])*) = {
     def nodeWithId(id: Long) = {
-      new NodeProxy(null, id)
+      new NodeEntity(null, id)
     }
 
     data.flatMap {

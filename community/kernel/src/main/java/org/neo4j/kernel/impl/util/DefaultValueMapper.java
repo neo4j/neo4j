@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Paths;
-import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.ValueMapper;
@@ -55,7 +55,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         { // this is the back door through which "virtual nodes" slip
             return ((NodeProxyWrappingNodeValue) value).nodeProxy();
         }
-        return new NodeProxy( transaction, value.id() );
+        return new NodeEntity( transaction, value.id() );
     }
 
     @Override

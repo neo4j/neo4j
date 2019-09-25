@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -349,7 +349,7 @@ class TxStateTransactionDataViewTest
     private TxStateTransactionDataSnapshot snapshot()
     {
         when( internalTransaction.newNodeProxy( anyLong() ) )
-                .thenAnswer( invocation -> new NodeProxy( internalTransaction, invocation.getArgument( 0 ) ) );
+                .thenAnswer( invocation -> new NodeEntity( internalTransaction, invocation.getArgument( 0 ) ) );
         when( internalTransaction.newRelationshipProxy( anyLong() ) )
                 .thenAnswer( invocation -> new RelationshipProxy( internalTransaction, invocation.getArgument( 0 ) ) );
         when( internalTransaction.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )

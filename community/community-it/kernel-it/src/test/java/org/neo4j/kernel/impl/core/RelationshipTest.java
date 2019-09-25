@@ -47,7 +47,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class RelationshipProxyTest extends EntityProxyTest
+public class RelationshipTest extends EntityTest
 {
     @Override
     protected long createEntity( Transaction tx )
@@ -256,7 +256,7 @@ public class RelationshipProxyTest extends EntityProxyTest
 
     private Node nodeWithId( long id )
     {
-        NodeProxy node = mock( NodeProxy.class );
+        NodeEntity node = mock( NodeEntity.class );
         when( node.getId() ).thenReturn( id );
         return node;
     }

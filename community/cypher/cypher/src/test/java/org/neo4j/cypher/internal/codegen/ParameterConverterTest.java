@@ -35,7 +35,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory;
 import org.neo4j.values.AnyValue;
@@ -91,7 +91,7 @@ class ParameterConverterTest
         when( manager.newNodeProxy( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
             long id = invocationOnMock.getArgument( 0 );
-            NodeProxy mock = mock( NodeProxy.class );
+            NodeEntity mock = mock( NodeEntity.class );
             when( mock.getId() ).thenReturn( id );
             return mock;
         } );
