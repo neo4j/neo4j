@@ -51,7 +51,7 @@ import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder 
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.{ResourceManager => _, _}
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory
+import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
 import org.neo4j.storageengine.api.RelationshipVisitor
@@ -69,7 +69,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   extends TransactionBoundTokenContext(transactionalContext.kernelTransaction) with QueryContext {
   override val nodeOps: NodeOperations = new NodeOperations
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
-  override lazy val entityAccessor: TransactionalProxyFactory = transactionalContext.tc.transaction()
+  override lazy val entityAccessor: TransactionalEntityFactory = transactionalContext.tc.transaction()
   private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(transactionalContext.tc.transaction())
 
   // We don't need to unregister this anywhere since the TransactionBoundQueryContext will be closed together with the Statement

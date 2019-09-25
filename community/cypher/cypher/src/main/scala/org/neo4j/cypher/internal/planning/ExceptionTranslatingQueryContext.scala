@@ -31,7 +31,7 @@ import org.neo4j.graphdb.{Entity, Path}
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.IndexDescriptor
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory
+import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value}
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
@@ -40,7 +40,7 @@ import scala.collection.Iterator
 
 class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
 
-  override def entityAccessor: TransactionalProxyFactory = inner.entityAccessor
+  override def entityAccessor: TransactionalEntityFactory = inner.entityAccessor
 
   override def resources: ResourceManager = inner.resources
 

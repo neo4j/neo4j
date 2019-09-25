@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.RelationshipType;
 
-public interface TransactionalProxyFactory
+public interface TransactionalEntityFactory
 {
     RelationshipProxy newRelationshipProxy( long id );
 

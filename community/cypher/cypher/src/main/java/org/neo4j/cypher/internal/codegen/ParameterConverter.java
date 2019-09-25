@@ -38,7 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.ReverseArrayIterator;
-import org.neo4j.kernel.impl.core.TransactionalProxyFactory;
+import org.neo4j.kernel.impl.core.TransactionalEntityFactory;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
@@ -58,9 +58,9 @@ import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 class ParameterConverter implements AnyValueWriter<RuntimeException>
 {
     private final Deque<Writer> stack = new ArrayDeque<>();
-    private final TransactionalProxyFactory proxySpi;
+    private final TransactionalEntityFactory proxySpi;
 
-    ParameterConverter( TransactionalProxyFactory proxySpi )
+    ParameterConverter( TransactionalEntityFactory proxySpi )
     {
         this.proxySpi = proxySpi;
         stack.push( new ObjectWriter() );
