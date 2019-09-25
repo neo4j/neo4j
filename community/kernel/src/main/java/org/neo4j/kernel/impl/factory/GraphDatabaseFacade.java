@@ -164,17 +164,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-<<<<<<< HEAD
     public void executeTransactionally( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
-        executeTransactionally( query, parameters, EMPTY_CONSUMER );
+        executeTransactionally( query, parameters, EMPTY_TRANSFORMER );
     }
 
     @Override
-    public void executeTransactionally( String query, Map<String,Object> parameters, ResultConsumer resultConsumer ) throws QueryExecutionException
-=======
     public <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer ) throws QueryExecutionException
->>>>>>> Return transformation result from executeTransactionally
     {
         return executeTransactionally( query, parameters, resultTransformer, config.get( transaction_timeout ) );
     }
