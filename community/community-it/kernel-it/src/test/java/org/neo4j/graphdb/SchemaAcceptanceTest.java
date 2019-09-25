@@ -102,7 +102,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         IndexDefinition index = createIndex( db, label, propertyKey );
 
         // THEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getIndexes( tx, label ), containsOnly( index ) );
         }
@@ -115,7 +115,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         IndexDefinition index = createIndex( db, label, propertyKey, secondPropertyKey );
 
         // THEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getIndexes( tx, label ), containsOnly( index ) );
         }
@@ -295,7 +295,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         dropIndex( index );
 
         // THEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getIndexes( tx, label ), isEmpty() );
         }
@@ -325,7 +325,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
 
         // THEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( "Index should have been deleted", getIndexes( tx, label ), not( contains( index ) ) );
         }
@@ -350,7 +350,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
 
         // THEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( "Index should have been deleted", getIndexes( tx, label ), not( contains( index ) ) );
         }
@@ -365,7 +365,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         IndexDefinition index = createIndex( db, label, propertyKey );
 
         // PASS
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             tx.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
 
@@ -385,7 +385,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
         // PASS
         waitForIndex( db, index );
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
 
@@ -502,7 +502,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getConstraints( tx, label ), containsOnly( constraint1 ) );
         }
@@ -516,7 +516,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         ConstraintDefinition constraint2 = createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getConstraints( tx ), containsOnly( constraint1, constraint2 ) );
         }
@@ -532,7 +532,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         dropConstraint( db, constraint );
 
         // THEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( getConstraints( tx, label ), isEmpty() );
         }
@@ -589,7 +589,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         createUniquenessConstraint( label, "b" );
 
         // WHEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertThat( count( tx.schema().getIndexes( label ) ), is( 2L ) );
             IndexDefinition indexC = tx.schema().indexFor( label ).on( "c" ).create();
