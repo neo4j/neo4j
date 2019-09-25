@@ -50,14 +50,21 @@ public class Race
     private final List<Contestant> contestants = new ArrayList<>();
     private volatile CountDownLatch readySet;
     private final CountDownLatch go = new CountDownLatch( 1 );
-    private volatile boolean addSomeMinorRandomStartDelays;
+    private volatile int baseStartDelay;
+    private volatile int maxRandomStartDelay;
     private volatile BooleanSupplier endCondition;
     private volatile boolean failure;
     private boolean asyncExecution;
 
     public Race withRandomStartDelays()
     {
-        this.addSomeMinorRandomStartDelays = true;
+        return withRandomStartDelays( 10, 100 );
+    }
+
+    public Race withRandomStartDelays( int base, int random )
+    {
+        this.baseStartDelay = base;
+        this.maxRandomStartDelay = random;
         return this;
     }
 
@@ -296,7 +303,7 @@ public class Race
                 return;
             }
 
-            if ( addSomeMinorRandomStartDelays )
+            if ( baseStartDelay > 0 || maxRandomStartDelay > 0 )
             {
                 randomlyDelaySlightly();
             }
@@ -323,8 +330,8 @@ public class Race
 
         private void randomlyDelaySlightly()
         {
-            int millis = ThreadLocalRandom.current().nextInt( 100 );
-            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 + millis ) );
+            int millis = ThreadLocalRandom.current().nextInt( maxRandomStartDelay );
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( baseStartDelay + millis ) );
         }
     }
 }
