@@ -54,7 +54,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
-public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
+public class RelationshipEntity implements Relationship, RelationshipVisitor<RuntimeException>
 {
     private final InternalTransaction internalTransaction;
     private long id = NO_ID;
@@ -62,13 +62,13 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     private long endNode = NO_ID;
     private int type;
 
-    public RelationshipProxy( InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
+    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
     {
         this.internalTransaction = internalTransaction;
         visit( id, type, startNode, endNode );
     }
 
-    public RelationshipProxy( InternalTransaction internalTransaction, long id )
+    public RelationshipEntity( InternalTransaction internalTransaction, long id )
     {
         this.internalTransaction = internalTransaction;
         this.id = id;
@@ -76,9 +76,9 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
 
     public static boolean isDeletedInCurrentTransaction( Relationship relationship )
     {
-        if ( relationship instanceof RelationshipProxy )
+        if ( relationship instanceof RelationshipEntity )
         {
-            RelationshipProxy proxy = (RelationshipProxy) relationship;
+            RelationshipEntity proxy = (RelationshipEntity) relationship;
             KernelTransaction ktx = proxy.internalTransaction.kernelTransaction();
             try ( Statement ignore = ktx.acquireStatement() )
             {

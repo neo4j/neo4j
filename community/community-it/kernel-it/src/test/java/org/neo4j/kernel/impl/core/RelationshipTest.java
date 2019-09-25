@@ -233,15 +233,15 @@ public class RelationshipTest extends EntityTest
     {
         // given
         var transaction = mockedTransactionWithDepletedTokens();
-        RelationshipProxy relationshipProxy = new RelationshipProxy( transaction, 5 );
+        RelationshipEntity relationshipEntity = new RelationshipEntity( transaction, 5 );
 
         // when
-        assertThrows( ConstraintViolationException.class, () -> relationshipProxy.setProperty( "key", "value" ) );
+        assertThrows( ConstraintViolationException.class, () -> relationshipEntity.setProperty( "key", "value" ) );
     }
 
     private void verifyIds( InternalTransaction transaction, long relationshipId, long nodeId1, int typeId, long nodeId2 )
     {
-        RelationshipProxy proxy = new RelationshipProxy( transaction, relationshipId, nodeId1, typeId, nodeId2 );
+        RelationshipEntity proxy = new RelationshipEntity( transaction, relationshipId, nodeId1, typeId, nodeId2 );
         assertEquals( relationshipId, proxy.getId() );
         // our mock above is known to return RelationshipTypeToken
         assertEquals( nodeId1, proxy.getStartNode().getId() );

@@ -146,16 +146,16 @@ public class PathProxy implements Path
                 : relationship( relationships.length - 1 );
     }
 
-    private RelationshipProxy relationship( int offset )
+    private RelationshipEntity relationship( int offset )
     {
         int type = directedTypes[offset];
         if ( type >= 0 )
         {
-            return new RelationshipProxy( internalTransaction, relationships[offset], nodes[offset], type, nodes[offset + 1] );
+            return new RelationshipEntity( internalTransaction, relationships[offset], nodes[offset], type, nodes[offset + 1] );
         }
         else
         {
-            return new RelationshipProxy( internalTransaction, relationships[offset], nodes[offset + 1], ~type, nodes[offset] );
+            return new RelationshipEntity( internalTransaction, relationships[offset], nodes[offset + 1], ~type, nodes[offset] );
         }
     }
 

@@ -79,7 +79,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.NodeEntity;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.internal.NodeCursorResourceIterator;
 import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -594,15 +594,15 @@ public class TransactionImpl implements InternalTransaction
     }
 
     @Override
-    public RelationshipProxy newRelationshipProxy( long id )
+    public RelationshipEntity newRelationshipProxy( long id )
     {
-        return new RelationshipProxy( this, id );
+        return new RelationshipEntity( this, id );
     }
 
     @Override
-    public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
+    public RelationshipEntity newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
     {
-        return new RelationshipProxy( this, id, startNodeId, typeId, endNodeId );
+        return new RelationshipEntity( this, id, startNodeId, typeId, endNodeId );
     }
 
     @Override

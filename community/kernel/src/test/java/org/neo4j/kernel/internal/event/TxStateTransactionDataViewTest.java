@@ -43,7 +43,7 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.NodeEntity;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StubStorageCursors;
@@ -351,9 +351,9 @@ class TxStateTransactionDataViewTest
         when( internalTransaction.newNodeProxy( anyLong() ) )
                 .thenAnswer( invocation -> new NodeEntity( internalTransaction, invocation.getArgument( 0 ) ) );
         when( internalTransaction.newRelationshipProxy( anyLong() ) )
-                .thenAnswer( invocation -> new RelationshipProxy( internalTransaction, invocation.getArgument( 0 ) ) );
+                .thenAnswer( invocation -> new RelationshipEntity( internalTransaction, invocation.getArgument( 0 ) ) );
         when( internalTransaction.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )
-                .thenAnswer( invocation -> new RelationshipProxy( internalTransaction,
+                .thenAnswer( invocation -> new RelationshipEntity( internalTransaction,
                         invocation.getArgument( 0 ), invocation.getArgument( 1 ),
                         invocation.getArgument( 2 ), invocation.getArgument( 3 ) ) );
         return new TxStateTransactionDataSnapshot( state, ops, transaction );

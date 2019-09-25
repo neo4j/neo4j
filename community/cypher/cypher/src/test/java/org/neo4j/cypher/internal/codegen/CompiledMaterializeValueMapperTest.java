@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.kernel.impl.core.NodeEntity;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -51,7 +51,7 @@ class CompiledMaterializeValueMapperTest
     private static final NodeValue directNodeValue = VirtualValues.nodeValue( 2L, Values.stringArray(), VirtualValues.EMPTY_MAP );
     private static final NodeReference nodeReference = VirtualValues.node( 1L ); // Should equal nodeProxyValue when converted
 
-    private static final RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipProxy( transaction, 11L ) );
+    private static final RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipEntity( transaction, 11L ) );
     private static final RelationshipValue directRelationshipValue =
             VirtualValues.relationshipValue( 12L, nodeProxyValue, directNodeValue, Values.stringValue( "TYPE" ), VirtualValues.EMPTY_MAP );
     private static final RelationshipReference relationshipReference = VirtualValues.relationship( 11L ); // Should equal relationshipProxyValue when converted
@@ -62,8 +62,8 @@ class CompiledMaterializeValueMapperTest
         when( transaction.newNodeProxy( anyLong() ) )
                 .thenAnswer( (Answer<NodeEntity>) invocation -> new NodeEntity( transaction, invocation.getArgument( 0 ) ) );
         when( transaction.newRelationshipProxy( anyLong() ) )
-                .thenAnswer( (Answer<RelationshipProxy>) invocation ->
-                        new RelationshipProxy( transaction, invocation.getArgument( 0 ) ) );
+                .thenAnswer( (Answer<RelationshipEntity>) invocation ->
+                        new RelationshipEntity( transaction, invocation.getArgument( 0 ) ) );
     }
 
     @Test

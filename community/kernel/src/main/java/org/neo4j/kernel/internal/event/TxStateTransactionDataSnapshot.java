@@ -41,7 +41,7 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeEntity;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -74,7 +74,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final Collection<PropertyEntry<Node>> removedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> removedRelationshipProperties = new ArrayList<>();
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
-    private final MutableLongObjectMap<RelationshipProxy> relationshipsReadFromStore = new LongObjectHashMap<>( 16 );
+    private final MutableLongObjectMap<RelationshipEntity> relationshipsReadFromStore = new LongObjectHashMap<>( 16 );
     private final StorageRelationshipScanCursor relationship;
     private final InternalTransaction internalTransaction;
 
@@ -333,10 +333,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private Relationship relationship( long relId )
     {
-        RelationshipProxy relationship = internalTransaction.newRelationshipProxy( relId );
+        RelationshipEntity relationship = internalTransaction.newRelationshipProxy( relId );
         if ( !state.relationshipVisit( relId, relationship ) )
         {   // This relationship has been created or changed in this transaction
-            RelationshipProxy cached = relationshipsReadFromStore.get( relId );
+            RelationshipEntity cached = relationshipsReadFromStore.get( relId );
             if ( cached != null )
             {
                 return cached;

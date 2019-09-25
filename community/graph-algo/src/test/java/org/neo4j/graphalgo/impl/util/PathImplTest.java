@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.core.NodeEntity;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -139,9 +139,9 @@ class PathImplTest
         assertEquals( 3, nodeList.get( 2 ).getId() );
     }
 
-    private RelationshipProxy createRelationshipProxy( int startNodeId, int endNodeId )
+    private RelationshipEntity createRelationshipProxy( int startNodeId, int endNodeId )
     {
-        return new RelationshipProxy( transaction, 1L, startNodeId, 1, endNodeId );
+        return new RelationshipEntity( transaction, 1L, startNodeId, 1, endNodeId );
     }
 
     private NodeEntity createNodeProxy( int nodeId )

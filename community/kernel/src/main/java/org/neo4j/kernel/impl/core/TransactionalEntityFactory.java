@@ -23,9 +23,9 @@ import org.neo4j.graphdb.RelationshipType;
 
 public interface TransactionalEntityFactory
 {
-    RelationshipProxy newRelationshipProxy( long id );
+    RelationshipEntity newRelationshipProxy( long id );
 
-    RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );
+    RelationshipEntity newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );
 
     NodeEntity newNodeProxy( long nodeId );
 

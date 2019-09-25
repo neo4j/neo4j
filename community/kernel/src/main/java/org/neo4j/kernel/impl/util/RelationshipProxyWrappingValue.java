@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.util;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -54,14 +54,14 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        if ( relationship instanceof RelationshipProxy )
+        if ( relationship instanceof RelationshipEntity )
         {
-            RelationshipProxy proxy = (RelationshipProxy) relationship;
+            RelationshipEntity proxy = (RelationshipEntity) relationship;
             if ( !proxy.initializeData() )
             {
                 // If the relationship has been deleted since it was found by the query, then we'll have to tell the client that their transaction conflicted,
                 // and that they need to retry it.
-                throw new ReadAndDeleteTransactionConflictException( RelationshipProxy.isDeletedInCurrentTransaction( relationship ) );
+                throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ) );
             }
         }
 
@@ -76,7 +76,7 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
         }
         catch ( IllegalStateException e )
         {
-            throw new ReadAndDeleteTransactionConflictException( RelationshipProxy.isDeletedInCurrentTransaction( relationship ), e );
+            throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
         }
 
         if ( id() < 0 )
@@ -115,9 +115,9 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     {
         try
         {
-            if ( relationship instanceof RelationshipProxy )
+            if ( relationship instanceof RelationshipEntity )
             {
-                RelationshipProxy proxy = (RelationshipProxy) relationship;
+                RelationshipEntity proxy = (RelationshipEntity) relationship;
                 if ( !proxy.initializeData() )
                 {
                     // When this happens to relationship proxies, we have most likely observed our relationship being deleted by an overlapping committed
