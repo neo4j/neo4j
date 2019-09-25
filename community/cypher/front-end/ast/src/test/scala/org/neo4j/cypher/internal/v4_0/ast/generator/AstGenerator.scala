@@ -573,9 +573,23 @@ case class AstGenerator(simpleStrings: Boolean = true) {
     )
   } yield item
 
+  def _removeItem: Gen[RemoveItem] = for {
+    variable <- _variable
+    labels <- oneOrMore(_labelName)
+    property <- _property
+    item <- oneOf(
+      RemoveLabelItem(variable, labels)(pos),
+      RemovePropertyItem(property)
+    )
+  } yield item
+
   def _set: Gen[SetClause] = for {
     items <- oneOrMore(_setItem)
   } yield SetClause(items)(pos)
+
+  def _remove: Gen[Remove] = for {
+    items <- oneOrMore(_removeItem)
+  } yield Remove(items)(pos)
 
   def _delete: Gen[Delete] = for {
     expressions <- oneOrMore(_expression)
@@ -685,6 +699,7 @@ case class AstGenerator(simpleStrings: Boolean = true) {
     lzy(_create),
     lzy(_unwind),
     lzy(_set),
+    lzy(_remove),
     lzy(_delete),
     lzy(_merge),
     lzy(_call),
