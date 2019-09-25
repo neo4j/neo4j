@@ -29,6 +29,7 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.time.Stopwatch;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
@@ -114,8 +115,8 @@ public class TransactionIdTracker
         var lastTransactionId = -1L;
         try
         {
-            var endTime = Math.addExact( clock.nanos(), timeout.toNanos() );
-            while ( endTime > clock.nanos() )
+            Stopwatch startTime = clock.startStopWatch();
+            do
             {
                 if ( isNotAvailable( db ) )
                 {
@@ -127,7 +128,8 @@ public class TransactionIdTracker
                     return;
                 }
                 waitWhenNotUpToDate();
-            }
+            } while ( !startTime.hasTimedOut( timeout ) );
+
             throw unreachableDatabaseVersion( db, lastTransactionId, oldestAcceptableTxId );
         }
         catch ( RuntimeException e )

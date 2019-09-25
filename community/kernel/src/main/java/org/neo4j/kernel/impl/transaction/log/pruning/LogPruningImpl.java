@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.File;
-import java.time.Clock;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongConsumer;
@@ -31,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * This class listens for rotations and does log pruning.
@@ -42,7 +42,7 @@ public class LogPruningImpl implements LogPruning
     private final LogFiles logFiles;
     private final Log log;
     private final LogPruneStrategyFactory strategyFactory;
-    private final Clock clock;
+    private final SystemNanoClock clock;
     private final LogProvider logProvider;
     private volatile LogPruneStrategy pruneStrategy;
 
@@ -50,7 +50,7 @@ public class LogPruningImpl implements LogPruning
                            LogFiles logFiles,
                            LogProvider logProvider,
                            LogPruneStrategyFactory strategyFactory,
-                           Clock clock,
+                           SystemNanoClock clock,
                            Config config )
     {
         this.fs = fs;

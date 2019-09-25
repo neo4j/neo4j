@@ -316,7 +316,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     @Override
     public IdController.ConditionSnapshot get()
     {
-        return new KernelTransactionsSnapshot( activeTransactions(), clock.millis() );
+        return new KernelTransactionsSnapshot( activeTransactions() );
     }
 
     /**

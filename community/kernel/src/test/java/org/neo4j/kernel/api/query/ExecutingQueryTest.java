@@ -107,18 +107,6 @@ class ExecutingQueryTest
         }
         // then
         assertEquals( "running", query.snapshot().status() );
-
-        // when
-        query.waitsForQuery( subQuery );
-
-        // then
-        assertEquals( "waiting", query.snapshot().status() );
-
-        // when
-        query.waitsForQuery( null );
-
-        // then
-        assertEquals( "running", query.snapshot().status() );
     }
 
     @Test
@@ -193,35 +181,6 @@ class ExecutingQueryTest
             assertEquals( "running", snapshot.status() );
             assertEquals( 6_000_000, snapshot.waitTimeMicros() );
         }
-    }
-
-    @Test
-    void shouldReportQueryWaitTime()
-    {
-        // given
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
-
-        // when
-        query.waitsForQuery( subQuery );
-        clock.forward( 5, TimeUnit.SECONDS );
-
-        // then
-        QuerySnapshot snapshot = query.snapshot();
-        assertEquals( 5_000_000L, snapshot.waitTimeMicros() );
-        assertEquals( "waiting", snapshot.status() );
-        assertThat( snapshot.resourceInformation(), CoreMatchers.<Map<String,Object>>allOf(
-                hasEntry( "waitTimeMillis", 5_000L ),
-                hasEntry( "queryId", "query-2" ) ) );
-
-        // when
-        clock.forward( 1, TimeUnit.SECONDS );
-        query.waitsForQuery( null );
-        clock.forward( 2, TimeUnit.SECONDS );
-
-        // then
-        snapshot = query.snapshot();
-        assertEquals( 6_000_000L, snapshot.waitTimeMicros() );
-        assertEquals( "running", snapshot.status() );
     }
 
     @Test

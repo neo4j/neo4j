@@ -34,8 +34,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.time.Stopwatch;
 
-import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.internal.helpers.Format.duration;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
@@ -180,7 +181,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * earlier check point and replay from there all the log entries. Everything will be ok.
              */
             msgLog.info( prefix + " checkpoint started..." );
-            long startTime = currentTimeMillis();
+            Stopwatch startTime = Stopwatch.start();
             forceOperation.flushAndForce( ioLimiter );
             /*
              * Check kernel health before going to write the next check point.  In case of a panic this check point
@@ -190,7 +191,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             databaseHealth.assertHealthy( IOException.class );
             appender.checkPoint( logPosition, event );
             threshold.checkPointHappened( lastClosedTransactionId );
-            long durationMillis = currentTimeMillis() - startTime;
+            long durationMillis = startTime.elapsed( MILLISECONDS );
             msgLog.info( prefix + " checkpoint completed in " + duration( durationMillis ) );
             event.checkpointCompleted( durationMillis );
 

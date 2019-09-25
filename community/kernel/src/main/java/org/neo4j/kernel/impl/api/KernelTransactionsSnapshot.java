@@ -34,9 +34,8 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 public class KernelTransactionsSnapshot implements IdController.ConditionSnapshot
 {
     private Tx relevantTransactions;
-    private final long snapshotTime;
 
-    public KernelTransactionsSnapshot( Set<KernelTransactionHandle> allTransactions, long snapshotTime )
+    KernelTransactionsSnapshot( Set<KernelTransactionHandle> allTransactions )
     {
         Tx head = null;
         for ( KernelTransactionHandle tx : allTransactions )
@@ -56,7 +55,6 @@ public class KernelTransactionsSnapshot implements IdController.ConditionSnapsho
             }
         }
         relevantTransactions = head;
-        this.snapshotTime = snapshotTime;
     }
 
     @Override
@@ -76,11 +74,6 @@ public class KernelTransactionsSnapshot implements IdController.ConditionSnapsho
 
         // All transactions have been closed
         return true;
-    }
-
-    public long snapshotTime()
-    {
-        return snapshotTime;
     }
 
     private static class Tx

@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.internal.compiler.helpers.LazyIterable
 import org.neo4j.cypher.internal.compiler.planner.logical.{ProjectingSelector, Selector}
+import org.neo4j.time.Stopwatch
 
 import scala.collection.immutable.BitSet
 
@@ -64,7 +67,7 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
       var largestFinishedIteration = 0
       var blockSize = 1
       var keepGoing = true
-      val start = System.currentTimeMillis()
+      val start = Stopwatch.start()
 
       while (keepGoing && blockSize <= maxBlockSize) {
         var foundNoCandidate = true
@@ -84,7 +87,7 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
               table.put(goal, extraRequirement.forResult(candidate), candidate)
             }
             keepGoing = blockSize == 2 ||
-              (table.size <= maxTableSize && (System.currentTimeMillis() - start) < iterationDurationLimit)
+              (table.size <= maxTableSize && !start.hasTimedOut(iterationDurationLimit, TimeUnit.MILLISECONDS))
           }
         }
         largestFinishedIteration = if (foundNoCandidate || goals.hasNext) largestFinishedIteration else blockSize

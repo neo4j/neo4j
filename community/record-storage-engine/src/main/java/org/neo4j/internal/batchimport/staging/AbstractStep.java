@@ -35,7 +35,7 @@ import org.neo4j.internal.batchimport.stats.StepStats;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
@@ -204,7 +204,7 @@ public abstract class AbstractStep<T> implements Step<T>
                     {
                         downstream.endOfUpstream();
                     }
-                    endTime = currentTimeMillis();
+                    endTime = nanoTime();
                     completed.countDown();
                 }
             }
@@ -236,7 +236,7 @@ public abstract class AbstractStep<T> implements Step<T>
         queuedBatches.set( 0 );
         doneBatches.set( 0 );
         totalProcessingTime.reset();
-        startTime = currentTimeMillis();
+        startTime = nanoTime();
         endTime = 0;
     }
 

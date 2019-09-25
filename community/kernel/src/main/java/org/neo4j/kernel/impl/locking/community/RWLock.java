@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -143,7 +144,7 @@ class RWLock
         private final TxLockElement element;
         private final LockType lockType;
         private final Thread waitingThread;
-        private final long since = System.currentTimeMillis();
+        private final long since = System.nanoTime();
 
         LockRequest( TxLockElement element, LockType lockType, Thread thread )
         {
@@ -625,7 +626,7 @@ class RWLock
         return sb.toString();
     }
 
-    public synchronized long maxWaitTime()
+    synchronized long maxWaitTime()
     {
         long max = 0L;
         for ( LockRequest thread : waitingThreadList )
@@ -635,7 +636,7 @@ class RWLock
                 max = thread.since;
             }
         }
-        return System.currentTimeMillis() - max;
+        return TimeUnit.NANOSECONDS.toMillis( System.nanoTime() - max );
     }
 
     // for specified transaction object mark all lock elements as terminated

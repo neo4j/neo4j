@@ -642,7 +642,7 @@ public class Database extends LifecycleAdapter
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
                         databaseDependencies, databaseTracer, pageCursorTracerSupplier, lockTracer, epoch ) );
 
-        buildTransactionMonitor( kernelTransactions, clock, databaseConfig );
+        buildTransactionMonitor( kernelTransactions, databaseConfig );
 
         KernelImpl kernel = new KernelImpl( kernelTransactions, databaseHealth, transactionStats, globalProcedures, databaseConfig, storageEngine );
 
@@ -693,7 +693,7 @@ public class Database extends LifecycleAdapter
         return heapAllocation;
     }
 
-    private void buildTransactionMonitor( KernelTransactions kernelTransactions, SystemNanoClock clock, Config config )
+    private void buildTransactionMonitor( KernelTransactions kernelTransactions, Config config )
     {
         KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, databaseLogService );
         databaseDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );

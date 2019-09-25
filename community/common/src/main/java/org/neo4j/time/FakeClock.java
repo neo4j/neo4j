@@ -59,7 +59,13 @@ public class FakeClock extends SystemNanoClock
     @Override
     public Instant instant()
     {
-        return Instant.ofEpochMilli( TimeUnit.NANOSECONDS.toMillis( nanoTime.get() ) );
+        return Instant.ofEpochMilli( millis() );
+    }
+
+    @Override
+    public long millis()
+    {
+        return TimeUnit.NANOSECONDS.toMillis( nanos() );
     }
 
     @Override
@@ -69,9 +75,9 @@ public class FakeClock extends SystemNanoClock
     }
 
     @Override
-    public long millis()
+    public Stopwatch startStopWatch()
     {
-        return TimeUnit.NANOSECONDS.toMillis( nanoTime.get() );
+        return new Stopwatch( this::nanos );
     }
 
     public FakeClock forward( Duration delta )

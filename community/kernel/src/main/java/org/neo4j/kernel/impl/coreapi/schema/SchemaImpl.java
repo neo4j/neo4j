@@ -72,8 +72,10 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedSchemaComponentException;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
+import org.neo4j.time.Stopwatch;
 
 import static java.util.Collections.emptyList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
@@ -187,7 +189,7 @@ public class SchemaImpl implements Schema
     public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
     {
         actions.assertInOpenTransaction();
-        long timeout = System.currentTimeMillis() + unit.toMillis( duration );
+        Stopwatch startTime = Stopwatch.start();
         do
         {
             IndexState state = getIndexState( index );
@@ -211,7 +213,8 @@ public class SchemaImpl implements Schema
                 }
                 break;
             }
-        } while ( System.currentTimeMillis() < timeout );
+        } while ( !startTime.hasTimedOut( duration, unit ) );
+
         throw new IllegalStateException( "Expected index to come online within a reasonable time." );
     }
 
@@ -233,9 +236,9 @@ public class SchemaImpl implements Schema
 
             IndexDefinition index = iter.next();
 
-            long millisBefore = System.currentTimeMillis();
+            Stopwatch stopWatch = Stopwatch.start();
             awaitIndexOnline( index, millisLeft, TimeUnit.MILLISECONDS );
-            millisLeft -= System.currentTimeMillis() - millisBefore;
+            millisLeft -= stopWatch.elapsed( MILLISECONDS );
 
             onlineIndexes.add( index );
         }

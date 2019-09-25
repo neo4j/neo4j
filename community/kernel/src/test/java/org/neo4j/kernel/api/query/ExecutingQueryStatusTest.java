@@ -26,15 +26,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
-import org.neo4j.test.FakeCpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -95,39 +91,6 @@ class ExecutingQueryStatusTest
         expected.put( "lockMode", "EXCLUSIVE" );
         expected.put( "resourceType", "NODE" );
         expected.put( "resourceIds", resourceIds );
-        assertEquals( expected, statusMap );
-    }
-
-    @Test
-    void shouldProduceSensibleMapRepresentationInWaitingOnQueryState()
-    {
-        // given
-        WaitingOnQuery status =
-                new WaitingOnQuery(
-                        new ExecutingQuery(
-                                12,
-                                null,
-                                new TestDatabaseIdRepository().defaultDatabase(),
-                                null,
-                                "",
-                                VirtualValues.EMPTY_MAP,
-                                null,
-                                ( /*activeLockCount:*/ ) -> 0,
-                                PageCursorTracer.NULL,
-                                Thread.currentThread().getId(),
-                                Thread.currentThread().getName(),
-                                clock,
-                                FakeCpuClock.NOT_AVAILABLE ), clock.nanos() );
-        clock.forward( 1025, TimeUnit.MILLISECONDS );
-
-        // when
-        Map<String,Object> statusMap = status.toMap( clock.nanos() );
-
-        // then
-        assertEquals( "waiting", status.name() );
-        Map<String,Object> expected = new HashMap<>();
-        expected.put( "waitTimeMillis", 1025L );
-        expected.put( "queryId", "query-12" );
         assertEquals( expected, statusMap );
     }
 

@@ -22,13 +22,12 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
-
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -39,14 +38,14 @@ class LogPruneStrategyFactoryTest
 {
 
     private FileSystemAbstraction fsa;
-    private Clock clock;
+    private SystemNanoClock clock;
     private AssertableLogProvider logProvider;
 
     @BeforeEach
     void setUp()
     {
         fsa = new DefaultFileSystemAbstraction();
-        clock = Clocks.systemClock();
+        clock = Clocks.nanoClock();
         logProvider = new AssertableLogProvider();
     }
 

@@ -25,7 +25,7 @@ import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 
-import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 
 /**
  * {@link IoTracer} exposed as a {@link StatsProvider}.
@@ -47,14 +47,14 @@ public class IoMonitor implements StatsProvider
 
     public void reset()
     {
-        startTime = currentTimeMillis();
+        startTime = nanoTime();
         endTime = 0;
         resetPoint = tracer.countBytesWritten();
     }
 
     public void stop()
     {
-        endTime = currentTimeMillis();
+        endTime = nanoTime();
     }
 
     private long totalBytesWritten()

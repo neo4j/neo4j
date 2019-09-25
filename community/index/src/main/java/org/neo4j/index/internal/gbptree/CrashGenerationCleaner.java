@@ -30,11 +30,12 @@ import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.time.Stopwatch;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -85,7 +86,7 @@ class CrashGenerationCleaner
         assert unstableGeneration > stableGeneration : unexpectedGenerations();
         assert unstableGeneration - stableGeneration > 1 : unexpectedGenerations();
 
-        long startTime = currentTimeMillis();
+        Stopwatch startTime = Stopwatch.start();
         long pagesToClean = highTreeNodeId - lowTreeNodeId;
         int threads = NUMBER_OF_WORKERS;
         long batchSize = batchSize( pagesToClean, threads );
@@ -126,8 +127,7 @@ class CrashGenerationCleaner
             throw new RuntimeException( finalError );
         }
 
-        long endTime = currentTimeMillis();
-        monitor.cleanupFinished( pagesToClean, numberOfTreeNodes.sum(), cleanedPointers.sum(), endTime - startTime );
+        monitor.cleanupFinished( pagesToClean, numberOfTreeNodes.sum(), cleanedPointers.sum(), startTime.elapsed( MILLISECONDS ) );
     }
 
     private Runnable cleaner( AtomicLong nextId, long batchSize, LongAdder numberOfTreeNodes, LongAdder cleanedPointers,

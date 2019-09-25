@@ -19,10 +19,12 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.internal.batchimport.stats.DetailLevel;
 import org.neo4j.internal.batchimport.stats.Stat;
 
-import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**
@@ -50,9 +52,9 @@ public class IoThroughputStat implements Stat
     @Override
     public long asLong()
     {
-        long endTime = this.endTime != 0 ? this.endTime : currentTimeMillis();
+        long endTime = this.endTime != 0 ? this.endTime : nanoTime();
         long totalTime = endTime - startTime;
-        int seconds = (int) (totalTime / 1000);
+        int seconds = (int) TimeUnit.NANOSECONDS.toSeconds( totalTime );
         return seconds > 0 ? position / seconds : -1;
     }
 

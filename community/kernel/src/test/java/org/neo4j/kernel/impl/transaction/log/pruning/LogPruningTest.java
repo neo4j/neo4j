@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.File;
-import java.time.Clock;
 import java.util.stream.LongStream;
 
 import org.neo4j.configuration.Config;
@@ -33,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,7 +52,7 @@ class LogPruningTest
     private FileSystemAbstraction fs;
     private LogFiles logFiles;
     private LogProvider logProvider;
-    private Clock clock;
+    private SystemNanoClock clock;
     private LogPruneStrategyFactory factory;
 
     @BeforeEach
@@ -63,7 +63,7 @@ class LogPruningTest
         doAnswer( inv -> new File( String.valueOf( inv.getArguments()[0] ) ) )
                 .when( logFiles ).getLogFileForVersion( anyLong() );
         logProvider = NullLogProvider.getInstance();
-        clock = mock( Clock.class );
+        clock = mock( SystemNanoClock.class );
         factory = mock( LogPruneStrategyFactory.class );
     }
 

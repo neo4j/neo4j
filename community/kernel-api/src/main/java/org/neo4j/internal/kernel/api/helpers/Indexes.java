@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
+import org.neo4j.time.Stopwatch;
 
 public class Indexes
 {
@@ -36,15 +37,14 @@ public class Indexes
      * For each index, await a resampling event unless it has zero pending updates.
      *
      * @param schemaRead backing schema read
-     * @param timeout timeout in seconds. If this limit is passed, a TimeoutException is thrown.
+     * @param timeoutSeconds timeout in seconds. If this limit is passed, a TimeoutException is thrown.
      * @throws TimeoutException if all indexes are not resampled within the timeout.
      */
-    public static void awaitResampling( SchemaRead schemaRead, long timeout ) throws TimeoutException
+    public static void awaitResampling( SchemaRead schemaRead, long timeoutSeconds ) throws TimeoutException
     {
         final Iterator<IndexDescriptor> indexes = schemaRead.indexesGetAll();
         final Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-        final long t0 = System.currentTimeMillis();
-        final long timeoutMillis = 1000 * timeout;
+        final Stopwatch startTime = Stopwatch.start();
 
         while ( indexes.hasNext() )
         {
@@ -58,14 +58,14 @@ public class Indexes
                 while ( updateCount > 0 && updateCount <= readUpdates && !hasTimedOut )
                 {
                     Thread.sleep( 10 );
-                    hasTimedOut = System.currentTimeMillis() - t0 >= timeoutMillis;
+                    hasTimedOut = startTime.hasTimedOut( timeoutSeconds, TimeUnit.SECONDS );
                     updateCount = Math.max( updateCount, readUpdates );
                     readUpdates = readUpdates( index, schemaRead, register );
                 }
 
                 if ( hasTimedOut )
                 {
-                    throw new TimeoutException( String.format( "Indexes were not resampled within %s %s", timeout, TimeUnit.SECONDS ) );
+                    throw new TimeoutException( String.format( "Indexes were not resampled within %s %s", timeoutSeconds, TimeUnit.SECONDS ) );
                 }
             }
             catch ( InterruptedException e )
