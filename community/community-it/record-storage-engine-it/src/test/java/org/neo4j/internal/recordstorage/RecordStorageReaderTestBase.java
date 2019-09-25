@@ -165,7 +165,7 @@ public abstract class RecordStorageReaderTestBase
         apply( txState );
     }
 
-    void createUniquenessConstraint( Label label, String propertyKey ) throws Exception
+    IndexDescriptor createUniquenessConstraint( Label label, String propertyKey ) throws Exception
     {
         IndexDescriptor index = createUniqueIndex( label, propertyKey );
         TxState txState = new TxState();
@@ -175,6 +175,7 @@ public abstract class RecordStorageReaderTestBase
         constraint = constraint.withName( index.getName() ).withOwnedIndexId( index.getId() );
         txState.constraintDoAdd( constraint );
         apply( txState );
+        return index;
     }
 
     void createNodeKeyConstraint( Label label, String propertyKey ) throws Exception
@@ -201,24 +202,30 @@ public abstract class RecordStorageReaderTestBase
         return index;
     }
 
-    void createIndex( Label label, String propertyKey ) throws Exception
+    IndexDescriptor createIndex( Label label, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
         int labelId = getOrCreateLabelId( label );
         int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
         long id = commitContext.reserveSchema();
-        txState.indexDoAdd( IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).withName( "index_" + id ).materialise( id ) );
+        IndexPrototype prototype = IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).withName( "index_" + id );
+        IndexDescriptor index = prototype.materialise( id );
+        txState.indexDoAdd( index );
         apply( txState );
+        return index;
     }
 
-    void createIndex( RelationshipType relType, String propertyKey ) throws Exception
+    IndexDescriptor createIndex( RelationshipType relType, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
         int relTypeId = getOrCreateRelationshipTypeId( relType );
         int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
         long id = commitContext.reserveSchema();
-        txState.indexDoAdd( IndexPrototype.forSchema( forRelType( relTypeId, propertyKeyId ) ).withName( "index_" + id ).materialise( id ) );
+        IndexPrototype prototype = IndexPrototype.forSchema( forRelType( relTypeId, propertyKeyId ) ).withName( "index_" + id );
+        IndexDescriptor index = prototype.materialise( id );
+        txState.indexDoAdd( index );
         apply( txState );
+        return index;
     }
 
     void createNodePropertyExistenceConstraint( Label label, String propertyKey ) throws Exception

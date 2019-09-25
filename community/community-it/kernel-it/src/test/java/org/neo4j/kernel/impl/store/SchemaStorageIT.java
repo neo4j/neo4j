@@ -48,8 +48,10 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -67,7 +69,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @ImpermanentDbmsExtension
 class SchemaStorageIT
@@ -214,9 +215,9 @@ class SchemaStorageIT
 
         // Then
         Set<IndexDescriptor> expectedRules = new HashSet<>();
-        expectedRules.add( makeIndexRule( 0, LABEL1, PROP1 ) );
-        expectedRules.add( makeIndexRule( 1, LABEL1, PROP2 ) );
-        expectedRules.add( makeIndexRuleForConstraint( 2, LABEL2, PROP1, 0L ) );
+        expectedRules.add( makeIndexRule( 1, LABEL1, PROP1 ) );
+        expectedRules.add( makeIndexRule( 2, LABEL1, PROP2 ) );
+        expectedRules.add( makeIndexRuleForConstraint( 3, LABEL2, PROP1, 0L ) );
 
         assertEquals( expectedRules, listedRules );
     }
@@ -290,18 +291,23 @@ class SchemaStorageIT
     private IndexDescriptor makeIndexRule( long ruleId, String label, String propertyKey )
     {
         LabelSchemaDescriptor schema = forLabel( labelId( label ), propId( propertyKey ) );
-        return forSchema( schema, EMPTY.getProviderDescriptor() ).withName( "index_" + ruleId ).materialise( ruleId );
+        IndexPrototype prototype = forSchema( schema, GenericNativeIndexProvider.DESCRIPTOR );
+        prototype = prototype.withName( SchemaRule.generateName( prototype, new String[]{label}, new String[]{propertyKey} ) );
+        return prototype.materialise( ruleId );
     }
 
     private IndexDescriptor makeIndexRuleForConstraint( long ruleId, String label, String propertyKey, long constraintId )
     {
-        IndexPrototype prototype = uniqueForSchema( forLabel( labelId( label ), propId( propertyKey ) ), EMPTY.getProviderDescriptor() );
-        return prototype.withName( "constraint_" + ruleId ).materialise( ruleId ).withOwningConstraintId( constraintId );
+        LabelSchemaDescriptor schema = forLabel( labelId( label ), propId( propertyKey ) );
+        IndexPrototype prototype = uniqueForSchema( schema, GenericNativeIndexProvider.DESCRIPTOR );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
+        prototype = prototype.withName( SchemaRule.generateName( constraint, new String[]{label}, new String[]{propertyKey} ) );
+        return prototype.materialise( ruleId ).withOwningConstraintId( constraintId );
     }
 
     private int labelId( String labelName )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel( labelName );
         }
@@ -309,7 +315,7 @@ class SchemaStorageIT
 
     private int propId( String propName )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             return ((InternalTransaction) tx).kernelTransaction().tokenRead().propertyKey( propName );
         }

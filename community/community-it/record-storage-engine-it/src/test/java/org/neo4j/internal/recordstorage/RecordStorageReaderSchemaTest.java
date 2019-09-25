@@ -24,11 +24,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
@@ -41,17 +38,14 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
     void shouldListAllIndexes() throws Exception
     {
         // Given
-        createIndex( label1, propertyKey );
-        createIndex( label2, propertyKey );
+        IndexDescriptor firstExpectedIndex = createIndex( label1, propertyKey );
+        IndexDescriptor secondExpectedIndex = createIndex( label2, propertyKey );
 
         // When
         Set<IndexDescriptor> indexes = asSet( storageReader.indexesGetAll() );
 
         // Then
-        Set<IndexDescriptor> expectedIndexes = asSet(
-                indexDescriptor( label1, propertyKey ),
-                indexDescriptor( label2, propertyKey ) );
-
+        Set<IndexDescriptor> expectedIndexes = asSet( firstExpectedIndex, secondExpectedIndex );
         assertEquals( expectedIndexes, indexes );
     }
 
@@ -59,7 +53,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
     void shouldListAllIndexesAtTimeOfSnapshot() throws Exception
     {
         // Given
-        createIndex( label1, propertyKey );
+        IndexDescriptor expectedIndex = createIndex( label1, propertyKey );
 
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
@@ -67,10 +61,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<IndexDescriptor> indexes = asSet( snapshot.indexesGetAll() );
 
         // Then
-        Set<IndexDescriptor> expectedIndexes = asSet(
-                indexDescriptor( label1, propertyKey ) );
-
-        assertEquals( expectedIndexes, indexes );
+        assertEquals( asSet( expectedIndex ), indexes );
     }
 
     @Test
@@ -113,8 +104,8 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
     void shouldListAllIndexesForLabel() throws Exception
     {
         // Given
-        createUniquenessConstraint( label1, propertyKey );
-        createIndex( label1, otherPropertyKey );
+        IndexDescriptor expectedUniquenessIndex = createUniquenessConstraint( label1, propertyKey );
+        IndexDescriptor expectedIndex = createIndex( label1, otherPropertyKey );
         createUniquenessConstraint( label2, propertyKey );
         createIndex( label2, otherPropertyKey );
 
@@ -122,10 +113,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<IndexDescriptor> indexes = asSet( storageReader.indexesGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<IndexDescriptor> expectedIndexes = asSet(
-                uniqueIndexDescriptor( label1, propertyKey ),
-                indexDescriptor( label1, otherPropertyKey ) );
-
+        Set<IndexDescriptor> expectedIndexes = asSet( expectedIndex, expectedUniquenessIndex );
         assertEquals( expectedIndexes, indexes );
     }
 
@@ -133,8 +121,8 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
     void shouldListAllIndexesForLabelAtTimeOfSnapshot() throws Exception
     {
         // Given
-        createUniquenessConstraint( label1, propertyKey );
-        createIndex( label1, otherPropertyKey );
+        IndexDescriptor expectedUniquenessIndex = createUniquenessConstraint( label1, propertyKey );
+        IndexDescriptor expectedIndex = createIndex( label1, otherPropertyKey );
         createUniquenessConstraint( label2, propertyKey );
         createIndex( label2, otherPropertyKey );
 
@@ -143,10 +131,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<IndexDescriptor> indexes = asSet( snapshot.indexesGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<IndexDescriptor> expectedIndexes = asSet(
-                uniqueIndexDescriptor( label1, propertyKey ),
-                indexDescriptor( label1, otherPropertyKey ) );
-
+        Set<IndexDescriptor> expectedIndexes = asSet( expectedIndex, expectedUniquenessIndex );
         assertEquals( expectedIndexes, indexes );
     }
 
@@ -154,24 +139,22 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
     void shouldListAllIndexesForRelationshipType() throws Exception
     {
         // Given
-        createIndex( relType1, propertyKey );
+        IndexDescriptor expectedIndex = createIndex( relType1, propertyKey );
         createIndex( relType2, propertyKey );
 
         // When
         Set<IndexDescriptor> indexes = asSet( storageReader.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
 
         // Then
-        Set<IndexDescriptor> expectedIndexes = asSet(
-                indexDescriptor( relType1, propertyKey ) );
 
-        assertEquals( expectedIndexes, indexes );
+        assertEquals( asSet( expectedIndex ), indexes );
     }
 
     @Test
     void shouldListAllIndexesForRelationshipTypeAtTimeOfSnapshot() throws Exception
     {
         // Given
-        createIndex( relType1, propertyKey );
+        IndexDescriptor expectedIndex = createIndex( relType1, propertyKey );
         createIndex( relType2, propertyKey );
 
         // When
@@ -179,10 +162,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<IndexDescriptor> indexes = asSet( snapshot.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
 
         // Then
-        Set<IndexDescriptor> expectedIndexes = asSet(
-                indexDescriptor( relType1, propertyKey ) );
-
-        assertEquals( expectedIndexes, indexes );
+        assertEquals( asSet( expectedIndex ), indexes );
     }
 
     @Test
@@ -235,27 +215,6 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
                 uniqueConstraintDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
-    }
-
-    private IndexDescriptor indexDescriptor( Label label, String propertyKey )
-    {
-        int labelId = labelId( label );
-        int propKeyId = propertyKeyId( propertyKey );
-        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).withName( "index" ).materialise( 0 );
-    }
-
-    private IndexDescriptor indexDescriptor( RelationshipType relType, String propertyKey )
-    {
-        int relTypeId = relationshipTypeId( relType );
-        int propKeyId = propertyKeyId( propertyKey );
-        return IndexPrototype.forSchema( SchemaDescriptor.forRelType( relTypeId, propKeyId ) ).withName( "index" ).materialise( 0 );
-    }
-
-    private IndexDescriptor uniqueIndexDescriptor( Label label, String propertyKey )
-    {
-        int labelId = labelId( label );
-        int propKeyId = propertyKeyId( propertyKey );
-        return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).withName( "constraint" ).materialise( 0 );
     }
 
     private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )
