@@ -33,6 +33,12 @@ public class DropIndexFailureException extends SchemaKernelException
         this.message = message;
     }
 
+    public DropIndexFailureException( String message, Throwable cause )
+    {
+        super( Status.Schema.IndexDropFailed, message, cause );
+        this.message = message;
+    }
+
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {

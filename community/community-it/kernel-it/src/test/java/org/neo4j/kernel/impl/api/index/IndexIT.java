@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -256,8 +257,8 @@ class IndexIT extends KernelIntegrationTest
             SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexDrop( index );
         } );
-        assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
-            "No such index :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
+        assertEquals( "Unable to drop index: Index does not exist: Index( 1, 'Index on :Label (prop)', GENERAL, :Label(prop), native-btree-1.0 )",
+                e.getUserMessage( idTokenNameLookup ) );
         commit();
     }
 
@@ -288,8 +289,7 @@ class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
-                          "No such index :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
+            assertEquals( "Unable to drop index on :" + LABEL + "(" + PROPERTY_KEY + "). There is no such index.", e.getMessage() );
         }
         commit();
     }

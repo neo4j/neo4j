@@ -80,7 +80,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         {
             return index.getId();
         }
-        throw new IndexNotFoundKernelException( "Expected index on " + index + " to be online." );
+        throw new IndexNotFoundKernelException( "Expected index to be online: ", index );
     }
 
     Iterable<IndexProxy> getAllIndexProxies()

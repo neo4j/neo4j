@@ -893,6 +893,14 @@ public class Operations implements Write, SchemaWrite
         }
         exclusiveSchemaLock( index.schema() );
         exclusiveSchemaNameLock( index.getName() );
+        try
+        {
+            allStoreHolder.assertIndexExists( index );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new DropIndexFailureException( "Unable to drop index: " + e.getUserMessage( tokenNameLookup ), e );
+        }
         if ( index.isUnique() )
         {
             if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
@@ -911,7 +919,8 @@ public class Operations implements Write, SchemaWrite
 
         if ( !iterator.hasNext() )
         {
-            throw new NoSuchIndexException( schema );
+            throw new DropIndexFailureException(
+                    "Unable to drop index on " + schema.userDescription( tokenNameLookup ) + ". There is no such index." );
         }
         IndexDescriptor existingIndex = iterator.next();
         if ( iterator.hasNext() )
@@ -933,25 +942,25 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider, String name ) throws KernelException
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException
     {
         //Lock
-        exclusiveSchemaLock( descriptor );
+        exclusiveSchemaLock( schema );
         ktx.assertOpen();
         UniquenessConstraintDescriptor constraint;
 
         try
         {
             //Check data integrity
-            assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
-            constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor ).withName( name );
+            assertValidDescriptor( schema, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
+            constraint = ConstraintDescriptorFactory.uniqueForSchema( schema ).withName( name );
             constraint = ensureConstraintHasName( constraint );
             exclusiveSchemaNameLock( constraint.getName() );
             assertNoBlockingSchemaRulesExists( constraint );
         }
         catch ( SchemaKernelException e )
         {
-            exclusiveSchemaUnlock( descriptor ); // Try not to hold on to exclusive schema locks when we don't strictly need them.
+            exclusiveSchemaUnlock( schema ); // Try not to hold on to exclusive schema locks when we don't strictly need them.
             throw e;
         }
 
@@ -1100,33 +1109,33 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String provider, String name ) throws KernelException
+    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String provider, String name ) throws KernelException
     {
         //Lock
-        exclusiveSchemaLock( descriptor );
+        exclusiveSchemaLock( schema );
         ktx.assertOpen();
         NodeKeyConstraintDescriptor constraint;
 
         try
         {
             //Check data integrity
-            assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
-            constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor ).withName( name );
+            assertValidDescriptor( schema, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
+            constraint = ConstraintDescriptorFactory.nodeKeyForSchema( schema ).withName( name );
             constraint = ensureConstraintHasName( constraint );
             exclusiveSchemaNameLock( constraint.getName() );
             assertNoBlockingSchemaRulesExists( constraint );
         }
         catch ( SchemaKernelException e )
         {
-            exclusiveSchemaUnlock( descriptor );
+            exclusiveSchemaUnlock( schema );
             throw e;
         }
 
         //enforce constraints
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
         {
-            allStoreHolder.nodeLabelScan( descriptor.getLabelId(), nodes );
-            constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, descriptor );
+            allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
+            constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema );
         }
 
         //create constraint

@@ -77,7 +77,6 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
@@ -420,6 +419,14 @@ public class AllStoreHolder extends Read
         return storageReader.indexExists( index );
     }
 
+    public void assertIndexExists( IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
+        if ( !indexExists( index ) )
+        {
+            throw new IndexNotFoundKernelException( "Index does not exist: ", index );
+        }
+    }
+
     private ConstraintDescriptor lockConstraint( ConstraintDescriptor constraint )
     {
         if ( constraint == null )
@@ -636,7 +643,7 @@ public class AllStoreHolder extends Read
         assertValidIndex( index );
         acquireSharedSchemaLock( index );
         ktx.assertOpen();
-        indexingService.getIndexProxy( index ); // Throws if the index has been dropped.
+        assertIndexExists( index ); // Throws if the index has been dropped.
         DoubleLongRegister output = indexStatisticsStore.indexSample( index.getId(), Registers.newDoubleLongRegister() );
         long unique = output.readFirst();
         long size = output.readSecond();
@@ -705,8 +712,7 @@ public class AllStoreHolder extends Read
         }
         if ( diffSet.isRemoved( index ) )
         {
-            throw new IndexNotFoundKernelException( format( "Index on %s has been dropped in this transaction.",
-                    index.userDescription( idTokenNameLookup ) ) );
+            throw new IndexNotFoundKernelException( "Index has been dropped in this transaction: ", index );
         }
         return false;
     }
