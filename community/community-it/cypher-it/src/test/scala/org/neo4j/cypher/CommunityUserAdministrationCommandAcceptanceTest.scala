@@ -734,6 +734,17 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
   }
 
+  test("should fail when changing own password when AUTH DISABLED") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    the[IllegalStateException] thrownBy {
+      // WHEN
+      execute("ALTER CURRENT USER SET PASSWORD FROM 'old' TO 'new'")
+      // THEN
+    } should have message "User failed to alter their own password: Command not available with auth disabled."
+  }
+
   test("should fail when changing own password when not on system database") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)

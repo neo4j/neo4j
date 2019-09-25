@@ -144,6 +144,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           |SET user.passwordChangeRequired = false
           |RETURN oldCredentials""".stripMargin
       val currentUser = securityContext.subject().username()
+      if (securityContext.equals(SecurityContext.AUTH_DISABLED))
+        throw new IllegalStateException("User failed to alter their own password: Command not available with auth disabled.")
 
       UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine, query,
         VirtualValues.map(Array("name", "credentials"),
