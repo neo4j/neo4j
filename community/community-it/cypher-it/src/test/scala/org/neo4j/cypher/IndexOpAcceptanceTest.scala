@@ -86,7 +86,6 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     // WHEN
     val e = intercept[CypherExecutionException](execute("DROP INDEX ON :Person(name)"))
     assert(e.getCause.isInstanceOf[DropIndexFailureException])
-    assert(e.getCause.getCause.isInstanceOf[NoSuchIndexException])
   }
 
   implicit class FileHelper(file: File) {

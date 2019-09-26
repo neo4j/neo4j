@@ -189,14 +189,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
     expectError(
       "DROP INDEX ON :LabelName(Prop)",
-      "Unable to drop index on :LabelName(Prop): Index belongs to constraint: :LabelName(Prop)"
+      "Unable to drop index: Index belongs to constraint: :LabelName(Prop)"
     )
   }
 
   test("trying to drop non existent index") {
     expectError(
       "DROP INDEX ON :Person(name)",
-      "Unable to drop index on :Person(name): No such index :Person(name)."
+      "Unable to drop index on :Person(name). There is no such index."
     )
   }
 

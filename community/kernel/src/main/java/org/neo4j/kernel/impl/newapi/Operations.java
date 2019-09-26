@@ -905,7 +905,8 @@ public class Operations implements Write, SchemaWrite
         {
             if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
             {
-                throw new IndexBelongsToConstraintException( index.schema() );
+                IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException( index.schema() );
+                throw new DropIndexFailureException( "Unable to drop index: " + cause.getUserMessage( tokenNameLookup ), cause );
             }
         }
         ktx.txState().indexDoDrop( index );
