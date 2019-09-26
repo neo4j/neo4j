@@ -96,6 +96,7 @@ import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
@@ -113,6 +114,7 @@ import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngi
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
+import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * Utility class to perform store recovery or check is recovery is required.
@@ -122,6 +124,8 @@ import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
  */
 public final class Recovery
 {
+    public static final boolean IGNORE_STORE_ID = flag( Recovery.class, "ignoreStoreId", false );
+
     private Recovery()
     {
     }
@@ -320,10 +324,10 @@ public final class Recovery
                 .withDependencies( dependencies )
                 .build();
 
-        logFiles.accept( new StoreIdValidator( storageEngine.getStoreId() ) );
-
         Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
         LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles ) );
+
+        validateStoreId( logTailScanner, storageEngine.getStoreId() );
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
@@ -367,6 +371,22 @@ public final class Recovery
         finally
         {
             recoveryLife.shutdown();
+        }
+    }
+
+    public static void validateStoreId( LogTailScanner tailScanner, StoreId storeId )
+    {
+        if ( !IGNORE_STORE_ID )
+        {
+            StoreId txStoreId = tailScanner.getTailInformation().lastStoreId;
+            if ( !StoreId.UNKNOWN.equals( txStoreId ) )
+            {
+                if ( !storeId.equalsIgnoringUpdate( txStoreId ) )
+                {
+                    throw new RuntimeException( "Mismatching store id. Store StoreId: " + storeId +
+                            ". Transaction log StoreId: " + txStoreId );
+                }
+            }
         }
     }
 
