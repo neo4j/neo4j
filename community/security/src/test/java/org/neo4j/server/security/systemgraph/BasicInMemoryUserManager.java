@@ -64,11 +64,7 @@ public class BasicInMemoryUserManager extends BasicSystemGraphRealm
 
     private void setupDefaultUser() throws InvalidArgumentsException
     {
-        Credential credential = SystemGraphCredential.createCredentialForPassword( UTF8.encode( INITIAL_PASSWORD ), mock(SecureHasher.class) );
-        User user = new User.Builder().withName( INITIAL_USER_NAME ).withCredentials( credential ).withRequiredPasswordChange( true ).withoutFlag(
-                IS_SUSPENDED ).build();
-
-        addUser( user );
+        newUser( INITIAL_USER_NAME,  UTF8.encode( INITIAL_PASSWORD ), true );
     }
 
     @Override
