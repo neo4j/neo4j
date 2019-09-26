@@ -99,7 +99,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
-                HEAP_ALLOCATOR, 1000, layout
+                HEAP_ALLOCATOR, 10_000, layout
         ) )
         {
             // when
