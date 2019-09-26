@@ -30,6 +30,7 @@ org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Russian
 org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Sorani
 org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Spanish
 org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Standard
+org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardFolding
 org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Swedish
 org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Thai
 org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Turkish

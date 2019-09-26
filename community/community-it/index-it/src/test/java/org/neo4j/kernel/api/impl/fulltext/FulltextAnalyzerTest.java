@@ -37,6 +37,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
     public static final String ENGLISH = "english";
     public static final String SWEDISH = "swedish";
+    public static final String FOLDING = "standard-folding";
 
     @Test
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
@@ -107,6 +108,41 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             assertQueryFindsNothing( ktx, "nodes", "och" );
             assertQueryFindsNothing( ktx, "nodes", "ett" );
         }
+    }
+
+    @Test
+    public void shouldBeAbleToSpecifyFoldingAnalyzer() throws Exception
+    {
+        applySetting( FulltextConfig.fulltext_default_analyzer, FOLDING );
+        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, settings, PROP );
+        IndexReference nodes;
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+        {
+            SchemaWrite schemaWrite = transaction.schemaWrite();
+            nodes = schemaWrite.indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( "nodes" ) );
+            transaction.success();
+        }
+        await( nodes );
+
+        long id;
+        try ( Transaction tx = db.beginTx() )
+        {
+            id = createNodeIndexableByPropertyValue( LABEL, "Příliš žluťoučký kůň úpěl ďábelské ódy." );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = kernelTransaction( tx );
+            assertQueryFindsIds( ktx, "nodes", "prilis", id );
+            assertQueryFindsIds( ktx, "nodes", "zlutoucky", id );
+            assertQueryFindsIds( ktx, "nodes", "kun", id );
+            assertQueryFindsIds( ktx, "nodes", "upel", id );
+            assertQueryFindsIds( ktx, "nodes", "dabelske", id );
+            assertQueryFindsIds( ktx, "nodes", "ody", id );
+        }
+
     }
 
     @Test
