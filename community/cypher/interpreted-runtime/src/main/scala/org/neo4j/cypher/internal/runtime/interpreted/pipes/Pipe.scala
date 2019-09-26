@@ -78,4 +78,6 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
   private[pipes] def testCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     internalCreateResults(input, state)
+
+  def getSource: Pipe = source
 }
