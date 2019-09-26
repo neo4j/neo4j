@@ -26,6 +26,8 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexKind;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.register.Register;
 import org.neo4j.values.storable.Value;
@@ -42,6 +44,25 @@ public interface SchemaRead extends SchemaReadCore
      * @return An index matching the schema, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong.
      */
     Iterator<IndexDescriptor> indexForSchemaNonTransactional( SchemaDescriptor schema );
+
+    /**
+     * This method only exists to make the Cypher Compiled Runtime happy. It should be removed once the compiled runtime is removed.
+     */
+    @Deprecated
+    default IndexDescriptor indexGetForLabelAndPropertiesForCompiledRuntime( int labelId, int[] propertyIds )
+    {
+        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyIds );
+        Iterator<IndexDescriptor> indexes = index( schema );
+        while ( indexes.hasNext() )
+        {
+            IndexDescriptor index = indexes.next();
+            if ( index.getIndexType().getKind() == IndexKind.GENERAL )
+            {
+                return index;
+            }
+        }
+        return IndexDescriptor.NO_INDEX;
+    }
 
     /**
      * Returns the index with the given name.
