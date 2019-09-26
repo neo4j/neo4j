@@ -144,8 +144,6 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           |SET user.passwordChangeRequired = false
           |RETURN oldCredentials""".stripMargin
       val currentUser = securityContext.subject().username()
-      if (securityContext.equals(SecurityContext.AUTH_DISABLED))
-        throw new IllegalStateException("User failed to alter their own password: Command not available with auth disabled.")
 
       UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine, query,
         VirtualValues.map(Array("name", "credentials"),
@@ -164,6 +162,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
               Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Old password and new password cannot be the same."))
             else
               None
+          })
+          .handleNoResult( () => {
+            if (currentUser.isEmpty) // This is true if the securityContext is AUTH_DISABLED (both for community and enterprise)
+              Some(new IllegalStateException("User failed to alter their own password: Command not available with auth disabled."))
+            else None // The 'current user' doesn't exist in the system graph
           })
       )
 
