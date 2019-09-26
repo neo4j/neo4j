@@ -166,7 +166,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           .handleNoResult( () => {
             if (currentUser.isEmpty) // This is true if the securityContext is AUTH_DISABLED (both for community and enterprise)
               Some(new IllegalStateException("User failed to alter their own password: Command not available with auth disabled."))
-            else None // The 'current user' doesn't exist in the system graph
+            else // The 'current user' doesn't exist in the system graph
+              Some(new IllegalStateException(s"User '$currentUser' failed to alter their own password: User does not exist."))
           })
       )
 
