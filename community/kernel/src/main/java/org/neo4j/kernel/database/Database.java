@@ -493,7 +493,7 @@ public class Database extends LifecycleAdapter
             if ( !StoreId.UNKNOWN.equals( txStoreId ) )
             {
                 StoreId storeId = storageEngineFactory.storeId( databaseLayout, databasePageCache );
-                if ( !storeId.equals( txStoreId ) )
+                if ( !storeId.equalsIgnoringUpdate( txStoreId ) )
                 {
                     throw new RuntimeException( "Mismatching store id. Store StoreId: " + storeId +
                             ". Transaction log StoreId: " + txStoreId );

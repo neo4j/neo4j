@@ -105,6 +105,20 @@ public final class StoreId
                upgradeTxId == storeId.upgradeTxId;
     }
 
+    public boolean equalsIgnoringUpdate( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        StoreId storeId = (StoreId) o;
+        return creationTime == storeId.creationTime && randomId == storeId.randomId;
+    }
+
     @Override
     public int hashCode()
     {

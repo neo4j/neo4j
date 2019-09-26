@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 
@@ -67,20 +66,6 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
         {
             String version = readVersion();
             return Optional.of( version );
-        }
-        catch ( IOException e )
-        {
-            return Optional.empty();
-        }
-    }
-
-    @Override
-    public Optional<StoreId> storeId()
-    {
-        try
-        {
-            return Optional.of( MetaDataStore.getStoreId( pageCache, metaDataFile ) );
-
         }
         catch ( IOException e )
         {

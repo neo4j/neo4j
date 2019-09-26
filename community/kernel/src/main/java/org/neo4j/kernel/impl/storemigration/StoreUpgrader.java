@@ -32,20 +32,13 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogVersions;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.IndexCapabilities;
-import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
@@ -221,57 +214,27 @@ public class StoreUpgrader
         {
             File transactionLogsDirectory = dbDirectoryLayout.getTransactionLogsDirectory();
             File legacyLogsDirectory = transactionLogsLocator.getTransactionLogsDirectory();
-            if ( !transactionLogsDirectory.equals( legacyLogsDirectory ) )
+            if ( transactionLogsDirectory.equals( legacyLogsDirectory ) )
             {
-                // Directories differ, move files to right location
-                File[] legacyFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fileSystem ).build().logFiles();
-                if ( legacyFiles != null )
+                // directories are the same - no need to move log files
+                return;
+            }
+            File[] legacyFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fileSystem ).build().logFiles();
+            if ( legacyFiles != null )
+            {
+                for ( File legacyFile : legacyFiles )
                 {
-                    for ( File legacyFile : legacyFiles )
-                    {
-                        fileSystem.copyFile( legacyFile, new File( transactionLogsDirectory, legacyFile.getName() ), EMPTY_COPY_OPTIONS );
-                    }
-                    for ( File legacyFile : legacyFiles )
-                    {
-                        fileSystem.deleteFile( legacyFile );
-                    }
+                    fileSystem.copyFile( legacyFile, new File( transactionLogsDirectory, legacyFile.getName() ), EMPTY_COPY_OPTIONS );
+                }
+                for ( File legacyFile : legacyFiles )
+                {
+                    fileSystem.deleteFile( legacyFile );
                 }
             }
         }
         catch ( IOException ioException )
         {
             throw new TransactionLogsRelocationException( "Failure on attempt to move transaction logs into new location.", ioException );
-        }
-
-        try
-        {
-            StoreId storeId = storeVersionCheck.storeId().orElseThrow( () -> new IOException( "Unable to read store id" ) );
-            File transactionLogsDirectory = dbDirectoryLayout.getTransactionLogsDirectory();
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fileSystem ).build();
-            logFiles.accept( ( file, logVersion ) ->
-            {
-                try
-                {
-                    LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, file );
-                    if ( logHeader.logFormatVersion == LogVersions.LOG_VERSION_4_0 )
-                    {
-                        // This version have the store id as part of the header, that must be updated after the upgrade
-                        try ( StoreChannel logChannel = fileSystem.write( logFiles.getLogFileForVersion( logHeader.logVersion ) ) )
-                        {
-                            LogHeader newLogHeader = new LogHeader( logHeader.logFormatVersion, logHeader.logVersion, logHeader.lastCommittedTxId, storeId );
-                            LogHeaderWriter.writeLogHeader( logChannel, newLogHeader );
-                        }
-                    }
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
-                }
-            } );
-        }
-        catch ( IOException | UncheckedIOException ioException )
-        {
-            throw new TransactionLogsUpdateStoreIdException( "Error updating transaction log headers.", ioException );
         }
     }
 
@@ -426,14 +389,6 @@ public class StoreUpgrader
     static class TransactionLogsRelocationException extends RuntimeException
     {
         TransactionLogsRelocationException( String message, Throwable cause )
-        {
-            super( message, cause );
-        }
-    }
-
-    static class TransactionLogsUpdateStoreIdException extends RuntimeException
-    {
-        TransactionLogsUpdateStoreIdException( String message, Throwable cause )
         {
             super( message, cause );
         }
