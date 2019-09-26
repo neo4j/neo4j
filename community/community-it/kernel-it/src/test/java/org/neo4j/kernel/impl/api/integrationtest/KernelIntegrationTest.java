@@ -73,12 +73,12 @@ public abstract class KernelIntegrationTest
     protected IndexingService indexingService;
 
     protected InternalTransaction transaction;
-    private KernelTransaction kernelTransaction;
+    protected KernelTransaction kernelTransaction;
     private DbmsOperations dbmsOperations;
     protected DependencyResolver dependencyResolver;
     private DatabaseManagementService managementService;
 
-    protected TokenWrite tokenWriteInNewTransaction() throws KernelException
+    protected TokenWrite tokenWriteInNewTransaction()
     {
         beginTransaction( AnonymousContext.writeToken() );
         return kernelTransaction.tokenWrite();
@@ -96,7 +96,7 @@ public abstract class KernelIntegrationTest
         return kernelTransaction.schemaWrite();
     }
 
-    protected Procedures procs() throws TransactionFailureException
+    protected Procedures procs()
     {
         if ( kernelTransaction == null )
         {
@@ -105,7 +105,7 @@ public abstract class KernelIntegrationTest
         return kernelTransaction.procedures();
     }
 
-    protected Procedures procsSchema() throws TransactionFailureException
+    protected Procedures procsSchema()
     {
         if ( kernelTransaction == null )
         {
@@ -114,13 +114,13 @@ public abstract class KernelIntegrationTest
         return kernelTransaction.procedures();
     }
 
-    protected KernelTransaction newTransaction() throws TransactionFailureException
+    protected KernelTransaction newTransaction()
     {
         beginTransaction( AnonymousContext.read() );
         return kernelTransaction;
     }
 
-    protected KernelTransaction newTransaction( LoginContext loginContext ) throws TransactionFailureException
+    protected KernelTransaction newTransaction( LoginContext loginContext )
     {
         beginTransaction( loginContext );
         return kernelTransaction;
@@ -145,7 +145,7 @@ public abstract class KernelIntegrationTest
         return dbmsOperations;
     }
 
-    protected void commit() throws TransactionFailureException
+    protected void commit()
     {
         transaction.commit();
         transaction = null;
