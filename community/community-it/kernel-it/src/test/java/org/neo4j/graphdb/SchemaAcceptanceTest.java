@@ -924,7 +924,7 @@ class SchemaAcceptanceTest
                     {
                         try
                         {
-                            db.schema().awaitIndexesOnline( 1, TimeUnit.SECONDS );
+                            db.schema().awaitIndexesOnline( 20, TimeUnit.SECONDS );
                         }
                         catch ( Exception e )
                         {
