@@ -184,8 +184,8 @@ class ArrayQueueOutOfOrderSequenceTest
         // given
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 2, 8, new long[]{1, 2} );
         sequence.offer( 3, new long[]{3, 4} );
-        sequence.offer( 5, new long[]{5, 6} );
-        sequence.offer( 7, new long[]{7, 8} );
+        sequence.offer( 10, new long[]{10, 11} );
+        sequence.offer( 12, new long[]{12, 13} );
         sequence.offer( 6, new long[]{6, 7} );
 
         // when grabbing a snapshot
@@ -197,9 +197,9 @@ class ArrayQueueOutOfOrderSequenceTest
         // then the snapshot should contain data from when it was taken
         assertArrayEquals( new long[]{3, 3, 4}, snapshot.highestGapFree() );
         assertEquals( 3, snapshot.idsOutOfOrder().length );
-        assertArrayEquals( new long[]{5, 5, 6}, snapshot.idsOutOfOrder()[0] );
-        assertArrayEquals( new long[]{6, 6, 7}, snapshot.idsOutOfOrder()[1] );
-        assertArrayEquals( new long[]{7, 7, 8}, snapshot.idsOutOfOrder()[2] );
+        assertArrayEquals( new long[]{6, 6, 7}, snapshot.idsOutOfOrder()[0] );
+        assertArrayEquals( new long[]{10, 10, 11}, snapshot.idsOutOfOrder()[1] );
+        assertArrayEquals( new long[]{12, 12, 13}, snapshot.idsOutOfOrder()[2] );
     }
 
     @Test

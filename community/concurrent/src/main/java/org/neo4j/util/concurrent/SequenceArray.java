@@ -177,8 +177,8 @@ public class SequenceArray
             if ( number != UNSET )
             {
                 temp[resultCursor++] = Arrays.copyOfRange( array, absIndex, absIndex + longsPerItem );
-                queueCursor = advanceCursor( queueCursor );
             }
+            queueCursor = advanceCursor( queueCursor );
         }
         if ( resultCursor < temp.length )
         {

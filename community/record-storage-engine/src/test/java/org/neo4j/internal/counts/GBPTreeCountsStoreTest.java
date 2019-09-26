@@ -152,12 +152,11 @@ class GBPTreeCountsStoreTest
     {
         // given
         int threads = 50; // it's good if it's way more than number of cores so that it creates some scheduling issues
-        int numberOfRounds = 10;
-        int roundTimeMillis = 1_000;
+        int numberOfRounds = 5;
+        int roundTimeMillis = 300;
         ConcurrentMap<CountsKey,AtomicLong> expected = new ConcurrentHashMap<>();
         AtomicLong nextTxId = new AtomicLong( BASE_TX_ID );
         AtomicLong lastCheckPointedTxId = new AtomicLong( nextTxId.longValue() );
-        OutOfOrderSequence lastClosedTxId = new ArrayQueueOutOfOrderSequence( BASE_TX_ID, 200, EMPTY_LONG_ARRAY );
         long lastRoundClosedAt = BASE_TX_ID;
 
         // Start at some number > 0 so that we can do negative deltas now and then
@@ -176,6 +175,7 @@ class GBPTreeCountsStoreTest
                 }
             }
         }
+        OutOfOrderSequence lastClosedTxId = new ArrayQueueOutOfOrderSequence( nextTxId.get(), 200, EMPTY_LONG_ARRAY );
 
         // when
         for ( int r = 0; r < numberOfRounds; r++ )
@@ -184,17 +184,18 @@ class GBPTreeCountsStoreTest
             Race race = new Race().withMaxDuration( roundTimeMillis, TimeUnit.MILLISECONDS );
             race.addContestants( threads, throwing( () ->
             {
-                Thread.sleep( ThreadLocalRandom.current().nextInt( 30 ) );
                 long txId = nextTxId.incrementAndGet();
+                // Sleep a random time after getting the txId, this creates bigger temporary gaps in the txId sequence
+                Thread.sleep( ThreadLocalRandom.current().nextInt( 5 ) );
                 generateAndApplyTransaction( expected, txId );
                 lastClosedTxId.offer( txId, EMPTY_LONG_ARRAY );
             } ) );
             race.addContestant( throwing( () ->
             {
-                Thread.sleep( ThreadLocalRandom.current().nextInt( roundTimeMillis / 4 ) );
                 long checkpointTxId = lastClosedTxId.getHighestGapFreeNumber();
                 countsStore.checkpoint( UNLIMITED );
                 lastCheckPointedTxId.set( checkpointTxId );
+                Thread.sleep( ThreadLocalRandom.current().nextInt( roundTimeMillis / 5 ) );
             } ) );
             race.go();
 
