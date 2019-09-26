@@ -258,7 +258,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
     val allRows = for {
       x <- nodes
-      rel <- x.getRelationships().asScala
+      rel <- runtimeTestSupport.txHolder.get().getNodeById(x.getId).getRelationships().asScala
       y = rel.getOtherNode(x)
     } yield Array[Any](x, y)
 
@@ -292,7 +292,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
     def outerTop(from: Node): Seq[(Node, Node)] = {
       (for {
-        rel <- from.getRelationships().asScala.toSeq
+        rel <- runtimeTestSupport.txHolder.get().getNodeById(from.getId).getRelationships().asScala.toSeq
         to = rel.getOtherNode(from)
       } yield (from, to)).sortBy(tuple => -tuple._2.getId).take(limit1)
     }

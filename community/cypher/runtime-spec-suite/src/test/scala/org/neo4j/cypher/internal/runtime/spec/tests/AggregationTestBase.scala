@@ -678,7 +678,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     def outerAgg(from: Node): Seq[(Long, Seq[Node])] = {
       (for {
-        rel <- from.getRelationships().asScala.toSeq
+        rel <- runtimeTestSupport.txHolder.get().getNodeById(from.getId).getRelationships().asScala.toSeq
         to = rel.getOtherNode(from)
       } yield (from, to)).groupBy{ case (_, to) => to.getId % 2}
         .map{ case (key, seq) => (key, seq.map(_._2))}.toSeq
