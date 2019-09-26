@@ -234,17 +234,19 @@ public class Neo4jJsonCodec extends ObjectMapper
         var kti = container.getBridge().getKernelTransactionBoundToThisThread( true, container.getDb().databaseId() );
         if ( value instanceof Node )
         {
-            var entity = kti instanceof KernelTransactionImplementation ?
+            var nodeDeletedInCurrentTx = txStateChecker.isNodeDeletedInCurrentTx( value.getId() );
+            var entity = !nodeDeletedInCurrentTx && kti instanceof KernelTransactionImplementation ?
                          ((KernelTransactionImplementation) kti).internalTransaction().getNodeById( value.getId() )
                         : value;
-            writeNodeOrRelationship( out, entity, txStateChecker.isNodeDeletedInCurrentTx( value.getId() ) );
+            writeNodeOrRelationship( out, entity, nodeDeletedInCurrentTx );
         }
         else if ( value instanceof Relationship )
         {
-            var entity = kti instanceof KernelTransactionImplementation ?
+            var relationshipDeletedInCurrentTx = txStateChecker.isRelationshipDeletedInCurrentTx( value.getId() );
+            var entity = !relationshipDeletedInCurrentTx && kti instanceof KernelTransactionImplementation ?
                          ((KernelTransactionImplementation) kti).internalTransaction().getRelationshipById( value.getId() )
-                                                                        : value;
-            writeNodeOrRelationship( out, entity, txStateChecker.isRelationshipDeletedInCurrentTx( value.getId() ) );
+                          : value;
+            writeNodeOrRelationship( out, entity, relationshipDeletedInCurrentTx );
         }
         else
         {
