@@ -35,6 +35,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
     private static final String ENGLISH = "english";
     static final String SWEDISH = "swedish";
+    private static final String FOLDING = "standard-folding";
 
     @Test
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
@@ -104,6 +105,40 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             assertQueryFindsNothing( ktx, true, "nodes", "en" );
             assertQueryFindsNothing( ktx, true, "nodes", "och" );
             assertQueryFindsNothing( ktx, true, "nodes", "ett" );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToSpecifyFoldingAnalyzer() throws Exception
+    {
+        applySetting( FulltextSettings.fulltext_default_analyzer, FOLDING );
+        SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        IndexDescriptor nodes;
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
+        {
+            SchemaWrite schemaWrite = transaction.schemaWrite();
+            nodes = schemaWrite.indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "nodes" );
+            transaction.success();
+        }
+        await( nodes );
+
+        long id;
+        try ( Transaction tx = db.beginTx() )
+        {
+            id = createNodeIndexableByPropertyValue( tx, LABEL, "Příliš žluťoučký kůň úpěl ďábelské ódy." );
+
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = kernelTransaction( tx );
+            assertQueryFindsIds( ktx, true, "nodes", "prilis", id );
+            assertQueryFindsIds( ktx, true, "nodes", "zlutoucky", id );
+            assertQueryFindsIds( ktx, true, "nodes", "kun", id );
+            assertQueryFindsIds( ktx, true, "nodes", "upel", id );
+            assertQueryFindsIds( ktx, true, "nodes", "dabelske", id );
+            assertQueryFindsIds( ktx, true, "nodes", "ody", id );
         }
     }
 
