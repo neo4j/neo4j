@@ -61,9 +61,10 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def containsUpdates: Boolean =
     clauses.exists {
+      case sub: SubQuery    => sub.part.containsUpdates
       case call: CallClause => !call.containsNoUpdates
-      case _: UpdateClause => true
-      case _               => false
+      case _: UpdateClause  => true
+      case _                => false
     }
 
   override def returnColumns: List[LogicalVariable] = clauses.last.returnColumns
