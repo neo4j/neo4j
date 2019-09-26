@@ -30,6 +30,12 @@ public interface StoreVersionCheck
     Optional<String> storeVersion();
 
     /**
+     * The store id of the store.
+     * @return store id of the store.
+     */
+    Optional<StoreId> storeId();
+
+    /**
      * Store version as dictated by configuration.
      * @return store version that configuration says is the version to use.
      */

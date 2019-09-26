@@ -54,7 +54,6 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -189,10 +188,11 @@ class DatabaseStartupTest
         {
             db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             assertFalse( db.isAvailable( 10 ) );
-            DatabaseManager<?> databaseManager = getDatabaseManager( db );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseLayout.getDatabaseName() ).get();
-            assertTrue( databaseContext.isFailed() );
-            assertTrue( databaseContext.failureCause().getCause().getMessage().contains( "Mismatching store id" ) );
+
+            DatabaseStateService dbStateService = db.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+            Optional<Throwable> cause = dbStateService.causeOfFailure( db.databaseId() );
+            assertTrue( cause.isPresent() );
+            assertTrue( cause.get().getCause().getMessage().contains( "Mismatching store id" ) );
         }
         finally
         {
