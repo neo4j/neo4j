@@ -58,7 +58,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
     private final Map<Long, SchemaRecord> indexObligations;
     private final Map<Long, SchemaRecord> constraintObligations;
-    private final Map<SchemaRule, SchemaRecord> verifiedRulesWithRecords;
+    private final Map<SchemaRuleKey, SchemaRecord> verifiedRulesWithRecords;
     private final CheckStrategy strategy;
 
     public SchemaRecordCheck( SchemaRuleAccess ruleAccess, IndexAccessors indexAccessors )
@@ -76,7 +76,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             IndexAccessors indexAccessors,
             Map<Long, SchemaRecord> indexObligations,
             Map<Long, SchemaRecord> constraintObligations,
-            Map<SchemaRule, SchemaRecord> verifiedRulesWithRecords,
+            Map<SchemaRuleKey, SchemaRecord> verifiedRulesWithRecords,
             CheckStrategy strategy )
     {
         this.ruleAccess = ruleAccess;
@@ -327,7 +327,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private void checkForDuplicates( SchemaRule rule, SchemaRecord record,
             CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
-        SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( rule, cloneRecord( record ) );
+        SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( rule ), cloneRecord( record ) );
         if ( previousContentRecord != null )
         {
             engine.report().duplicateRuleContent( previousContentRecord );
@@ -363,4 +363,62 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                     engine.report().propertyKeyNotInUse( propertyKeyTokenRecord );
                 }
             };
+
+    private static class SchemaRuleKey
+    {
+        private final boolean isConstraint;
+        private final boolean isUnique;
+        private final SchemaDescriptor schema;
+
+        private SchemaRuleKey( SchemaRule rule )
+        {
+            if ( rule instanceof ConstraintDescriptor )
+            {
+                ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
+                this.isConstraint = true;
+                this.isUnique = constraint.enforcesUniqueness();
+            }
+            else
+            {
+                IndexDescriptor index = (IndexDescriptor) rule;
+                this.isConstraint = false;
+                this.isUnique = index.isUnique();
+            }
+            this.schema = rule.schema();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            SchemaRuleKey that = (SchemaRuleKey) o;
+
+            if ( isConstraint != that.isConstraint )
+            {
+                return false;
+            }
+            if ( isUnique != that.isUnique )
+            {
+                return false;
+            }
+            return schema.equals( that.schema );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = isConstraint ? 1 : 0;
+            result = 31 * result + (isUnique ? 1 : 0);
+            result = 31 * result + schema.hashCode();
+            return result;
+        }
+    }
 }
