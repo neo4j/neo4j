@@ -584,8 +584,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("sum").withSingleRow(expected)
   }
-  // TODO fix in morsel & parallel
-  ignore("should aggregation on top of apply with expand and limit and aggregation on rhs of apply") {
+
+  test("should aggregation on top of apply with expand and limit and aggregation on rhs of apply") {
     // given
     val nodesPerLabel = 10
     val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
