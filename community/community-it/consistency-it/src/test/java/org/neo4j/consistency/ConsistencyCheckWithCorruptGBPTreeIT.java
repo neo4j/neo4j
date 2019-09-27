@@ -545,7 +545,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
         try
         {
-            final File neo4jHome = testDirectory.directory();
+            final File neo4jHome = testDirectory.homeDir();
             dbmsAction( neo4jHome, fs, NATIVE30, db ->
             {
                 Label label = Label.label( "label2" );

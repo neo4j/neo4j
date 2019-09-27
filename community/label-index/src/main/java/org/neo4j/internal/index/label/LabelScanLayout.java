@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 public class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
 {
-    LabelScanLayout()
+    public LabelScanLayout()
     {
         super( true, Layout.namedIdentifier( IDENTIFIER_NAME, LabelScanValue.RANGE_SIZE ), 0, 1 );
     }

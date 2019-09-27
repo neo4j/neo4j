@@ -49,7 +49,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
     public void setup() throws IOException
     {
         ServerHelper.cleanTheDatabase( readOnlyServer );
-        readOnlyServer = ServerHelper.createReadOnlyServer( dir.storeDir() );
+        readOnlyServer = ServerHelper.createReadOnlyServer( dir.homeDir() );
         http = HTTP.withBaseUri( readOnlyServer.baseUri() );
     }
 

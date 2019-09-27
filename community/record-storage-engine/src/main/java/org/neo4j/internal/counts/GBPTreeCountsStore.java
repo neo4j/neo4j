@@ -92,7 +92,7 @@ public class GBPTreeCountsStore implements CountsStore
 
         // First just read the header so that we can avoid creating it if this store is read-only
         CountsHeader header = new CountsHeader( 0 );
-        this.tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector );
+        this.tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector, false );
         boolean successful = false;
         try
         {
@@ -370,7 +370,7 @@ public class GBPTreeCountsStore implements CountsStore
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), 0, GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.immediate() ) )
+                RecoveryCleanupWorkCollector.ignore(), true ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             tree.visit( new GBPTreeVisitor.Adaptor<>()

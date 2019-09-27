@@ -193,9 +193,9 @@ public class NativeLabelScanStoreTest
     {
         // WHEN
         final Exception exception = assertThrows( Exception.class, () -> start( true ) );
-        assertTrue( Exceptions.contains( exception, NoSuchFileException.class ) );
-        assertTrue( Exceptions.contains( exception, TreeFileNotFoundException.class ) );
-        assertTrue( Exceptions.contains( exception, IllegalStateException.class ) );
+        assertTrue( Exceptions.contains( exception, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( exception, t -> t instanceof TreeFileNotFoundException ) );
+        assertTrue( Exceptions.contains( exception, t -> t instanceof IllegalStateException ) );
     }
 
     @Test
