@@ -41,7 +41,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
-import org.neo4j.configuration.ssl.PemSslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
@@ -243,14 +243,15 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled ) throws Exception
     {
-        PemSslPolicyConfig httpsPolicy = PemSslPolicyConfig.forScope( SslPolicyScope.HTTPS );
+        SslPolicyConfig httpsPolicy = SslPolicyConfig.forScope( SslPolicyScope.HTTPS );
         if ( httpsEnabled )
         {
             //create self signed
             SelfSignedCertificateFactory.create( testDirectory.homeDir().getAbsoluteFile() );
         }
 
-        String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.homeDir().getAbsolutePath() ) : "",
+        String[] config = { "-c", httpsEnabled ? configOption( httpsPolicy.enabled, TRUE ) : "",
+                "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.homeDir().getAbsolutePath() ) : "",
 
                 "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
                 "-c", HttpConnector.listen_address.name() + "=localhost:0",

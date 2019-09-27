@@ -37,9 +37,6 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.configuration.ssl.JksSslPolicyConfig;
-import org.neo4j.configuration.ssl.PemSslPolicyConfig;
-import org.neo4j.configuration.ssl.Pkcs12SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.config.Setting;
@@ -75,8 +72,8 @@ class SettingMigratorsTest
     @Test
     void shouldRemoveAllowKeyGeneration() throws Throwable
     {
-        shouldRemoveAllowKeyGeneration( "dbms.ssl.policy.pem.default.allow_key_generation", TRUE );
-        shouldRemoveAllowKeyGeneration( "dbms.ssl.policy.pem.default.allow_key_generation", FALSE );
+        shouldRemoveAllowKeyGeneration( "dbms.ssl.policy.default.allow_key_generation", TRUE );
+        shouldRemoveAllowKeyGeneration( "dbms.ssl.policy.default.allow_key_generation", FALSE );
     }
 
     @TestFactory
@@ -91,14 +88,8 @@ class SettingMigratorsTest
         );
         sources.forEach( ( setting, source ) ->
         {
-            String name = "Test migration of SslPolicy %s from source %s";
-            tests.add( dynamicTest( String.format( name, "pem", source.name() ), () ->
-                    testMigrateSslPolicy( setting, "pem", PemSslPolicyConfig.forScope( source ) ) ) );
-            tests.add( dynamicTest( String.format( name, "jks", source.name() ), () ->
-                    testMigrateSslPolicy( setting, "jks", JksSslPolicyConfig.forScope( source ) ) ) );
-            tests.add( dynamicTest( String.format( name, "pkcs12", source.name() ), () ->
-                    testMigrateSslPolicy( setting, "pkcs12", Pkcs12SslPolicyConfig.forScope( source ) ) ) );
-
+            tests.add( dynamicTest( String.format( "Test migration of SslPolicy for source %s", source.name() ), () ->
+                    testMigrateSslPolicy( setting, SslPolicyConfig.forScope( source ) ) ) );
         } );
 
         return tests;
@@ -151,7 +142,6 @@ class SettingMigratorsTest
             assertEquals( "bar", config.get( GraphDatabaseSettings.default_database ) );
             verify( log ).warn( "Use of deprecated setting %s. It is replaced by %s", "dbms.active_database", GraphDatabaseSettings.default_database.name() );
         }
-
     }
 
     @Test
@@ -253,9 +243,9 @@ class SettingMigratorsTest
         logProvider.assertNone( inLog( Config.class ).warn( msg, 666, listenAddr.name(), advertisedAddr.name() ) );
     }
 
-    private static void testMigrateSslPolicy( String oldGroupnameSetting, String sslType, SslPolicyConfig policyConfig )
+    private static void testMigrateSslPolicy( String oldGroupnameSetting, SslPolicyConfig policyConfig )
     {
-        String oldFormatSetting = String.format( "dbms.ssl.policy.%s.foo.trust_all", sslType );
+        String oldFormatSetting = "dbms.ssl.policy.foo.trust_all";
         var config = Config.newBuilder().setRaw( Map.of( oldGroupnameSetting, "foo", oldFormatSetting, "true" ) ).build();
 
         var logProvider = new AssertableLogProvider();

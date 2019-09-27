@@ -26,7 +26,7 @@ import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.File;
 
-import org.neo4j.configuration.ssl.PemSslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.internal.InProcessNeo4j;
@@ -225,8 +225,10 @@ class FixturesTestIT
     {
         SelfSignedCertificateFactory.create( testDir.homeDir() );
         return newInProcessBuilder( targetFolder )
-                .withConfig( PemSslPolicyConfig.forScope( BOLT ).base_directory, testDir.homeDir().toPath() )
-                .withConfig( PemSslPolicyConfig.forScope( HTTPS ).base_directory, testDir.homeDir().toPath() );
+                .withConfig( SslPolicyConfig.forScope( BOLT ).enabled, Boolean.TRUE )
+                .withConfig( SslPolicyConfig.forScope( BOLT ).base_directory, testDir.homeDir().toPath() )
+                .withConfig( SslPolicyConfig.forScope( HTTPS ).enabled, Boolean.TRUE )
+                .withConfig( SslPolicyConfig.forScope( HTTPS ).base_directory, testDir.homeDir().toPath() );
     }
 
 }

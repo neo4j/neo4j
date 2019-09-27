@@ -19,27 +19,33 @@
  */
 package org.neo4j.ssl;
 
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMDecryptorProvider;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
+import org.bouncycastle.operator.InputDecryptorProvider;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
+import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -90,51 +96,49 @@ public final class PkiUtils
         return certificates.toArray( new X509Certificate[0] );
     }
 
-    public static PrivateKey loadPrivateKey( File privateKeyFile )
-            throws IOException, NoSuchAlgorithmException,
-            InvalidKeySpecException
+    public static PrivateKey loadPrivateKey( File privateKeyFile, String passPhrase ) throws IOException
     {
-        try ( PemReader r = new PemReader( new FileReader( privateKeyFile ) ) )
+        if ( passPhrase == null )
         {
-            PemObject pemObject = r.readPemObject();
-            if ( pemObject != null )
+            passPhrase = "";
+        }
+        try ( PEMParser r = new PEMParser( new FileReader( privateKeyFile ) ) )
+        {
+            Object pemObject = r.readObject();
+            final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider( PROVIDER );
+
+            if ( pemObject instanceof PEMEncryptedKeyPair ) // -----BEGIN RSA/DSA/EC PRIVATE KEY----- Proc-Type: 4,ENCRYPTED
             {
-                byte[] encodedKey = pemObject.getContent();
-                KeySpec keySpec = new PKCS8EncodedKeySpec( encodedKey );
+                final PEMEncryptedKeyPair ckp = (PEMEncryptedKeyPair) pemObject;
+                final PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build( passPhrase.toCharArray() );
+                return converter.getKeyPair( ckp.decryptKeyPair( decProv ) ).getPrivate();
+            }
+            else if ( pemObject instanceof PKCS8EncryptedPrivateKeyInfo ) // -----BEGIN ENCRYPTED PRIVATE KEY-----
+            {
                 try
                 {
-                    return KeyFactory.getInstance( "RSA" ).generatePrivate( keySpec );
+                    final PKCS8EncryptedPrivateKeyInfo encryptedInfo = (PKCS8EncryptedPrivateKeyInfo) pemObject;
+                    final InputDecryptorProvider provider = new JceOpenSSLPKCS8DecryptorProviderBuilder().build( passPhrase.toCharArray() );
+                    final PrivateKeyInfo privateKeyInfo = encryptedInfo.decryptPrivateKeyInfo( provider );
+                    return converter.getPrivateKey( privateKeyInfo );
                 }
-                catch ( InvalidKeySpecException ignore )
+                catch ( PKCSException | OperatorCreationException e )
                 {
-                    try
-                    {
-                        return KeyFactory.getInstance( "DSA" ).generatePrivate( keySpec );
-                    }
-                    catch ( InvalidKeySpecException ignore2 )
-                    {
-                        try
-                        {
-                            return KeyFactory.getInstance( "EC" ).generatePrivate( keySpec );
-                        }
-                        catch ( InvalidKeySpecException e )
-                        {
-                            throw new InvalidKeySpecException( "Neither RSA, DSA nor EC worked", e );
-                        }
-                    }
+                    throw new IOException( "Unable to decrypt private key.", e );
                 }
             }
-        }
-
-        // Ok, failed to read as PEM file, try and read it as a raw binary private key
-        try ( DataInputStream in = new DataInputStream( new FileInputStream( privateKeyFile ) ) )
-        {
-            byte[] keyBytes = new byte[(int) privateKeyFile.length()];
-            in.readFully( keyBytes );
-
-            KeySpec keySpec = new PKCS8EncodedKeySpec( keyBytes );
-
-            return KeyFactory.getInstance( DEFAULT_ENCRYPTION ).generatePrivate( keySpec );
+            else if ( pemObject instanceof PrivateKeyInfo ) // -----BEGIN PRIVATE KEY-----
+            {
+                return converter.getPrivateKey( (PrivateKeyInfo) pemObject );
+            }
+            else if ( pemObject instanceof PEMKeyPair ) // -----BEGIN RSA/DSA/EC PRIVATE KEY-----
+            {
+                return converter.getKeyPair( (PEMKeyPair) pemObject ).getPrivate();
+            }
+            else
+            {
+                throw new IOException( "Unrecognized private key format." );
+            }
         }
     }
 }

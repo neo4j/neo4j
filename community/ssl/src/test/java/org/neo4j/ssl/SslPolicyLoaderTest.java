@@ -27,7 +27,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ssl.PemSslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ssl.config.SslPolicyLoader;
@@ -47,7 +47,7 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.TESTING;
 
 @TestDirectoryExtension
-class PemSslPolicyLoaderTest
+class SslPolicyLoaderTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -64,8 +64,7 @@ class PemSslPolicyLoaderTest
         publicCertificateFile = new File( baseDir, "public.crt" );
         privateKeyFile = new File( baseDir, "private.key" );
 
-        new SelfSignedCertificateFactory().createSelfSignedCertificate(
-                publicCertificateFile, privateKeyFile, "localhost" );
+        new SelfSignedCertificateFactory().createSelfSignedCertificate( publicCertificateFile, privateKeyFile, "localhost" );
 
         File trustedDir = new File( baseDir, "trusted" );
         trustedDir.mkdir();
@@ -77,10 +76,11 @@ class PemSslPolicyLoaderTest
     void shouldLoadBaseCryptographicObjects() throws Exception
     {
         // given
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.forScope( TESTING );
+        SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
 
         Config config = newBuilder()
                 .set( neo4j_home, home.toPath().toAbsolutePath() )
+                .set( policyConfig.enabled, Boolean.TRUE )
                 .set( policyConfig.base_directory, Path.of("certificates/default" ) )
                 .build();
 
@@ -113,10 +113,11 @@ class PemSslPolicyLoaderTest
         // given
         FileUtils.deleteFile( file );
 
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.forScope( TESTING );
+        SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
 
         Config config = newBuilder()
                 .set( neo4j_home, home.toPath().toAbsolutePath() )
+                .set( policyConfig.enabled, Boolean.TRUE )
                 .set( policyConfig.base_directory, Path.of( "certificates/default" ) )
                 .build();
 
@@ -129,7 +130,7 @@ class PemSslPolicyLoaderTest
     void shouldThrowIfPolicyNameDoesNotExist()
     {
         // given
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.forScope( TESTING );
+        SslPolicyConfig policyConfig = SslPolicyConfig.forScope( TESTING );
 
         Config config = newBuilder()
                 .set( neo4j_home, home.toPath().toAbsolutePath() )

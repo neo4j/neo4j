@@ -23,6 +23,10 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.PrivateKey;
@@ -41,6 +45,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestDirectoryExtension
@@ -66,7 +71,7 @@ class PkiUtilsTest
         assertThat( certificates.length, is( greaterThan( 0 ) ) );
 
         // Attempt to load private key
-        PrivateKey pk = PkiUtils.loadPrivateKey( pkPath );
+        PrivateKey pk = PkiUtils.loadPrivateKey( pkPath, null );
         assertThat( pk, notNullValue() );
     }
 
@@ -94,7 +99,7 @@ class PkiUtilsTest
         var privateKey = cert.privateKey();
 
         // When
-        var pk = PkiUtils.loadPrivateKey( privateKey );
+        var pk = PkiUtils.loadPrivateKey( privateKey, null );
 
         // Then
         assertNotNull( pk );
@@ -126,29 +131,38 @@ class PkiUtilsTest
         assertThat( certificates.length, equalTo( 1 ) );
     }
 
-    /**
-     * For backwards-compatibility reasons, we support both PEM-encoded private keys *and* raw binary files containing
-     * the private key data
-     */
     @Test
-    void shouldLoadBinaryPrivateKey() throws Throwable
+    void shouldReadEncryptedPrivateKey() throws Exception
     {
-        // Given
-        var cert = new SelfSignedCertificate( "example.com" );
+        File keyFile = testDirectory.file( "private.key" );
+        URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
+        copy( resource, keyFile );
 
-        var keyFile = testDirectory.file( "certificate" );
-        assertTrue( keyFile.createNewFile() );
-        var raw = PkiUtils.loadPrivateKey( cert.privateKey() ).getEncoded();
+        PrivateKey pk = PkiUtils.loadPrivateKey( keyFile, "neo4j" );
+        assertThat( pk.getAlgorithm(), is( "RSA") );
+    }
 
-        try ( FileChannel ch = FileChannel.open( keyFile.toPath(), WRITE ) )
+    @Test
+    void shouldThrowOnMissingPassphraseForEncryptedPrivateKey() throws Exception
+    {
+        File keyFile = testDirectory.file( "private.key" );
+        URL resource = this.getClass().getResource( "test-certificates/encrypted/private.key" );
+        copy( resource, keyFile );
+
+        assertThrows( IOException.class, () -> PkiUtils.loadPrivateKey( keyFile, null ) );
+    }
+
+    private void copy( URL in, File outFile ) throws IOException
+    {
+        try ( InputStream is = in.openStream();
+                OutputStream os = testDirectory.getFileSystem().openAsOutputStream( outFile, false ) )
         {
-            FileUtils.writeAll( ch, ByteBuffer.wrap( raw ) );
+            while ( is.available() > 0 )
+            {
+                byte[] buf = new byte[8192];
+                int nBytes = is.read( buf );
+                os.write( buf, 0, nBytes );
+            }
         }
-
-        // When
-        var pk = PkiUtils.loadPrivateKey( keyFile );
-
-        // Then
-        assertNotNull( pk );
     }
 }

@@ -24,13 +24,19 @@ import static org.neo4j.configuration.ssl.ClientAuth.REQUIRE;
 
 public enum SslPolicyScope
 {
-    BOLT( OPTIONAL ), HTTPS( OPTIONAL ), CLUSTER( REQUIRE ), BACKUP( REQUIRE ), TESTING( REQUIRE );
+    BOLT( OPTIONAL, "certificates/bolt" ),
+    HTTPS( OPTIONAL, "certificates/https" ),
+    CLUSTER( REQUIRE, "certificates/cluster" ),
+    BACKUP( REQUIRE, "certificates/backup" ),
+    TESTING( REQUIRE, "certificates/testing" );
 
     final ClientAuth authDefault;
+    final String baseDir;
 
-    SslPolicyScope( ClientAuth authDefault )
+    SslPolicyScope( ClientAuth authDefault, String baseDir )
     {
         this.authDefault = authDefault;
+        this.baseDir = baseDir;
     }
 
     static SslPolicyScope fromName( String name )

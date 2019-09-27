@@ -36,7 +36,7 @@ import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.configuration.ssl.PemSslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.ssl.PkiUtils;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
@@ -56,7 +56,8 @@ public class CertificatesIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
     {
-        PemSslPolicyConfig policy = PemSslPolicyConfig.forScope( BOLT );
+        SslPolicyConfig policy = SslPolicyConfig.forScope( BOLT );
+        settings.put( policy.enabled, true );
         settings.put( policy.public_certificate, certFile.toPath().toAbsolutePath() );
         settings.put( policy.private_key, keyFile.toPath().toAbsolutePath() );
         settings.put( BoltConnector.enabled, true );

@@ -35,6 +35,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
@@ -170,7 +171,7 @@ public final class SettingMigrators
     @ServiceProvider
     public static class SslPolicyMigrator implements SettingMigrator
     {
-        private static final Pattern pattern = Pattern.compile( "^(dbms\\.ssl\\.policy\\.[^.]+\\.)([^.]+)(\\.[^.]+)$" );
+        private static final Pattern pattern = Pattern.compile( "^(dbms\\.ssl\\.policy\\.)([^.]+)(\\.[^.]+)$" );
         private static final Map<String,SslPolicyScope> settingScopeMap = Map.of(
                 "bolt.ssl_policy", SslPolicyScope.BOLT,
                 "https.ssl_policy", SslPolicyScope.HTTPS,
@@ -196,7 +197,9 @@ public final class SettingMigrators
                 if ( settingScopeMap.containsKey( setting ) )
                 {
                     log.warn( "Use of deprecated setting %s.", setting );
-                    oldNameToScope.put( value, settingScopeMap.get( setting ) );
+                    SslPolicyScope scope = settingScopeMap.get( setting );
+                    oldNameToScope.put( value, scope );
+                    values.put( SslPolicyConfig.forScope( scope ).enabled.name(), Boolean.TRUE.toString() );
                     values.remove( setting );
                 }
             } );
@@ -231,7 +234,6 @@ public final class SettingMigrators
                 if ( values.remove( legacySetting ) != null )
                 {
                     log.warn( "Use of deprecated setting %s. Legacy ssl policy is no longer supported.", legacySetting );
-
                 }
             }
         }
@@ -240,7 +242,7 @@ public final class SettingMigrators
     @ServiceProvider
     public static class AllowKeyGenerationMigrator implements SettingMigrator
     {
-        private static final Pattern pattern = Pattern.compile( "^dbms\\.ssl\\.policy(\\.pem)?\\.([^.]+)\\.allow_key_generation$" );
+        private static final Pattern pattern = Pattern.compile( "^dbms\\.ssl\\.policy\\.([^.]+)\\.allow_key_generation$" );
 
         @Override
         public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )

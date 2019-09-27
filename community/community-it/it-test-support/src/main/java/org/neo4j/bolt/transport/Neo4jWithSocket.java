@@ -35,7 +35,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.configuration.ssl.PemSslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -191,7 +191,8 @@ public class Neo4jWithSocket extends ExternalResource
             var certificates = new File( workingDirectory, "certificates" );
             SelfSignedCertificateFactory.create( certificates );
 
-            settings.put( PemSslPolicyConfig.forScope( SslPolicyScope.BOLT ).base_directory, certificates.toPath() );
+            settings.put( SslPolicyConfig.forScope( SslPolicyScope.BOLT ).enabled, Boolean.TRUE );
+            settings.put( SslPolicyConfig.forScope( SslPolicyScope.BOLT ).base_directory, certificates.toPath() );
         }
     }
 

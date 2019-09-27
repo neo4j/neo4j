@@ -23,7 +23,6 @@ import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -31,10 +30,8 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
 import java.security.cert.CRLException;
 import java.security.cert.CertStore;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CollectionCertStoreParameters;
@@ -43,7 +40,6 @@ import java.security.cert.X509CRL;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -53,9 +49,6 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ssl.ClientAuth;
-import org.neo4j.configuration.ssl.JksSslPolicyConfig;
-import org.neo4j.configuration.ssl.PemSslPolicyConfig;
-import org.neo4j.configuration.ssl.Pkcs12SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.logging.Log;
@@ -137,23 +130,25 @@ public class SslPolicyLoader
 
     private void load()
     {
-        config.getGroups( PemSslPolicyConfig.class ).values().forEach( policy -> addPolicy( policy, pemSslPolicy( policy ) ) );
-        config.getGroups( JksSslPolicyConfig.class ).values().forEach( policy -> addPolicy( policy, jksKeyStoreSslPolicy( policy ) ) );
-        config.getGroups( Pkcs12SslPolicyConfig.class ).values().forEach( policy -> addPolicy( policy, pkcsKeyStoreSslPolicy( policy ) ) );
+        config.getGroups( SslPolicyConfig.class ).values().forEach( this::addPolicy );
 
         policies.forEach( ( scope, sslPolicy ) -> log.info( format( "Loaded SSL policy '%s' = %s", scope.name(), sslPolicy ) ) );
     }
 
-    private void addPolicy( SslPolicyConfig policyConfig, SslPolicy policy )
+    private void addPolicy( SslPolicyConfig policyConfig )
     {
-        SslPolicyScope scope = policyConfig.getScope();
-        if ( policies.put( scope, policy ) != null )
+        if ( config.get( policyConfig.enabled ) )
         {
-            throw new IllegalStateException( "Can not have multiple SslPolicies configured for " + scope.name() );
+            SslPolicyScope scope = policyConfig.getScope();
+            SslPolicy policy = createSslPolicy( policyConfig );
+            if ( policies.put( scope, policy ) != null )
+            {
+                throw new IllegalStateException( "Can not have multiple SslPolicies configured for " + scope.name() );
+            }
         }
     }
 
-    private SslPolicy pemSslPolicy( PemSslPolicyConfig policyConfig )
+    private SslPolicy createSslPolicy( SslPolicyConfig policyConfig )
     {
         File baseDirectory = config.get( policyConfig.base_directory ).toFile();
         File revokedCertificatesDir = config.get( policyConfig.revoked_dir ).toFile();
@@ -166,150 +161,6 @@ public class SslPolicyLoader
 
         KeyAndChain keyAndChain = pemKeyAndChain( policyConfig );
 
-        return sslPolicy( policyConfig, revokedCertificatesDir, keyAndChain );
-    }
-
-    private KeyAndChain pemKeyAndChain( PemSslPolicyConfig policyConfig )
-    {
-        File privateKeyFile = config.get( policyConfig.private_key ).toFile();
-        SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
-        File trustedCertificatesDir = config.get( policyConfig.trusted_dir ).toFile();
-
-        PrivateKey privateKey;
-
-        X509Certificate[] keyCertChain;
-        File keyCertChainFile = config.get( policyConfig.public_certificate ).toFile();
-
-        privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
-        keyCertChain = loadCertificateChain( keyCertChainFile );
-
-        ClientAuth clientAuth = config.get( policyConfig.client_auth );
-        KeyStore trustStore;
-        try
-        {
-            trustStore = createTrustStoreFromPem( trustedCertificatesDir, clientAuth );
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
-        }
-
-        return new KeyAndChain( privateKey, keyCertChain, trustStore );
-    }
-
-    private SslPolicy jksKeyStoreSslPolicy( JksSslPolicyConfig policyConfig )
-    {
-        File baseDirectory = config.get( policyConfig.base_directory ).toFile();
-        File revokedCertificatesDir = config.get( policyConfig.revoked_dir ).toFile();
-
-        if ( !baseDirectory.exists() )
-        {
-            throw new IllegalArgumentException(
-                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyConfig.name() ) );
-        }
-
-        File keyStoreFile = config.get( policyConfig.keystore ).toFile();
-        File trustStoreFile = config.get( policyConfig.truststore ).toFile();
-        SecureString storePass = config.get( policyConfig.keystore_pass );
-        SecureString trustStorePass = config.get( policyConfig.truststore_pass );
-        SecureString keyPass = config.get( policyConfig.entry_pass );
-        String keyAlias = config.get( policyConfig.entry_alias );
-
-        KeyAndChain keyAndChain = keyStoreKeyAndChain( "JKS", keyStoreFile, trustStoreFile, storePass, trustStorePass, keyPass, keyAlias );
-
-        return sslPolicy( policyConfig, revokedCertificatesDir, keyAndChain );
-    }
-
-    private SslPolicy pkcsKeyStoreSslPolicy( Pkcs12SslPolicyConfig policyConfig )
-    {
-        File baseDirectory = config.get( policyConfig.base_directory ).toFile();
-        File revokedCertificatesDir = config.get( policyConfig.revoked_dir ).toFile();
-
-        if ( !baseDirectory.exists() )
-        {
-            throw new IllegalArgumentException(
-                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyConfig.name() ) );
-        }
-
-        File trustStoreFile = config.get( policyConfig.truststore ).toFile();
-        File keyStoreFile = config.get( policyConfig.keystore ).toFile();
-        SecureString storePass = config.get( policyConfig.keystore_pass );
-        SecureString trustStorePass = config.get( policyConfig.truststore_pass );
-        String keyAlias = config.get( policyConfig.entry_alias );
-        SecureString keyPass = config.get( policyConfig.entry_pass );
-
-        KeyAndChain keyAndChain = keyStoreKeyAndChain( "PKCS12", keyStoreFile, trustStoreFile, storePass, trustStorePass, keyPass, keyAlias );
-
-        return sslPolicy( policyConfig, revokedCertificatesDir, keyAndChain );
-    }
-
-    private KeyAndChain keyStoreKeyAndChain( String type, File keyStoreFile, File trustStoreFile, SecureString storePass, SecureString trustStorePass,
-            SecureString keyPass, String keyAlias )
-    {
-        KeyStore keyStore = loadKeyStore( keyStoreFile, storePass, type );
-
-        KeyStore trustStore;
-        if ( trustStoreFile != null && !trustStoreFile.equals( keyStoreFile ) )
-        {
-            trustStore = loadKeyStore( trustStoreFile, trustStorePass, type );
-        }
-        else
-        {
-            trustStore = keyStore;
-        }
-
-        X509Certificate[] certificateChain;
-        PrivateKey key;
-        try
-        {
-            Certificate[] chain = keyStore.getCertificateChain( keyAlias );
-            certificateChain = Arrays.copyOf( chain, chain.length, X509Certificate[].class );
-        }
-        catch ( KeyStoreException e )
-        {
-            throw new RuntimeException( String.format( "Unable to load certificate chain from: %s alias %s ", keyStoreFile, keyAlias ), e );
-        }
-        try
-        {
-            key = (PrivateKey)keyStore.getKey( keyAlias, keyPass == null ? null : keyPass.getString().toCharArray() );
-        }
-        catch ( KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException | ClassCastException e )
-        {
-            throw new RuntimeException( String.format( "Unable to load private key from: %s alias %s ", keyStoreFile, keyAlias ), e );
-        }
-
-        return new KeyAndChain( key, certificateChain, trustStore );
-    }
-
-    private KeyStore loadKeyStore( File keyStoreFile, SecureString storePass, String type )
-    {
-        KeyStore keyStore;
-        try
-        {
-            keyStore = KeyStore.getInstance( type );
-        }
-        catch ( KeyStoreException e )
-        {
-            throw new RuntimeException( "Unable to create keystore with type: " + type, e );
-        }
-
-        try ( FileInputStream fis = new FileInputStream( keyStoreFile ) )
-        {
-            keyStore.load( fis, storePass == null ? null : storePass.getString().toCharArray() );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to open file: " + keyStoreFile, e );
-        }
-        catch ( CertificateException | NoSuchAlgorithmException e )
-        {
-            throw new RuntimeException( "Cryptographic error creating keystore from file: " + keyStoreFile, e );
-        }
-        return keyStore;
-    }
-
-    private SslPolicy sslPolicy( SslPolicyConfig policyConfig, File revokedCertificatesDir, KeyAndChain keyAndChain )
-    {
         Collection<X509CRL> crls = getCRLs( revokedCertificatesDir );
         TrustManagerFactory trustManagerFactory;
         try
@@ -336,6 +187,34 @@ public class SslPolicyLoader
                 sslProvider,
                 verifyHostname,
                 logProvider );
+    }
+
+    private KeyAndChain pemKeyAndChain( SslPolicyConfig policyConfig )
+    {
+        File privateKeyFile = config.get( policyConfig.private_key ).toFile();
+        SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
+        File trustedCertificatesDir = config.get( policyConfig.trusted_dir ).toFile();
+
+        PrivateKey privateKey;
+
+        X509Certificate[] keyCertChain;
+        File keyCertChainFile = config.get( policyConfig.public_certificate ).toFile();
+
+        privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
+        keyCertChain = loadCertificateChain( keyCertChainFile );
+
+        ClientAuth clientAuth = config.get( policyConfig.client_auth );
+        KeyStore trustStore;
+        try
+        {
+            trustStore = createTrustStoreFromPem( trustedCertificatesDir, clientAuth );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
+        }
+
+        return new KeyAndChain( privateKey, keyCertChain, trustStore );
     }
 
     private Collection<X509CRL> getCRLs( File revokedCertificatesDir )
@@ -393,15 +272,11 @@ public class SslPolicyLoader
 
     private PrivateKey loadPrivateKey( File privateKeyFile, SecureString privateKeyPassword )
     {
-        if ( privateKeyPassword != null )
-        {
-            // TODO: Support loading of private keys with passwords.
-            throw new UnsupportedOperationException( "Loading private keys with passwords is not yet supported" );
-        }
+        String password = privateKeyPassword != null ? privateKeyPassword.getString() : null;
 
         try
         {
-            return PkiUtils.loadPrivateKey( privateKeyFile );
+            return PkiUtils.loadPrivateKey( privateKeyFile, password );
         }
         catch ( Exception e )
         {

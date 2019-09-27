@@ -48,7 +48,7 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.ClientAuth;
-import org.neo4j.configuration.ssl.PemSslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -125,7 +125,7 @@ class InProcessServerBuilderIT
         List<String> defaultCiphers = Arrays.asList( ssf.getDefaultCipherSuites() );
 
         // When
-        PemSslPolicyConfig pem = PemSslPolicyConfig.forScope( HTTPS );
+        SslPolicyConfig pem = SslPolicyConfig.forScope( HTTPS );
 
         var certificates = directory.directory( "certificates" );
         SelfSignedCertificateFactory.create( certificates, "private.key", "public.crt" );
@@ -139,6 +139,7 @@ class InProcessServerBuilderIT
                 .withConfig( HttpsConnector.listen_address, new SocketAddress( "localhost", 0 ) )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, 20 )
                 // override legacy policy
+                .withConfig( pem.enabled, Boolean.TRUE )
                 .withConfig( pem.base_directory, certificates.toPath() )
                 .withConfig( pem.ciphers, defaultCiphers )
                 .withConfig( pem.tls_versions, List.of( "TLSv1.2", "TLSv1.1", "TLSv1" ) )
@@ -363,7 +364,8 @@ class InProcessServerBuilderIT
         if ( httpsEnabled )
         {
             SelfSignedCertificateFactory.create( certificates );
-            serverBuilder.withConfig( PemSslPolicyConfig.forScope( HTTPS ).base_directory, certificates.toPath() );
+            serverBuilder.withConfig( SslPolicyConfig.forScope( HTTPS ).enabled, Boolean.TRUE );
+            serverBuilder.withConfig( SslPolicyConfig.forScope( HTTPS ).base_directory, certificates.toPath() );
         }
 
         try ( InProcessNeo4j neo4j = serverBuilder.build() )

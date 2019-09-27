@@ -37,7 +37,6 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.ClientAuth;
-import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -136,9 +135,10 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
                  dbConfig.get( BoltConnector.enabled ) && dbConfig.get( BoltConnector.encryption_level ) != BoltConnector.EncryptionLevel.DISABLED )
             {
                 SelfSignedCertificateFactory.create( certificates );
-                List<SslPolicyConfig> policies = List.of( PemSslPolicyConfig.forScope( HTTPS ), PemSslPolicyConfig.forScope( BOLT ) );
+                List<SslPolicyConfig> policies = List.of( SslPolicyConfig.forScope( HTTPS ), SslPolicyConfig.forScope( BOLT ) );
                 for ( SslPolicyConfig policy : policies )
                 {
+                    config.set( policy.enabled, Boolean.TRUE );
                     config.set( policy.base_directory, certificates.toPath() );
                     config.set( policy.trust_all, true );
                     config.set( policy.client_auth, ClientAuth.NONE );
