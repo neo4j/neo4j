@@ -771,8 +771,11 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      inputColumns(4, n/4,
+                   i => tx.getNodeById(paths(i).startNode.getId),
+                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
+    })
 
     // then
     val expected =
@@ -795,8 +798,11 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      inputColumns(4, n/4,
+                   i => tx.getNodeById(paths(i).startNode.getId),
+                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
+    })
 
     // then
     val expected: IndexedSeq[Array[Node]] = paths.map(p => Array(p.startNode, p.endNode()))
@@ -815,10 +821,12 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      inputColumns(4, n/4,
+                   i => tx.getNodeById(paths(i).startNode.getId),
+                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
+    })
 
-    // then
     // then
     val expected =
     for {
@@ -840,8 +848,11 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      inputColumns(4, n/4,
+                   i => tx.getNodeById(paths(i).startNode.getId),
+                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
+    })
 
     // then
     val expected: IndexedSeq[Array[Node]] = paths.map(p => Array(p.startNode, p.endNode()))
@@ -861,8 +872,11 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      inputColumns(4, n/4,
+                   i => tx.getNodeById(paths(i).startNode.getId),
+                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
+    })
 
     // then
     val expected =
@@ -886,8 +900,11 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "other"))
       .build()
 
-    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      inputColumns(4, n/4,
+                   i => tx.getNodeById(paths(i).startNode.getId),
+                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
+    })
 
     // then
     val expected =
