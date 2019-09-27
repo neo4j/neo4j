@@ -23,7 +23,7 @@ import org.neo4j.configuration.helpers.{DatabaseNameValidator, NormalizedDatabas
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, PrivilegePlan, ResolvedCall, SecurityAdministrationLogicalPlan}
-import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
+import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.v4_0.ast.{IndexManagementAction, _}
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
@@ -387,7 +387,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
     val planState = LogicalPlanState(from)
 
     if (maybeLogicalPlan.isDefined)
-      planState.copy(maybeLogicalPlan = maybeLogicalPlan, plannerName = ProcedurePlannerName)
+      planState.copy(maybeLogicalPlan = maybeLogicalPlan, plannerName = AdministrationPlannerName)
     else planState
   }
 }

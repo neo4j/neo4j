@@ -44,8 +44,8 @@ case object ParallelRuntimeName extends RuntimeName {
   override val name = "PARALLEL"
 }
 
-case object ProcedureRuntimeName extends RuntimeName {
-  override val name = "PROCEDURE"
+case object SchemaRuntimeName extends RuntimeName {
+  override val name = "SCHEMA"
 }
 
 case object SystemCommandRuntimeName extends RuntimeName {
@@ -60,7 +60,7 @@ object RuntimeName {
     case MorselRuntimeName.name => MorselRuntimeName
     case CompiledRuntimeName.name => CompiledRuntimeName
     case ParallelRuntimeName.name => ParallelRuntimeName
-    case ProcedureRuntimeName.name => ProcedureRuntimeName
+    case SchemaRuntimeName.name => SchemaRuntimeName
     case SystemCommandRuntimeName.name => SystemCommandRuntimeName
 
     case n => throw new IllegalArgumentException(s"$n is not a valid runtime")
