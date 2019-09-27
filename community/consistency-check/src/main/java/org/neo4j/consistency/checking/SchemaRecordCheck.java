@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalLong;
 
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -57,8 +58,10 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     final IndexAccessors indexAccessors;
 
     private final Map<Long, SchemaRecord> indexObligations;
+    private final Map<Long, String> indexNameObligations;
     private final Map<Long, SchemaRecord> constraintObligations;
     private final Map<SchemaRuleKey, SchemaRecord> verifiedRulesWithRecords;
+    private final Map<String, NamedSchema> verifiedRuleNames;
     private final CheckStrategy strategy;
 
     public SchemaRecordCheck( SchemaRuleAccess ruleAccess, IndexAccessors indexAccessors )
@@ -66,8 +69,10 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
         this.ruleAccess = ruleAccess;
         this.indexAccessors = indexAccessors;
         this.indexObligations = new HashMap<>();
+        this.indexNameObligations = new HashMap<>();
         this.constraintObligations = new HashMap<>();
         this.verifiedRulesWithRecords = new HashMap<>();
+        this.verifiedRuleNames = new HashMap<>();
         this.strategy = new RulesCheckStrategy();
     }
 
@@ -75,22 +80,26 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             SchemaRuleAccess ruleAccess,
             IndexAccessors indexAccessors,
             Map<Long, SchemaRecord> indexObligations,
+            Map<Long, String> indexNameObligations,
             Map<Long, SchemaRecord> constraintObligations,
             Map<SchemaRuleKey, SchemaRecord> verifiedRulesWithRecords,
+            Map<String, NamedSchema> verifiedRuleNames,
             CheckStrategy strategy )
     {
         this.ruleAccess = ruleAccess;
         this.indexAccessors = indexAccessors;
         this.indexObligations = indexObligations;
+        this.indexNameObligations = indexNameObligations;
         this.constraintObligations = constraintObligations;
         this.verifiedRulesWithRecords = verifiedRulesWithRecords;
+        this.verifiedRuleNames = verifiedRuleNames;
         this.strategy = strategy;
     }
 
     public SchemaRecordCheck forObligationChecking()
     {
-        return new SchemaRecordCheck( ruleAccess, indexAccessors, indexObligations, constraintObligations,
-                verifiedRulesWithRecords, new ObligationsCheckStrategy() );
+        return new SchemaRecordCheck( ruleAccess, indexAccessors, indexObligations, indexNameObligations, constraintObligations,
+                verifiedRulesWithRecords, verifiedRuleNames, new ObligationsCheckStrategy() );
     }
 
     @Override
@@ -174,6 +183,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 {
                     engine.report().duplicateObligation( previousObligation );
                 }
+                indexNameObligations.put( indexBacked.ownedIndexId(), indexBacked.getName() );
             }
         }
 
@@ -210,6 +220,12 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                     {
                         engine.report().constraintIndexRuleNotReferencingBack( obligation );
                     }
+                }
+
+                String nameObligation = indexNameObligations.get( rule.getId() );
+                if ( nameObligation != null && !nameObligation.equals( rule.getName() ) )
+                {
+                    engine.report().constraintIndexNameDoesNotMatchConstraintName( record, rule.getName(), nameObligation );
                 }
             }
             if ( indexAccessors.notOnlineRules().contains( rule ) )
@@ -250,7 +266,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
         rule.schema().processWith( new CheckSchema( engine, records ) );
-        checkForDuplicates( rule, record, engine );
+        checkNamesAndDuplicates( rule, record, engine );
     }
 
     private SchemaRecord cloneRecord( SchemaRecord record )
@@ -324,13 +340,61 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
         }
     }
 
-    private void checkForDuplicates( SchemaRule rule, SchemaRecord record,
+    private void checkNamesAndDuplicates( SchemaRule rule, SchemaRecord record,
             CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
         SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( rule ), cloneRecord( record ) );
         if ( previousContentRecord != null )
         {
             engine.report().duplicateRuleContent( previousContentRecord );
+        }
+
+        String name = rule.getName();
+        NamedSchema namedSchema = verifiedRuleNames.get( name );
+        if ( namedSchema == null )
+        {
+            namedSchema = new NamedSchema();
+            verifiedRuleNames.put( name, namedSchema );
+        }
+        if ( rule instanceof ConstraintDescriptor )
+        {
+            ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
+            if ( namedSchema.constraint != null )
+            {
+                engine.report().duplicateRuleName( namedSchema.constraintRecord, name );
+            }
+            namedSchema.constraint = constraint;
+            namedSchema.constraintRecord = record;
+            if ( namedSchema.index != null )
+            {
+                if ( constraint.isIndexBackedConstraint() )
+                {
+                    IndexBackedConstraintDescriptor ibc = constraint.asIndexBackedConstraint();
+                    if ( ibc.hasOwnedIndexId() && ibc.ownedIndexId() == namedSchema.index.getId() )
+                    {
+                        return;
+                    }
+                }
+                engine.report().duplicateRuleName( namedSchema.indexRecord, name );
+            }
+        }
+        else
+        {
+            IndexDescriptor index = (IndexDescriptor) rule;
+            if ( namedSchema.index != null )
+            {
+                engine.report().duplicateRuleName( namedSchema.indexRecord, name );
+            }
+            namedSchema.index = index;
+            namedSchema.indexRecord = record;
+            if ( namedSchema.constraint != null )
+            {
+                OptionalLong owningConstraintId = index.getOwningConstraintId();
+                if ( owningConstraintId.isEmpty() || owningConstraintId.getAsLong() != namedSchema.constraint.getId() )
+                {
+                    engine.report().duplicateRuleName( namedSchema.constraintRecord, name );
+                }
+            }
         }
     }
 
@@ -420,5 +484,13 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             result = 31 * result + schema.hashCode();
             return result;
         }
+    }
+
+    private static class NamedSchema
+    {
+        private IndexDescriptor index;
+        private ConstraintDescriptor constraint;
+        private SchemaRecord indexRecord;
+        private SchemaRecord constraintRecord;
     }
 }

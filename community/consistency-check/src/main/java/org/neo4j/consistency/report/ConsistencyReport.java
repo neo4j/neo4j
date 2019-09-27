@@ -139,6 +139,9 @@ public interface ConsistencyReport
         @Documented( "The constraint index does not reference back to the given record" )
         void constraintIndexRuleNotReferencingBack( SchemaRecord ruleRecord );
 
+        @Documented( "The constraint index name is different from the name of its owning constraint" )
+        void constraintIndexNameDoesNotMatchConstraintName( SchemaRecord ruleRecord, String indexName, String constraintName );
+
         @Documented( "This record is required to reference some other record of the given kind but no such obligation was found" )
         void missingObligation( String kind );
 
@@ -149,6 +152,10 @@ public interface ConsistencyReport
         @Documented( "This record contains a schema rule which has the same content as the schema rule contained " +
                 "in the record given as parameter" )
         void duplicateRuleContent( SchemaRecord record );
+
+        @Documented( "This record contains a schema rule which has the same name as the schema rule contained " +
+                "in the record given as parameter" )
+        void duplicateRuleName( SchemaRecord record, String name );
 
         @Documented( "The schema rule is malformed (not deserializable)" )
         void malformedSchemaRule();
