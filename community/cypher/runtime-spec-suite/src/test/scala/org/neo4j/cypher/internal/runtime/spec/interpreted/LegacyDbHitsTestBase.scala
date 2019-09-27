@@ -23,6 +23,10 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.tests.ProfileDbHitsTestBase
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
+object LegacyDbHitsTestBase {
+  final val costOfExpand: Int = 1
+}
+
 abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
                                                                sizeHint: Int)
@@ -33,5 +37,5 @@ abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                 costOfGetPropertyChain = 0,
                                 costOfPropertyJumpedOverInChain = 0,
                                 costOfProperty = 1,
-                                costOfExpand = 1,
+                                costOfExpand = LegacyDbHitsTestBase.costOfExpand,
                                 costOfRelationshipTypeLookup = 1)

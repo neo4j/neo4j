@@ -160,6 +160,52 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).rows() should be >= (sizeHint * 2L) // all node scan
   }
 
+  test("should profile rows with expand into") {
+    // given
+    val nodesPerLabel = 100
+    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expandInto("(x)-[r]->(y)")
+      .expandAll("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 10000 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 10000 // expand into
+    queryProfile.operatorProfile(2).rows() shouldBe 10000 // expand all
+    queryProfile.operatorProfile(3).rows() should be >= (nodesPerLabel * 2L) // all node scan
+  }
+
+  test("should profile rows with optional expand into") {
+    // given
+    val nodesPerLabel = 100
+    bipartiteGraph(nodesPerLabel, "A", "B", "R")
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .optionalExpandInto("(x)-[r]->(y)", Some("true"))
+      .expandAll("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 10000 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 10000 // optional expand into
+    queryProfile.operatorProfile(2).rows() shouldBe 10000 // expand all
+    queryProfile.operatorProfile(3).rows() should be >= (nodesPerLabel * 2L) // all node scan
+  }
+
   test("should profile rows with node hash join") {
     // given
     nodePropertyGraph(sizeHint,{

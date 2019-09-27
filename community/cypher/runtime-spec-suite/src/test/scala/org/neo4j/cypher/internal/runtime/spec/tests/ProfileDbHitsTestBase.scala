@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.runtime.spec.interpreted.LegacyDbHitsTestBase
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.result.QueryProfile
 
@@ -279,6 +280,28 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * 2L + costOfExpand) // expand
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
+    queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint * 2L) // all node scan
+  }
+
+  test("should profile dbHits with limit + optional expand all") {
+    // given
+    val nodes = nodeGraph(sizeHint * 10)
+    connect(nodes, Seq((1, 2, "REL")))
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .optionalExpandAll("(x)-->(y)", Some("true"))
+      .limit(sizeHint * 2)
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * 2L + LegacyDbHitsTestBase.costOfExpand) // optional expand all (uses legacy pipe)
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
     queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint * 2L) // all node scan
   }

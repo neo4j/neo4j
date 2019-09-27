@@ -441,6 +441,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => Selection(predicateExpressions, lp)(_)))
   }
 
+  def dropResult(): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DropResult(lp)(_)))
+  }
+
+  def errorPlan(e: Exception): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => ErrorPlan(lp, e)(_)))
+  }
+
   // SHIP IP
 
   protected def buildLogicalPlan(): LogicalPlan = tree.build()
