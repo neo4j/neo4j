@@ -34,8 +34,7 @@ abstract class OptionalExpandAllPipe(source: Pipe,
                                      fromName: String,
                                      relName: String, toName: String,
                                      dir: SemanticDirection,
-                                     types: RelationshipTypes,
-                                     val id: Id)
+                                     types: RelationshipTypes)
   extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -82,19 +81,19 @@ object OptionalExpandAllPipe {
             dir: SemanticDirection,
             types: RelationshipTypes,
             maybePredicate: Option[Expression])(id: Id = Id.INVALID_ID): OptionalExpandAllPipe = maybePredicate match {
-    case Some(predicate) => new FilteringOptionalExpandAllPipe(source, fromName, relName, toName, dir, types, id, predicate)
-    case None => new NonFilteringOptionalExpandAllPipe(source, fromName, relName, toName, dir, types, id)
+    case Some(predicate) => FilteringOptionalExpandAllPipe(source, fromName, relName, toName, dir, types, predicate)(id)
+    case None => NonFilteringOptionalExpandAllPipe(source, fromName, relName, toName, dir, types)(id)
   }
 }
 
-class NonFilteringOptionalExpandAllPipe(source: Pipe,
-                                        fromName: String,
-                                        relName: String,
-                                        toName: String,
-                                        dir: SemanticDirection,
-                                        types: RelationshipTypes,
-                                        id: Id)
-  extends OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection, types: RelationshipTypes, id) {
+case class NonFilteringOptionalExpandAllPipe(source: Pipe,
+                                             fromName: String,
+                                             relName: String,
+                                             toName: String,
+                                             dir: SemanticDirection,
+                                             types: RelationshipTypes)
+                                            (val id: Id = Id.INVALID_ID)
+  extends OptionalExpandAllPipe(source, fromName, relName, toName, dir, types) {
 
   override def findMatchIterator(row: ExecutionContext,
                                  ignore: QueryState,
@@ -107,15 +106,15 @@ class NonFilteringOptionalExpandAllPipe(source: Pipe,
   }
 }
 
-class FilteringOptionalExpandAllPipe(source: Pipe,
-                                     fromName: String,
-                                     relName: String,
-                                     toName: String,
-                                     dir: SemanticDirection,
-                                     types: RelationshipTypes,
-                                     id: Id,
-                                     predicate: Expression)
-  extends OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection, types: RelationshipTypes, id) {
+case class FilteringOptionalExpandAllPipe(source: Pipe,
+                                          fromName: String,
+                                          relName: String,
+                                          toName: String,
+                                          dir: SemanticDirection,
+                                          types: RelationshipTypes,
+                                          predicate: Expression)
+                                         (val id: Id = Id.INVALID_ID)
+  extends OptionalExpandAllPipe(source, fromName, relName, toName, dir, types) {
 
   predicate.registerOwningPipe(this)
 
