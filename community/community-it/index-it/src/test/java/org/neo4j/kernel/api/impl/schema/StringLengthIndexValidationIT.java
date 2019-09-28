@@ -123,14 +123,14 @@ public abstract class StringLengthIndexValidationIT
         // Create index should be fine
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( LABEL_ONE ).on( propKey ).create();
+            tx.schema().indexFor( LABEL_ONE ).on( propKey ).create();
             tx.commit();
         }
 
         // Waiting for it to come online should fail
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
         catch ( IllegalStateException e )
@@ -146,11 +146,11 @@ public abstract class StringLengthIndexValidationIT
         // Index should be in failed state
         try ( Transaction tx = db.beginTx() )
         {
-            Iterator<IndexDefinition> iterator = db.schema().getIndexes( LABEL_ONE ).iterator();
+            Iterator<IndexDefinition> iterator = tx.schema().getIndexes( LABEL_ONE ).iterator();
             assertTrue( iterator.hasNext() );
             IndexDefinition next = iterator.next();
-            assertEquals( "state is FAILED", Schema.IndexState.FAILED, db.schema().getIndexState( next ) );
-            assertThat( db.schema().getIndexFailure( next ),
+            assertEquals( "state is FAILED", Schema.IndexState.FAILED, tx.schema().getIndexState( next ) );
+            assertThat( tx.schema().getIndexFailure( next ),
                     Matchers.containsString( expectedPopulationFailureMessage() ) );
             tx.commit();
         }
@@ -204,7 +204,7 @@ public abstract class StringLengthIndexValidationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator indexCreator = db.schema().indexFor( LABEL_ONE );
+            IndexCreator indexCreator = tx.schema().indexFor( LABEL_ONE );
             for ( String key : keys )
             {
                 indexCreator = indexCreator.on( key );
@@ -214,7 +214,7 @@ public abstract class StringLengthIndexValidationIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, MINUTES );
+            tx.schema().awaitIndexesOnline( 1, MINUTES );
             tx.commit();
         }
     }

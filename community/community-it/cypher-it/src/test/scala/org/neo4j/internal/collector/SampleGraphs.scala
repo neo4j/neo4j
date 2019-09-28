@@ -52,8 +52,7 @@ trait SampleGraphs {
     graph.createIndex("Room", "hotel", "number")
     graph.createIndex("Car", "number")
 
-    graph.inTx(
-      graph.schema().awaitIndexesOnline(5, TimeUnit.MINUTES)
+    graph.withTx( tx => tx.schema().awaitIndexesOnline(5, TimeUnit.MINUTES)
     )
 
      // these are added after index uniqueness estimation

@@ -109,12 +109,12 @@ class KernelDiagnosticsIT
             }
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( label ).on( key ).create();
+                tx.schema().indexFor( label ).on( key ).create();
                 tx.commit();
             }
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 1, MINUTES );
+                tx.schema().awaitIndexesOnline( 1, MINUTES );
                 tx.commit();
             }
         }

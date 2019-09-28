@@ -161,7 +161,7 @@ class CompositeStringLengthValidationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator indexCreator = db.schema().indexFor( LABEL );
+            IndexCreator indexCreator = tx.schema().indexFor( LABEL );
             for ( String key : keys )
             {
                 indexCreator = indexCreator.on( key );
@@ -171,7 +171,7 @@ class CompositeStringLengthValidationIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, SECONDS );
+            tx.schema().awaitIndexesOnline( 10, SECONDS );
             tx.commit();
         }
     }

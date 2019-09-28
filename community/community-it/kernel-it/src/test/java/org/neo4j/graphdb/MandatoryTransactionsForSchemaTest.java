@@ -40,6 +40,6 @@ public class MandatoryTransactionsForSchemaTest extends AbstractMandatoryTransac
     @Override
     protected Schema obtainEntityInTransaction( Transaction transaction )
     {
-        return db.schema();
+        return transaction.schema();
     }
 }

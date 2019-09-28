@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import java.util.Map;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
@@ -449,4 +450,12 @@ public interface Transaction extends AutoCloseable
      * transaction finishes.
      */
     Lock acquireReadLock( Entity entity );
+
+    /**
+     * Returns the {@link Schema schema manager} where all things related to schema,
+     * for example constraints and indexing on {@link Label labels}.
+     *
+     * @return the {@link Schema schema manager} for this database.
+     */
+    Schema schema();
 }

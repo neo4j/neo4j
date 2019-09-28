@@ -223,7 +223,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         //let indexes come online
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 2, MINUTES );
+            tx.schema().awaitIndexesOnline( 2, MINUTES );
             tx.commit();
         }
 
@@ -327,7 +327,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         //let indexes come online
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 2, MINUTES );
+            tx.schema().awaitIndexesOnline( 2, MINUTES );
             tx.commit();
         }
 

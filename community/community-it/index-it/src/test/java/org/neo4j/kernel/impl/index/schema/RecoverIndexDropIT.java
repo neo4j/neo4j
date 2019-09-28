@@ -106,7 +106,7 @@ class RecoverIndexDropIT
             // then
             try ( Transaction tx = db.beginTx() )
             {
-                assertEquals( 0, count( db.schema().getIndexes() ) );
+                assertEquals( 0, count( tx.schema().getIndexes() ) );
                 tx.commit();
             }
         }
@@ -121,7 +121,7 @@ class RecoverIndexDropIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = db.schema().indexFor( LABEL_ONE ).on( KEY ).create();
+            IndexDefinition index = tx.schema().indexFor( LABEL_ONE ).on( KEY ).create();
             tx.commit();
             return index;
         }

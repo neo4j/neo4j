@@ -50,7 +50,7 @@ class DropBrokenUniquenessConstraintIT
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
             tx.commit();
         }
 
@@ -62,15 +62,15 @@ class DropBrokenUniquenessConstraintIT
         storageEngine.loadSchemaCache();
         try ( Transaction tx = db.beginTx() )
         {
-            single( db.schema().getConstraints( label ).iterator() ).drop();
+            single( tx.schema().getConstraints( label ).iterator() ).drop();
             tx.commit();
         }
 
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertFalse( db.schema().getConstraints().iterator().hasNext() );
-            assertFalse( db.schema().getIndexes().iterator().hasNext() );
+            assertFalse( tx.schema().getConstraints().iterator().hasNext() );
+            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
         }
     }
 
@@ -80,7 +80,7 @@ class DropBrokenUniquenessConstraintIT
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
             tx.commit();
         }
 
@@ -92,15 +92,15 @@ class DropBrokenUniquenessConstraintIT
         storageEngine.loadSchemaCache();
         try ( Transaction tx = db.beginTx() )
         {
-            single( db.schema().getConstraints( label ).iterator() ).drop();
+            single( tx.schema().getConstraints( label ).iterator() ).drop();
             tx.commit();
         }
 
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertFalse( db.schema().getConstraints().iterator().hasNext() );
-            assertFalse( db.schema().getIndexes().iterator().hasNext() );
+            assertFalse( tx.schema().getConstraints().iterator().hasNext() );
+            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
         }
     }
 
@@ -110,7 +110,7 @@ class DropBrokenUniquenessConstraintIT
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
             tx.commit();
         }
 
@@ -124,16 +124,16 @@ class DropBrokenUniquenessConstraintIT
         try ( Transaction tx = db.beginTx() )
         {
             // We don't use single() here, because it is okay for the schema cache reload to clean up after us.
-            db.schema().getConstraints( label ).forEach( ConstraintDefinition::drop );
-            db.schema().getIndexes( label ).forEach( IndexDefinition::drop );
+            tx.schema().getConstraints( label ).forEach( ConstraintDefinition::drop );
+            tx.schema().getIndexes( label ).forEach( IndexDefinition::drop );
             tx.commit();
         }
 
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertFalse( db.schema().getConstraints().iterator().hasNext() );
-            assertFalse( db.schema().getIndexes().iterator().hasNext() );
+            assertFalse( tx.schema().getConstraints().iterator().hasNext() );
+            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
         }
     }
 
@@ -143,7 +143,7 @@ class DropBrokenUniquenessConstraintIT
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
             tx.commit();
         }
 
@@ -158,16 +158,16 @@ class DropBrokenUniquenessConstraintIT
         try ( Transaction tx = db.beginTx() )
         {
             // We don't use single() here, because it is okay for the schema cache reload to clean up after us.
-            db.schema().getConstraints( label ).forEach( ConstraintDefinition::drop );
-            db.schema().getIndexes( label ).forEach( IndexDefinition::drop );
+            tx.schema().getConstraints( label ).forEach( ConstraintDefinition::drop );
+            tx.schema().getIndexes( label ).forEach( IndexDefinition::drop );
             tx.commit();
         }
 
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertFalse( db.schema().getConstraints().iterator().hasNext() );
-            assertFalse( db.schema().getIndexes().iterator().hasNext() );
+            assertFalse( tx.schema().getConstraints().iterator().hasNext() );
+            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
         }
     }
 

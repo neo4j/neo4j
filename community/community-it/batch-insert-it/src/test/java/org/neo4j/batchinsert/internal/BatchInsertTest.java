@@ -1217,7 +1217,7 @@ class BatchInsertTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                List<ConstraintDefinition> constraints = Iterables.asList( db.schema().getConstraints() );
+                List<ConstraintDefinition> constraints = Iterables.asList( tx.schema().getConstraints() );
                 assertEquals( 1, constraints.size() );
                 ConstraintDefinition constraint = constraints.get( 0 );
                 assertEquals( label.name(), constraint.getLabel().name() );
@@ -1321,8 +1321,9 @@ class BatchInsertTest
         GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = db.schema().getIndexes( label ).iterator().next();
-            String indexFailure = db.schema().getIndexFailure( index );
+            var schema = tx.schema();
+            IndexDefinition index = schema.getIndexes( label ).iterator().next();
+            String indexFailure = schema.getIndexFailure( index );
             assertThat( indexFailure, containsString( "IndexEntryConflictException" ) );
             assertThat( indexFailure, containsString( value ) );
             tx.commit();

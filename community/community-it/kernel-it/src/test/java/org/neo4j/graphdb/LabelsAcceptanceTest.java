@@ -485,7 +485,7 @@ class LabelsAcceptanceTest
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    db.schema().indexFor( Labels.MY_LABEL ).on( "prop" ).create();
+                    tx.schema().indexFor( Labels.MY_LABEL ).on( "prop" ).create();
                     indexCreateStarted.release();
                     indexCreateAllowToFinish.await();
                     tx.commit();

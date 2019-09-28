@@ -73,7 +73,7 @@ public class IndexPopulationFlipRaceIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 30, SECONDS );
+            tx.schema().awaitIndexesOnline( 30, SECONDS );
             tx.commit();
         }
     }
@@ -82,15 +82,15 @@ public class IndexPopulationFlipRaceIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( labelA( i ) ).on( keyA( i ) ).create();
+            tx.schema().indexFor( labelA( i ) ).on( keyA( i ) ).create();
 
             if ( random.nextBoolean() )
             {
-                db.schema().indexFor( labelB( i ) ).on( keyB( i ) ).create();
+                tx.schema().indexFor( labelB( i ) ).on( keyB( i ) ).create();
             }
             else
             {
-                db.schema().constraintFor( labelB( i ) ).assertPropertyIsUnique( keyB( i ) ).create();
+                tx.schema().constraintFor( labelB( i ) ).assertPropertyIsUnique( keyB( i ) ).create();
             }
             tx.commit();
         }

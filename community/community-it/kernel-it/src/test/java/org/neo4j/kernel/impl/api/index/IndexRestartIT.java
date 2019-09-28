@@ -53,7 +53,6 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexState;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class IndexRestartIT
 {
@@ -97,18 +96,21 @@ public class IndexRestartIT
 
         // WHEN
         dropIndex( index, populationCompletionLatch );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // THEN
+            assertThat( getIndexes( transaction, myLabel ), hasSize( 0 ) );
+            try
+            {
+                getIndexState( transaction, index );
+                fail( "This index should have been deleted" );
+            }
+            catch ( NotFoundException e )
+            {
+                assertThat( e.getMessage(), CoreMatchers.containsString( myLabel.name() ) );
+            }
+        }
 
-        // THEN
-        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 0 ) ) );
-        try
-        {
-            getIndexState( db, index );
-            fail( "This index should have been deleted" );
-        }
-        catch ( NotFoundException e )
-        {
-            assertThat( e.getMessage(), CoreMatchers.containsString( myLabel.name() ) );
-        }
     }
 
     @Test
@@ -127,7 +129,10 @@ public class IndexRestartIT
         startDb();
 
         // Then
-        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.ONLINE ) );
+        }
         assertEquals( 1, provider.populatorCallCount.get() );
         assertEquals( 2, provider.writerCallCount.get() );
     }
@@ -146,7 +151,10 @@ public class IndexRestartIT
         // When
         startDb();
 
-        assertThat( getIndexes( db, myLabel ), inTx( db, not( haveState( db, Schema.IndexState.FAILED ) ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getIndexes( transaction, myLabel ), not( haveState( transaction, Schema.IndexState.FAILED ) ) );
+        }
         assertEquals( 2, provider.populatorCallCount.get() );
     }
 
@@ -154,7 +162,7 @@ public class IndexRestartIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = db.schema().indexFor( myLabel ).on( "number_of_bananas_owned" ).create();
+            IndexDefinition index = tx.schema().indexFor( myLabel ).on( "number_of_bananas_owned" ).create();
             tx.commit();
             return index;
         }

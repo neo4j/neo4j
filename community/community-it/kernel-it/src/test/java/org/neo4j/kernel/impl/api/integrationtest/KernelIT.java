@@ -84,7 +84,7 @@ class KernelIT extends KernelIntegrationTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 20, SECONDS );
+            tx.schema().awaitIndexesOnline( 20, SECONDS );
             tx.commit();
         }
         // THEN schema state is eventually updated (clearing the schema cache is not atomic with respect to flipping
@@ -102,7 +102,7 @@ class KernelIT extends KernelIntegrationTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 20, SECONDS );
+            tx.schema().awaitIndexesOnline( 20, SECONDS );
             getOrCreateSchemaState( "my key", "some state" );
             tx.commit();
         }

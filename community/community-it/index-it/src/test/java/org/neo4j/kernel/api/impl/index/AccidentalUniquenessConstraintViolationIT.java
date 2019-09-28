@@ -58,7 +58,7 @@ class AccidentalUniquenessConstraintViolationIT
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( Foo ).assertPropertyIsUnique( BAR ).create();
+            tx.schema().constraintFor( Foo ).assertPropertyIsUnique( BAR ).create();
             tx.commit();
         }
         Node fourtyTwo;

@@ -153,12 +153,12 @@ class IndexConsistencyIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( LABEL_ONE ).on( PROPERTY_KEY ).create();
+            tx.schema().indexFor( LABEL_ONE ).on( PROPERTY_KEY ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
     }

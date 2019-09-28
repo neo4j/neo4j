@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.annotations.api.PublicApi;
-import org.neo4j.graphdb.schema.Schema;
 
 /**
  * <p>
@@ -120,14 +119,6 @@ public interface GraphDatabaseService
      */
     <T> T executeTransactionally( String query, Map<String,Object> parameters, ResultTransformer<T> resultTransformer,
             Duration timeout ) throws QueryExecutionException;
-
-    /**
-     * Returns the {@link Schema schema manager} where all things related to schema,
-     * for example constraints and indexing on {@link Label labels}.
-     *
-     * @return the {@link Schema schema manager} for this database.
-     */
-    Schema schema();
 
     /**
      * Return name of underlying database

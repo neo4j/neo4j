@@ -56,7 +56,7 @@ public class ServerHelper
     public static void cleanTheDatabase( GraphDatabaseAPI db )
     {
         new Transactor( db, new DeleteAllData( db ), 10 ).execute();
-        new Transactor( db, new DeleteAllSchema( db ), 10 ).execute();
+        new Transactor( db, new DeleteAllSchema(), 10 ).execute();
     }
 
     public static NeoServer createNonPersistentServer() throws IOException
@@ -137,23 +137,16 @@ public class ServerHelper
 
     private static class DeleteAllSchema implements UnitOfWork
     {
-        private final GraphDatabaseAPI db;
-
-        DeleteAllSchema( GraphDatabaseAPI db )
-        {
-            this.db = db;
-        }
-
         @Override
         public void doWork( Transaction transaction )
         {
-            deleteAllIndexRules();
-            deleteAllConstraints();
+            deleteAllIndexRules( transaction );
+            deleteAllConstraints( transaction );
         }
 
-        private void deleteAllIndexRules()
+        private void deleteAllIndexRules( Transaction transaction )
         {
-            for ( IndexDefinition index : db.schema().getIndexes() )
+            for ( IndexDefinition index : transaction.schema().getIndexes() )
             {
                 if ( !index.isConstraintIndex() )
                 {
@@ -162,9 +155,9 @@ public class ServerHelper
             }
         }
 
-        private void deleteAllConstraints()
+        private void deleteAllConstraints( Transaction transaction )
         {
-            for ( ConstraintDefinition constraint : db.schema().getConstraints() )
+            for ( ConstraintDefinition constraint : transaction.schema().getConstraints() )
             {
                 constraint.drop();
             }

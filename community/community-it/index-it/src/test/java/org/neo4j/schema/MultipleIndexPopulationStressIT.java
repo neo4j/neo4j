@@ -222,7 +222,7 @@ public class MultipleIndexPopulationStressIT
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            for ( IndexDefinition index : db.schema().getIndexes() )
+            for ( IndexDefinition index : tx.schema().getIndexes() )
             {
                 index.drop();
             }
@@ -238,16 +238,16 @@ public class MultipleIndexPopulationStressIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( IndexDefinition index : db.schema().getIndexes() )
+            for ( IndexDefinition index : tx.schema().getIndexes() )
             {
-                switch ( db.schema().getIndexState( index ) )
+                switch ( tx.schema().getIndexState( index ) )
                 {
                 case ONLINE:
                     break; // Good
                 case POPULATING:
                     return false; // Still populating
                 case FAILED:
-                    fail( index + " entered failed state: " + db.schema().getIndexFailure( index ) );
+                    fail( index + " entered failed state: " + tx.schema().getIndexFailure( index ) );
                 default:
                     throw new UnsupportedOperationException();
                 }
@@ -269,7 +269,7 @@ public class MultipleIndexPopulationStressIT
             {
                 for ( String propertyKey : random.selection( TOKENS, 3, 3, false ) )
                 {
-                    db.schema().indexFor( Label.label( label ) ).on( propertyKey ).create();
+                    tx.schema().indexFor( Label.label( label ) ).on( propertyKey ).create();
                 }
             }
             tx.commit();

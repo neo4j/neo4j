@@ -108,7 +108,7 @@ class ConstraintRecoveryIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
+                tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
             }
         } );
         managementService.shutdown();
@@ -124,7 +124,7 @@ class ConstraintRecoveryIT
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
         }
 
         try ( Transaction transaction = db.beginTx() )
@@ -134,12 +134,12 @@ class ConstraintRecoveryIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 0, Iterables.count( Iterables.asList( db.schema().getConstraints() ) ) );
+            assertEquals( 0, Iterables.count( Iterables.asList( tx.schema().getConstraints() ) ) );
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition orphanedConstraintIndex = single( db.schema().getIndexes() );
+            IndexDefinition orphanedConstraintIndex = single( tx.schema().getIndexes() );
             assertEquals( LABEL.name(), single( orphanedConstraintIndex.getLabels() ).name() );
             assertEquals( KEY, single( orphanedConstraintIndex.getPropertyKeys() ) );
         }

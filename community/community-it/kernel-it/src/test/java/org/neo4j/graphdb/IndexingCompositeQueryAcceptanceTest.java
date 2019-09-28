@@ -88,9 +88,9 @@ public class IndexingCompositeQueryAcceptanceTest
         {
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( LABEL ).on( keys[0] ).create();
+                tx.schema().indexFor( LABEL ).on( keys[0] ).create();
 
-                IndexCreator indexCreator = db.schema().indexFor( LABEL );
+                IndexCreator indexCreator = tx.schema().indexFor( LABEL );
                 for ( String key : keys )
                 {
                     indexCreator = indexCreator.on( key );
@@ -101,7 +101,7 @@ public class IndexingCompositeQueryAcceptanceTest
 
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
+                tx.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
                 tx.commit();
             }
         }

@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -129,7 +128,7 @@ class SchemaStorageIT
         String d = "d";
         String e = "e";
         String f = "f";
-        createSchema( db -> db.schema().indexFor( Label.label( LABEL1 ) )
+        createSchema( tx -> tx.schema().indexFor( Label.label( LABEL1 ) )
           .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create() );
 
         IndexDescriptor rule = single( storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
@@ -150,9 +149,9 @@ class SchemaStorageIT
     void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite()
     {
         String[] props = "abcdefghijklmnopqrstuvwxyzABCDEFGHJILKMNOPQRSTUVWXYZ".split( "\\B" );
-        createSchema( db ->
+        createSchema( tx ->
         {
-            IndexCreator indexCreator = db.schema().indexFor( Label.label( LABEL1 ) );
+            IndexCreator indexCreator = tx.schema().indexFor( Label.label( LABEL1 ) );
             for ( String prop : props )
             {
                 indexCreator = indexCreator.on( prop );
@@ -327,24 +326,24 @@ class SchemaStorageIT
         return db.getDependencyResolver().resolveDependency( clazz );
     }
 
-    private static Consumer<GraphDatabaseService> index( String label, String prop )
+    private static Consumer<Transaction> index( String label, String prop )
     {
-        return db -> db.schema().indexFor( Label.label( label ) ).on( prop ).create();
+        return tx -> tx.schema().indexFor( Label.label( label ) ).on( prop ).create();
     }
 
-    private static Consumer<GraphDatabaseService> uniquenessConstraint( String label, String prop )
+    private static Consumer<Transaction> uniquenessConstraint( String label, String prop )
     {
-        return db -> db.schema().constraintFor( Label.label( label ) ).assertPropertyIsUnique( prop ).create();
+        return tx -> tx.schema().constraintFor( Label.label( label ) ).assertPropertyIsUnique( prop ).create();
     }
 
     @SafeVarargs
-    private void createSchema( Consumer<GraphDatabaseService>... creators )
+    private void createSchema( Consumer<Transaction>... creators )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Consumer<GraphDatabaseService> rule : creators )
+            for ( Consumer<Transaction> rule : creators )
             {
-                rule.accept( db );
+                rule.accept( tx );
             }
             tx.commit();
         }
@@ -355,7 +354,7 @@ class SchemaStorageIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
     }

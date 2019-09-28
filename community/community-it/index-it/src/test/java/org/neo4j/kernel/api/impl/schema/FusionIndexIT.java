@@ -120,7 +120,7 @@ public class FusionIndexIT
         GraphDatabaseAPI newDb = db.getGraphDatabaseAPI();
         try ( Transaction tx = newDb.beginTx() )
         {
-            assertEquals( 1L, Iterators.stream( newDb.schema().getIndexes( label ).iterator() ).count() );
+            assertEquals( 1L, Iterators.stream( tx.schema().getIndexes( label ).iterator() ).count() );
             assertNotNull( tx.findNode( label, propKey, numberValue ) );
             assertNotNull( tx.findNode( label, propKey, stringValue ) );
             assertNotNull( tx.findNode( label, propKey, spatialValue ) );
@@ -158,12 +158,12 @@ public class FusionIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( propKey ).create();
+            tx.schema().indexFor( label ).on( propKey ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             tx.commit();
         }
     }

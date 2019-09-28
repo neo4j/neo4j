@@ -160,13 +160,13 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().indexFor( Label.label( "Node" ) ).on( "prop" ).create();
+            tx.schema().indexFor( Label.label( "Node" ) ).on( "prop" ).create();
             tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
     }
 

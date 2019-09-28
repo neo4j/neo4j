@@ -55,7 +55,7 @@ public class UniqueIndexApplicationIT
     @Rule
     public final DbmsRule db = new ImpermanentDbmsRule();
 
-    private final Function<GraphDatabaseService, ?> createIndex;
+    private final Function<Transaction, ?> createIndex;
 
     @Parameterized.Parameters( name = "{0}" )
     public static List<Object[]> indexTypes()
@@ -78,10 +78,10 @@ public class UniqueIndexApplicationIT
     @Before
     public void given()
     {
-        db.executeAndCommit( tx -> createIndex.apply( db ) );
+        db.executeAndCommit( createIndex::apply );
         db.executeAndCommit( transaction ->
         {
-            awaitIndexesOnline( 5, SECONDS ).apply( db );
+            awaitIndexesOnline( 5, SECONDS ).apply( transaction );
             return null;
         } );
     }
@@ -210,12 +210,12 @@ public class UniqueIndexApplicationIT
         };
     }
 
-    public UniqueIndexApplicationIT( Function<GraphDatabaseService, ?> createIndex )
+    public UniqueIndexApplicationIT( Function<Transaction, ?> createIndex )
     {
         this.createIndex = createIndex;
     }
 
-    private static Object[] createIndex( Function<GraphDatabaseService, Void> createIndex )
+    private static Object[] createIndex( Function<Transaction, Void> createIndex )
     {
         return new Object[]{createIndex};
     }

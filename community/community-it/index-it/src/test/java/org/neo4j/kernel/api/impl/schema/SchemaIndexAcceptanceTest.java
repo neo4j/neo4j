@@ -49,7 +49,6 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 
 public class SchemaIndexAcceptanceTest
@@ -114,7 +113,10 @@ public class SchemaIndexAcceptanceTest
 
         restart();
 
-        assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ));
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( getIndexes( tx, label ), haveState( tx, IndexState.ONLINE ) );
+        }
         try ( Transaction transaction = db.beginTx() )
         {
             assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db, transaction ), containsOnly( node1 ) );
@@ -138,7 +140,10 @@ public class SchemaIndexAcceptanceTest
 
         restart();
 
-        assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( getIndexes( tx, label ), haveState( tx, IndexState.ONLINE ) );
+        }
         try ( Transaction transaction = db.beginTx() )
         {
             assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db, transaction ), containsOnly( node1 ) );
@@ -163,7 +168,10 @@ public class SchemaIndexAcceptanceTest
 
         restart();
 
-        assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( getIndexes( tx, label ), haveState( tx, IndexState.ONLINE ) );
+        }
         try ( Transaction transaction = db.beginTx() )
         {
             assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db, transaction ), containsOnly( node1 ) );
@@ -188,7 +196,7 @@ public class SchemaIndexAcceptanceTest
         // THEN
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( getIndexes( db, label ), isEmpty() );
+            assertThat( getIndexes( transaction, label ), isEmpty() );
         }
     }
 

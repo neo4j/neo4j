@@ -193,7 +193,7 @@ class LuceneIndexRecoveryIT
         IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
-            index = db.schema().getIndexes().iterator().next();
+            index = tx.schema().getIndexes().iterator().next();
         }
         waitForIndex( index );
 
@@ -262,7 +262,7 @@ class LuceneIndexRecoveryIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
+            IndexDefinition definition = tx.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
             tx.commit();
             return definition;
         }
@@ -272,7 +272,7 @@ class LuceneIndexRecoveryIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( definition, 10, TimeUnit.MINUTES );
+            tx.schema().awaitIndexOnline( definition, 10, TimeUnit.MINUTES );
             tx.commit();
         }
     }

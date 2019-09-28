@@ -93,9 +93,9 @@ class CancelIndexPopulationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition indexDefinition = first( db.schema().getIndexes( LABEL ) );
-            db.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
-            Schema.IndexState indexState = db.schema().getIndexState( indexDefinition );
+            IndexDefinition indexDefinition = first( tx.schema().getIndexes( LABEL ) );
+            tx.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
+            Schema.IndexState indexState = tx.schema().getIndexState( indexDefinition );
             tx.commit();
             return indexState;
         }
@@ -105,7 +105,7 @@ class CancelIndexPopulationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( LABEL ).on( KEY ).create();
+            tx.schema().indexFor( LABEL ).on( KEY ).create();
             tx.commit();
         }
     }

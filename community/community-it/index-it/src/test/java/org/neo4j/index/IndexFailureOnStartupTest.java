@@ -63,7 +63,7 @@ public class IndexFailureOnStartupTest
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( PERSON ).on( "name" ).create();
+            tx.schema().indexFor( PERSON ).on( "name" ).create();
             tx.commit();
         }
         awaitIndexesOnline( 5, SECONDS );
@@ -83,7 +83,7 @@ public class IndexFailureOnStartupTest
         // given
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
+            tx.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
             tx.commit();
         }
         createNamed( PERSON, "Lars" );
@@ -125,7 +125,7 @@ public class IndexFailureOnStartupTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
+            tx.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
             tx.commit();
         }
         assertThat( archiveFile(), nullValue() );
@@ -154,7 +154,7 @@ public class IndexFailureOnStartupTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( timeout, unit );
+            tx.schema().awaitIndexesOnline( timeout, unit );
             tx.commit();
         }
     }
@@ -173,9 +173,9 @@ public class IndexFailureOnStartupTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( IndexDefinition index : db.schema().getIndexes() )
+            for ( IndexDefinition index : tx.schema().getIndexes() )
             {
-                assertThat( db.schema().getIndexState( index ), matchesExpectation );
+                assertThat( tx.schema().getIndexState( index ), matchesExpectation );
             }
             tx.commit();
         }

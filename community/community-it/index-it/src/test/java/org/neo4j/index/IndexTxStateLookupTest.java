@@ -206,12 +206,12 @@ public class IndexTxStateLookupTest
         // database with an index on `(:Node).prop`
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
+            tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, SECONDS );
+            tx.schema().awaitIndexesOnline( 10, SECONDS );
             tx.commit();
         }
     }

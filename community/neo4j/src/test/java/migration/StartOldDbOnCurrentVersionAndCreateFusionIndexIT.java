@@ -138,7 +138,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             }
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+                tx.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
                 Node node = tx.createNode( Label.label( "Fts1" ), Label.label( "Fts2" ), Label.label( "Fts3" ), Label.label( "Fts4" ) );
                 node.setProperty( "prop1", "abc" );
                 node.setProperty( "prop2", "abc" );
@@ -188,7 +188,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             // Wait for all populating indexes to finish, so we can verify their contents:
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+                tx.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
                 tx.commit();
             }
 
@@ -216,7 +216,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             // then
             try ( Transaction tx = db.beginTx() )
             {
-                IndexDefinition fts1 = db.schema().getIndexByName( "fts1" );
+                IndexDefinition fts1 = tx.schema().getIndexByName( "fts1" );
 
                 Iterator<Label> fts1labels = fts1.getLabels().iterator();
                 assertTrue( fts1labels.hasNext() );
@@ -228,7 +228,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                 assertEquals( fts1props.next(), "prop1" );
                 assertFalse( fts1props.hasNext() );
 
-                IndexDefinition fts2 = db.schema().getIndexByName( "fts2" );
+                IndexDefinition fts2 = tx.schema().getIndexByName( "fts2" );
 
                 Iterator<Label> fts2labels = fts2.getLabels().iterator();
                 assertTrue( fts2labels.hasNext() );
@@ -244,7 +244,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                 assertEquals( fts2props.next(), "prop2" );
                 assertFalse( fts2props.hasNext() );
 
-                IndexDefinition fts3 = db.schema().getIndexByName( "fts3" );
+                IndexDefinition fts3 = tx.schema().getIndexByName( "fts3" );
 
                 Iterator<Label> fts3labels = fts3.getLabels().iterator();
                 assertTrue( fts3labels.hasNext() );
@@ -257,7 +257,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                 assertFalse( fts3props.hasNext() );
                 // TODO verify the index configuration of 'fts3' -- it is eventually consistent.
 
-                IndexDefinition fts4 = db.schema().getIndexByName( "fts4" );
+                IndexDefinition fts4 = tx.schema().getIndexByName( "fts4" );
 
                 Iterator<RelationshipType> fts4relTypes = fts4.getRelationshipTypes().iterator();
                 assertTrue( fts4relTypes.hasNext() );
@@ -413,13 +413,13 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( KEY1 ).create();
-            db.schema().indexFor( label ).on( KEY1 ).on( KEY2 ).create();
+            tx.schema().indexFor( label ).on( KEY1 ).create();
+            tx.schema().indexFor( label ).on( KEY1 ).on( KEY2 ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
             tx.commit();
         }
 
@@ -528,7 +528,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         try ( Transaction tx = db.beginTx() )
         {
             List<String> keyList = asList( keys );
-            for ( IndexDefinition index : db.schema().getIndexes( label ) )
+            for ( IndexDefinition index : tx.schema().getIndexes( label ) )
             {
                 if ( asList( index.getPropertyKeys() ).equals( keyList ) )
                 {

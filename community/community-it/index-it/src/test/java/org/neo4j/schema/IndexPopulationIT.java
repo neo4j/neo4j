@@ -94,7 +94,7 @@ public class IndexPopulationIT
 
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().indexFor( Label.label( "testLabel" ) ).on( "testProperty" ).create();
+            transaction.schema().indexFor( Label.label( "testLabel" ) ).on( "testProperty" ).create();
 
             Future<Number> countFuture = executorService.submit( countNodes() );
             assertEquals( 1, countFuture.get().intValue() );
@@ -111,7 +111,7 @@ public class IndexPopulationIT
         String testProperty = "testProperty";
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().indexFor( Label.label( "testLabel2" ) ).on( testProperty ).create();
+            transaction.schema().indexFor( Label.label( "testLabel2" ) ).on( testProperty ).create();
 
             Future<?> creationFuture = executorService.submit( createIndexForLabelAndProperty( nodeLabel, testProperty ) );
             creationFuture.get();
@@ -129,7 +129,7 @@ public class IndexPopulationIT
         Label nodesLabel = Label.label( "testLabel4" );
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().indexFor( markerLabel ).on( "testProperty" ).create();
+            transaction.schema().indexFor( markerLabel ).on( "testProperty" ).create();
 
             Future<?> creation = executorService.submit( createNodeWithLabel( nodesLabel ) );
             creation.get();
@@ -162,7 +162,7 @@ public class IndexPopulationIT
 
         try ( Transaction transaction = shutDownDb.beginTx() )
         {
-            shutDownDb.schema().indexFor( testLabel ).on( propertyName ).create();
+            transaction.schema().indexFor( testLabel ).on( propertyName ).create();
             transaction.commit();
         }
         managementService.shutdown();
@@ -184,7 +184,7 @@ public class IndexPopulationIT
         // when
         try ( Transaction tx = database.beginTx() )
         {
-            database.schema().indexFor( nodeLabel ).on( key ).create();
+            tx.schema().indexFor( nodeLabel ).on( key ).create();
             tx.commit();
         }
         waitForOnlineIndexes();
@@ -233,7 +233,7 @@ public class IndexPopulationIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            return Iterables.count( database.schema().getIndexes() );
+            return Iterables.count( transaction.schema().getIndexes() );
         }
     }
 
@@ -243,7 +243,7 @@ public class IndexPopulationIT
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                database.schema().indexFor( label ).on( propertyKey ).create();
+                transaction.schema().indexFor( label ).on( propertyKey ).create();
                 transaction.commit();
             }
 
@@ -255,7 +255,7 @@ public class IndexPopulationIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             transaction.commit();
         }
     }

@@ -308,7 +308,7 @@ public class FulltextProcedures
         if ( !txImpl.hasTxStateWithChanges() || !txImpl.txState().indexDiffSetsBySchema( index.schema() ).isAdded( index ) )
         {
             // If the index was not created in this transaction, then wait for it to come online before querying.
-            Schema schema = db.schema();
+            Schema schema = transaction.schema();
             schema.awaitIndexOnline( schema.getIndexByName( index.getName() ), INDEX_ONLINE_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS );
         }
         // If the index was created in this transaction, then we skip this check entirely.

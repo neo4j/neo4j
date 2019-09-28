@@ -101,7 +101,7 @@ class ConstraintCreationIT
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).create();
+            tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).create();
             fail( "Should have failed with ConstraintViolationException" );
             tx.commit();
         }
@@ -112,7 +112,7 @@ class ConstraintCreationIT
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 0, Iterables.count( db.schema().getIndexes() ) );
+            assertEquals( 0, Iterables.count( tx.schema().getIndexes() ) );
         }
     }
 }

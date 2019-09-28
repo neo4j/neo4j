@@ -99,7 +99,7 @@ class SchemaImplTest
         IndexDefinition indexDefinition;
         try ( Transaction tx = db.beginTx() )
         {
-            Schema schema = db.schema();
+            Schema schema = tx.schema();
             indexDefinition = schema.indexFor( USER_LABEL ).on( "username" ).create();
             tx.commit();
         }
@@ -107,7 +107,7 @@ class SchemaImplTest
         // Get state and progress
         try ( Transaction tx = db.beginTx() )
         {
-            Schema schema = db.schema();
+            Schema schema = tx.schema();
             Schema.IndexState state;
 
             IndexPopulationProgress progress;
@@ -132,7 +132,7 @@ class SchemaImplTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = db.schema().indexFor( USER_LABEL ).on( "name" ).create();
+            IndexDefinition index = tx.schema().indexFor( USER_LABEL ).on( "name" ).create();
             assertThat( index.getName(), equalTo( "Index on :User (name)" ) );
             tx.commit();
         }
@@ -144,13 +144,13 @@ class SchemaImplTest
         String indexName = "Users index";
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = db.schema().indexFor( USER_LABEL ).on( "name" ).withName( indexName ).create();
+            IndexDefinition index = tx.schema().indexFor( USER_LABEL ).on( "name" ).withName( indexName ).create();
             assertThat( index.getName(), is( indexName ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = db.schema().getIndexByName( indexName );
+            IndexDefinition index = tx.schema().getIndexByName( indexName );
             assertThat( index.getName(), is( indexName ) );
             tx.commit();
         }
@@ -160,7 +160,7 @@ class SchemaImplTest
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            Iterable<IndexDefinition> indexes = db.schema().getIndexes( label );
+            Iterable<IndexDefinition> indexes = transaction.schema().getIndexes( label );
             IndexDefinition index = Iterables.firstOrNull( indexes );
             boolean exists = index != null;
             transaction.commit();

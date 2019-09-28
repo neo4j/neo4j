@@ -41,6 +41,6 @@ public class MandatoryTransactionsForConstraintCreatorTest
     @Override
     protected ConstraintCreator obtainEntityInTransaction( Transaction transaction )
     {
-        return db.schema().constraintFor( Label.label( "Label" ) );
+        return transaction.schema().constraintFor( Label.label( "Label" ) );
     }
 }

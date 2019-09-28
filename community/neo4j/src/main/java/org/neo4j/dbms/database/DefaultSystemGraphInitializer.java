@@ -114,7 +114,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
     {
         try ( Transaction tx = system.beginTx() )
         {
-            system.schema().constraintFor( DATABASE_LABEL ).assertPropertyIsUnique( DATABASE_NAME_PROPERTY ).create();
+            tx.schema().constraintFor( DATABASE_LABEL ).assertPropertyIsUnique( DATABASE_NAME_PROPERTY ).create();
             tx.commit();
         }
 

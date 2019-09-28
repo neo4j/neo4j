@@ -316,7 +316,7 @@ public class BuiltInProcedures
             return;
         }
 
-        graphDatabaseAPI.schema().awaitIndexesOnline( timeout, TimeUnit.SECONDS );
+        transaction.schema().awaitIndexesOnline( timeout, TimeUnit.SECONDS );
     }
 
     @SystemProcedure

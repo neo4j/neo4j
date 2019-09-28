@@ -56,7 +56,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            for ( ConstraintDefinition definition : graphDb.schema().getConstraints() )
+            for ( ConstraintDefinition definition : tx.schema().getConstraints() )
             {
                 definition.drop();
             }
@@ -113,9 +113,9 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
 
-            graphDb.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
+            tx.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
             ConstraintDefinition dropped =
-                    graphDb.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).create();
+                    tx.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).create();
             dropped.drop();
             tx.commit();
         }
@@ -287,7 +287,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         {
             for ( int i = 0; i < labelProps.length; i += 2 )
             {
-                graphDb.schema().constraintFor( label( labelProps[i] ) ).assertPropertyIsUnique( labelProps[i + 1] )
+                tx.schema().constraintFor( label( labelProps[i] ) ).assertPropertyIsUnique( labelProps[i + 1] )
                         .create();
             }
             tx.commit();

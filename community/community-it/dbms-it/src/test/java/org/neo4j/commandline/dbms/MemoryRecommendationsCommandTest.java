@@ -358,7 +358,7 @@ class MemoryRecommendationsCommandTest
                 Label labelOne = Label.label( "one" );
                 try ( Transaction tx = db.beginTx() )
                 {
-                    db.schema().indexFor( labelOne ).on( key ).create();
+                    tx.schema().indexFor( labelOne ).on( key ).create();
                     tx.commit();
                 }
 

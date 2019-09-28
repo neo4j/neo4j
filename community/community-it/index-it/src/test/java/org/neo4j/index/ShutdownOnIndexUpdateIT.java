@@ -77,7 +77,7 @@ class ShutdownOnIndexUpdateIT
     {
         try ( Transaction tx = database.beginTx() )
         {
-            database.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
         }
     }
 
@@ -85,7 +85,7 @@ class ShutdownOnIndexUpdateIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            Schema schema = database.schema();
+            Schema schema = transaction.schema();
             schema.constraintFor( CONSTRAINT_INDEX_LABEL ).assertPropertyIsUnique( UNIQUE_PROPERTY_NAME ).create();
             transaction.commit();
         }

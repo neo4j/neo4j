@@ -45,6 +45,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -82,6 +83,7 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.internal.NodeCursorResourceIterator;
 import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
+import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -554,6 +556,11 @@ public class TransactionImpl implements InternalTransaction
         {
             throw new NotInTransactionException( "The transaction has been closed." );
         }
+        if ( transaction.isTerminated() )
+        {
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
+        }
         return transaction;
     }
 
@@ -623,6 +630,12 @@ public class TransactionImpl implements InternalTransaction
         {
             throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + type );
         }
+    }
+
+    @Override
+    public Schema schema()
+    {
+        return new SchemaImpl( this::kernelTransaction );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )

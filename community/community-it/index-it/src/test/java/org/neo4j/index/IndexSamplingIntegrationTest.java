@@ -78,13 +78,13 @@ class IndexSamplingIntegrationTest
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
             {
-                indexDefinition = db.schema().indexFor( label ).on( property ).create();
+                indexDefinition = tx.schema().indexFor( label ).on( property ).create();
                 tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexOnline( indexDefinition, 10, TimeUnit.SECONDS );
+                tx.schema().awaitIndexOnline( indexDefinition, 10, TimeUnit.SECONDS );
                 tx.commit();
             }
 
@@ -147,7 +147,7 @@ class IndexSamplingIntegrationTest
             db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+                tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
                 tx.commit();
             }
 

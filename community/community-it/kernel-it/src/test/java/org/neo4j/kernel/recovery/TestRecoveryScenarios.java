@@ -252,12 +252,12 @@ class TestRecoveryScenarios
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( key ).create();
+            tx.schema().indexFor( label ).on( key ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, SECONDS );
+            tx.schema().awaitIndexesOnline( 10, SECONDS );
             tx.commit();
         }
     }

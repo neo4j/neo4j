@@ -795,7 +795,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             {
                 preCreateLatch.countDown();
             }
-            db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
             tx.commit();
         }
     }

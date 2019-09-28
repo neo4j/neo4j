@@ -222,7 +222,7 @@ public class UniquenessRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ConstraintDefinition constraint = Iterables.single( db.schema().getConstraints() );
+            ConstraintDefinition constraint = Iterables.single( tx.schema().getConstraints() );
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
             assertEquals( "Person", constraint.getLabel().name() );
             assertEquals( "name", Iterables.single( constraint.getPropertyKeys() ) );
@@ -264,7 +264,7 @@ public class UniquenessRecoveryTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().constraintFor( label( "Person" ) ).assertPropertyIsUnique( "name" ).create();
+                tx.schema().constraintFor( label( "Person" ) ).assertPropertyIsUnique( "name" ).create();
 
                 tx.commit();
             }

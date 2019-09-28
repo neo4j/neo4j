@@ -99,13 +99,13 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().indexFor( label( "Foo" ) ).on( "p1" ).create();
+            tx.schema().indexFor( label( "Foo" ) ).on( "p1" ).create();
             tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
 

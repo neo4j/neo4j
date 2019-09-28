@@ -50,7 +50,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
     }

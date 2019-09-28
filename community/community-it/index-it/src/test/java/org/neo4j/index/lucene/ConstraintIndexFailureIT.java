@@ -64,7 +64,7 @@ public class ConstraintIndexFailureIT
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
+            tx.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
             tx.commit();
         }
         finally

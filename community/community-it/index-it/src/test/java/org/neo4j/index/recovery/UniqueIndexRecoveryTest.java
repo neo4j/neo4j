@@ -103,7 +103,7 @@ public class UniqueIndexRecoveryTest
         // then - just make sure the constraint is gone
         try ( Transaction tx = db.beginTx() )
         {
-            assertFalse( db.schema().getConstraints( LABEL ).iterator().hasNext() );
+            assertFalse( tx.schema().getConstraints( LABEL ).iterator().hasNext() );
             tx.commit();
         }
     }
@@ -192,7 +192,7 @@ public class UniqueIndexRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
             tx.commit();
         }
     }
@@ -222,7 +222,7 @@ public class UniqueIndexRecoveryTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( ConstraintDefinition constraint : db.schema().getConstraints( LABEL ) )
+            for ( ConstraintDefinition constraint : tx.schema().getConstraints( LABEL ) )
             {
                 constraint.drop();
             }

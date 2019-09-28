@@ -318,7 +318,7 @@ public class Neo4jMatchers
     public static Deferred<Node> findNodesByLabelAndProperty( final Label label, final String propertyName, final Object propertyValue,
             final GraphDatabaseService db, Transaction transaction )
     {
-        return new Deferred<>( db )
+        return new Deferred<>()
         {
             @Override
             protected Iterable<Node> manifest()
@@ -328,22 +328,22 @@ public class Neo4jMatchers
         };
     }
 
-    public static Deferred<IndexDefinition> getIndexes( final GraphDatabaseService db, final Label label )
+    public static Deferred<IndexDefinition> getIndexes( final Transaction transaction, final Label label )
     {
-        return new Deferred<>( db )
+        return new Deferred<>()
         {
             @Override
             protected Iterable<IndexDefinition> manifest()
             {
-                return db.schema().getIndexes( label );
+                return transaction.schema().getIndexes( label );
             }
         };
     }
 
-    public static Deferred<String> getPropertyKeys( final GraphDatabaseService db,
+    public static Deferred<String> getPropertyKeys( final Transaction transaction,
                                                     final Entity entity )
     {
-        return new Deferred<>( db )
+        return new Deferred<>()
         {
             @Override
             protected Iterable<String> manifest()
@@ -353,39 +353,39 @@ public class Neo4jMatchers
         };
     }
 
-    public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db, final Label label )
+    public static Deferred<ConstraintDefinition> getConstraints( final Transaction transaction, final Label label )
     {
-        return new Deferred<>( db )
+        return new Deferred<>()
         {
             @Override
             protected Iterable<ConstraintDefinition> manifest()
             {
-                return db.schema().getConstraints( label );
+                return transaction.schema().getConstraints( label );
             }
         };
     }
 
-    public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db,
+    public static Deferred<ConstraintDefinition> getConstraints( final Transaction transaction,
             final RelationshipType type )
     {
-        return new Deferred<>( db )
+        return new Deferred<>()
         {
             @Override
             protected Iterable<ConstraintDefinition> manifest()
             {
-                return db.schema().getConstraints( type );
+                return transaction.schema().getConstraints( type );
             }
         };
     }
 
-    public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db )
+    public static Deferred<ConstraintDefinition> getConstraints( final Transaction transaction )
     {
-        return new Deferred<>( db )
+        return new Deferred<>()
         {
             @Override
             protected Iterable<ConstraintDefinition> manifest()
             {
-                return db.schema().getConstraints();
+                return transaction.schema().getConstraints();
             }
         };
     }
@@ -399,13 +399,6 @@ public class Neo4jMatchers
      */
     public abstract static class Deferred<T>
     {
-
-        private final GraphDatabaseService db;
-
-        public Deferred( GraphDatabaseService db )
-        {
-            this.db = db;
-        }
 
         protected abstract Iterable<T> manifest();
 
@@ -468,7 +461,7 @@ public class Neo4jMatchers
     }
 
     public static TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<IndexDefinition>> haveState(
-            final GraphDatabaseService db, final Schema.IndexState expectedState )
+            final Transaction transaction, final Schema.IndexState expectedState )
     {
         return new TypeSafeDiagnosingMatcher<>()
         {
@@ -477,13 +470,13 @@ public class Neo4jMatchers
             {
                 for ( IndexDefinition current : indexes.collection() )
                 {
-                    Schema.IndexState currentState = db.schema().getIndexState( current );
+                    Schema.IndexState currentState = transaction.schema().getIndexState( current );
                     if ( !currentState.equals( expectedState ) )
                     {
                         description.appendValue( current ).appendText( " has state " ).appendValue( currentState );
                         if ( currentState == Schema.IndexState.FAILED )
                         {
-                            String indexFailure = db.schema().getIndexFailure( current );
+                            String indexFailure = transaction.schema().getIndexFailure( current );
                             description.appendText( " has failure message: " ).appendText( indexFailure );
                         }
                         return false;
@@ -568,12 +561,12 @@ public class Neo4jMatchers
         return createIndexNoWait( beansAPI, null, label, properties );
     }
 
-    public static IndexDefinition createIndexNoWait( GraphDatabaseService beansAPI, String name, Label label, String... properties )
+    public static IndexDefinition createIndexNoWait( GraphDatabaseService db, String name, Label label, String... properties )
     {
         IndexDefinition indexDef;
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator indexCreator = beansAPI.schema().indexFor( label );
+            IndexCreator indexCreator = tx.schema().indexFor( label );
             for ( String property : properties )
             {
                 indexCreator = indexCreator.on( property );
@@ -592,7 +585,7 @@ public class Neo4jMatchers
     {
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            beansAPI.schema().awaitIndexOnline( indexDef, 30, SECONDS );
+            tx.schema().awaitIndexOnline( indexDef, 30, SECONDS );
         }
     }
 
@@ -600,24 +593,20 @@ public class Neo4jMatchers
     {
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            beansAPI.schema().awaitIndexesOnline( 30, SECONDS );
+            tx.schema().awaitIndexesOnline( 30, SECONDS );
         }
     }
 
-    public static Object getIndexState( GraphDatabaseService beansAPI, IndexDefinition indexDef )
+    public static Object getIndexState( Transaction tx, IndexDefinition indexDef )
     {
-        try ( Transaction tx = beansAPI.beginTx() )
-        {
-            return beansAPI.schema().getIndexState( indexDef );
-        }
+        return tx.schema().getIndexState( indexDef );
     }
 
     public static ConstraintDefinition createConstraint( GraphDatabaseService db, Label label, String propertyKey )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ConstraintDefinition constraint =
-                    db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            ConstraintDefinition constraint = tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
             tx.commit();
             return constraint;
         }

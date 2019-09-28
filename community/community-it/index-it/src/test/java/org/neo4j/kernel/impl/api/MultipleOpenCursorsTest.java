@@ -475,9 +475,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( DbmsRule db )
+        void doCreateIndex( Transaction tx )
         {
-            db.schema().indexFor( indexLabel ).on( stringProp1 ).on( stringProp2 ).create();
+            tx.schema().indexFor( indexLabel ).on( stringProp1 ).on( stringProp2 ).create();
         }
     }
 
@@ -538,9 +538,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( DbmsRule db )
+        void doCreateIndex( Transaction tx )
         {
-            db.schema().indexFor( indexLabel ).on( numberProp1 ).on( numberProp2 ).create();
+            tx.schema().indexFor( indexLabel ).on( numberProp1 ).on( numberProp2 ).create();
         }
     }
 
@@ -609,9 +609,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( DbmsRule db )
+        void doCreateIndex( Transaction tx )
         {
-            db.schema().indexFor( indexLabel ).on( stringProp1 ).create();
+            tx.schema().indexFor( indexLabel ).on( stringProp1 ).create();
         }
     }
 
@@ -680,9 +680,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( DbmsRule db )
+        void doCreateIndex( Transaction tx )
         {
-            db.schema().indexFor( indexLabel ).on( numberProp1 ).create();
+            tx.schema().indexFor( indexLabel ).on( numberProp1 ).create();
         }
     }
 
@@ -771,12 +771,12 @@ public class MultipleOpenCursorsTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                doCreateIndex( db );
+                doCreateIndex( tx );
                 tx.commit();
             }
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 tx.commit();
             }
         }
@@ -811,7 +811,7 @@ public class MultipleOpenCursorsTest
 
         abstract void assertExactResult( List<Long> result );
 
-        abstract void doCreateIndex( DbmsRule db );
+        abstract void doCreateIndex( Transaction tx );
 
         NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
         {

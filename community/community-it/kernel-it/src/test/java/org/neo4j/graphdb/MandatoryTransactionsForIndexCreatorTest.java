@@ -41,6 +41,6 @@ public class MandatoryTransactionsForIndexCreatorTest
     @Override
     protected IndexCreator obtainEntityInTransaction( Transaction transaction )
     {
-        return db.schema().indexFor( Label.label( "Label" ) );
+        return transaction.schema().indexFor( Label.label( "Label" ) );
     }
 }

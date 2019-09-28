@@ -174,7 +174,7 @@ class IndexStatisticsIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
             tx.commit();
         }
     }
@@ -183,7 +183,7 @@ class IndexStatisticsIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition definition = db.schema().indexFor( ALIEN ).on( SPECIMEN ).create();
+            IndexDefinition definition = tx.schema().indexFor( ALIEN ).on( SPECIMEN ).create();
             tx.commit();
             return definition;
         }

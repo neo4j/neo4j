@@ -36,7 +36,6 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -189,12 +188,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public Transaction beginTx( long timeout, TimeUnit timeUnit )
     {
         return getGraphDatabaseAPI().beginTx( timeout, timeUnit );
-    }
-
-    @Override
-    public Schema schema()
-    {
-        return getGraphDatabaseAPI().schema();
     }
 
     @Override

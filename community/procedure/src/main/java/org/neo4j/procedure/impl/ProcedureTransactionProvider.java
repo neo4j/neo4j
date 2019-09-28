@@ -35,6 +35,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -231,6 +232,12 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         public Lock acquireReadLock( Entity entity )
         {
             return transaction.acquireReadLock( entity );
+        }
+
+        @Override
+        public Schema schema()
+        {
+            return transaction.schema();
         }
 
         @Override

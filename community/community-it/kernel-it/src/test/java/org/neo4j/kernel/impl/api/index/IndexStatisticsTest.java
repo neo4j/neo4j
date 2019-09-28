@@ -640,7 +640,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline(3, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline(3, TimeUnit.MINUTES );
         }
     }
 

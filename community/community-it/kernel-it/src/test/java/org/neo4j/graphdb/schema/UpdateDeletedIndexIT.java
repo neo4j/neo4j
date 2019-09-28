@@ -134,12 +134,12 @@ class UpdateDeletedIndexIT
         IndexDefinition indexDefinition;
         try ( Transaction tx = db.beginTx() )
         {
-            indexDefinition = db.schema().indexFor( LABEL ).on( KEY ).create();
+            indexDefinition = tx.schema().indexFor( LABEL ).on( KEY ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
         return indexDefinition;

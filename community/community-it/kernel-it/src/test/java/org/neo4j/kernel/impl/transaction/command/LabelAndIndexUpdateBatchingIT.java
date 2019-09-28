@@ -97,7 +97,7 @@ public class LabelAndIndexUpdateBatchingIT
             // uniqueness constraint affecting N
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+                tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
                 tx.commit();
             }
             transactions = extractTransactions( db );

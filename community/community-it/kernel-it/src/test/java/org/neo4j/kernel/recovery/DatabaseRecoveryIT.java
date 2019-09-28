@@ -273,7 +273,7 @@ class DatabaseRecoveryIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+                    tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
                     tx.commit();
                 }
 
@@ -347,13 +347,13 @@ class DatabaseRecoveryIT
         String key2 = "key2";
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( key1 ).create();
-            db.schema().indexFor( label ).on( key1 ).on( key2 ).create();
+            tx.schema().indexFor( label ).on( key1 ).create();
+            tx.schema().indexFor( label ).on( key1 ).on( key2 ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, SECONDS );
+            tx.schema().awaitIndexesOnline( 10, SECONDS );
             tx.commit();
         }
         checkPoint( db );

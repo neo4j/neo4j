@@ -339,13 +339,13 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().indexFor( Label.label( label ) ).on( propertyKey ).create();
+            tx.schema().indexFor( Label.label( label ) ).on( propertyKey ).create();
             tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().awaitIndexesOnline( 1, MINUTES );
+            tx.schema().awaitIndexesOnline( 1, MINUTES );
         }
     }
 }

@@ -41,7 +41,7 @@ public class MandatoryTransactionsForUniquenessConstraintDefinitionTest
     @Override
     protected ConstraintDefinition obtainEntityInTransaction( Transaction transaction )
     {
-        return db
+        return transaction
                 .schema()
                 .constraintFor( Label.label( "Label" ) )
                 .assertPropertyIsUnique( "property" )

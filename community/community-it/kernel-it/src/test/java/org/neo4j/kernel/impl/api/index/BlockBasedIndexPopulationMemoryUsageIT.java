@@ -96,11 +96,12 @@ class BlockBasedIndexPopulationMemoryUsageIT
     {
         try ( Transaction tx = db.beginTx() )
         {
+            var schema = tx.schema();
             for ( Label label : LABELS )
             {
                 for ( String key : KEYS )
                 {
-                    db.schema().indexFor( label ).on( key ).create();
+                    schema.indexFor( label ).on( key ).create();
                 }
             }
             tx.commit();
@@ -109,7 +110,7 @@ class BlockBasedIndexPopulationMemoryUsageIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 1, SECONDS );
+                tx.schema().awaitIndexesOnline( 1, SECONDS );
                 break;
             }
             catch ( IllegalStateException e )

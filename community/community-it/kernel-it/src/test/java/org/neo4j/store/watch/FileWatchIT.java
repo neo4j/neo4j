@@ -296,7 +296,7 @@ class FileWatchIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            for ( IndexDefinition definition : database.schema().getIndexes() )
+            for ( IndexDefinition definition : transaction.schema().getIndexes() )
             {
                 definition.drop();
             }
@@ -308,13 +308,13 @@ class FileWatchIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().indexFor( testLabel ).on( propertyName ).create();
+            transaction.schema().indexFor( testLabel ).on( propertyName ).create();
             transaction.commit();
         }
 
         try ( Transaction tx = database.beginTx() )
         {
-            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
     }
 

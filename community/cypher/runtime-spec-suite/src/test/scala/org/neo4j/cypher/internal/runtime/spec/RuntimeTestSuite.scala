@@ -491,7 +491,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def index(label: String, properties: String*): Unit = {
     var tx = graphDb.beginTx()
     try {
-      var creator = graphDb.schema().indexFor(Label.label(label))
+      var creator = tx.schema().indexFor(Label.label(label))
       properties.foreach(p => creator = creator.on(p))
       creator.create()
       tx.commit()
@@ -499,7 +499,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
     tx = graphDb.beginTx()
     try {
-      graphDb.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
       tx.commit()
     } finally tx.close()
   }
@@ -507,14 +507,14 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def uniqueIndex(label: String, property: String): Unit = {
     var tx = graphDb.beginTx()
     try {
-      val creator = graphDb.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property)
+      val creator = tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property)
       creator.create()
       tx.commit()
     } finally tx.close()
 
     tx = graphDb.beginTx()
     try {
-      graphDb.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
       tx.commit()
     } finally tx.close()
   }

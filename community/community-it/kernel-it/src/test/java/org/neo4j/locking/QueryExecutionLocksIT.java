@@ -177,12 +177,12 @@ class QueryExecutionLocksIT
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( propertyKey ).create();
+            transaction.schema().indexFor( label ).on( propertyKey ).create();
             transaction.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
     }
 

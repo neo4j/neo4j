@@ -160,12 +160,12 @@ class UniqueIndexSeekIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().constraintFor( label ).assertPropertyIsUnique( nameProperty ).create();
+            transaction.schema().constraintFor( label ).assertPropertyIsUnique( nameProperty ).create();
             transaction.commit();
         }
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             transaction.commit();
         }
     }

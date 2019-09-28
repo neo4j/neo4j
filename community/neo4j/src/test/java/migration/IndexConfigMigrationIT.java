@@ -230,7 +230,7 @@ class IndexConfigMigrationIT
             Set<CoordinateReferenceSystem> allCRS = Iterables.asSet( all() );
             try ( Transaction tx = db.beginTx() )
             {
-                hasIndexCount( db, 7 );
+                hasIndexCount( tx, 7 );
                 for ( Node node : tx.getAllNodes() )
                 {
                     hasLabels( node, label1, label2, label3, label4 );
@@ -322,9 +322,9 @@ class IndexConfigMigrationIT
     }
 
     @SuppressWarnings( "SameParameterValue" )
-    private static void hasIndexCount( GraphDatabaseAPI db, int expectedIndexCount )
+    private static void hasIndexCount( Transaction transaction, int expectedIndexCount )
     {
-        Iterable<IndexDefinition> indexes = db.schema().getIndexes();
+        Iterable<IndexDefinition> indexes = transaction.schema().getIndexes();
         long actualIndexCount = Iterables.count( indexes );
         assertEquals( expectedIndexCount, actualIndexCount, "Expected there to be " + expectedIndexCount + " indexes but was " + actualIndexCount );
     }
@@ -363,7 +363,7 @@ class IndexConfigMigrationIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
     }

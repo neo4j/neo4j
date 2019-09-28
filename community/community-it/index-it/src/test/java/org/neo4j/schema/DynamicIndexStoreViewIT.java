@@ -92,14 +92,14 @@ public class DynamicIndexStoreViewIT
             {
                 try ( Transaction transaction = database.beginTx() )
                 {
-                    database.schema().indexFor( Label.label( "label10" ) ).on( "property" ).create();
+                    transaction.schema().indexFor( Label.label( "label10" ) ).on( "property" ).create();
                     transaction.commit();
                 }
                 startSignal.countDown();
 
                 try ( Transaction transaction = database.beginTx() )
                 {
-                    database.schema().awaitIndexesOnline( populatorCount, TimeUnit.MINUTES );
+                    transaction.schema().awaitIndexesOnline( populatorCount, TimeUnit.MINUTES );
                     transaction.commit();
                 }
             }

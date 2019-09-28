@@ -579,7 +579,7 @@ public class IndexingAcceptanceTest
 
     private Neo4jMatchers.Deferred<Label> labels( final Node myNode )
     {
-        return new Neo4jMatchers.Deferred<Label>( dbRule.getGraphDatabaseAPI() )
+        return new Neo4jMatchers.Deferred<>()
         {
             @Override
             protected Iterable<Label> manifest()

@@ -73,7 +73,7 @@ class SchemaRecoveryIT
         startDb();
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -83,7 +83,7 @@ class SchemaRecoveryIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
             tx.commit();
         }
         killDb();
@@ -105,7 +105,7 @@ class SchemaRecoveryIT
         startDb();
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
             tx.commit();
         }
 
@@ -150,7 +150,7 @@ class SchemaRecoveryIT
     {
         try ( Transaction tx = database.beginTx() )
         {
-            return Iterables.asList( database.schema().getConstraints() );
+            return Iterables.asList( tx.schema().getConstraints() );
         }
     }
 
@@ -158,7 +158,7 @@ class SchemaRecoveryIT
     {
         try ( Transaction tx = database.beginTx() )
         {
-            return Iterables.asList( database.schema().getIndexes() );
+            return Iterables.asList( tx.schema().getIndexes() );
         }
     }
 }

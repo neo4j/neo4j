@@ -329,7 +329,7 @@ class IndexIT extends KernelIntegrationTest
         // when
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
@@ -355,7 +355,7 @@ class IndexIT extends KernelIntegrationTest
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
@@ -383,7 +383,7 @@ class IndexIT extends KernelIntegrationTest
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
@@ -411,7 +411,7 @@ class IndexIT extends KernelIntegrationTest
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
@@ -440,7 +440,7 @@ class IndexIT extends KernelIntegrationTest
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
@@ -481,13 +481,13 @@ class IndexIT extends KernelIntegrationTest
         {
             try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
             {
-                db.schema().indexFor( label ).on( propertyKey ).create();
+                transaction.schema().indexFor( label ).on( propertyKey ).create();
                 transaction.commit();
             }
 
             try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 transaction.commit();
             }
         };

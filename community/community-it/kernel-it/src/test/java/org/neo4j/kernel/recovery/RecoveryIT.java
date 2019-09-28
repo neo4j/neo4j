@@ -225,13 +225,13 @@ class RecoveryIT
 
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().indexFor( startMarker ).on( startProperty ).create();
-            database.schema().constraintFor( stopMarker ).assertPropertyIsUnique( stopProperty ).create();
+            transaction.schema().indexFor( startMarker ).on( startProperty ).create();
+            transaction.schema().constraintFor( stopMarker ).assertPropertyIsUnique( stopProperty ).create();
             transaction.commit();
         }
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            transaction.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             transaction.commit();
         }
 

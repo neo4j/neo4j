@@ -362,12 +362,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
 
     def createIndex(label: Label, propertyName: String): Unit = {
-      graph.withTx { _ =>
-        gds.schema().indexFor(label).on(propertyName).create()
+      graph.withTx { tx =>
+        tx.schema().indexFor(label).on(propertyName).create()
       }
 
-      graph.withTx { _ =>
-        gds.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
+      graph.withTx { tx =>
+        tx.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
       }
     }
   }

@@ -368,7 +368,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
     def apply(graph: GraphDatabaseQueryService): MatchResult = {
       inTestTx {
-        val constraintNames = graph.schema().getConstraints.asScala.toList.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
+        val constraintNames = tx.schema().getConstraints.asScala.toList.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
         val result = expectedConstraints.forall(i => constraintNames.contains(i.toString))
         MatchResult(
           result,

@@ -26,12 +26,14 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.exceptions.{CypherExecutionException, FailedIndexException}
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{GraphDatabaseService, Label, Transaction}
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.test.rule.TestDirectory
+
+import scala.collection.JavaConverters._
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
@@ -40,9 +42,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     execute("CREATE INDEX ON :Person(name)")
 
     // THEN
-    graph.inTx {
-      graph.indexPropsForLabel("Person") should equal(List(List("name")))
-    }
+    graph.withTx(tx => {
+      indexPropsForLabel(tx, "Person") should equal(List(List("name")))
+    })
   }
 
   test("createIndexShouldBeIdempotent") {
@@ -75,9 +77,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     execute("DROP INDEX ON :Person(name)")
 
     // THEN
-    graph.inTx {
-      graph.indexPropsForLabel("Person") shouldBe empty
-    }
+    graph.withTx( tx  => {
+      indexPropsForLabel( tx, "Person") shouldBe empty
+    } )
   }
 
   test("drop_index_that_does_not_exist") {
@@ -100,6 +102,11 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     }
   }
 
+  def indexPropsForLabel(tx: Transaction, label: String): List[List[String]] = {
+    val indexDefs = tx.schema.getIndexes(Label.label(label)).asScala.toList
+    indexDefs.map(_.getPropertyKeys.asScala.toList)
+  }
+
   private def createDbWithFailedIndex: GraphDatabaseService = {
     val testDirectory = TestDirectory.testDirectory()
     testDirectory.prepareDirectory(getClass, "createDbWithFailedIndex")
@@ -119,7 +126,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     execute("CREATE INDEX ON :Person(name)")
     val tx = graph.getGraphDatabaseService.beginTx()
     try {
-      graph.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)
+      tx.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)
       tx.commit()
     } catch {
       case e:IllegalStateException => assert(e.getMessage.contains("FAILED"), "Was expecting FAILED state")

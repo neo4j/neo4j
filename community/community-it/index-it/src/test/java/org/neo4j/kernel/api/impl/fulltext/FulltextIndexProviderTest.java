@@ -160,7 +160,7 @@ public class FulltextIndexProviderTest
         createIndex( new int[]{labelIdHej, labelIdHa, labelIdHe}, new int[]{propIdHej, propIdHa, propIdHe} );
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
             tx.commit();
         }
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
@@ -254,7 +254,7 @@ public class FulltextIndexProviderTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            for ( IndexDefinition index : db.schema().getIndexes() )
+            for ( IndexDefinition index : tx.schema().getIndexes() )
             {
                 assertFalse( index.isConstraintIndex() );
                 assertTrue( index.isMultiTokenIndex() );
@@ -371,7 +371,7 @@ public class FulltextIndexProviderTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             tx.commit();
         }
 
@@ -390,7 +390,7 @@ public class FulltextIndexProviderTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             tx.commit();
         }
 

@@ -492,7 +492,7 @@ class TestTransactionEvents
         Label label = label( "Label" );
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( "indexed" ).create();
+            tx.schema().indexFor( label ).on( "indexed" ).create();
             tx.commit();
         }
 
@@ -515,7 +515,7 @@ class TestTransactionEvents
         // When we create a node with the right label, but not the right property...
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( AWAIT_INDEX_DURATION, AWAIT_INDEX_UNIT );
+            tx.schema().awaitIndexesOnline( AWAIT_INDEX_DURATION, AWAIT_INDEX_UNIT );
             Node node = tx.createNode( label );
             node.setProperty( "random", 42 );
             tx.commit();
@@ -536,7 +536,7 @@ class TestTransactionEvents
         final Label label = label( "Label" );
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( "indexed" ).create();
+            tx.schema().indexFor( label ).on( "indexed" ).create();
             tx.commit();
         }
 
@@ -559,7 +559,7 @@ class TestTransactionEvents
         // When we create a node with the right property, but not the right label...
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( AWAIT_INDEX_DURATION, AWAIT_INDEX_UNIT );
+            tx.schema().awaitIndexesOnline( AWAIT_INDEX_DURATION, AWAIT_INDEX_UNIT );
             Node node = tx.createNode();
             node.setProperty( "indexed", "value" );
             node.setProperty( "random", 42 );
@@ -847,13 +847,13 @@ class TestTransactionEvents
         // ... also when creating an index
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( key ).create();
+            tx.schema().indexFor( label ).on( key ).create();
             tx.commit();
         }
         // ... or a constraint
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( "otherkey" ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( "otherkey" ).create();
             tx.commit();
         }
 

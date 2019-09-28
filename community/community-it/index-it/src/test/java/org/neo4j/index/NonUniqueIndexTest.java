@@ -73,7 +73,7 @@ class NonUniqueIndexTest
             // When
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( label( LABEL ) ).on( KEY ).create();
+                tx.schema().indexFor( label( LABEL ) ).on( KEY ).create();
                 tx.commit();
             }
             Node node;
@@ -86,7 +86,7 @@ class NonUniqueIndexTest
 
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 1, MINUTES );
+                tx.schema().awaitIndexesOnline( 1, MINUTES );
                 tx.commit();
             }
 

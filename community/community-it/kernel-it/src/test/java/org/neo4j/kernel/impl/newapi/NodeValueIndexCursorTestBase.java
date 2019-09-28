@@ -92,14 +92,14 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
-            graphDb.schema().indexFor( label( "Node" ) ).on( "prop2" ).create();
-            graphDb.schema().indexFor( label( "Node" ) ).on( "prop3" ).create();
+            tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
+            tx.schema().indexFor( label( "Node" ) ).on( "prop2" ).create();
+            tx.schema().indexFor( label( "Node" ) ).on( "prop3" ).create();
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().indexFor( label( "What" ) ).on( "ever" ).create();
+            tx.schema().indexFor( label( "What" ) ).on( "ever" ).create();
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -113,7 +113,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().awaitIndexesOnline( 5, MINUTES );
+            tx.schema().awaitIndexesOnline( 5, MINUTES );
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )

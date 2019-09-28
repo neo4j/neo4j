@@ -183,12 +183,12 @@ public class NestedIndexReadersIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( LABEL ).on( KEY ).create();
+            tx.schema().indexFor( LABEL ).on( KEY ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, SECONDS );
+            tx.schema().awaitIndexesOnline( 10, SECONDS );
             tx.commit();
         }
     }

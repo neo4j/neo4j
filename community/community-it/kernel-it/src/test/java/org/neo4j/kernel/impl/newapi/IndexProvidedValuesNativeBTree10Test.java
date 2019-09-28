@@ -69,13 +69,13 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
-            graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).on( "prip" ).create();
+            tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
+            tx.schema().indexFor( label( "Node" ) ).on( "prop" ).on( "prip" ).create();
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().awaitIndexesOnline( 5, MINUTES );
+            tx.schema().awaitIndexesOnline( 5, MINUTES );
             tx.commit();
         }
 

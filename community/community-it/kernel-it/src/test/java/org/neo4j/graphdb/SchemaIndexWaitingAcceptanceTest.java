@@ -67,7 +67,7 @@ public class SchemaIndexWaitingAcceptanceTest
         IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
-            index = db.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
+            index = tx.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
             tx.commit();
         }
 
@@ -77,7 +77,7 @@ public class SchemaIndexWaitingAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             // then
-            db.schema().awaitIndexOnline( index, 1, TimeUnit.MILLISECONDS );
+            tx.schema().awaitIndexOnline( index, 1, TimeUnit.MILLISECONDS );
 
             fail( "Expected IllegalStateException to be thrown" );
         }
@@ -101,7 +101,7 @@ public class SchemaIndexWaitingAcceptanceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
+            tx.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
             tx.commit();
         }
 
@@ -111,7 +111,7 @@ public class SchemaIndexWaitingAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             // then
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MILLISECONDS );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MILLISECONDS );
 
             fail( "Expected IllegalStateException to be thrown" );
         }

@@ -299,7 +299,7 @@ public class GenericIndexValidationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator indexCreator = db.schema().indexFor( LABEL_ONE );
+            IndexCreator indexCreator = tx.schema().indexFor( LABEL_ONE );
             for ( String propKey : propKeys )
             {
                 indexCreator = indexCreator.on( propKey );
@@ -309,7 +309,7 @@ public class GenericIndexValidationIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
     }

@@ -69,15 +69,15 @@ class KernelAPIParallelIndexScanStressIT
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( Label.label( "LABEL1" ) ).on( "prop" ).create();
-            db.schema().indexFor( Label.label( "LABEL2" ) ).on( "prop" ).create();
-            db.schema().indexFor( Label.label( "LABEL3" ) ).on( "prop" ).create();
+            tx.schema().indexFor( Label.label( "LABEL1" ) ).on( "prop" ).create();
+            tx.schema().indexFor( Label.label( "LABEL2" ) ).on( "prop" ).create();
+            tx.schema().indexFor( Label.label( "LABEL3" ) ).on( "prop" ).create();
             tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, MINUTES );
+            tx.schema().awaitIndexesOnline( 10, MINUTES );
             tx.commit();
         }
 

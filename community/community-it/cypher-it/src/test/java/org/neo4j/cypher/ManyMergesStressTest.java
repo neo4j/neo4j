@@ -64,23 +64,23 @@ class ManyMergesStressTest
         {
             // THIS USED TO CAUSE OUT OF FILE HANDLES
             // (maybe look at:  http://stackoverflow.com/questions/6210348/too-many-open-files-error-on-lucene)
-            db.schema().indexFor( person ).on( "id" ).create();
+            tx.schema().indexFor( person ).on( "id" ).create();
 
             // THIS SHOULD ALSO WORK
-            db.schema().constraintFor( person ).assertPropertyIsUnique( "id" ).create();
+            tx.schema().constraintFor( person ).assertPropertyIsUnique( "id" ).create();
 
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( person ).on( "name" ).create();
+            tx.schema().indexFor( person ).on( "name" ).create();
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
 

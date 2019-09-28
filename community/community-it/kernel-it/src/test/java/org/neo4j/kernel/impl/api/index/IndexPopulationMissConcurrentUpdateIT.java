@@ -150,7 +150,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( LABEL_ONE ).on( NAME_PROPERTY ).create();
+            tx.schema().indexFor( LABEL_ONE ).on( NAME_PROPERTY ).create();
             tx.commit();
         }
 
@@ -172,7 +172,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         index.barrier.release();
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, MINUTES );
+            tx.schema().awaitIndexesOnline( 1, MINUTES );
             tx.commit();
         }
 

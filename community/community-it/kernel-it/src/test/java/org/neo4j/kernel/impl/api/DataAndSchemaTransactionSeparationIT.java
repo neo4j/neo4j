@@ -46,13 +46,13 @@ class DataAndSchemaTransactionSeparationIT
     private Function<Transaction, Void> expectFailureAfterSchemaOperation(
             final Function<Transaction, ?> function )
     {
-        return graphDb ->
+        return transaction ->
         {
             // given
-            db.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+            transaction.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
             // when
-            var exception = assertThrows( Exception.class, () -> function.apply( graphDb ) );
+            var exception = assertThrows( Exception.class, () -> function.apply( transaction ) );
             assertEquals( "Cannot perform data updates in a transaction that has performed schema updates.", exception.getMessage() );
             return null;
         };
@@ -61,13 +61,13 @@ class DataAndSchemaTransactionSeparationIT
     private Function<Transaction, Void> succeedAfterSchemaOperation(
             final Function<Transaction, ?> function )
     {
-        return graphDb ->
+        return transaction ->
         {
             // given
-            db.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+            transaction.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
             // when/then
-            function.apply( graphDb );
+            function.apply( transaction );
             return null;
         };
     }

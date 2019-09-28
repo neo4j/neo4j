@@ -69,13 +69,13 @@ abstract class IndexingStringQueryAcceptanceTestBase
         {
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( LABEL ).on( KEY ).create();
+                tx.schema().indexFor( LABEL ).on( KEY ).create();
                 tx.commit();
             }
 
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
+                tx.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
                 tx.commit();
             }
         }

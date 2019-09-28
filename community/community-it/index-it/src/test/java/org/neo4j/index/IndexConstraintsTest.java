@@ -66,16 +66,16 @@ class IndexConstraintsTest
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
+            tx.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
             tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            IndexDefinition index = firstOrNull( graphDb.schema().getIndexes( LABEL ) );
+            IndexDefinition index = firstOrNull( tx.schema().getIndexes( LABEL ) );
             index.drop();
 
-            graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
             tx.commit();
         }
         // assert no exception is thrown
@@ -96,16 +96,16 @@ class IndexConstraintsTest
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
+            tx.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
             tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            IndexDefinition index = firstOrNull( graphDb.schema().getIndexes( LABEL ) );
+            IndexDefinition index = firstOrNull( tx.schema().getIndexes( LABEL ) );
             index.drop();
 
-            graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
             tx.commit();
         }
         // assert no exception is thrown
@@ -116,16 +116,16 @@ class IndexConstraintsTest
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
             tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            ConstraintDefinition constraint = firstOrNull( graphDb.schema().getConstraints( LABEL ) );
+            ConstraintDefinition constraint = firstOrNull( tx.schema().getConstraints( LABEL ) );
             constraint.drop();
 
-            graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
+            tx.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
             tx.commit();
         }
         // assert no exception is thrown
@@ -142,37 +142,37 @@ class IndexConstraintsTest
                 // when: CREATE, DROP, CREATE => effect: CREATE
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    recreate( graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create(), times );
+                    recreate( tx, tx.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create(), times );
                     tx.commit();
                 }
                 // then
                 try ( Transaction transaction = graphDb.beginTx() )
                 {
-                    assertNotNull( getIndex( LABEL, PROPERTY_KEY ), "Index should exist" );
+                    assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Index should exist" );
                 }
 
                 // when: DROP, CREATE => effect: <none>
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    recreate( getIndex( LABEL, PROPERTY_KEY ), times );
+                    recreate( tx, getIndex( tx, LABEL, PROPERTY_KEY ), times );
                     tx.commit();
                 }
                 // then
                 try ( Transaction transaction = graphDb.beginTx() )
                 {
-                    assertNotNull( getIndex( LABEL, PROPERTY_KEY ), "Index should exist" );
+                    assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Index should exist" );
                 }
 
                 // when: DROP, CREATE, DROP => effect: DROP
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    recreate( getIndex( LABEL, PROPERTY_KEY ), times ).drop();
+                    recreate( tx, getIndex( tx, LABEL, PROPERTY_KEY ), times ).drop();
                     tx.commit();
                 }
                 // then
                 try ( Transaction transaction = graphDb.beginTx() )
                 {
-                    assertNull( getIndex( LABEL, PROPERTY_KEY ), "Index should be removed" );
+                    assertNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Index should be removed" );
                 }
             }
             catch ( Throwable e )
@@ -182,12 +182,12 @@ class IndexConstraintsTest
         }
     }
 
-    private IndexDefinition recreate( IndexDefinition index, int times )
+    private IndexDefinition recreate( Transaction tx, IndexDefinition index, int times )
     {
         for ( int i = 0; i < times; i++ )
         {
             index.drop();
-            index = graphDb.schema()
+            index = tx.schema()
                     .indexFor( single( index.getLabels() ) )
                     .on( single( index.getPropertyKeys() ) )
                     .create();
@@ -195,10 +195,10 @@ class IndexConstraintsTest
         return index;
     }
 
-    private IndexDefinition getIndex( Label label, String propertyKey )
+    private IndexDefinition getIndex( Transaction tx, Label label, String propertyKey )
     {
         IndexDefinition found = null;
-        for ( IndexDefinition index : graphDb.schema().getIndexes( label ) )
+        for ( IndexDefinition index : tx.schema().getIndexes( label ) )
         {
             if ( propertyKey.equals( single( index.getPropertyKeys() ) ) )
             {
@@ -215,7 +215,7 @@ class IndexConstraintsTest
         try ( Transaction tx = graphDb.beginTx() )
         {
             // given
-            graphDb.schema()
+            tx.schema()
                     .constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY )
                     .create()
                     .drop();
@@ -225,7 +225,7 @@ class IndexConstraintsTest
         // then
         try ( Transaction transaction = graphDb.beginTx() )
         {
-            assertNull( getIndex( LABEL, PROPERTY_KEY ), "Should not have constraint index" );
+            assertNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should not have constraint index" );
         }
     }
 
@@ -240,42 +240,42 @@ class IndexConstraintsTest
                 // when: CREATE, DROP, CREATE => effect: CREATE
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    recreate( graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create(), times );
+                    recreate( tx, tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create(), times );
                     tx.commit();
                 }
                 // then
                 try ( Transaction transaction = graphDb.beginTx() )
                 {
-                    assertNotNull( getConstraint( LABEL, PROPERTY_KEY ), "Constraint should exist" );
-                    assertNotNull( getIndex( LABEL, PROPERTY_KEY ), "Should have constraint index" );
+                    assertNotNull( getConstraint( transaction, LABEL, PROPERTY_KEY ), "Constraint should exist" );
+                    assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should have constraint index" );
                 }
 
                 // when: DROP, CREATE => effect: <none>
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    ConstraintDefinition constraint = getConstraint( LABEL, PROPERTY_KEY );
-                    recreate( constraint, times );
+                    ConstraintDefinition constraint = getConstraint( tx, LABEL, PROPERTY_KEY );
+                    recreate( tx, constraint, times );
                     tx.commit();
                 }
 
                 try ( Transaction transaction = graphDb.beginTx() )
                 {
                     // then
-                    assertNotNull( getConstraint( LABEL, PROPERTY_KEY ), "Constraint should exist" );
-                    assertNotNull( getIndex( LABEL, PROPERTY_KEY ), "Should have constraint index" );
+                    assertNotNull( getConstraint( transaction, LABEL, PROPERTY_KEY ), "Constraint should exist" );
+                    assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should have constraint index" );
                 }
 
                 // when: DROP, CREATE, DROP => effect: DROP
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    recreate( getConstraint( LABEL, PROPERTY_KEY ), times ).drop();
+                    recreate( tx, getConstraint( tx, LABEL, PROPERTY_KEY ), times ).drop();
                     tx.commit();
                 }
                 try ( Transaction transaction = graphDb.beginTx() )
                 {
                     // then
-                    assertNull( getConstraint( LABEL, PROPERTY_KEY ), "Constraint should be removed" );
-                    assertNull( getIndex( LABEL, PROPERTY_KEY ), "Should not have constraint index" );
+                    assertNull( getConstraint( transaction, LABEL, PROPERTY_KEY ), "Constraint should be removed" );
+                    assertNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should not have constraint index" );
                 }
             }
             catch ( Throwable e )
@@ -285,12 +285,12 @@ class IndexConstraintsTest
         }
     }
 
-    private ConstraintDefinition recreate( ConstraintDefinition constraint, int times )
+    private ConstraintDefinition recreate( Transaction tx, ConstraintDefinition constraint, int times )
     {
         for ( int i = 0; i < times; i++ )
         {
             constraint.drop();
-            constraint = graphDb.schema()
+            constraint = tx.schema()
                     .constraintFor( constraint.getLabel() )
                     .assertPropertyIsUnique( single( constraint.getPropertyKeys() ) )
                     .create();
@@ -298,10 +298,10 @@ class IndexConstraintsTest
         return constraint;
     }
 
-    private ConstraintDefinition getConstraint( Label label, String propertyKey )
+    private ConstraintDefinition getConstraint( Transaction tx, Label label, String propertyKey )
     {
         ConstraintDefinition found = null;
-        for ( ConstraintDefinition constraint : graphDb.schema().getConstraints( label ) )
+        for ( ConstraintDefinition constraint : tx.schema().getConstraints( label ) )
         {
             if ( propertyKey.equals( single( constraint.getPropertyKeys() ) ) )
             {

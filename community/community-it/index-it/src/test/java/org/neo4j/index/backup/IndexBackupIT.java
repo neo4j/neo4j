@@ -204,14 +204,14 @@ public class IndexBackupIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                database.schema().indexFor( label ).on( PROPERTY_PREFIX + i ).create();
+                transaction.schema().indexFor( label ).on( PROPERTY_PREFIX + i ).create();
             }
             transaction.commit();
         }
 
         try ( Transaction tx = database.beginTx() )
         {
-            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
 
         checkPointer = resolveDependency( CheckPointer.class );

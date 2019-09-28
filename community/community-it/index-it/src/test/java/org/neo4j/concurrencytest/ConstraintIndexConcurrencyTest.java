@@ -70,7 +70,7 @@ public class ConstraintIndexConcurrencyTest
         // a constraint
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
             tx.commit();
         }
 

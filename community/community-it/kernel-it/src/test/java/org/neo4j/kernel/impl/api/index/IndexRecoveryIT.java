@@ -94,7 +94,6 @@ import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVID
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @TestDirectoryExtension
 class IndexRecoveryIT
@@ -172,8 +171,11 @@ class IndexRecoveryIT
                 // When
                 startDb();
 
-                assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
-                assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
+                try ( Transaction transaction = db.beginTx() )
+                {
+                    assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
+                    assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.POPULATING ) );
+                }
                 // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
                 // we will not gonna need to get index populators during recovery index service start
                 verify( mockedIndexProvider, times( recoveryRequired ? 3 : 2 ) ).getPopulator( any( IndexDescriptor.class ),
@@ -221,8 +223,11 @@ class IndexRecoveryIT
                         indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
                 startDb();
 
-                assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
-                assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
+                try ( Transaction transaction = db.beginTx() )
+                {
+                    assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
+                    assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.POPULATING ) );
+                }
                 verify( mockedIndexProvider, times( 3 ) ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
                 verify( mockedIndexProvider, never() ).getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
             }
@@ -264,8 +269,11 @@ class IndexRecoveryIT
         startDb();
 
         // Then
-        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
-        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
+            assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.ONLINE ) );
+        }
         verify( mockedIndexProvider )
                 .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         int onlineAccessorInvocationCount = 3; // once when we create the index, and once when we restart the db
@@ -296,8 +304,11 @@ class IndexRecoveryIT
         startDb();
 
         // Then
-        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
-        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.FAILED ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getIndexes( transaction, myLabel ), hasSize( 1 ) );
+            assertThat( getIndexes( transaction, myLabel ), haveState( transaction, Schema.IndexState.FAILED ) );
+        }
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
     }
 
@@ -387,7 +398,7 @@ class IndexRecoveryIT
         IndexDefinition index = createIndex( label );
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( index, 10, SECONDS );
+            tx.schema().awaitIndexOnline( index, 10, SECONDS );
             tx.commit();
         }
     }
@@ -396,7 +407,7 @@ class IndexRecoveryIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = db.schema().indexFor( label ).on( key ).create();
+            IndexDefinition index = tx.schema().indexFor( label ).on( key ).create();
             tx.commit();
             return index;
         }

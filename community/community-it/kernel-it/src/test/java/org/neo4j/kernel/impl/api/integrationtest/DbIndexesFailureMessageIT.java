@@ -75,7 +75,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            assertThrows( IllegalStateException.class, () -> db.schema().awaitIndexesOnline( 2, MINUTES ) );
+            assertThrows( IllegalStateException.class, () -> tx.schema().awaitIndexesOnline( 2, MINUTES ) );
         }
 
         // When

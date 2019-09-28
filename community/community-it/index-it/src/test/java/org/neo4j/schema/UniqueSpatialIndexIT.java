@@ -190,12 +190,12 @@ class UniqueSpatialIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( TestLabels.LABEL_ONE ).assertPropertyIsUnique( KEY ).create();
+            tx.schema().constraintFor( TestLabels.LABEL_ONE ).assertPropertyIsUnique( KEY ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
     }

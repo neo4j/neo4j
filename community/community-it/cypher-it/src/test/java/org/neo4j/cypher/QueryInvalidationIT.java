@@ -135,12 +135,12 @@ public class QueryInvalidationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( Label.label( "User" ) ).on( "userId" ).create();
+            tx.schema().indexFor( Label.label( "User" ) ).on( "userId" ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, SECONDS );
+            tx.schema().awaitIndexesOnline( 10, SECONDS );
             tx.commit();
         }
     }

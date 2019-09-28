@@ -234,7 +234,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Label label = Label.label( "Item" );
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -319,13 +319,13 @@ public class ConsistencyCheckServiceIntegrationTest
 
         try ( Transaction tx = gds.beginTx() )
         {
-            indexDefinition = gds.schema().indexFor( label ).on( propKey ).create();
+            indexDefinition = tx.schema().indexFor( label ).on( propKey ).create();
             tx.commit();
         }
 
         try ( Transaction tx = gds.beginTx() )
         {
-            gds.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
             tx.commit();
         }
     }

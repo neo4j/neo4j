@@ -113,9 +113,9 @@ public class UniquenessConstraintValidationConcurrencyIT
     private Function<Transaction, Void> createUniquenessConstraint(
             final String label, final String propertyKey )
     {
-        return db ->
+        return transaction ->
         {
-            database.getGraphDatabaseAPI().schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
+            transaction.schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
             return null;
         };
     }

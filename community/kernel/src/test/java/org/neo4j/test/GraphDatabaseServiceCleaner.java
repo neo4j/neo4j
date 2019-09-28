@@ -43,12 +43,12 @@ public class GraphDatabaseServiceCleaner
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( ConstraintDefinition constraint : db.schema().getConstraints() )
+            for ( ConstraintDefinition constraint : tx.schema().getConstraints() )
             {
                 constraint.drop();
             }
 
-            for ( IndexDefinition index : db.schema().getIndexes() )
+            for ( IndexDefinition index : tx.schema().getIndexes() )
             {
                 index.drop();
             }

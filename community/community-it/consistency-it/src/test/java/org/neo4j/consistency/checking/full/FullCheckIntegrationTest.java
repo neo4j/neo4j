@@ -2081,7 +2081,7 @@ public class FullCheckIntegrationTest
             {
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
-                    db.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
+                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
                     KernelTransaction ktx = transactionOn( db );
                     try ( Statement ignore = ktx.acquireStatement() )
                     {
@@ -2093,7 +2093,7 @@ public class FullCheckIntegrationTest
                         ktx.schemaWrite().indexCreate( forLabel( label3, key1, key2 ) );
                     }
 
-                    db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
+                    tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
                     tx.commit();
                 }
                 catch ( KernelException e )
@@ -2103,7 +2103,7 @@ public class FullCheckIntegrationTest
 
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
-                    db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                    tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 }
 
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )

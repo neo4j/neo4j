@@ -154,10 +154,11 @@ class BatchInsertIndexTest
         GraphDatabaseService db = graphDatabaseService( config );
         try ( Transaction tx = db.beginTx() )
         {
-            Iterator<IndexDefinition> indexes = db.schema().getIndexes().iterator();
+            var schema = tx.schema();
+            Iterator<IndexDefinition> indexes = schema.getIndexes().iterator();
             assertTrue( indexes.hasNext() );
             IndexDefinition index = indexes.next();
-            Schema.IndexState indexState = db.schema().getIndexState( index );
+            Schema.IndexState indexState = schema.getIndexState( index );
             assertEquals( Schema.IndexState.FAILED, indexState );
             assertFalse( indexes.hasNext() );
             tx.commit();
@@ -196,7 +197,7 @@ class BatchInsertIndexTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             tx.commit();
         }
     }

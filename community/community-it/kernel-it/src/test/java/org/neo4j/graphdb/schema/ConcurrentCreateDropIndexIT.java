@@ -84,7 +84,7 @@ class ConcurrentCreateDropIndexIT
         // THEN they should all be observed as existing in the end
         try ( Transaction tx = db.beginTx() )
         {
-            List<IndexDefinition> indexes = asList( db.schema().getIndexes() );
+            List<IndexDefinition> indexes = asList( tx.schema().getIndexes() );
             assertEquals( threads, indexes.size() );
             Set<String> labels = new HashSet<>();
             for ( IndexDefinition index : indexes )
@@ -104,7 +104,7 @@ class ConcurrentCreateDropIndexIT
         {
             for ( int i = 0; i < threads; i++ )
             {
-                indexes.add( db.schema().indexFor( label( i ) ).on( KEY ).create() );
+                indexes.add( tx.schema().indexFor( label( i ) ).on( KEY ).create() );
             }
             tx.commit();
         }
@@ -120,7 +120,7 @@ class ConcurrentCreateDropIndexIT
         // THEN they should all be observed as dropped in the end
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 0, asList( db.schema().getIndexes() ).size() );
+            assertEquals( 0, asList( tx.schema().getIndexes() ).size() );
             tx.commit();
         }
     }
@@ -136,7 +136,7 @@ class ConcurrentCreateDropIndexIT
         {
             for ( int i = 0; i < drops; i++ )
             {
-                indexesToDrop.add( db.schema().indexFor( label( i ) ).on( KEY ).create() );
+                indexesToDrop.add( tx.schema().indexFor( label( i ) ).on( KEY ).create() );
             }
             tx.commit();
         }
@@ -158,7 +158,7 @@ class ConcurrentCreateDropIndexIT
         // THEN they should all be observed as dropped in the end
         try ( Transaction tx = db.beginTx() )
         {
-            List<IndexDefinition> indexes = asList( db.schema().getIndexes() );
+            List<IndexDefinition> indexes = asList( tx.schema().getIndexes() );
             assertEquals( creates, indexes.size() );
 
             for ( IndexDefinition index : indexes )
@@ -179,7 +179,7 @@ class ConcurrentCreateDropIndexIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().constraintFor( label ).assertPropertyIsUnique( KEY ).create();
+                tx.schema().constraintFor( label ).assertPropertyIsUnique( KEY ).create();
                 tx.commit();
             }
             catch ( TransientFailureException | ConstraintViolationException e )
@@ -193,9 +193,9 @@ class ConcurrentCreateDropIndexIT
         try ( Transaction tx = db.beginTx() )
         {
             // then
-            ConstraintDefinition constraint = single( db.schema().getConstraints( label ) );
+            ConstraintDefinition constraint = single( tx.schema().getConstraints( label ) );
             assertNotNull( constraint );
-            IndexDefinition index = single( db.schema().getIndexes( label ) );
+            IndexDefinition index = single( tx.schema().getIndexes( label ) );
             assertNotNull( index );
             tx.commit();
         }
@@ -219,7 +219,7 @@ class ConcurrentCreateDropIndexIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().constraintFor( label ).assertPropertyIsUnique( KEY ).create();
+                tx.schema().constraintFor( label ).assertPropertyIsUnique( KEY ).create();
                 tx.commit();
             }
             catch ( TransientFailureException | ConstraintViolationException e )
@@ -233,9 +233,9 @@ class ConcurrentCreateDropIndexIT
         try ( Transaction tx = db.beginTx() )
         {
             // then
-            ConstraintDefinition constraint = singleOrNull( db.schema().getConstraints( label ) );
+            ConstraintDefinition constraint = singleOrNull( tx.schema().getConstraints( label ) );
             assertNull( constraint );
-            IndexDefinition index = singleOrNull( db.schema().getIndexes( label ) );
+            IndexDefinition index = singleOrNull( tx.schema().getIndexes( label ) );
             assertNull( index );
             tx.commit();
         }
@@ -251,7 +251,7 @@ class ConcurrentCreateDropIndexIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    db.schema().indexFor( label( 0 ) ).on( KEY ).create();
+                    tx.schema().indexFor( label( 0 ) ).on( KEY ).create();
                     tx.commit();
                 }
             } );
@@ -259,7 +259,7 @@ class ConcurrentCreateDropIndexIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                    tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
                     tx.commit();
                 }
             }
@@ -277,7 +277,7 @@ class ConcurrentCreateDropIndexIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( label( labelIndex ) ).on( KEY ).create();
+                tx.schema().indexFor( label( labelIndex ) ).on( KEY ).create();
                 tx.commit();
             }
         };

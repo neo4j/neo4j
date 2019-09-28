@@ -133,7 +133,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.createNode( Label.label( "Label" ) ).setProperty( "prop", "value" );
             tx.commit();
         }
@@ -152,7 +152,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node node = tx.createNode( Label.label( "Label" ) );
             node.setProperty( "p1", "value" );
             node.setProperty( "p2", "value" );
@@ -175,7 +175,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.createNode( Label.label( "L1" ), Label.label( "L2" ) ).setProperty( "prop", "value" );
             tx.createNode( Label.label( "L2" ) ).setProperty( "prop", "value" );
             tx.createNode( Label.label( "L1" ) ).setProperty( "prop", "value" );
@@ -198,7 +198,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.createNode( Stream.of( labels ).map( Label::label ).toArray( Label[]::new ) ).setProperty( "prop", "value" );
             tx.commit();
         }
@@ -217,7 +217,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node n1 = tx.createNode( Label.label( "L1" ), Label.label( "L2" ) );
             n1.setProperty( "p1", "value" );
             n1.setProperty( "p2", "value" );
@@ -261,7 +261,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node node = tx.createNode();
             node.createRelationshipTo( node, relationshipType ).setProperty( "p1", "value" );
             node.createRelationshipTo( node, relationshipType ).setProperty( "p1", "value" ); // This relationship will have a different id value than the node.
@@ -283,7 +283,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node node = tx.createNode();
             Relationship r1 = node.createRelationshipTo( node, relationshipType );
             r1.setProperty( "p1", "value" );
@@ -312,7 +312,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node n1 = tx.createNode();
             Node n2 = tx.createNode();
             n1.createRelationshipTo( n1, relType1 ).setProperty( "p1", "value" );
@@ -338,7 +338,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node n1 = tx.createNode();
             Node n2 = tx.createNode();
             Relationship r1 = n1.createRelationshipTo( n1, relType1 );
@@ -375,7 +375,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node n1 = tx.createNode( Label.label( "L1" ), Label.label( "L3" ) );
             n1.setProperty( "p1", "value" );
             n1.setProperty( "p2", "value" );
@@ -402,7 +402,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.createNode( Label.label( "L1" ) ).setProperty( "p1", 1 );
             tx.commit();
         }
@@ -421,7 +421,7 @@ class FulltextIndexConsistencyCheckIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node node = tx.createNode();
             node.createRelationshipTo( node, RelationshipType.withName( "R1" ) ).setProperty( "p1", 1 );
             tx.commit();
@@ -476,7 +476,7 @@ class FulltextIndexConsistencyCheckIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
 
@@ -498,8 +498,8 @@ class FulltextIndexConsistencyCheckIT
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            indexDescriptor = getIndexDescriptor( first( db.schema().getIndexes() ) );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            indexDescriptor = getIndexDescriptor( first( tx.schema().getIndexes() ) );
             Node node = tx.createNode( Label.label( "Label" ) );
             node.setProperty( "prop", "value" );
             nodeId = node.getId();
@@ -532,7 +532,7 @@ class FulltextIndexConsistencyCheckIT
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node node = tx.createNode( Label.label( "Label" ) );
             nodeId = node.getId();
             node.setProperty( "prop", "value" );
@@ -572,8 +572,8 @@ class FulltextIndexConsistencyCheckIT
         long relId;
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            indexDescriptor = getIndexDescriptor( first( db.schema().getIndexes() ) );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            indexDescriptor = getIndexDescriptor( first( tx.schema().getIndexes() ) );
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo( node, RelationshipType.withName( "REL" ) );
             rel.setProperty( "prop", "value" );
@@ -607,7 +607,7 @@ class FulltextIndexConsistencyCheckIT
         long relId;
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo( node, RelationshipType.withName( "REL" ) );
             relId = rel.getId();

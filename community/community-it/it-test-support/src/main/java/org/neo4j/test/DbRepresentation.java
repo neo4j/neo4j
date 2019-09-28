@@ -66,7 +66,8 @@ public class DbRepresentation
         {
             try ( Transaction transaction = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                var schema = transaction.schema();
+                schema.awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 DbRepresentation result = new DbRepresentation();
                 for ( Node node : transaction.getAllNodes() )
                 {
@@ -75,11 +76,11 @@ public class DbRepresentation
                     result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
                     result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
                 }
-                for ( IndexDefinition indexDefinition : db.schema().getIndexes() )
+                for ( IndexDefinition indexDefinition : schema.getIndexes() )
                 {
                     result.schemaIndexes.add( indexDefinition );
                 }
-                for ( ConstraintDefinition constraintDefinition : db.schema().getConstraints() )
+                for ( ConstraintDefinition constraintDefinition : schema.getConstraints() )
                 {
                     result.constraints.add( constraintDefinition );
                 }

@@ -183,7 +183,7 @@ class TruncateDatabaseIT
         String indexName = "truncatedIndex";
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
-            databaseAPI.schema().indexFor( indexLabel )
+            transaction.schema().indexFor( indexLabel )
                     .on( indexedProperty )
                     .withName( indexName )
                     .create();
@@ -205,7 +205,7 @@ class TruncateDatabaseIT
 
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
-            IndexDefinition indexDefinition = databaseAPI.schema().getIndexByName( indexName );
+            IndexDefinition indexDefinition = transaction.schema().getIndexByName( indexName );
             assertEquals( indexLabel, indexDefinition.getLabels().iterator().next() );
             assertEquals( indexedProperty, indexDefinition.getPropertyKeys().iterator().next() );
         }
@@ -288,7 +288,7 @@ class TruncateDatabaseIT
     {
         try ( Transaction tx = databaseAPI.beginTx() )
         {
-            databaseAPI.schema().awaitIndexesOnline( 10, MINUTES );
+            tx.schema().awaitIndexesOnline( 10, MINUTES );
         }
     }
 

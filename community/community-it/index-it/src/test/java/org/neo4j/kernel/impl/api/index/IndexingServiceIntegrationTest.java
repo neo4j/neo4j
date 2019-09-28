@@ -113,7 +113,7 @@ public class IndexingServiceIntegrationTest
     {
         try ( Transaction tx = database.beginTx() )
         {
-            database.schema().indexFor( Label.label( FOOD_LABEL ) ).on( PROPERTY_NAME ).create();
+            tx.schema().indexFor( Label.label( FOOD_LABEL ) ).on( PROPERTY_NAME ).create();
             tx.commit();
         }
 
@@ -157,15 +157,15 @@ public class IndexingServiceIntegrationTest
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            database.schema().constraintFor( Label.label( CLOTHES_LABEL ) ).assertPropertyIsUnique( PROPERTY_NAME ).create();
-            database.schema().indexFor( Label.label( WEATHER_LABEL ) ).on( PROPERTY_NAME ).create();
+            transaction.schema().constraintFor( Label.label( CLOTHES_LABEL ) ).assertPropertyIsUnique( PROPERTY_NAME ).create();
+            transaction.schema().indexFor( Label.label( WEATHER_LABEL ) ).on( PROPERTY_NAME ).create();
 
             transaction.commit();
         }
 
         try ( Transaction tx = database.beginTx() )
         {
-            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
 
         IndexingService indexingService = getIndexingService( database );
@@ -190,16 +190,16 @@ public class IndexingServiceIntegrationTest
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                database.schema().constraintFor( Label.label( constraintLabelPrefix + i ) )
+                transaction.schema().constraintFor( Label.label( constraintLabelPrefix + i ) )
                         .assertPropertyIsUnique( constraintPropertyPrefix + i ).create();
-                database.schema().indexFor( Label.label( indexLabelPrefix + i ) ).on( indexPropertyPrefix + i ).create();
+                transaction.schema().indexFor( Label.label( indexLabelPrefix + i ) ).on( indexPropertyPrefix + i ).create();
                 transaction.commit();
             }
         }
 
         try ( Transaction tx = database.beginTx() )
         {
-            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
 
         IndexingService indexingService = getIndexingService( database );

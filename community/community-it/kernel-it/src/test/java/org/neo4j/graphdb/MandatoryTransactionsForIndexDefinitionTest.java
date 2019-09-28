@@ -40,7 +40,7 @@ public class MandatoryTransactionsForIndexDefinitionTest extends AbstractMandato
     @Override
     protected IndexDefinition obtainEntityInTransaction( Transaction transaction )
     {
-        return db
+        return transaction
                .schema()
                .indexFor( Label.label( "Label" ) )
                .on( "property" )

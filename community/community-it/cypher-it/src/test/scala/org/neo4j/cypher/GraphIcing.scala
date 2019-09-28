@@ -54,17 +54,10 @@ trait GraphIcing {
 
     private val graph: GraphDatabaseFacade = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
-    def schema() = graph.schema
-
-    def indexPropsForLabel(label: String): List[List[String]] = {
-      val indexDefs = graph.schema.getIndexes(Label.label(label)).asScala.toList
-      indexDefs.map(_.getPropertyKeys.asScala.toList)
-    }
-
     def createUniqueConstraint(label: String, property: String) = {
-      inTx {
-        graph.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
-      }
+      withTx( tx =>  {
+        tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
+      } )
     }
 
     def createExistenceConstraint(label: String, property: String) = {
@@ -84,17 +77,17 @@ trait GraphIcing {
         tx.execute(s"CREATE INDEX ON :$label(${properties.map(p => s"`$p`").mkString(",")})")
       })
 
-      inTx {
-        graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      }
+      withTx( tx => {
+        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      } )
 
       getIndex(label, properties)
     }
 
     def getIndex(label: String, properties: Seq[String]): IndexDefinition = {
-      inTx {
-        graph.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get
-      }
+      withTx( tx => {
+        tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get
+      } )
     }
 
     def createUniqueIndex(label: String, property: String): Unit = {
@@ -102,9 +95,9 @@ trait GraphIcing {
         tx.execute(s"CREATE CONSTRAINT ON (p:$label) ASSERT p.$property IS UNIQUE")
       } )
 
-      inTx {
-        graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      }
+      withTx( tx => {
+        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      } )
     }
 
     def statement: Statement = txBridge.get(graph.databaseId())

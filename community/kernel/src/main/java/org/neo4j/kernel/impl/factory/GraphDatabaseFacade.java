@@ -29,8 +29,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -38,7 +36,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
@@ -46,7 +43,6 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
-import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -65,7 +61,6 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
  */
 public class GraphDatabaseFacade implements GraphDatabaseAPI
 {
-    private final Schema schema;
     private final Database database;
     private final ThreadToStatementContextBridge statementContext;
     private final TransactionalContextFactory contextFactory;
@@ -88,16 +83,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         this.statementContext = requireNonNull( txBridge );
         this.availabilityGuard = requireNonNull( availabilityGuard );
         this.databaseInfo = requireNonNull( databaseInfo );
-        this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true, databaseId() ) );
         this.contextFactory = Neo4jTransactionalContextFactory.create( () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ),
                 new FacadeKernelTransactionFactory( config, this ), txBridge );
-    }
-
-    @Override
-    public Schema schema()
-    {
-        assertTransactionOpen();
-        return schema;
     }
 
     @Override
@@ -238,15 +225,5 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public String toString()
     {
         return databaseInfo + " [" + databaseLayout() + "]";
-    }
-
-    private void assertTransactionOpen()
-    {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-        if ( transaction.isTerminated() )
-        {
-            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
-            throw new TransactionTerminatedException( terminationReason );
-        }
     }
 }

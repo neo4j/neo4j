@@ -195,7 +195,7 @@ public class FulltextProceduresTest
             assertEquals( "ONLINE", result.next().get( "state" ) );
             assertFalse( result.hasNext() );
             result.close();
-            assertNotNull( db.schema().getIndexByName( "test-index" ) );
+            assertNotNull( tx.schema().getIndexByName( "test-index" ) );
             tx.commit();
         }
         managementService.shutdown();
@@ -212,7 +212,7 @@ public class FulltextProceduresTest
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
             assertFalse( result.hasNext() );
-            assertNotNull( db.schema().getIndexByName( "test-index" ) );
+            assertNotNull( tx.schema().getIndexByName( "test-index" ) );
             tx.commit();
         }
     }
@@ -249,7 +249,7 @@ public class FulltextProceduresTest
             assertEquals( "ONLINE", result.next().get( "state" ) );
             assertFalse( result.hasNext() );
             result.close();
-            assertNotNull( db.schema().getIndexByName( "test-index" ) );
+            assertNotNull( tx.schema().getIndexByName( "test-index" ) );
             tx.commit();
         }
         managementService.shutdown();
@@ -266,7 +266,7 @@ public class FulltextProceduresTest
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
             assertFalse( result.hasNext() );
-            assertNotNull( db.schema().getIndexByName( "test-index" ) );
+            assertNotNull( tx.schema().getIndexByName( "test-index" ) );
             tx.commit();
         }
     }
@@ -1193,7 +1193,7 @@ public class FulltextProceduresTest
         long book2id;
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node book1 = tx.createNode( book );
             book1.setProperty( "author", "René Descartes" );
             book1.setProperty( "title", "Meditationes de prima philosophia" );
@@ -2015,7 +2015,7 @@ public class FulltextProceduresTest
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
         {
-            assertFalse( db.schema().getIndexes().iterator().hasNext() );
+            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
             tx.commit();
         }
     }
@@ -2097,7 +2097,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( LABEL ).on( PROP ).create();
+            tx.schema().indexFor( LABEL ).on( PROP ).create();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2277,7 +2277,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2288,7 +2288,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( single( db.schema().getIndexes() ).getName(), is( not( "nameIndex" ) ) );
+            assertThat( single( tx.schema().getIndexes() ).getName(), is( not( "nameIndex" ) ) );
             tx.commit();
         }
     }
@@ -2305,7 +2305,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2316,7 +2316,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( single( db.schema().getIndexes() ).getName(), is( "nameIndex" ) );
+            assertThat( single( tx.schema().getIndexes() ).getName(), is( "nameIndex" ) );
             tx.commit();
         }
     }
@@ -2559,17 +2559,17 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( prop ).create();
+            tx.schema().indexFor( label ).on( prop ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 2, Iterables.count( db.schema().getIndexes() ) );
+            assertEquals( 2, Iterables.count( tx.schema().getIndexes() ) );
             tx.commit();
         }
     }
@@ -2583,12 +2583,12 @@ public class FulltextProceduresTest
         final String prop = "prop";
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( prop ).create();
+            tx.schema().indexFor( label ).on( prop ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2603,7 +2603,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 2, Iterables.count( db.schema().getIndexes() ) );
+            assertEquals( 2, Iterables.count( tx.schema().getIndexes() ) );
             tx.commit();
         }
     }
@@ -2672,7 +2672,7 @@ public class FulltextProceduresTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
     }
