@@ -53,6 +53,20 @@ trait WorkIdentity {
   override def toString: String = s"$workDescription-$workId"
 }
 
+trait WorkIdentityMutableDescription extends WorkIdentity {
+  def updateDescription(newDescription: String): Unit
+}
+
 case class WorkIdentityImpl(workId: Id, workDescription: String) extends WorkIdentity with HasWorkIdentity {
   override def workIdentity: WorkIdentity = this
+}
+
+case class WorkIdentityMutableDescriptionImpl(workId: Id, fixedPrefix: String, var mutableDescription: String) extends WorkIdentityMutableDescription with HasWorkIdentity {
+  // Optimized for updates rather than reads since we do not know if it will be ever used
+
+  override def workIdentity: WorkIdentity = this
+
+  override def workDescription: String = fixedPrefix + mutableDescription
+
+  override def updateDescription(newDescription: String): Unit = mutableDescription = newDescription
 }
