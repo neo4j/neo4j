@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.{Label, QueryExecutionException}
 import org.neo4j.internal.helpers.collection.Pair
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.JavaConversions._
@@ -75,11 +73,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         // Flush cache
         cacheListener.clear()
 
-        graph.inTx {
-          val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-          val statement = bridge.getKernelTransactionBoundToThisThread(true, graphOps.asInstanceOf[GraphDatabaseAPI].databaseId())
-          statement.schemaRead().schemaStateFlush()
-        }
+        graph.withTx( tx => {
+          tx.kernelTransaction().schemaRead().schemaStateFlush()
+        } )
 
         graph.withTx( tx => tx.execute(firstQuery).resultAsString() )
         graph.withTx( tx => tx.execute(secondQuery).resultAsString() )

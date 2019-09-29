@@ -104,7 +104,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            createCompositeIndex( graphDb, "Person", "firstname", "surname" );
+            createCompositeIndex( graphDb, tx, "Person", "firstname", "surname" );
             tx.commit();
         }
         catch ( Exception e )
@@ -182,7 +182,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
-    protected abstract void createCompositeIndex( GraphDatabaseService graphDb, String label, String... properties ) throws Exception;
+    protected abstract void createCompositeIndex( GraphDatabaseService graphDb, Transaction tx, String label, String... properties ) throws Exception;
     protected abstract String providerKey();
     protected abstract String providerVersion();
 

@@ -35,7 +35,6 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -47,14 +46,12 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     private final TransactionIdTracker transactionIdTracker;
     private final GraphDatabaseAPI databaseAPI;
     private final QueryExecutionEngine queryExecutionEngine;
-    private final ThreadToStatementContextBridge txBridge;
     private final TransactionalContextFactory transactionalContextFactory;
     private final DatabaseId databaseId;
 
     public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, TransactionIdTracker transactionIdTracker )
     {
         this.databaseAPI = databaseAPI;
-        this.txBridge = resolveDependency( databaseAPI, ThreadToStatementContextBridge.class );
         this.queryExecutionEngine = resolveDependency( databaseAPI, QueryExecutionEngine.class );
         this.transactionIdTracker = transactionIdTracker;
         this.transactionalContextFactory = newTransactionalContextFactory( databaseAPI );
@@ -93,13 +90,13 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
             AccessMode accessMode, Map<String,Object> txMetadata )
     {
         InternalTransaction topLevelInternalTransaction = beginInternalTransaction( type, loginContext, clientInfo, txTimeout, txMetadata );
-        KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( false, databaseAPI.databaseId() );
+        KernelTransaction kernelTransaction = topLevelInternalTransaction.kernelTransaction();
         if ( KernelTransaction.Type.implicit == type )
         {
-            return new PeriodicBoltKernelTransaction( queryExecutionEngine, txBridge, transactionalContextFactory, kernelTransaction,
+            return new PeriodicBoltKernelTransaction( queryExecutionEngine, transactionalContextFactory,
                     topLevelInternalTransaction );
         }
-        return new BoltKernelTransaction( queryExecutionEngine, txBridge, transactionalContextFactory, kernelTransaction, topLevelInternalTransaction );
+        return new BoltKernelTransaction( queryExecutionEngine, transactionalContextFactory, kernelTransaction, topLevelInternalTransaction );
     }
 
     @Override

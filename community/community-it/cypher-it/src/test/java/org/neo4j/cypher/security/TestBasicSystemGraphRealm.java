@@ -27,7 +27,6 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -38,8 +37,8 @@ import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.ContextSwitchingSystemGraphQueryExecutor;
 import org.neo4j.server.security.systemgraph.QueryExecutor;
+import org.neo4j.server.security.systemgraph.SystemGraphQueryExecutor;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -53,8 +52,7 @@ public class TestBasicSystemGraphRealm
 
     static BasicSystemGraphRealm testRealm( BasicImportOptionsBuilder importOptions, TestDatabaseManager dbManager, Config config ) throws Throwable
     {
-        var threadToStatementContextBridge = dbManager.testSystemDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
+        var executor = new SystemGraphQueryExecutor( dbManager );
         return testRealm( importOptions.migrationSupplier(), importOptions.initialUserSupplier(), newRateLimitedAuthStrategy(),
                 dbManager, executor, config );
     }
@@ -70,8 +68,7 @@ public class TestBasicSystemGraphRealm
 
         Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
-        var threadToStatementContextBridge = dbManager.testSystemDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
+        var executor = new SystemGraphQueryExecutor( dbManager );
         return testRealm( migrationUserRepositorySupplier, initialUserRepositorySupplier, newRateLimitedAuthStrategy(), dbManager,
                 executor, config );
     }

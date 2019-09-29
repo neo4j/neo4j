@@ -23,7 +23,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.values.virtual.MapValue;
@@ -35,11 +34,11 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     private final Neo4jTransactionalContext.Creator contextCreator;
 
     public static TransactionalContextFactory create( Supplier<GraphDatabaseQueryService> queryServiceSupplier,
-            KernelTransactionFactory transactionFactory, ThreadToStatementContextBridge txBridge )
+            KernelTransactionFactory transactionFactory )
     {
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton( queryServiceSupplier );
         Neo4jTransactionalContext.Creator contextCreator =
-                ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(), txBridge, tx, initialStatement, executingQuery,
+                ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(), tx, initialStatement, executingQuery,
                         transactionFactory );
         return new Neo4jTransactionalContextFactory( contextCreator );
     }
@@ -48,13 +47,11 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     public static TransactionalContextFactory create( GraphDatabaseQueryService queryService )
     {
         var resolver = queryService.getDependencyResolver();
-        var txBridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
         var transactionFactory = resolver.resolveDependency( KernelTransactionFactory.class );
         Neo4jTransactionalContext.Creator contextCreator =
                 ( tx, initialStatement, executingQuery ) ->
                         new Neo4jTransactionalContext(
                                 queryService,
-                                txBridge,
                                 tx,
                                 initialStatement,
                                 executingQuery,

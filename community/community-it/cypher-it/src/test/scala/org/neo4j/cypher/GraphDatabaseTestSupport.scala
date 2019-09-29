@@ -36,7 +36,6 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.procedure.{CallableProcedure, CallableUserAggregationFunction, CallableUserFunction, GlobalProcedures}
 import org.neo4j.kernel.api.{Kernel, KernelTransaction}
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.monitoring.Monitors
@@ -169,14 +168,12 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     }
   }
 
-  def tokenReader[T](f: TokenRead => T): T = {
-    f(kernelTransaction().tokenRead())
+  def tokenReader[T](tx: Transaction, f: TokenRead => T): T = {
+    f(kernelTransaction(tx).tokenRead())
   }
 
-  def kernelTransaction(): KernelTransaction = {
-    val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-    val transaction = bridge.getKernelTransactionBoundToThisThread(true, graph.getGraphDatabaseService.databaseId())
-    transaction
+  def kernelTransaction(tx: Transaction): KernelTransaction = {
+    tx.asInstanceOf[InternalTransaction].kernelTransaction()
   }
 
   def nodeId(n: Node) = inTestTx {

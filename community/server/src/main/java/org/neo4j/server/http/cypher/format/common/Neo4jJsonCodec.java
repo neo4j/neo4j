@@ -231,7 +231,7 @@ public class Neo4jJsonCodec extends ObjectMapper
             TransactionStateChecker txStateChecker )
             throws IOException
     {
-        var kti = container.getBridge().getKernelTransactionBoundToThisThread( true, container.getDb().databaseId() );
+        KernelTransactionImplementation kti = null;//container.getBridge().getKernelTransactionBoundToThisThread( true, container.getDb().databaseId() );
         if ( value instanceof Node )
         {
             var nodeDeletedInCurrentTx = txStateChecker.isNodeDeletedInCurrentTx( value.getId() );

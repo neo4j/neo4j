@@ -44,7 +44,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
@@ -85,7 +84,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -106,7 +105,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -2082,7 +2080,7 @@ public class FullCheckIntegrationTest
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
-                    KernelTransaction ktx = transactionOn( db );
+                    KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                     try ( Statement ignore = ktx.acquireStatement() )
                     {
                         // the Core API for composite index creation is not quite merged yet
@@ -2119,7 +2117,7 @@ public class FullCheckIntegrationTest
 
                     set( tx.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
 
-                    KernelTransaction ktx = transactionOn( db );
+                    KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                     try ( Statement ignore = ktx.acquireStatement() )
                     {
                         TokenRead tokenRead = ktx.tokenRead();
@@ -2433,13 +2431,6 @@ public class FullCheckIntegrationTest
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
         return schema.indexesGetAll();
-    }
-
-    private static KernelTransaction transactionOn( GraphDatabaseService db )
-    {
-        DependencyResolver resolver = ((GraphDatabaseAPI) db).getDependencyResolver();
-        ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
-        return bridge.getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() );
     }
 
     private static class Reference<T>

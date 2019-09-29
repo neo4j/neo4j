@@ -30,8 +30,6 @@ import org.neo4j.graphdb.schema.{ConstraintDefinition, ConstraintType, IndexDefi
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query._
@@ -207,8 +205,6 @@ trait GraphIcing {
       } )
     }
 
-    def statement: Statement = txBridge.get(graph.databaseId())
-
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
     def inTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T = withTx(f, txType)
 
@@ -254,8 +250,6 @@ trait GraphIcing {
     def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledBackTransactions, txMonitor.getNumberOfActiveTransactions)
 
     private def txMonitor: DatabaseTransactionStats = graph.getDependencyResolver.resolveDependency(classOf[DatabaseTransactionStats])
-
-    private def txBridge: ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
   }
 }
 

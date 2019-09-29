@@ -27,12 +27,12 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -57,6 +57,9 @@ public class BuiltInDbmsProcedures
 
     @Context
     public GraphDatabaseAPI graph;
+
+    @Context
+    public Transaction transaction;
 
     @Context
     public SecurityContext securityContext;
@@ -99,7 +102,7 @@ public class BuiltInDbmsProcedures
                             "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
         }
 
-        getCurrentTx().setMetaData( data );
+        ((InternalTransaction) transaction).setMetaData( data );
     }
 
     @SystemProcedure
@@ -108,7 +111,7 @@ public class BuiltInDbmsProcedures
     public Stream<MetadataResult> getTXMetaData()
     {
         securityContext.assertCredentialsNotExpired();
-        return Stream.of( getCurrentTx().getMetaData() ).map( MetadataResult::new );
+        return Stream.of( ((InternalTransaction) transaction).kernelTransaction().getMetaData() ).map( MetadataResult::new );
     }
 
     @SystemProcedure
@@ -162,12 +165,6 @@ public class BuiltInDbmsProcedures
                                                     : "Query caches successfully cleared of " + numberOfClearedQueries + " queries.";
         log.info( "Called dbms.clearQueryCaches(): " + result );
         return Stream.of( new StringResult( result ) );
-    }
-
-    private KernelTransaction getCurrentTx()
-    {
-        return graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                .getKernelTransactionBoundToThisThread( true, graph.databaseId() );
     }
 
     public static class FunctionResult

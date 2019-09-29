@@ -65,10 +65,6 @@ public class TransactionStateMachine implements StatementProcessor
 
     private void before()
     {
-        if ( ctx.currentTransaction != null )
-        {
-            spi.bindTransactionToCurrentThread( ctx.currentTransaction );
-        }
     }
 
     @Override
@@ -181,7 +177,6 @@ public class TransactionStateMachine implements StatementProcessor
 
     private void after()
     {
-        spi.unbindTransactionFromCurrentThread(ctx.currentTransaction);
     }
 
     @Override

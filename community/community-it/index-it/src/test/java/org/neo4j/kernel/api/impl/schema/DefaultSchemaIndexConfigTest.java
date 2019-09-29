@@ -43,7 +43,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -142,7 +142,7 @@ public class DefaultSchemaIndexConfigTest
         try ( Transaction tx = db.beginTx() )
         {
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            TokenRead tokenRead = tokenRead( api );
+            TokenRead tokenRead = tokenRead( tx );
             IndexingService indexingService = getIndexingService( api );
             int labelId = tokenRead.nodeLabel( LABEL.name() );
             int propKeyId = tokenRead.propertyKey( KEY );
@@ -183,10 +183,9 @@ public class DefaultSchemaIndexConfigTest
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private static TokenRead tokenRead( GraphDatabaseAPI db )
+    private static TokenRead tokenRead( Transaction tx )
     {
-        ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        return bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() ).tokenRead();
+        return ((InternalTransaction) tx).kernelTransaction().tokenRead();
     }
 
     private void assertIndexProvider( GraphDatabaseService db, String expectedProviderIdentifier ) throws IndexNotFoundKernelException
@@ -194,9 +193,7 @@ public class DefaultSchemaIndexConfigTest
         GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) db;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = graphDatabaseAPI.getDependencyResolver()
-                    .resolveDependency( ThreadToStatementContextBridge.class )
-                    .getKernelTransactionBoundToThisThread( true, graphDatabaseAPI.databaseId() );
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             TokenRead tokenRead = ktx.tokenRead();
             int labelId = tokenRead.nodeLabel( LABEL.name() );
             int propertyId = tokenRead.propertyKey( KEY );

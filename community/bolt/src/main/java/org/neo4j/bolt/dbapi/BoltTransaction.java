@@ -29,10 +29,6 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public interface BoltTransaction extends BoltQueryExecutor
 {
-    void bindToCurrentThread();
-
-    void unbindFromCurrentThread();
-
     void commit() throws TransactionFailureException;
 
     void rollback() throws TransactionFailureException;

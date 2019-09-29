@@ -57,7 +57,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -349,9 +349,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private static void verifyExpectedProvider( GraphDatabaseAPI db, Label label, IndexProviderDescriptor expectedDescriptor )
             throws TransactionFailureException
     {
-        ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        try ( Transaction tx = db.beginTx();
-              KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true, db.databaseId() ) )
+        try ( InternalTransaction tx = (InternalTransaction) db.beginTx();
+              KernelTransaction kernelTransaction = tx.kernelTransaction() )
         {
             TokenRead tokenRead = kernelTransaction.tokenRead();
             SchemaRead schemaRead = kernelTransaction.schemaRead();
@@ -490,10 +489,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
     private static int countIndexedNodes( GraphDatabaseAPI db, Label label, String... keys ) throws Exception
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( InternalTransaction tx = (InternalTransaction) db.beginTx() )
         {
-            ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-            KernelTransaction ktx = txBridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+            KernelTransaction ktx = tx.kernelTransaction();
 
             TokenRead tokenRead = ktx.tokenRead();
             int labelId = tokenRead.nodeLabel( label.name() );

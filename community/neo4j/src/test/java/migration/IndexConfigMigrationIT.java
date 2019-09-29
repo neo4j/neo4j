@@ -55,7 +55,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.config.CrsConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
@@ -241,8 +241,8 @@ class IndexConfigMigrationIT
                     }
                 }
                 assertTrue( allCRS.isEmpty(), "Expected all CRS to be represented in store, but missing " + allCRS );
-                assertIndexConfiguration( db );
-                assertFulltextIndexConfiguration( db );
+                assertIndexConfiguration( db, tx );
+                assertFulltextIndexConfiguration( db, tx );
                 tx.commit();
             }
         }
@@ -266,11 +266,11 @@ class IndexConfigMigrationIT
         }
     }
 
-    private static void assertIndexConfiguration( GraphDatabaseAPI db ) throws IndexNotFoundKernelException
+    private static void assertIndexConfiguration( GraphDatabaseAPI db, Transaction tx ) throws IndexNotFoundKernelException
     {
         for ( Label label : labels )
         {
-            Map<String,Value> actualIndexConfig = getIndexConfig( db, label, propKey );
+            Map<String,Value> actualIndexConfig = getIndexConfig( db, tx, label, propKey );
             Map<String,Value> expectedIndexConfig = new HashMap<>( staticExpectedIndexConfig );
             for ( Map.Entry<String,Value> entry : actualIndexConfig.entrySet() )
             {
@@ -286,11 +286,11 @@ class IndexConfigMigrationIT
         }
     }
 
-    private static void assertFulltextIndexConfiguration( GraphDatabaseAPI db ) throws IndexNotFoundKernelException
+    private static void assertFulltextIndexConfiguration( GraphDatabaseAPI db, Transaction tx ) throws IndexNotFoundKernelException
     {
         for ( FulltextIndexDescription fulltextIndex : FulltextIndexDescription.values() )
         {
-            Map<String,Value> actualIndexConfig = getFulltextIndexConfig( db, fulltextIndex.indexName );
+            Map<String,Value> actualIndexConfig = getFulltextIndexConfig( db, tx, fulltextIndex.indexName );
             for ( Map.Entry<String,Value> expectedEntry : fulltextIndex.configMap.entrySet() )
             {
                 Value actualValue = actualIndexConfig.get( expectedEntry.getKey() );
@@ -301,19 +301,19 @@ class IndexConfigMigrationIT
         }
     }
 
-    private static Map<String,Value> getFulltextIndexConfig( GraphDatabaseAPI db, String indexName ) throws IndexNotFoundKernelException
+    private static Map<String,Value> getFulltextIndexConfig( GraphDatabaseAPI db, Transaction tx, String indexName ) throws IndexNotFoundKernelException
     {
         IndexingService indexingService = getIndexingService( db );
-        IndexDescriptor indexReference = schemaRead( db ).indexGetForName( indexName );
+        IndexDescriptor indexReference = schemaRead( tx ).indexGetForName( indexName );
         IndexProxy indexProxy = indexingService.getIndexProxy( indexReference.schema() );
         return indexProxy.indexConfig();
     }
 
     @SuppressWarnings( "SameParameterValue" )
-    private static Map<String,Value> getIndexConfig( GraphDatabaseAPI db, Label label, String propKey )
+    private static Map<String,Value> getIndexConfig( GraphDatabaseAPI db, Transaction tx, Label label, String propKey )
             throws IndexNotFoundKernelException
     {
-        TokenRead tokenRead = tokenRead( db );
+        TokenRead tokenRead = tokenRead( tx );
         IndexingService indexingService = getIndexingService( db );
         int labelId = tokenRead.nodeLabel( label.name() );
         int propKeyId = tokenRead.propertyKey( propKey );
@@ -431,15 +431,13 @@ class IndexConfigMigrationIT
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private static TokenRead tokenRead( GraphDatabaseAPI db )
+    private static TokenRead tokenRead( Transaction tx )
     {
-        ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        return txBridge.getKernelTransactionBoundToThisThread( false, db.databaseId() ).tokenRead();
+        return ((InternalTransaction) tx).kernelTransaction().tokenRead();
     }
 
-    private static SchemaRead schemaRead( GraphDatabaseAPI db )
+    private static SchemaRead schemaRead( Transaction tx )
     {
-        ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        return txBridge.getKernelTransactionBoundToThisThread( false, db.databaseId() ).schemaRead();
+        return ((InternalTransaction) tx).kernelTransaction().schemaRead();
     }
 }

@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.Lock;
@@ -289,7 +288,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
         Transaction otherTx = db.beginTx();
         otherTx.getNodeById( a.getId() ).removeLabel( label );
-        suspend( otherTx );
 
         // When
         try
@@ -305,7 +303,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         }
         finally
         {
-            resume( otherTx );
             otherTx.rollback();
         }
     }
@@ -950,24 +947,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     // -- Set Up: Advanced transaction handling
 
     private final Map<Transaction,KernelTransaction> txMap = new IdentityHashMap<>();
-
-    private void suspend( Transaction tx )
-    {
-        ThreadToStatementContextBridge txManager = getTransactionManager();
-        txMap.put( tx, txManager.getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() ) );
-        txManager.unbindTransactionFromCurrentThread();
-    }
-
-    private void resume( Transaction tx )
-    {
-        ThreadToStatementContextBridge txManager = getTransactionManager();
-        txManager.bindTransactionToCurrentThread( txMap.remove(tx) );
-    }
-
-    private ThreadToStatementContextBridge getTransactionManager()
-    {
-        return resolveInternalDependency( ThreadToStatementContextBridge.class );
-    }
 
     // -- Set Up: Misc. sharp tools
 

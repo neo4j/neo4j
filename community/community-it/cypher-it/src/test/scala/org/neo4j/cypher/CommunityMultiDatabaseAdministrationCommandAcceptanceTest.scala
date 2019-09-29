@@ -27,10 +27,9 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager, DefaultSystemGraphInitializer}
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.{InMemoryUserRepository, SecureHasher}
-import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, ContextSwitchingSystemGraphQueryExecutor, UserSecurityGraphInitializer}
+import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, SystemGraphQueryExecutor, UserSecurityGraphInitializer}
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import scala.collection.Map
@@ -228,7 +227,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
   private def initSystemGraph(config: Config): Unit = {
     val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
-    val queryExecutor: ContextSwitchingSystemGraphQueryExecutor = new ContextSwitchingSystemGraphQueryExecutor(databaseManager, threadToStatementContextBridge())
+    val queryExecutor: SystemGraphQueryExecutor = new SystemGraphQueryExecutor(databaseManager)
     val secureHasher: SecureHasher = new SecureHasher
     val systemGraphOperations: BasicSystemGraphOperations = new BasicSystemGraphOperations(queryExecutor, secureHasher)
 
@@ -243,10 +242,6 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     securityGraphInitializer.initializeSecurityGraph()
     selectDatabase(SYSTEM_DATABASE_NAME)
-  }
-
-  private def threadToStatementContextBridge(): ThreadToStatementContextBridge = {
-    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
   }
 
   // Use the default value instead of the new value in CommunityDDLAcceptanceTestBase

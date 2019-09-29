@@ -35,11 +35,10 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphOperations;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.ContextSwitchingSystemGraphQueryExecutor;
+import org.neo4j.server.security.systemgraph.SystemGraphQueryExecutor;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphInitializer;
 import org.neo4j.time.Clocks;
 
@@ -49,7 +48,6 @@ public class CommunitySecurityModule extends SecurityModule
     private BasicSystemGraphRealm authManager;
     private SystemGraphInitializer systemGraphInitializer;
     private DatabaseManager<?> databaseManager;
-    private ThreadToStatementContextBridge threadToStatementContextBridge;
 
     @Override
     public String getName()
@@ -62,7 +60,6 @@ public class CommunitySecurityModule extends SecurityModule
     {
         org.neo4j.collection.Dependencies platformDependencies = (org.neo4j.collection.Dependencies) dependencies.dependencySatisfier();
         this.databaseManager = platformDependencies.resolveDependency( DatabaseManager.class );
-        this.threadToStatementContextBridge = platformDependencies.resolveDependency( ThreadToStatementContextBridge.class );
         this.systemGraphInitializer = platformDependencies.resolveDependency( SystemGraphInitializer.class );
 
         Config config = dependencies.config();
@@ -133,8 +130,7 @@ public class CommunitySecurityModule extends SecurityModule
 
     private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
-        ContextSwitchingSystemGraphQueryExecutor queryExecutor =
-                new ContextSwitchingSystemGraphQueryExecutor( databaseManager, threadToStatementContextBridge );
+        SystemGraphQueryExecutor queryExecutor = new SystemGraphQueryExecutor( databaseManager );
 
         SecureHasher secureHasher = new SecureHasher();
         BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( queryExecutor, secureHasher );

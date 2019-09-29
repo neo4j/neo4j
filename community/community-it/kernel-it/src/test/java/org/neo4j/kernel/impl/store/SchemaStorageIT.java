@@ -48,9 +48,8 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -90,7 +89,7 @@ class SchemaStorageIT
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            TokenWrite tokenWrite = getTransaction().tokenWrite();
+            TokenWrite tokenWrite = ((InternalTransaction) transaction).kernelTransaction().tokenWrite();
             tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
             tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
             tokenWrite.labelGetOrCreateForName( LABEL1 );
@@ -304,7 +303,7 @@ class SchemaStorageIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            return getTransaction().tokenRead().nodeLabel( labelName );
+            return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel( labelName );
         }
     }
 
@@ -312,13 +311,8 @@ class SchemaStorageIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            return getTransaction().tokenRead().propertyKey( propName );
+            return ((InternalTransaction) tx).kernelTransaction().tokenRead().propertyKey( propName );
         }
-    }
-
-    private KernelTransaction getTransaction()
-    {
-        return resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, db.databaseId() );
     }
 
     private <T> T resolveDependency( Class<T> clazz )

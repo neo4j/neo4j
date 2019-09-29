@@ -20,13 +20,11 @@
 package org.neo4j.kernel.counts;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -36,7 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -53,15 +51,6 @@ class RelationshipCountsTest
     private GraphDatabaseAPI db;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private Supplier<KernelTransaction> ktxSupplier;
-
-    @BeforeEach
-    void exposeGuts()
-    {
-        ktxSupplier = () -> db.getDependencyResolver()
-            .resolveDependency( ThreadToStatementContextBridge.class )
-            .getKernelTransactionBoundToThisThread( true, db.databaseId() );
-    }
 
     @AfterEach
     void tearDown()
@@ -91,7 +80,7 @@ class RelationshipCountsTest
             node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
             node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
             node.createRelationshipTo( tx.createNode(), withName( "KNOWS" ) );
-            during = countsForRelationship( null, null, null );
+            during = countsForRelationship( tx, null, null, null );
             tx.commit();
         }
 
@@ -122,7 +111,7 @@ class RelationshipCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.getRelationshipById( rel.getId() ).delete();
-            during = countsForRelationship( null, null, null );
+            during = countsForRelationship( tx, null, null, null );
             tx.commit();
         }
 
@@ -148,7 +137,7 @@ class RelationshipCountsTest
                 Node node = txn.createNode();
                 node.createRelationshipTo( txn.createNode(), withName( "KNOWS" ) );
                 node.createRelationshipTo( txn.createNode(), withName( "KNOWS" ) );
-                long whatThisThreadSees = countsForRelationship( null, null, null );
+                long whatThisThreadSees = countsForRelationship( txn, null, null, null );
                 barrier.reached();
                 txn.commit();
                 return whatThisThreadSees;
@@ -189,7 +178,7 @@ class RelationshipCountsTest
             try ( Transaction txn = db.beginTx() )
             {
                 txn.getRelationshipById( rel.getId() ).delete();
-                long whatThisThreadSees = countsForRelationship( null, null, null );
+                long whatThisThreadSees = countsForRelationship( txn, null, null, null );
                 barrier.reached();
                 txn.commit();
                 return whatThisThreadSees;
@@ -375,12 +364,12 @@ class RelationshipCountsTest
         return numberOfRelationshipsMatching( null, null, null );
     }
 
-    /** Transactional version of {@link #countsForRelationship(Label, RelationshipType, Label)} */
+    /** Transactional version of {@link #countsForRelationship(Transaction, Label, RelationshipType, Label)} */
     private long numberOfRelationshipsMatching( Label lhs, RelationshipType type, Label rhs )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            long nodeCount = countsForRelationship( lhs, type, rhs );
+            long nodeCount = countsForRelationship( tx, lhs, type, rhs );
             tx.commit();
             return nodeCount;
         }
@@ -391,9 +380,9 @@ class RelationshipCountsTest
      * @param type  the type of the relationships to get the number of, or {@code null} for "any".
      * @param end   the label of the end node of relationships to get the number of, or {@code null} for "any".
      */
-    private long countsForRelationship( Label start, RelationshipType type, Label end )
+    private long countsForRelationship( Transaction tx, Label start, RelationshipType type, Label end )
     {
-        KernelTransaction ktx = ktxSupplier.get();
+        KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
         try ( Statement ignore = ktx.acquireStatement() )
         {
             TokenRead tokenRead = ktx.tokenRead();

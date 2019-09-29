@@ -41,7 +41,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.tracking.TrackingIndexExtensionFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -127,8 +127,7 @@ class UniqueIndexSeekIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            ThreadToStatementContextBridge contextBridge = database.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-            KernelTransaction kernelTransaction = contextBridge.getKernelTransactionBoundToThisThread( true, database.databaseId() );
+            KernelTransaction kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             TokenRead tokenRead = kernelTransaction.tokenRead();
             Read dataRead = kernelTransaction.dataRead();
 

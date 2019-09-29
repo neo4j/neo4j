@@ -55,7 +55,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -418,9 +418,7 @@ class IndexRecoveryIT
         Set<IndexEntryUpdate<?>> updates = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
-            ThreadToStatementContextBridge ctxSupplier = db.getDependencyResolver().resolveDependency(
-                    ThreadToStatementContextBridge.class );
-            KernelTransaction ktx = ctxSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
 
             int labelId = ktx.tokenRead().nodeLabel( label.name() );
             int propertyKeyId = ktx.tokenRead().propertyKey( key );

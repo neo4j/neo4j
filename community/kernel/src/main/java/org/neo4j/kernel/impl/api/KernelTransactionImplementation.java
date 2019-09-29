@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,6 +51,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -86,7 +86,6 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.FrozenStatementLocks;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
@@ -165,7 +164,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TxState txState;
     private volatile TransactionWriteState writeState;
     private final KernelStatement currentStatement;
-    private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private volatile long userTransactionId;
@@ -533,16 +531,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assertTransactionOpen();
         closed = true;
-        notifyListeners( txId );
         closeCurrentStatementIfAny();
-    }
-
-    private void notifyListeners( long txId )
-    {
-        for ( CloseListener closeListener : closeListeners )
-        {
-            closeListener.notify( txId );
-        }
     }
 
     private void closeCurrentStatementIfAny()
@@ -1037,7 +1026,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             transactionEvent = null;
             txState = null;
             collectionsFactory.release();
-            closeListeners.clear();
             reuseCount++;
             userMetaData = emptyMap();
             clientInfo = null;
@@ -1074,13 +1062,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public long lastTransactionTimestampWhenStarted()
     {
         return lastTransactionTimestampWhenStarted;
-    }
-
-    @Override
-    public void registerCloseListener( CloseListener listener )
-    {
-        assert listener != null;
-        closeListeners.add( listener );
     }
 
     @Override

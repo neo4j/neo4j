@@ -50,7 +50,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -336,9 +336,7 @@ class TransactionEventsIT
     {
         try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, loginContext ) )
         {
-            KernelTransaction kernelTransaction =
-                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                            .getKernelTransactionBoundToThisThread( true, db.databaseId() );
+            KernelTransaction kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             kernelTransaction.setMetaData( metaData );
             transaction.createNode();
             transaction.commit();

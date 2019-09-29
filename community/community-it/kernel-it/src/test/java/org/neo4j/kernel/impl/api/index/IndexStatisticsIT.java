@@ -37,11 +37,10 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -145,7 +144,7 @@ class IndexStatisticsIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            return ktx().tokenRead().nodeLabel( alien.name() );
+            return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel( alien.name() );
         }
     }
 
@@ -153,7 +152,7 @@ class IndexStatisticsIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            return ktx().tokenRead().propertyKey( propertyName );
+            return ((InternalTransaction) tx).kernelTransaction().tokenRead().propertyKey( propertyName );
         }
     }
 
@@ -197,12 +196,6 @@ class IndexStatisticsIT
     private <T> T resolveDependency( Class<T> clazz )
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( clazz );
-    }
-
-    private KernelTransaction ktx()
-    {
-        ThreadToStatementContextBridge bridge = resolveDependency( ThreadToStatementContextBridge.class );
-        return bridge.getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() );
     }
 
     private NeoStores neoStores()

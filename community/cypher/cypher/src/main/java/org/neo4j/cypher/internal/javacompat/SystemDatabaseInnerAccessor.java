@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
@@ -41,9 +40,9 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class SystemDatabaseInnerAccessor implements Supplier<GraphDatabaseQueryService>
 {
-    private GraphDatabaseFacade systemDb;
-    private SystemDatabaseInnerEngine engine;
-    private TransactionalContextFactory contextFactory;
+    private final GraphDatabaseFacade systemDb;
+    private final SystemDatabaseInnerEngine engine;
+    private final TransactionalContextFactory contextFactory;
 
     SystemDatabaseInnerAccessor( GraphDatabaseFacade systemDb, SystemDatabaseInnerEngine engine )
     {
@@ -51,8 +50,7 @@ public class SystemDatabaseInnerAccessor implements Supplier<GraphDatabaseQueryS
         this.engine = engine;
         var dependencyResolver = this.systemDb.getDependencyResolver();
         var transactionFactory = dependencyResolver.resolveDependency( KernelTransactionFactory.class );
-        var txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-        this.contextFactory = Neo4jTransactionalContextFactory.create( this, transactionFactory, txBridge );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( this, transactionFactory );
     }
 
     public InternalTransaction beginTx()

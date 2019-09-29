@@ -43,7 +43,7 @@ import org.neo4j.internal.helpers.Cancelable;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -189,7 +189,7 @@ class PageCacheCountersIT
                 PageCursorCounters pageCursorCounters;
                 try ( Transaction transaction = db.beginTx() )
                 {
-                    try ( KernelStatement kernelStatement = getKernelStatement( (GraphDatabaseAPI) db ) )
+                    try ( KernelStatement kernelStatement = (KernelStatement) ((InternalTransaction) transaction).kernelTransaction().acquireStatement() )
                     {
                         pageCursorCounters = kernelStatement.getPageCursorTracer();
                     }
@@ -260,12 +260,6 @@ class PageCacheCountersIT
         long getFlushes()
         {
             return flushes;
-        }
-
-        private static KernelStatement getKernelStatement( GraphDatabaseAPI db )
-        {
-            ThreadToStatementContextBridge statementBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-            return (KernelStatement) statementBridge.get( db.databaseId() );
         }
     }
 }

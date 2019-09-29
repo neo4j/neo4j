@@ -22,8 +22,6 @@ package org.neo4j.concurrencytest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.function.Supplier;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -36,7 +34,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -61,9 +59,6 @@ class ConstraintIndexConcurrencyTest
     void shouldNotAllowConcurrentViolationOfConstraint() throws Exception
     {
         // Given
-        Supplier<KernelTransaction> ktxSupplier = () -> db.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, db.databaseId() );
-
         Label label = label( "Foo" );
         String propertyKey = "bar";
         String conflictingValue = "baz";
@@ -78,7 +73,7 @@ class ConstraintIndexConcurrencyTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = ktxSupplier.get();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             int labelId = ktx.tokenRead().nodeLabel( label.name() );
             int propertyKeyId = ktx.tokenRead().propertyKey( propertyKey );
             Read read = ktx.dataRead();

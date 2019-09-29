@@ -34,7 +34,7 @@ import org.neo4j.internal.index.label.NativeLabelScanStoreTest;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.test.extension.DbmsExtension;
@@ -121,19 +121,15 @@ class NativeLabelScanStoreStartupIT
         return closingAsArray( labelScanStore.newReader().nodesWithLabel( labelId ) );
     }
 
-    private Node createTestNode()
+    private void createTestNode()
     {
-        Node node;
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
-            node = transaction.createNode( LABEL);
-             KernelTransaction ktx = databaseAPI.getDependencyResolver()
-                    .resolveDependency( ThreadToStatementContextBridge.class )
-                    .getKernelTransactionBoundToThisThread( true, databaseAPI.databaseId() );
-                labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
+            var node = transaction.createNode( LABEL );
+            KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
+            labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
             transaction.commit();
         }
-        return node;
     }
 
     private void scrambleFile( File file ) throws IOException

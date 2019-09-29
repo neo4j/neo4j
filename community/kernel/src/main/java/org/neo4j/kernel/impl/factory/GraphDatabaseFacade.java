@@ -40,7 +40,6 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -62,7 +61,6 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 public class GraphDatabaseFacade implements GraphDatabaseAPI
 {
     private final Database database;
-    private final ThreadToStatementContextBridge statementContext;
     private final TransactionalContextFactory contextFactory;
     private final Config config;
     private final DatabaseAvailabilityGuard availabilityGuard;
@@ -71,20 +69,19 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     public GraphDatabaseFacade( GraphDatabaseFacade facade, Function<LoginContext,LoginContext> loginContextTransformer )
     {
-        this( facade.database, facade.statementContext, facade.config, facade.databaseInfo, facade.availabilityGuard );
+        this( facade.database, facade.config, facade.databaseInfo, facade.availabilityGuard );
         this.loginContextTransformer = requireNonNull( loginContextTransformer );
     }
 
-    public GraphDatabaseFacade( Database database, ThreadToStatementContextBridge txBridge, Config config, DatabaseInfo databaseInfo,
+    public GraphDatabaseFacade( Database database, Config config, DatabaseInfo databaseInfo,
             DatabaseAvailabilityGuard availabilityGuard )
     {
         this.database = requireNonNull( database );
         this.config = requireNonNull( config );
-        this.statementContext = requireNonNull( txBridge );
         this.availabilityGuard = requireNonNull( availabilityGuard );
         this.databaseInfo = requireNonNull( databaseInfo );
         this.contextFactory = Neo4jTransactionalContextFactory.create( () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ),
-                new FacadeKernelTransactionFactory( config, this ), txBridge );
+                new FacadeKernelTransactionFactory( config, this ) );
     }
 
     @Override
@@ -166,10 +163,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private InternalTransaction beginTransactionInternal( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
             long timeoutMillis )
     {
-        if ( statementContext.hasTransaction() )
-        {
-            throw new org.neo4j.graphdb.TransactionFailureException( "Fail to start new transaction. Already have transaction in the context." );
-        }
         var kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
         return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction );
     }
@@ -192,10 +185,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         try
         {
             availabilityGuard.assertDatabaseAvailable();
-            KernelTransaction kernelTx = database.getKernel().beginTransaction( type, loginContextTransformer.apply( loginContext ), connectionInfo, timeout );
-            kernelTx.registerCloseListener( txId -> statementContext.unbindTransactionFromCurrentThread() );
-            statementContext.bindTransactionToCurrentThread( kernelTx );
-            return kernelTx;
+            return database.getKernel().beginTransaction( type, loginContextTransformer.apply( loginContext ), connectionInfo, timeout );
         }
         catch ( UnavailableException | TransactionFailureException e )
         {

@@ -25,36 +25,21 @@ import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 
 public class BoltKernelTransaction extends BoltQueryExecutorImpl implements BoltTransaction
 {
-    private final ThreadToStatementContextBridge txBridge;
     private final KernelTransaction kernelTransaction;
     private final InternalTransaction topLevelInternalTransaction;
 
-    public BoltKernelTransaction( QueryExecutionEngine queryExecutionEngine, ThreadToStatementContextBridge txBridge,
+    public BoltKernelTransaction( QueryExecutionEngine queryExecutionEngine,
             TransactionalContextFactory transactionalContextFactory, KernelTransaction kernelTransaction, InternalTransaction internalTransaction )
     {
         super( queryExecutionEngine, transactionalContextFactory, internalTransaction );
-        this.txBridge = txBridge;
         this.kernelTransaction = kernelTransaction;
         this.topLevelInternalTransaction = internalTransaction;
-    }
-
-    @Override
-    public void bindToCurrentThread()
-    {
-        txBridge.bindTransactionToCurrentThread( kernelTransaction );
-    }
-
-    @Override
-    public void unbindFromCurrentThread()
-    {
-        txBridge.unbindTransactionFromCurrentThread();
     }
 
     @Override

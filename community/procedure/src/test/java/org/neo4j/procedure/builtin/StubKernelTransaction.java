@@ -243,12 +243,6 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public void registerCloseListener( CloseListener listener )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
     public Type transactionType()
     {
         throw new UnsupportedOperationException( "not implemented" );

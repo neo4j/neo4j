@@ -50,7 +50,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -81,7 +81,6 @@ class IndexCRUDIT
     private GraphDatabaseAPI db;
     private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
     private final ExtensionFactory<?> mockedIndexProviderFactory = singleInstanceIndexProviderFactory( "none", mockedIndexProvider );
-    private ThreadToStatementContextBridge ctxSupplier;
     private final Label myLabel = Label.label( "MYLABEL" );
 
     private DatabaseManagementService managementService;
@@ -103,7 +102,7 @@ class IndexCRUDIT
         // Then, for now, this should trigger two NodePropertyUpdates
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = ctxSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             TokenRead tokenRead = ktx.tokenRead();
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );
@@ -145,7 +144,7 @@ class IndexCRUDIT
         // THEN
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = ctxSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             TokenRead tokenRead = ktx.tokenRead();
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );
@@ -187,7 +186,6 @@ class IndexCRUDIT
                 .build();
 
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     private GatheringIndexWriter newWriter() throws IOException

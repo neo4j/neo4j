@@ -68,7 +68,6 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -379,13 +378,13 @@ class QueryExecutionLocksIT
             return lockOperationRecords;
         }
 
-        private void record( boolean exclusive, boolean acquisition, ResourceTypes type, long... ids )
+        private void record( Transaction tx, boolean exclusive, boolean acquisition, ResourceTypes type, long... ids )
         {
             if ( acquisition )
             {
                 for ( LockOperationListener listener : listeners )
                 {
-                    listener.lockAcquired( exclusive, type, ids );
+                    listener.lockAcquired( tx, exclusive, type, ids );
                 }
             }
             lockOperationRecords.add( new LockOperationRecord( exclusive, acquisition, type, ids ) );
@@ -394,91 +393,91 @@ class QueryExecutionLocksIT
         @Override
         public void acquireExclusiveNodeLock( long... ids )
         {
-            record( true, true, ResourceTypes.NODE, ids );
+            record( null, true, true, ResourceTypes.NODE, ids );
             delegate.acquireExclusiveNodeLock( ids );
         }
 
         @Override
         public void acquireExclusiveRelationshipLock( long... ids )
         {
-            record( true, true, ResourceTypes.RELATIONSHIP, ids );
+            record( null, true, true, ResourceTypes.RELATIONSHIP, ids );
             delegate.acquireExclusiveRelationshipLock( ids );
         }
 
         @Override
         public void acquireExclusiveLabelLock( long... ids )
         {
-            record( true, true, ResourceTypes.LABEL, ids );
+            record( null, true, true, ResourceTypes.LABEL, ids );
             delegate.acquireExclusiveLabelLock( ids );
         }
 
         @Override
         public void releaseExclusiveNodeLock( long... ids )
         {
-            record( true, false, ResourceTypes.NODE, ids );
+            record( null, true, false, ResourceTypes.NODE, ids );
             delegate.releaseExclusiveNodeLock( ids );
         }
 
         @Override
         public void releaseExclusiveRelationshipLock( long... ids )
         {
-            record( true, false, ResourceTypes.RELATIONSHIP, ids );
+            record( null, true, false, ResourceTypes.RELATIONSHIP, ids );
             delegate.releaseExclusiveRelationshipLock( ids );
         }
 
         @Override
         public void releaseExclusiveLabelLock( long... ids )
         {
-            record( true, false, ResourceTypes.LABEL, ids );
+            record( null, true, false, ResourceTypes.LABEL, ids );
             delegate.releaseExclusiveLabelLock( ids );
         }
 
         @Override
         public void acquireSharedNodeLock( long... ids )
         {
-            record( false, true, ResourceTypes.NODE, ids );
+            record( null, false, true, ResourceTypes.NODE, ids );
             delegate.acquireSharedNodeLock( ids );
         }
 
         @Override
         public void acquireSharedRelationshipLock( long... ids )
         {
-            record( false, true, ResourceTypes.RELATIONSHIP, ids );
+            record( null, false, true, ResourceTypes.RELATIONSHIP, ids );
             delegate.acquireSharedRelationshipLock( ids );
         }
 
         @Override
         public void acquireSharedLabelLock( long... ids )
         {
-            record( false, true, ResourceTypes.LABEL, ids );
+            record( null, false, true, ResourceTypes.LABEL, ids );
             delegate.acquireSharedLabelLock( ids );
         }
 
         @Override
         public void releaseSharedNodeLock( long... ids )
         {
-            record( false, false, ResourceTypes.NODE, ids );
+            record( null, false, false, ResourceTypes.NODE, ids );
             delegate.releaseSharedNodeLock( ids );
         }
 
         @Override
         public void releaseSharedRelationshipLock( long... ids )
         {
-            record( false, false, ResourceTypes.RELATIONSHIP, ids );
+            record( null, false, false, ResourceTypes.RELATIONSHIP, ids );
             delegate.releaseSharedRelationshipLock( ids );
         }
 
         @Override
         public void releaseSharedLabelLock( long... ids )
         {
-            record( false, false, ResourceTypes.LABEL, ids );
+            record( null, false, false, ResourceTypes.LABEL, ids );
             delegate.releaseSharedLabelLock( ids );
         }
     }
 
     private static class LockOperationListener implements EventListener
     {
-        void lockAcquired( boolean exclusive, ResourceType resourceType, long... ids )
+        void lockAcquired( Transaction tx, boolean exclusive, ResourceType resourceType, long... ids )
         {
             // empty operation
         }
@@ -512,14 +511,11 @@ class QueryExecutionLocksIT
         private boolean executed;
 
         @Override
-        void lockAcquired( boolean exclusive, ResourceType resourceType, long... ids )
+        void lockAcquired( Transaction tx, boolean exclusive, ResourceType resourceType, long... ids )
         {
             if ( !executed )
             {
-                ThreadToStatementContextBridge bridge =
-                        db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-                KernelTransaction ktx =
-                        bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+                KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                 ktx.schemaRead().schemaStateFlush();
             }
             executed = true;
@@ -728,12 +724,6 @@ class QueryExecutionLocksIT
         public long timeout()
         {
             return internal.timeout();
-        }
-
-        @Override
-        public void registerCloseListener( CloseListener listener )
-        {
-            internal.registerCloseListener( listener );
         }
 
         @Override

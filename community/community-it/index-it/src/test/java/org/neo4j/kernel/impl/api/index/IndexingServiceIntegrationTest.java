@@ -48,7 +48,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -254,8 +254,7 @@ public class IndexingServiceIntegrationTest
     {
         try ( Transaction tx = database.beginTx() )
         {
-            KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
-                    ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) database).databaseId() );
+            KernelTransaction transaction = ((InternalTransaction) tx).kernelTransaction();
             return transaction.tokenRead().propertyKey( name );
         }
     }
@@ -264,8 +263,7 @@ public class IndexingServiceIntegrationTest
     {
         try ( Transaction tx = database.beginTx() )
         {
-            KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
-                    ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) database).databaseId() );
+            KernelTransaction transaction = ((InternalTransaction) tx).kernelTransaction();
             return transaction.tokenRead().nodeLabel( name );
         }
     }

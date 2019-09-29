@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.counts;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -30,7 +27,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -44,15 +41,6 @@ class LabelCountsTest
 {
     @Inject
     private GraphDatabaseAPI db;
-
-    private Supplier<KernelTransaction> transactionSupplier;
-
-    @BeforeEach
-    void exposeGuts()
-    {
-        transactionSupplier = () -> db.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, db.databaseId() );
-    }
 
     @Test
     void shouldGetNumberOfNodesWithLabel()
@@ -197,21 +185,21 @@ class LabelCountsTest
         assertEquals( 0, barCount );
     }
 
-    /** Transactional version of {@link #countsForNode(Label)} */
+    /** Transactional version of {@link #countsForNode(Transaction, Label)} */
     private long numberOfNodesWith( Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            long nodeCount = countsForNode( label );
+            long nodeCount = countsForNode( tx, label );
             tx.commit();
             return nodeCount;
         }
     }
 
     /** @param label the label to get the number of nodes of, or {@code null} to get the total number of nodes. */
-    private long countsForNode( Label label )
+    private long countsForNode( Transaction tx, Label label )
     {
-        KernelTransaction transaction = transactionSupplier.get();
+        KernelTransaction transaction = ((InternalTransaction) tx).kernelTransaction();
         Read read = transaction.dataRead();
         int labelId;
         if ( label == null )

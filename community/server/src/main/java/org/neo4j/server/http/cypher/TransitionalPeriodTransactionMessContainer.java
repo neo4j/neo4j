@@ -25,7 +25,6 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -36,23 +35,16 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 public class TransitionalPeriodTransactionMessContainer
 {
     private final GraphDatabaseFacade db;
-    private final ThreadToStatementContextBridge txBridge;
 
     public TransitionalPeriodTransactionMessContainer( GraphDatabaseFacade db )
     {
         this.db = db;
-        this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     TransitionalTxManagementKernelTransaction newTransaction( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
                                                               long customTransactionTimeout )
     {
-        return new TransitionalTxManagementKernelTransaction( db, type, loginContext, connectionInfo, customTransactionTimeout, txBridge );
-    }
-
-    public ThreadToStatementContextBridge getBridge()
-    {
-        return txBridge;
+        return new TransitionalTxManagementKernelTransaction( db, type, loginContext, connectionInfo, customTransactionTimeout );
     }
 
     public GraphDatabaseFacade getDb()

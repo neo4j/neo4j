@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.http.cypher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.mockito.Mockito.mock;
@@ -34,19 +33,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
-public class TransitionalTxManagementKernelTransactionTest
+class TransitionalTxManagementKernelTransactionTest
 {
-
-    private GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
-    private ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
-    private LoginContext loginContext = AnonymousContext.read();
-    private KernelTransaction.Type type = KernelTransaction.Type.implicit;
+    private final GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
+    private final LoginContext loginContext = AnonymousContext.read();
+    private final KernelTransaction.Type type = KernelTransaction.Type.implicit;
 
     @Test
-    public void reopenStartTransactionWithCustomTimeoutIfSpecified()
+    void reopenStartTransactionWithCustomTimeoutIfSpecified()
     {
         TransitionalTxManagementKernelTransaction managementKernelTransaction =
-                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, EMBEDDED_CONNECTION, 10, contextBridge );
+                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, EMBEDDED_CONNECTION, 10 );
 
         managementKernelTransaction.reopenAfterPeriodicCommit();
 
@@ -54,10 +51,10 @@ public class TransitionalTxManagementKernelTransactionTest
     }
 
     @Test
-    public void reopenStartDefaultTransactionIfTimeoutNotSpecified()
+    void reopenStartDefaultTransactionIfTimeoutNotSpecified()
     {
         TransitionalTxManagementKernelTransaction managementKernelTransaction =
-                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, EMBEDDED_CONNECTION, -1, contextBridge );
+                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, EMBEDDED_CONNECTION, -1 );
 
         managementKernelTransaction.reopenAfterPeriodicCommit();
 

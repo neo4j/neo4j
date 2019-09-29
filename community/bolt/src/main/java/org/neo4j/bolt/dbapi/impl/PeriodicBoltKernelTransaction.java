@@ -25,86 +25,47 @@ import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 
 public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl implements BoltTransaction
 {
-    private final ThreadToStatementContextBridge txBridge;
-    private final DatabaseId databaseId;
     private volatile KernelTransaction transaction;
 
-    public PeriodicBoltKernelTransaction( QueryExecutionEngine queryExecutionEngine, ThreadToStatementContextBridge txBridge,
-            TransactionalContextFactory transactionalContextFactory, KernelTransaction kernelTransaction, InternalTransaction internalTransaction )
+    public PeriodicBoltKernelTransaction( QueryExecutionEngine queryExecutionEngine,
+            TransactionalContextFactory transactionalContextFactory, InternalTransaction transaction )
     {
-        super( queryExecutionEngine, transactionalContextFactory, internalTransaction );
-        this.txBridge = txBridge;
-        this.databaseId = kernelTransaction.getDatabaseId();
-    }
-
-    @Override
-    public void bindToCurrentThread()
-    {
-        if ( transaction != null )
-        {
-            txBridge.bindTransactionToCurrentThread( transaction );
-        }
-    }
-
-    @Override
-    public void unbindFromCurrentThread()
-    {
-        transaction = txBridge.getKernelTransactionBoundToThisThread( true , databaseId );
-        txBridge.unbindTransactionFromCurrentThread();
+        super( queryExecutionEngine, transactionalContextFactory, transaction );
     }
 
     @Override
     public void commit() throws TransactionFailureException
     {
-        var transaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
-        if ( transaction != null )
-        {
-            transaction.commit();
-        }
+        internalTransaction.commit();
     }
 
     @Override
     public void rollback() throws TransactionFailureException
     {
-        var transaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
-        if ( transaction != null )
-        {
-            transaction.rollback();
-        }
+        internalTransaction.rollback();
     }
 
     @Override
     public void markForTermination( Status reason )
     {
-        var transaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
-        if ( transaction != null )
-        {
-            transaction.markForTermination( reason );
-        }
+        internalTransaction.kernelTransaction().markForTermination( reason );
     }
 
     @Override
     public void markForTermination()
     {
-        var transaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
-        if ( transaction != null )
-        {
-            transaction.markForTermination( Status.Transaction.Terminated );
-        }
+        internalTransaction.kernelTransaction().markForTermination( Status.Transaction.Terminated );
     }
 
     @Override
     public Optional<Status> getReasonIfTerminated()
     {
-        var transaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
-        return Optional.ofNullable( transaction ).flatMap( KernelTransaction::getReasonIfTerminated );
+        return internalTransaction.kernelTransaction().getReasonIfTerminated();
     }
 }

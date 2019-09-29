@@ -286,7 +286,7 @@ public class Database extends LifecycleAdapter
         this.storageEngineFactory = context.getStorageEngineFactory();
         long availabilityGuardTimeout = databaseConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
-        this.databaseFacade = new GraphDatabaseFacade( this, context.getContextBridge(), databaseConfig, databaseInfo, databaseAvailabilityGuard );
+        this.databaseFacade = new GraphDatabaseFacade( this, databaseConfig, databaseInfo, databaseAvailabilityGuard );
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory( databaseConfig, databaseFacade );
         Tracers globalTracers = context.getTracers();
         this.databaseTracer = globalTracers.getDatabaseTracer();

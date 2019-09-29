@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -55,7 +56,7 @@ class KernelIT extends KernelIntegrationTest
         Transaction transaction = db.beginTx();
 
         // 2: Get a hold of a KernelAPI transaction this way:
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+        KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
 
         // 3: Now you can interact through both the statement context and the kernel API to manipulate the
         //    same transaction.
@@ -74,7 +75,7 @@ class KernelIT extends KernelIntegrationTest
         // GIVEN
         try ( Transaction tx = db.beginTx() )
         {
-            getOrCreateSchemaState( "my key", "my state" );
+            getOrCreateSchemaState( tx, "my key", "my state" );
             tx.commit();
         }
 
@@ -103,7 +104,7 @@ class KernelIT extends KernelIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 20, SECONDS );
-            getOrCreateSchemaState( "my key", "some state" );
+            getOrCreateSchemaState( tx, "my key", "some state" );
             tx.commit();
         }
         // WHEN
@@ -211,9 +212,9 @@ class KernelIT extends KernelIntegrationTest
         return schemaWrite.indexCreate( schemaDescriptor );
     }
 
-    private void getOrCreateSchemaState( String key, final String maybeSetThisState )
+    private void getOrCreateSchemaState( Transaction tx, String key, final String maybeSetThisState )
     {
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+        KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
         ktx.schemaRead().schemaStateGetOrCreate( key, s -> maybeSetThisState );
     }
 
@@ -221,7 +222,7 @@ class KernelIT extends KernelIntegrationTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             final AtomicBoolean result = new AtomicBoolean( true );
             ktx.schemaRead().schemaStateGetOrCreate( key, s ->
             {

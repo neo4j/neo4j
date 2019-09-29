@@ -72,7 +72,7 @@ import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
@@ -308,11 +308,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         RecordStorageEngine storageEngine = getStorageEngine();
         LabelScanStore labelScanStore = getLabelScanStore();
-        ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
 
         try ( Transaction transaction = embeddedDatabase.beginTx() )
         {
-            KernelTransaction ktx = transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true, embeddedDatabase.databaseId() );
+            KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore );
 
             IndexProviderMap providerMap = getIndexProviderMap();
@@ -360,7 +359,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         try ( Transaction tx = embeddedDatabase.beginTx() )
         {
-            return getPropertyIdByName( NAME_PROPERTY );
+            return getPropertyIdByName( tx, NAME_PROPERTY );
         }
     }
 
@@ -368,7 +367,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         try ( Transaction tx = embeddedDatabase.beginTx() )
         {
-            return getLabelIdsByName( COUNTRY_LABEL, COLOR_LABEL, CAR_LABEL );
+            return getLabelIdsByName( tx, COUNTRY_LABEL, COLOR_LABEL, CAR_LABEL );
         }
     }
 
@@ -395,12 +394,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 .toArray( IndexDescriptor[]::new );
     }
 
-    private Map<String, Integer> getLabelIdsByName( String... names )
+    private Map<String, Integer> getLabelIdsByName( Transaction tx, String... names )
     {
-        ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
         Map<String,Integer> labelNameIdMap = new HashMap<>();
-        KernelTransaction ktx =
-                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true, embeddedDatabase.databaseId() );
+        KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
         try ( Statement ignore = ktx.acquireStatement() )
         {
             TokenRead tokenRead = ktx.tokenRead();
@@ -412,11 +409,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return labelNameIdMap;
     }
 
-    private int getPropertyIdByName( String name )
+    private int getPropertyIdByName( Transaction tx, String name )
     {
-        ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
-        KernelTransaction ktx =
-                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true, embeddedDatabase.databaseId() );
+        KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
         try ( Statement ignore = ktx.acquireStatement() )
         {
             return ktx.tokenRead().propertyKey( name );
@@ -469,11 +464,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private SchemaState getSchemaState()
     {
         return embeddedDatabase.resolveDependency( SchemaState.class );
-    }
-
-    private ThreadToStatementContextBridge getTransactionStatementContextBridge()
-    {
-        return embeddedDatabase.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     private IndexProviderMap getIndexProviderMap()

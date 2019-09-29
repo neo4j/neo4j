@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.EpochSupplier;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -110,7 +109,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseEventListeners eventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
     private final StorageEngineFactory storageEngineFactory;
-    private final ThreadToStatementContextBridge contextBridge;
     private final FileLockerService fileLockerService;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final EpochSupplier epoch;
@@ -158,7 +156,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.watcherServiceFactory = editionComponents.getWatcherServiceFactory();
         this.databaseAvailabilityGuardFactory = databaseTimeoutMillis -> databaseAvailabilityGuardFactory( databaseId, globalModule, databaseTimeoutMillis );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
-        this.contextBridge = globalModule.getThreadToTransactionBridge();
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
         this.epoch = epoch;
@@ -378,12 +375,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public StorageEngineFactory getStorageEngineFactory()
     {
         return storageEngineFactory;
-    }
-
-    @Override
-    public ThreadToStatementContextBridge getContextBridge()
-    {
-        return contextBridge;
     }
 
     @Override

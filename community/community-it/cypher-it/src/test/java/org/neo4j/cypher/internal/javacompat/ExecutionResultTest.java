@@ -28,8 +28,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -186,9 +184,6 @@ class ExecutionResultTest
 
     private TransactionImpl activeTransaction()
     {
-        ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-        KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
-        return kernelTransaction == null ? null : new TransactionImpl( null, null, null, null, kernelTransaction );
+        return null;
     }
 }

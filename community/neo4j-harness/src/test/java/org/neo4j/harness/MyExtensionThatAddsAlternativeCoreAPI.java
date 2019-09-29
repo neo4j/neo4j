@@ -24,7 +24,6 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -47,7 +46,7 @@ public class MyExtensionThatAddsAlternativeCoreAPI
     public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
         dependencies.procedures().registerComponent( MyCoreAPI.class,
-                ctx -> new MyCoreAPI( dependencies.getGraphDatabaseAPI(), dependencies.txBridge(),
+                ctx -> new MyCoreAPI( dependencies.getGraphDatabaseAPI(),
                         dependencies.logService().getUserLog( MyCoreAPI.class ) ), true );
         return new LifecycleAdapter();
     }
@@ -59,8 +58,5 @@ public class MyExtensionThatAddsAlternativeCoreAPI
         GlobalProcedures procedures();
 
         GraphDatabaseAPI getGraphDatabaseAPI();
-
-        ThreadToStatementContextBridge txBridge();
-
     }
 }

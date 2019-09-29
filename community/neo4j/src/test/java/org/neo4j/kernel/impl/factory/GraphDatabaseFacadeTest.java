@@ -34,12 +34,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
@@ -53,7 +49,6 @@ class GraphDatabaseFacadeTest
     private GraphDatabaseFacade graphDatabaseFacade;
     private GraphDatabaseQueryService queryService;
     private Kernel kernel;
-    private ThreadToStatementContextBridge contextBridge;
     private KernelTransaction kernelTransaction;
     private Statement statement;
 
@@ -66,9 +61,7 @@ class GraphDatabaseFacadeTest
         kernel = mock( Kernel.class, RETURNS_MOCKS );
         when( database.getKernel() ).thenReturn( kernel );
         when( database.getDependencyResolver() ).thenReturn( resolver );
-        contextBridge = mock( ThreadToStatementContextBridge.class );
 
-        when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( contextBridge );
         when( resolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
         Config config = Config.defaults();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
@@ -77,9 +70,8 @@ class GraphDatabaseFacadeTest
         when( kernelTransaction.getDatabaseId() ).thenReturn( TestDatabaseIdRepository.randomDatabaseId() );
         statement = mock( Statement.class, RETURNS_DEEP_STUBS );
         when( kernelTransaction.acquireStatement() ).thenReturn( statement );
-        when( contextBridge.getKernelTransactionBoundToThisThread( eq( true ), any( DatabaseId.class ) ) ).thenReturn( kernelTransaction );
 
-        graphDatabaseFacade = new GraphDatabaseFacade( database, contextBridge, config, DatabaseInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
+        graphDatabaseFacade = new GraphDatabaseFacade( database, config, DatabaseInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
     }
 
     @Test

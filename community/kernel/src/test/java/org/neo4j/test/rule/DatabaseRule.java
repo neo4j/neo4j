@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.api.EpochSupplier;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
@@ -169,7 +168,7 @@ public class DatabaseRule extends ExternalResource
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), null,
-                storageEngineFactory, new ThreadToStatementContextBridge(), new GlobalLockerService(), EpochSupplier.NO_EPOCHS ) );
+                storageEngineFactory, new GlobalLockerService(), EpochSupplier.NO_EPOCHS ) );
         return database;
     }
 
@@ -236,7 +235,6 @@ public class DatabaseRule extends ExternalResource
         private final QueryEngineProvider engineProvider;
         private final DatabaseEventListeners eventListeners;
         private final StorageEngineFactory storageEngineFactory;
-        private final ThreadToStatementContextBridge contextBridge;
         private final FileLockerService fileLockerService;
 
         TestDatabaseCreationContext( DatabaseId databaseId, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
@@ -249,7 +247,7 @@ public class DatabaseRule extends ExternalResource
                 StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
-                QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge,
+                QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory,
                 FileLockerService fileLockerService, EpochSupplier epoch )
         {
             this.databaseId = databaseId;
@@ -287,7 +285,6 @@ public class DatabaseRule extends ExternalResource
             this.engineProvider = engineProvider;
             this.eventListeners = mock( DatabaseEventListeners.class );
             this.storageEngineFactory = storageEngineFactory;
-            this.contextBridge = contextBridge;
             this.fileLockerService = fileLockerService;
         }
 
@@ -515,12 +512,6 @@ public class DatabaseRule extends ExternalResource
         public StorageEngineFactory getStorageEngineFactory()
         {
             return storageEngineFactory;
-        }
-
-        @Override
-        public ThreadToStatementContextBridge getContextBridge()
-        {
-            return contextBridge;
         }
 
         @Override

@@ -68,7 +68,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.security.auth.AuthenticationResult.AUTH_DISABLED;
@@ -349,8 +348,6 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
-
-        verify( stateMachineSPI ).unbindTransactionFromCurrentThread( any() );
     }
 
     @Test
@@ -362,8 +359,6 @@ class TransactionStateMachineTest
 
         stateMachine.run( "SOME STATEMENT", null );
         stateMachine.streamResult( StatementMetadata.ABSENT_QUERY_ID, EMPTY );
-
-        verify( stateMachineSPI, times( 2 ) ).unbindTransactionFromCurrentThread(any());
     }
 
     @Test

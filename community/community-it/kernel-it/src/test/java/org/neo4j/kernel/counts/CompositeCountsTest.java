@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.counts;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -32,7 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -358,13 +355,13 @@ class CompositeCountsTest
     }
 
     /**
-     * Transactional version of {@link #countsForRelationship(Label, RelationshipType, Label)}
+     * Transactional version of {@link #countsForRelationship(Transaction, Label, RelationshipType, Label)}
      */
     private MatchingRelationships numberOfRelationshipsMatching( Label lhs, RelationshipType type, Label rhs )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            long nodeCount = countsForRelationship( lhs, type, rhs );
+            long nodeCount = countsForRelationship( tx, lhs, type, rhs );
             tx.commit();
             return new MatchingRelationships( String.format( "(%s)-%s->(%s)",
                                                              lhs == null ? "" : ":" + lhs.name(),
@@ -395,9 +392,9 @@ class CompositeCountsTest
      * @param type  the type of the relationships to get the number of, or {@code null} for "any".
      * @param end   the label of the end node of relationships to get the number of, or {@code null} for "any".
      */
-    private long countsForRelationship( Label start, RelationshipType type, Label end )
+    private long countsForRelationship( Transaction tx, Label start, RelationshipType type, Label end )
     {
-        KernelTransaction transaction = transactionSupplier.get();
+        KernelTransaction transaction = ((InternalTransaction) tx).kernelTransaction();
         try ( Statement ignore = transaction.acquireStatement() )
         {
             TokenRead tokenRead = transaction.tokenRead();
@@ -442,14 +439,5 @@ class CompositeCountsTest
             }
             return transaction.dataRead().countsForRelationship( startId, typeId, endId );
         }
-    }
-
-    private Supplier<KernelTransaction> transactionSupplier;
-
-    @BeforeEach
-    void exposeGuts()
-    {
-        transactionSupplier = () -> db.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, db.databaseId() );
     }
 }

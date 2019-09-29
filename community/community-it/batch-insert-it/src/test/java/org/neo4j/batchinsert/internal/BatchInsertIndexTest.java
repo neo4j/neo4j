@@ -44,7 +44,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -88,9 +88,7 @@ class BatchInsertIndexTest
         try ( Transaction tx = db.beginTx() )
         {
             DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
-            ThreadToStatementContextBridge threadToStatementContextBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-            KernelTransaction kernelTransaction =
-                    threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() );
+            KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
             TokenRead tokenRead = kernelTransaction.tokenRead();
             SchemaRead schemaRead = kernelTransaction.schemaRead();
             int labelId = tokenRead.nodeLabel( TestLabels.LABEL_ONE.name() );

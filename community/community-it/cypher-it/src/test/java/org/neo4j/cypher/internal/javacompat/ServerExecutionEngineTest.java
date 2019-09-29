@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -55,12 +54,10 @@ class ServerExecutionEngineTest
         DependencyResolver resolver = db.getDependencyResolver();
         QueryExecutionEngine engine = resolver
                                           .resolveDependency( QueryExecutionEngine.class );
-        ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
         KernelTransactionFactory transactionFactory = resolver.resolveDependency( KernelTransactionFactory.class );
         TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( () -> resolver
                                                                                                       .resolveDependency( GraphDatabaseQueryService.class ),
-                                                                                              transactionFactory,
-                                                                                              bridge );
+                                                                                              transactionFactory );
         // We need two node vars to have one non-pooled cursor
         String query = "MATCH (n), (m) WHERE true RETURN n, m, n.name, m.name";
 

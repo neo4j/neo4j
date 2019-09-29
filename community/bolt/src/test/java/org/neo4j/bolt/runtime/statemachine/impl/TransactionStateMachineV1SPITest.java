@@ -48,7 +48,6 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
@@ -224,8 +223,6 @@ class TransactionStateMachineV1SPITest
         var queryExecutionEngine = mock( QueryExecutionEngine.class );
 
         var dependencyResolver = mock( Dependencies.class );
-        var bridge = new ThreadToStatementContextBridge();
-        when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( bridge );
         when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( queryExecutionEngine );
         when( dependencyResolver.resolveDependency( DatabaseAvailabilityGuard.class ) ).thenReturn( availabilityGuard );
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );

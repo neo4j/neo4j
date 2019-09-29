@@ -47,7 +47,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.Lock;
@@ -368,10 +368,7 @@ class NeoStoreIndexStoreViewTest
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            ThreadToStatementContextBridge bridge =
-                    graphDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-
-            TokenWrite tokenWrite = bridge.getKernelTransactionBoundToThisThread( true, graphDb.databaseId() ).tokenWrite();
+            TokenWrite tokenWrite = ((InternalTransaction) tx ).kernelTransaction().tokenWrite();
             labelId = tokenWrite.labelGetOrCreateForName( "Person" );
             relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( "Knows" );
             propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "name" );

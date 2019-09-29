@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -70,7 +69,6 @@ public abstract class KernelIntegrationTest
     protected TestDirectory testDir;
 
     protected GraphDatabaseAPI db;
-    ThreadToStatementContextBridge statementContextSupplier;
     protected Kernel kernel;
     protected IndexingService indexingService;
 
@@ -191,7 +189,6 @@ public abstract class KernelIntegrationTest
         dependencyResolver = db.getDependencyResolver();
         kernel = dependencyResolver.resolveDependency( Kernel.class );
         indexingService = dependencyResolver.resolveDependency( IndexingService.class );
-        statementContextSupplier = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
         dbmsOperations = dependencyResolver.resolveDependency( DbmsOperations.class );
     }
 

@@ -60,7 +60,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -130,7 +130,7 @@ public class FulltextIndexProviderTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            TokenRead tokenRead = tokenRead();
+            TokenRead tokenRead = tokenRead( tx );
             labelIdHej = tokenRead.nodeLabel( hej.name() );
             labelIdHa = tokenRead.nodeLabel( ha.name() );
             labelIdHe = tokenRead.nodeLabel( he.name() );
@@ -459,10 +459,9 @@ public class FulltextIndexProviderTest
         }
     }
 
-    private TokenRead tokenRead()
+    private TokenRead tokenRead( Transaction tx )
     {
-        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                .getKernelTransactionBoundToThisThread( false, db.databaseId() ).tokenRead();
+        return ((InternalTransaction) tx).kernelTransaction().tokenRead();
     }
 
     private KernelTransactionImplementation getKernelTransaction()

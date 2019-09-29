@@ -99,22 +99,6 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     }
 
     @Override
-    public void bindTransactionToCurrentThread( BoltTransaction tx )
-    {
-        tx.bindToCurrentThread();
-    }
-
-    @Override
-    public void unbindTransactionFromCurrentThread( BoltTransaction tx )
-    {
-
-        if ( tx != null )
-        {
-            tx.unbindFromCurrentThread();
-        }
-    }
-
-    @Override
     public boolean isPeriodicCommit( String query )
     {
         return boltGraphDatabaseServiceSPI.isPeriodicCommit( query );

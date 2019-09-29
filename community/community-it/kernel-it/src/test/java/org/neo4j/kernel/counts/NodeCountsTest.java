@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.counts;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.NamedThreadFactory;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -44,14 +41,6 @@ class NodeCountsTest
 {
     @Inject
     private GraphDatabaseAPI db;
-    private Supplier<KernelTransaction> kernelTransactionSupplier;
-
-    @BeforeEach
-    void setUp()
-    {
-        kernelTransactionSupplier = () -> db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                .getKernelTransactionBoundToThisThread( true, db.databaseId() );
-    }
 
     @Test
     void shouldReportNumberOfNodesInAnEmptyGraph()
@@ -121,7 +110,7 @@ class NodeCountsTest
         {
             // when
             tx.createNode();
-            long nodeCount = countsForNode();
+            long nodeCount = countsForNode( tx );
 
             // then
             assertEquals( before + 1, nodeCount );
@@ -146,7 +135,7 @@ class NodeCountsTest
         {
             // when
             tx.getNodeById( one.getId() ).delete();
-            long nodeCount = countsForNode();
+            long nodeCount = countsForNode( tx );
 
             // then
             assertEquals( before - 1, nodeCount );
@@ -173,7 +162,7 @@ class NodeCountsTest
                     tx.createNode();
                     tx.createNode();
                     barrier.reached();
-                    long whatThisThreadSees = countsForNode();
+                    long whatThisThreadSees = countsForNode( tx );
                     tx.commit();
                     return whatThisThreadSees;
                 }
@@ -199,19 +188,19 @@ class NodeCountsTest
         }
     }
 
-    /** Transactional version of {@link #countsForNode()} */
+    /** Transactional version of {@link #countsForNode(Transaction)} */
     private long numberOfNodes()
     {
         try ( Transaction tx = db.beginTx() )
         {
-            long nodeCount = countsForNode();
+            long nodeCount = countsForNode( tx );
             tx.commit();
             return nodeCount;
         }
     }
 
-    private long countsForNode()
+    private long countsForNode( Transaction tx )
     {
-        return kernelTransactionSupplier.get().dataRead().countsForNode( ANY_LABEL );
+        return ((InternalTransaction) tx).kernelTransaction().dataRead().countsForNode( ANY_LABEL );
     }
 }

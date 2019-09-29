@@ -22,20 +22,17 @@ package org.neo4j.harness;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 
 public class MyCoreAPI
 {
     private final GraphDatabaseAPI graph;
-    private final ThreadToStatementContextBridge txBridge;
     private final Log log;
 
-    public MyCoreAPI( GraphDatabaseAPI graph, ThreadToStatementContextBridge txBridge, Log log )
+    public MyCoreAPI( GraphDatabaseAPI graph, Log log )
     {
         this.graph = graph;
-        this.txBridge = txBridge;
         this.log = log;
     }
 
@@ -44,7 +41,7 @@ public class MyCoreAPI
         long result;
         try
         {
-            KernelTransaction ktx = txBridge.getKernelTransactionBoundToThisThread( true, graph.databaseId() );
+            KernelTransaction ktx = null;
             long nodeId = ktx.dataWrite().nodeCreate();
             int labelId = ktx.tokenWrite().labelGetOrCreateForName( label );
             ktx.dataWrite().nodeAddLabel( nodeId, labelId );
@@ -60,7 +57,7 @@ public class MyCoreAPI
 
     public long countNodes()
     {
-        KernelTransaction kernelTransaction = this.txBridge.getKernelTransactionBoundToThisThread(true, graph.databaseId() );
+        KernelTransaction kernelTransaction = null;
         return kernelTransaction.dataRead().countsForNode( -1 );
     }
 }

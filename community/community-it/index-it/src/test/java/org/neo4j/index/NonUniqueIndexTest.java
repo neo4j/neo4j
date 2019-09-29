@@ -35,9 +35,8 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -93,8 +92,7 @@ class NonUniqueIndexTest
             // Then
             try ( Transaction tx = db.beginTx() )
             {
-                KernelTransaction ktx = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
-                        ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() );
+                KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                 IndexDescriptor index = ktx.schemaRead().index( ktx.tokenRead().nodeLabel( LABEL ), ktx.tokenRead().propertyKey( KEY ) );
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
                 try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )

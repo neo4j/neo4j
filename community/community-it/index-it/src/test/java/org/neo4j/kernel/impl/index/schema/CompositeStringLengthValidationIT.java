@@ -37,7 +37,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
@@ -108,9 +108,7 @@ class CompositeStringLengthValidationIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx =
-                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                            .getKernelTransactionBoundToThisThread( true, db.databaseId() );
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             int labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
             int propertyKeyId1 = ktx.tokenRead().propertyKey( KEY );
             int propertyKeyId2 = ktx.tokenRead().propertyKey( KEY2 );

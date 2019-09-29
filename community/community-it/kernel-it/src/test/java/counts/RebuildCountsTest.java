@@ -39,7 +39,7 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -177,12 +177,9 @@ class RebuildCountsTest
 
     private int labelId( Label alien )
     {
-        ThreadToStatementContextBridge contextBridge = ((GraphDatabaseAPI) db).getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class );
         try ( Transaction tx = db.beginTx() )
         {
-            return contextBridge.getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() )
-                    .tokenRead().nodeLabel( alien.name() );
+            return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel( alien.name() );
         }
     }
 

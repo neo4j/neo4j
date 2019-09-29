@@ -45,6 +45,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
@@ -153,7 +154,7 @@ public class MultipleOpenCursorsTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = db.transaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             // when
             try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExists( ktx );
                   NodeValueIndexCursor cursor2 = indexCoordinator.queryExists( ktx ) )
@@ -186,7 +187,7 @@ public class MultipleOpenCursorsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            KernelTransaction ktx = db.transaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExact( ktx );
                   NodeValueIndexCursor cursor2 = indexCoordinator.queryExact( ktx ) )
             {
@@ -208,7 +209,7 @@ public class MultipleOpenCursorsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            KernelTransaction ktx = db.transaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryRange( ktx );
                   NodeValueIndexCursor cursor2 = indexCoordinator.queryRange( ktx ) )
             {
@@ -229,7 +230,7 @@ public class MultipleOpenCursorsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            KernelTransaction ktx = db.transaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExists( ktx ) )
             {
                 List<Long> actual1 = new ArrayList<>();
@@ -256,7 +257,7 @@ public class MultipleOpenCursorsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            KernelTransaction ktx = db.transaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExact( ktx ) )
             {
                 List<Long> actual1 = new ArrayList<>();
@@ -283,7 +284,7 @@ public class MultipleOpenCursorsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            KernelTransaction ktx = db.transaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryRange( ktx ) )
             {
                 List<Long> actual1 = new ArrayList<>();
@@ -309,7 +310,7 @@ public class MultipleOpenCursorsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            KernelTransaction ktx = db.transaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExists( ktx ) )
             {
                 List<Long> actual1 = new ArrayList<>();
@@ -335,7 +336,7 @@ public class MultipleOpenCursorsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            KernelTransaction ktx = db.transaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExact( ktx ) )
             {
                 List<Long> actual1 = new ArrayList<>();
@@ -362,7 +363,7 @@ public class MultipleOpenCursorsTest
         try ( Transaction tx = db.beginTx() )
         {
             // when
-            KernelTransaction ktx = db.transaction();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryRange( ktx );
                   NodeValueIndexCursor cursor2 = indexCoordinator.queryRange( ktx ) )
             {
@@ -754,7 +755,7 @@ public class MultipleOpenCursorsTest
 
             try ( Transaction tx = db.beginTx() )
             {
-                TokenRead tokenRead = db.transaction().tokenRead();
+                TokenRead tokenRead = ((InternalTransaction) tx).kernelTransaction().tokenRead();
                 indexedLabelId = tokenRead.nodeLabel( indexLabel.name() );
                 numberPropId1 = tokenRead.propertyKey( numberProp1 );
                 numberPropId2 = tokenRead.propertyKey( numberProp2 );

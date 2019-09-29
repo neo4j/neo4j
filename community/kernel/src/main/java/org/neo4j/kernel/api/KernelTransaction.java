@@ -257,16 +257,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
         explicit
     }
 
-    //TODO: misha remove when thread local tx will be removed
-    interface CloseListener
-    {
-        /**
-         * @param txId On success, the actual id of the current transaction if writes have been performed, 0 otherwise.
-         * On rollback, always -1.
-         */
-        void notify( long txId );
-    }
-
     /**
      * Acquires a new {@link Statement} for this transaction which allows for reading and writing data from and
      * to the underlying database. After the group of reads and writes have been performed the statement
@@ -333,13 +323,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * @return transaction timeout in milliseconds.
      */
     long timeout();
-
-    /**
-     * Register a {@link CloseListener} to be invoked after commit, but before transaction events "after" hooks
-     * are invoked.
-     * @param listener {@link CloseListener} to get these notifications.
-     */
-    void registerCloseListener( CloseListener listener );
 
     /**
      * Kernel transaction type

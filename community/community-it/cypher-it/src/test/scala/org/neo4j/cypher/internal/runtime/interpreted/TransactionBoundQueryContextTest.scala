@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 import org.hamcrest.Matchers.greaterThan
 import org.junit.Assert.assertThat
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -49,9 +47,8 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.security.AnonymousContext
-import org.neo4j.kernel.database.{DatabaseId, TestDatabaseIdRepository}
+import org.neo4j.kernel.database.TestDatabaseIdRepository
 import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation}
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
@@ -100,11 +97,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
 
-    val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
-    when(bridge.getKernelTransactionBoundToThisThread(ArgumentMatchers.eq(true), any(classOf[DatabaseId]))).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], transactionFactory)
+    val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -123,12 +118,10 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.transactionType()).thenReturn(Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
-    val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
-    when(bridge.getKernelTransactionBoundToThisThread(ArgumentMatchers.eq(true), any(classOf[DatabaseId]))).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], transactionFactory)
+    val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -220,12 +213,10 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("should close all resources when closing resources") {
     // GIVEN
-    val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
-    when(bridge.getKernelTransactionBoundToThisThread(ArgumentMatchers.eq(true), any(classOf[DatabaseId]))).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], transactionFactory)
+    val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     val resource1 = mock[AutoCloseablePlus]

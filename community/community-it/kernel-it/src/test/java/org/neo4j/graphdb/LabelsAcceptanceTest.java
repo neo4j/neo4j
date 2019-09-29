@@ -52,7 +52,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -690,8 +690,7 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             DependencyResolver resolver = db.getDependencyResolver();
-            ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
-            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor();
                   PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor() )
             {

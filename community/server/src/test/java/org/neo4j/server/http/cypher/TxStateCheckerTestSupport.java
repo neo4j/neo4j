@@ -19,11 +19,7 @@
  */
 package org.neo4j.server.http.cypher;
 
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
-import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.mockito.Mockito.mock;
@@ -32,31 +28,11 @@ import static org.mockito.Mockito.when;
 public class TxStateCheckerTestSupport
 {
     public static final TransitionalPeriodTransactionMessContainer CONTAINER = mock( TransitionalPeriodTransactionMessContainer.class );
-    private static final FakeBridge FAKE_BRIDGE = new FakeBridge();
 
     static
     {
-        when( CONTAINER.getBridge() ).thenReturn( FAKE_BRIDGE );
         GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
         when( CONTAINER.getDb() ).thenReturn( facade );
         when( facade.databaseId() ).thenReturn( TestDatabaseIdRepository.randomDatabaseId() );
-    }
-
-    public static class FakeBridge extends ThreadToStatementContextBridge
-    {
-        private final KernelTransaction tx = mock( KernelTransaction.class );
-        private final KernelStatement statement = mock( KernelStatement.class );
-
-        FakeBridge()
-        {
-            when( tx.acquireStatement() ).thenReturn( statement );
-            when( statement.hasTxStateWithChanges() ).thenReturn( false );
-        }
-
-        @Override
-        public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict, DatabaseId databaseId )
-        {
-            return tx;
-        }
     }
 }

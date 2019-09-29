@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -61,9 +60,6 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.DoubleLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -84,7 +80,6 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 class KernelTransactionImplementationTest extends KernelTransactionTestBase
 {
@@ -619,45 +614,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         tx.markForTermination( Status.Transaction.Terminated );
         tx.close();
         assertFalse( tx.getReasonIfTerminated().isPresent() );
-    }
-
-    @ParameterizedTest
-    @MethodSource( "parameters" )
-    void shouldCallCloseListenerOnCloseWhenCommitting( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer ) throws Exception
-    {
-        // given
-        AtomicLong closeTxId = new AtomicLong( Long.MIN_VALUE );
-        KernelTransactionImplementation tx = newTransaction( loginContext( isWriteTx ) );
-        tx.registerCloseListener( closeTxId::set );
-
-        // when
-        if ( isWriteTx )
-        {
-            tx.upgradeToDataWrites();
-            tx.txState().nodeDoCreate( 42L );
-        }
-        tx.success();
-        tx.close();
-
-        // then
-        assertThat( closeTxId.get(), isWriteTx ? greaterThan( BASE_TX_ID ) : equalTo( 0L ) );
-    }
-
-    @ParameterizedTest
-    @MethodSource( "parameters" )
-    void shouldCallCloseListenerOnCloseWhenRollingBack( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer ) throws Exception
-    {
-        // given
-        AtomicLong closeTxId = new AtomicLong( Long.MIN_VALUE );
-        KernelTransactionImplementation tx = newTransaction( loginContext( isWriteTx ) );
-        tx.registerCloseListener( closeTxId::set );
-
-        // when
-        tx.failure();
-        tx.close();
-
-        // then
-        assertEquals( -1L, closeTxId.get() );
     }
 
     @Test

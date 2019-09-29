@@ -39,12 +39,10 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.values.storable.Value;
@@ -54,7 +52,6 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -65,7 +62,6 @@ import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 
 class TxStateTransactionDataViewTest
 {
-    private final ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
     private final Statement stmt = mock( Statement.class );
     private final StubStorageCursors ops = new StubStorageCursors();
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -79,7 +75,6 @@ class TxStateTransactionDataViewTest
     {
         when( transaction.internalTransaction() ).thenReturn( internalTransaction );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
-        when( bridge.get( any( DatabaseId.class ) ) ).thenReturn( stmt );
         when( tokenRead.propertyKeyName( anyInt() ) ).thenAnswer( invocationOnMock ->
         {
             int id = invocationOnMock.getArgument( 0 );

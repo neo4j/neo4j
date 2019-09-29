@@ -22,12 +22,9 @@ package org.neo4j.server.http.cypher;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -37,20 +34,18 @@ public class TransitionalTxManagementKernelTransaction
     private final KernelTransaction.Type type;
     private final LoginContext loginContext;
     private final long customTransactionTimeout;
-    private final ThreadToStatementContextBridge bridge;
     private final ClientConnectionInfo connectionInfo;
 
     private InternalTransaction tx;
     private KernelTransaction suspendedTransaction;
 
     public TransitionalTxManagementKernelTransaction( GraphDatabaseFacade db, KernelTransaction.Type type, LoginContext loginContext,
-            ClientConnectionInfo connectionInfo, long customTransactionTimeout, ThreadToStatementContextBridge bridge )
+            ClientConnectionInfo connectionInfo, long customTransactionTimeout )
     {
         this.db = db;
         this.type = type;
         this.loginContext = loginContext;
         this.customTransactionTimeout = customTransactionTimeout;
-        this.bridge = bridge;
         this.connectionInfo = connectionInfo;
         this.tx = startTransaction();
     }
@@ -63,15 +58,15 @@ public class TransitionalTxManagementKernelTransaction
     void suspendSinceTransactionsAreStillThreadBound()
     {
         assert suspendedTransaction == null : "Can't suspend the transaction if it already is suspended.";
-        suspendedTransaction = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
-        bridge.unbindTransactionFromCurrentThread();
+//        suspendedTransaction = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+//        bridge.unbindTransactionFromCurrentThread();
     }
 
     void resumeSinceTransactionsAreStillThreadBound()
     {
         assert suspendedTransaction != null : "Can't resume the transaction if it has not first been suspended.";
-        bridge.bindTransactionToCurrentThread( suspendedTransaction );
-        suspendedTransaction = null;
+//        bridge.bindTransactionToCurrentThread( suspendedTransaction );
+//        suspendedTransaction = null;
     }
 
     public void terminate()
@@ -81,43 +76,43 @@ public class TransitionalTxManagementKernelTransaction
 
     public void rollback()
     {
-        try
-        {
-            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
-            if ( kernelTransactionBoundToThisThread != null )
-            {
-                kernelTransactionBoundToThisThread.rollback();
-            }
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new RuntimeException( e );
-        }
-        finally
-        {
-            bridge.unbindTransactionFromCurrentThread();
-        }
+//        try
+//        {
+//            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
+//            if ( kernelTransactionBoundToThisThread != null )
+//            {
+//                kernelTransactionBoundToThisThread.rollback();
+//            }
+//        }
+//        catch ( TransactionFailureException e )
+//        {
+//            throw new RuntimeException( e );
+//        }
+//        finally
+//        {
+//            bridge.unbindTransactionFromCurrentThread();
+//        }
     }
 
     public void commit()
     {
-        try
-        {
-            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
-            kernelTransactionBoundToThisThread.commit();
-        }
-        catch ( NotInTransactionException e )
-        {
-            // if the transaction was already terminated there is nothing more to do
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new RuntimeException( e );
-        }
-        finally
-        {
-            bridge.unbindTransactionFromCurrentThread();
-        }
+//        try
+//        {
+//            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+//            kernelTransactionBoundToThisThread.commit();
+//        }
+//        catch ( NotInTransactionException e )
+//        {
+//            // if the transaction was already terminated there is nothing more to do
+//        }
+//        catch ( TransactionFailureException e )
+//        {
+//            throw new RuntimeException( e );
+//        }
+//        finally
+//        {
+//            bridge.unbindTransactionFromCurrentThread();
+//        }
     }
 
     void closeTransactionForPeriodicCommit()

@@ -43,7 +43,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -73,7 +73,7 @@ class CompositeIndexingIT
     {
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             TokenWrite tokenWrite = ktx.tokenWrite();
             tokenWrite.labelGetOrCreateForName( "Label0" );
             assertEquals( LABEL_ID, tokenWrite.labelGetOrCreateForName( "Label1" ) );
@@ -85,7 +85,7 @@ class CompositeIndexingIT
         }
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             if ( prototype.isUnique() )
             {
                 ktx.schemaWrite().uniquePropertyConstraintCreate( prototype.schema(), null );
@@ -100,7 +100,7 @@ class CompositeIndexingIT
 
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             while ( ktx.schemaRead().indexGetState( index ) != InternalIndexState.ONLINE )
             {
                 Thread.sleep( 10 );
@@ -113,7 +113,7 @@ class CompositeIndexingIT
     {
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             if ( index.isUnique() )
             {
                 Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetForSchema( index.schema() );
@@ -159,7 +159,7 @@ class CompositeIndexingIT
         setup( prototype );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             Write write = ktx.dataWrite();
             long nodeID = write.nodeCreate();
             write.nodeAddLabel( nodeID, LABEL_ID );
@@ -183,7 +183,7 @@ class CompositeIndexingIT
         setup( prototype );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             Write write = ktx.dataWrite();
             long nodeID = write.nodeCreate();
             for ( int propID : index.schema().getPropertyIds() )
@@ -208,7 +208,7 @@ class CompositeIndexingIT
         long nodeID = createNode();
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             ktx.dataWrite().nodeDelete( nodeID );
             try ( NodeValueIndexCursor cursor = seek( ktx ) )
             {
@@ -225,7 +225,7 @@ class CompositeIndexingIT
         long nodeID = createNode();
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             ktx.dataWrite().nodeRemoveLabel( nodeID, LABEL_ID );
             try ( NodeValueIndexCursor cursor = seek( ktx ) )
             {
@@ -242,7 +242,7 @@ class CompositeIndexingIT
         long nodeID = createNode();
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             ktx.dataWrite().nodeRemoveProperty( nodeID, index.schema().getPropertyIds()[0] );
             try ( NodeValueIndexCursor cursor = seek( ktx ) )
             {
@@ -263,7 +263,7 @@ class CompositeIndexingIT
             long nodeID3 = createNode();
             try ( Transaction tx = graphDatabaseAPI.beginTx() )
             {
-                KernelTransaction ktx = ktx();
+                KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                 Set<Long> result = new HashSet<>();
                 try ( NodeValueIndexCursor cursor = seek( ktx ) )
                 {
@@ -289,7 +289,7 @@ class CompositeIndexingIT
             long nodeID3 = createNode();
             try ( Transaction tx = graphDatabaseAPI.beginTx() )
             {
-                KernelTransaction ktx = ktx();
+                KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                 Set<Long> result = new HashSet<>();
                 try ( NodeValueIndexCursor cursor = seek( ktx ) )
                 {
@@ -311,7 +311,7 @@ class CompositeIndexingIT
         long nodeID1 = createNode();
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             Write write = ktx.dataWrite();
             long irrelevantNodeID = write.nodeCreate();
             write.nodeAddLabel( irrelevantNodeID, LABEL_ID );
@@ -339,7 +339,7 @@ class CompositeIndexingIT
         long nodeID;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ktx();
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             Write write = ktx.dataWrite();
             nodeID = write.nodeCreate();
             write.nodeAddLabel( nodeID, LABEL_ID );
@@ -370,11 +370,5 @@ class CompositeIndexingIT
             query[i] = IndexQuery.exact( propID, Values.of( propID ) );
         }
         return query;
-    }
-
-    private KernelTransaction ktx()
-    {
-        ThreadToStatementContextBridge bridge = graphDatabaseAPI.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        return bridge.getKernelTransactionBoundToThisThread( true, graphDatabaseAPI.databaseId() );
     }
 }
