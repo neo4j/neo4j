@@ -154,10 +154,9 @@ class SchemaAcceptanceTest
     void shouldThrowConstraintViolationIfAskedToIndexPropertyThatIsAlreadyIndexed()
     {
         // GIVEN
-        Schema schema;
         try ( Transaction tx = db.beginTx() )
         {
-            schema = tx.schema();
+            var schema = tx.schema();
             schema.indexFor( label ).on( propertyKey ).create();
             tx.commit();
         }
@@ -166,7 +165,7 @@ class SchemaAcceptanceTest
         ConstraintViolationException caught = null;
         try ( Transaction tx = db.beginTx() )
         {
-            schema.indexFor( label ).on( propertyKey ).create();
+            tx.schema().indexFor( label ).on( propertyKey ).create();
             tx.commit();
         }
         catch ( ConstraintViolationException e )
@@ -222,6 +221,7 @@ class SchemaAcceptanceTest
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
+            index = tx.schema().getIndexByName( index.getName() );
             index.drop();
             try
             {
@@ -255,9 +255,9 @@ class SchemaAcceptanceTest
             dropIndex( index );
             fail( "Should not be able to drop index twice" );
         }
-        catch ( ConstraintViolationException e )
+        catch ( Exception e )
         {
-            assertThat( e.getMessage(), containsString( "No such INDEX ON :MY_LABEL(my_property_key)." ) );
+            assertThat( e.getMessage(), containsString( "Index on :MY_LABEL (my_property_key)" ) );
         }
 
         // THEN
@@ -357,6 +357,7 @@ class SchemaAcceptanceTest
         // THEN
         try ( Transaction tx = db.beginTx() )
         {
+            constraint = tx.schema().getConstraintByName( constraint.getName() );
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
             assertEquals( label.name(), constraint.getLabel().name() );
             assertEquals( asSet( propertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
@@ -374,6 +375,7 @@ class SchemaAcceptanceTest
         // Then
         try ( Transaction tx = db.beginTx() )
         {
+            constraint = tx.schema().getConstraintByName( constraint.getName() );
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
             assertEquals( label.name(), constraint.getLabel().name() );
             assertEquals( asSet( propertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
@@ -1046,7 +1048,7 @@ class SchemaAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            constraint.drop();
+            tx.schema().getConstraintByName( constraint.getName() ).drop();
             tx.commit();
         }
     }
@@ -1072,7 +1074,7 @@ class SchemaAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            index.drop();
+            tx.schema().getIndexByName( index.getName() ).drop();
             tx.commit();
         }
     }

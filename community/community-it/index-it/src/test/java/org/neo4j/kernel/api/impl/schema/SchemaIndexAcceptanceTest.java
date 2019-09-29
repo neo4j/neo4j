@@ -233,7 +233,7 @@ public class SchemaIndexAcceptanceTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            indexDefinition.drop();
+            tx.schema().getIndexByName( indexDefinition.getName() ).drop();
             tx.commit();
         }
     }

@@ -84,7 +84,7 @@ class UpdateDeletedIndexIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                indexDefinition.drop();
+                tx.schema().getIndexByName( indexDefinition.getName() ).drop();
                 tx.commit();
             }
         }, 1 );

@@ -287,10 +287,18 @@ class ConcurrentCreateDropIndexIT
     {
         return () ->
         {
-            try ( Transaction tx = db.beginTx() )
+            while ( true )
             {
-                index.drop();
-                tx.commit();
+                try ( Transaction tx = db.beginTx() )
+                {
+                    tx.schema().getIndexByName( index.getName() ).drop();
+                    tx.commit();
+                    return;
+                }
+                catch ( Exception dde )
+                {
+                    //ignored
+                }
             }
         };
     }

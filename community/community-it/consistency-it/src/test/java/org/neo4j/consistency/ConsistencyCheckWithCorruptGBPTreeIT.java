@@ -740,12 +740,12 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( label ).on( propKey1 ).create();
+            tx.schema().indexFor( label ).on( propKey1 ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
             tx.commit();
         }
     }
@@ -757,6 +757,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return new String( chars );
     }
 
+    @FunctionalInterface
     private interface CorruptionInject
     {
         void corrupt( GBPTree<?,?> tree, GBPTreeInspection<?,?> inspection ) throws IOException;

@@ -152,12 +152,12 @@ class TestReadOnlyNeo4j
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( Label.label( "label" ) ).on( "prop" ).create();
+            tx.schema().indexFor( Label.label( "label" ) ).on( "prop" ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.commit();
         }
         managementService.shutdown();

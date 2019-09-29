@@ -172,7 +172,7 @@ public class IndexRestartIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            index.drop();
+            tx.schema().getIndexByName( index.getName() ).drop();
             populationCompletionLatch.finish();
             tx.commit();
         }

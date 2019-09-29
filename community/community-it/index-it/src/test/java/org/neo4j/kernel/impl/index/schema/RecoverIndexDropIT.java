@@ -160,7 +160,7 @@ class RecoverIndexDropIT
             index = createIndex( db );
             try ( Transaction tx = db.beginTx() )
             {
-                index.drop();
+                tx.schema().getIndexByName( index.getName() ).drop();
                 tx.commit();
             }
             return extractLastTransaction( db );
