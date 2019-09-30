@@ -53,6 +53,7 @@ import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.io.ByteUnit.ONE_GIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_KIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_MEBI_BYTE;
@@ -117,11 +118,19 @@ class MemoryRecommendationsCommand extends AbstractCommand
         return brackets.recommend( Bracket::heapMemory );
     }
 
+    static long recommendTxStateMemory( long heapMemoryBytes )
+    {
+        long recommendation = heapMemoryBytes / 4;
+        recommendation = Math.max( mebiBytes( 128 ), recommendation );
+        recommendation = Math.min( gibiBytes( 8 ), recommendation );
+        return recommendation;
+    }
+
     static long recommendPageCacheMemory( long totalMemoryBytes )
     {
         long osMemory = recommendOsMemory( totalMemoryBytes );
         long heapMemory = recommendHeapMemory( totalMemoryBytes );
-        long recommendation = totalMemoryBytes - osMemory - heapMemory;
+        long recommendation = totalMemoryBytes - osMemory - heapMemory - recommendTxStateMemory( heapMemory );
         recommendation = Math.max( mebiBytes( 8 ), recommendation );
         recommendation = Math.min( tebiBytes( 16 ), recommendation );
         return recommendation;
@@ -201,6 +210,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         String os = bytesToString( recommendOsMemory( memory ) );
         String heap = bytesToString( recommendHeapMemory( memory ) );
         String pagecache = bytesToString( recommendPageCacheMemory( memory ) );
+        String txState = bytesToString( recommendTxStateMemory( memory ) );
         File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
         Config config = getConfig( configFile );
         File databasesRoot = config.get( databases_root_path ).toFile();
@@ -220,6 +230,13 @@ class MemoryRecommendationsCommand extends AbstractCommand
         print( "# data indexed, then it might advantageous to leave more memory for the" );
         print( "# operating system." );
         print( "#" );
+        print( "# Tip: Depending on the workload type you may want to increase the amount" );
+        print( "# of off-heap memory available for storing transaction state." );
+        print( "# For instance, in case of large write-intensive transactions" );
+        print( "# increasing it can lower GC overhead and thus improve performance." );
+        print( "# On the other hand, if vast majority of transactions are small or read-only" );
+        print( "# then you can decrease it and increase page cache instead." );
+        print( "#" );
         print( "# Tip: The more concurrent transactions your workload has and the more updates" );
         print( "# they do, the more heap memory you will need. However, don't allocate more" );
         print( "# than 31g of heap, since this will disable pointer compression, also known as" );
@@ -233,6 +250,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         print( initialHeapSize.name() + "=" + heap );
         print( maxHeapSize.name() + "=" + heap );
         print( pagecache_memory.name() + "=" + pagecache );
+        print( tx_state_max_off_heap_memory.name() + "=" + txState );
         print( "#" );
         print( "# The numbers below have been derived based on your current databases located at: '" + databasesRoot + "'." );
         print( "# They can be used as an input into more detailed memory analysis." );

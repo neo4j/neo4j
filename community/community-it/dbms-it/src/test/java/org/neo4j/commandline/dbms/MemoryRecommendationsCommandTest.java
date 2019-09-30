@@ -58,8 +58,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -67,6 +67,7 @@ import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToStr
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
+import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendTxStateMemory;
 import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
@@ -151,14 +152,26 @@ class MemoryRecommendationsCommandTest
     void mustRecommendPageCacheMemory()
     {
         assertThat( recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 50 ), mebiBytes( 60 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 3 ) ), between( mebiBytes( 470 ), mebiBytes( 530 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 6 ) ), between( mebiBytes( 980 ), mebiBytes( 1048 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 192 ) ), between( gibiBytes( 140 ), gibiBytes( 150 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ) ), between( gibiBytes( 1850 ), gibiBytes( 1900 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 8 ), mebiBytes( 50 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 3 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 6 ) ), between( mebiBytes( 100 ), mebiBytes( 256 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 192 ) ), between( gibiBytes( 75 ), gibiBytes( 202 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ) ), between( gibiBytes( 978 ), gibiBytes( 1900 ) ) );
 
         // Also never recommend more than 16 TiB of page cache memory, regardless of how much is available.
-        assertThat( recommendPageCacheMemory( exbiBytes( 1 ) ), lessThan( tebiBytes( 17 ) ) );
+        assertThat( recommendPageCacheMemory( exbiBytes( 1 ) ), lessThanOrEqualTo( tebiBytes( 16 ) ) );
+    }
+
+    @Test
+    void recommendTxStatMemory()
+    {
+        assertEquals( mebiBytes( 128 ), recommendTxStateMemory( mebiBytes( 100 ) ) );
+        assertEquals( mebiBytes( 128 ), recommendTxStateMemory( mebiBytes( 512 ) ) );
+        assertEquals( mebiBytes( 192 ), recommendTxStateMemory( mebiBytes( 768 ) ) );
+        assertEquals( mebiBytes( 256 ), recommendTxStateMemory( gibiBytes( 1 ) ) );
+        assertEquals( gibiBytes( 4 ), recommendTxStateMemory( gibiBytes( 16 ) ) );
+        assertEquals( gibiBytes( 8 ), recommendTxStateMemory( gibiBytes( 32 ) ) );
+        assertEquals( gibiBytes( 8 ), recommendTxStateMemory( gibiBytes( 128 ) ) );
     }
 
     @Test
