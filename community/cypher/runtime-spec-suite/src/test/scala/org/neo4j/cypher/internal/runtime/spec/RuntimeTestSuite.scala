@@ -261,6 +261,28 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     (aNodes, bNodes)
   }
 
+  def bidirectionalBipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relTypeAB: String, relTypeBA: String): (Seq[Node], Seq[Node], Seq[Relationship], Seq[Relationship]) = {
+    val aNodes = nodeGraph(nNodes, aLabel)
+    val bNodes = nodeGraph(nNodes, bLabel)
+    var aRels: Seq[Relationship] = null
+    var bRels: Seq[Relationship] = null
+    inTx { tx =>
+      val relationshipTypeAB = RelationshipType.withName(relTypeAB)
+      val relationshipTypeBA = RelationshipType.withName(relTypeBA)
+      val (_aRels, _bRels) =
+        (for {a <- aNodes; b <- bNodes} yield {
+          val aNode = tx.getNodeById(a.getId)
+          val bNode = tx.getNodeById(b.getId)
+          val aRel = aNode.createRelationshipTo(bNode, relationshipTypeAB)
+          val bRel = bNode.createRelationshipTo(aNode, relationshipTypeBA)
+          (aRel, bRel)
+        }).unzip
+      aRels = _aRels
+      bRels = _bRels
+    }
+    (aNodes, bNodes, aRels, bRels)
+  }
+
   def nodeGraph(nNodes: Int, labels: String*): Seq[Node] = {
     inTx { tx =>
       for (_ <- 0 until nNodes) yield {

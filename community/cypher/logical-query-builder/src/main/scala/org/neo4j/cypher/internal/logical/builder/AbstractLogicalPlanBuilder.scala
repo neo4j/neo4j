@@ -174,6 +174,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def projectEndpoints(pattern: String, startInScope: Boolean, endInScope: Boolean): IMPL = {
+    val p = PatternParser.parse(pattern)
+    val relTypesAsNonEmptyOption = if (p.relTypes.isEmpty) None else Some(p.relTypes)
+    val directed = p.dir != SemanticDirection.BOTH
+    appendAtCurrentIndent(UnaryOperator(lp => ProjectEndpoints(lp, p.relName, p.from, startInScope, p.to, endInScope,
+                                                               relTypesAsNonEmptyOption, directed, p.length)(_)))
+  }
+
   def partialSort(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => PartialSort(lp, alreadySortedPrefix, stillToSortSuffix)(_)))
     self
@@ -421,15 +429,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def argument(): IMPL =
     appendAtCurrentIndent(LeafOperator(Argument()(_)))
 
-  def input(nodes: Seq[String] = Seq.empty, variables: Seq[String] = Seq.empty, nullable: Boolean = true): IMPL = {
+  def input(nodes: Seq[String] = Seq.empty, relationships: Seq[String] = Seq.empty, variables: Seq[String] = Seq.empty, nullable: Boolean = true): IMPL = {
     if (indent != 0) {
       throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
     }
-    if (nodes.toSet.size < nodes.size || variables.toSet.size < variables.size) {
+    if (nodes.toSet.size < nodes.size || relationships.toSet.size < relationships.size || variables.toSet.size < variables.size) {
       throw new IllegalArgumentException("Input must create unique variables")
     }
     nodes.foreach(node => newNode(varFor(node)))
-    appendAtCurrentIndent(LeafOperator(Input(nodes, variables, nullable)(_)))
+    relationships.foreach(rel => newRelationship(varFor(rel)))
+    appendAtCurrentIndent(LeafOperator(Input(nodes, relationships, variables, nullable)(_)))
   }
 
   def filter(predicateStrings: String*): IMPL = {
