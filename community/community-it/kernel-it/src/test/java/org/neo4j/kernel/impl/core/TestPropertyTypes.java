@@ -34,7 +34,6 @@ import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
@@ -511,9 +510,8 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            transaction.getNodeById( node1.getId() ).setProperty( "location",
-                    Values.unsafePointValue( Cartesian, 1, 1, 1, 1 ) );
-            assertThrows( TransactionFailureException.class, transaction::commit );
+            assertThrows( IllegalArgumentException.class, () -> transaction.getNodeById( node1.getId() ).setProperty( "location",
+                    Values.unsafePointValue( Cartesian, 1, 1, 1, 1 ) ) );
         }
     }
 
