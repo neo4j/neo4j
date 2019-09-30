@@ -99,14 +99,15 @@ public interface ProcedureITBase
                 proc( "db.createIndex",
                         "(indexName :: STRING?, index :: STRING?, providerName :: STRING?) :: (name :: STRING?, index :: STRING?, providerName :: STRING?, " +
                                 "status :: STRING?)",
-                        "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
-                                "YIELD index, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
+                        "Create a named schema index with specified index provider " +
+                                "(for example: CALL db.createIndex(\"MyIndex\", \":Person(name)\", \"native-btree-1.0\")) - " +
+                                "YIELD name, index, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.createUniquePropertyConstraint",
                         "(constraintName :: STRING?, index :: STRING?, providerName :: STRING?) :: " +
                                 "(name :: STRING?, index :: STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a unique property constraint with index backed by specified index provider " +
-                                "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
-                                "YIELD index, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
+                        "Create a named unique property constraint with index backed by specified index provider " +
+                                "(for example: CALL db.createUniquePropertyConstraint(\"MyConstraint\", \":Person(name)\", \"native-btree-1.0\")) - " +
+                                "YIELD name, index, providerName, status", stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", "() :: VOID",
                         "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
@@ -197,8 +198,9 @@ public interface ProcedureITBase
                         "List all queries currently executing at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "db.createNodeKey", "(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a node key constraint with index backed by specified index provider " +
-                                "(for example: CALL db.createNodeKey(\":Person(name)\", \"lucene+native-2.0\")) - YIELD index, providerName, status",
+                        "Create a named node key constraint with index backed by specified index provider " +
+                                "(for example: CALL db.createNodeKey(\"MyConstraint\", \":Person(name)\", \"native-btree-1.0\")) - " +
+                                "YIELD name, index, providerName, status",
                         stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "dbms.listActiveLocks", "(queryId :: STRING?) :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?)",
                         "List the active lock requests granted for the transaction executing the query with the given query id.",

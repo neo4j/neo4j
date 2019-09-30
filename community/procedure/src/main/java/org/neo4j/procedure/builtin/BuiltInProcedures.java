@@ -439,8 +439,9 @@ public class BuiltInProcedures
         return result.stream();
     }
 
-    @Description( "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
-            "YIELD index, providerName, status" )
+    @Description( "Create a named schema index with specified index provider " +
+            "(for example: CALL db.createIndex(\"MyIndex\", \":Person(name)\", \"native-btree-1.0\")) - " +
+            "YIELD name, index, providerName, status" )
     @Procedure( name = "db.createIndex", mode = SCHEMA )
     public Stream<SchemaIndexInfo> createIndex(
             @Name( "indexName" ) String indexName,
@@ -454,9 +455,9 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Create a unique property constraint with index backed by specified index provider " +
-            "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
-            "YIELD index, providerName, status" )
+    @Description( "Create a named unique property constraint with index backed by specified index provider " +
+            "(for example: CALL db.createUniquePropertyConstraint(\"MyConstraint\", \":Person(name)\", \"native-btree-1.0\")) - " +
+            "YIELD name, index, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
             @Name( "constraintName" ) String constraintName,
