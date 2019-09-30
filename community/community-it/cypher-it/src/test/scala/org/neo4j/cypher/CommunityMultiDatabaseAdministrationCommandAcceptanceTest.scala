@@ -29,7 +29,7 @@ import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.{InMemoryUserRepository, SecureHasher}
-import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, SystemGraphQueryExecutor, UserSecurityGraphInitializer}
+import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, UserSecurityGraphInitializer}
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import scala.collection.Map
@@ -227,18 +227,13 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
   private def initSystemGraph(config: Config): Unit = {
     val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
-    val queryExecutor: SystemGraphQueryExecutor = new SystemGraphQueryExecutor(databaseManager)
-    val secureHasher: SecureHasher = new SecureHasher
-    val systemGraphOperations: BasicSystemGraphOperations = new BasicSystemGraphOperations(queryExecutor, secureHasher)
-
     val securityGraphInitializer = new UserSecurityGraphInitializer(
+      databaseManager,
       new DefaultSystemGraphInitializer(databaseManager, config),
-      queryExecutor,
       mock[Log],
-      systemGraphOperations,
       () => new InMemoryUserRepository,
       () => new InMemoryUserRepository,
-      secureHasher)
+      new SecureHasher())
 
     securityGraphInitializer.initializeSecurityGraph()
     selectDatabase(SYSTEM_DATABASE_NAME)

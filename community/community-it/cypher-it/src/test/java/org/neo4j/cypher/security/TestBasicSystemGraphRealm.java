@@ -85,10 +85,9 @@ public class TestBasicSystemGraphRealm
         BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( executor, secureHasher );
         UserSecurityGraphInitializer securityGraphInitializer =
                 new UserSecurityGraphInitializer(
+                        manager,
                         new DefaultSystemGraphInitializer( manager, config ),
-                        executor,
                         Mockito.mock(Log.class),
-                        systemGraphOperations,
                         migrationSupplier,
                         initialUserSupplier,
                         secureHasher

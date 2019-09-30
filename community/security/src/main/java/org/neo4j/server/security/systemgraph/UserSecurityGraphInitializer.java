@@ -19,13 +19,19 @@
  */
 package org.neo4j.server.security.systemgraph;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
@@ -34,33 +40,31 @@ import org.neo4j.server.security.auth.SecureHasher;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 {
+    protected Label USER_LABEL = Label.label( "User" );
+    protected List<Node> userNodes = new ArrayList<>();
+    protected List<String> usernames = new ArrayList<>();
+
+    protected final DatabaseManager<?> databaseManager;
     protected final SystemGraphInitializer systemGraphInitializer;
-    protected QueryExecutor queryExecutor;
     protected Log log;
-    private final BasicSystemGraphOperations systemGraphOperations;
 
     private final Supplier<UserRepository> migrationUserRepositorySupplier;
     private final Supplier<UserRepository> initialUserRepositorySupplier;
     private final SecureHasher secureHasher;
 
-    public UserSecurityGraphInitializer(
-            SystemGraphInitializer systemGraphInitializer,
-            QueryExecutor queryExecutor,
-            Log log,
-            BasicSystemGraphOperations systemGraphOperations,
-            Supplier<UserRepository> migrationUserRepositorySupplier,
-            Supplier<UserRepository> initialUserRepositorySupplier,
-            SecureHasher secureHasher )
+    public UserSecurityGraphInitializer( DatabaseManager<?> databaseManager, SystemGraphInitializer systemGraphInitializer, Log log,
+            Supplier<UserRepository> migrationUserRepositorySupplier, Supplier<UserRepository> initialUserRepositorySupplier, SecureHasher secureHasher )
     {
+        this.databaseManager = databaseManager;
         this.systemGraphInitializer = systemGraphInitializer;
-        this.queryExecutor = queryExecutor;
         this.log = log;
-        this.systemGraphOperations = systemGraphOperations;
         this.migrationUserRepositorySupplier = migrationUserRepositorySupplier;
         this.initialUserRepositorySupplier = initialUserRepositorySupplier;
         this.secureHasher = secureHasher;
@@ -81,28 +85,98 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
 
     private void doInitializeSecurityGraph() throws Exception
     {
-        // If the system graph has not been initialized (typically the first time you start neo4j) we set it up by:
-        // 1) Try to migrate users from the auth file
-        // 2) If no users were migrated, create one default user
-        if ( nbrOfUsers() == 0 )
-        {
-            setupConstraints();
-            migrateFromAuthFile();
-        }
+        // Must be done outside main transaction since it changes the schema
+        setupConstraints();
 
-        if ( nbrOfUsers() == 0 )
+        try ( Transaction tx = getSystemDb().beginTx() )
         {
-            ensureDefaultUser();
-        }
-        else
-        {
-            ensureCorrectInitialPassword();
+            userNodes = findInitialNodes( tx, USER_LABEL );
+            userNodes.forEach( node -> usernames.add( (String) node.getProperty( "name" ) ) );
+            boolean initialUsersExist = !userNodes.isEmpty();
+
+            // If the security graph had not been initialized (typically the first time you start neo4j),
+            // try to migrate users from the auth file.
+            if ( !initialUsersExist )
+            {
+                initialUsersExist = migrateFromAuthFile( tx );
+            }
+
+            // If no users were migrated, create the default user with the default password
+            if ( !initialUsersExist )
+            {
+                addDefaultUser( tx );
+            }
+
+            // If applicable, give the default user the password set by set-initial-password command
+            setInitialPassword( );
+
+            tx.commit();
         }
     }
 
-    protected long nbrOfUsers()
+    private void setupConstraints()
     {
-        return systemGraphOperations.getAllUsernames().size();
+        // Ensure that multiple users cannot have the same name and are indexed
+        try ( Transaction tx = getSystemDb().beginTx() )
+        {
+            try
+            {
+                tx.schema().constraintFor( USER_LABEL ).assertPropertyIsUnique( "name" ).create();
+            }
+            catch ( ConstraintViolationException e )
+            {
+                // Makes the creation of constraints for security idempotent
+                if ( !e.getMessage().startsWith( "Constraint already exists" ) )
+                {
+                    throw e;
+                }
+            }
+            tx.commit();
+        }
+    }
+
+    protected ArrayList<Node> findInitialNodes( Transaction tx, Label label )
+    {
+        ArrayList<Node> nodeList = new ArrayList<>();
+        final ResourceIterator<Node> nodes = tx.findNodes( label );
+        nodes.forEachRemaining( nodeList::add );
+        nodes.close();
+
+        return nodeList;
+    }
+
+    private boolean migrateFromAuthFile( Transaction tx ) throws Exception
+    {
+        UserRepository userRepository = startUserRepository( migrationUserRepositorySupplier );
+        boolean migratedUsers = doImportUsers( tx, userRepository );
+        stopUserRepository( userRepository );
+        return migratedUsers;
+    }
+
+    protected boolean doImportUsers( Transaction tx, UserRepository userRepository ) throws Exception
+    {
+        ListSnapshot<User> users = userRepository.getPersistedSnapshot();
+
+        if ( !users.values().isEmpty() )
+        {
+            for ( User user : users.values() )
+            {
+                addUser( tx, user.name(), user.credentials(), user.passwordChangeRequired(), user.hasFlag( BasicSystemGraphRealm.IS_SUSPENDED ) );
+            }
+
+            // Log what happened to the security log
+            String userString = users.values().size() == 1 ? "user" : "users";
+            log.info( "Completed import of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
+            return true;
+        }
+        return false;
+    }
+
+    /* Adds initial neo4j user */
+    protected void addDefaultUser( Transaction tx )
+    {
+        SystemGraphCredential initialCredential = SystemGraphCredential.createCredentialForPassword( UTF8.encode( INITIAL_PASSWORD ), secureHasher );
+        addUser( tx, INITIAL_USER_NAME, initialCredential, true, false );
     }
 
     protected UserRepository startUserRepository( Supplier<UserRepository> supplier ) throws Exception
@@ -119,11 +193,34 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         userRepository.shutdown();
     }
 
-    /* Adds neo4j user if no users exist */
-    protected void ensureDefaultUser() throws Exception
+    protected void setInitialPassword( ) throws Exception
     {
-        boolean addedUser = false;
+        // The set-initial-password command should only take effect if the only existing user is the default user with the default password.
+        // The reason for this user to already exist in the system database can e.g. be if some setup script have led to the dbms
+        // being started before first login.
+        if ( userNodes.size() == 1 )
+        {
+            Node defaultUser = userNodes.get( 0 );
 
+            if ( defaultUser.getProperty( "name" ).equals( INITIAL_USER_NAME ) )
+            {
+                Credential credentials = SystemGraphCredential.deserialize( (String) defaultUser.getProperty( "credentials" ), secureHasher );
+                if ( credentials.matchesPassword( UTF8.encode( INITIAL_PASSWORD ) ) )
+                {
+                    Credential credential = getInitialPassword();
+                    if ( credential != null )
+                    {
+                        defaultUser.setProperty( "credentials", credential.serialize() );
+                        defaultUser.setProperty( "passwordChangeRequired", false );
+                    }
+                }
+            }
+        }
+    }
+
+    private Credential getInitialPassword() throws Exception
+    {
+        Credential credential = null;
         if ( initialUserRepositorySupplier != null )
         {
             UserRepository initialUserRepository = startUserRepository( initialUserRepositorySupplier );
@@ -134,93 +231,29 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
                 User initialUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
                 if ( initialUser != null )
                 {
-                    systemGraphOperations.addUser( initialUser );
-                    addedUser = true;
+                    credential = initialUser.credentials();
                 }
             }
             stopUserRepository( initialUserRepository );
         }
-
-        // If no initial user was set create the default neo4j user
-        if ( !addedUser )
-        {
-            Credential credential = SystemGraphCredential.createCredentialForPassword( UTF8.encode( INITIAL_PASSWORD ), secureHasher );
-            User user = new User.Builder().withName( INITIAL_USER_NAME ).withCredentials( credential ).withRequiredPasswordChange( true ).withoutFlag(
-                    BasicSystemGraphRealm.IS_SUSPENDED ).build();
-
-            systemGraphOperations.addUser( user );
-        }
+        return credential;
     }
 
-    private void setupConstraints() throws InvalidArgumentsException
-
+    private void addUser( Transaction tx, String username, Credential credentials, boolean passwordChangeRequired, boolean suspended )
     {
-        // Ensure that multiple users cannot have the same name and are indexed
-        queryExecutor.executeQuery( "CREATE CONSTRAINT ON (u:User) ASSERT u.name IS UNIQUE", Collections.emptyMap(),
-                new ErrorPreservingQuerySubscriber() );
+        // NOTE: If username already exists we will violate a constraint
+        Node node = tx.createNode( USER_LABEL );
+        node.setProperty( "name", username );
+        node.setProperty( "credentials", credentials.serialize() );
+        node.setProperty( "passwordChangeRequired", passwordChangeRequired );
+        node.setProperty( "suspended", suspended );
+        userNodes.add( node );
+        usernames.add( username );
     }
 
-    private boolean onlyDefaultUserWithDefaultPassword() throws Exception
+    protected GraphDatabaseService getSystemDb()
     {
-        if ( nbrOfUsers() == 1 )
-        {
-            User user = systemGraphOperations.getUser( INITIAL_USER_NAME, true );
-            return user != null && user.credentials().matchesPassword( UTF8.encode( INITIAL_PASSWORD ) );
-        }
-        return false;
-    }
-
-    protected void ensureCorrectInitialPassword() throws Exception
-    {
-        if ( onlyDefaultUserWithDefaultPassword() )
-        {
-            if ( initialUserRepositorySupplier != null )
-            {
-                UserRepository initialUserRepository = startUserRepository( initialUserRepositorySupplier );
-                if ( initialUserRepository.numberOfUsers() > 0 )
-                {
-                    // In alignment with InternalFlatFileRealm we only allow the INITIAL_USER_NAME here for now
-                    // (This is what we get from the `set-initial-password` command)
-                    User initialUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
-
-                    if ( initialUser != null )
-                    {
-                        systemGraphOperations.setUserCredentials( INITIAL_USER_NAME, initialUser.credentials().serialize(), false );
-                    }
-                }
-                stopUserRepository( initialUserRepository );
-            }
-        }
-    }
-
-    private void migrateFromAuthFile() throws Exception
-    {
-        UserRepository userRepository = startUserRepository( migrationUserRepositorySupplier );
-        doImportUsers( userRepository );
-        stopUserRepository( userRepository );
-    }
-
-    protected void doImportUsers( UserRepository userRepository ) throws Exception
-    {
-        ListSnapshot<User> users = userRepository.getPersistedSnapshot();
-
-        if ( !users.values().isEmpty() )
-        {
-            try ( Transaction transaction = queryExecutor.beginTx() )
-            {
-
-                // This is not an efficient implementation, since it executes many queries
-                // If performance ever becomes an issue we could do this with a single query instead
-                for ( User user : users.values() )
-                {
-                    systemGraphOperations.addUser( user );
-                }
-                transaction.commit();
-            }
-
-            // Log what happened to the security log
-            String userString = users.values().size() == 1 ? "user" : "users";
-            log.info( "Completed import of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
-        }
+        return databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
+                () -> new AuthProviderFailedException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
     }
 }

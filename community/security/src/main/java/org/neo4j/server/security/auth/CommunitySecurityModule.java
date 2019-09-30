@@ -139,7 +139,7 @@ public class CommunitySecurityModule extends SecurityModule
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
 
         UserSecurityGraphInitializer securityGraphInitializer =
-                new UserSecurityGraphInitializer( systemGraphInitializer, queryExecutor, logProvider.getLog( getClass() ), systemGraphOperations,
+                new UserSecurityGraphInitializer( databaseManager, systemGraphInitializer, logProvider.getLog( getClass() ),
                         migrationUserRepositorySupplier, initialUserRepositorySupplier, secureHasher );
 
         return new BasicSystemGraphRealm(
