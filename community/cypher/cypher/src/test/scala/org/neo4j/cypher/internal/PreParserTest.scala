@@ -30,6 +30,7 @@ class PreParserTest extends CypherFunSuite {
     CypherRuntimeOption.default,
     CypherExpressionEngineOption.default,
     CypherOperatorEngineOption.default,
+    CypherInterpretedPipesFallbackOption.default,
     0)
 
   test("should not allow inconsistent runtime options") {
@@ -47,6 +48,25 @@ class PreParserTest extends CypherFunSuite {
 
   test("should accept just one operator execution mode") {
     preParser.preParseQuery("CYPHER operatorEngine=interpreted RETURN 42").options.operatorEngine should equal(CypherOperatorEngineOption.interpreted)
+  }
+
+  test("should accept just one interpreted pipes fallback mode") {
+    preParser.preParseQuery("CYPHER interpretedPipesFallback=disabled RETURN 42").options.interpretedPipesFallback should
+      equal(CypherInterpretedPipesFallbackOption.disabled)
+    preParser.preParseQuery("CYPHER interpretedPipesFallback=default RETURN 42").options.interpretedPipesFallback should
+      equal(CypherInterpretedPipesFallbackOption.whitelistedPlansOnly)
+    preParser.preParseQuery("CYPHER interpretedPipesFallback=all RETURN 42").options.interpretedPipesFallback should
+      equal(CypherInterpretedPipesFallbackOption.allPossiblePlans)
+  }
+
+  test("should not allow multiple conflicting interpreted pipes fallback modes") {
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER interpretedPipesFallback=all interpretedPipesFallback=disabled RETURN 42"))
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER interpretedPipesFallback=default interpretedPipesFallback=disabled RETURN 42"))
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER interpretedPipesFallback=default interpretedPipesFallback=all RETURN 42"))
+  }
+
+  test("should only allow interpreted pipes fallback mode in pipelined runtime") {
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=slotted interpretedPipesFallback=all RETURN 42"))
   }
 
   test("should parse all variants of periodic commit") {

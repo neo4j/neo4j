@@ -433,15 +433,18 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<CypherOperatorEngine> cypher_operator_engine =
             newBuilder( "unsupported.cypher.morsel.operator_engine", ofEnum( CypherOperatorEngine.class ), CypherOperatorEngine.COMPILED ).build();
 
-    @Description( "Use interpreted pipes as a fallback for operators that do not have a specialized implementation in the morsel runtime." )
+    @Description( "Use interpreted pipes as a fallback for operators that do not have a specialized implementation in the morsel runtime. " +
+                  "Allowed values are \"disabled\", \"default\" (the default) and \"all\" (experimental). " +
+                  "The default is to enable the use of a subset of whitelisted operators that are known to be supported, whereas \"all\" is an " +
+                  "experimental option that enables the fallback to be used for all possible operators that are not known to be unsupported." )
     @Internal
-    public static final Setting<CypherMorselUseInterpretedPipes> cypher_morsel_use_interpreted_pipes =
-            newBuilder( "unsupported.cypher.morsel_use_interpreted_pipes", ofEnum( CypherMorselUseInterpretedPipes.class ),
-                    CypherMorselUseInterpretedPipes.WHITELISTED_PLANS_ONLY ).build();
+    public static final Setting<CypherMorselInterpretedPipesFallback> cypher_morsel_interpreted_pipes_fallback =
+            newBuilder( "unsupported.cypher.morsel_interpreted_pipes_fallback", ofEnum( CypherMorselInterpretedPipesFallback.class ),
+                    CypherMorselInterpretedPipesFallback.DEFAULT ).build();
 
-    public enum CypherMorselUseInterpretedPipes
+    public enum CypherMorselInterpretedPipesFallback
     {
-        DISABLED, WHITELISTED_PLANS_ONLY, ALL_POSSIBLE_PLANS
+        DISABLED, DEFAULT, ALL
     }
 
     @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +

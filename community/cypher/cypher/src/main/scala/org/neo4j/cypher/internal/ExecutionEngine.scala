@@ -65,6 +65,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     config.runtime,
     config.expressionEngineOption,
     config.operatorEngine,
+    config.interpretedPipesFallback,
     config.queryCacheSize)
   private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
   private def planReusabilitiy(executableQuery: ExecutableQuery,

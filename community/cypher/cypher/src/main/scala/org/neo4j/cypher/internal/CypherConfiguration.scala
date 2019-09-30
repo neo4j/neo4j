@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.configuration.GraphDatabaseSettings.CypherMorselUseInterpretedPipes
 import org.neo4j.configuration.{Config, GraphDatabaseSettings, SettingChangeListener}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator}
@@ -57,7 +56,7 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.morsel_scheduler_trace_filename).toFile,
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
       CypherOperatorEngineOption(config.get(GraphDatabaseSettings.cypher_operator_engine).toString),
-      CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseSettings.cypher_morsel_use_interpreted_pipes).toString),
+      CypherInterpretedPipesFallbackOption(config.get(GraphDatabaseSettings.cypher_morsel_interpreted_pipes_fallback).toString),
       new ConfigMemoryTrackingController(config)
     )
   }
@@ -134,7 +133,6 @@ case class CypherConfiguration(version: CypherVersion,
       morselSizeBig = morselSizeBig,
       schedulerTracing = toSchedulerTracingConfiguration(doSchedulerTracing, schedulerTracingFile),
       lenientCreateRelationship = lenientCreateRelationship,
-      interpretedPipesFallback = interpretedPipesFallback,
       memoryTrackingController = memoryTrackingController
     )
 

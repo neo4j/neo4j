@@ -92,6 +92,7 @@ case class QueryOptions(offset: InputPosition,
                         updateStrategy: CypherUpdateStrategy,
                         expressionEngine: CypherExpressionEngineOption,
                         operatorEngine: CypherOperatorEngineOption,
+                        interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
                         debugOptions: Set[String],
                         recompilationLimitReached: Boolean = false,
                         materializedEntitiesMode: Boolean = false) {
@@ -125,6 +126,10 @@ case class QueryOptions(offset: InputPosition,
       case CypherOperatorEngineOption.default => ""
       case _ => s"operatorEngine=${operatorEngine.name}"
     },
+    interpretedPipesFallbackInfo = interpretedPipesFallback match {
+      case CypherInterpretedPipesFallbackOption.default => ""
+      case _ => s"interpretedPipesFallback=${interpretedPipesFallback.name}"
+    },
     debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
   )
 
@@ -137,6 +142,7 @@ object QueryOptions {
                       updateStrategyInfo: String,
                       expressionEngineInfo: String,
                       operatorEngineInfo: String,
+                      interpretedPipesFallbackInfo: String,
                       debugFlags: String)
 
   val default: QueryOptions = QueryOptions(InputPosition.NONE,
@@ -148,5 +154,6 @@ object QueryOptions {
     CypherUpdateStrategy.default,
     CypherExpressionEngineOption.default,
     CypherOperatorEngineOption.default,
+    CypherInterpretedPipesFallbackOption.default,
     Set())
 }

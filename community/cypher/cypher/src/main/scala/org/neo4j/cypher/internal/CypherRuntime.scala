@@ -23,7 +23,6 @@ import java.io.File
 import java.time.Clock
 
 import org.neo4j.cypher.{CypherInterpretedPipesFallbackOption, CypherOperatorEngineOption, CypherRuntimeOption}
-import org.neo4j.configuration.GraphDatabaseSettings.CypherMorselUseInterpretedPipes
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -108,7 +107,8 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
              debugOptions: Set[String],
              compileExpressions: Boolean,
              materializedEntitiesMode: Boolean,
-             operatorEngine: CypherOperatorEngineOption
+             operatorEngine: CypherOperatorEngineOption,
+             interpretedPipesFallback: CypherInterpretedPipesFallbackOption
             ): CONTEXT
 
   /**
@@ -193,7 +193,6 @@ case class CypherRuntimeConfiguration(workers: Int,
                                       morselSizeBig: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
                                       lenientCreateRelationship: Boolean,
-                                      interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
                                       memoryTrackingController: MemoryTrackingController) {
 
   Preconditions.checkArgument(morselSizeSmall <= morselSizeBig, s"morselSizeSmall (got $morselSizeSmall) must be <= morselSizeBig (got $morselSizeBig)")

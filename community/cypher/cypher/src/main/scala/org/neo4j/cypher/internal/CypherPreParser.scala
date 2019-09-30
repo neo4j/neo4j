@@ -42,7 +42,7 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   def Cypher: Rule1[ConfigurationOptions] = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption | RuntimeOption | ExpressionEngineOption | OperatorEngine | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
+      zeroOrMore(PlannerOption | RuntimeOption | ExpressionEngineOption | OperatorEngine | InterpretedPipesFallback | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
@@ -80,6 +80,12 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   def OperatorEngine: Rule1[OperatorEnginePreParserOption] = rule("operator engine mode options") (
     option("operatorEngine", "compiled") ~ push(CompiledOperatorEngineOption)
     | option("operatorEngine", "interpreted") ~ push(InterpretedOperatorEngineOption)
+  )
+
+  def InterpretedPipesFallback: Rule1[InterpretedPipesFallbackPreParserOption] = rule("interpreted pipes fallback options") (
+    option("interpretedPipesFallback", "disabled") ~ push(DisabledInterpretedPipesFallbackOption)
+    | option("interpretedPipesFallback", "default") ~ push(DefaultInterpretedPipesFallbackOption)
+    | option("interpretedPipesFallback", "all") ~ push(AllInterpretedPipesFallbackOption)
   )
 
   def Digits: Rule0 = oneOrMore("0" - "9")

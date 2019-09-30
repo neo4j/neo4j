@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.Collections
 
-import org.neo4j.cypher.CypherOperatorEngineOption
+import org.neo4j.cypher.{CypherInterpretedPipesFallbackOption, CypherOperatorEngineOption}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, MasterCompiler, RuntimeContext}
@@ -221,7 +221,9 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
           Set.empty,
           compileExpressions = false,
           materializedEntitiesMode = true,
-          operatorEngine = CypherOperatorEngineOption.default)
+          operatorEngine = CypherOperatorEngineOption.default,
+          interpretedPipesFallback = CypherInterpretedPipesFallbackOption.default
+        )
       }
     }
   }

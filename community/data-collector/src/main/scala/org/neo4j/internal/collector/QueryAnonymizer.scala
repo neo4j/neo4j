@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Pre
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.anonymizeQuery
-import org.neo4j.cypher.{CypherExpressionEngineOption, CypherOperatorEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
+import org.neo4j.cypher.{CypherExpressionEngineOption, CypherInterpretedPipesFallbackOption, CypherOperatorEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.MapValue
@@ -49,6 +49,7 @@ object IdAnonymizer {
     CypherRuntimeOption.default,
     CypherExpressionEngineOption.default,
     CypherOperatorEngineOption.default,
+    CypherInterpretedPipesFallbackOption.default,
     0)
 }
 

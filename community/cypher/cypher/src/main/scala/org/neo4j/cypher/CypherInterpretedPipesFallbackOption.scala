@@ -23,8 +23,8 @@ sealed abstract class CypherInterpretedPipesFallbackOption(mode: String) extends
 
 case object CypherInterpretedPipesFallbackOption extends CypherOptionCompanion[CypherInterpretedPipesFallbackOption] {
   case object disabled extends CypherInterpretedPipesFallbackOption("disabled")
-  case object whitelistedPlansOnly extends CypherInterpretedPipesFallbackOption("whitelisted_plans_only")
-  case object allPossiblePlans extends CypherInterpretedPipesFallbackOption("all_possible_plans")
+  case object whitelistedPlansOnly extends CypherInterpretedPipesFallbackOption("default")
+  case object allPossiblePlans extends CypherInterpretedPipesFallbackOption("all")
 
   val all: Set[CypherInterpretedPipesFallbackOption] = Set(disabled, whitelistedPlansOnly, allPossiblePlans)
   override val default: CypherInterpretedPipesFallbackOption = whitelistedPlansOnly

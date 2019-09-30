@@ -50,6 +50,7 @@ class PreParser(configuredVersion: CypherVersion,
                 configuredRuntime: CypherRuntimeOption,
                 configuredExpressionEngine: CypherExpressionEngineOption,
                 configuredOperatorEngine: CypherOperatorEngineOption,
+                configuredInterpretedPipesFallback: CypherInterpretedPipesFallbackOption,
                 planCacheSize: Int) {
 
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](planCacheSize)
@@ -89,7 +90,8 @@ class PreParser(configuredVersion: CypherVersion,
       configuredPlanner,
       configuredRuntime,
       configuredExpressionEngine,
-      configuredOperatorEngine)
+      configuredOperatorEngine,
+      configuredInterpretedPipesFallback)
 
     PreParsedQuery(preParsedStatement.statement, queryText, options)
   }
@@ -111,6 +113,18 @@ object PreParser {
       (CypherOperatorEngineOption.compiled, CypherRuntimeOption.compiled),
       (CypherOperatorEngineOption.compiled, CypherRuntimeOption.slotted),
       (CypherOperatorEngineOption.compiled, CypherRuntimeOption.interpreted))
+  private final val ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS: Set[(CypherInterpretedPipesFallbackOption, CypherRuntimeOption)] =
+    Set(
+      (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.compiled),
+      (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.slotted),
+      (CypherInterpretedPipesFallbackOption.disabled, CypherRuntimeOption.interpreted),
+      (CypherInterpretedPipesFallbackOption.whitelistedPlansOnly, CypherRuntimeOption.compiled),
+      (CypherInterpretedPipesFallbackOption.whitelistedPlansOnly, CypherRuntimeOption.slotted),
+      (CypherInterpretedPipesFallbackOption.whitelistedPlansOnly, CypherRuntimeOption.interpreted),
+      (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.compiled),
+      (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.slotted),
+      (CypherInterpretedPipesFallbackOption.allPossiblePlans, CypherRuntimeOption.interpreted)
+    )
 
 
   private class PPOption[T](val default: T) {
@@ -134,13 +148,15 @@ object PreParser {
                    configuredPlanner: CypherPlannerOption,
                    configuredRuntime: CypherRuntimeOption,
                    configuredExpressionEngine: CypherExpressionEngineOption,
-                   configuredOperatorEngine: CypherOperatorEngineOption): QueryOptions = {
+                   configuredOperatorEngine: CypherOperatorEngineOption,
+                   configuredInterpretedPipesFallback: CypherInterpretedPipesFallbackOption): QueryOptions = {
     val executionMode: PPOption[CypherExecutionMode] = new PPOption(CypherExecutionMode.default)
     val version: PPOption[CypherVersion] = new PPOption(configuredVersion)
     val planner: PPOption[CypherPlannerOption] = new PPOption(configuredPlanner)
     val runtime: PPOption[CypherRuntimeOption] = new PPOption(configuredRuntime)
     val expressionEngine: PPOption[CypherExpressionEngineOption] = new PPOption(configuredExpressionEngine)
     val operatorEngine: PPOption[CypherOperatorEngineOption] = new PPOption(configuredOperatorEngine)
+    val interpretedPipesFallback: PPOption[CypherInterpretedPipesFallbackOption] = new PPOption(configuredInterpretedPipesFallback)
     val updateStrategy: PPOption[CypherUpdateStrategy] = new PPOption(CypherUpdateStrategy.default)
     var debugOptions: Set[String] = Set()
 
@@ -165,6 +181,8 @@ object PreParser {
             expressionEngine.selectOrThrow(CypherExpressionEngineOption(engine.name), "Can't specify multiple conflicting expression engines")
           case o: OperatorEnginePreParserOption =>
             operatorEngine.selectOrThrow(CypherOperatorEngineOption(o.name), "Can't specify multiple conflicting operator execution modes")
+          case i: InterpretedPipesFallbackPreParserOption =>
+            interpretedPipesFallback.selectOrThrow(CypherInterpretedPipesFallbackOption(i.name), "Can't specify multiple conflicting interpreted pipes fallback modes")
 
           case ConfigurationOptions(versionOpt, innerOptions) =>
             for (v <- versionOpt)
@@ -189,6 +207,10 @@ object PreParser {
       throw new InvalidPreparserOption(s"Cannot combine OPERATOR ENGINE '${operatorEngine.pick.name}' with RUNTIME '${runtime.pick.name}'")
     }
 
+    if (runtime.isSelected && interpretedPipesFallback.isSelected && ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS(interpretedPipesFallback.pick, runtime.pick)) {
+      throw new InvalidPreparserOption(s"Cannot combine INTERPRETED PIPES FALLBACK '${interpretedPipesFallback.pick.name}' with RUNTIME '${runtime.pick.name}'")
+    }
+
     QueryOptions(offset,
       isPeriodicCommit,
       version.pick,
@@ -198,6 +220,7 @@ object PreParser {
       updateStrategy.pick,
       expressionEngine.pick,
       operatorEngine.pick,
+      interpretedPipesFallback.pick,
       debugOptions)
   }
 }
