@@ -330,12 +330,11 @@ class RecoveryIT
     @Test
     void startDatabaseWithRemovedSingleTransactionLogFile() throws Exception
     {
-        GraphDatabaseService database = createDatabase();
-        GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) database;
-        PageCache pageCache = getDatabasePageCache( databaseAPI );
+        GraphDatabaseAPI database = createDatabase();
+        PageCache pageCache = getDatabasePageCache( database );
         generateSomeData( database );
 
-        assertEquals( -1, getRecord( pageCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ) );
+        assertEquals( -1, getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ) );
 
         managementService.shutdown();
 
@@ -346,7 +345,7 @@ class RecoveryIT
         // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
         assertEquals( 2, countCheckPointsInTransactionLogs() );
 
-        verifyRecoveryTimestampPresent( databaseAPI );
+        verifyRecoveryTimestampPresent( database );
     }
 
     @Test

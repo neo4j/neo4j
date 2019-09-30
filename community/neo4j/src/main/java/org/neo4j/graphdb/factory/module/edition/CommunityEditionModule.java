@@ -32,12 +32,14 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
+import org.neo4j.dbms.DefaultDatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.dbms.procedures.StandaloneDatabaseStateProcedure;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -92,6 +94,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
 
     protected final SslPolicyLoader sslPolicyLoader;
+    protected final GlobalModule globalModule;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
 
     public CommunityEditionModule( GlobalModule globalModule )
@@ -101,6 +104,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         LogService logService = globalModule.getLogService();
         SystemNanoClock globalClock = globalModule.getGlobalClock();
         DependencyResolver externalDependencies = globalModule.getExternalDependencyResolver();
+        this.globalModule = globalModule;
 
         watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher( globalModule.getFileWatcher(), databaseLayout,
                 logService, fileWatcherFileNameFilter() );
@@ -199,7 +203,8 @@ public class CommunityEditionModule extends StandaloneEditionModule
     @Override
     public void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager ) throws KernelException
     {
-        // no additional procedures in community edition
+        globalProcedures.register( new StandaloneDatabaseStateProcedure( databaseStateService,
+                databaseManager.databaseIdRepository(), globalModule.getGlobalConfig() ) );
     }
 
     @Override

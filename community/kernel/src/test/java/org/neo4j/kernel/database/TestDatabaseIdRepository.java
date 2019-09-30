@@ -21,8 +21,12 @@ package org.neo4j.kernel.database;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -37,6 +41,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
 {
     private final String defaultDatabaseName;
+    private final Set<DatabaseId> filterSet;
 
     public TestDatabaseIdRepository()
     {
@@ -51,6 +56,7 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
     public TestDatabaseIdRepository( String defaultDbName )
     {
         super( new RandomDatabaseIdRepository() );
+        filterSet = new CopyOnWriteArraySet<>();
         this.defaultDatabaseName = defaultDbName;
     }
 
@@ -65,6 +71,38 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
         Preconditions.checkState( databaseIdOpt.isPresent(),
                 getClass().getSimpleName() + " should always produce a " + DatabaseId.class.getSimpleName() + " for any database name" );
         return databaseIdOpt.get();
+    }
+
+    /**
+     * Add a database to appear "not found" by the id repository
+     */
+    public void filter( DatabaseId databaseId )
+    {
+        filterSet.add( databaseId );
+    }
+
+    /**
+     * Remove a database from the filter set, allowing it to be found by the "always found" default implementation of TestDatabaseIdRepository
+     */
+    public void unfilter( DatabaseId databaseId )
+    {
+        filterSet.remove( databaseId );
+    }
+
+    @Override
+    public Optional<DatabaseId> getByName( NormalizedDatabaseName databaseName )
+    {
+        var id = super.getByName( databaseName );
+        var nameIsFiltered = id.map( filterSet::contains ).orElse( false );
+        return nameIsFiltered ? Optional.empty() : id;
+    }
+
+    @Override
+    public Optional<DatabaseId> getByUuid( UUID uuid )
+    {
+        var id = super.getByUuid( uuid );
+        var uuidIsFiltered = id.map( filterSet::contains ).orElse( false );
+        return uuidIsFiltered ? Optional.empty() : id;
     }
 
     /**

@@ -21,34 +21,45 @@ package org.neo4j.dbms;
 
 import java.util.Optional;
 
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.database.DatabaseId;
 
-/**
- * Database State Service for the community edition of the dbms
- */
-public final class DefaultDatabaseStateService implements DatabaseStateService
+class DefaultDatabaseState implements DatabaseState
 {
-    private final DatabaseManager<StandaloneDatabaseContext> databaseManager;
+    private final StandaloneDatabaseContext context;
 
-    public DefaultDatabaseStateService( DefaultDatabaseManager databaseManager )
+    DefaultDatabaseState( StandaloneDatabaseContext context )
     {
-        this.databaseManager = databaseManager;
+        this.context = context;
     }
 
     @Override
-    public OperatorState stateOfDatabase( DatabaseId databaseId )
+    public DatabaseId databaseId()
     {
-        return databaseManager.getDatabaseContext( databaseId )
-                .map( ctx -> new DefaultDatabaseState( ctx ).operatorState() )
-                .orElse( DefaultOperatorState.UNKNOWN );
+        return context.database().getDatabaseId();
     }
 
     @Override
-    public Optional<Throwable> causeOfFailure( DatabaseId databaseId )
+    public OperatorState operatorState()
     {
-        return databaseManager.getDatabaseContext( databaseId ).map( StandaloneDatabaseContext::failureCause );
+        return started( context );
+    }
+
+    @Override
+    public boolean hasFailed()
+    {
+        return context.isFailed();
+    }
+
+    @Override
+    public Optional<Throwable> failure()
+    {
+        return Optional.ofNullable( context.failureCause() );
+    }
+
+    private DefaultOperatorState started( StandaloneDatabaseContext databaseContext )
+    {
+
+        return databaseContext.database().isStarted() ? DefaultOperatorState.STARTED : DefaultOperatorState.STOPPED;
     }
 }

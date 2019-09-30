@@ -24,7 +24,7 @@ import java.util.Optional;
 import org.neo4j.kernel.database.DatabaseId;
 
 /**
- * Simple api for retrieving a human readable satus for a given database, by id.
+ * Simple api for retrieving a human readable state for a given database, by id.
  *
  * Also provides the ability to check whether a database is in a failed state.
  * A failed database has usually failed to undergo some state transition (i.e. START -> STOP)
@@ -32,16 +32,16 @@ import org.neo4j.kernel.database.DatabaseId;
 public interface DatabaseStateService
 {
     /**
-     * Note that if a database with the given {@link DatabaseId} does not exist, the state
+     * Note that if a database with the given name does not exist, the state
      * "UNKNOWN" will be returned.
      *
      * @param databaseId the database whose state to return
-     * @return string state of database with databaseId
+     * @return state of database with name
      */
-    String stateOfDatabase( DatabaseId databaseId );
+    OperatorState stateOfDatabase( DatabaseId databaseId );
 
     /**
-     * Note that if a database with the given {@link DatabaseId} does not exist, {@code Optional.empty()}
+     * Note that if a database with the given name does not exist, {@code Optional.empty()}
      * will be returned.
      *
      * @param databaseId the database to check for failure

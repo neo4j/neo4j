@@ -19,36 +19,38 @@
  */
 package org.neo4j.dbms;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.DefaultDatabaseManager;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.database.DatabaseId;
 
-/**
- * Database State Service for the community edition of the dbms
- */
-public final class DefaultDatabaseStateService implements DatabaseStateService
-{
-    private final DatabaseManager<StandaloneDatabaseContext> databaseManager;
+import static org.neo4j.dbms.DefaultOperatorState.UNKNOWN;
 
-    public DefaultDatabaseStateService( DefaultDatabaseManager databaseManager )
+public class StubDatabaseStateService implements DatabaseStateService
+{
+    private final Map<DatabaseId,DatabaseState> databaseStates;
+
+    public StubDatabaseStateService()
     {
-        this.databaseManager = databaseManager;
+        this.databaseStates = Collections.emptyMap();
+    }
+
+    public StubDatabaseStateService( Map<DatabaseId,DatabaseState> databaseStates )
+    {
+        this.databaseStates = databaseStates;
     }
 
     @Override
     public OperatorState stateOfDatabase( DatabaseId databaseId )
     {
-        return databaseManager.getDatabaseContext( databaseId )
-                .map( ctx -> new DefaultDatabaseState( ctx ).operatorState() )
-                .orElse( DefaultOperatorState.UNKNOWN );
+        var state = databaseStates.get( databaseId  );
+        return state == null ? UNKNOWN : state.operatorState();
     }
 
     @Override
     public Optional<Throwable> causeOfFailure( DatabaseId databaseId )
     {
-        return databaseManager.getDatabaseContext( databaseId ).map( StandaloneDatabaseContext::failureCause );
+        return Optional.ofNullable( databaseStates.get( databaseId ) ).flatMap( DatabaseState::failure );
     }
 }

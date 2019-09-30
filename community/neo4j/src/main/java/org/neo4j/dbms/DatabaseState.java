@@ -17,19 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.api;
+package org.neo4j.dbms;
 
-import org.neo4j.annotations.api.PublicApi;
+import java.util.Optional;
+
+import org.neo4j.kernel.database.DatabaseId;
 
 /**
- * A {@link DatabaseManagementService} tried to create a Database but the total limit of databases is already reached.
+ * Instances of this class record the current {@link OperatorState} of a database with the given {@link DatabaseId}
+ *
  */
-@PublicApi
-public class DatabaseLimitReachedException extends DatabaseManagementException
+public interface DatabaseState
 {
-    public DatabaseLimitReachedException( String startOfErrorMessage )
-    {
-        super( startOfErrorMessage + " The total limit of databases is already reached. " +
-                "To create more you need to either drop databases or change the limit via the config setting 'dbms.max_databases'" );
-    }
+    DatabaseId databaseId();
+
+    OperatorState operatorState();
+
+    boolean hasFailed();
+
+    Optional<Throwable> failure();
 }

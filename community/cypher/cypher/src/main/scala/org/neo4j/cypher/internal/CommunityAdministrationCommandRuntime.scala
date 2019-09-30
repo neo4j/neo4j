@@ -207,18 +207,36 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // SHOW DATABASES
     case ShowDatabases() => (_, _, _) =>
-      SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine,
-        "MATCH (d:Database) RETURN d.name as name, d.status as status, d.default as default", VirtualValues.EMPTY_MAP)
+      val query =
+        """
+          |MATCH (d: Database)
+          |CALL dbms.database.state(d.uuid) yield status, error, address, role
+          |WITH d, status as currentStatus, error, address, role
+          |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error, d.default as isDefault
+        """.stripMargin
+      SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine, query, VirtualValues.EMPTY_MAP)
 
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _, _) =>
-      SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine,
-        "MATCH (d:Database {default: true}) RETURN d.name as name, d.status as status", VirtualValues.EMPTY_MAP)
+      val query =
+        """
+          |MATCH (d: Database {default: true})
+          |CALL dbms.database.state(d.uuid) yield status, error, address, role
+          |WITH d, status as currentStatus, error, address, role
+          |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error
+        """.stripMargin
+      SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine, query, VirtualValues.EMPTY_MAP)
 
     // SHOW DATABASE foo
     case ShowDatabase(normalizedName) => (_, _, _) =>
-      SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine,
-        "MATCH (d:Database {name: $name}) RETURN d.name as name, d.status as status, d.default as default",
+      val query =
+        """
+          |MATCH (d: Database {name: $name})
+          |CALL dbms.database.state(d.uuid) yield status, error, address, role
+          |WITH d, status as currentStatus, error, address, role
+          |RETURN d.name as name, address, role, d.status as requestedStatus, currentStatus, error, d.default as isDefault
+        """.stripMargin
+      SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine, query,
         VirtualValues.map(Array("name"), Array(Values.stringValue(normalizedName.name))))
 
     case DoNothingIfNotExists(source, label, name) => (context, parameterMapping, securityContext) =>
