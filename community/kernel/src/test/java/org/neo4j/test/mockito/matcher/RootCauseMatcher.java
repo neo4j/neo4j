@@ -20,9 +20,10 @@
 package org.neo4j.test.mockito.matcher;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
+
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 
 public class RootCauseMatcher<T> extends TypeSafeMatcher<Throwable>
 {
@@ -44,7 +45,7 @@ public class RootCauseMatcher<T> extends TypeSafeMatcher<Throwable>
     @Override
     protected boolean matchesSafely( Throwable item )
     {
-        cause = ExceptionUtils.getRootCause( item );
+        cause = getRootCause( item );
         return rootCause.isInstance( cause ) && cause.getMessage().startsWith( message );
     }
 

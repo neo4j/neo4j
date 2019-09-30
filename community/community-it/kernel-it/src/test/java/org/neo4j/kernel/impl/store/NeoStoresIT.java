@@ -30,7 +30,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
@@ -39,6 +38,7 @@ import org.neo4j.test.extension.Inject;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 
 @DbmsExtension( configurationCallback = "configure" )
 class NeoStoresIT
@@ -148,7 +148,7 @@ class NeoStoresIT
             }
             catch ( NotFoundException e )
             {
-                if ( Exceptions.contains( e, InvalidRecordException.class ) )
+                if ( indexOfThrowable( e, InvalidRecordException.class ) != -1 )
                 {
                     throw e;
                 }
@@ -210,7 +210,7 @@ class NeoStoresIT
             }
             catch ( NotFoundException e )
             {
-                if ( Exceptions.contains( e, InvalidRecordException.class ) )
+                if ( indexOfThrowable( e, InvalidRecordException.class ) != -1 )
                 {
                     throw e;
                 }

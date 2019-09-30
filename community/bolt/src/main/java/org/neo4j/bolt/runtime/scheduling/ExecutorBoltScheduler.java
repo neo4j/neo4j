@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.runtime.scheduling;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
-
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -28,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
-
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Job;
@@ -41,6 +38,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
 
 public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltScheduler
 {
@@ -223,7 +221,7 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     {
         try
         {
-            if ( error != null && ExceptionUtils.hasCause( error, RejectedExecutionException.class ) )
+            if ( error != null && hasCause( error, RejectedExecutionException.class ) )
             {
                 connection.handleSchedulingError( error );
                 return;

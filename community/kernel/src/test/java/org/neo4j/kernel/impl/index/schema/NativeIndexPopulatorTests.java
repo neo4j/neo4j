@@ -35,7 +35,6 @@ import java.util.Random;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.StoreChannel;
@@ -47,6 +46,7 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -362,7 +362,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
 
         // then
         var e = assertThrows( RuntimeException.class, () -> populator.close( true ) );
-        assertTrue( Exceptions.contains( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
+        assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
         populator.close( false );
     }
 
@@ -421,7 +421,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
 
         // when
         var e = assertThrows( RuntimeException.class, () -> populator.close( true ) );
-        assertTrue( Exceptions.contains( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
+        assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
     }
 
     @Test
@@ -450,7 +450,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
 
         // then
         var e = assertThrows( RuntimeException.class, () -> populator.close( true ) );
-        assertTrue( Exceptions.contains( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
+        assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
     }
 
     @Test
@@ -464,7 +464,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
 
         // then
         var e = assertThrows( RuntimeException.class, () -> populator.close( false ) );
-        assertTrue( Exceptions.contains( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
+        assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
     }
 
     private int interleaveLargeAmountOfUpdates( Random updaterRandom,

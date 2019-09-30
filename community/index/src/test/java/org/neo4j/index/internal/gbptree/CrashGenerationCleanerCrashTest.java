@@ -27,12 +27,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPagedFile;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,7 +53,7 @@ class CrashGenerationCleanerCrashTest
         try
         {
             Throwable exception = assertThrows( Throwable.class, () -> cleaner.clean( executorService ) );
-            Throwable rootCause = Exceptions.rootCause( exception );
+            Throwable rootCause = getRootCause( exception );
             assertTrue( rootCause instanceof IOException );
             assertEquals( exceptionMessage, rootCause.getMessage() );
         }

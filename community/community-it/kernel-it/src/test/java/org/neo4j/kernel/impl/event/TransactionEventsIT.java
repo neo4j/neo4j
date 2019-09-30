@@ -44,7 +44,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -59,6 +58,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.util.concurrent.BinaryLatch;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
@@ -155,7 +155,7 @@ class TransactionEventsIT
     void transactionIdNotAccessibleBeforeCommit()
     {
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( TransactionData::getTransactionId ) );
-        Throwable rootCause = Exceptions.rootCause( assertThrows( RuntimeException.class, this::runTransaction ) );
+        Throwable rootCause = getRootCause( assertThrows( RuntimeException.class, this::runTransaction ) );
         assertTrue( rootCause instanceof IllegalStateException );
         assertEquals( "Transaction id is not assigned yet. It will be assigned during transaction commit.", rootCause.getMessage() );
     }
@@ -164,7 +164,7 @@ class TransactionEventsIT
     void commitTimeNotAccessibleBeforeCommit()
     {
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( TransactionData::getCommitTime ) );
-        Throwable rootCause = Exceptions.rootCause( assertThrows( RuntimeException.class, this::runTransaction ) );
+        Throwable rootCause = getRootCause( assertThrows( RuntimeException.class, this::runTransaction ) );
         assertTrue( rootCause instanceof IllegalStateException );
         assertEquals( "Transaction commit time is not assigned yet. It will be assigned during transaction commit.", rootCause.getMessage() );
     }

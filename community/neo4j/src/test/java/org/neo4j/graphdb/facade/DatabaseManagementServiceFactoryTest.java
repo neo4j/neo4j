@@ -37,6 +37,7 @@ import org.neo4j.test.extension.SkipThreadLeakageGuard;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,7 +48,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
-import static org.neo4j.internal.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
 @SkipThreadLeakageGuard
@@ -74,7 +74,7 @@ class DatabaseManagementServiceFactoryTest
         DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( config, startupError, null );
         RuntimeException startException =
                 assertThrows( RuntimeException.class, () -> factory.build( config, deps ) );
-        assertEquals( startupError, rootCause( startException ) );
+        assertEquals( startupError, getRootCause( startException ) );
     }
 
     @Test

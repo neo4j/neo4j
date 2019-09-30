@@ -19,8 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
-
 import java.util.Iterator;
 import java.util.stream.Stream;
 
@@ -33,6 +31,8 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
+
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 
 /**
  * Base iterator class used extended by generated code to map from procedure streams
@@ -134,7 +134,7 @@ public abstract class BaseStreamIterator implements RawIterator<AnyValue[],Proce
         }
         else
         {
-            Throwable cause = ExceptionUtils.getRootCause( throwable );
+            Throwable cause = getRootCause( throwable );
             return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                     "Failed to invoke procedure `%s`: %s", signature.name(),
                     "Caused by: " + (cause != null ? cause : throwable) );

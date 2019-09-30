@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import org.neo4j.function.Predicates;
+import static org.neo4j.function.Predicates.instanceOfAny;
 
 public class Exceptions
 {
@@ -116,55 +116,6 @@ public class Exceptions
     }
 
     /**
-     * Peels off layers of causes. For example:
-     *
-     * MyFarOuterException
-     *   cause: MyOuterException
-     *     cause: MyInnerException
-     *       cause: MyException
-     * and a toPeel predicate returning true for MyFarOuterException and MyOuterException
-     * will return MyInnerException. If the predicate peels all exceptions null is returned.
-     *
-     * @param exception the outer exception to peel to get to an delegate cause.
-     * @param toPeel {@link Predicate} for deciding what to peel. {@code true} means
-     * to peel (i.e. remove), whereas the first {@code false} means stop and return.
-     * @return the delegate cause of an exception, dictated by the predicate.
-     */
-    public static Throwable peel( Throwable exception, Predicate<Throwable> toPeel )
-    {
-        while ( exception != null )
-        {
-            if ( !toPeel.test( exception ) )
-            {
-                break;
-            }
-            exception = exception.getCause();
-        }
-        return exception;
-    }
-
-    /**
-     * Returns the root cause of an exception.
-     *
-     * @param caughtException exception to find the root cause of.
-     * @return the root cause.
-     * @throws IllegalArgumentException if the provided exception is null.
-     */
-    public static Throwable rootCause( Throwable caughtException )
-    {
-        if ( null == caughtException )
-        {
-            throw new IllegalArgumentException( "Cannot obtain rootCause from (null)" );
-        }
-        Throwable root  = caughtException;
-        while ( root.getCause() != null )
-        {
-            root = root.getCause();
-        }
-        return root;
-    }
-
-    /**
      * Searches the entire exception hierarchy of causes and suppressed exceptions against the given predicate.
      *
      * @param e exception to start searching from.
@@ -249,18 +200,10 @@ public class Exceptions
         return builder.toString();
     }
 
-    @SuppressWarnings( "rawtypes" )
-    public static boolean contains( final Throwable cause, final String containsMessage, final Class... anyOfTheseClasses )
+    public static boolean contains( final Throwable cause, final String containsMessage, final Class<?>... anyOfTheseClasses )
     {
-        final Predicate<Throwable> anyOfClasses = Predicates.instanceOfAny( anyOfTheseClasses );
-        return contains( cause, item -> item.getMessage() != null && item.getMessage().contains( containsMessage ) &&
-                                anyOfClasses.test( item ) );
-    }
-
-    @SuppressWarnings( "rawtypes" )
-    public static boolean contains( Throwable cause, Class... anyOfTheseClasses )
-    {
-        return contains( cause, org.neo4j.function.Predicates.instanceOfAny( anyOfTheseClasses ) );
+        final Predicate<Throwable> anyOfClasses = instanceOfAny( anyOfTheseClasses );
+        return contains( cause, item -> item.getMessage() != null && item.getMessage().contains( containsMessage ) && anyOfClasses.test( item ) );
     }
 
     public static boolean contains( Throwable cause, Predicate<Throwable> toLookFor )
@@ -290,7 +233,7 @@ public class Exceptions
         }
     }
 
-    public static void setMessage( Throwable cause, String message )
+    public static <T extends Throwable> T withMessage( T cause, String message )
     {
         try
         {
@@ -300,11 +243,6 @@ public class Exceptions
         {
             throw new RuntimeException( e );
         }
-    }
-
-    public static <T extends Throwable> T withMessage( T cause, String message )
-    {
-        setMessage( cause, message );
         return cause;
     }
 

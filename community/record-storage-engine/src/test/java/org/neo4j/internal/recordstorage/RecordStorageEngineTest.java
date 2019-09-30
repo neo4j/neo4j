@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -60,6 +59,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -120,7 +120,7 @@ class RecordStorageEngineTest
         CommandsToApply commandsToApply = mock( CommandsToApply.class );
 
         var exception = assertThrows( Exception.class, () -> engine.apply( commandsToApply, TransactionApplicationMode.INTERNAL ) );
-        assertSame( failure, Exceptions.rootCause( exception ) );
+        assertSame( failure, getRootCause( exception ) );
 
         verify( databaseHealth ).panic( any( Throwable.class ) );
     }
@@ -242,7 +242,7 @@ class RecordStorageEngineTest
         }
         catch ( Exception e )
         {
-            assertSame( applicationError, Exceptions.rootCause( e ) );
+            assertSame( applicationError, getRootCause( e ) );
         }
         return applicationError;
     }

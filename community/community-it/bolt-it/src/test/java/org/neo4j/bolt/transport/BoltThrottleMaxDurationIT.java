@@ -47,7 +47,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -56,6 +55,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -161,7 +161,7 @@ public class BoltThrottleMaxDurationIT
         }
         catch ( ExecutionException e )
         {
-            assertThat( Exceptions.rootCause( e ), instanceOf( SocketException.class ) );
+            assertThat( getRootCause( e ), instanceOf( SocketException.class ) );
         }
 
         logProvider.assertAtLeastOnce( inLog( Matchers.containsString( BoltConnection.class.getPackage().getName() ) ).error(

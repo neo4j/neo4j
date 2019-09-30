@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.BatchingIdSequence;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -51,6 +50,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -178,8 +178,7 @@ public abstract class AbstractRecordFormatTest
                 }
                 catch ( Throwable t )
                 {
-                    Exceptions.setMessage( t, t.getMessage() + " : written:" + written + ", read:" + read +
-                            ", seed:" + random.seed() + ", iteration:" + i );
+                    withMessage( t, t.getMessage() + " : written:" + written + ", read:" + read + ", seed:" + random.seed() + ", iteration:" + i );
                     throw t;
                 }
             }

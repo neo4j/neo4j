@@ -21,8 +21,6 @@ package org.neo4j.internal.helpers;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.function.Predicates;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,53 +28,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TestExceptions
 {
     @Test
-    void canPeelExceptions()
-    {
-        // given
-        Throwable expected;
-        Throwable exception =
-                new LevelOneException( "",
-                        new LevelTwoException( "",
-                                new LevelThreeException( "",
-                                        expected = new LevelThreeException( "include",
-                                                new LevelFourException( "" ) ) ) ) );
-
-        // when
-        Throwable peeled = Exceptions.peel( exception,
-                item -> !(item instanceof LevelThreeException) || !item.getMessage().contains( "include" ) );
-
-        // then
-        assertEquals( expected, peeled );
-    }
-
-    @Test
-    void canPeelUsingConveniencePredicate()
-    {
-        // given
-        Throwable expected;
-        Throwable exception =
-                new ARuntimeException(
-                        new AnotherRuntimeException(
-                                new LevelFourException( "",
-                                        expected = new LevelThreeException( "",
-                                                new LevelFourException( "" ) ) ) ) );
-
-        // when
-        Throwable peeled = Exceptions.peel( exception,
-                Predicates.instanceOfAny( RuntimeException.class, LevelFourException.class ) );
-
-        // then
-        assertEquals( expected, peeled );
-    }
-
-    @Test
     void shouldDetectContainsOneOfSome()
     {
         // GIVEN
         Throwable cause = new ARuntimeException( new AnotherRuntimeException( new NullPointerException( "Some words" ) ) );
 
         // THEN
-        assertTrue( Exceptions.contains( cause, NullPointerException.class ) );
         assertTrue( Exceptions.contains( cause, "words", NullPointerException.class ) );
         assertFalse( Exceptions.contains( cause, "not", NullPointerException.class ) );
     }
@@ -101,50 +58,6 @@ class TestExceptions
         LevelOneException( String message )
         {
             super( message );
-        }
-
-        LevelOneException( String message, Throwable cause )
-        {
-            super( message, cause );
-        }
-    }
-
-    private static class LevelTwoException extends LevelOneException
-    {
-        LevelTwoException( String message )
-        {
-            super( message );
-        }
-
-        LevelTwoException( String message, Throwable cause )
-        {
-            super( message, cause );
-        }
-    }
-
-    private static class LevelThreeException extends LevelTwoException
-    {
-        LevelThreeException( String message )
-        {
-            super( message );
-        }
-
-        LevelThreeException( String message, Throwable cause )
-        {
-            super( message, cause );
-        }
-    }
-
-    private static class LevelFourException extends LevelThreeException
-    {
-        LevelFourException( String message )
-        {
-            super( message );
-        }
-
-        LevelFourException( String message, Throwable cause )
-        {
-            super( message, cause );
         }
     }
 

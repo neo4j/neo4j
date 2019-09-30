@@ -67,7 +67,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
@@ -90,6 +89,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
@@ -2619,7 +2619,7 @@ public class FulltextProceduresTest
                 tx.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id", "id" ) ) );
             }
         } );
-        final Throwable cause = Exceptions.rootCause( e );
+        final Throwable cause = getRootCause( e );
         assertThat( cause, instanceOf( RepeatedPropertyInSchemaException.class ) );
     }
 
@@ -2634,7 +2634,7 @@ public class FulltextProceduresTest
                 tx.execute( format( NODE_CREATE, "myindex", array( "Label", "Label" ), array( "id" ) ) );
             }
         } );
-        final Throwable cause = Exceptions.rootCause( e );
+        final Throwable cause = getRootCause( e );
         assertThat( cause, instanceOf( RepeatedLabelInSchemaException.class ) );
     }
 
@@ -2649,7 +2649,7 @@ public class FulltextProceduresTest
                 tx.execute( format( RELATIONSHIP_CREATE, "myindex", array( "RelType", "RelType" ), array( "id" ) ) );
             }
         } );
-        final Throwable cause = Exceptions.rootCause( e );
+        final Throwable cause = getRootCause( e );
         assertThat( cause, instanceOf( RepeatedRelationshipTypeInSchemaException.class ) );
     }
 

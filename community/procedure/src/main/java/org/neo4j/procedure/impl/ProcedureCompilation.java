@@ -19,8 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -91,6 +89,7 @@ import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.neo4j.codegen.CodeGenerator.generateCode;
 import static org.neo4j.codegen.Expression.arrayLoad;
 import static org.neo4j.codegen.Expression.box;
@@ -535,7 +534,7 @@ public final class ProcedureCompilation
         }
         else
         {
-            Throwable cause = ExceptionUtils.getRootCause( throwable );
+            Throwable cause = getRootCause( throwable );
             return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                     "Failed to invoke %s: %s", typeAndName,
                     "Caused by: " + (cause != null ? cause : throwable) );

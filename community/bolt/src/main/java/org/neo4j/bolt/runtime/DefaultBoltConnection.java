@@ -20,7 +20,6 @@
 package org.neo4j.bolt.runtime;
 
 import io.netty.channel.Channel;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.net.SocketAddress;
 import java.time.Clock;
@@ -32,16 +31,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltServer;
+import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionLifetimeListener;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
 
 public class DefaultBoltConnection implements BoltConnection
 {
@@ -303,7 +303,7 @@ public class DefaultBoltConnection implements BoltConnection
         {
             String message;
             Neo4jError error;
-            if ( ExceptionUtils.hasCause( t, RejectedExecutionException.class ) )
+            if ( hasCause( t, RejectedExecutionException.class ) )
             {
                 error = Neo4jError.from( Status.Request.NoThreadsAvailable, Status.Request.NoThreadsAvailable.code().description() );
                 message = String.format( "Unable to schedule bolt session '%s' for execution since there are no available threads to " +

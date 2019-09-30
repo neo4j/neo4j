@@ -36,6 +36,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -44,7 +45,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.Exceptions.rootCause;
 
 public class GraphDatabaseShutdownTest
 {
@@ -157,7 +157,7 @@ public class GraphDatabaseShutdownTest
         }
         catch ( Exception e )
         {
-            assertThat( rootCause( e ), instanceOf( TransactionTerminatedException.class ) );
+            assertThat( getRootCause( e ), instanceOf( TransactionTerminatedException.class ) );
         }
         try
         {
@@ -166,7 +166,7 @@ public class GraphDatabaseShutdownTest
         }
         catch ( Exception e )
         {
-            assertThat( rootCause( e ), instanceOf( TransactionTerminatedException.class ) );
+            assertThat( getRootCause( e ), instanceOf( TransactionTerminatedException.class ) );
         }
     }
 

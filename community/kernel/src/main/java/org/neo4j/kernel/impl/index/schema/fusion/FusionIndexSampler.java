@@ -27,6 +27,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 
+import static org.neo4j.internal.helpers.Exceptions.throwIfInstanceOf;
+import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.internal.helpers.collection.Iterables.asCollection;
 import static org.neo4j.io.IOUtils.closeAllSilently;
 
@@ -57,8 +59,9 @@ public class FusionIndexSampler implements IndexSampler
         }
         if ( exception != null )
         {
-            Exceptions.throwIfUnchecked( exception );
-            throw (IndexNotFoundKernelException)exception;
+            throwIfUnchecked( exception );
+            throwIfInstanceOf( exception, IndexNotFoundKernelException.class );
+            throw new RuntimeException( exception );
         }
         return combineSamples( samples );
     }

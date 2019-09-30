@@ -52,11 +52,11 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.internal.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgraderTest.removeCheckPointFromTxLog;
@@ -123,7 +123,7 @@ public class StoreUpgradeOnStartupTest
         {
             DatabaseStateService databaseStateService = database.getDependencyResolver().resolveDependency( DatabaseStateService.class );
             assertTrue( databaseStateService.causeOfFailure( database.databaseId() ).isPresent() );
-            assertThat( rootCause( databaseStateService.causeOfFailure( database.databaseId() ).get() ),
+            assertThat( getRootCause( databaseStateService.causeOfFailure( database.databaseId() ).get() ),
                     Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );
         }
         finally

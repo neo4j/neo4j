@@ -55,7 +55,6 @@ import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
 import org.neo4j.internal.batchimport.staging.SpectrumExecutionMonitor;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -69,6 +68,7 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
@@ -230,14 +230,14 @@ class CsvImporter implements Importer
         // This type of exception is wrapped since our input code throws InputException consistently,
         // and so IllegalMultilineFieldException comes from the csv component, which has no access to InputException
         // therefore it's wrapped.
-        else if ( Exceptions.contains( e, IllegalMultilineFieldException.class ) )
+        else if ( indexOfThrowable( e, IllegalMultilineFieldException.class ) != -1 )
         {
             printErrorMessage( "Detected field which spanned multiple lines for an import where " +
                     "--multiline-fields=false. If you know that your input data " +
                     "include fields containing new-line characters then import with this option set to " +
                     "true.", e, stackTrace, err );
         }
-        else if ( Exceptions.contains( e, InputException.class ) )
+        else if ( indexOfThrowable( e, InputException.class ) != -1 )
         {
             printErrorMessage( "Error in input data", e, stackTrace, err );
         }

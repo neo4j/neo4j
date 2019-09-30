@@ -23,18 +23,17 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.ValueType;
 
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -109,7 +108,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
             updater.close();
             populator.scanCompleted( nullInstance );
         } );
-        assertTrue( Exceptions.contains( e, IndexEntryConflictException.class ), e.getMessage() );
+        assertTrue( hasCause( e, IndexEntryConflictException.class ), e.getMessage() );
 
         populator.close( true );
     }

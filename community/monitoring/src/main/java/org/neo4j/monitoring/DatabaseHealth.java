@@ -25,11 +25,13 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
+
 public class DatabaseHealth extends LifecycleAdapter implements Health
 {
     private static final String panicMessage = "The database has encountered a critical error, " +
             "and needs to be restarted. Please see database logs for more details.";
-    private static final Class<?>[] CRITICAL_EXCEPTIONS = new Class[]{OutOfMemoryError.class};
+    private static final Class<? extends Throwable> CRITICAL_EXCEPTION = OutOfMemoryError.class;
 
     private volatile boolean healthy = true;
     private final DatabasePanicEventGenerator panicEventGenerator;
@@ -114,7 +116,7 @@ public class DatabaseHealth extends LifecycleAdapter implements Health
 
     private boolean hasCriticalFailure()
     {
-        return !isHealthy() && Exceptions.contains( causeOfPanic, CRITICAL_EXCEPTIONS );
+        return !isHealthy() && indexOfThrowable( causeOfPanic, CRITICAL_EXCEPTION ) != -1;
     }
 
     @Override

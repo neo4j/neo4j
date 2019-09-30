@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -41,6 +40,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.limited.LimitedFilesystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,7 +93,7 @@ class RunOutOfDiskSpaceIT
                 tx.commit();
             }
         } );
-        assertTrue( Exceptions.contains( exception, IOException.class ) );
+        assertTrue( indexOfThrowable( exception, IOException.class ) != -1 );
 
         limitedFs.runOutOfDiskSpace( false ); // to help shutting down the db
         managementService.shutdown();

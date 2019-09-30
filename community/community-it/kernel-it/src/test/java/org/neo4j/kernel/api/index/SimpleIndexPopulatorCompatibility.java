@@ -31,7 +31,6 @@ import java.util.StringJoiner;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -49,6 +48,7 @@ import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -412,7 +412,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 // then
                 catch ( Exception e )
                 {
-                    Throwable root = Exceptions.rootCause( e );
+                    Throwable root = getRootCause( e );
                     if ( root instanceof IndexEntryConflictException )
                     {
                         IndexEntryConflictException conflict = (IndexEntryConflictException)root;

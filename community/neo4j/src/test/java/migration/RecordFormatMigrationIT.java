@@ -41,14 +41,13 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
-import static org.neo4j.internal.helpers.Exceptions.rootCause;
 
 @TestDirectoryExtension
 class RecordFormatMigrationIT
@@ -80,7 +79,7 @@ class RecordFormatMigrationIT
         try
         {
             Throwable throwable = assertDefaultDatabaseFailed( database );
-            assertSame( UpgradeNotAllowedException.class, rootCause( throwable ).getClass() );
+            assertSame( UpgradeNotAllowedException.class, getRootCause( throwable ).getClass() );
         }
         finally
         {
@@ -106,7 +105,7 @@ class RecordFormatMigrationIT
         try
         {
             Throwable throwable = assertDefaultDatabaseFailed( database );
-            assertSame( StoreUpgrader.AttemptedDowngradeException.class, rootCause( throwable ).getClass() );
+            assertSame( StoreUpgrader.AttemptedDowngradeException.class, getRootCause( throwable ).getClass() );
         }
         finally
         {
@@ -177,7 +176,7 @@ class RecordFormatMigrationIT
         try
         {
             Throwable exception = assertDefaultDatabaseFailed( database );
-            assertSame( UpgradeNotAllowedException.class, rootCause( exception ).getClass() );
+            assertSame( UpgradeNotAllowedException.class, getRootCause( exception ).getClass() );
         }
         finally
         {
