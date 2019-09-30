@@ -90,13 +90,8 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    var gotException = false
-    try {
+    a[HintException] should be thrownBy {
       consume(runtimeResult)
-    } catch {
-      case _: HintException =>
-        gotException = true
     }
-    gotException shouldEqual true
   }
 }
