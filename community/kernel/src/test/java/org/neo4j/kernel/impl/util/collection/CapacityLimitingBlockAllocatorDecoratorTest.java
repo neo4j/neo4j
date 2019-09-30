@@ -55,14 +55,14 @@ class CapacityLimitingBlockAllocatorDecoratorTest
             blocks.add( block );
         }
 
-        assertThrows( RuntimeException.class, () -> decorator.allocate( 128, tracker ) );
+        assertThrows( MemoryAllocationLimitException.class, () -> decorator.allocate( 128, tracker ) );
 
         decorator.free( blocks.remove( 0 ), tracker );
         assertDoesNotThrow( () -> decorator.allocate( 128, tracker ) );
 
-        assertThrows( RuntimeException.class, () -> decorator.allocate( 256, tracker ) );
+        assertThrows( MemoryAllocationLimitException.class, () -> decorator.allocate( 256, tracker ) );
         decorator.free( blocks.remove( 0 ), tracker );
-        assertThrows( RuntimeException.class, () -> decorator.allocate( 256, tracker ) );
+        assertThrows( MemoryAllocationLimitException.class, () -> decorator.allocate( 256, tracker ) );
 
         decorator.free( blocks.remove( 0 ), tracker );
         assertDoesNotThrow( () -> decorator.allocate( 256, tracker ) );
