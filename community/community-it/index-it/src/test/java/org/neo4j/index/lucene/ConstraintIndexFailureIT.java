@@ -19,8 +19,8 @@
  */
 package org.neo4j.index.lucene;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
@@ -33,30 +33,34 @@ import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintExceptio
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.INITIAL_STATE;
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.INITIAL_STATE_FAILURE_MESSAGE;
 import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
-public class ConstraintIndexFailureIT
+@TestDirectoryExtension
+@ExtendWith( RandomExtension.class )
+class ConstraintIndexFailureIT
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
-
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private RandomRule random;
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
+    void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
     {
         // given a perfectly normal constraint
         File dir = directory.homeDir();
@@ -83,12 +87,7 @@ public class ConstraintIndexFailureIT
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
-            fail( "expected exception" );
-        }
-        // then
-        catch ( ConstraintViolationException e )
-        {
+            var e = assertThrows( ConstraintViolationException.class, () -> tx.createNode( label( "Label1" ) ).setProperty( "key1", "value1" ) );
             assertThat( e.getCause(), instanceOf( UnableToValidateConstraintException.class ) );
             assertThat( e.getCause().getCause().getMessage(), allOf(
                     containsString( "The index is in a failed state:" ),

@@ -19,10 +19,9 @@
  */
 package org.neo4j.schema;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Map;
@@ -45,27 +44,29 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class IndexPopulationIT
+@TestDirectoryExtension
+class IndexPopulationIT
 {
-    @ClassRule
-    public static final TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
 
-    private static final int TEST_TIMEOUT = 120_000;
     private static GraphDatabaseService database;
     private static ExecutorService executorService;
     private static AssertableLogProvider logProvider;
     private static DatabaseManagementService managementService;
 
-    @BeforeClass
-    public static void setUp()
+    @BeforeEach
+    void setUp()
     {
         logProvider = new AssertableLogProvider( true );
         managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() )
@@ -75,15 +76,15 @@ public class IndexPopulationIT
         executorService = Executors.newCachedThreadPool();
     }
 
-    @AfterClass
-    public static void tearDown()
+    @AfterEach
+    void tearDown()
     {
         executorService.shutdown();
         managementService.shutdown();
     }
 
-    @Test( timeout = TEST_TIMEOUT )
-    public void indexCreationDoNotBlockQueryExecutions() throws Exception
+    @Test
+    void indexCreationDoNotBlockQueryExecutions() throws Exception
     {
         Label nodeLabel = Label.label( "nodeLabel" );
         try ( Transaction transaction = database.beginTx() )
@@ -103,8 +104,8 @@ public class IndexPopulationIT
         }
     }
 
-    @Test( timeout = TEST_TIMEOUT )
-    public void createIndexesFromDifferentTransactionsWithoutBlocking() throws ExecutionException, InterruptedException
+    @Test
+    void createIndexesFromDifferentTransactionsWithoutBlocking() throws ExecutionException, InterruptedException
     {
         long numberOfIndexesBeforeTest = countIndexes();
         Label nodeLabel = Label.label( "nodeLabel2" );
@@ -122,8 +123,8 @@ public class IndexPopulationIT
         assertEquals( numberOfIndexesBeforeTest + 2, countIndexes() );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
-    public void indexCreationDoNotBlockWritesOnOtherLabel() throws ExecutionException, InterruptedException
+    @Test
+    void indexCreationDoNotBlockWritesOnOtherLabel() throws ExecutionException, InterruptedException
     {
         Label markerLabel = Label.label( "testLabel3" );
         Label nodesLabel = Label.label( "testLabel4" );
@@ -147,7 +148,7 @@ public class IndexPopulationIT
     }
 
     @Test
-    public void shutdownDatabaseDuringIndexPopulations()
+    void shutdownDatabaseDuringIndexPopulations()
     {
         AssertableLogProvider assertableLogProvider = new AssertableLogProvider( true );
         File storeDir = directory.directory( "shutdownDbTest" );
@@ -170,7 +171,7 @@ public class IndexPopulationIT
     }
 
     @Test
-    public void mustLogPhaseTracker()
+    void mustLogPhaseTracker()
     {
         Label nodeLabel = Label.label( "testLabel5" );
         String key = "key";
@@ -194,7 +195,7 @@ public class IndexPopulationIT
         {
             ResourceIterator<Node> nodes = tx.findNodes( nodeLabel, key, value );
             long nodeCount = Iterators.count( nodes );
-            assertEquals( "expected exactly one hit in index but was ",1, nodeCount );
+            assertEquals( 1, nodeCount, "expected exactly one hit in index but was " );
             nodes.close();
             tx.commit();
         }

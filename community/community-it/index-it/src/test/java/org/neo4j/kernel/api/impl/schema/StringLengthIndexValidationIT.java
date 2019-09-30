@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,29 +36,35 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
+@DbmsExtension( configurationCallback = "configure" )
+@ExtendWith( RandomExtension.class )
 public abstract class StringLengthIndexValidationIT
 {
     private static final String propKey = "largeString";
-    private int singleKeySizeLimit = getSingleKeySizeLimit();
-    private GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
+    private final int singleKeySizeLimit = getSingleKeySizeLimit();
+    private final GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
 
-    @Rule
-    public DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() );
+    @Inject
+    private GraphDatabaseAPI db;
 
-    @Rule
-    public RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     protected abstract int getSingleKeySizeLimit();
 
@@ -64,8 +72,14 @@ public abstract class StringLengthIndexValidationIT
 
     protected abstract String expectedPopulationFailureMessage();
 
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( default_schema_provider, schemaIndex.providerName() );
+    }
+
     @Test
-    public void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit()
+    void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit()
     {
         createIndex( propKey );
         String propValue = getString( singleKeySizeLimit );
@@ -79,7 +93,7 @@ public abstract class StringLengthIndexValidationIT
     }
 
     @Test
-    public void shouldSuccessfullyPopulateIndexWithinIndexKeySizeLimit()
+    void shouldSuccessfullyPopulateIndexWithinIndexKeySizeLimit()
     {
         String propValue = getString( singleKeySizeLimit );
         long expectedNodeId;
@@ -95,7 +109,7 @@ public abstract class StringLengthIndexValidationIT
     }
 
     @Test
-    public void txMustFailIfExceedingIndexKeySizeLimit()
+    void txMustFailIfExceedingIndexKeySizeLimit()
     {
         createIndex( propKey );
 
@@ -108,13 +122,13 @@ public abstract class StringLengthIndexValidationIT
         }
         catch ( IllegalArgumentException e )
         {
-            assertThat( e.getMessage(), Matchers.containsString(
+            assertThat( e.getMessage(), containsString(
                     "Property value is too large to index into this particular index. Please see index documentation for limitations." ) );
         }
     }
 
     @Test
-    public void indexPopulationMustFailIfExceedingIndexKeySizeLimit()
+    void indexPopulationMustFailIfExceedingIndexKeySizeLimit()
     {
         // Write
         String propValue = getString( singleKeySizeLimit + 1 );
@@ -136,7 +150,7 @@ public abstract class StringLengthIndexValidationIT
         catch ( IllegalStateException e )
         {
             GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
-            assertThat( e.getMessage(), Matchers.containsString(
+            assertThat( e.getMessage(), containsString(
                     String.format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
                                     "(Index( 1, 'Index on :LABEL_ONE (largeString)', GENERAL, :label[0](property[0]), %s )) " +
                                     "entered a FAILED state.",
@@ -149,15 +163,15 @@ public abstract class StringLengthIndexValidationIT
             Iterator<IndexDefinition> iterator = tx.schema().getIndexes( LABEL_ONE ).iterator();
             assertTrue( iterator.hasNext() );
             IndexDefinition next = iterator.next();
-            assertEquals( "state is FAILED", Schema.IndexState.FAILED, tx.schema().getIndexState( next ) );
+            assertEquals( Schema.IndexState.FAILED, tx.schema().getIndexState( next ), "state is FAILED" );
             assertThat( tx.schema().getIndexFailure( next ),
-                    Matchers.containsString( expectedPopulationFailureMessage() ) );
+            containsString( expectedPopulationFailureMessage() ) );
             tx.commit();
         }
     }
 
     @Test
-    public void shouldHandleSizesCloseToTheLimit()
+    void shouldHandleSizesCloseToTheLimit()
     {
         // given
         createIndex( propKey );
@@ -237,8 +251,8 @@ public abstract class StringLengthIndexValidationIT
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.findNode( LABEL_ONE, propKey, propValue );
-            assertNotNull( node );
-            assertEquals( "node id", expectedNodeId, node.getId() );
+            Assertions.assertNotNull( node );
+            assertEquals( expectedNodeId, node.getId(), "node id" );
             tx.commit();
         }
     }

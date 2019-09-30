@@ -19,28 +19,28 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import java.util.Map;
 
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.mockito.mock.SpatialMocks;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
@@ -53,25 +53,24 @@ import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
-public class IndexingAcceptanceTest
+@DbmsExtension
+class IndexingAcceptanceTest
 {
     private static final String LONG_STRING = "a long string that has to be stored in dynamic records";
 
-    @ClassRule
-    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
-    @Rule
-    public final TestName testName = new TestName();
+    @Inject
+    private GraphDatabaseAPI db;
 
     private Label LABEL1;
     private Label LABEL2;
     private Label LABEL3;
 
-    @Before
-    public void setupLabels()
+    @BeforeEach
+    void setupLabels( TestInfo testInfo )
     {
-        LABEL1 = Label.label( "LABEL1-" + testName.getMethodName() );
-        LABEL2 = Label.label( "LABEL2-" + testName.getMethodName() );
-        LABEL3 = Label.label( "LABEL3-" + testName.getMethodName() );
+        LABEL1 = Label.label( "LABEL1-" + testInfo.getDisplayName() );
+        LABEL2 = Label.label( "LABEL2-" + testInfo.getDisplayName() );
+        LABEL3 = Label.label( "LABEL3-" + testInfo.getDisplayName() );
     }
 
     /* This test is a bit interesting. It tests a case where we've got a property that sits in one
@@ -86,14 +85,13 @@ public class IndexingAcceptanceTest
      * the underlying add/remove vs. change internal details.
      */
     @Test
-    public void shouldInterpretPropertyAsChangedEvenIfPropertyMovesFromOneRecordToAnother()
+    void shouldInterpretPropertyAsChangedEvenIfPropertyMovesFromOneRecordToAnother()
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         long smallValue = 10L;
         long bigValue = 1L << 62;
         Node myNode;
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             myNode = tx.createNode( LABEL1 );
             myNode.setProperty( "pad0", true );
@@ -105,33 +103,30 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        Neo4jMatchers.createIndex( beansAPI, LABEL1, "key" );
+        Neo4jMatchers.createIndex( db, LABEL1, "key" );
 
         // WHEN
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             // A big long value which will occupy two property blocks
             tx.getNodeById( myNode.getId() ).setProperty( "key", bigValue );
             tx.commit();
         }
 
-        try ( Transaction transaction = beansAPI.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             // THEN
-            assertThat( findNodesByLabelAndProperty( LABEL1, "key", bigValue, beansAPI, transaction ), containsOnly( myNode ) );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "key", smallValue, beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key", bigValue, db, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key", smallValue, db, transaction ), isEmpty() );
         }
     }
 
     @Test
-    public void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction()
+    void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction()
     {
-        // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-
         // When
         long id;
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Node myNode = tx.createNode();
             id = myNode.getId();
@@ -141,9 +136,9 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        Neo4jMatchers.createIndex( beansAPI, LABEL1, "key2" );
+        Neo4jMatchers.createIndex( db, LABEL1, "key2" );
         Node myNode;
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             myNode = tx.getNodeById( id );
             myNode.addLabel( LABEL1 );
@@ -153,57 +148,54 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        try ( Transaction transaction = beansAPI.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             myNode = transaction.getNodeById( myNode.getId() );
             // Then
             assertThat( myNode, hasProperty( "key2" ).withValue( LONG_STRING ) );
             assertThat( myNode, hasProperty( "key3" ).withValue( LONG_STRING ) );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "key2", LONG_STRING, beansAPI, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key2", LONG_STRING, db, transaction ), containsOnly( myNode ) );
         }
     }
 
     @Test
-    public void searchingForNodeByPropertyShouldWorkWithoutIndex()
+    void searchingForNodeByPropertyShouldWorkWithoutIndex()
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), LABEL1 );
+        Node myNode = createNode( db, map( "name", "Hawking" ), LABEL1 );
 
         // When
-        try ( Transaction transaction = beansAPI.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), containsOnly( myNode ) );
         }
     }
 
     @Test
-    public void searchingUsesIndexWhenItExists()
+    void searchingUsesIndexWhenItExists()
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), LABEL1 );
-        Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
+        Node myNode = createNode( db, map( "name", "Hawking" ), LABEL1 );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
 
         // When
-        try ( Transaction transaction = beansAPI.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), containsOnly( myNode ) );
         }
     }
 
     @Test
-    public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime()
+    void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime()
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), LABEL1, LABEL2 );
-        Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
-        Neo4jMatchers.createIndex( beansAPI, LABEL2, "name" );
-        Neo4jMatchers.createIndex( beansAPI, LABEL3, "name" );
+        Node myNode = createNode( db, map( "name", "Hawking" ), LABEL1, LABEL2 );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        Neo4jMatchers.createIndex( db, LABEL2, "name" );
+        Neo4jMatchers.createIndex( db, LABEL3, "name" );
 
         // When
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             myNode = tx.getNodeById( myNode.getId() );
             myNode.removeLabel( LABEL1 );
@@ -212,37 +204,36 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        try ( Transaction transaction = beansAPI.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             myNode = transaction.getNodeById( myNode.getId() );
             // Then
             assertThat( myNode, hasProperty( "name" ).withValue( "Einstein" ) );
             assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
 
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", db, transaction ), isEmpty() );
 
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", db, transaction ), containsOnly( myNode ) );
 
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", db, transaction ), containsOnly( myNode ) );
             transaction.commit();
         }
     }
 
     @Test
-    public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce()
+    void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce()
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), LABEL1, LABEL2 );
-        Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
-        Neo4jMatchers.createIndex( beansAPI, LABEL2, "name" );
-        Neo4jMatchers.createIndex( beansAPI, LABEL3, "name" );
+        Node myNode = createNode( db, map( "name", "Hawking" ), LABEL1, LABEL2 );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        Neo4jMatchers.createIndex( db, LABEL2, "name" );
+        Neo4jMatchers.createIndex( db, LABEL3, "name" );
 
         // When
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             myNode = tx.getNodeById( myNode.getId() );
             myNode.addLabel( LABEL3 );
@@ -252,74 +243,69 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        try ( Transaction transaction = beansAPI.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             myNode = transaction.getNodeById( myNode.getId() );
             // Then
             assertThat( myNode, hasProperty( "name" ).withValue( "Feynman" ) );
             assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
 
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", db, transaction ), isEmpty() );
 
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", beansAPI, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", db, transaction ), containsOnly( myNode ) );
 
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI, transaction ), isEmpty() );
-            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", beansAPI, transaction ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", db, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", db, transaction ), containsOnly( myNode ) );
             transaction.commit();
         }
     }
 
     @Test
-    public void searchingByLabelAndPropertyReturnsEmptyWhenMissingLabelOrProperty()
+    void searchingByLabelAndPropertyReturnsEmptyWhenMissingLabelOrProperty()
     {
-        // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-
         // When/Then
-        try ( Transaction transaction = beansAPI.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI, transaction ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", db, transaction ), isEmpty() );
         }
     }
 
     @Test
-    public void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction()
+    void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction()
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
-        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        Node firstNode = createNode( db, map( "name", "Mattias" ), LABEL1 );
 
         // WHEN THEN
-        try ( Transaction transaction = beansAPI.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Mattias", beansAPI, transaction ), containsOnly( firstNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Mattias", db, transaction ), containsOnly( firstNode ) );
         }
-        Node secondNode = createNode( beansAPI, map( "name", "Taylor" ), LABEL1 );
-        try ( Transaction transaction = beansAPI.beginTx() )
+        Node secondNode = createNode( db, map( "name", "Taylor" ), LABEL1 );
+        try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Taylor", beansAPI, transaction ), containsOnly( secondNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Taylor", db, transaction ), containsOnly( secondNode ) );
         }
     }
 
     @Test
-    public void createdNodeShouldShowUpWithinTransaction()
+    void createdNodeShouldShowUpWithinTransaction()
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
 
         // WHEN
 
-        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
+        Node firstNode = createNode( db, map( "name", "Mattias" ), LABEL1 );
         long sizeBeforeDelete;
         long sizeAfterDelete;
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             sizeBeforeDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
             tx.getNodeById( firstNode.getId() ).delete();
@@ -333,17 +319,16 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void deletedNodeShouldShowUpWithinTransaction()
+    void deletedNodeShouldShowUpWithinTransaction()
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
-        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        Node firstNode = createNode( db, map( "name", "Mattias" ), LABEL1 );
 
         // WHEN
         long sizeBeforeDelete;
         long sizeAfterDelete;
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             sizeBeforeDelete = count( tx.findNodes( LABEL1, "name", "Mattias" ) );
             tx.getNodeById( firstNode.getId() ).delete();
@@ -357,22 +342,21 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void createdNodeShouldShowUpInIndexQuery()
+    void createdNodeShouldShowUpInIndexQuery()
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
-        createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        createNode( db, map( "name", "Mattias" ), LABEL1 );
 
         // WHEN
         long sizeBeforeDelete;
         long sizeAfterDelete;
-        try ( Transaction transaction = beansAPI.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             sizeBeforeDelete = count( transaction.findNodes( LABEL1, "name", "Mattias" ) );
         }
-        createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
-        try ( Transaction transaction = beansAPI.beginTx() )
+        createNode( db, map( "name", "Mattias" ), LABEL1 );
+        try ( Transaction transaction = db.beginTx() )
         {
             sizeAfterDelete = count( transaction.findNodes( LABEL1, "name", "Mattias" ) );
         }
@@ -383,11 +367,10 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldBeAbleToQuerySupportedPropertyTypes()
+    void shouldBeAbleToQuerySupportedPropertyTypes()
     {
         // GIVEN
         String property = "name";
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( db, LABEL1, property );
 
         // WHEN & THEN
@@ -438,17 +421,16 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldRetrieveMultipleNodesWithSameValueFromIndex()
+    void shouldRetrieveMultipleNodesWithSameValueFromIndex()
     {
         // this test was included here for now as a precondition for the following test
 
         // given
-        GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( graph, LABEL1, "name" );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
 
         Node node1;
         Node node2;
-        try ( Transaction tx = graph.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node1 = tx.createNode( LABEL1 );
             node1.setProperty( "name", "Stefan" );
@@ -458,7 +440,7 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        try ( Transaction tx = graph.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             ResourceIterator<Node> result = tx.findNodes( LABEL1, "name", "Stefan" );
             assertEquals( asSet( node1, node2 ), asSet( result ) );
@@ -468,15 +450,14 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldThrowWhenMultipleResultsForSingleNode()
+    void shouldThrowWhenMultipleResultsForSingleNode()
     {
         // given
-        GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( graph, LABEL1, "name" );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
 
         Node node1;
         Node node2;
-        try ( Transaction tx = graph.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node1 = tx.createNode( LABEL1 );
             node1.setProperty( "name", "Stefan" );
@@ -486,13 +467,9 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        try ( Transaction tx = graph.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            tx.findNode( LABEL1, "name", "Stefan" );
-            fail( "Expected MultipleFoundException but got none" );
-        }
-        catch ( MultipleFoundException e )
-        {
+            var e = assertThrows( MultipleFoundException.class, () -> tx.findNode( LABEL1, "name", "Stefan" ) );
             assertThat( e.getMessage(), equalTo(
                     format( "Found multiple nodes with label: '%s', property name: 'name' " +
                             "and property value: 'Stefan' while only one was expected.", LABEL1 ) ) );
@@ -500,14 +477,13 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldAddIndexedPropertyToNodeWithDynamicLabels()
+    void shouldAddIndexedPropertyToNodeWithDynamicLabels()
     {
         // Given
         int indexesCount = 20;
         String labelPrefix = "foo";
         String propertyKeyPrefix = "bar";
         String propertyValuePrefix = "baz";
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         for ( int i = 0; i < indexesCount; i++ )
         {
@@ -563,9 +539,9 @@ public class IndexingAcceptanceTest
         }
     }
 
-    private Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )
+    private Node createNode( GraphDatabaseService db, Map<String, Object> properties, Label... labels )
     {
-        try ( Transaction tx = beansAPI.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( labels );
             for ( Map.Entry<String,Object> property : properties.entrySet() )

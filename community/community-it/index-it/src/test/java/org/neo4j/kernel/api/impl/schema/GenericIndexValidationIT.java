@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,15 +32,19 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_BOOLEAN;
@@ -61,6 +64,8 @@ import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_ZONED_DATE_TIME
 import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_ZONED_TIME;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
+@DbmsExtension( configurationCallback = "configure" )
+@ExtendWith( RandomExtension.class )
 public class GenericIndexValidationIT
 {
     private static final String[] PROP_KEYS = new String[]{
@@ -74,11 +79,17 @@ public class GenericIndexValidationIT
     private static final int ESTIMATED_OVERHEAD_PER_SLOT = 2;
     private static final int WIGGLE_ROOM = 50;
 
-    @Rule
-    public DbmsRule db = new EmbeddedDbmsRule().withSetting( default_schema_provider, NATIVE_BTREE10.providerName() );
+    @Inject
+    public GraphDatabaseAPI db;
 
-    @ClassRule
-    public static final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( default_schema_provider, NATIVE_BTREE10.providerName() );
+    }
 
     /**
      * Key size validation test for single type.
@@ -92,7 +103,7 @@ public class GenericIndexValidationIT
      * is documented and if it changes, documentation also needs to change.
      */
     @Test
-    public void shouldEnforceSizeCapSingleValueSingleType()
+    void shouldEnforceSizeCapSingleValueSingleType()
     {
         NamedDynamicValueGenerator[] dynamicValueGenerators = NamedDynamicValueGenerator.values();
         for ( NamedDynamicValueGenerator generator : dynamicValueGenerators )
@@ -105,7 +116,7 @@ public class GenericIndexValidationIT
 
             while ( !binarySearch.finished() )
             {
-                propValue = generator.dynamicValue( binarySearch.arrayLength );
+                propValue = generator.dynamicValue( random, binarySearch.arrayLength );
                 long expectedNodeId = -1;
 
                 // Write
@@ -128,13 +139,14 @@ public class GenericIndexValidationIT
                 // Progress binary search
                 binarySearch.progress( wasAbleToWrite );
             }
-            assertEquals( format( "expected longest successful array length for type %s, to be %d but was %d. " +
-                            "This is a strong indication that documentation of max limit needs to be updated.",
-                    generator.name(), generator.expectedMax, binarySearch.longestSuccessful ), generator.expectedMax, binarySearch.longestSuccessful );
+            assertEquals( generator.expectedMax, binarySearch.longestSuccessful,
+                    format( "expected longest successful array length for type %s, to be %d but was %d. " +
+                                    "This is a strong indication that documentation of max limit needs to be updated.", generator.name(), generator.expectedMax,
+                            binarySearch.longestSuccessful ) );
         }
     }
 
-    private class BinarySearch
+    private static class BinarySearch
     {
         private int longestSuccessful;
         private int minArrayLength;
@@ -198,7 +210,7 @@ public class GenericIndexValidationIT
      * (1/2)^3995. As a reference (1/2)^100 = 7.8886091e-31.
      */
     @Test
-    public void shouldEnforceSizeCapMixedTypes()
+    void shouldEnforceSizeCapMixedTypes()
     {
         for ( int numberOfSlots = 1; numberOfSlots < 5; numberOfSlots++ )
         {
@@ -260,7 +272,7 @@ public class GenericIndexValidationIT
         for ( int propKey = 0; propKey < propKeys.length; propKey++ )
         {
             NamedDynamicValueGenerator among = random.among( NamedDynamicValueGenerator.values() );
-            propValues[propKey] = among.dynamicValue( keySizeLimitPerSlot, wiggleRoomPerSlot );
+            propValues[propKey] = among.dynamicValue( random, keySizeLimitPerSlot, wiggleRoomPerSlot );
         }
         return propValues;
     }
@@ -285,7 +297,7 @@ public class GenericIndexValidationIT
                 assertTrue( nodes.hasNext() );
                 Node node = nodes.next();
                 assertNotNull( node );
-                assertEquals( "node id", expectedNodeId, node.getId() );
+                assertEquals( expectedNodeId, node.getId(), "node id" );
             }
             else
             {
@@ -314,7 +326,7 @@ public class GenericIndexValidationIT
         }
     }
 
-    private class SuccessAndFail
+    private static class SuccessAndFail
     {
         boolean atLeastOneSuccess;
         boolean atLeastOneFail;
@@ -333,37 +345,37 @@ public class GenericIndexValidationIT
 
         void verifyBothSuccessAndFail()
         {
-            assertTrue( "not a single successful write, need to adjust parameters", atLeastOneSuccess );
-            assertTrue( "not a single failed write, need to adjust parameters", atLeastOneFail );
+            assertTrue( atLeastOneSuccess, "not a single successful write, need to adjust parameters" );
+            assertTrue( atLeastOneFail, "not a single failed write, need to adjust parameters" );
         }
     }
 
     private enum NamedDynamicValueGenerator
     {
-        string( Byte.BYTES, 8164, i -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
-        byteArray( SIZE_NUMBER_BYTE, 8163, i -> random.randomValues().nextByteArrayRaw( i, i ) ),
-        shortArray( SIZE_NUMBER_SHORT, 4081, i -> random.randomValues().nextShortArrayRaw( i, i ) ),
-        intArray( SIZE_NUMBER_INT, 2040, i -> random.randomValues().nextIntArrayRaw( i, i ) ),
-        longArray( SIZE_NUMBER_LONG, 1020, i -> random.randomValues().nextLongArrayRaw( i, i ) ),
-        floatArray( SIZE_NUMBER_FLOAT, 2040, i -> random.randomValues().nextFloatArrayRaw( i, i ) ),
-        doubleArray( SIZE_NUMBER_DOUBLE, 1020, i -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
-        booleanArray( SIZE_BOOLEAN, 8164, i -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
-        charArray( Byte.BYTES, 2721, i -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue().toCharArray() ),
-        stringArray1( SIZE_STRING_LENGTH + 1, 2721, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1, 1 ) ),
-        stringArray10( SIZE_STRING_LENGTH + 10, 680, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
-        stringArray100( SIZE_STRING_LENGTH + 100, 80, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
-        stringArray1000( SIZE_STRING_LENGTH + 1000, 8, i -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
-        dateArray( SIZE_DATE, 1020, i -> random.randomValues().nextDateArrayRaw( i, i ) ),
-        timeArray( SIZE_ZONED_TIME, 680, i -> random.randomValues().nextTimeArrayRaw( i, i ) ),
-        localTimeArray( SIZE_LOCAL_TIME, 1020, i -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
-        dateTimeArray( SIZE_ZONED_DATE_TIME, 510, i -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
-        localDateTimeArray( SIZE_LOCAL_DATE_TIME, 680, i -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
-        durationArray( SIZE_DURATION, 291, i -> random.randomValues().nextDurationArrayRaw( i, i ) ),
-        periodArray( SIZE_DURATION, 291, i -> random.randomValues().nextPeriodArrayRaw( i, i ) ),
-        cartesianPointArray( SIZE_GEOMETRY, 340, i -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
-        cartesian3DPointArray( SIZE_GEOMETRY, 255, i -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
-        geographicPointArray( SIZE_GEOMETRY, 340, i -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
-        geographic3DPointArray( SIZE_GEOMETRY, 255, i -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
+        string( Byte.BYTES, 8164, ( random, i ) -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue() ),
+        byteArray( SIZE_NUMBER_BYTE, 8163, ( random, i ) -> random.randomValues().nextByteArrayRaw( i, i ) ),
+        shortArray( SIZE_NUMBER_SHORT, 4081, ( random, i ) -> random.randomValues().nextShortArrayRaw( i, i ) ),
+        intArray( SIZE_NUMBER_INT, 2040, ( random, i ) -> random.randomValues().nextIntArrayRaw( i, i ) ),
+        longArray( SIZE_NUMBER_LONG, 1020, ( random, i ) -> random.randomValues().nextLongArrayRaw( i, i ) ),
+        floatArray( SIZE_NUMBER_FLOAT, 2040, ( random, i ) -> random.randomValues().nextFloatArrayRaw( i, i ) ),
+        doubleArray( SIZE_NUMBER_DOUBLE, 1020, ( random, i ) -> random.randomValues().nextDoubleArrayRaw( i, i ) ),
+        booleanArray( SIZE_BOOLEAN, 8164, ( random, i ) -> random.randomValues().nextBooleanArrayRaw( i, i ) ),
+        charArray( Byte.BYTES, 2721, ( random, i ) -> random.randomValues().nextAlphaNumericTextValue( i, i ).stringValue().toCharArray() ),
+        stringArray1( SIZE_STRING_LENGTH + 1, 2721, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1, 1 ) ),
+        stringArray10( SIZE_STRING_LENGTH + 10, 680, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 10, 10 ) ),
+        stringArray100( SIZE_STRING_LENGTH + 100, 80, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 100, 100 ) ),
+        stringArray1000( SIZE_STRING_LENGTH + 1000, 8, ( random, i ) -> random.randomValues().nextAlphaNumericStringArrayRaw( i, i, 1000, 1000 ) ),
+        dateArray( SIZE_DATE, 1020, ( random, i ) -> random.randomValues().nextDateArrayRaw( i, i ) ),
+        timeArray( SIZE_ZONED_TIME, 680, ( random, i ) -> random.randomValues().nextTimeArrayRaw( i, i ) ),
+        localTimeArray( SIZE_LOCAL_TIME, 1020, ( random, i ) -> random.randomValues().nextLocalTimeArrayRaw( i, i ) ),
+        dateTimeArray( SIZE_ZONED_DATE_TIME, 510, ( random, i ) -> random.randomValues().nextDateTimeArrayRaw( i, i ) ),
+        localDateTimeArray( SIZE_LOCAL_DATE_TIME, 680, ( random, i ) -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
+        durationArray( SIZE_DURATION, 291, ( random, i ) -> random.randomValues().nextDurationArrayRaw( i, i ) ),
+        periodArray( SIZE_DURATION, 291, ( random, i ) -> random.randomValues().nextPeriodArrayRaw( i, i ) ),
+        cartesianPointArray( SIZE_GEOMETRY, 340, ( random, i ) -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
+        cartesian3DPointArray( SIZE_GEOMETRY, 255, ( random, i ) -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
+        geographicPointArray( SIZE_GEOMETRY, 340, ( random, i ) -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
+        geographic3DPointArray( SIZE_GEOMETRY, 255, ( random, i ) -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
 
         private final int singleArrayEntrySize;
         private final DynamicValueGenerator generator;
@@ -376,16 +388,16 @@ public class GenericIndexValidationIT
             this.generator = generator;
         }
 
-        Object dynamicValue( int length )
+        Object dynamicValue( RandomRule random, int length )
         {
-            return generator.dynamicValue( length );
+            return generator.dynamicValue( random, length );
         }
 
-        Object dynamicValue( int keySizeLimit, int wiggleRoom )
+        Object dynamicValue( RandomRule random, int keySizeLimit, int wiggleRoom )
         {
             int lowLimit = lowLimit( keySizeLimit, wiggleRoom, singleArrayEntrySize );
             int highLimit = highLimit( keySizeLimit, wiggleRoom, singleArrayEntrySize );
-            return dynamicValue( random.intBetween( lowLimit, highLimit ) );
+            return dynamicValue( random, random.intBetween( lowLimit, highLimit ) );
         }
 
         private int lowLimit( int keySizeLimit, int wiggleRoom, int singleEntrySize )
@@ -401,7 +413,7 @@ public class GenericIndexValidationIT
         @FunctionalInterface
         private interface DynamicValueGenerator
         {
-            Object dynamicValue( int arrayLength );
+            Object dynamicValue( RandomRule random, int arrayLength );
         }
     }
 }

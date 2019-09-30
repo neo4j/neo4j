@@ -19,9 +19,8 @@
  */
 package org.neo4j.schema;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -41,23 +40,24 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
-public class DynamicIndexStoreViewIT
+@TestDirectoryExtension
+@ExtendWith( SuppressOutputExtension.class )
+class DynamicIndexStoreViewIT
 {
-    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( suppressOutput );
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void populateDbWithConcurrentUpdates() throws Exception
+    void populateDbWithConcurrentUpdates() throws Exception
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -120,7 +120,7 @@ public class DynamicIndexStoreViewIT
         }
     }
 
-    private class Populator implements Runnable
+    private static class Populator implements Runnable
     {
         private final GraphDatabaseService databaseService;
         private final long totalNodes;

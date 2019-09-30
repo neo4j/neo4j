@@ -19,8 +19,8 @@
  */
 package org.neo4j.schema;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -31,27 +31,31 @@ import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
-public class IndexPopulationFlipRaceIT
+@DbmsExtension
+@ExtendWith( RandomExtension.class )
+class IndexPopulationFlipRaceIT
 {
     private static final int NODES_PER_INDEX = 10;
 
-    @Rule
-    public final DbmsRule db = new EmbeddedDbmsRule();
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldAtomicallyFlipMultipleIndexes() throws Exception
+    void shouldAtomicallyFlipMultipleIndexes() throws Exception
     {
         // A couple of times since this is probabilistic, but also because there seems to be a difference
         // in timings between the first time and all others... which is perhaps super obvious to some, but not to me.
@@ -150,11 +154,9 @@ public class IndexPopulationFlipRaceIT
             for ( int j = 0; j < NODES_PER_INDEX; j++ )
             {
                 long nodeAId = data.first()[j];
-                assertEquals( 1, tx.schemaRead().nodesCountIndexed(
-                        indexA, nodeAId, keyAId, Values.of( nodeAId ) ) );
+                assertEquals( 1, tx.schemaRead().nodesCountIndexed( indexA, nodeAId, keyAId, Values.of( nodeAId ) ) );
                 long nodeBId = data.other()[j];
-                assertEquals( 1, tx.schemaRead().nodesCountIndexed(
-                        indexB, nodeBId, keyBId, Values.of( nodeBId ) ) );
+                assertEquals( 1, tx.schemaRead().nodesCountIndexed( indexB, nodeBId, keyBId, Values.of( nodeBId ) ) );
             }
         }
     }
