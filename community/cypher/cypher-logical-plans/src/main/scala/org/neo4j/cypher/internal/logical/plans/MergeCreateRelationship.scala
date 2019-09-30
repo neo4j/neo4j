@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.{Expression, RelTypeName}
   * with the same type and properties exist between the given nodes.
   */
 case class MergeCreateRelationship(source: LogicalPlan, idName: String, startNode: String, typ: RelTypeName, endNode: String, properties: Option[Expression])
-                                  (implicit idGen: IdGen) extends LogicalPlan(idGen) {
+                                  (implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

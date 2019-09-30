@@ -35,7 +35,7 @@ case class SetNodeProperty(source: LogicalPlan,
                            propertyKey: PropertyKeyName,
                            value: Expression
                           )(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
+  extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.LabelName
   * For each source row, add the labels in 'labelNamed' to the node 'idName'.
   * The source row is produced.
   */
-case class SetLabels(source: LogicalPlan, idName: String, labelNames: Seq[LabelName])(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class SetLabels(source: LogicalPlan, idName: String, labelNames: Seq[LabelName])(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

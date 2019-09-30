@@ -37,7 +37,7 @@ case class SetNodePropertiesFromMap(
                                      expression: Expression,
                                      removeOtherProps: Boolean
                                    )(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
+  extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
