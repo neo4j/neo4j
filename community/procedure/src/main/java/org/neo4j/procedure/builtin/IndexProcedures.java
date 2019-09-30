@@ -58,7 +58,7 @@ public class IndexProcedures implements AutoCloseable
         this.indexingService = indexingService;
     }
 
-    public void awaitIndexByPattern( String indexPattern, long timeout, TimeUnit timeoutUnits )
+    void awaitIndexByPattern( String indexPattern, long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
         IndexSpecifier specifier = IndexSpecifier.byPattern( indexPattern );
@@ -72,18 +72,18 @@ public class IndexProcedures implements AutoCloseable
         waitUntilOnline( getIndex( specifier ), specifier, timeout, timeoutUnits );
     }
 
-    public void resampleIndex( String indexSpecification ) throws ProcedureException
+    void resampleIndex( String indexSpecification ) throws ProcedureException
     {
         IndexSpecifier specifier = IndexSpecifier.byPattern( indexSpecification );
         triggerSampling( getIndex( specifier ) );
     }
 
-    public void resampleOutdatedIndexes()
+    void resampleOutdatedIndexes()
     {
         indexingService.triggerIndexSampling( IndexSamplingMode.TRIGGER_REBUILD_UPDATED );
     }
 
-    public void awaitIndexResampling( long timeout ) throws ProcedureException
+    void awaitIndexResampling( long timeout ) throws ProcedureException
     {
         try
         {
