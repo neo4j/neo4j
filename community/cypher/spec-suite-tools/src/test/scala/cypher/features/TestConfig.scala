@@ -21,7 +21,8 @@ package cypher.features
 
 class TestConfig(
   val blacklist: Option[String],
-  val executionPrefix: String
+  val executionPrefix: String,
+  val experimental: Boolean = false
 )
 
 case object DefaultTestConfig extends TestConfig(Some("default.txt"),"")
@@ -38,3 +39,9 @@ case object CostCompiledTestConfig extends TestConfig(Some("cost-compiled.txt"),
   "CYPHER planner=cost runtime=compiled debug=generate_java_source")
 
 case object CostInterpretedTestConfig extends TestConfig(Some("cost-interpreted.txt"),"CYPHER planner=cost runtime=interpreted")
+
+case object CostMorselSingleThreadedFullTestConfig extends TestConfig(
+  Some("cost-morsel-single-threaded-full.txt"),
+  "CYPHER planner=cost runtime=morsel interpretedPipesFallback=all",
+  experimental = true
+)

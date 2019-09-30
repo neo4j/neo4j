@@ -23,6 +23,7 @@ import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util
+import java.util.concurrent.atomic.AtomicInteger
 
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.function.Executable
@@ -35,6 +36,8 @@ import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 object ScenarioTestHelper {
+  var unexpectedSuccessCount = new AtomicInteger(0)
+
   def createTests(scenarios: Seq[Scenario],
                   config: TestConfig,
                   graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
@@ -59,8 +62,12 @@ object ScenarioTestHelper {
             scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory())).execute()
           } match {
             case Success(_) =>
-              if (!blacklist.exists(_.isFlaky(scenario)))
-                throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
+              if (config.experimental) {
+                unexpectedSuccessCount.getAndAdd(1)
+              } else {
+                if (!blacklist.exists(_.isFlaky(scenario)))
+                  throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
+              }
             case Failure(e) =>
               e.getCause match {
                 case cause@Neo4jExecutionFailed(_, phase, _, _) =>
