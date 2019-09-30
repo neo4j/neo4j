@@ -357,11 +357,11 @@ public class Database extends LifecycleAdapter
             final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
             LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader )
-                                               .withConfig( databaseConfig )
-                                               .withDependencies( databaseDependencies )
-                                               .withLogProvider( internalLogProvider )
-                                               .withDatabaseTracer( databaseTracer )
-                                               .build();
+                    .withConfig( databaseConfig )
+                    .withDependencies( databaseDependencies )
+                    .withLogProvider( internalLogProvider )
+                    .withDatabaseTracer( databaseTracer )
+                    .build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
             databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( LogTailScanner.class ) ) );
@@ -371,7 +371,11 @@ public class Database extends LifecycleAdapter
                     new LogTailScanner( logFiles, logEntryReader, databaseMonitors, databaseConfig.get( fail_on_corrupted_log_files ) );
             LogVersionUpgradeChecker.check( tailScanner, databaseConfig );
 
-            validateStoreId( tailScanner, storageEngineFactory.storeId( databaseLayout, databasePageCache ) );
+            boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
+            if ( storageExists )
+            {
+                validateStoreId( tailScanner, storageEngineFactory.storeId( databaseLayout, databasePageCache ) );
+            }
 
             performRecovery( fs, databasePageCache, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
                     extensionFactories,
@@ -383,7 +387,6 @@ public class Database extends LifecycleAdapter
             Supplier<IdController.ConditionSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
                     recoveryCleanupWorkCollector, !storageExists );
