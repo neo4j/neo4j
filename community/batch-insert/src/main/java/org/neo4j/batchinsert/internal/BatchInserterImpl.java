@@ -284,7 +284,6 @@ public class BatchInserterImpl implements BatchInserter
 
             maxNodeId = recordFormats.node().getMaxId();
 
-//<<<<<<< HEAD
             if ( dump )
             {
                 dumpConfiguration( config, System.out );

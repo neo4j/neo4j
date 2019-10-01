@@ -317,7 +317,6 @@ class TestRecoveryScenarios
 
     private void crashAndRestart() throws Exception
     {
-//<<<<<<< HEAD
         var uncleanFs = fs.snapshot();
         try
         {
@@ -330,10 +329,6 @@ class TestRecoveryScenarios
         }
 
         managementService = databaseFactory( uncleanFs ).impermanent().build();
-//=======
-//        FileSystemAbstraction uncleanFs = fsRule.snapshot( managementService::shutdown );
-//        DatabaseManagementService managementService = databaseFactory( uncleanFs ).impermanent().build();
-//>>>>>>> Introduces GBPTreeCountsStore
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }
