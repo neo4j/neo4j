@@ -1594,8 +1594,6 @@
         <groupId>org.neo4j</groupId>
         <artifactId>annotations</artifactId>
         <version>${project.version}</version>
-        <optional>true</optional>
-        <scope>provided</scope>
       </dependency>
       <!-- used by benchmark-infra module -->
       <dependency>

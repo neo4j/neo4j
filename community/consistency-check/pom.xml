@@ -52,7 +52,6 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>annotations</artifactId>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
