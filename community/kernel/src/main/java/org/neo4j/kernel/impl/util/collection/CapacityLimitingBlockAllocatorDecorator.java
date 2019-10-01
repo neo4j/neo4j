@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.memory.MemoryAllocationTracker;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.requirePositive;
 
@@ -48,8 +47,7 @@ public class CapacityLimitingBlockAllocatorDecorator implements OffHeapBlockAllo
             final long usedMemoryAfter = usedMemoryBefore + size;
             if ( usedMemoryAfter > maxMemory )
             {
-                throw new RuntimeException(
-                        format( "Can't allocate %d bytes due to exceeding memory limit; used=%d, max=%d", size, usedMemoryBefore, maxMemory ) );
+                throw new MemoryAllocationLimitException( size, usedMemoryBefore, maxMemory );
             }
             if ( usedMemory.compareAndSet( usedMemoryBefore, usedMemoryAfter ) )
             {
