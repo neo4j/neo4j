@@ -63,7 +63,7 @@ public class PushToCloudCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( ARG_USERNAME, "neo4j", null,
                     "Optional: Username of the target database to push this database to. Prompt will ask for username if not provided. " +
                             "Alternatively NEO4J_USERNAME environment variable can be used." ) )
-            .withArgument( new OptionalNamedArg( ARG_PASSWORD, "true/false", null,
+            .withArgument( new OptionalNamedArg( ARG_PASSWORD, "mYs3cr3tPa$$w0rd", null,
                     "Optional: Password of the target database to push this database to. Prompt will ask for password if not provided. " +
                             "Alternatively NEO4J_PASSWORD environment variable can be used." ) )
             .withArgument( new OptionalNamedArg( ARG_CONFIRMED, "true/false", "false",

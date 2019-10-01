@@ -213,7 +213,8 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 case HTTP_CONFLICT:
                     // the cloud target database has already been populated with data, and importing the dump file would overwrite it.
                     boolean consent =
-                            askForBooleanConsent( "A non-empty database already exists at the given location, would you like to overwrite that database?" );
+                            askForBooleanConsent( "A non-empty database already exists at the given location, would you like to overwrite that database? " +
+                                    "(Yes/No)" );
                     if ( consent )
                     {
                         return authenticate( verbose, consoleUrl, username, password, true );
