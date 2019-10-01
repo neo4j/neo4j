@@ -182,6 +182,6 @@ public class Neo4jLayout
     @Override
     public String toString()
     {
-        return "StoreLayout{" + "storeDirectory=" + storeDirectory + ", transactionLogsRootDirectory=" + layoutConfig.getTransactionLogsRootDirectory() + '}';
+        return "Neo4jLayout{" + "storeDirectory=" + storeDirectory + ", transactionLogsRootDirectory=" + layoutConfig.getTransactionLogsRootDirectory() + '}';
     }
 }
