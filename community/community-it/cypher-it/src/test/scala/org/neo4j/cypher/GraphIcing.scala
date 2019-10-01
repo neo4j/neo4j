@@ -61,9 +61,9 @@ trait GraphIcing {
     }
 
     def createUniqueConstraintWithName(name: String, label: String, property: String) = {
-      inTx {
-        graph.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).withName(name).create()
-      }
+      withTx( tx =>  {
+        tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).withName(name).create()
+      } )
     }
 
     def createNodeExistenceConstraint(label: String, property: String) = {
@@ -129,17 +129,17 @@ trait GraphIcing {
         tx.execute(s"CREATE INDEX `$name` FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")})")
       })
 
-      inTx {
-        graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      }
+      withTx( tx =>  {
+        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      } )
 
       getIndex(label, properties)
     }
 
     def awaitIndexesOnline(): Unit = {
-      inTx {
-        graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      }
+      withTx( tx =>  {
+        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      } )
     }
 
     def getIndex(label: String, properties: Seq[String]): IndexDefinition = {
@@ -149,53 +149,53 @@ trait GraphIcing {
     }
 
     def getMaybeIndex(label: String, properties: Seq[String]): Option[IndexDefinition] = {
-      inTx {
-        graph.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
-      }
+      withTx( tx =>  {
+        tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
+      } )
     }
 
     def getIndexSchemaByName(name: String): (String, Seq[String]) = {
-      inTx {
-        val index = graph.schema().getIndexByName(name)
+      withTx( tx =>  {
+        val index = tx.schema().getIndexByName(name)
         val label = index.getLabel.name()
         val properties = index.getPropertyKeys.asScala.toList
         (label, properties)
-      }
+      } )
     }
 
     def getNodeConstraint(label: String, properties: Seq[String]): ConstraintDefinition = {
-      inTx {
-        graph.schema().getConstraints(Label.label(label)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == properties.toList).get
-      }
+      withTx( tx =>  {
+        tx.schema().getConstraints(Label.label(label)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == properties.toList).get
+      } )
     }
 
     def getMaybeNodeConstraint(label: String, properties: Seq[String]): Option[ConstraintDefinition] = {
-      inTx {
-        graph.schema().getConstraints(Label.label(label)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == properties.toList)
-      }
+      withTx( tx =>  {
+        tx.schema().getConstraints(Label.label(label)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == properties.toList)
+      } )
     }
 
     def getRelationshipConstraint(relType: String, property: String): ConstraintDefinition = {
-      inTx {
-        graph.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == List(property)).get
-      }
+      withTx( tx =>  {
+        tx.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == List(property)).get
+      } )
     }
 
     def getMaybeRelationshipConstraint(relType: String, property: String): Option[ConstraintDefinition] = {
-      inTx {
-        graph.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == List(property))
-      }
+      withTx( tx =>  {
+        tx.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == List(property))
+      } )
     }
 
-    def getConstraintSchemaByName(name: String): (String, Seq[String])  = inTx {
-      val constraint = graph.schema().getConstraintByName(name)
+    def getConstraintSchemaByName(name: String): (String, Seq[String])  = withTx( tx =>  {
+      val constraint = tx.schema().getConstraintByName(name)
       val properties = constraint.getPropertyKeys.asScala.toList
       val labelOrRelType = constraint.getConstraintType match {
         case ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE => constraint.getRelationshipType.name()
         case _ => constraint.getLabel.name()
       }
       (labelOrRelType, properties)
-    }
+    } )
 
     def createUniqueIndex(label: String, property: String): Unit = {
       withTx( tx => {
