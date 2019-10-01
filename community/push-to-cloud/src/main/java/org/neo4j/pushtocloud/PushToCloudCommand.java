@@ -57,7 +57,7 @@ public class PushToCloudCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( ARG_DUMP_TO, "/path/to/dump-file-to-be-created", null,
                     "Location to create the dump file if database is given. The database will be dumped to this file instead of a default location" ) )
             .withArgument( new MandatoryNamedArg( ARG_BOLT_URI, "bolt+routing://mydatabaseid.databases.neo4j.io",
-                    "Bolt URI pointing out the target location to push the database to" ) )
+                    "Bolt URI pointing to the target location to push the database to" ) )
             .withArgument( new OptionalNamedArg( ARG_VERBOSE, "true/false", null,
                     "Whether or not to be verbose about internal details and errors." ) )
             .withArgument( new OptionalNamedArg( ARG_USERNAME, "neo4j", null,
@@ -139,6 +139,10 @@ public class PushToCloudCommand implements AdminCommand
             }
 
             String boltURI = arguments.get( ARG_BOLT_URI );
+            if ( boltURI == null || "".equals( boltURI ) )
+            {
+                throw new IncorrectUsage( "Please provide a bolt URI pointing at the target location to push the database to as --bolt-uri." );
+            }
             String confirmationViaArgument = arguments.get( ARG_CONFIRMED );
 
             String consoleURL = buildConsoleURI( boltURI );
