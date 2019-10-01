@@ -995,7 +995,6 @@ public class GBPTreeTest
             // WHEN cleanup not finished
             Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
             monitor.barrier.awaitUninterruptibly();
-            index.writer().close();
 
             // THEN
             Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED ) ) );
@@ -1055,7 +1054,7 @@ public class GBPTreeTest
     }
 
     @Test( timeout = 5_000L )
-    public void cleanJobShouldNotLockOutWriter() throws Exception
+    public void cleanJobShouldLockOutWriter() throws Exception
     {
         // GIVEN
         makeDirty();
@@ -1071,31 +1070,11 @@ public class GBPTreeTest
 
             // THEN
             Future<?> writer = executor.submit( throwing( () -> index.writer().close() ) );
-            writer.get();
+            shouldWait( writer );
 
             monitor.barrier.release();
             cleanup.get();
-        }
-    }
-
-    @Test
-    public void writerShouldNotLockOutCleanJob() throws Exception
-    {
-        // GIVEN
-        makeDirty();
-
-        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
-        try ( GBPTree<MutableLong,MutableLong> index = index().with( cleanupWork ).build() )
-        {
-            // WHEN
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                // THEN
-                Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
-                // Move writer to let cleaner pass
-                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
-                cleanup.get();
-            }
+            writer.get();
         }
     }
 
@@ -1196,7 +1175,18 @@ public class GBPTreeTest
     }
 
     @Test
+    public void writerMustRecognizeFailedCleaning() throws Exception
+    {
+        mustRecognizeFailedCleaning( GBPTree::writer );
+    }
+
+    @Test
     public void checkpointMustRecognizeFailedCleaning() throws Exception
+    {
+        mustRecognizeFailedCleaning( index -> index.checkpoint( IOLimiter.UNLIMITED ) );
+    }
+
+    private void mustRecognizeFailedCleaning( ThrowingConsumer<GBPTree<MutableLong,MutableLong>,IOException> operation ) throws Exception
     {
         // given
         makeDirty();
@@ -1219,12 +1209,10 @@ public class GBPTreeTest
                 .with( collector )
                 .build() )
         {
-            index.writer().close(); // Changes since last checkpoint
-
             Future<?> cleanup = executor.submit( throwing( collector::start ) );
             shouldWait( cleanup );
 
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> operation.accept( index ) ) );
             shouldWait( checkpoint );
 
             cleanupMonitor.barrier.release();
