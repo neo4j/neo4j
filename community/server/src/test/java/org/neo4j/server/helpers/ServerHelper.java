@@ -83,6 +83,7 @@ public class ServerHelper
     {
         // Start writable server to create all store files needed
         CommunityServerBuilder builder = CommunityServerBuilder.server();
+        builder.withProperty( "dbms.connector.bolt.listen_address", ":0" );
         createServer( builder, true, path ).stop();
         // Then start server in read only mode
         builder.withProperty( GraphDatabaseSettings.read_only.name(), "true" );
