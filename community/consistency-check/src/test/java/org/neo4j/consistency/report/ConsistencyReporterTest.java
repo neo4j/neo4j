@@ -222,7 +222,6 @@ public class ConsistencyReporterTest
     public static class TestAllReportMessages implements Answer
     {
         @Test
-        @SuppressWarnings( "unchecked" )
         public void shouldLogInconsistency() throws Exception
         {
             // given
