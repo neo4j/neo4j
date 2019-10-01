@@ -1012,7 +1012,6 @@ class GBPTreeTest
                 Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
                 monitor.barrier.awaitUninterruptibly();
 
-
                 // THEN
                 Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED ) ) );
                 shouldWait( checkpoint );
