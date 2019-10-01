@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -58,6 +57,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexKind;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -81,7 +81,6 @@ import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsE
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
-import org.neo4j.kernel.api.exceptions.schema.MultipleIndexesException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
@@ -916,24 +915,22 @@ public class Operations implements Write, SchemaWrite
     public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
     {
         exclusiveSchemaLock( schema );
-        Iterator<IndexDescriptor> iterator = allStoreHolder.index( schema );
+        Iterator<IndexDescriptor> iterator = Iterators.filter(
+                index -> index.getIndexType().getKind() == IndexKind.GENERAL,
+                allStoreHolder.index( schema ) );
 
         if ( !iterator.hasNext() )
         {
-            throw new DropIndexFailureException(
-                    "Unable to drop index on " + schema.userDescription( tokenNameLookup ) + ". There is no such index." );
-        }
-        // TODO change this to drop all IndexType.GENERAL indexes that matches the given schema.
-        IndexDescriptor existingIndex = iterator.next();
-        if ( iterator.hasNext() )
-        {
-            Collection<IndexDescriptor> indexes = new ArrayList<>();
-            indexes.add( existingIndex );
-            iterator.forEachRemaining( indexes::add );
-            throw new MultipleIndexesException( schema, indexes );
+            String description = schema.userDescription( tokenNameLookup );
+            throw new DropIndexFailureException( "Unable to drop index on " + description + ". There is no such index." );
         }
 
-        indexDrop( existingIndex );
+        do
+        {
+            IndexDescriptor existingIndex = iterator.next();
+            indexDrop( existingIndex );
+        }
+        while ( iterator.hasNext() );
     }
 
     @Override

@@ -104,6 +104,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -618,6 +619,30 @@ class OperationsTest
     }
 
     @Test
+    void shouldDropAllGeneralIndexesMatchingSchema() throws Exception
+    {
+        SchemaDescriptor schema = SchemaDescriptor.forLabel( 0, 0 );
+        SchemaDescriptor ftsSchema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[] {0}, new int[] {0} );
+        IndexDescriptor indexA = IndexPrototype.forSchema( schema ).withName( "a" ).materialise( 0 );
+        IndexDescriptor indexB = IndexPrototype.forSchema( ftsSchema ).withName( "b" ).materialise( 1 );
+        IndexDescriptor indexC = IndexPrototype.forSchema( schema ).withName( "c" ).materialise( 2 );
+
+        // The full-text index would not actually ever match the given schema,
+        // but let's pretend in order to verify that we have safe-guards in place.
+        when( storageReader.indexGetForSchema( schema ) ).thenReturn( Iterators.iterator( indexA, indexB, indexC ) );
+        when( storageReader.indexExists( any( IndexDescriptor.class ) ) ).thenReturn( true );
+
+        // when
+        operations.indexDrop( schema );
+
+        // then
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
+        order.verify( txState ).indexDoDrop( indexA );
+        order.verify( txState ).indexDoDrop( indexC );
+        verify( txState, never() ).indexDoDrop( indexB );
+    }
+
+    @Test
     void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
@@ -972,7 +997,7 @@ class OperationsTest
         storageReaderWithoutConstraints();
         when( storageReader.indexGetForSchema( any() ) ).thenReturn( Collections.emptyIterator() );
         operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ) );
-        operations.indexCreate( SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {2, 3}, new int[] {1, 2} ), null );
+        operations.indexCreate( SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[] {2, 3}, new int[] {1, 2} ), null );
         operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", null );
         IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
                 .stream()
