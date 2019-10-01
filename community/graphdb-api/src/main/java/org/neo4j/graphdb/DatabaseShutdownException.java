@@ -23,14 +23,16 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class DatabaseShutdownException extends RuntimeException implements Status.HasStatus
 {
-    public DatabaseShutdownException( )
+    private static final String MESSAGE = "This database is shutdown.";
+
+    public DatabaseShutdownException()
     {
-        super( "This database is shutdown." );
+        super( MESSAGE );
     }
 
-    public DatabaseShutdownException( String message )
+    public DatabaseShutdownException( Throwable cause )
     {
-        super( message );
+        super( MESSAGE, cause );
     }
 
     @Override

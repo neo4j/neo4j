@@ -460,6 +460,7 @@ public class Database extends LifecycleAdapter
         catch ( Throwable e )
         {
             // Something unexpected happened during startup
+            databaseAvailabilityGuard.startupFailure( e );
             msgLog.warn( "Exception occurred while starting the database. Trying to stop already started components.", e );
             try
             {

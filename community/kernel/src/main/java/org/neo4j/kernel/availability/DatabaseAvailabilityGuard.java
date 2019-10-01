@@ -44,6 +44,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
 
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
     private volatile boolean shutdown = true;
+    private volatile Throwable startupFailure;
     private final Listeners<AvailabilityListener> listeners = new Listeners<>();
     private final DatabaseId databaseId;
     private final Clock clock;
@@ -66,6 +67,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     public void init() throws Exception
     {
         shutdown = false;
+        startupFailure = null;
     }
 
     @Override
@@ -119,6 +121,17 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     }
 
     /**
+     * If a database fails to start the exception can only be found in the debug log, which is very inconvenience in most, if not all cases.
+     * This method allows database startup failure to tell this availability guard about that cause so that it can pass it to
+     * the {@link DatabaseShutdownException} thrown from e.g. {@link #assertDatabaseAvailable()}.
+     * @param cause cause of failure to start database.
+     */
+    public void startupFailure( Throwable cause )
+    {
+        startupFailure = cause;
+    }
+
+    /**
      * Shutdown the guard. After this method is invoked, the database will always be considered unavailable.
      */
     @Override
@@ -154,6 +167,10 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
         case AVAILABLE:
             return;
         case SHUTDOWN:
+            if ( startupFailure != null )
+            {
+                throw new DatabaseShutdownException( startupFailure );
+            }
             throw new DatabaseShutdownException();
         case UNAVAILABLE:
             throwUnavailableException( databaseTimeMillis, availability );
