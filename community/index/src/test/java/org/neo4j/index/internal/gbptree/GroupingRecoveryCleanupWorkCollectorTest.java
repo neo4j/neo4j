@@ -45,16 +45,6 @@ class GroupingRecoveryCleanupWorkCollectorTest
     private final GroupingRecoveryCleanupWorkCollector collector = new GroupingRecoveryCleanupWorkCollector( jobScheduler );
 
     @Test
-    void shouldNotAcceptJobsBeforeInit()
-    {
-        // given
-        collector.add( new DummyJob( "A", new ArrayList<>() ) );
-
-        // when/then
-        assertThrows( IllegalStateException.class, collector::init );
-    }
-
-    @Test
     void shouldNotAcceptJobsAfterStart()
     {
         // given

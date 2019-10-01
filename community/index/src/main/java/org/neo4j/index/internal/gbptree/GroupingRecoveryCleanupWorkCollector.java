@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.StringJoiner;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -52,12 +51,6 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
     @Override
     public void init()
     {
-        if ( !jobs.isEmpty() )
-        {
-            StringJoiner joiner = new StringJoiner( String.format( "%n  " ), "Did not expect there to be any cleanup jobs still here. Jobs[", "]" );
-            consumeAndCloseJobs( cj -> joiner.add( jobs.toString() ) );
-            throw new IllegalStateException( joiner.toString() );
-        }
         scheduleJobs();
     }
 
