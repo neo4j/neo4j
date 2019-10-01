@@ -26,6 +26,7 @@ import static org.apache.commons.lang3.CharUtils.isAsciiAlphaLower;
 
 public class DatabaseNameValidator
 {
+    public static final int MAXIMUM_DATABASE_NAME_LENGTH = 63;
     public static final String DESCRIPTION = "Containing only alphabetic characters, numbers, dots and dashes, " +
                                              "with a length between 3 and 63 characters. " +
                                              "It should be starting with an alphabetic character but not with the name 'system'.";
@@ -42,7 +43,7 @@ public class DatabaseNameValidator
             throw new IllegalArgumentException( "The provided database name is empty." );
         }
 
-        if ( name.length() < 3 || name.length() > 63 )
+        if ( name.length() < 3 || name.length() > MAXIMUM_DATABASE_NAME_LENGTH )
         {
             throw new IllegalArgumentException( "The provided database name must have a length between 3 and 63 characters." );
         }
