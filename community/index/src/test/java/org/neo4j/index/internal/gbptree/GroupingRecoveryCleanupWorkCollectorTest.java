@@ -33,6 +33,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.scheduler.JobSchedulerAdapter;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -111,6 +112,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         catch ( IllegalStateException e )
         {
             // then
+            assertEquals( format( "Did not expect there to be any cleanup jobs still here. Jobs[A%n  B%n  C]" ), e.getMessage() );
         }
     }
 
