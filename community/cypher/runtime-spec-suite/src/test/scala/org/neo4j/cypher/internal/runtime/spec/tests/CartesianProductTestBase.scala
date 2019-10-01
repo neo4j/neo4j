@@ -134,7 +134,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("ab").withRows(expected)
   }
 
-  test("should join after expand on empty lhs") {
+  test("cartesian product after expand on empty lhs") {
     // given
     circleGraph(sizeHint)
     val lhsRows = inputValues()
@@ -154,7 +154,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withNoRows()
   }
 
-  test("should join on empty rhs") {
+  test("cartesian product on empty rhs") {
     // given
     val nodes = nodeGraph(sizeHint)
     nodeGraph(19, "RHS")
@@ -176,7 +176,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withNoRows()
   }
 
-  test("should join on empty lhs and rhs") {
+  test("cartesian product on empty lhs and rhs") {
     // given
     nodeGraph(0)
     val lhsRows = inputValues()
@@ -195,7 +195,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
-  test("should join after expand on rhs") {
+  test("cartesian product after expand on rhs") {
     val sizeHint = 24
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
@@ -223,7 +223,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResultRows)
   }
 
-  test("should join after expand on lhs") {
+  test("cartesian product after expand on lhs") {
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
@@ -251,7 +251,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResultRows)
   }
 
-  test("should join nested") {
+  test("cartesian product nested") {
     // given
     val n = Math.pow(sizeHint, 1.0 / 4).toInt * 2
     val as = nodeGraph(n, "A")
@@ -283,7 +283,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a", "b", "c", "d").withRows(expectedResultRows)
   }
 
-  test("should join below an apply") {
+  test("cartesian product below an apply") {
     // given
     val n = Math.pow(sizeHint, 1.0 / 3).toInt * 2
     val (as, _) = bipartiteGraph(n, "A", "B", "REL")
@@ -314,7 +314,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a", "r1", "r2").withRows(expectedResultRows)
   }
 
-    test("should join with limit on rhs") {
+    test("cartesian product with limit on rhs") {
       val nodesPerLabel = Math.sqrt(sizeHint).toInt
       val limit = nodesPerLabel - 1
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
@@ -338,7 +338,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "y", "z").withRows(rowCount(nodes.size * limit))
     }
 
-  test("should join with double sort and limit after join") {
+  test("cartesian product with double sort and limit after join") {
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
@@ -371,7 +371,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(inOrder(expectedResultRows))
   }
 
-  test("should join with limit on top of join") {
+  test("cartesian product with limit on top of join") {
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
