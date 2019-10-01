@@ -94,7 +94,7 @@ public class RecoveryCleanupIT
     }
 
     @Test
-    public void recoveryCleanupShouldBlockCheckpoint() throws Throwable
+    public void recoveryCleanupShouldBlockRecoveryWritingToCleanedIndexes() throws Throwable
     {
         // GIVEN
         AtomicReference<Throwable> error = new AtomicReference<>();
@@ -106,14 +106,16 @@ public class RecoveryCleanupIT
             Barrier.Control recoveryCompleteBarrier = new Barrier.Control();
             LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
             setMonitor( recoveryBarrierMonitor );
-            db = startDatabase();
+            Future<?> recovery = executor.submit( () ->
+            {
+                db = startDatabase();
+            } );
             recoveryCompleteBarrier.awaitUninterruptibly(); // Ensure we are mid recovery cleanup
 
             // THEN
-            Future<?> checkpointFuture = executor.submit( () -> reportError( () -> checkpoint( db ), error ) );
-            shouldWait( checkpointFuture );
+            shouldWait( recovery );
             recoveryCompleteBarrier.release();
-            checkpointFuture.get();
+            recovery.get();
 
             db.shutdown();
         }
