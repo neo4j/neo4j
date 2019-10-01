@@ -319,7 +319,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             }
             catch ( ConstraintViolationException e )
             {
-                assertThat( e.getMessage(), containsString( "No such index :MY_LABEL(my_property_key)." ) );
+                assertThat( e.getMessage(), containsString( "Unable to drop index on :MY_LABEL(my_property_key): No such index :MY_LABEL(my_property_key)." ) );
             }
             tx.commit();
         }
@@ -346,7 +346,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
         catch ( Exception e )
         {
-            assertThat( e.getMessage(), containsString( "No such index :MY_LABEL(my_property_key)." ) );
+            assertThat( e.getMessage(), containsString( "No index found with the name 'Index on :MY_LABEL (my_property_key)'." ) );
         }
 
         // THEN
