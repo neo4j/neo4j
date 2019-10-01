@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.logical.plans.{ResolvedCall, ResolvedFunctionInvocation}
-import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.{ProcedureSignatureResolver}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
@@ -47,7 +47,7 @@ case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseS
       q.copy(part = part.copy(clauses = Seq(newResolved, projection))(part.position))(q.position)
   }
 
-  def resolverProcedureCall(context: PlanContext) = bottomUp(Rewriter.lift {
+  def resolverProcedureCall(context: ProcedureSignatureResolver) = bottomUp(Rewriter.lift {
     case unresolved: UnresolvedCall =>
       val resolved = ResolvedCall(context.procedureSignature)(unresolved)
       // We coerce here to ensure that the semantic check run after this rewriter assigns a type
@@ -65,7 +65,7 @@ case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseS
   })
 
   // rewriter that amends unresolved procedure calls with procedure signature information
-  def rewriter(context: PlanContext): AnyRef => AnyRef =
+  def rewriter(context: ProcedureSignatureResolver): AnyRef => AnyRef =
     resolverProcedureCall(context) andThen fakeStandaloneCallDeclarations
 
   override def phase = AST_REWRITE
