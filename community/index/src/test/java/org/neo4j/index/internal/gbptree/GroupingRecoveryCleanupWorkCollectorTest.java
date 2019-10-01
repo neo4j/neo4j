@@ -133,22 +133,6 @@ class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustNotScheduleOldJobsOnStartStopStart() throws Throwable
-    {
-        // given
-        List<DummyJob> allRuns = new ArrayList<>();
-        List<DummyJob> expectedJobs = someJobs( allRuns );
-
-        // when
-        collector.init();
-        collector.start();
-        collector.shutdown();
-
-        // then
-        assertSame( expectedJobs, allRuns );
-    }
-
-    @Test
     void shouldExecuteAllTheJobsWhenSeparateJobFails() throws Exception
     {
         List<DummyJob> allRuns = new ArrayList<>();
