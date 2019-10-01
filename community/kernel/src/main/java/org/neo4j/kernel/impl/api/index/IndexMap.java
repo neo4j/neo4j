@@ -24,10 +24,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
 import org.neo4j.internal.schema.IndexDescriptor;
 
 /**
@@ -39,19 +35,15 @@ import org.neo4j.internal.schema.IndexDescriptor;
 public final class IndexMap implements Cloneable
 {
     private final MutableLongObjectMap<IndexProxy> indexesById;
-    private final Set<IndexDescriptor> indexDescriptors;
 
     public IndexMap()
     {
-        this( new LongObjectHashMap<>(), new HashSet<>() );
+        this( new LongObjectHashMap<>() );
     }
 
-    private IndexMap(
-            MutableLongObjectMap<IndexProxy> indexesById,
-            Set<IndexDescriptor> indexesByDescriptor )
+    private IndexMap( MutableLongObjectMap<IndexProxy> indexesById )
     {
         this.indexesById = indexesById;
-        this.indexDescriptors = indexesByDescriptor;
     }
 
     public IndexProxy getIndexProxy( IndexDescriptor index )
@@ -68,20 +60,11 @@ public final class IndexMap implements Cloneable
     {
         IndexDescriptor index = indexProxy.getDescriptor();
         indexesById.put( index.getId(), indexProxy );
-        indexDescriptors.add( index );
     }
 
     IndexProxy removeIndexProxy( long indexId )
     {
-        IndexProxy removedProxy = indexesById.remove( indexId );
-        if ( removedProxy == null )
-        {
-            return null;
-        }
-
-        IndexDescriptor index = removedProxy.getDescriptor();
-        indexDescriptors.remove( index );
-        return removedProxy;
+        return indexesById.remove( indexId );
     }
 
     void forEachIndexProxy( LongObjectProcedure<IndexProxy> consumer )
@@ -94,15 +77,11 @@ public final class IndexMap implements Cloneable
         return indexesById.values();
     }
 
+    @SuppressWarnings( "MethodDoesntCallSuperMethod" )
     @Override
     public IndexMap clone()
     {
-        return new IndexMap( LongObjectHashMap.newMap( indexesById ), new HashSet<>( indexDescriptors ) );
-    }
-
-    public Iterator<IndexDescriptor> descriptors()
-    {
-        return indexDescriptors.iterator();
+        return new IndexMap( LongObjectHashMap.newMap( indexesById ) );
     }
 
     public LongIterator indexIds()

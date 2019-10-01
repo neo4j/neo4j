@@ -71,6 +71,17 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         return updater;
     }
 
+    private IndexUpdater getUpdater( IndexProxy proxy )
+    {
+        IndexUpdater updater = updaterMap.get( proxy.getDescriptor() );
+        if ( null == updater )
+        {
+            updater = proxy.newUpdater( indexUpdateMode );
+            updaterMap.put( proxy.getDescriptor(), updater );
+        }
+        return updater;
+    }
+
     @Override
     public void close() throws UnderlyingStorageException
     {
@@ -121,13 +132,14 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     {
         return new PrefetchingIterator<>()
         {
-            private Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
+            private Iterator<IndexProxy> proxies = indexMap.getAllIndexProxies().iterator();
+
             @Override
             protected IndexUpdater fetchNextOrNull()
             {
-                if ( descriptors.hasNext() )
+                if ( proxies.hasNext() )
                 {
-                    return getUpdater( descriptors.next() );
+                    return getUpdater( proxies.next() );
                 }
                 return null;
             }

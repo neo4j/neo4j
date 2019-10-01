@@ -41,9 +41,9 @@ class IndexMapReferenceTest
         IndexProxy[] existing = mockedIndexProxies( 5, 0 );
         ref.modify( indexMap ->
         {
-            for ( int i = 0; i < existing.length; i++ )
+            for ( IndexProxy indexProxy : existing )
             {
-                indexMap.putIndexProxy( existing[i] );
+                indexMap.putIndexProxy( indexProxy );
             }
             return indexMap;
         } );
