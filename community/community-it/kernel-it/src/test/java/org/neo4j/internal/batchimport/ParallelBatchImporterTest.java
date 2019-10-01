@@ -543,10 +543,11 @@ public class ParallelBatchImporterTest
                 Object endNode = idGenerator.miss( randoms, endNodeExistingId.id, 0.001f );
 
                 if ( !inputIdGenerator.isMiss( startNode ) && !inputIdGenerator.isMiss( endNode ) )
-                    {
-                        relationshipCount.increment();
-                        propertyCount.add( thisPropertyCount );
-                    }visitor.startId( startNode, startNodeGroup );
+                {
+                    relationshipCount.increment();
+                    propertyCount.add( thisPropertyCount );
+                }
+                visitor.startId( startNode, startNodeGroup );
                 visitor.endId( endNode, endNodeGroup );
 
                 String type = InputIdGenerator.randomType( randoms );
