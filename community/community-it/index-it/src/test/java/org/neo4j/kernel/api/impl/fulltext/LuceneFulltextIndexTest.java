@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexCapability;
@@ -42,9 +43,11 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
@@ -654,5 +657,87 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
                 .withName( "index_1" ).materialise( 1 ).withIndexCapability( capability );
         IndexDescriptor completed = indexProvider.completeConfiguration( index );
         assertSame( capability, completed.getCapability() );
+    }
+
+    @Test
+    public void fulltextIndexMustNotAnswerCoreApiIndexQueries() throws Exception
+    {
+        IndexDescriptor index;
+        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        {
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
+            tx.success();
+        }
+        await( index );
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            nodeId = createNodeIndexableByPropertyValue( tx, LABEL, 1 );
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.findNode( LABEL, PROP, 1 );
+            assertThat( node.getId(), is( nodeId ) );
+        }
+    }
+
+    @Test
+    public void fulltextIndexMustNotAnswerCoreApiCompositeIndexQueries() throws Exception
+    {
+        IndexDescriptor index;
+        try ( KernelTransactionImplementation tx = getKernelTransaction() )
+        {
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP, PROP2 );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
+            tx.success();
+        }
+        await( index );
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode( LABEL );
+            node.setProperty( PROP, 1 );
+            node.setProperty( PROP2, 2 );
+            nodeId = node.getId();
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( ResourceIterator<Node> nodes = tx.findNodes( LABEL, PROP, 1, PROP2, 2 ) )
+            {
+                assertTrue( nodes.hasNext() );
+                Node node = nodes.next();
+                assertThat( node.getId(), is( nodeId ) );
+                assertFalse( nodes.hasNext() );
+            }
+
+            try ( ResourceIterator<Node> nodes = tx.findNodes( LABEL, PROP2, 2, PROP, 1 ) )
+            {
+                assertTrue( nodes.hasNext() );
+                Node node = nodes.next();
+                assertThat( node.getId(), is( nodeId ) );
+                assertFalse( nodes.hasNext() );
+            }
+
+            try ( ResourceIterator<Node> nodes = tx.findNodes( LABEL, PROP, 1 ) )
+            {
+                assertTrue( nodes.hasNext() );
+                Node node = nodes.next();
+                assertThat( node.getId(), is( nodeId ) );
+                assertFalse( nodes.hasNext() );
+            }
+
+            try ( ResourceIterator<Node> nodes = tx.findNodes( LABEL, PROP2, 2 ) )
+            {
+                assertTrue( nodes.hasNext() );
+                Node node = nodes.next();
+                assertThat( node.getId(), is( nodeId ) );
+                assertFalse( nodes.hasNext() );
+            }
+        }
     }
 }

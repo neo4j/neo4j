@@ -39,14 +39,18 @@ public class MultipleIndexesException extends SchemaKernelException
 
     public MultipleIndexesException( SchemaDescriptor descriptor, Collection<IndexDescriptor> indexes )
     {
-        super( Status.Schema.IndexMultipleFound,
-                format( message, descriptor.userDescription( idTokenNameLookup ), Iterators.toString( indexes.iterator(), IndexDescriptor::getName, 5 ) ) );
+        super( Status.Schema.IndexMultipleFound, getUserMessage( idTokenNameLookup, descriptor, indexes ) );
         this.descriptor = descriptor;
         this.indexes = indexes;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
+    {
+        return getUserMessage( tokenNameLookup, descriptor, indexes );
+    }
+
+    private static String getUserMessage( TokenNameLookup tokenNameLookup, SchemaDescriptor descriptor, Collection<IndexDescriptor> indexes )
     {
         return format( message, descriptor.userDescription( tokenNameLookup ), Iterators.toString( indexes.iterator(), IndexDescriptor::getName, 5 ) );
     }

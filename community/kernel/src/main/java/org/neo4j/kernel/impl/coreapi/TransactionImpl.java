@@ -788,7 +788,7 @@ public class TransactionImpl implements InternalTransaction
         {
             IndexDescriptor index = indexes.next();
             int[] original = index.schema().getPropertyIds();
-            if ( hasSamePropertyIds( original, workingCopy, propertyIds ) )
+            if ( index.getIndexType().getKind() == IndexKind.GENERAL && hasSamePropertyIds( original, workingCopy, propertyIds ) )
             {
                 // Ha! We found an index with the same properties in another order
                 return index;

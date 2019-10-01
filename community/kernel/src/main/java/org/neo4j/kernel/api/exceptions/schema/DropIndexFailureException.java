@@ -19,29 +19,18 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class DropIndexFailureException extends SchemaKernelException
 {
-    private final String message;
-
     public DropIndexFailureException( String message )
     {
         super( Status.Schema.IndexDropFailed, message );
-        this.message = message;
     }
 
     public DropIndexFailureException( String message, Throwable cause )
     {
         super( Status.Schema.IndexDropFailed, message, cause );
-        this.message = message;
-    }
-
-    @Override
-    public String getUserMessage( TokenNameLookup tokenNameLookup )
-    {
-        return message;
     }
 }

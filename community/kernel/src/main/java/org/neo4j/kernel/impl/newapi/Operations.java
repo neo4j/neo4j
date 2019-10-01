@@ -923,6 +923,7 @@ public class Operations implements Write, SchemaWrite
             throw new DropIndexFailureException(
                     "Unable to drop index on " + schema.userDescription( tokenNameLookup ) + ". There is no such index." );
         }
+        // TODO change this to drop all IndexType.GENERAL indexes that matches the given schema.
         IndexDescriptor existingIndex = iterator.next();
         if ( iterator.hasNext() )
         {

@@ -70,6 +70,7 @@ public class LuceneFulltextTestSupport
     static final Label LABEL = Label.label( "LABEL" );
     static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
     static final String PROP = "prop";
+    static final String PROP2 = "prop2";
 
     DbmsRule db = new EmbeddedDbmsRule();
     private RepeatRule repeatRule = createRepeatRule();
