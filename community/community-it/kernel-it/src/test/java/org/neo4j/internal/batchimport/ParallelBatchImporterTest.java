@@ -35,9 +35,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -62,6 +64,7 @@ import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
+import org.neo4j.internal.batchimport.staging.StageExecution;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -92,6 +95,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -164,6 +168,7 @@ public class ParallelBatchImporterTest
 
         // GIVEN
         ExecutionMonitor processorAssigner = ProcessorAssignmentStrategies.eagerRandomSaturation( config.maxNumberOfProcessors() );
+        CapturingMonitor monitor = new CapturingMonitor( processorAssigner );
         DatabaseLayout databaseLayout = directory.databaseLayout();
 
         boolean successful = false;
@@ -176,21 +181,23 @@ public class ParallelBatchImporterTest
         Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_PER_NODE * 2 );
         final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
             fs, null, config, NullLogService.getInstance(),
-            processorAssigner, EMPTY, dbConfig, getFormat(), ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogsInitializer.INSTANCE );
+            monitor, EMPTY, dbConfig, getFormat(), ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogsInitializer.INSTANCE );
+        LongAdder propertyCount = new LongAdder();
+        LongAdder relationshipCount = new LongAdder();
         try
         {
             // WHEN
             inserter.doImport( Input.input(
-                nodes( nodeRandomSeed, NODE_COUNT, config.batchSize(), inputIdGenerator, groupDistribution ),
-                relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, config.batchSize(),
-                    inputIdGenerator, groupDistribution ), idType,
-                Input.knownEstimates(
-                    NODE_COUNT, RELATIONSHIP_COUNT,
-                    NODE_COUNT * TOKENS.length / 2,
-                    RELATIONSHIP_COUNT * TOKENS.length / 2,
-                    NODE_COUNT * TOKENS.length / 2 * Long.BYTES,
-                    RELATIONSHIP_COUNT * TOKENS.length / 2 * Long.BYTES,
-                    NODE_COUNT * TOKENS.length / 2 ), groups ) );
+                    nodes( nodeRandomSeed, NODE_COUNT, config.batchSize(), inputIdGenerator, groupDistribution, propertyCount ),
+                    relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, config.batchSize(),
+                            inputIdGenerator, groupDistribution, propertyCount, relationshipCount ), idType,
+                    knownEstimates(
+                            NODE_COUNT, RELATIONSHIP_COUNT,
+                            NODE_COUNT * TOKENS.length / 2,
+                            RELATIONSHIP_COUNT * TOKENS.length / 2,
+                            NODE_COUNT * TOKENS.length / 2 * Long.BYTES,
+                            RELATIONSHIP_COUNT * TOKENS.length / 2 * Long.BYTES,
+                            NODE_COUNT * TOKENS.length / 2 ), groups ) );
 
             // THEN
             DatabaseManagementService managementService = getDBMSBuilder( directory.homeDir() ).build();
@@ -361,10 +368,11 @@ public class ParallelBatchImporterTest
             long relationshipRandomSeed ) throws IOException
     {
         // Read all nodes, relationships and properties ad verify against the input data.
-        try ( InputIterator nodes = nodes( nodeRandomSeed, nodeCount, config.batchSize(), inputIdGenerator, groups ).iterator();
+        LongAdder propertyCount = new LongAdder();
+        try ( InputIterator nodes = nodes( nodeRandomSeed, nodeCount, config.batchSize(), inputIdGenerator, groups, propertyCount ).iterator();
             InputIterator relationships = relationships( relationshipRandomSeed, relationshipCount,
-                config.batchSize(), inputIdGenerator, groups ).iterator();
-            ResourceIterator<Node> dbNodes = tx.getAllNodes().iterator() )
+                config.batchSize(), inputIdGenerator, groups ,
+            propertyCount, new LongAdder() ).iterator(); ResourceIterator<Node> dbNodes = tx.getAllNodes().iterator() )
         {
             // Nodes
             Map<String, Node> nodeByInputId = new HashMap<>( nodeCount );
@@ -519,23 +527,26 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private static InputIterable relationships( final long randomSeed, final long count, int batchSize,
-        final InputIdGenerator idGenerator, final IdGroupDistribution groups )
+    private InputIterable relationships( final long randomSeed, final long count, int batchSize,
+        final InputIdGenerator idGenerator, final IdGroupDistribution groups, LongAdder propertyCount, LongAdder relationshipCount )
     {
         return () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
-            ( randoms, visitor, id ) ->
-            {
-                randomProperties( randoms, "Name " + id, visitor );
-                ExistingId startNodeExistingId = idGenerator.randomExisting( randoms );
-                Group startNodeGroup = groups.groupOf( startNodeExistingId.nodeIndex );
-                ExistingId endNodeExistingId = idGenerator.randomExisting( randoms );
-                Group endNodeGroup = groups.groupOf( endNodeExistingId.nodeIndex );
+                ( randoms, visitor, id ) -> {
+                    int thisPropertyCount = randomProperties( randoms, "Name " + id, visitor );
+                    ExistingId startNodeExistingId = idGenerator.randomExisting( randoms );
+                    Group startNodeGroup = groups.groupOf( startNodeExistingId.nodeIndex );
+                    ExistingId endNodeExistingId = idGenerator.randomExisting( randoms );
+                    Group endNodeGroup = groups.groupOf( endNodeExistingId.nodeIndex );
 
                 // miss some
                 Object startNode = idGenerator.miss( randoms, startNodeExistingId.id, 0.001f );
                 Object endNode = idGenerator.miss( randoms, endNodeExistingId.id, 0.001f );
 
-                visitor.startId( startNode, startNodeGroup );
+                if ( !inputIdGenerator.isMiss( startNode ) && !inputIdGenerator.isMiss( endNode ) )
+                    {
+                        relationshipCount.increment();
+                        propertyCount.add( thisPropertyCount );
+                    }visitor.startId( startNode, startNodeGroup );
                 visitor.endId( endNode, endNodeGroup );
 
                 String type = InputIdGenerator.randomType( randoms );
@@ -549,8 +560,8 @@ public class ParallelBatchImporterTest
             }, 0 );
     }
 
-    private static InputIterable nodes( final long randomSeed, final long count, int batchSize,
-        final InputIdGenerator inputIdGenerator, final IdGroupDistribution groups )
+    private InputIterable nodes( final long randomSeed, final long count, int batchSize,
+        final InputIdGenerator inputIdGenerator, final IdGroupDistribution groups, LongAdder propertyCount )
     {
         return () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
             ( randoms, visitor, id ) ->
@@ -558,14 +569,14 @@ public class ParallelBatchImporterTest
                 Object nodeId = inputIdGenerator.nextNodeId( randoms, id );
                 Group group = groups.groupOf( id );
                 visitor.id( nodeId, group );
-                randomProperties( randoms, uniqueId( group, nodeId ), visitor );
+                propertyCount.add( randomProperties( randoms, uniqueId( group, nodeId ), visitor ) );
                 visitor.labels( randoms.selection( TOKENS, 0, TOKENS.length, true ) );
             }, 0 );
     }
 
     private static final String[] TOKENS = {"token1", "token2", "token3", "token4", "token5", "token6", "token7"};
 
-    private static void randomProperties( RandomValues randoms, Object id, InputEntityVisitor visitor )
+    private int randomProperties( RandomValues randoms, Object id, InputEntityVisitor visitor )
     {
         String[] keys = randoms.selection( TOKENS, 0, TOKENS.length, false );
         for ( String key : keys )
@@ -573,5 +584,54 @@ public class ParallelBatchImporterTest
             visitor.property( key, randoms.nextValue().asObject() );
         }
         visitor.property( "id", id );
+        return keys.length + 1 /*the 'id' property*/;
+    }
+
+    private static class CapturingMonitor implements ExecutionMonitor
+    {
+        private final ExecutionMonitor delegate;
+        private String additionalInformation;
+
+        CapturingMonitor( ExecutionMonitor delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void initialize( DependencyResolver dependencyResolver )
+        {
+            delegate.initialize( dependencyResolver );
+        }
+
+        @Override
+        public void start( StageExecution execution )
+        {
+            delegate.start( execution );
+        }
+
+        @Override
+        public void end( StageExecution execution, long totalTimeMillis )
+        {
+            delegate.end( execution, totalTimeMillis );
+        }
+
+        @Override
+        public void done( boolean successful, long totalTimeMillis, String additionalInformation )
+        {
+            this.additionalInformation = additionalInformation;
+            delegate.done( successful, totalTimeMillis, additionalInformation );
+        }
+
+        @Override
+        public long nextCheckTime()
+        {
+            return delegate.nextCheckTime();
+        }
+
+        @Override
+        public void check( StageExecution execution )
+        {
+            delegate.check( execution );
+        }
     }
 }

@@ -55,6 +55,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private final BatchingIdGetter arrayPropertyIds;
     protected final Monitor monitor;
     private long propertyCount;
+    protected int entityPropertyCount; // just for the current entity
     private boolean hasPropertyId;
     private long propertyId;
     private final DynamicRecordAllocator dynamicStringRecordAllocator;
@@ -89,7 +90,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     {
         assert !hasPropertyId;
         encodeProperty( nextPropertyBlock(), propertyKeyId, value );
-        propertyCount++;
+        entityPropertyCount++;
         return true;
     }
 
@@ -107,6 +108,8 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     {
         propertyBlocksCursor = 0;
         hasPropertyId = false;
+        propertyCount += entityPropertyCount;
+        entityPropertyCount = 0;
     }
 
     private PropertyBlock nextPropertyBlock()

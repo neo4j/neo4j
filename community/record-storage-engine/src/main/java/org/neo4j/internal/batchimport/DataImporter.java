@@ -135,6 +135,7 @@ public class DataImporter
         List<EntityImporter> importers = new ArrayList<>();
         try ( InputIterator dataIterator = data.iterator() )
         {
+            executionMonitor.start( execution );
             for ( int i = 0; i < numRunners; i++ )
             {
                 EntityImporter importer = visitors.get();
@@ -143,7 +144,6 @@ public class DataImporter
             }
             pool.shutdown();
 
-            executionMonitor.start( execution );
             long nextWait = 0;
             try
             {
@@ -185,7 +185,7 @@ public class DataImporter
             Monitor monitor, boolean validateRelationshipData )
                     throws IOException
     {
-        DataStatistics typeDistribution = new DataStatistics( monitor.nodes.sum(), monitor.properties.sum(), new DataStatistics.RelationshipTypeCount[0] );
+        DataStatistics typeDistribution = new DataStatistics( monitor, new DataStatistics.RelationshipTypeCount[0] );
         Supplier<EntityImporter> importers = () -> new RelationshipImporter( stores, idMapper, typeDistribution, monitor,
                 badCollector, validateRelationshipData, stores.usesDoubleRelationshipRecordUnits() );
         importData( RELATIONSHIP_IMPORT_NAME, numRunners, input.relationships( badCollector ), stores, importers, executionMonitor,

@@ -189,6 +189,7 @@ public class RelationshipImporter extends EntityImporter
             }
             badCollector.collectBadRelationship( startId, group( startIdGroup ).name(), type, endId, group( endIdGroup ).name(),
                     relationshipRecord.getFirstNode() == IdMapper.ID_NOT_FOUND ? startId : endId );
+            entityPropertyCount = 0;
         }
 
         relationshipRecord.clear();
