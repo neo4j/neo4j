@@ -39,7 +39,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingR
 import org.neo4j.unsafe.impl.batchimport.store.PrepareIdSequence;
 
 import static java.lang.String.format;
-
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
 
 /**
@@ -192,6 +191,7 @@ public class RelationshipImporter extends EntityImporter
             }
             badCollector.collectBadRelationship( startId, group( startIdGroup ).name(), type, endId, group( endIdGroup ).name(),
                     relationshipRecord.getFirstNode() == ID_NOT_FOUND ? startId : endId );
+            entityPropertyCount = 0;
         }
 
         relationshipRecord.clear();
