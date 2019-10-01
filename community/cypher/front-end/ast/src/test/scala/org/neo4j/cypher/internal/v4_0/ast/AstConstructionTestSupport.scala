@@ -307,9 +307,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
            args: Option[Seq[Expression]] = Some(Vector()),
            yields: Option[Seq[Variable]] = None
           ): UnresolvedCall =
-    UnresolvedCall(Namespace(ns.toList)(pos),
+    UnresolvedCall(
+      Namespace(ns.toList)(pos),
       ProcedureName(name)(pos),
-      Some(Vector()),
+      args,
       yields.map(vs => ProcedureResult(vs.toIndexedSeq.map(ProcedureResultItem(_)(pos)))(pos))
     )(pos)
 
