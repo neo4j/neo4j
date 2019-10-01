@@ -19,24 +19,27 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.Queue;
+import java.util.StringJoiner;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.Preconditions;
 
 /**
- * Collects recovery cleanup work to be performed and schedule them one by one in {@link #start()}}.
- * <p>
- * Also see {@link RecoveryCleanupWorkCollector}
+ * Runs cleanup work as they're added in {@link #add(CleanupJob)}, but the thread that calls {@link #add(CleanupJob)} will not execute them itself.
  */
 public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
 {
-    private final Queue<CleanupJob> jobs;
+    private final BlockingQueue<CleanupJob> jobs = new LinkedBlockingQueue<>();
     private final JobScheduler jobScheduler;
     private volatile boolean started;
+    private JobHandle handle;
 
     /**
      * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
@@ -44,41 +47,51 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
     public GroupingRecoveryCleanupWorkCollector( JobScheduler jobScheduler )
     {
         this.jobScheduler = jobScheduler;
-        this.jobs = new LinkedBlockingQueue<>();
+    }
+
+    @Override
+    public void init()
+    {
+        if ( !jobs.isEmpty() )
+        {
+            StringJoiner joiner = new StringJoiner( String.format( "%n  " ), "Did not expect there to be any cleanup jobs still here. Jobs[", "]" );
+            consumeAndCloseJobs( cj -> joiner.add( jobs.toString() ) );
+            throw new IllegalStateException( joiner.toString() );
+        }
+        scheduleJobs();
     }
 
     @Override
     public void add( CleanupJob job )
     {
-        if ( started )
-        {
-            throw new IllegalStateException( "Index clean jobs can't be added after collector start." );
-        }
+        Preconditions.checkState( !started, "Index clean jobs can't be added after collector start." );
         jobs.add( job );
-    }
-
-    @Override
-    public void init()
-    {   // Nothing to init
     }
 
     @Override
     public void start()
     {
         Preconditions.checkState( !started, "Already started" );
-        scheduleJobs();
         started = true;
     }
 
     @Override
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
+        started = true;
+        if ( handle != null )
+        {
+            // Also set the started flag which acts as a signal to exit the scheduled job on empty queue,
+            // this is of course a special case where perhaps not start() gets called, i.e. if something fails
+            // before reaching that phase in the lifecycle.
+            handle.waitTermination();
+        }
         consumeAndCloseJobs( cj -> {} );
     }
 
     private void scheduleJobs()
     {
-        jobScheduler.schedule( Group.STORAGE_MAINTENANCE, allJobs() );
+        handle = jobScheduler.schedule( Group.STORAGE_MAINTENANCE, allJobs() );
     }
 
     private Runnable allJobs()
@@ -86,34 +99,32 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
         return () ->
                 executeWithExecutor( executor ->
                 {
-                    CleanupJob job;
-                    Exception jobsException = null;
-                    while ( (job = jobs.poll()) != null )
+                    CleanupJob job = null;
+                    do
                     {
                         try
                         {
-                            job.run( executor );
+                            job = jobs.poll( 100, TimeUnit.MILLISECONDS );
+                            if ( job != null )
+                            {
+                                job.run( executor );
+                            }
                         }
                         catch ( Exception e )
                         {
-                            if ( jobsException == null )
-                            {
-                                jobsException = e;
-                            }
-                            else
-                            {
-                                jobsException.addSuppressed( e );
-                            }
+                            // There's no audience for these exceptions. The jobs themselves know if they've failed and communicates
+                            // that to its tree. The scheduled job is just a vessel for running these cleanup jobs.
                         }
                         finally
                         {
-                            job.close();
+                            if ( job != null )
+                            {
+                                job.close();
+                            }
                         }
                     }
-                    if ( jobsException != null )
-                    {
-                        throw new RuntimeException( jobsException );
-                    }
+                    // Even if there are no jobs in the queue then continue looping until we go to started state
+                    while ( !jobs.isEmpty() || !started );
                 } );
     }
 

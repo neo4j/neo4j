@@ -97,7 +97,7 @@ class RecoveryCleanupIT
     }
 
     @Test
-    void recoveryCleanupShouldBlockCheckpoint()
+    void recoveryCleanupShouldBlockRecoveryWritingToCleanedIndexes()
     {
         assertTimeoutPreemptively( ofSeconds( 1000 ), () ->
         {
@@ -110,13 +110,13 @@ class RecoveryCleanupIT
                 Barrier.Control recoveryCompleteBarrier = new Barrier.Control();
                 LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
                 setMonitor( recoveryBarrierMonitor );
-                Future<GraphDatabaseService> startDatabaseFuture = executor.submit( () -> db = startDatabase() );
+                Future<GraphDatabaseService> recovery = executor.submit( () -> db = startDatabase() );
                 recoveryCompleteBarrier.awaitUninterruptibly(); // Ensure we are mid recovery cleanup
 
                 // THEN
-                shouldWait( startDatabaseFuture );
+                shouldWait( recovery );
                 recoveryCompleteBarrier.release();
-                startDatabaseFuture.get();
+                recovery.get();
             }
             finally
             {
