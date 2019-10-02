@@ -83,13 +83,12 @@ sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
-final case class FromGraph(expression: Expression)(val position: InputPosition) extends MultipleGraphClause with SemanticAnalysisTooling {
+sealed trait GraphSelection extends Clause with SemanticAnalysisTooling {
 
-  override def name = "FROM GRAPH"
+  def expression: Expression
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      checkGraphReference chain
+    checkGraphReference chain
       whenState(_.features(SemanticFeature.ExpressionsInViewInvocations))(
         thenBranch = checkGraphReferenceExpressions,
         elseBranch = checkGraphReferenceRecursive
@@ -117,6 +116,22 @@ final case class FromGraph(expression: Expression)(val position: InputPosition) 
 
   def graphReference: Option[GraphReference] =
     GraphReference.from(expression)
+}
+
+final case class FromGraph(expression: Expression)(val position: InputPosition) extends GraphSelection {
+  override def name = "FROM GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    requireFeatureSupport(s"The `$name` clause", SemanticFeature.FromGraphSelector, position) chain
+      super.semanticCheck
+}
+
+final case class UseGraph(expression: Expression)(val position: InputPosition) extends GraphSelection {
+  override def name = "USE GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    requireFeatureSupport(s"The `$name` clause", SemanticFeature.UseGraphSelector, position) chain
+      super.semanticCheck
 }
 
 object GraphReference extends SemanticAnalysisTooling {
