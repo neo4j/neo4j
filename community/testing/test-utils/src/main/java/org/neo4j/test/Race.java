@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntFunction;
 
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -136,9 +137,19 @@ public class Race
 
     public void addContestants( int count, Runnable contestant, int maxNumberOfRuns )
     {
+        addContestants( count, i -> contestant, maxNumberOfRuns );
+    }
+
+    public void addContestants( int count, IntFunction<Runnable> contestantSupplier )
+    {
+        addContestants( count, contestantSupplier, UNLIMITED );
+    }
+
+    public void addContestants( int count, IntFunction<Runnable> contestantSupplier, int maxNumberOfRuns )
+    {
         for ( int i = 0; i < count; i++ )
         {
-            addContestant( contestant, maxNumberOfRuns );
+            addContestant( contestantSupplier.apply( i ), maxNumberOfRuns );
         }
     }
 
