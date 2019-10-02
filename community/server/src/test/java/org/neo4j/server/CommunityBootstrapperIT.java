@@ -19,6 +19,11 @@
  */
 package org.neo4j.server;
 
+import java.io.File;
+
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+
 public class CommunityBootstrapperIT extends BaseBootstrapperIT
 {
     @Override
@@ -27,4 +32,9 @@ public class CommunityBootstrapperIT extends BaseBootstrapperIT
         return new CommunityBootstrapper();
     }
 
+    @Override
+    protected DatabaseManagementService newEmbeddedDbms( File homeDir )
+    {
+        return new DatabaseManagementServiceBuilder( homeDir ).build();
+    }
 }

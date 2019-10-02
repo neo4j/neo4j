@@ -27,14 +27,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
@@ -44,22 +38,21 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
@@ -68,6 +61,7 @@ import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.fs.FileUtils.relativePath;
 import static org.neo4j.server.ServerTestUtils.getDefaultRelativeProperties;
 import static org.neo4j.server.ServerTestUtils.verifyConnector;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -205,41 +199,21 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     {
         File serverDir = testDirectory.directory( "server-dir" );
         ServerBootstrapper.start( bootstrapper, "--home-dir", serverDir.getAbsolutePath() );
+        Neo4jLayout serverLayout = bootstrapper.getServer().getDatabaseService().getDatabase().databaseLayout().getNeo4jLayout();
         bootstrapper.stop();
 
         File embeddedDir = testDirectory.directory( "embedded-dir" );
         DatabaseManagementService dbms = newEmbeddedDbms( embeddedDir );
+        Neo4jLayout embeddedLayout = ((GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME )).databaseLayout().getNeo4jLayout();
         dbms.shutdown();
 
-        Predicate<Path> filter = path -> !path.toString().contains( "index" ); //indexes may differ
-        Set<Path> serverPathsWithoutRoot = getAllDirectoryWithPathsStrippedFromRoot( serverDir.toPath(), filter );
-        Set<Path> embeddedPathsWithoutRoot = getAllDirectoryWithPathsStrippedFromRoot( embeddedDir.toPath(), filter );
-
-        Set<Path> directoriesInServerButNotEmbedded = new HashSet<>( serverPathsWithoutRoot );
-        directoriesInServerButNotEmbedded.removeAll( embeddedPathsWithoutRoot );
-
-        Set<Path> directoriesInEmbeddedButNotServer = new HashSet<>( embeddedPathsWithoutRoot );
-        directoriesInEmbeddedButNotServer.removeAll( serverPathsWithoutRoot );
-
-        assertFalse( serverPathsWithoutRoot.isEmpty() );
-        assertFalse( embeddedPathsWithoutRoot.isEmpty() );
-        assertThat( directoriesInServerButNotEmbedded, empty() );
-        assertThat( directoriesInEmbeddedButNotServer, empty() );
+        assertEquals( relativePath( serverDir, serverLayout.homeDirectory() ), relativePath( embeddedDir, embeddedLayout.homeDirectory() ) );
+        assertEquals( relativePath( serverDir, serverLayout.storeDirectory() ), relativePath( embeddedDir, embeddedLayout.storeDirectory() ) );
+        assertEquals( relativePath( serverDir, serverLayout.transactionLogsRootDirectory() ),
+                relativePath( embeddedDir, embeddedLayout.transactionLogsRootDirectory() ) );
     }
 
-    protected DatabaseManagementService newEmbeddedDbms( File homeDir )
-    {
-        return new DatabaseManagementServiceBuilder( homeDir ).build();
-    }
-
-    private Set<Path> getAllDirectoryWithPathsStrippedFromRoot( Path root, Predicate<Path> filter ) throws IOException
-    {
-        return Files.walk( root )
-                .filter( Files::isDirectory )
-                .filter( filter )
-                .map( root::relativize )
-                .collect( Collectors.toSet() );
-    }
+    protected abstract DatabaseManagementService newEmbeddedDbms( File homeDir );
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled ) throws Exception
     {
