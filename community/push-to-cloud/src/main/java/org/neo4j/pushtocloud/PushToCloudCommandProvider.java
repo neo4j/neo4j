@@ -53,7 +53,7 @@ public class PushToCloudCommandProvider extends AdminCommand.Provider
     public String description()
     {
         return "Push your local database to a Neo4j cloud instance. The database must be shutdown in order to take a dump to upload. " +
-                "The target location is your Neo4j Cloud bolt URI. You will be asked your Neo4j Cloud username and password during " +
+                "The target location is your Neo4j Cloud Bolt URI. You will be asked your Neo4j Cloud username and password during " +
                 "the push-to-cloud operation.";
     }
 
