@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.Statement;
@@ -62,6 +61,7 @@ class GraphExtractionWriterTest
     private final Relationship r1 = relationship( 7, n1, "ONE", n2, property( "name", "r1" ) );
     private final Relationship r2 = relationship( 8, n1, "TWO", n3, property( "name", "r2" ) );
     private final TransactionStateChecker checker = new TransactionStateChecker( mock( Statement.class ), id -> false, id -> false );
+    private final JsonFactory jsonFactory = new JsonFactory();
 
     @Test
     void shouldExtractNodesFromRow() throws Exception
@@ -191,8 +191,6 @@ class GraphExtractionWriterTest
 
     // The code under test
 
-    private JsonFactory jsonFactory = new JsonFactory();
-
     private JsonNode write( Map<String, Object> row ) throws IOException, JsonParseException
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -201,7 +199,7 @@ class GraphExtractionWriterTest
         try
         {
             RecordEvent recordEvent = new RecordEvent( new ArrayList<>( row.keySet() ), row::get );
-            new GraphExtractionWriter().write( json, recordEvent , checker, mock( GraphDatabaseService.class ) );
+            new GraphExtractionWriter().write( json, recordEvent , checker );
         }
         finally
         {

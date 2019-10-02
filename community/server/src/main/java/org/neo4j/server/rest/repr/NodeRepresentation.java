@@ -21,7 +21,6 @@ package org.neo4j.server.rest.repr;
 
 import java.util.Collection;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
@@ -33,14 +32,12 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 public final class NodeRepresentation extends ObjectRepresentation implements ExtensibleRepresentation, EntityRepresentation
 {
     private final Node node;
-    private final GraphDatabaseService databaseService;
     private TransactionStateChecker checker;
 
-    public NodeRepresentation( Node node, GraphDatabaseService databaseService )
+    public NodeRepresentation( Node node )
     {
         super( RepresentationType.NODE );
         this.node = node;
-        this.databaseService = databaseService;
     }
 
     public void setTransactionStateChecker( TransactionStateChecker checker )
@@ -153,7 +150,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
     {
         if ( isDeleted() )
         {
-            return new MapRepresentation( map( "id", node.getId(), "deleted", Boolean.TRUE ), databaseService );
+            return new MapRepresentation( map( "id", node.getId(), "deleted", Boolean.TRUE ) );
         }
         else
         {
@@ -165,7 +162,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
                     return label.name();
                 }
             } );
-            return new MapRepresentation( map( "id", node.getId(), "labels", labels ), databaseService );
+            return new MapRepresentation( map( "id", node.getId(), "labels", labels ) );
         }
     }
 
@@ -182,13 +179,6 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
             MappingWriter writer = serializer.writer;
             MappingWriter properties = writer.newMapping( RepresentationType.PROPERTIES, "data" );
             new PropertiesRepresentation( node ).serialize( properties );
-            if ( writer.isInteractive() )
-            {
-                try ( var transaction = databaseService.beginTx() )
-                {
-                    serializer.putList( "relationship_types", ListRepresentation.relationshipTypes( transaction.getAllRelationshipTypes() ) );
-                }
-            }
             properties.done();
         }
     }

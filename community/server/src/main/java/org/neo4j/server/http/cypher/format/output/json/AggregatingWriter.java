@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.IOException;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 
@@ -37,12 +36,12 @@ class AggregatingWriter implements ResultDataContentWriter
     }
 
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker, GraphDatabaseService databaseService )
+    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker )
             throws IOException
     {
         for ( ResultDataContentWriter writer : writers )
         {
-            writer.write( out, recordEvent, txStateChecker, databaseService );
+            writer.write( out, recordEvent, txStateChecker );
         }
     }
 }

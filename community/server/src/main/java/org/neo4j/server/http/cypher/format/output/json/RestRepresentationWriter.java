@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -48,7 +47,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
     }
 
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker, GraphDatabaseService databaseService )
+    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker )
             throws IOException
     {
         RepresentationFormat format = new StreamingJsonFormat.StreamingRepresentationFormat( out, null );
@@ -57,7 +56,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
         {
             for ( String key : recordEvent.getColumns() )
             {
-                write( out, format, recordEvent.getValue( key ), txStateChecker, databaseService );
+                write( out, format, recordEvent.getValue( key ), txStateChecker );
             }
         }
         finally
@@ -66,7 +65,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
         }
     }
 
-    private void write( JsonGenerator out, RepresentationFormat format, Object value, TransactionStateChecker checker, GraphDatabaseService databaseService )
+    private void write( JsonGenerator out, RepresentationFormat format, Object value, TransactionStateChecker checker )
             throws IOException
     {
         if ( value instanceof Map<?, ?> )
@@ -77,7 +76,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
                 for ( Map.Entry<String, ?> entry : ((Map<String, ?>) value).entrySet() )
                 {
                     out.writeFieldName( entry.getKey() );
-                    write( out, format, entry.getValue(), checker, databaseService );
+                    write( out, format, entry.getValue(), checker );
                 }
             }
             finally
@@ -96,7 +95,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
             {
                 for ( Object item : (Iterable<?>) value )
                 {
-                    write( out, format, item, checker, databaseService );
+                    write( out, format, item, checker );
                 }
             }
             finally
@@ -106,13 +105,13 @@ class RestRepresentationWriter implements ResultDataContentWriter
         }
         else if ( value instanceof Node )
         {
-            NodeRepresentation representation = new NodeRepresentation( (Node) value, databaseService );
+            NodeRepresentation representation = new NodeRepresentation( (Node) value );
             representation.setTransactionStateChecker( checker );
             write( format, representation );
         }
         else if ( value instanceof Relationship )
         {
-            RelationshipRepresentation representation = new RelationshipRepresentation( (Relationship) value, databaseService );
+            RelationshipRepresentation representation = new RelationshipRepresentation( (Relationship) value );
             representation.setTransactionStateChecker( checker );
             write( format, representation );
         }

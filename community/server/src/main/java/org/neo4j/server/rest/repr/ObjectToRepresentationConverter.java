@@ -22,7 +22,6 @@ package org.neo4j.server.rest.repr;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.FirstItemIterable;
@@ -31,35 +30,35 @@ import org.neo4j.internal.helpers.collection.IteratorWrapper;
 
 public class ObjectToRepresentationConverter
 {
-    public static Representation convert( final Object data, GraphDatabaseService databaseService )
+    public static Representation convert( final Object data )
     {
         if ( data instanceof Iterable )
         {
-            return getListRepresentation( (Iterable) data, databaseService );
+            return getListRepresentation( (Iterable) data );
         }
         if ( data instanceof Iterator )
         {
             Iterator iterator = (Iterator) data;
-            return getIteratorRepresentation( iterator, databaseService );
+            return getIteratorRepresentation( iterator );
         }
         if ( data instanceof Map )
         {
-            return getMapRepresentation( (Map) data, databaseService );
+            return getMapRepresentation( (Map) data );
         }
-        return getSingleRepresentation( data, databaseService );
+        return getSingleRepresentation( data );
     }
 
     private ObjectToRepresentationConverter()
     {
     }
 
-    public static MappingRepresentation getMapRepresentation( Map data, GraphDatabaseService databaseService )
+    public static MappingRepresentation getMapRepresentation( Map data )
     {
-        return new MapRepresentation( data, databaseService );
+        return new MapRepresentation( data );
     }
 
     @SuppressWarnings( "unchecked" )
-    static Representation getIteratorRepresentation( Iterator data, GraphDatabaseService databaseService )
+    static Representation getIteratorRepresentation( Iterator data )
     {
         final FirstItemIterable<Representation> results =
                 new FirstItemIterable<>( new IteratorWrapper<Representation,Object>( data )
@@ -69,33 +68,33 @@ public class ObjectToRepresentationConverter
                     {
                         if ( value instanceof Iterable )
                         {
-                            FirstItemIterable<Representation> nested = convertValuesToRepresentations( (Iterable) value, databaseService );
+                            FirstItemIterable<Representation> nested = convertValuesToRepresentations( (Iterable) value );
                             return new ListRepresentation( getType( nested ), nested );
                         }
                         else
                         {
-                            return getSingleRepresentation( value, databaseService );
+                            return getSingleRepresentation( value );
                         }
                     }
                 } );
         return new ListRepresentation( getType( results ), results );
     }
 
-    public static ListRepresentation getListRepresentation( Iterable data, GraphDatabaseService databaseService )
+    public static ListRepresentation getListRepresentation( Iterable data )
     {
-        final FirstItemIterable<Representation> results = convertValuesToRepresentations( data, databaseService );
-        return new ServerListRepresentation( getType( results ), results, databaseService );
+        final FirstItemIterable<Representation> results = convertValuesToRepresentations( data );
+        return new ServerListRepresentation( getType( results ), results );
     }
 
     @SuppressWarnings( "unchecked" )
-    static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data, GraphDatabaseService databaseService )
+    static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data )
     {
         return new FirstItemIterable<>( new IterableWrapper<Representation,Object>( data )
         {
             @Override
             protected Representation underlyingObjectToObject( Object value )
             {
-                return convert( value, databaseService );
+                return convert( value );
             }
         } );
     }
@@ -110,7 +109,7 @@ public class ObjectToRepresentationConverter
         return representation.getRepresentationType();
     }
 
-    static Representation getSingleRepresentation( Object result, GraphDatabaseService databaseService )
+    static Representation getSingleRepresentation( Object result )
     {
         if ( result == null )
         {
@@ -118,11 +117,11 @@ public class ObjectToRepresentationConverter
         }
         else if ( result instanceof Node )
         {
-            return new NodeRepresentation( (Node) result, databaseService );
+            return new NodeRepresentation( (Node) result );
         }
         else if ( result instanceof Relationship )
         {
-            return new RelationshipRepresentation( (Relationship) result, databaseService );
+            return new RelationshipRepresentation( (Relationship) result );
         }
         else if ( result instanceof Double || result instanceof Float )
         {

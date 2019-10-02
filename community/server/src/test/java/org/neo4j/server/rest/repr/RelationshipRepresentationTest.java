@@ -23,11 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
@@ -85,7 +82,7 @@ class RelationshipRepresentationTest
     private RelationshipRepresentation relrep( long id )
     {
         return new RelationshipRepresentation(
-                relationship( id, node( 0, properties() ), "LOVES", node( 1, properties() ) ), mock( GraphDatabaseService.class ) );
+                relationship( id, node( 0, properties() ), "LOVES", node( 1, properties() ) ) );
     }
 
     static void verifySerialisation( Map<String,Object> relrep )

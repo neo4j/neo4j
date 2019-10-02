@@ -55,7 +55,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * to the registry. If you want to use it again, you'll need to acquire it back from the registry to ensure exclusive
  * use.
  */
-class TransactionHandle implements TransactionTerminationHandle
+public class TransactionHandle implements TransactionTerminationHandle
 {
     private final TransitionalPeriodTransactionMessContainer txManagerFacade;
     private final QueryExecutionEngine engine;
@@ -64,10 +64,10 @@ class TransactionHandle implements TransactionTerminationHandle
     private final Type type;
     private final LoginContext loginContext;
     private final ClientConnectionInfo connectionInfo;
-    private long customTransactionTimeoutMillis;
+    private final long customTransactionTimeoutMillis;
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
-    private GraphDatabaseQueryService queryService;
+    private final GraphDatabaseQueryService queryService;
     private long expirationTimestamp = -1;
 
     TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine, GraphDatabaseQueryService queryService,
@@ -137,10 +137,6 @@ class TransactionHandle implements TransactionTerminationHandle
         {
             context = txManagerFacade.newTransaction( type, loginContext, connectionInfo, customTransactionTimeoutMillis );
         }
-        else
-        {
-            context.resumeSinceTransactionsAreStillThreadBound();
-        }
     }
 
     Result executeStatement( Statement statement, boolean periodicCommit ) throws QueryExecutionKernelException
@@ -162,13 +158,11 @@ class TransactionHandle implements TransactionTerminationHandle
 
     void forceRollback()
     {
-        context.resumeSinceTransactionsAreStillThreadBound();
         context.rollback();
     }
 
     void suspendTransaction()
     {
-        context.suspendSinceTransactionsAreStillThreadBound();
         expirationTimestamp = registry.release( id, this );
     }
 
@@ -199,5 +193,10 @@ class TransactionHandle implements TransactionTerminationHandle
     boolean hasTransactionContext()
     {
         return context != null;
+    }
+
+    public TransitionalTxManagementKernelTransaction getContext()
+    {
+        return context;
     }
 }

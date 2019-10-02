@@ -44,9 +44,9 @@ import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
-import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
+import org.neo4j.server.http.cypher.TransitionalTxManagementKernelTransaction;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.FLUSH_AFTER_WRITE_VALUE;
 import static java.util.Objects.requireNonNull;
@@ -79,12 +79,12 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private TransitionalPeriodTransactionMessContainer container;
+    private TransactionHandle transactionHandle;
 
-    public Neo4jJsonCodec( TransitionalPeriodTransactionMessContainer container )
+    public Neo4jJsonCodec( TransactionHandle transactionHandle )
     {
         this();
-        this.container = container;
+        this.transactionHandle = transactionHandle;
     }
 
     public Neo4jJsonCodec()
@@ -97,16 +97,18 @@ public class Neo4jJsonCodec extends ObjectMapper
     {
         if ( value instanceof Entity )
         {
-            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
+            var context = transactionHandle.getContext();
+            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( context ) )
             {
-                writeEntity( out, (Entity) value, txStateChecker );
+                writeEntity( out, (Entity) value, txStateChecker, context );
             }
         }
         else if ( value instanceof Path )
         {
-            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
+            var context = transactionHandle.getContext();
+            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( context ) )
             {
-                writePath( out, ((Path) value).iterator(), txStateChecker );
+                writePath( out, ((Path) value).iterator(), txStateChecker, context );
             }
         }
         else if ( value instanceof Iterable )
@@ -210,15 +212,15 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePath( JsonGenerator out, Iterator<Entity> value,
-            TransactionStateChecker txStateChecker ) throws IOException
+    private void writePath( JsonGenerator out, Iterator<Entity> value, TransactionStateChecker txStateChecker,
+            TransitionalTxManagementKernelTransaction context ) throws IOException
     {
         out.writeStartArray();
         try
         {
             while ( value.hasNext() )
             {
-                writeEntity( out, value.next(), txStateChecker );
+                writeEntity( out, value.next(), txStateChecker, context );
             }
         }
         finally
@@ -227,25 +229,20 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writeEntity( JsonGenerator out, Entity value,
-            TransactionStateChecker txStateChecker )
+    private void writeEntity( JsonGenerator out, Entity value, TransactionStateChecker txStateChecker, TransitionalTxManagementKernelTransaction context )
             throws IOException
     {
-        KernelTransactionImplementation kti = null;//container.getBridge().getKernelTransactionBoundToThisThread( true, container.getDb().databaseId() );
+        var transaction = context.getInternalTransaction();
         if ( value instanceof Node )
         {
             var nodeDeletedInCurrentTx = txStateChecker.isNodeDeletedInCurrentTx( value.getId() );
-            var entity = !nodeDeletedInCurrentTx && kti instanceof KernelTransactionImplementation ?
-                         ((KernelTransactionImplementation) kti).internalTransaction().getNodeById( value.getId() )
-                        : value;
+            var entity = !nodeDeletedInCurrentTx ? transaction.getNodeById( value.getId() ) : value;
             writeNodeOrRelationship( out, entity, nodeDeletedInCurrentTx );
         }
         else if ( value instanceof Relationship )
         {
             var relationshipDeletedInCurrentTx = txStateChecker.isRelationshipDeletedInCurrentTx( value.getId() );
-            var entity = !relationshipDeletedInCurrentTx && kti instanceof KernelTransactionImplementation ?
-                         ((KernelTransactionImplementation) kti).internalTransaction().getRelationshipById( value.getId() )
-                          : value;
+            var entity = !relationshipDeletedInCurrentTx ? transaction.getRelationshipById( value.getId() ) : value;
             writeNodeOrRelationship( out, entity, relationshipDeletedInCurrentTx );
         }
         else
@@ -295,7 +292,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         if ( value instanceof Node )
         {
             Node node = (Node) value;
-            try ( TransactionStateChecker stateChecker = TransactionStateChecker.create( container ) )
+            try ( TransactionStateChecker stateChecker = TransactionStateChecker.create( transactionHandle.getContext() ) )
             {
                 writeNodeOrRelationshipMeta( out, node.getId(), Neo4jJsonMetaType.NODE, stateChecker.isNodeDeletedInCurrentTx( node.getId() ) );
             }
@@ -303,7 +300,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         else if ( value instanceof Relationship )
         {
             Relationship relationship = (Relationship) value;
-            try ( TransactionStateChecker transactionStateChecker = TransactionStateChecker.create( container ) )
+            try ( TransactionStateChecker transactionStateChecker = TransactionStateChecker.create( transactionHandle.getContext() ) )
             {
                 writeNodeOrRelationshipMeta( out, relationship.getId(), Neo4jJsonMetaType.RELATIONSHIP,
                         transactionStateChecker.isRelationshipDeletedInCurrentTx( relationship.getId() ) );

@@ -23,7 +23,6 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
 /**
@@ -46,22 +45,20 @@ import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
  * This is done to ensure we stick to the contract of the response handler, which is important, because if we skimp on
  * it, clients may be left waiting for results that never arrive.
  */
-public class TransactionFacade
+class TransactionFacade
 {
     private final TransitionalPeriodTransactionMessContainer kernel;
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
-    private final LogProvider logProvider;
-    private GraphDatabaseQueryService queryService;
+    private final GraphDatabaseQueryService queryService;
 
-    public TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, QueryExecutionEngine engine,
-            GraphDatabaseQueryService queryService, TransactionRegistry registry, LogProvider logProvider )
+    TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, QueryExecutionEngine engine, GraphDatabaseQueryService queryService,
+            TransactionRegistry registry )
     {
         this.kernel = kernel;
         this.engine = engine;
         this.queryService = queryService;
         this.registry = registry;
-        this.logProvider = logProvider;
     }
 
     TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,

@@ -20,7 +20,9 @@
 package org.neo4j.server.http.cypher.format.output.json;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -55,8 +57,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.http.cypher.TxStateCheckerTestSupport;
+import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.server.http.cypher.TransactionHandle;
+import org.neo4j.server.http.cypher.TransitionalTxManagementKernelTransaction;
 import org.neo4j.server.http.cypher.format.api.FailureEvent;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.api.StatementEndEvent;
@@ -71,12 +77,14 @@ import org.neo4j.test.mockito.mock.SpatialMocks;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -94,18 +102,34 @@ import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
-public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
+class ExecutionResultSerializerTest
 {
-
     private static final Map<String,Object> NO_ARGS = Collections.emptyMap();
     private static final Set<String> NO_IDS = Collections.emptySet();
     private static final List<ExecutionPlanDescription> NO_PLANS = Collections.emptyList();
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
-    private ExecutionResultSerializer serializer = getSerializerWith( output );
+    private ExecutionResultSerializer serializer;
+    private final TransactionHandle transactionHandle = mock( TransactionHandle.class );
+    private InternalTransaction internalTransaction;
+
+    @BeforeEach
+    void init()
+    {
+        var context = mock( TransitionalTxManagementKernelTransaction.class );
+        internalTransaction = mock( InternalTransaction.class );
+        var kernelTransaction = mock( KernelTransaction.class );
+        var kernelStatement = mock( KernelStatement.class, RETURNS_MOCKS );
+
+        when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
+        when( kernelTransaction.acquireStatement() ).thenReturn( kernelStatement );
+        when( context.getInternalTransaction() ).thenReturn( internalTransaction );
+        when( transactionHandle.getContext() ).thenReturn( context );
+        serializer = getSerializerWith( output );
+    }
 
     @Test
-    public void shouldSerializeResponseWithCommitUriOnly() throws Exception
+    void shouldSerializeResponseWithCommitUriOnly() throws Exception
     {
         // when
         serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, URI.create( "commit/uri/1" ) , -1 ) );
@@ -116,7 +140,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithCommitUriAndResults() throws Exception
+    void shouldSerializeResponseWithCommitUriAndResults() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -138,7 +162,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithResultsOnly() throws Exception
+    void shouldSerializeResponseWithResultsOnly() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -158,7 +182,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithCommitUriAndResultsAndErrors() throws Exception
+    void shouldSerializeResponseWithCommitUriAndResultsAndErrors() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -181,7 +205,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithResultsAndErrors() throws Exception
+    void shouldSerializeResponseWithResultsAndErrors() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -204,7 +228,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithCommitUriAndErrors() throws Exception
+    void shouldSerializeResponseWithCommitUriAndErrors() throws Exception
     {
 
         // when
@@ -218,7 +242,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithErrorsOnly() throws Exception
+    void shouldSerializeResponseWithErrorsOnly() throws Exception
     {
         // when
         writeError( Status.Request.InvalidFormat, "cause1" );
@@ -232,7 +256,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithNoCommitUriResultsOrErrors() throws Exception
+    void shouldSerializeResponseWithNoCommitUriResultsOrErrors() throws Exception
     {
 
         // when
@@ -244,7 +268,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithMultipleResultRows() throws Exception
+    void shouldSerializeResponseWithMultipleResultRows() throws Exception
     {
         // given
         Map<String, Object> row1 = new HashMap<>();
@@ -271,7 +295,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeResponseWithMultipleResults() throws Exception
+    void shouldSerializeResponseWithMultipleResults() throws Exception
     {
         // given
         Map<String, Object> row1 = new HashMap<>();
@@ -300,16 +324,19 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeNodeAsMapOfProperties() throws Exception
+    void shouldSerializeNodeAsMapOfProperties() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
-        row.put( "node", node( 1, properties(
-                property( "a", 12 ),
-                property( "b", true ),
-                property( "c", new int[]{1, 0, 1, 2} ),
-                property( "d", new byte[]{1, 0, 1, 2} ),
-                property( "e", new String[]{"a", "b", "ääö"} ) ) ) );
+        var node = node( 1,
+                properties( property( "a", 12 ),
+                        property( "b", true ),
+                        property( "c", new int[]{1, 0, 1, 2} ),
+                        property( "d", new byte[]{1, 0, 1, 2} ),
+                        property( "e", new String[]{"a", "b", "ääö"} ) ) );
+        row.put( "node", node );
+
+        when( internalTransaction.getNodeById( 1 ) ).thenReturn( node );
 
         // when
         writeStatementStart( "node");
@@ -326,12 +353,15 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeNestedEntities() throws Exception
+    void shouldSerializeNestedEntities() throws Exception
     {
         // given
         Node a = node( 1, properties( property( "foo", 12 ) ) );
         Node b = node( 2, properties( property( "bar", false ) ) );
         Relationship r = relationship( 1, properties( property( "baz", "quux" ) ), a, "FRAZZLE", b );
+        when( internalTransaction.getRelationshipById( 1 ) ).thenReturn( r );
+        when( internalTransaction.getNodeById( 1 ) ).thenReturn( a );
+        when( internalTransaction.getNodeById( 2 ) ).thenReturn( b );
         Map<String, Object> row = new HashMap<>();
         row.put( "nested", new TreeMap<>( map( "node", a, "edge", r, "path", path( a, link( r, b ) ) ) ) );
 
@@ -353,11 +383,19 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePathAsListOfMapsOfProperties() throws Exception
+    void shouldSerializePathAsListOfMapsOfProperties() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
-        row.put( "path", mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) ) );
+        final Path path = mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) );
+        row.put( "path", path );
+
+        var startNode = path.startNode();
+        var endNode = path.endNode();
+        var rel = path.lastRelationship();
+        when( internalTransaction.getRelationshipById( 1L ) ).thenReturn( rel );
+        when( internalTransaction.getNodeById( 1L ) ).thenReturn( startNode );
+        when( internalTransaction.getNodeById( 2L ) ).thenReturn( endNode );
 
         // when
         writeStatementStart( "path");
@@ -375,7 +413,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePointsAsListOfMapsOfProperties() throws Exception
+    void shouldSerializePointsAsListOfMapsOfProperties() throws Exception
     {
         // given
         Map<String, Object> row1 = new HashMap<>();
@@ -420,7 +458,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializeTemporalAsListOfMapsOfProperties() throws Exception
+    void shouldSerializeTemporalAsListOfMapsOfProperties() throws Exception
     {
         // given
         Map<String, Object> row1 = new HashMap<>();
@@ -462,7 +500,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldErrorWhenSerializingUnknownGeometryType() throws Exception
+    void shouldErrorWhenSerializingUnknownGeometryType() throws Exception
     {
         // given
         List<Coordinate> points = new ArrayList<>();
@@ -473,18 +511,14 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         row.put("geom", SpatialMocks.mockGeometry( "LineString", points, mockCartesian() ) );
 
         // when
-        try
+        var e = assertThrows( RuntimeException.class, () ->
         {
-            writeStatementStart( "geom");
+            writeStatementStart( "geom" );
             writeRecord( row, "geom" );
+        } );
 
-            fail();
-        }
-        catch ( RuntimeException e )
-        {
-            writeError( Status.Statement.ExecutionFailed, e.getMessage() );
-            writeTransactionInfo();
-        }
+        writeError( Status.Statement.ExecutionFailed, e.getMessage() );
+        writeTransactionInfo();
 
         // then
         String result = output.toString( UTF_8.name() );
@@ -497,7 +531,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnNext() throws Exception
+    void shouldProduceWellFormedJsonEvenIfResultIteratorThrowsExceptionOnNext() throws Exception
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -509,18 +543,15 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         when( recordEvent.getColumns() ).thenReturn( Arrays.asList( "column1", "column2" ) );
 
         // when
-        try
+        var e = assertThrows( RuntimeException.class, () ->
         {
-            writeStatementStart(  "column1", "column2");
-            writeRecord( row,  "column1", "column2");
-            serializer.writeRecord(recordEvent);
-            fail( "should have thrown exception" );
-        }
-        catch ( RuntimeException e )
-        {
-            writeError( Status.Statement.ExecutionFailed, e.getMessage() );
-            writeTransactionInfo();
-        }
+            writeStatementStart( "column1", "column2" );
+            writeRecord( row, "column1", "column2" );
+            serializer.writeRecord( recordEvent );
+        } );
+
+        writeError( Status.Statement.ExecutionFailed, e.getMessage() );
+        writeTransactionInfo();
 
         // then
         String result = output.toString( UTF_8.name() );
@@ -532,7 +563,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldProduceResultStreamWithGraphEntries() throws Exception
+    void shouldProduceResultStreamWithGraphEntries() throws Exception
     {
         // given
         Node[] node = {
@@ -543,6 +574,11 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         Relationship[] rel = {
                 relationship( 0, node[0], "KNOWS", node[1], property( "name", "rel0" ) ),
                 relationship( 1, node[2], "LOVES", node[3], property( "name", "rel1" ) )};
+
+        when( internalTransaction.getRelationshipById( anyLong() ) ).thenAnswer(
+                (Answer<Relationship>) invocation -> rel[invocation.getArgument( 0, Number.class ).intValue()] );
+        when( internalTransaction.getNodeById( anyLong() ) ).thenAnswer(
+                (Answer<Node>) invocation -> node[invocation.getArgument( 0, Number.class ).intValue()] );
 
         Map<String, Object> resultRow1 = new HashMap<>();
         resultRow1.put( "node", node[0] );
@@ -585,18 +621,18 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         int r1 = result.indexOf( rel1 );
         int row0Index = result.indexOf( row0 );
         int row1Index = result.indexOf( row1 );
-        assertTrue( "result should contain row0", row0Index > 0 );
-        assertTrue( "result should contain row1 after row0", row1Index > row0Index );
-        assertTrue( "result should contain node0 after row0", n0 > row0Index );
-        assertTrue( "result should contain node1 after row0", n1 > row0Index );
-        assertTrue( "result should contain node2 after row1", n2 > row1Index );
-        assertTrue( "result should contain node3 after row1", n3 > row1Index );
-        assertTrue( "result should contain rel0 after node0 and node1", r0 > n0 && r0 > n1 );
-        assertTrue( "result should contain rel1 after node2 and node3", r1 > n2 && r1 > n3 );
+        assertTrue( row0Index > 0, "result should contain row0" );
+        assertTrue( row1Index > row0Index, "result should contain row1 after row0" );
+        assertTrue( n0 > row0Index, "result should contain node0 after row0" );
+        assertTrue( n1 > row0Index, "result should contain node1 after row0" );
+        assertTrue( n2 > row1Index, "result should contain node2 after row1" );
+        assertTrue( n3 > row1Index, "result should contain node3 after row1" );
+        assertTrue( r0 > n0 && r0 > n1, "result should contain rel0 after node0 and node1" );
+        assertTrue( r1 > n2 && r1 > n3, "result should contain rel1 after node2 and node3" );
     }
 
     @Test
-    public void shouldProduceResultStreamWithLegacyRestFormat() throws Exception
+    void shouldProduceResultStreamWithLegacyRestFormat() throws Exception
     {
         // given
         Node[] node = {
@@ -647,7 +683,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldProduceResultStreamWithLegacyRestFormatAndNestedMaps() throws Exception
+    void shouldProduceResultStreamWithLegacyRestFormatAndNestedMaps() throws Exception
     {
         // given
         serializer = getSerializerWith( output, "http://base.uri/" );
@@ -679,7 +715,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePlanWithoutChildButAllKindsOfSupportedArguments() throws Exception
+    void shouldSerializePlanWithoutChildButAllKindsOfSupportedArguments() throws Exception
     {
         // given
         serializer = getSerializerWith( output, "http://base.uri/" );
@@ -724,7 +760,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePlanWithoutChildButWithIdentifiers() throws Exception
+    void shouldSerializePlanWithoutChildButWithIdentifiers() throws Exception
     {
         // given
         serializer = getSerializerWith( output, "http://base.uri/" );
@@ -756,7 +792,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldSerializePlanWithChildren() throws Exception
+    void shouldSerializePlanWithChildren() throws Exception
     {
         // given
         serializer = getSerializerWith( output, "http://base.uri/" );
@@ -788,7 +824,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         Set<Set<String>> identifiers = new HashSet<>();
         for ( JsonNode child : root.get( "children" ) )
         {
-            assertTrue( "Expected object", child.isObject() );
+            assertTrue( child.isObject(), "Expected object" );
             assertEquals( "child", child.get( "operatorType" ).asText() );
             identifiers.add( identifiersOf( child ) );
             childIds.add( child.get( "id" ).asInt() );
@@ -798,7 +834,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldReturnNotifications() throws IOException
+    void shouldReturnNotifications() throws IOException
     {
         // given
         Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification( new InputPosition( 1, 2, 3 ) );
@@ -831,7 +867,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldNotReturnNotificationsWhenEmptyNotifications() throws IOException
+    void shouldNotReturnNotificationsWhenEmptyNotifications() throws IOException
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -853,7 +889,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldNotReturnPositionWhenEmptyPosition() throws IOException
+    void shouldNotReturnPositionWhenEmptyPosition() throws IOException
     {
         // given
         Map<String, Object> row = new HashMap<>();
@@ -892,7 +928,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
     private ExecutionResultSerializer getSerializerWith( OutputStream output, String uri )
     {
-        return new ExecutionResultSerializer( output, uri == null ? null : URI.create( uri ), CONTAINER );
+        return new ExecutionResultSerializer( output, uri == null ? null : URI.create( uri ), transactionHandle );
     }
 
     private void writeStatementStart( String... columns )
@@ -974,10 +1010,10 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         JsonNode results = json.get( "results" ).get( 0 );
 
         JsonNode plan = results.get( "plan" );
-        assertTrue( "Expected plan to be an object", plan != null && plan.isObject() );
+        assertTrue( plan != null && plan.isObject(), "Expected plan to be an object" );
 
         JsonNode root = plan.get( "root" );
-        assertTrue( "Expected plan to be an object", root != null && root.isObject() );
+        assertTrue( root != null && root.isObject(), "Expected plan to be an object" );
 
         return root;
     }

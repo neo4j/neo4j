@@ -22,7 +22,7 @@ package org.neo4j.server.http.cypher.format.api;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
+import org.neo4j.server.http.cypher.TransactionHandle;
 
 /**
  * A representation of a source of events that are produced by Cypher resource.
@@ -52,7 +52,7 @@ public interface OutputEventSource
      */
     Map<String,Object> getParameters();
 
-    TransitionalPeriodTransactionMessContainer getTransactionContainer();
+    TransactionHandle getTransactionHandle();
 
     TransactionUriScheme getUriInfo();
 }

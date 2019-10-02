@@ -177,7 +177,6 @@ public class InvocationTest
 
         // then
         InOrder transactionOrder = inOrder( transactionContext, registry );
-        transactionOrder.verify( transactionContext ).suspendSinceTransactionsAreStillThreadBound();
         transactionOrder.verify( registry ).release( 1337L, handle );
 
         verify( executionEngine ).executeQuery( "query", NO_PARAMS, transactionalContext, false );
@@ -218,9 +217,7 @@ public class InvocationTest
 
         // then
         InOrder order = inOrder( transactionContext, registry, executionEngine );
-        order.verify( transactionContext ).resumeSinceTransactionsAreStillThreadBound();
         order.verify( executionEngine ).executeQuery( "query", NO_PARAMS, transactionalContext, false );
-        order.verify( transactionContext ).suspendSinceTransactionsAreStillThreadBound();
         order.verify( registry ).release( 1337L, handle );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -480,36 +477,6 @@ public class InvocationTest
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeFailure( Status.Security.Forbidden, "Forbidden" );
-        outputOrder.verify( outputEventStream ).writeTransactionInfo( TransactionNotificationState.NO_TRANSACTION, uriScheme.txCommitUri( 1337L ), -1 );
-        verifyNoMoreInteractions( outputEventStream );
-    }
-
-    @Test
-    public void shouldHandleErrorWhenResumingTransaction()
-    {
-        // given
-        doThrow( new IllegalStateException( "Something went wrong" ) ).when( transactionContext ).resumeSinceTransactionsAreStillThreadBound();
-
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
-        TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
-        handle.ensureActiveTransaction();
-
-        InputEventStream inputEventStream = mock( InputEventStream.class );
-        Statement statement = new Statement( "query", map() );
-        when( inputEventStream.read() ).thenReturn( statement, null );
-
-        mockDefaultResult();
-
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
-
-        // when
-        invocation.execute( outputEventStream );
-
-        // then
-        verify( log ).error( eq( "Failed to resume transaction" ), any( IllegalStateException.class ) );
-
-        InOrder outputOrder = inOrder( outputEventStream );
-        outputOrder.verify( outputEventStream ).writeFailure( Status.Transaction.TransactionNotFound, "Something went wrong" );
         outputOrder.verify( outputEventStream ).writeTransactionInfo( TransactionNotificationState.NO_TRANSACTION, uriScheme.txCommitUri( 1337L ), -1 );
         verifyNoMoreInteractions( outputEventStream );
     }

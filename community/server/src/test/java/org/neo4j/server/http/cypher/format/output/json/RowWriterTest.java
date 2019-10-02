@@ -65,7 +65,7 @@ class RowWriterTest
 
         json.writeStartObject();
         // RETURN {one:{two:[true, {three: 42}]}}
-        resultDataContentWriter.write( json, recordEvent, null, null );
+        resultDataContentWriter.write( json, recordEvent, null );
         json.writeEndObject();
         json.flush();
         json.close();

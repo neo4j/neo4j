@@ -20,8 +20,8 @@
 package org.neo4j.server.http.cypher;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -41,10 +41,14 @@ import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.test.mockito.mock.SpatialMocks;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -59,44 +63,41 @@ import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
-public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
+class Neo4jJsonCodecTest
 {
-
     private Neo4jJsonCodec jsonCodec;
     private JsonGenerator jsonGenerator;
+    private final TransactionHandle transactionHandle = mock( TransactionHandle.class );
 
-    @Before
-    public void init()
+    @BeforeEach
+    void init()
     {
-        jsonCodec = new Neo4jJsonCodec( CONTAINER );
+        var context = mock( TransitionalTxManagementKernelTransaction.class );
+        var internalTransaction = mock( InternalTransaction.class );
+        var kernelTransaction = mock( KernelTransaction.class );
+        var kernelStatement = mock( KernelStatement.class, RETURNS_MOCKS );
+
+        when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
+        when( kernelTransaction.acquireStatement() ).thenReturn( kernelStatement );
+        when( context.getInternalTransaction() ).thenReturn( internalTransaction );
+        when( transactionHandle.getContext() ).thenReturn( context );
+        jsonCodec = new Neo4jJsonCodec( transactionHandle );
         jsonGenerator = mock( JsonGenerator.class );
     }
 
     @Test
-    public void testEntityWriting() throws IOException
+    void testEntityWriting() throws IOException
     {
         //Given
         Entity entity = mock( Entity.class );
         when( entity.getAllProperties() ).thenThrow( RuntimeException.class );
 
-        boolean exceptionThrown = false;
-        //When
-        try
-        {
-            jsonCodec.writeValue( jsonGenerator, entity );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            //Then
-            verify( jsonGenerator, never() ).writeEndObject();
-            exceptionThrown = true;
-        }
-
-        assertTrue( exceptionThrown );
+        var e = assertThrows( IllegalArgumentException.class, () -> jsonCodec.writeValue( jsonGenerator, entity ) );
+        verify( jsonGenerator, never() ).writeEndObject();
     }
 
     @Test
-    public void testNodeWriting() throws IOException
+    void testNodeWriting() throws IOException
     {
         //Given
         Entity node = mock( Node.class );
@@ -117,7 +118,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testRelationshipWriting() throws IOException
+    void testRelationshipWriting() throws IOException
     {
         //Given
         Entity relationship = mock( Relationship.class );
@@ -138,7 +139,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testPathWriting() throws IOException
+    void testPathWriting() throws IOException
     {
         //Given
         Path path = mock( Path.class );
@@ -161,7 +162,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testIteratorWriting() throws IOException
+    void testIteratorWriting() throws IOException
     {
         //Given
         Entity entity = mock( Entity.class );
@@ -182,7 +183,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testByteArrayWriting() throws IOException
+    void testByteArrayWriting() throws IOException
     {
         //Given
         doThrow( new RuntimeException() ).when( jsonGenerator ).writeNumber( anyInt() );
@@ -203,7 +204,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testMapWriting() throws IOException
+    void testMapWriting() throws IOException
     {
         //Given
         doThrow( new RuntimeException() ).when( jsonGenerator ).writeFieldName( anyString() );
@@ -223,7 +224,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldWriteAMapContainingNullAsKeysAndValues() throws IOException
+    void shouldWriteAMapContainingNullAsKeysAndValues() throws IOException
     {
         // given
         Map<String,String> map = new HashMap<>();
@@ -237,7 +238,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testGeographicPointWriting() throws IOException
+    void testGeographicPointWriting() throws IOException
     {
         //Given
         Point value = SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() );
@@ -250,7 +251,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testGeographic3DPointWriting() throws IOException
+    void testGeographic3DPointWriting() throws IOException
     {
         //Given
         Point value = SpatialMocks.mockPoint( 12.3, 45.6, 78.9, mockWGS84_3D() );
@@ -263,7 +264,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testCartesianPointWriting() throws IOException
+    void testCartesianPointWriting() throws IOException
     {
         //Given
         Point value = SpatialMocks.mockPoint( 123.0, 456.0, mockCartesian() );
@@ -276,7 +277,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testCartesian3DPointWriting() throws IOException
+    void testCartesian3DPointWriting() throws IOException
     {
         //Given
         Point value = SpatialMocks.mockPoint( 123.0, 456.0, 789.0, mockCartesian_3D() );
@@ -289,7 +290,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testGeometryWriting() throws IOException
+    void testGeometryWriting() throws IOException
     {
         //Given
         List<Coordinate> points = new ArrayList<>();
@@ -305,25 +306,25 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void testGeometryCrsStructureCartesian() throws IOException
+    void testGeometryCrsStructureCartesian() throws IOException
     {
         verifyCRSStructure( mockCartesian() );
     }
 
     @Test
-    public void testGeometryCrsStructureCartesian_3D() throws IOException
+    void testGeometryCrsStructureCartesian_3D() throws IOException
     {
         verifyCRSStructure( mockCartesian_3D() );
     }
 
     @Test
-    public void testGeometryCrsStructureWGS84() throws IOException
+    void testGeometryCrsStructureWGS84() throws IOException
     {
         verifyCRSStructure( mockWGS84() );
     }
 
     @Test
-    public void testGeometryCrsStructureWGS84_3D() throws IOException
+    void testGeometryCrsStructureWGS84_3D() throws IOException
     {
         verifyCRSStructure( mockWGS84_3D() );
     }

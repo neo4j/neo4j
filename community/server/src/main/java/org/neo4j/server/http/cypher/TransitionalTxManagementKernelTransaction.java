@@ -39,7 +39,7 @@ public class TransitionalTxManagementKernelTransaction
     private InternalTransaction tx;
     private KernelTransaction suspendedTransaction;
 
-    public TransitionalTxManagementKernelTransaction( GraphDatabaseFacade db, KernelTransaction.Type type, LoginContext loginContext,
+    TransitionalTxManagementKernelTransaction( GraphDatabaseFacade db, KernelTransaction.Type type, LoginContext loginContext,
             ClientConnectionInfo connectionInfo, long customTransactionTimeout )
     {
         this.db = db;
@@ -55,20 +55,6 @@ public class TransitionalTxManagementKernelTransaction
         return tx;
     }
 
-    void suspendSinceTransactionsAreStillThreadBound()
-    {
-        assert suspendedTransaction == null : "Can't suspend the transaction if it already is suspended.";
-//        suspendedTransaction = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
-//        bridge.unbindTransactionFromCurrentThread();
-    }
-
-    void resumeSinceTransactionsAreStillThreadBound()
-    {
-        assert suspendedTransaction != null : "Can't resume the transaction if it has not first been suspended.";
-//        bridge.bindTransactionToCurrentThread( suspendedTransaction );
-//        suspendedTransaction = null;
-    }
-
     public void terminate()
     {
         tx.terminate();
@@ -76,43 +62,12 @@ public class TransitionalTxManagementKernelTransaction
 
     public void rollback()
     {
-//        try
-//        {
-//            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
-//            if ( kernelTransactionBoundToThisThread != null )
-//            {
-//                kernelTransactionBoundToThisThread.rollback();
-//            }
-//        }
-//        catch ( TransactionFailureException e )
-//        {
-//            throw new RuntimeException( e );
-//        }
-//        finally
-//        {
-//            bridge.unbindTransactionFromCurrentThread();
-//        }
+        tx.rollback();
     }
 
     public void commit()
     {
-//        try
-//        {
-//            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
-//            kernelTransactionBoundToThisThread.commit();
-//        }
-//        catch ( NotInTransactionException e )
-//        {
-//            // if the transaction was already terminated there is nothing more to do
-//        }
-//        catch ( TransactionFailureException e )
-//        {
-//            throw new RuntimeException( e );
-//        }
-//        finally
-//        {
-//            bridge.unbindTransactionFromCurrentThread();
-//        }
+        tx.commit();
     }
 
     void closeTransactionForPeriodicCommit()
@@ -120,7 +75,7 @@ public class TransitionalTxManagementKernelTransaction
         tx.close();
     }
 
-    public void reopenAfterPeriodicCommit()
+    void reopenAfterPeriodicCommit()
     {
         tx = startTransaction();
     }

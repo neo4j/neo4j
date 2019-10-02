@@ -44,13 +44,11 @@ public class HttpTransactionManager
 {
     private final TransactionHandleRegistry transactionRegistry;
     private final DatabaseService database;
-    private final LogProvider userLogProvider;
-    private final JobScheduler jobScheduler;
+        private final JobScheduler jobScheduler;
 
     public HttpTransactionManager( DatabaseService database, JobScheduler jobScheduler, Clock clock, Duration transactionTimeout, LogProvider userLogProvider )
     {
         this.database = database;
-        this.userLogProvider = userLogProvider;
         this.jobScheduler = jobScheduler;
 
         transactionRegistry = new TransactionHandleRegistry( clock, transactionTimeout, userLogProvider );
@@ -88,7 +86,7 @@ public class HttpTransactionManager
 
         return new TransactionFacade( new TransitionalPeriodTransactionMessContainer( graph ),
                 dependencyResolver.resolveDependency( QueryExecutionEngine.class ), dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ),
-                transactionRegistry, userLogProvider );
+                transactionRegistry );
     }
 
     private void scheduleTransactionTimeout( Duration timeout )

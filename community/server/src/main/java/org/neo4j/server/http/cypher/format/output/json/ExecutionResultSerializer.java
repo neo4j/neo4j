@@ -37,8 +37,8 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
+import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
-import org.neo4j.server.http.cypher.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.FailureEvent;
 import org.neo4j.server.http.cypher.format.api.OutputEvent;
@@ -66,7 +66,7 @@ class ExecutionResultSerializer
     private static final JsonFactory JSON_FACTORY = new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private final JsonGenerator out;
     private final URI baseUri;
-    private final TransitionalPeriodTransactionMessContainer container;
+    private final TransactionHandle transactionHandle;
     private final List<Notification> notifications = new ArrayList<>();
     private final List<FailureEvent> errors = new ArrayList<>();
     private final OutputStream output;
@@ -74,12 +74,12 @@ class ExecutionResultSerializer
     private ResultDataContentWriter writer;
     private InputStatement inputStatement;
 
-    ExecutionResultSerializer( OutputStream output, URI baseUri, TransitionalPeriodTransactionMessContainer container )
+    ExecutionResultSerializer( OutputStream output, URI baseUri, TransactionHandle transactionHandle )
     {
         this.baseUri = baseUri;
-        this.container = container;
+        this.transactionHandle = transactionHandle;
         this.output = output;
-        JSON_FACTORY.setCodec( new Neo4jJsonCodec( container ) );
+        JSON_FACTORY.setCodec( new Neo4jJsonCodec( transactionHandle ) );
         JsonGenerator generator;
         try
         {
@@ -121,9 +121,9 @@ class ExecutionResultSerializer
         {
             out.writeStartObject();
 
-            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
+            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( transactionHandle.getContext() ) )
             {
-                writer.write( out, recordEvent, txStateChecker, container.getDb() );
+                writer.write( out, recordEvent, txStateChecker );
             }
             finally
             {

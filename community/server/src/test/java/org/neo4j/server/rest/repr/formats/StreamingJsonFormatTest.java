@@ -65,7 +65,7 @@ class StreamingJsonFormatTest
         try ( Transaction transaction = db.beginTx() )
         {
             final Node n = transaction.createNode();
-            json.assemble( new NodeRepresentation( n, db ) );
+            json.assemble( new NodeRepresentation( n ) );
         }
         finally
         {

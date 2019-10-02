@@ -88,7 +88,7 @@ public abstract class AbstractCypherResource
 
             Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, false );
             OutputEventStreamImpl outputStream =
-                    new OutputEventStreamImpl( inputStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
+                    new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
             return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
 
         } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
@@ -127,7 +127,7 @@ public abstract class AbstractCypherResource
 
             Invocation invocation = new Invocation( log, transactionHandle, null, inputStream, true );
             OutputEventStreamImpl outputStream =
-                    new OutputEventStreamImpl( inputStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
+                    new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
             return Response.ok( outputStream ).build();
         } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
@@ -199,7 +199,7 @@ public abstract class AbstractCypherResource
             Invocation invocation =
                     new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, finishWithCommit );
             OutputEventStreamImpl outputEventStream =
-                    new OutputEventStreamImpl( inputStream.getParameters(), transactionFacade.getTransactionContainer(), uriScheme, invocation::execute );
+                    new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
             return Response.ok( outputEventStream ).build();
         } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
@@ -208,7 +208,7 @@ public abstract class AbstractCypherResource
     {
         ErrorInvocation errorInvocation = new ErrorInvocation( e.toNeo4jError() );
         return Response.status( Response.Status.NOT_FOUND ).entity(
-                new OutputEventStreamImpl( parameters, transactionFacade.getTransactionContainer(), uriScheme, errorInvocation::execute ) ).build();
+                new OutputEventStreamImpl( parameters, null, uriScheme, errorInvocation::execute ) ).build();
     }
 
     private InputEventStream ensureNotNull( InputEventStream inputEventStream )

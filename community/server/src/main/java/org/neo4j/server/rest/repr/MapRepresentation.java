@@ -21,7 +21,6 @@ package org.neo4j.server.rest.repr;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -34,13 +33,11 @@ public class MapRepresentation extends MappingRepresentation
 {
 
     private final Map value;
-    private final GraphDatabaseService databaseService;
 
-    public MapRepresentation( Map value, GraphDatabaseService databaseService )
+    public MapRepresentation( Map value )
     {
         super( RepresentationType.MAP );
         this.value = value;
-        this.databaseService = databaseService;
     }
 
     @Override
@@ -69,11 +66,11 @@ public class MapRepresentation extends MappingRepresentation
             }
             else if ( val instanceof Iterable )
             {
-                serializer.putList( keyString, ObjectToRepresentationConverter.getListRepresentation( (Iterable) val, databaseService ) );
+                serializer.putList( keyString, ObjectToRepresentationConverter.getListRepresentation( (Iterable) val ) );
             }
             else if ( val instanceof Map )
             {
-                serializer.putMapping( keyString, ObjectToRepresentationConverter.getMapRepresentation( (Map) val, databaseService ) );
+                serializer.putMapping( keyString, ObjectToRepresentationConverter.getMapRepresentation( (Map) val ) );
             }
             else if ( val == null )
             {
@@ -83,11 +80,11 @@ public class MapRepresentation extends MappingRepresentation
             {
                 Object[] objects = toArray( val );
 
-                serializer.putList( keyString, ObjectToRepresentationConverter.getListRepresentation( asList(objects), databaseService ) );
+                serializer.putList( keyString, ObjectToRepresentationConverter.getListRepresentation( asList(objects) ) );
             }
             else if ( val instanceof Node || val instanceof Relationship )
             {
-                Representation representation = ObjectToRepresentationConverter.getSingleRepresentation( val, databaseService );
+                Representation representation = ObjectToRepresentationConverter.getSingleRepresentation( val );
                 serializer.putMapping( keyString, (MappingRepresentation) representation );
             }
             else

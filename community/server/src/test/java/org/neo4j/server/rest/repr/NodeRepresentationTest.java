@@ -24,12 +24,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
@@ -123,7 +120,7 @@ class NodeRepresentationTest
 
     private NodeRepresentation noderep( long id )
     {
-        return new NodeRepresentation( node( id, properties(), "Label" ), mock( GraphDatabaseService.class ) );
+        return new NodeRepresentation( node( id, properties(), "Label" ) );
     }
 
     static void verifySerialisation( Map<String,Object> noderep )

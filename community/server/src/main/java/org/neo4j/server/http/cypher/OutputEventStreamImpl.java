@@ -46,15 +46,15 @@ class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
 
     private final Consumer<OutputEventStream> startListener;
     private final Map<String,Object> parameters;
-    private final TransitionalPeriodTransactionMessContainer transactionContainer;
+    private final TransactionHandle transactionHandle;
     private final TransactionUriScheme uriInfo;
     private Consumer<OutputEvent> eventListener;
 
-    OutputEventStreamImpl( Map<String,Object> parameters, TransitionalPeriodTransactionMessContainer transactionContainer, TransactionUriScheme uriInfo,
+    OutputEventStreamImpl( Map<String,Object> parameters, TransactionHandle transactionHandle, TransactionUriScheme uriInfo,
             Consumer<OutputEventStream> startListener )
     {
         this.parameters = parameters;
-        this.transactionContainer = transactionContainer;
+        this.transactionHandle = transactionHandle;
         this.startListener = startListener;
         this.uriInfo = uriInfo;
     }
@@ -115,8 +115,8 @@ class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
     }
 
     @Override
-    public TransitionalPeriodTransactionMessContainer getTransactionContainer()
+    public TransactionHandle getTransactionHandle()
     {
-        return transactionContainer;
+        return transactionHandle;
     }
 }
