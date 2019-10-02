@@ -213,7 +213,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 case HTTP_CONFLICT:
                     // the cloud target database has already been populated with data, and importing the dump file would overwrite it.
                     boolean consent =
-                            askForBooleanConsent( "The target database already has data within it, would you like to overwrite the data? " +
+                            askForBooleanConsent( "The target database contains data. Overwrite it? " +
                                     "(Yes/No)" );
                     if ( consent )
                     {
@@ -221,7 +221,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     }
                     else
                     {
-                        throw errorResponse( verbose, connection, "No consent to overwrite database, aborting upload" );
+                        throw errorResponse( verbose, connection, "No consent to overwrite database. Aborting" );
                     }
                 case HTTP_OK:
                     try ( InputStream responseData = connection.getInputStream() )
@@ -389,7 +389,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw resumePossibleErrorResponse( connection, source, boltUri );
             case HTTP_CONFLICT:
                 throw errorResponse( verbose, connection,
-                        "The target database already has data within it and consent to overwrite the data was not given, aborting" );
+                        "The target database contained data and consent to overwrite the data was not given. Aborting" );
             case HTTP_OK:
                 // All good, we managed to trigger the import protocol after our completed upload
                 break;
