@@ -26,6 +26,8 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     SemanticState.clean
       .withFeature(SemanticFeature.CorrelatedSubQueries)
       .withFeature(SemanticFeature.MultipleGraphs)
+      .withFeature(SemanticFeature.FromGraphSelector)
+      .withFeature(SemanticFeature.UseGraphSelector)
       .withFeature(SemanticFeature.ExpressionsInViewInvocations)
 
   test("returned variables are added to scope after subquery") {
@@ -355,6 +357,27 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .tap(_.errors.size.shouldEqual(0))
   }
 
+  test("importing WITH may appear after USE") {
+    // WITH 1 AS x
+    // CALL {
+    //   USE g
+    //   WITH x
+    //   RETURN x AS y
+    // }
+    // RETURN x, y
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        use(varFor("g")),
+        with_(varFor("x").aliased),
+        return_(varFor("x").as("y"))
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(0))
+  }
+
   test("importing WITH must be clean pass-through") {
     // WITH 1 AS x
     // CALL {
@@ -417,6 +440,27 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .tap(_.errors.size.shouldEqual(0))
   }
 
+  test("subquery leading USE may reference outer variables") {
+    // WITH 1 AS x, 2 AS y
+    // CALL {
+    //   USE g(x, y)
+    //   WITH x
+    //   RETURN 1 AS z
+    // }
+    // RETURN x, y
+    singleQuery(
+      with_(literal(1).as("x"), literal(2).as("y")),
+      subQuery(
+        use(function("g", varFor("x"), varFor("y"))),
+        with_(varFor("x").aliased),
+        return_(literal(1).as("z"))
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(0))
+  }
+
   test("subquery FROM after imports may only reference imported variables") {
     // WITH 1 AS x, 2 AS y
     // CALL {
@@ -430,6 +474,28 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       subQuery(
         with_(varFor("x").aliased),
         from(function("g", varFor("x"), varFor("y"))),
+        return_(literal(3).as("z"))
+      ),
+      return_(varFor("x").aliased, varFor("y").aliased)
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.should(include("Variable `y` not defined")))
+  }
+
+  test("subquery USE after imports may only reference imported variables") {
+    // WITH 1 AS x, 2 AS y
+    // CALL {
+    //   WITH x
+    //   USE g(x, y)
+    //   RETURN 3 AS z
+    // }
+    // RETURN x, y
+    singleQuery(
+      with_(literal(1).as("x"), literal(2).as("y")),
+      subQuery(
+        with_(varFor("x").aliased),
+        use(function("g", varFor("x"), varFor("y"))),
         return_(literal(3).as("z"))
       ),
       return_(varFor("x").aliased, varFor("y").aliased)
@@ -606,6 +672,13 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
     singleQuery(
       from(varFor("foo")),
+      with_(varFor("x").aliased),
+      return_(varFor("x").as("y"))
+    ).importColumns
+      .shouldEqual(Seq("x"))
+
+    singleQuery(
+      use(varFor("foo")),
       with_(varFor("x").aliased),
       return_(varFor("x").as("y"))
     ).importColumns

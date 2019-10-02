@@ -32,6 +32,19 @@ class MultipleGraphClauseSemanticCheckingTest
 
   implicit val parser: Rule1[Statement] = Statement
 
+  test("FROM requires feature") {
+    parsingWith("""FROM g RETURN 1""", multiGraph)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("The `FROM GRAPH` clause is not available in this implementation of Cypher due to lack of support for FROM graph selector.")))
+    parsingWith("""FROM g RETURN 1""", defaultFeatures)
+      .shouldVerify(_.errorMessages.shouldEqual(Set()))
+  }
+
+  test("USE requires feature") {
+    parsingWith("""USE g RETURN 1""", multiGraph)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("The `USE GRAPH` clause is not available in this implementation of Cypher due to lack of support for USE graph selector.")))
+    parsingWith("""USE g RETURN 1""", useGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set()))
+  }
 
   // TODO: Need to reset semantic state after CONSTRUCT
   ignore("checks that all SET variables are in scope") {
@@ -515,61 +528,98 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("Allow single identifier in FROM") {
-    parsing("FROM x RETURN 1")
-      .shouldVerify(result => result.errors shouldBe empty)
+  test("Allow single identifier in FROM/USE") {
+    parsingWith("FROM x RETURN 1", fromGraphSelector)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
+    parsingWith("USE x RETURN 1", useGraphSelector)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
   }
 
-  test("Allow qualified identifier in FROM") {
-    parsing("FROM x.y.z RETURN 1")
-      .shouldVerify(result => result.errors shouldBe empty)
+  test("Allow qualified identifier in FROM/USE") {
+    parsingWith("FROM x.y.z RETURN 1", fromGraphSelector)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
+    parsingWith("USE x.y.z RETURN 1", useGraphSelector)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
   }
 
-  test("Allow view invocation in FROM") {
-    parsing("FROM v(g, w(k)) RETURN 1")
-      .shouldVerify(result => result.errors shouldBe empty)
+  test("Allow view invocation in FROM/USE") {
+    parsingWith("FROM v(g, w(k)) RETURN 1", fromGraphSelector)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
+    parsingWith("USE v(g, w(k)) RETURN 1", useGraphSelector)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
   }
 
-  test("Allow qualified view invocation in FROM") {
-    parsing("FROM a.b.v(g, x.g, x.v(k)) RETURN 1")
-      .shouldVerify(result => result.errors shouldBe empty)
+  test("Allow qualified view invocation in FROM/USE") {
+    parsingWith("FROM a.b.v(g, x.g, x.v(k)) RETURN 1", fromGraphSelector)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
+    parsingWith("USE a.b.v(g, x.g, x.v(k)) RETURN 1", useGraphSelector)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
   }
 
-  test("Do not allow arbitrary expressions in FROM") {
-    parsing("FROM 1 RETURN 1")
-      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
-    parsing("FROM 'a' RETURN 1")
-      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
-    parsing("FROM [x] RETURN 1")
-      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
-    parsing("FROM 1 + 2 RETURN 1")
-      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
+  test("Do not allow arbitrary expressions in FROM/USE") {
+    parsingWith("FROM 1 RETURN 1", fromGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
+    parsingWith("USE 1 RETURN 1", useGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
+
+    parsingWith("FROM 'a' RETURN 1", fromGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
+    parsingWith("USE 'a' RETURN 1", useGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
+
+    parsingWith("FROM [x] RETURN 1", fromGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
+    parsingWith("USE [x] RETURN 1", useGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
+
+    parsingWith("FROM 1 + 2 RETURN 1", fromGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
+    parsingWith("USE 1 + 2 RETURN 1", useGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
   }
 
   test("Disallow expressions in view invocations") {
-    parsing("FROM a.b.v(1, 1+2, 'x') RETURN 1")
-      .shouldVerify(result => result.errorMessages should equal(Set("Invalid graph reference")))
+    parsingWith("FROM a.b.v(1, 1+2, 'x') RETURN 1", fromGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
+    parsingWith("USE a.b.v(1, 1+2, 'x') RETURN 1", useGraphSelector)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Invalid graph reference")))
   }
 
   test("Allow expressions in view invocations (with feature flag)") {
-    parsingWith("WITH 1 AS x FROM v(2, 'x', x, x+3) RETURN 1", expressionsInViews)
-      .shouldVerify(result => result.errors shouldBe empty)
+    parsingWith("WITH 1 AS x FROM v(2, 'x', x, x+3) RETURN 1", fromGraphSelector ++ expressionsInViews)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
+    parsingWith("WITH 1 AS x USE v(2, 'x', x, x+3) RETURN 1", useGraphSelector ++ expressionsInViews)
+      .shouldVerify(_.errors.shouldEqual(Seq()))
   }
 
   test("Expressions in view invocations are checked (with feature flag)") {
-    parsingWith("WITH 1 AS x FROM v(2, 'x', y, x+3) RETURN 1", expressionsInViews)
-      .shouldVerify(result => result.errorMessages should equal(Set("Variable `y` not defined")))
+    parsingWith("WITH 1 AS x FROM v(2, 'x', y, x+3) RETURN 1", fromGraphSelector ++ expressionsInViews)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Variable `y` not defined")))
+    parsingWith("WITH 1 AS x USE v(2, 'x', y, x+3) RETURN 1", useGraphSelector ++ expressionsInViews)
+      .shouldVerify(_.errorMessages.shouldEqual(Set("Variable `y` not defined")))
   }
 
   override type Extra = Seq[SemanticFeature]
 
-  private val defaultFeatures = Seq(
+  private val multiGraph = Seq(
     SemanticFeature.MultipleGraphs,
-    SemanticFeature.WithInitialQuerySignature
+    SemanticFeature.WithInitialQuerySignature,
   )
 
-  private val expressionsInViews =
-    defaultFeatures :+ SemanticFeature.ExpressionsInViewInvocations
+  private val fromGraphSelector =
+    multiGraph :+ SemanticFeature.FromGraphSelector
+
+  private val useGraphSelector =
+    multiGraph :+ SemanticFeature.UseGraphSelector
+
+  private val defaultFeatures =
+    fromGraphSelector
+
+  private val expressionsInViews = Seq(
+    SemanticFeature.ExpressionsInViewInvocations
+  )
+
+
 
   override def convert(astNode: ast.Statement): SemanticCheckResult =
     convert(astNode, defaultFeatures)
