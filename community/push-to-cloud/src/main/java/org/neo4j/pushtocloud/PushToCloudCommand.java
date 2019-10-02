@@ -55,9 +55,9 @@ public class PushToCloudCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( ARG_DUMP, "/path/to/my-neo4j-database-dump-file", null,
                     "Path to an existing database dump for upload. This arugment cannot be used together with --database." ) )
             .withArgument( new OptionalNamedArg( ARG_DUMP_TO, "/path/to/dump-file-to-be-created", null,
-                    "A file location to export the dump to. Used in combination with the --database argument." ) )
+                    "Target path for dump file. Used in combination with the --database argument." ) )
             .withArgument( new MandatoryNamedArg( ARG_BOLT_URI, "bolt+routing://mydatabaseid.databases.neo4j.io",
-                    "Bolt URI of the target location to push the database to" ) )
+                    "Bolt URI of target location to push the database to" ) )
             .withArgument( new OptionalNamedArg( ARG_VERBOSE, "true/false", null,
                     "Enable verbose output." ) )
             .withArgument( new OptionalNamedArg( ARG_USERNAME, "neo4j", null,
@@ -67,7 +67,7 @@ public class PushToCloudCommand implements AdminCommand
                     "Optional: Password of the target database to push this database to. Prompt will ask for password if not provided. " +
                             "Alternatively NEO4J_PASSWORD environment variable can be used." ) )
             .withArgument( new OptionalNamedArg( ARG_CONFIRMED, "true/false", "false",
-                    "Optional: Overwrite the data in the target database if it is not empty." ) );
+                    "Optional: Overwrite the data in the target database." ) );
 
     private final Path homeDir;
     private final Path configDir;
