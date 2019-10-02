@@ -95,7 +95,7 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 @ExtendWith( LifeExtension.class )
 public class BatchingTransactionAppenderConcurrencyTest
 {
-    private static final long MILLISECONDS_TO_WAIT = TimeUnit.SECONDS.toMillis( 10 );
+    private static final long MILLISECONDS_TO_WAIT = TimeUnit.MINUTES.toMillis( 1 );
     private static ExecutorService executor;
     @Inject
     private LifeSupport life;
@@ -212,7 +212,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         {
             otherThread.join();
         }
-        assertTrue( channelCommandQueue.isEmpty() );
+        assertTrue( channelCommandQueue.isEmpty(), "Command queue: " + channelCommandQueue );
     }
 
     /*
