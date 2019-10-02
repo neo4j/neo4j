@@ -126,7 +126,7 @@ class IndexIT extends KernelIntegrationTest
         Write write = dataWriteInNewTransaction();
         long nodeId = write.nodeCreate();
         write.nodeAddLabel( nodeId, label2 );
-        try ( var resource = captureTransaction() )
+        try ( var ignored = captureTransaction() )
         {
             executorService.submit( () -> {
                 try
@@ -327,7 +327,7 @@ class IndexIT extends KernelIntegrationTest
         commit();
 
         // when
-        try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 
@@ -353,7 +353,7 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), null );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 
@@ -381,7 +381,7 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 
@@ -409,7 +409,7 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 
@@ -438,7 +438,7 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "index name" );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
 

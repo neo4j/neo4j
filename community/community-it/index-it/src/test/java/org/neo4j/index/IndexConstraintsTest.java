@@ -146,9 +146,9 @@ class IndexConstraintsTest
                     tx.commit();
                 }
                 // then
-                try ( Transaction ignored = graphDb.beginTx() )
+                try ( Transaction tx = graphDb.beginTx() )
                 {
-                    assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Index should exist" );
+                    assertNotNull( getIndex( tx, LABEL, PROPERTY_KEY ), "Index should exist" );
                 }
 
                 // when: DROP, CREATE => effect: <none>
@@ -158,9 +158,9 @@ class IndexConstraintsTest
                     tx.commit();
                 }
                 // then
-                try ( Transaction ignored = graphDb.beginTx() )
+                try ( Transaction tx = graphDb.beginTx() )
                 {
-                    assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Index should exist" );
+                    assertNotNull( getIndex( tx, LABEL, PROPERTY_KEY ), "Index should exist" );
                 }
 
                 // when: DROP, CREATE, DROP => effect: DROP
@@ -170,9 +170,9 @@ class IndexConstraintsTest
                     tx.commit();
                 }
                 // then
-                try ( Transaction ignored = graphDb.beginTx() )
+                try ( Transaction tx = graphDb.beginTx() )
                 {
-                    assertNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Index should be removed" );
+                    assertNull( getIndex( tx, LABEL, PROPERTY_KEY ), "Index should be removed" );
                 }
             }
             catch ( Throwable e )
@@ -223,9 +223,9 @@ class IndexConstraintsTest
             tx.rollback();
         }
         // then
-        try ( Transaction ignored = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            assertNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should not have constraint index" );
+            assertNull( getIndex( tx, LABEL, PROPERTY_KEY ), "Should not have constraint index" );
         }
     }
 
@@ -244,10 +244,10 @@ class IndexConstraintsTest
                     tx.commit();
                 }
                 // then
-                try ( Transaction ignored = graphDb.beginTx() )
+                try ( Transaction tx = graphDb.beginTx() )
                 {
-                    assertNotNull( getConstraint( transaction, LABEL, PROPERTY_KEY ), "Constraint should exist" );
-                    assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should have constraint index" );
+                    assertNotNull( getConstraint( tx, LABEL, PROPERTY_KEY ), "Constraint should exist" );
+                    assertNotNull( getIndex( tx, LABEL, PROPERTY_KEY ), "Should have constraint index" );
                 }
 
                 // when: DROP, CREATE => effect: <none>
@@ -258,11 +258,11 @@ class IndexConstraintsTest
                     tx.commit();
                 }
 
-                try ( Transaction ignored = graphDb.beginTx() )
+                try ( Transaction tx = graphDb.beginTx() )
                 {
                     // then
-                    assertNotNull( getConstraint( transaction, LABEL, PROPERTY_KEY ), "Constraint should exist" );
-                    assertNotNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should have constraint index" );
+                    assertNotNull( getConstraint( tx, LABEL, PROPERTY_KEY ), "Constraint should exist" );
+                    assertNotNull( getIndex( tx, LABEL, PROPERTY_KEY ), "Should have constraint index" );
                 }
 
                 // when: DROP, CREATE, DROP => effect: DROP
@@ -271,11 +271,11 @@ class IndexConstraintsTest
                     recreate( tx, getConstraint( tx, LABEL, PROPERTY_KEY ), times ).drop();
                     tx.commit();
                 }
-                try ( Transaction ignored = graphDb.beginTx() )
+                try ( Transaction tx = graphDb.beginTx() )
                 {
                     // then
-                    assertNull( getConstraint( transaction, LABEL, PROPERTY_KEY ), "Constraint should be removed" );
-                    assertNull( getIndex( transaction, LABEL, PROPERTY_KEY ), "Should not have constraint index" );
+                    assertNull( getConstraint( tx, LABEL, PROPERTY_KEY ), "Constraint should be removed" );
+                    assertNull( getIndex( tx, LABEL, PROPERTY_KEY ), "Should not have constraint index" );
                 }
             }
             catch ( Throwable e )

@@ -621,7 +621,7 @@ public class IndexStatisticsTest
 
     private void awaitIndexesOnline()
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline(3, TimeUnit.MINUTES );
         }

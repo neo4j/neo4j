@@ -350,7 +350,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
