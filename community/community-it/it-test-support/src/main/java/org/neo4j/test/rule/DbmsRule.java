@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreId;
@@ -422,6 +423,12 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
+    public DatabaseInfo databaseInfo()
+    {
+        return database.databaseInfo();
+    }
+
+    @Override
     public DependencyResolver getDependencyResolver()
     {
         return database.getDependencyResolver();
@@ -437,11 +444,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public DatabaseLayout databaseLayout()
     {
         return database.databaseLayout();
-    }
-
-    public String getDatabaseDirAbsolutePath()
-    {
-        return databaseLayout().databaseDirectory().getAbsolutePath();
     }
 
     @Override

@@ -180,6 +180,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return database.getDatabaseId();
     }
 
+    @Override
+    public DatabaseInfo databaseInfo()
+    {
+        return databaseInfo;
+    }
+
     KernelTransaction beginKernelTransaction( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
             long timeout )
     {
