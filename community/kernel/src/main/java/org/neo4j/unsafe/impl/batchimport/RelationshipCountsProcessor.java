@@ -68,8 +68,8 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
 
     static long calculateMemoryUsage( int highLabelId, int highRelationshipTypeId )
     {
-        int labels = highLabelId + 1;
-        int types = highRelationshipTypeId + 1;
+        long labels = highLabelId + 1;
+        long types = highRelationshipTypeId + 1;
         long labelsCountsUsage = labels * types * SIDES * Long.BYTES;
         long wildcardCountsUsage = types * Long.BYTES;
         return labelsCountsUsage + wildcardCountsUsage;
