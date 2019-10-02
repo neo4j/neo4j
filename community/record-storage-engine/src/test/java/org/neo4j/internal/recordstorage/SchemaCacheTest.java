@@ -615,6 +615,15 @@ class SchemaCacheTest
     }
 
     @Test
+    void hasConstraintRuleShouldMatchBySchemaAndType()
+    {
+        ConstraintDescriptor existing = uniquenessConstraint( 1, 2, 3, 4 );
+        ConstraintDescriptor checked = uniquenessConstraint( 0, 2, 3, 4 ); // Different rule id, but same type and schema.
+        SchemaCache cache = newSchemaCache( existing );
+        assertTrue( cache.hasConstraintRule( checked ) );
+    }
+
+    @Test
     void shouldCacheDependentState()
     {
         SchemaCache cache = newSchemaCache();

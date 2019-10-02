@@ -233,6 +233,7 @@ public class SchemaCache
         private final IndexConfigCompleter indexConfigCompleter;
         private final MutableLongObjectMap<IndexDescriptor> indexesById;
         private final MutableLongObjectMap<ConstraintDescriptor> constraintsById;
+        private final Set<ConstraintDescriptor> constraints;
 
         private final Map<SchemaDescriptor,IndexDescriptor> indexesBySchema;
         private final SchemaDescriptorLookupSet<IndexDescriptor> indexesByNode;
@@ -250,6 +251,7 @@ public class SchemaCache
             this.indexConfigCompleter = indexConfigCompleter;
             this.indexesById = new LongObjectHashMap<>();
             this.constraintsById = new LongObjectHashMap<>();
+            this.constraints = new HashSet<>();
 
             this.indexesBySchema = new HashMap<>();
             this.indexesByNode = new SchemaDescriptorLookupSet<>();
@@ -268,6 +270,7 @@ public class SchemaCache
             this.indexConfigCompleter = schemaCacheState.indexConfigCompleter;
             this.indexesById = LongObjectHashMap.newMap( schemaCacheState.indexesById );
             this.constraintsById = LongObjectHashMap.newMap( schemaCacheState.constraintsById );
+            this.constraints = new HashSet<>( schemaCacheState.constraints );
 
             this.indexesBySchema = new HashMap<>( schemaCacheState.indexesBySchema );
             this.indexesByNode = new SchemaDescriptorLookupSet<>();
@@ -310,7 +313,7 @@ public class SchemaCache
 
         boolean hasConstraintRule( ConstraintDescriptor descriptor )
         {
-            return constraintsById.containsKey( descriptor.getId() );
+            return constraints.contains( descriptor );
         }
 
         boolean hasIndex( IndexDescriptor index )
@@ -325,7 +328,7 @@ public class SchemaCache
 
         Iterable<ConstraintDescriptor> constraints()
         {
-            return constraintsById.values();
+            return constraints;
         }
 
         IndexDescriptor getIndex( long id )
@@ -465,6 +468,7 @@ public class SchemaCache
                 constraint = constraintSemantics.readConstraint( constraint );
                 constraintsById.put( constraint.getId(), constraint );
                 constrainsByName.put( constraint.getName(), constraint );
+                constraints.add( constraint );
                 cacheUniquenessConstraint( constraint );
             }
             else if ( rule instanceof IndexDescriptor )
@@ -484,6 +488,7 @@ public class SchemaCache
             {
                 ConstraintDescriptor constraint = constraintsById.remove( id );
                 constrainsByName.remove( constraint.getName() );
+                constraints.remove( constraint );
                 if ( constraint.enforcesUniqueness() )
                 {
                     selectUniquenessConstraintSetByEntityType( constraint.schema().entityType() ).remove( constraint.asIndexBackedConstraint() );
