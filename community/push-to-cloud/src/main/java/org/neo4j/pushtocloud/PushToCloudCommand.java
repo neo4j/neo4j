@@ -141,7 +141,8 @@ public class PushToCloudCommand implements AdminCommand
             String boltURI = arguments.get( ARG_BOLT_URI );
             if ( boltURI == null || "".equals( boltURI ) )
             {
-                throw new IncorrectUsage( "Please provide a Neo4j Cloud Bolt URI of the target location to push the database to, using the --bolt-uri argument." );
+                throw new IncorrectUsage( "Please provide a Neo4j Cloud Bolt URI of the target location to push the database to, " +
+                        "using the --bolt-uri argument." );
             }
             String confirmationViaArgument = arguments.get( ARG_CONFIRMED );
 
