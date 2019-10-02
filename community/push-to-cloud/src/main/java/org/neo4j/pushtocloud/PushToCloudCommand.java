@@ -41,8 +41,8 @@ public class PushToCloudCommand implements AdminCommand
     static final String ARG_BOLT_URI = "bolt-uri";
     static final String ARG_DUMP = "dump";
     static final String ARG_DUMP_TO = "dump-to";
-    static final String ARG_VERBOSE = "v";
-    static final String ARG_CONFIRMED = "confirmed";
+    static final String ARG_VERBOSE = "verbose";
+    static final String ARG_CONFIRMED = "overwrite";
     static final String ARG_USERNAME = "username";
     static final String ARG_PASSWORD = "password";
     static final String ENV_USERNAME = "NEO4J_USERNAME";
@@ -53,13 +53,13 @@ public class PushToCloudCommand implements AdminCommand
             .withDatabase()
             // ... or an existing backup/dump of a database
             .withArgument( new OptionalNamedArg( ARG_DUMP, "/path/to/my-neo4j-database-dump-file", null,
-                    "Existing dump of a database, produced from the dump command" ) )
+                    "Path to an existing database dump for upload. This arugment cannot be used together with --database." ) )
             .withArgument( new OptionalNamedArg( ARG_DUMP_TO, "/path/to/dump-file-to-be-created", null,
-                    "Location to create the dump file if database is given. The database will be dumped to this file instead of a default location" ) )
+                    "A file location to export the dump to. Used in combination with the --database argument." ) )
             .withArgument( new MandatoryNamedArg( ARG_BOLT_URI, "bolt+routing://mydatabaseid.databases.neo4j.io",
-                    "Bolt URI pointing to the target location to push the database to" ) )
+                    "Bolt URI of the target location to push the database to" ) )
             .withArgument( new OptionalNamedArg( ARG_VERBOSE, "true/false", null,
-                    "Whether or not to be verbose about internal details and errors." ) )
+                    "Enable verbose output." ) )
             .withArgument( new OptionalNamedArg( ARG_USERNAME, "neo4j", null,
                     "Optional: Username of the target database to push this database to. Prompt will ask for username if not provided. " +
                             "Alternatively NEO4J_USERNAME environment variable can be used." ) )
@@ -67,7 +67,7 @@ public class PushToCloudCommand implements AdminCommand
                     "Optional: Password of the target database to push this database to. Prompt will ask for password if not provided. " +
                             "Alternatively NEO4J_PASSWORD environment variable can be used." ) )
             .withArgument( new OptionalNamedArg( ARG_CONFIRMED, "true/false", "false",
-                    "Optional: Allow import to continue even if it will overwrite data in a non-empty cloud database." ) );
+                    "Optional: Overwrite the data in the target database if it is not empty." ) );
 
     private final Path homeDir;
     private final Path configDir;
@@ -118,7 +118,7 @@ public class PushToCloudCommand implements AdminCommand
                 }
                 else
                 {
-                    username = outsideWorld.promptLine( "Neo4j cloud database user name: " );
+                    username = outsideWorld.promptLine( "Neo4j Cloud database username: " );
                 }
             }
             char[] password;
@@ -134,14 +134,14 @@ public class PushToCloudCommand implements AdminCommand
                 }
                 else
                 {
-                    password = outsideWorld.promptPassword( "Neo4j cloud database password: " );
+                    password = outsideWorld.promptPassword( "Neo4j Cloud database password: " );
                 }
             }
 
             String boltURI = arguments.get( ARG_BOLT_URI );
             if ( boltURI == null || "".equals( boltURI ) )
             {
-                throw new IncorrectUsage( "Please provide a bolt URI pointing at the target location to push the database to as --bolt-uri." );
+                throw new IncorrectUsage( "Please provide a Neo4j Cloud Bolt URI of the target location to push the database to, using the --bolt-uri argument." );
             }
             String confirmationViaArgument = arguments.get( ARG_CONFIRMED );
 
