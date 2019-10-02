@@ -968,7 +968,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.SCHEMA, 4 ).andThatsAllFolks();
+        on( stats ).verify( RecordType.SCHEMA, 5 ).andThatsAllFolks();
     }
 
     @Test
@@ -1009,7 +1009,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.SCHEMA, 2 ).andThatsAllFolks();
+        on( stats ).verify( RecordType.SCHEMA, 3 ).andThatsAllFolks();
     }
 
     @Test
