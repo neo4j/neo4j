@@ -23,8 +23,6 @@ import org.neo4j.exceptions.InternalException
 
 object DebugSupport {
 
-  final val FAIL_HARD = false
-
   /** COLORS AND FORMATTING **/
 
   final val Black   = "\u001b[30m"
@@ -139,5 +137,3 @@ object DebugSupport {
       }
   }
 }
-
-class QueryFailHardException(message: String, cause: Throwable) extends InternalException(message, cause)
