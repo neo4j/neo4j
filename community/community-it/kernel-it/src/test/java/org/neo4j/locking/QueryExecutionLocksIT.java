@@ -249,7 +249,7 @@ class QueryExecutionLocksIT
             if ( recordingLocks == null )
             {
                 recordingLocks =
-                        new RecordingLocks( delegate.kernelTransaction().locks(), asList( listeners ), recordedLocks );
+                        new RecordingLocks( delegate.transaction(), asList( listeners ), recordedLocks );
             }
             return new DelegatingTransaction( delegate.kernelTransaction(), recordingLocks );
         }
@@ -363,14 +363,16 @@ class QueryExecutionLocksIT
         private final Locks delegate;
         private final List<LockOperationListener> listeners;
         private final List<LockOperationRecord> lockOperationRecords;
+        private final InternalTransaction transaction;
 
-        private RecordingLocks( Locks delegate,
+        private RecordingLocks( InternalTransaction transaction,
                 List<LockOperationListener> listeners,
                 List<LockOperationRecord> lockOperationRecords )
         {
-            this.delegate = delegate;
             this.listeners = listeners;
             this.lockOperationRecords = lockOperationRecords;
+            this.transaction = transaction;
+            this.delegate = transaction.kernelTransaction().locks();
         }
 
         List<LockOperationRecord> getLockOperationRecords()
@@ -393,84 +395,84 @@ class QueryExecutionLocksIT
         @Override
         public void acquireExclusiveNodeLock( long... ids )
         {
-            record( null, true, true, ResourceTypes.NODE, ids );
+            record( transaction, true, true, ResourceTypes.NODE, ids );
             delegate.acquireExclusiveNodeLock( ids );
         }
 
         @Override
         public void acquireExclusiveRelationshipLock( long... ids )
         {
-            record( null, true, true, ResourceTypes.RELATIONSHIP, ids );
+            record( transaction, true, true, ResourceTypes.RELATIONSHIP, ids );
             delegate.acquireExclusiveRelationshipLock( ids );
         }
 
         @Override
         public void acquireExclusiveLabelLock( long... ids )
         {
-            record( null, true, true, ResourceTypes.LABEL, ids );
+            record( transaction, true, true, ResourceTypes.LABEL, ids );
             delegate.acquireExclusiveLabelLock( ids );
         }
 
         @Override
         public void releaseExclusiveNodeLock( long... ids )
         {
-            record( null, true, false, ResourceTypes.NODE, ids );
+            record( transaction, true, false, ResourceTypes.NODE, ids );
             delegate.releaseExclusiveNodeLock( ids );
         }
 
         @Override
         public void releaseExclusiveRelationshipLock( long... ids )
         {
-            record( null, true, false, ResourceTypes.RELATIONSHIP, ids );
+            record( transaction, true, false, ResourceTypes.RELATIONSHIP, ids );
             delegate.releaseExclusiveRelationshipLock( ids );
         }
 
         @Override
         public void releaseExclusiveLabelLock( long... ids )
         {
-            record( null, true, false, ResourceTypes.LABEL, ids );
+            record( transaction, true, false, ResourceTypes.LABEL, ids );
             delegate.releaseExclusiveLabelLock( ids );
         }
 
         @Override
         public void acquireSharedNodeLock( long... ids )
         {
-            record( null, false, true, ResourceTypes.NODE, ids );
+            record( transaction, false, true, ResourceTypes.NODE, ids );
             delegate.acquireSharedNodeLock( ids );
         }
 
         @Override
         public void acquireSharedRelationshipLock( long... ids )
         {
-            record( null, false, true, ResourceTypes.RELATIONSHIP, ids );
+            record( transaction, false, true, ResourceTypes.RELATIONSHIP, ids );
             delegate.acquireSharedRelationshipLock( ids );
         }
 
         @Override
         public void acquireSharedLabelLock( long... ids )
         {
-            record( null, false, true, ResourceTypes.LABEL, ids );
+            record( transaction, false, true, ResourceTypes.LABEL, ids );
             delegate.acquireSharedLabelLock( ids );
         }
 
         @Override
         public void releaseSharedNodeLock( long... ids )
         {
-            record( null, false, false, ResourceTypes.NODE, ids );
+            record( transaction, false, false, ResourceTypes.NODE, ids );
             delegate.releaseSharedNodeLock( ids );
         }
 
         @Override
         public void releaseSharedRelationshipLock( long... ids )
         {
-            record( null, false, false, ResourceTypes.RELATIONSHIP, ids );
+            record( transaction, false, false, ResourceTypes.RELATIONSHIP, ids );
             delegate.releaseSharedRelationshipLock( ids );
         }
 
         @Override
         public void releaseSharedLabelLock( long... ids )
         {
-            record( null, false, false, ResourceTypes.LABEL, ids );
+            record( transaction, false, false, ResourceTypes.LABEL, ids );
             delegate.releaseSharedLabelLock( ids );
         }
     }
@@ -506,7 +508,7 @@ class QueryExecutionLocksIT
         }
     }
 
-    private class OnceSchemaFlushListener extends LockOperationListener
+    private static class OnceSchemaFlushListener extends LockOperationListener
     {
         private boolean executed;
 

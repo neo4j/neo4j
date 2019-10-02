@@ -22,6 +22,7 @@ package org.neo4j.harness;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.harness.internal.TestNeo4jBuilders;
@@ -79,16 +80,19 @@ class JavaFunctionsTestIT
         @Context
         public MyCoreAPI myCoreAPI;
 
+        @Context
+        public Transaction transaction;
+
         @UserFunction( value = "my.willFail" )
         public long willFail() throws ProcedureException
         {
-            return myCoreAPI.makeNode( "Test" );
+            return myCoreAPI.makeNode( transaction, "Test" );
         }
 
         @UserFunction( "my.countNodes" )
         public long countNodes()
         {
-            return myCoreAPI.countNodes();
+            return myCoreAPI.countNodes( transaction );
         }
     }
 

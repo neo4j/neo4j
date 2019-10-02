@@ -19,29 +19,28 @@
  */
 package org.neo4j.harness;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.logging.Log;
 
 public class MyCoreAPI
 {
-    private final GraphDatabaseAPI graph;
     private final Log log;
 
-    public MyCoreAPI( GraphDatabaseAPI graph, Log log )
+    public MyCoreAPI( Log log )
     {
-        this.graph = graph;
         this.log = log;
     }
 
-    public long makeNode( String label ) throws ProcedureException
+    public long makeNode( Transaction tx, String label ) throws ProcedureException
     {
         long result;
         try
         {
-            KernelTransaction ktx = null;
+            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             long nodeId = ktx.dataWrite().nodeCreate();
             int labelId = ktx.tokenWrite().labelGetOrCreateForName( label );
             ktx.dataWrite().nodeAddLabel( nodeId, labelId );
@@ -55,9 +54,9 @@ public class MyCoreAPI
         }
     }
 
-    public long countNodes()
+    public long countNodes( Transaction tx )
     {
-        KernelTransaction kernelTransaction = null;
+        KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
         return kernelTransaction.dataRead().countsForNode( -1 );
     }
 }

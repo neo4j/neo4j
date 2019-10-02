@@ -22,13 +22,9 @@ package org.neo4j.cypher.internal.javacompat;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.ArithmeticException;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -38,8 +34,6 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
@@ -48,51 +42,6 @@ class ExecutionResultTest
 {
     @Inject
     private GraphDatabaseAPI db;
-
-    //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
-    @Test
-    void shouldCloseTransactionsWhenIteratingResults()
-    {
-        // Given an execution result that has been started but not exhausted
-        createNode();
-        createNode();
-        try ( Transaction transaction = db.beginTx() )
-        {
-            try ( Result executionResult = transaction.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" ) )
-            {
-                executionResult.next();
-                assertThat( activeTransaction(), is( notNullValue() ) );
-            }
-            transaction.commit();
-        }
-
-        // Then
-        assertThat( activeTransaction(), is( nullValue() ) );
-    }
-
-    //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
-    @Test
-    void shouldCloseTransactionsWhenIteratingOverSingleColumn()
-    {
-        // Given an execution result that has been started but not exhausted
-        createNode();
-        createNode();
-        try ( Transaction transaction = db.beginTx() )
-        {
-            try ( Result executionResult = transaction.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" ) )
-            {
-                ResourceIterator<Node> resultIterator = executionResult.columnAs( "n" );
-                resultIterator.next();
-                assertThat( activeTransaction(), is( notNullValue() ) );
-                // When
-                resultIterator.close();
-            }
-            transaction.commit();
-        }
-
-        // Then
-        assertThat( activeTransaction(), is( nullValue() ) );
-    }
 
     @Test
     void shouldThrowAppropriateException()
@@ -180,10 +129,5 @@ class ExecutionResultTest
         {
             assertThat( transaction.execute( "RETURN toLower(null) AS lower" ).<String>columnAs( "lower" ).next(), nullValue() );
         }
-    }
-
-    private TransactionImpl activeTransaction()
-    {
-        return null;
     }
 }

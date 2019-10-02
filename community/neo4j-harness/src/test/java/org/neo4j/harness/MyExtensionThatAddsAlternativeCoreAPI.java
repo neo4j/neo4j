@@ -45,9 +45,7 @@ public class MyExtensionThatAddsAlternativeCoreAPI
     @Override
     public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
-        dependencies.procedures().registerComponent( MyCoreAPI.class,
-                ctx -> new MyCoreAPI( dependencies.getGraphDatabaseAPI(),
-                        dependencies.logService().getUserLog( MyCoreAPI.class ) ), true );
+        dependencies.procedures().registerComponent( MyCoreAPI.class, ctx -> new MyCoreAPI( dependencies.logService().getUserLog( MyCoreAPI.class ) ), true );
         return new LifecycleAdapter();
     }
 

@@ -27,6 +27,7 @@ import org.junit.jupiter.api.parallel.Resources;
 
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.harness.internal.TestNeo4jBuilders;
@@ -104,11 +105,14 @@ class JavaProceduresTest
         @Context
         public MyCoreAPI myCoreAPI;
 
+        @Context
+        public Transaction transaction;
+
         @Procedure( value = "makeNode", mode = Mode.WRITE )
         public Stream<LongResult> makeNode( @Name( "label" ) String label ) throws ProcedureException
         {
             LongResult t = new LongResult();
-            t.value = myCoreAPI.makeNode( label );
+            t.value = myCoreAPI.makeNode( transaction, label );
             return Stream.of( t );
         }
 
@@ -116,7 +120,7 @@ class JavaProceduresTest
         public Stream<LongResult> willFail() throws ProcedureException
         {
             LongResult t = new LongResult();
-            t.value = myCoreAPI.makeNode( "Test" );
+            t.value = myCoreAPI.makeNode( transaction, "Test" );
             return Stream.of( t );
         }
 
@@ -124,7 +128,7 @@ class JavaProceduresTest
         public Stream<LongResult> countNodes()
         {
             LongResult t = new LongResult();
-            t.value = myCoreAPI.countNodes();
+            t.value = myCoreAPI.countNodes( transaction );
             return Stream.of( t );
         }
     }
