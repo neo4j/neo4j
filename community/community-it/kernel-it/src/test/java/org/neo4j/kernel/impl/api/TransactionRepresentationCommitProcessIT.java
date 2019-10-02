@@ -20,9 +20,11 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -38,12 +40,10 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
 class TransactionRepresentationCommitProcessIT
@@ -60,12 +60,13 @@ class TransactionRepresentationCommitProcessIT
     }
 
     @Test
-    void commitDuringContinuousCheckpointing()
+    @Timeout( value = 5, unit = TimeUnit.MINUTES )
+    void commitDuringContinuousCheckpointing() throws Exception
     {
-        assertTimeoutPreemptively( ofSeconds( 15 ), () ->
+        final AtomicBoolean done = new AtomicBoolean();
+        Workers<Runnable> workers = new Workers<>( getClass().getSimpleName() );
+        try
         {
-            final AtomicBoolean done = new AtomicBoolean();
-            Workers<Runnable> workers = new Workers<>( getClass().getSimpleName() );
             for ( int i = 0; i < TOTAL_ACTIVE_THREADS; i++ )
             {
                 workers.start( new Runnable()
@@ -101,18 +102,21 @@ class TransactionRepresentationCommitProcessIT
             }
 
             Thread.sleep( SECONDS.toMillis( 2 ) );
+        }
+        finally
+        {
             done.set( true );
-            workers.awaitAndThrowOnError();
+        }
+        workers.awaitAndThrowOnError();
 
-            GBPTreeCountsStore counts = getDependency( GBPTreeCountsStore.class );
-            assertThat( "Count store should be rotated once at least", counts.txId(), greaterThan( 0L ) );
+        GBPTreeCountsStore counts = getDependency( GBPTreeCountsStore.class );
+        assertThat( "Count store should be rotated once at least", counts.txId(), greaterThan( 0L ) );
 
-            long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
-            TransactionIdStore txIdStore = getDependency( TransactionIdStore.class );
-            assertEquals( txIdStore.getLastClosedTransactionId(), lastRotationTx,
-                    "NeoStore last closed transaction id should be equal last count store rotation transaction id." );
-            assertEquals( txIdStore.getLastClosedTransactionId(), counts.txId(), "Last closed transaction should be last rotated tx in count store" );
-        } );
+        long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        TransactionIdStore txIdStore = getDependency( TransactionIdStore.class );
+        assertEquals( txIdStore.getLastClosedTransactionId(), lastRotationTx,
+                "NeoStore last closed transaction id should be equal last count store rotation transaction id." );
+        assertEquals( txIdStore.getLastClosedTransactionId(), counts.txId(), "Last closed transaction should be last rotated tx in count store" );
     }
 
     private <T> T getDependency( Class<T> clazz )
