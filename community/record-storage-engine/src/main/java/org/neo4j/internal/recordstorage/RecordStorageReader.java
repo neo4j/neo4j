@@ -96,19 +96,19 @@ public class RecordStorageReader implements StorageReader
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
-        return schemaCache.indexDescriptorsForLabel( labelId );
+        return schemaCache.indexesForLabel( labelId );
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
     {
-        return schemaCache.indexDescriptorsForRelationshipType( relationshipType );
+        return schemaCache.indexesForRelationshipType( relationshipType );
     }
 
     @Override
     public IndexDescriptor indexGetForName( String name )
     {
-        return schemaCache.indexDescriptorForName( name );
+        return schemaCache.indexForName( name );
     }
 
     @Override
@@ -126,7 +126,7 @@ public class RecordStorageReader implements StorageReader
     @Override
     public Iterator<IndexDescriptor> indexesGetAll()
     {
-        return schemaCache.indexDescriptors().iterator();
+        return schemaCache.indexes().iterator();
     }
 
     @Override
@@ -192,7 +192,7 @@ public class RecordStorageReader implements StorageReader
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll()
     {
-        return schemaCache.constraints();
+        return schemaCache.constraints().iterator();
     }
 
     @Override

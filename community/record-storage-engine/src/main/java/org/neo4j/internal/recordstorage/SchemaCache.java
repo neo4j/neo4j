@@ -74,14 +74,14 @@ public class SchemaCache
         this.schemaCacheState = schemaCacheState;
     }
 
-    public Iterable<IndexDescriptor> indexDescriptors()
+    public Iterable<IndexDescriptor> indexes()
     {
-        return schemaCacheState.indexDescriptors();
+        return schemaCacheState.indexes();
     }
 
-    Iterable<ConstraintDescriptor> constraintRules()
+    public Iterable<ConstraintDescriptor> constraints()
     {
-        return schemaCacheState.constraintRules();
+        return schemaCacheState.constraints();
     }
 
     boolean hasConstraintRule( Long constraintRuleId )
@@ -104,24 +104,19 @@ public class SchemaCache
         return schemaCacheState.hasIndex( descriptor );
     }
 
-    public Iterator<ConstraintDescriptor> constraints()
-    {
-        return schemaCacheState.constraints();
-    }
-
     Iterator<ConstraintDescriptor> constraintsForLabel( final int label )
     {
-        return Iterators.filter( SchemaDescriptorPredicates.hasLabel( label ), constraints() );
+        return Iterators.filter( SchemaDescriptorPredicates.hasLabel( label ), constraints().iterator() );
     }
 
     Iterator<ConstraintDescriptor> constraintsForRelationshipType( final int relTypeId )
     {
-        return Iterators.filter( SchemaDescriptorPredicates.hasRelType( relTypeId ), constraints() );
+        return Iterators.filter( SchemaDescriptorPredicates.hasRelType( relTypeId ), constraints().iterator() );
     }
 
     Iterator<ConstraintDescriptor> constraintsForSchema( SchemaDescriptor descriptor )
     {
-        return Iterators.filter( SchemaDescriptor.equalTo( descriptor ), constraints() );
+        return Iterators.filter( SchemaDescriptor.equalTo( descriptor ), constraints().iterator() );
     }
 
     <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
@@ -184,24 +179,24 @@ public class SchemaCache
         return schemaCacheState.indexesForSchema( descriptor );
     }
 
-    Iterator<IndexDescriptor> indexDescriptorsForLabel( int labelId )
+    Iterator<IndexDescriptor> indexesForLabel( int labelId )
     {
-        return schemaCacheState.indexForLabel( labelId );
+        return schemaCacheState.indexesForLabel( labelId );
     }
 
-    Iterator<IndexDescriptor> indexDescriptorsForRelationshipType( int relationshipType )
+    Iterator<IndexDescriptor> indexesForRelationshipType( int relationshipType )
     {
-        return schemaCacheState.indexForRelationshipType( relationshipType );
+        return schemaCacheState.indexesForRelationshipType( relationshipType );
     }
 
-    IndexDescriptor indexDescriptorForName( String name )
+    IndexDescriptor indexForName( String name )
     {
-        return schemaCacheState.indexDescriptorByName( name );
+        return schemaCacheState.indexForName( name );
     }
 
     ConstraintDescriptor constraintForName( String name )
     {
-        return schemaCacheState.constraintByName( name );
+        return schemaCacheState.constraintForName( name );
     }
 
     public Set<IndexDescriptor> getIndexesRelatedTo(
@@ -236,16 +231,15 @@ public class SchemaCache
     {
         private final ConstraintRuleAccessor constraintSemantics;
         private final IndexConfigCompleter indexConfigCompleter;
-        private final Set<ConstraintDescriptor> constraints;
-        private final MutableLongObjectMap<IndexDescriptor> indexDescriptorById;
-        private final MutableLongObjectMap<ConstraintDescriptor> constraintRuleById;
+        private final MutableLongObjectMap<IndexDescriptor> indexesById;
+        private final MutableLongObjectMap<ConstraintDescriptor> constraintsById;
 
-        private final Map<SchemaDescriptor,IndexDescriptor> indexDescriptors;
-        private final SchemaDescriptorLookupSet<IndexDescriptor> indexDescriptorsByNode;
-        private final SchemaDescriptorLookupSet<IndexDescriptor> indexDescriptorsByRelationship;
+        private final Map<SchemaDescriptor,IndexDescriptor> indexesBySchema;
+        private final SchemaDescriptorLookupSet<IndexDescriptor> indexesByNode;
+        private final SchemaDescriptorLookupSet<IndexDescriptor> indexesByRelationship;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByNode;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByRelationship;
-        private final Map<String,IndexDescriptor> indexDescriptorsByName;
+        private final Map<String,IndexDescriptor> indexesByName;
         private final Map<String,ConstraintDescriptor> constrainsByName;
 
         private final Map<Class<?>,Object> dependantState;
@@ -254,16 +248,15 @@ public class SchemaCache
         {
             this.constraintSemantics = constraintSemantics;
             this.indexConfigCompleter = indexConfigCompleter;
-            this.constraints = new HashSet<>();
-            this.indexDescriptorById = new LongObjectHashMap<>();
-            this.constraintRuleById = new LongObjectHashMap<>();
+            this.indexesById = new LongObjectHashMap<>();
+            this.constraintsById = new LongObjectHashMap<>();
 
-            this.indexDescriptors = new HashMap<>();
-            this.indexDescriptorsByNode = new SchemaDescriptorLookupSet<>();
-            this.indexDescriptorsByRelationship = new SchemaDescriptorLookupSet<>();
+            this.indexesBySchema = new HashMap<>();
+            this.indexesByNode = new SchemaDescriptorLookupSet<>();
+            this.indexesByRelationship = new SchemaDescriptorLookupSet<>();
             this.uniquenessConstraintsByNode = new SchemaDescriptorLookupSet<>();
             this.uniquenessConstraintsByRelationship = new SchemaDescriptorLookupSet<>();
-            this.indexDescriptorsByName = new HashMap<>();
+            this.indexesByName = new HashMap<>();
             this.constrainsByName = new HashMap<>();
             this.dependantState = new ConcurrentHashMap<>();
             load( rules );
@@ -273,19 +266,18 @@ public class SchemaCache
         {
             this.constraintSemantics = schemaCacheState.constraintSemantics;
             this.indexConfigCompleter = schemaCacheState.indexConfigCompleter;
-            this.indexDescriptorById = LongObjectHashMap.newMap( schemaCacheState.indexDescriptorById );
-            this.constraintRuleById = LongObjectHashMap.newMap( schemaCacheState.constraintRuleById );
-            this.constraints = new HashSet<>( schemaCacheState.constraints );
+            this.indexesById = LongObjectHashMap.newMap( schemaCacheState.indexesById );
+            this.constraintsById = LongObjectHashMap.newMap( schemaCacheState.constraintsById );
 
-            this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
-            this.indexDescriptorsByNode = new SchemaDescriptorLookupSet<>();
-            this.indexDescriptorsByRelationship = new SchemaDescriptorLookupSet<>();
+            this.indexesBySchema = new HashMap<>( schemaCacheState.indexesBySchema );
+            this.indexesByNode = new SchemaDescriptorLookupSet<>();
+            this.indexesByRelationship = new SchemaDescriptorLookupSet<>();
             this.uniquenessConstraintsByNode = new SchemaDescriptorLookupSet<>();
             this.uniquenessConstraintsByRelationship = new SchemaDescriptorLookupSet<>();
             // Now fill the node/relationship sets
-            this.indexDescriptorById.forEachValue( index -> selectIndexSetByEntityType( index.schema().entityType() ).add( index ) );
-            this.constraintRuleById.forEachValue( this::cacheUniquenessConstraint );
-            this.indexDescriptorsByName = new HashMap<>( schemaCacheState.indexDescriptorsByName );
+            this.indexesById.forEachValue( index -> selectIndexSetByEntityType( index.schema().entityType() ).add( index ) );
+            this.constraintsById.forEachValue( this::cacheUniquenessConstraint );
+            this.indexesByName = new HashMap<>( schemaCacheState.indexesByName );
             this.constrainsByName = new HashMap<>( schemaCacheState.constrainsByName );
             this.dependantState = new ConcurrentHashMap<>();
         }
@@ -306,70 +298,65 @@ public class SchemaCache
             }
         }
 
-        Iterable<IndexDescriptor> indexDescriptors()
+        Iterable<IndexDescriptor> indexes()
         {
-            return indexDescriptorById.values();
-        }
-
-        Iterable<ConstraintDescriptor> constraintRules()
-        {
-            return constraintRuleById.values();
+            return indexesById.values();
         }
 
         boolean hasConstraintRule( Long constraintRuleId )
         {
-            return constraintRuleId != null && constraintRuleById.containsKey( constraintRuleId );
+            return constraintRuleId != null && constraintsById.containsKey( constraintRuleId );
         }
 
         boolean hasConstraintRule( ConstraintDescriptor descriptor )
         {
-            return constraints.contains( descriptor );
+            return constraintsById.containsKey( descriptor.getId() );
         }
 
         boolean hasIndex( IndexDescriptor index )
         {
-            return indexDescriptorById.containsKey( index.getId() );
+            return indexesById.containsKey( index.getId() );
         }
 
         boolean hasIndex( SchemaDescriptor descriptor )
         {
-            return indexDescriptors.containsKey( descriptor );
+            return indexesBySchema.containsKey( descriptor );
         }
 
-        Iterator<ConstraintDescriptor> constraints()
+        Iterable<ConstraintDescriptor> constraints()
         {
-            return constraints.iterator();
+            return constraintsById.values();
         }
 
         IndexDescriptor getIndex( long id )
         {
-            return indexDescriptorById.get( id );
+            return indexesById.get( id );
         }
 
         Iterator<IndexDescriptor> indexesForSchema( SchemaDescriptor descriptor )
         {
-            IndexDescriptor index = indexDescriptors.get( descriptor );
+            IndexDescriptor index = indexesBySchema.get( descriptor );
             return index == null ? Iterators.emptyResourceIterator() : Iterators.iterator( index );
         }
 
-        IndexDescriptor indexDescriptorByName( String name )
+        IndexDescriptor indexForName( String name )
         {
-            return indexDescriptorsByName.get( name );
+            return indexesByName.get( name );
         }
 
-        ConstraintDescriptor constraintByName( String name )
+        ConstraintDescriptor constraintForName( String name )
         {
             return constrainsByName.get( name );
         }
 
-        Iterator<IndexDescriptor> indexForLabel( int labelId )
+        Iterator<IndexDescriptor> indexesForLabel( int labelId )
         {
-            return getSchemaRelatedTo( indexDescriptorsByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator();
+            return getSchemaRelatedTo( indexesByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator();
         }
 
-        Iterator<IndexDescriptor> indexForRelationshipType( int relationshipType )
+        Iterator<IndexDescriptor> indexesForRelationshipType( int relationshipType )
         {
-            return getSchemaRelatedTo( indexDescriptorsByRelationship, new long[]{relationshipType}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator();
+            return getSchemaRelatedTo( indexesByRelationship, new long[]{relationshipType}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator();
         }
 
         Set<IndexDescriptor> getIndexesRelatedTo( EntityType entityType, long[] changedEntityTokens,
@@ -444,9 +431,9 @@ public class SchemaCache
             switch ( entityType )
             {
             case NODE:
-                return indexDescriptorsByNode;
+                return indexesByNode;
             case RELATIONSHIP:
-                return indexDescriptorsByRelationship;
+                return indexesByRelationship;
             default:
                 throw new IllegalArgumentException( entityType.name() );
             }
@@ -475,40 +462,39 @@ public class SchemaCache
             if ( rule instanceof ConstraintDescriptor )
             {
                 ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
-                constraintRuleById.put( constraint.getId(), constraint );
-                constraints.add( constraintSemantics.readConstraint( constraint ) );
+                constraint = constraintSemantics.readConstraint( constraint );
+                constraintsById.put( constraint.getId(), constraint );
                 constrainsByName.put( constraint.getName(), constraint );
                 cacheUniquenessConstraint( constraint );
             }
             else if ( rule instanceof IndexDescriptor )
             {
                 IndexDescriptor index = indexConfigCompleter.completeConfiguration( (IndexDescriptor) rule );
-                indexDescriptorById.put( index.getId(), index );
+                indexesById.put( index.getId(), index );
                 SchemaDescriptor schemaDescriptor = index.schema();
-                indexDescriptors.put( schemaDescriptor, index );
-                indexDescriptorsByName.put( rule.getName(), index );
+                indexesBySchema.put( schemaDescriptor, index );
+                indexesByName.put( rule.getName(), index );
                 selectIndexSetByEntityType( schemaDescriptor.entityType() ).add( index );
             }
         }
 
         void removeSchemaRule( long id )
         {
-            if ( constraintRuleById.containsKey( id ) )
+            if ( constraintsById.containsKey( id ) )
             {
-                ConstraintDescriptor constraint = constraintRuleById.remove( id );
-                constraints.remove( constraint );
+                ConstraintDescriptor constraint = constraintsById.remove( id );
                 constrainsByName.remove( constraint.getName() );
                 if ( constraint.enforcesUniqueness() )
                 {
                     selectUniquenessConstraintSetByEntityType( constraint.schema().entityType() ).remove( constraint.asIndexBackedConstraint() );
                 }
             }
-            else if ( indexDescriptorById.containsKey( id ) )
+            else if ( indexesById.containsKey( id ) )
             {
-                IndexDescriptor index = indexDescriptorById.remove( id );
+                IndexDescriptor index = indexesById.remove( id );
                 SchemaDescriptor schema = index.schema();
-                indexDescriptors.remove( schema );
-                indexDescriptorsByName.remove( index.getName(), index );
+                indexesBySchema.remove( schema );
+                indexesByName.remove( index.getName(), index );
                 selectIndexSetByEntityType( schema.entityType() ).remove( index );
             }
         }

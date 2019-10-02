@@ -44,19 +44,19 @@ class StorageSchemaReaderSnapshot implements StorageSchemaReader
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
-        return schema.indexDescriptorsForLabel( labelId );
+        return schema.indexesForLabel( labelId );
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
     {
-        return schema.indexDescriptorsForRelationshipType( relationshipType );
+        return schema.indexesForRelationshipType( relationshipType );
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetAll()
     {
-        return schema.indexDescriptors().iterator();
+        return schema.indexes().iterator();
     }
 
     @Override
@@ -74,6 +74,6 @@ class StorageSchemaReaderSnapshot implements StorageSchemaReader
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll()
     {
-        return schema.constraints();
+        return schema.constraints().iterator();
     }
 }
