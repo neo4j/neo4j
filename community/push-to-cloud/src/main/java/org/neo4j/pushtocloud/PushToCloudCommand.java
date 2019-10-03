@@ -42,7 +42,7 @@ public class PushToCloudCommand implements AdminCommand
     static final String ARG_DUMP = "dump";
     static final String ARG_DUMP_TO = "dump-to";
     static final String ARG_VERBOSE = "verbose";
-    static final String ARG_CONFIRMED = "overwrite";
+    static final String ARG_OVERWRITE = "overwrite";
     static final String ARG_USERNAME = "username";
     static final String ARG_PASSWORD = "password";
     static final String ENV_USERNAME = "NEO4J_USERNAME";
@@ -66,7 +66,7 @@ public class PushToCloudCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( ARG_PASSWORD, "mYs3cr3tPa$$w0rd", null,
                     "Optional: Password of the target database to push this database to. Prompt will ask for password if not provided. " +
                             "Alternatively NEO4J_PASSWORD environment variable can be used." ) )
-            .withArgument( new OptionalNamedArg( ARG_CONFIRMED, "true/false", "false",
+            .withArgument( new OptionalNamedArg( ARG_OVERWRITE, "true/false", "false",
                     "Optional: Overwrite the data in the target database." ) );
 
     private final Path homeDir;
@@ -144,7 +144,7 @@ public class PushToCloudCommand implements AdminCommand
                 throw new IncorrectUsage( "Please provide a Neo4j Cloud Bolt URI of the target location to push the database to, " +
                         "using the --bolt-uri argument." );
             }
-            String confirmationViaArgument = arguments.get( ARG_CONFIRMED );
+            String confirmationViaArgument = arguments.get( ARG_OVERWRITE );
 
             String consoleURL = buildConsoleURI( boltURI );
             String bearerToken = copier.authenticate( verbose, consoleURL, username, password, "true".equals( confirmationViaArgument ) );
