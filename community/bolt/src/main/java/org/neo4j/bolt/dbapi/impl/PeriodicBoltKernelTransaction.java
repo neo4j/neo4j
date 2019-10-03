@@ -32,11 +32,13 @@ import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl implements BoltTransaction
 {
     private volatile KernelTransaction transaction;
+    private final InternalTransaction internalTransaction;
 
     public PeriodicBoltKernelTransaction( QueryExecutionEngine queryExecutionEngine,
             TransactionalContextFactory transactionalContextFactory, InternalTransaction transaction )
     {
         super( queryExecutionEngine, transactionalContextFactory, transaction );
+        this.internalTransaction = transaction;
     }
 
     @Override

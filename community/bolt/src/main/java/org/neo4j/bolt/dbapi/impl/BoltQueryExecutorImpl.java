@@ -34,7 +34,7 @@ public class BoltQueryExecutorImpl implements BoltQueryExecutor
 {
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionalContextFactory transactionalContextFactory;
-    protected final InternalTransaction internalTransaction;
+    private final InternalTransaction internalTransaction;
 
     BoltQueryExecutorImpl( QueryExecutionEngine queryExecutionEngine, TransactionalContextFactory transactionalContextFactory,
             InternalTransaction internalTransaction )
