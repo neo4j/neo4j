@@ -84,6 +84,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -194,6 +196,19 @@ class BuiltInProceduresTest
                 singletonList( "name" ),
                 "no-index-provider-1.0" )
         ) );
+    }
+
+    @Test
+    void lookupComponentProviders()
+    {
+        assertNotNull( procs.lookupComponentProvider( Transaction.class, true ) );
+        assertNotNull( procs.lookupComponentProvider( Transaction.class, false ) );
+
+        assertNull( procs.lookupComponentProvider( Statement.class, true ) );
+        assertNull( procs.lookupComponentProvider( Statement.class, false ) );
+
+        assertNull( procs.lookupComponentProvider( DependencyResolver.class, true ) );
+        assertNotNull( procs.lookupComponentProvider( DependencyResolver.class, false ) );
     }
 
     @Test

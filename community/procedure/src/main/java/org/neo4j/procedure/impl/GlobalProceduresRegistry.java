@@ -268,6 +268,18 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
         allComponents.register( cls, provider );
     }
 
+    /**
+     * Lookup registered component providers functions that capable to provide user requested type in scope of procedure invocation context
+     * @param cls the type of registered component
+     * @param safe set to false if desired component can bypass security, true if it respects security
+     * @return registered provider function if registered, null otherwise
+     */
+    public <T> ThrowingFunction<Context,T,ProcedureException> lookupComponentProvider( Class<T> cls, boolean safe )
+    {
+        var registry = safe ? safeComponents : allComponents;
+        return registry.providerFor( cls );
+    }
+
     @Override
     public ProcedureHandle procedure( QualifiedName name ) throws ProcedureException
     {
