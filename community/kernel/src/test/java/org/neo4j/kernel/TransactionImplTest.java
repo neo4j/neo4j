@@ -30,7 +30,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.token.TokenHolders;
@@ -45,7 +44,6 @@ import static org.mockito.Mockito.when;
 
 class TransactionImplTest
 {
-    private final GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
     private final TokenHolders tokenHolders = mock( TokenHolders.class );
     private final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
     private final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
