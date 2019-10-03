@@ -44,7 +44,7 @@ public class HttpTransactionManager
 {
     private final TransactionHandleRegistry transactionRegistry;
     private final DatabaseService database;
-        private final JobScheduler jobScheduler;
+    private final JobScheduler jobScheduler;
 
     public HttpTransactionManager( DatabaseService database, JobScheduler jobScheduler, Clock clock, Duration transactionTimeout, LogProvider userLogProvider )
     {

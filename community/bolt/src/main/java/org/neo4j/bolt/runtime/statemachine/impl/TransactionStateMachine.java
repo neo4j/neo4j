@@ -63,22 +63,10 @@ public class TransactionStateMachine implements StatementProcessor
         this.databaseName = databaseName;
     }
 
-    private void before()
-    {
-    }
-
     @Override
     public void beginTransaction( List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
     {
-        before();
-        try
-        {
-            state = state.beginTransaction( ctx, spi, bookmarks, txTimeout, accessMode, txMetadata );
-        }
-        finally
-        {
-            after();
-        }
+        state = state.beginTransaction( ctx, spi, bookmarks, txTimeout, accessMode, txMetadata );
     }
 
     @Override
@@ -91,39 +79,22 @@ public class TransactionStateMachine implements StatementProcessor
     public StatementMetadata run( String statement, MapValue params, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
             Map<String,Object> txMetaData ) throws KernelException
     {
-        before();
-        try
-        {
-            state = state.run( ctx, spi, statement, params, bookmarks, txTimeout, accessMode, txMetaData );
+        state = state.run( ctx, spi, statement, params, bookmarks, txTimeout, accessMode, txMetaData );
 
-            StatementMetadata metadata = ctx.lastStatementMetadata;
-            ctx.lastStatementMetadata = null; // metadata should not be needed more than once
-            return metadata;
-        }
-        finally
-        {
-            after();
-        }
+        StatementMetadata metadata = ctx.lastStatementMetadata;
+        ctx.lastStatementMetadata = null; // metadata should not be needed more than once
+        return metadata;
     }
 
     @Override
     public Bookmark streamResult( int statementId, ResultConsumer resultConsumer ) throws Throwable
     {
-        before();
-        try
-        {
-            return state.streamResult( ctx, spi, statementId, resultConsumer );
-        }
-        finally
-        {
-            after();
-        }
+        return state.streamResult( ctx, spi, statementId, resultConsumer );
     }
 
     @Override
     public Bookmark commitTransaction() throws KernelException
     {
-        before();
         try
         {
             state = state.commitTransaction( ctx, spi );
@@ -134,24 +105,12 @@ public class TransactionStateMachine implements StatementProcessor
             state = State.AUTO_COMMIT;
             throw ex;
         }
-        finally
-        {
-            after();
-        }
     }
 
     @Override
     public void rollbackTransaction() throws KernelException
     {
-        before();
-        try
-        {
-            state = state.rollbackTransaction( ctx, spi );
-        }
-        finally
-        {
-            after();
-        }
+        state = state.rollbackTransaction( ctx, spi );
     }
 
     @Override
@@ -173,10 +132,6 @@ public class TransactionStateMachine implements StatementProcessor
     {
         state.terminateQueryAndRollbackTransaction( spi, ctx );
         state = State.AUTO_COMMIT;
-    }
-
-    private void after()
-    {
     }
 
     @Override
