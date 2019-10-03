@@ -82,7 +82,6 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
@@ -977,18 +976,22 @@ public class Operations implements Write, SchemaWrite
         {
             throw new IllegalStateException( "Expected index to always have a name by this point" );
         }
+        String name = prototypeName.get();
 
         // Equivalent index
-        IndexDescriptor indexWithSameSchema = allStoreHolder.index( prototype.schema() );
-        String name = prototypeName.get();
-        if ( indexWithSameSchema.getName().equals( name ) &&
-             indexWithSameSchema.isUnique() == prototype.isUnique() )
+        IndexDescriptor indexWithSameSchema = IndexDescriptor.NO_INDEX;
+        Iterator<IndexDescriptor> indexesWithSameSchema = allStoreHolder.index( prototype.schema() );
+        while ( indexesWithSameSchema.hasNext() )
         {
-            throw new EquivalentSchemaRuleAlreadyExistsException( indexWithSameSchema, INDEX_CREATION, tokenNameLookup );
+            indexWithSameSchema = indexesWithSameSchema.next();
+            if ( indexWithSameSchema.getName().equals( name ) && indexWithSameSchema.isUnique() == prototype.isUnique() )
+            {
+                throw new EquivalentSchemaRuleAlreadyExistsException( indexWithSameSchema, INDEX_CREATION, tokenNameLookup );
+            }
         }
 
         // Name conflict with other schema rule
-        assertSchemaRuleWithNameDoesNotExist( name, null );
+        assertSchemaRuleWithNameDoesNotExist( name );
 
         // Already constrained
         final Iterator<ConstraintDescriptor> constraintWithSameSchema = allStoreHolder.constraintsGetForSchema( prototype.schema() );
@@ -1030,7 +1033,7 @@ public class Operations implements Write, SchemaWrite
         }
 
         // Name conflict with other schema rule
-        assertSchemaRuleWithNameDoesNotExist( name, constraint );
+        assertSchemaRuleWithNameDoesNotExist( name );
 
         // Already constrained
         for ( ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema )
@@ -1045,22 +1048,16 @@ public class Operations implements Write, SchemaWrite
         // Already indexed
         if ( constraint.type() != ConstraintType.EXISTS )
         {
-            IndexDescriptor indexWithSameSchema = allStoreHolder.index( constraint.schema() );
-            if ( indexWithSameSchema != IndexDescriptor.NO_INDEX )
+            Iterator<IndexDescriptor> existingIndexes = allStoreHolder.index( constraint.schema() );
+            if ( existingIndexes.hasNext() )
             {
-                // todo remove this bit once we remove support for adopting half applied constraints
-                if ( isIndexFromHalfAppliedConstraint( indexWithSameSchema, constraint ) )
-                {
-                    return;
-                }
-
-                throw new AlreadyIndexedException( constraint.schema(), CONSTRAINT_CREATION );
+                IndexDescriptor existingIndex = existingIndexes.next();
+                throw new AlreadyIndexedException( existingIndex.schema(), CONSTRAINT_CREATION );
             }
         }
     }
 
-    private void assertSchemaRuleWithNameDoesNotExist( String name, ConstraintDescriptor constraintDescriptor )
-            throws IndexWithNameAlreadyExistsException, ConstraintWithNameAlreadyExistsException
+    private void assertSchemaRuleWithNameDoesNotExist( String name ) throws IndexWithNameAlreadyExistsException, ConstraintWithNameAlreadyExistsException
     {
         // Check constraints first because some of them will also be backed by indexes
         final ConstraintDescriptor constraintWithSameName = allStoreHolder.constraintGetForName( name );
@@ -1071,34 +1068,8 @@ public class Operations implements Write, SchemaWrite
         final IndexDescriptor indexWithSameName = allStoreHolder.indexGetForName( name );
         if ( indexWithSameName != IndexDescriptor.NO_INDEX )
         {
-            // todo remove this bit once we remove support for adopting half applied constraints
-            if ( constraintDescriptor != null && isIndexFromHalfAppliedConstraint( indexWithSameName, constraintDescriptor ) )
-            {
-                // Simply return and be happy this will be removed in the future
-                return;
-            }
             throw new IndexWithNameAlreadyExistsException( name );
         }
-    }
-
-    private boolean isIndexFromHalfAppliedConstraint( IndexDescriptor index, ConstraintDescriptor constraint )
-    {
-        // OK so we found an index that collide with constraint in some way.
-        // This might be a left-over from a previously failed constraints creation.
-        // Check if it matches the index that would back the constraint we are trying to create.
-        // - existing index is a uniqueness index
-        // - existing index name match that of constraint
-        // - existing index schema match that of constraint
-        // - existing index does not already have owning constraint
-        return index.isUnique() &&
-               index.getName().equals( constraint.getName() ) &&
-               index.schema().equals( constraint.schema() ) &&
-               !constraintIndexHasOwner( index );
-    }
-
-    private boolean constraintIndexHasOwner( IndexDescriptor index )
-    {
-        return allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null;
     }
 
     @Override
