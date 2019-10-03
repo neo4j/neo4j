@@ -170,9 +170,9 @@ class GroupingRecoveryCleanupWorkCollectorTest
             return new JobHandle()
             {
                 @Override
-                public void cancel( boolean mayInterruptIfRunning )
+                public void cancel()
                 {
-                    future.cancel( mayInterruptIfRunning );
+                    future.cancel( false );
                 }
 
                 @Override
