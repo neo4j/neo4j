@@ -32,12 +32,12 @@ class InterpretedAcceptanceTests extends BaseAcceptanceTest {
 
   @TestFactory
   def runCostInterpreted(): util.Collection[DynamicTest] = {
-    createTests(scenarios, CostInterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder())
+    createTests(scenarios, InterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder())
   }
 
   @Disabled
   def generateBlacklistCostInterpreted(): Unit = {
-    printComputedBlacklist(scenarios, CostInterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder())
+    printComputedBlacklist(scenarios, InterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder())
     fail("Do not forget to add @Disabled to this method")
   }
 }

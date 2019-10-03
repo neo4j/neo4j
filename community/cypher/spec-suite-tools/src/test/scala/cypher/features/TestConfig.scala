@@ -27,21 +27,21 @@ class TestConfig(
 
 case object DefaultTestConfig extends TestConfig(Some("default.txt"),"")
 
-case object CostSlottedTestConfig extends TestConfig(Some("cost-slotted.txt"),"CYPHER planner=cost runtime=slotted")
+case object SlottedTestConfig extends TestConfig(Some("slotted.txt"),"CYPHER planner=cost runtime=slotted")
 
-case object CostSlottedWithCompiledExpressionsTestConfig extends TestConfig(Some("cost-slotted.txt"),"CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
+case object SlottedWithCompiledExpressionsTestConfig extends TestConfig(Some("slotted.txt"),"CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
 
-case object CostMorselSingleThreadedTestConfig extends TestConfig(Some("cost-morsel-single-threaded.txt"), "CYPHER planner=cost runtime=morsel")
+case object MorselTestConfig extends TestConfig(Some("morsel-single-threaded.txt"), "CYPHER planner=cost runtime=morsel")
 
-case object CostParallelTestConfig extends TestConfig(Some("cost-parallel.txt"), "CYPHER planner=cost runtime=parallel")
+case object ParallelTestConfig extends TestConfig(Some("parallel.txt"), "CYPHER planner=cost runtime=parallel")
 
-case object CostCompiledTestConfig extends TestConfig(Some("cost-compiled.txt"),
+case object CompiledTestConfig extends TestConfig(Some("compiled.txt"),
   "CYPHER planner=cost runtime=compiled debug=generate_java_source")
 
-case object CostInterpretedTestConfig extends TestConfig(Some("cost-interpreted.txt"),"CYPHER planner=cost runtime=interpreted")
+case object InterpretedTestConfig extends TestConfig(Some("interpreted.txt"),"CYPHER planner=cost runtime=interpreted")
 
-case object CostMorselSingleThreadedFullTestConfig extends TestConfig(
-  Some("cost-morsel-single-threaded-full.txt"),
+case object MorselFullTestConfig extends TestConfig(
+  Some("morsel-single-threaded-full.txt"),
   "CYPHER planner=cost runtime=morsel interpretedPipesFallback=all",
   experimental = true
 )
