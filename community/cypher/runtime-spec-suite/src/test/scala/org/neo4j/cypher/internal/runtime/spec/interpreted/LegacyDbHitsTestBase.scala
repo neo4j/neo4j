@@ -38,4 +38,5 @@ abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                 costOfPropertyJumpedOverInChain = 0,
                                 costOfProperty = 1,
                                 costOfExpand = LegacyDbHitsTestBase.costOfExpand,
-                                costOfRelationshipTypeLookup = 1)
+                                costOfRelationshipTypeLookup = 1,
+                                cartesianProductChunkSize = 1)

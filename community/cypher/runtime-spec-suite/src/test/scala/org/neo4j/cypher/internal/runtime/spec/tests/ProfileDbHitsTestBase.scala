@@ -26,15 +26,16 @@ import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
-                                  edition: Edition[CONTEXT],
-                                  runtime: CypherRuntime[CONTEXT],
-                                  val sizeHint: Int,
-                                  costOfGetPropertyChain: Int, // the reported dbHits for getting the property chain
-                                  costOfPropertyJumpedOverInChain: Int, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
-                                  costOfProperty: Int, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
-                                  costOfLabelLookup: Int, // the reported dbHits for finding the id of a label
-                                  costOfExpand: Int, // the reported dbHits for expanding a one-relationship node
-                                  costOfRelationshipTypeLookup: Int // the reported dbHits for finding the id of a relationship type
+                                                                 edition: Edition[CONTEXT],
+                                                                 runtime: CypherRuntime[CONTEXT],
+                                                                 val sizeHint: Int,
+                                                                 costOfGetPropertyChain: Int, // the reported dbHits for getting the property chain
+                                                                 costOfPropertyJumpedOverInChain: Int, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
+                                                                 costOfProperty: Int, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
+                                                                 costOfLabelLookup: Int, // the reported dbHits for finding the id of a label
+                                                                 costOfExpand: Int, // the reported dbHits for expanding a one-relationship node
+                                                                 costOfRelationshipTypeLookup: Int, // the reported dbHits for finding the id of a relationship type
+                                                                 cartesianProductChunkSize: Int // The size of a LHS chunk for cartesian product
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should profile dbHits of all nodes scan") {
@@ -467,6 +468,29 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       ((costOfGetPropertyChain + costOfProperty) // first prop in chain
       + (costOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) // second prop in chain
   }
+
+  test("should profile dbHits of cartesian product") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    nodeGraph(size)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toInt
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // cartesian product
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be (numberOfChunks * size) or be (numberOfChunks * (size + 1))) // all node scan b
+    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be (size) or be (size + 1)) // all node scan a
+  }
 }
 
 trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
@@ -478,8 +502,8 @@ trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("label")
-      .procedureCall("db.labels() YIELD label")
+      .produceResults("x")
+      .procedureCall("db.awaitIndexes()")
       .allNodeScan("x")
       .build()
 

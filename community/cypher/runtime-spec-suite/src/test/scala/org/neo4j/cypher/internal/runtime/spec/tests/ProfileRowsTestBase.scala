@@ -25,8 +25,9 @@ import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                               runtime: CypherRuntime[CONTEXT],
-                                                              sizeHint: Int
-                                                         ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                              sizeHint: Int,
+                                                              cartesianProductChunkSize: Int // The size of a LHS chunk for cartesian product
+                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should profile rows of all nodes scan + aggregation + produce results") {
     // given
@@ -329,5 +330,28 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).rows() shouldBe 1 // produce results
     queryProfile.operatorProfile(1).rows() shouldBe 1 // node index seek
+  }
+
+  test("should profile rows of cartesian product") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    nodeGraph(size)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toInt
+    result.runtimeResult.queryProfile().operatorProfile(1).rows() shouldBe size * size // cartesian product
+    result.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe numberOfChunks * size // all node scan b
+    result.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe size // all node scan a
   }
 }

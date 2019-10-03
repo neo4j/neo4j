@@ -180,4 +180,29 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // Should not attribute anything to the invalid id
     queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
   }
+
+  test("should profile time of cartesian product") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    nodeGraph(size)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).rows() should be > 0L// cartesian product
+    queryProfile.operatorProfile(2).rows() should be > 0L // all node scan b
+    queryProfile.operatorProfile(3).rows() should be > 0L // all node scan a
+    // Should not attribute anything to the invalid id
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+  }
 }
