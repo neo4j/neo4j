@@ -113,6 +113,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NOD
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUERY_NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUERY_RELS;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.array;
 
 public class FulltextProceduresTest
 {
@@ -161,8 +162,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "test-index", FulltextIndexProceduresUtil.array( "Label1", "Label2" ), FulltextIndexProceduresUtil
-                    .array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "test-index", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
         Result result;
@@ -216,8 +216,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( RELATIONSHIP_CREATE, "test-index", FulltextIndexProceduresUtil.array( "Reltype1", "Reltype2" ), FulltextIndexProceduresUtil
-                    .array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( RELATIONSHIP_CREATE, "test-index", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
         Result result;
@@ -271,9 +270,8 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( "Label1", "Label2" ), FulltextIndexProceduresUtil.array( "prop1", "prop2" ) ) ).close();
-            transaction.execute( format( RELATIONSHIP_CREATE, "rel", FulltextIndexProceduresUtil.array( "Reltype1", "Reltype2" ), FulltextIndexProceduresUtil
-                    .array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( RELATIONSHIP_CREATE, "rel", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
             Map<String,String> indexes = new HashMap<>();
             transaction.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
 
@@ -300,13 +298,13 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( "Label1", "Label2" ), FulltextIndexProceduresUtil.array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
         expectedException.expectMessage( "already exists" );
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( "Label1", "Label2" ), FulltextIndexProceduresUtil.array( "prop3", "prop4" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop3", "prop4" ) ) ).close();
             transaction.commit();
         }
     }
@@ -386,7 +384,7 @@ public class FulltextProceduresTest
         expectedException.expect( QueryExecutionException.class );
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "nodeIndex", FulltextIndexProceduresUtil.array(), FulltextIndexProceduresUtil.array( PROP ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "nodeIndex", array(), array( PROP ) ) ).close();
         }
     }
 
@@ -397,7 +395,7 @@ public class FulltextProceduresTest
         expectedException.expect( QueryExecutionException.class );
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", FulltextIndexProceduresUtil.array(), FulltextIndexProceduresUtil.array( PROP ) ) );
+            transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", array(), array( PROP ) ) );
         }
     }
 
@@ -408,7 +406,7 @@ public class FulltextProceduresTest
         expectedException.expect( QueryExecutionException.class );
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "nodeIndex", FulltextIndexProceduresUtil.array( "Label" ), FulltextIndexProceduresUtil.array() ) ).close();
+            transaction.execute( format( NODE_CREATE, "nodeIndex", array( "Label" ), array() ) ).close();
         }
     }
 
@@ -419,7 +417,7 @@ public class FulltextProceduresTest
         expectedException.expect( QueryExecutionException.class );
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", FulltextIndexProceduresUtil.array( "RELTYPE" ), FulltextIndexProceduresUtil.array() ) );
+            transaction.execute( format( RELATIONSHIP_CREATE, "relIndex", array( "RELTYPE" ), array() ) );
         }
     }
 
@@ -433,10 +431,10 @@ public class FulltextProceduresTest
             // The property keys and labels we ask for do not exist, so those tokens will have to be allocated.
             // This test verifies that the locking required for the index modifications do not conflict with the
             // locking required for the token allocation.
-            tx.execute( format( NODE_CREATE, "nodesA", FulltextIndexProceduresUtil.array( "SOME_LABEL" ), FulltextIndexProceduresUtil.array( "this" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "relsA", FulltextIndexProceduresUtil.array( "SOME_REL_TYPE" ), FulltextIndexProceduresUtil.array( "foo" ) ) );
-            tx.execute( format( NODE_CREATE, "nodesB", FulltextIndexProceduresUtil.array( "SOME_OTHER_LABEL" ), FulltextIndexProceduresUtil.array( "that" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "relsB", FulltextIndexProceduresUtil.array( "SOME_OTHER_REL_TYPE" ), FulltextIndexProceduresUtil.array( "bar" ) ) );
+            tx.execute( format( NODE_CREATE, "nodesA", array( "SOME_LABEL" ), array( "this" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "relsA", array( "SOME_REL_TYPE" ), array( "foo" ) ) );
+            tx.execute( format( NODE_CREATE, "nodesB", array( "SOME_OTHER_LABEL" ), array( "that" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "relsB", array( "SOME_OTHER_REL_TYPE" ), array( "bar" ) ) );
         }
     }
 
@@ -472,9 +470,9 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            String lbl = FulltextIndexProceduresUtil.array( LABEL.name() );
-            String rel = FulltextIndexProceduresUtil.array( REL.name() );
-            String props = FulltextIndexProceduresUtil.array( PROP );
+            String lbl = array( LABEL.name() );
+            String rel = array( REL.name() );
+            String props = array( PROP );
             String swedish = props + ", {analyzer: '" + FulltextAnalyzerTest.SWEDISH + "'}";
             tx.execute( format( NODE_CREATE, labelledSwedishNodes, lbl, swedish ) ).close();
             tx.execute( format( RELATIONSHIP_CREATE, typedSwedishRelationships, rel, swedish ) ).close();
@@ -514,9 +512,8 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( "Label1", "Label2" ), FulltextIndexProceduresUtil.array( "prop1", "prop2" ) ) ).close();
-            transaction.execute( format( RELATIONSHIP_CREATE, "rel", FulltextIndexProceduresUtil.array( "Reltype1", "Reltype2" ), FulltextIndexProceduresUtil
-                    .array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
+            transaction.execute( format( RELATIONSHIP_CREATE, "rel", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
             transaction.commit();
         }
         awaitIndexesOnline();
@@ -565,8 +562,8 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( PROP, "otherprop" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", FulltextIndexProceduresUtil.array( REL.name() ), FulltextIndexProceduresUtil.array( PROP ) ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP, "otherprop" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -586,8 +583,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", FulltextIndexProceduresUtil.array( REL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
 
@@ -639,8 +636,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", FulltextIndexProceduresUtil.array( REL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -696,8 +693,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", FulltextIndexProceduresUtil.array( REL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
             tx.commit();
         }
 
@@ -741,8 +738,8 @@ public class FulltextProceduresTest
             startLatch.await();
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) );
-                tx.execute( format( RELATIONSHIP_CREATE, "rel", FulltextIndexProceduresUtil.array( REL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) );
+                tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
+                tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
                 tx.commit();
             }
         };
@@ -785,8 +782,8 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( PROP, "otherprop" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", FulltextIndexProceduresUtil.array( REL.name() ), FulltextIndexProceduresUtil.array( PROP ) ) );
+            tx.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP, "otherprop" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -925,7 +922,7 @@ public class FulltextProceduresTest
         Label label = LABEL;
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", FulltextIndexProceduresUtil.array( label.name() ), FulltextIndexProceduresUtil.array( PROP ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", array( label.name() ), array( PROP ) ) ).close();
             createSimpleRelationshipIndex( tx );
             tx.commit();
         }
@@ -1110,7 +1107,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1149,7 +1146,7 @@ public class FulltextProceduresTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1190,7 +1187,7 @@ public class FulltextProceduresTest
         Label label = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "books", FulltextIndexProceduresUtil.array( label.name() ), FulltextIndexProceduresUtil.array( "title", "author", "contents" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "books", array( label.name() ), array( "title", "author", "contents" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1234,7 +1231,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "books", FulltextIndexProceduresUtil.array( label.name() ), FulltextIndexProceduresUtil.array( "title", "author", "contents" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "books", array( label.name() ), array( "title", "author", "contents" ) ) ).close();
             tx.commit();
         }
 
@@ -1250,7 +1247,7 @@ public class FulltextProceduresTest
         Label book = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "books", FulltextIndexProceduresUtil.array( book.name() ), FulltextIndexProceduresUtil.array( "title", "author" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "books", array( book.name() ), array( "title", "author" ) ) ).close();
             tx.commit();
         }
 
@@ -1278,7 +1275,7 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( "a", "b", "c", "d", "e", "f" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "a", "b", "c", "d", "e", "f" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -2090,8 +2087,8 @@ public class FulltextProceduresTest
         db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", FulltextIndexProceduresUtil.array( REL.name() ), FulltextIndexProceduresUtil.array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2506,7 +2503,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", FulltextIndexProceduresUtil.array( "Label" ), FulltextIndexProceduresUtil.array( "id" ) + ", {analyzer: 'standard'}" ) ).close();
+            tx.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) + ", {analyzer: 'standard'}" ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2544,7 +2541,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", FulltextIndexProceduresUtil.array( "Label" ), FulltextIndexProceduresUtil.array( "id" ) + ", {analyzer: 'simple'}" ) ).close();
+            tx.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) + ", {analyzer: 'simple'}" ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2582,7 +2579,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", FulltextIndexProceduresUtil.array( "Label" ), FulltextIndexProceduresUtil.array( "id" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -2614,7 +2611,7 @@ public class FulltextProceduresTest
         final String prop = "prop";
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", FulltextIndexProceduresUtil.array( label.name() ), FulltextIndexProceduresUtil.array( prop ) ) );
+            tx.execute( format( NODE_CREATE, "myindex", array( label.name() ), array( prop ) ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2658,7 +2655,7 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", FulltextIndexProceduresUtil.array( label.name() ), FulltextIndexProceduresUtil.array( prop ) ) );
+            tx.execute( format( NODE_CREATE, "myindex", array( label.name() ), array( prop ) ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2681,7 +2678,7 @@ public class FulltextProceduresTest
         final Exception e = assertThrows( Exception.class, () -> {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( NODE_CREATE, "myindex", FulltextIndexProceduresUtil.array( "Label" ), FulltextIndexProceduresUtil.array( "id", "id" ) ) );
+                tx.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id", "id" ) ) );
             }
         } );
         final Throwable cause = getRootCause( e );
@@ -2696,7 +2693,7 @@ public class FulltextProceduresTest
         final Exception e = assertThrows( Exception.class, () -> {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( NODE_CREATE, "myindex", FulltextIndexProceduresUtil.array( "Label", "Label" ), FulltextIndexProceduresUtil.array( "id" ) ) );
+                tx.execute( format( NODE_CREATE, "myindex", array( "Label", "Label" ), array( "id" ) ) );
             }
         } );
         final Throwable cause = getRootCause( e );
@@ -2711,8 +2708,7 @@ public class FulltextProceduresTest
         final Exception e = assertThrows( Exception.class, () -> {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( RELATIONSHIP_CREATE, "myindex", FulltextIndexProceduresUtil.array( "RelType", "RelType" ), FulltextIndexProceduresUtil
-                        .array( "id" ) ) );
+                tx.execute( format( RELATIONSHIP_CREATE, "myindex", array( "RelType", "RelType" ), array( "id" ) ) );
             }
         } );
         final Throwable cause = getRootCause( e );
@@ -2869,11 +2865,11 @@ public class FulltextProceduresTest
 
     private void createSimpleRelationshipIndex( Transaction tx )
     {
-        tx.execute( format( RELATIONSHIP_CREATE, "rels", FulltextIndexProceduresUtil.array( REL.name() ), FulltextIndexProceduresUtil.array( PROP ) ) ).close();
+        tx.execute( format( RELATIONSHIP_CREATE, "rels", array( REL.name() ), array( PROP ) ) ).close();
     }
 
     private void createSimpleNodesIndex( Transaction tx )
     {
-        tx.execute( format( NODE_CREATE, "nodes", FulltextIndexProceduresUtil.array( LABEL.name() ), FulltextIndexProceduresUtil.array( PROP ) ) ).close();
+        tx.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( PROP ) ) ).close();
     }
 }
