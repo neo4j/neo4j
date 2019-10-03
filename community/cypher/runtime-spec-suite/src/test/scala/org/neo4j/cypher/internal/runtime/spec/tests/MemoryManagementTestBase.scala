@@ -277,6 +277,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill node hash join query before it runs out of memory") {
     // given
+    val nodes = nodeGraph(1)
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x")
@@ -285,7 +286,6 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val nodes = nodeGraph(1)
     val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
     val input = infiniteInput(expectedRowSize, nodes.head)
 
@@ -336,6 +336,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill distinct + node hash join query before it runs out of memory") {
     // given
+    val nodes = nodeGraph(1)
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x")
@@ -344,7 +345,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val estimatedRowSize = estimateRowSize(logicalQuery, Some(nodeGraph(1).head))
+    val estimatedRowSize = estimateRowSize(logicalQuery, Some(nodes.head))
 
     // when
     val input = infiniteNodeInput(estimatedRowSize)
@@ -366,6 +367,25 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // when
     val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
     val input = finiteInput(1000000, expectedRowSize)
+
+    // then no exception
+    consume(execute(logicalQuery, runtime, input))
+  }
+
+  test("should not kill cartesian product query") {
+    // given
+    val nodes = nodeGraph(1)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
+    val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
+    val input = finiteInput(100000, expectedRowSize)
 
     // then no exception
     consume(execute(logicalQuery, runtime, input))
