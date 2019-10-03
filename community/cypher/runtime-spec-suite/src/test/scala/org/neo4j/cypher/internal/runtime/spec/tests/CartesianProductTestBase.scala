@@ -196,7 +196,6 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("cartesian product after expand on rhs") {
-    val sizeHint = 24
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
 
@@ -249,6 +248,96 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
                                   } yield Array(x, y, z)
 
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResultRows)
+  }
+
+  // This test mainly assert that we get the right slot configuration for Arraycopy and don't get IndexOutOfBounds there
+  test("cartesian product with apply everywhere") {
+    val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "z")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.apply()
+      .|.|.|.expand("(z)-[q]->(w)")
+      .|.|.|.argument("x", "y", "z")
+      .|.|.allNodeScan("z")
+      .|.expand("(x)-[p]->(v)")
+      .|.argument("x", "y")
+      .expand("(x)-[r]->(y)")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
+    })
+
+    // then
+    val expectedResultRows = for {x <- nodes if x != null
+                                  z <- unfilteredNodes
+                                  } yield Array(x, z)
+
+    runtimeResult should beColumns("x", "z").withRows(expectedResultRows)
+  }
+
+  test("cartesian product after optional on lhs") {
+    // given
+    val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y", "z")
+      .cartesianProduct()
+      .|.allNodeScan("z")
+      .apply()
+      .|.optional("y")
+      .|.expand("(y)-[r]->(a)")
+      .|.argument("y")
+      .input(nodes = Seq("y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
+    })
+
+    // then
+    val expectedResultRows = for {y <- nodes
+                                  z <- unfilteredNodes
+                                  } yield Array(y, z)
+
+    runtimeResult should beColumns("y", "z").withRows(expectedResultRows)
+  }
+
+  test("cartesian product with optional on top") {
+    // given
+    val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y", "z")
+      .apply()
+      .|.optional("y", "z")
+      .|.expand("(z)-[r]->(a)")
+      .|.argument("y", "z")
+      .cartesianProduct()
+      .|.allNodeScan("z")
+      .input(nodes = Seq("y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
+    })
+
+    // then
+    val expectedResultRows = for {y <- nodes
+                                  z <- unfilteredNodes
+                                  } yield Array(y, z)
+
+    runtimeResult should beColumns("y", "z").withRows(expectedResultRows)
   }
 
   test("cartesian product nested") {
@@ -470,5 +559,34 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       } yield Array(x, y1, y2, r1.getOtherNode(y1))
 
     runtimeResult should beColumns("x", "y1", "y2", "z").withRows(expectedResultRows)
+  }
+
+  test("should support join with cartesian product on RHS") {
+    // given
+    val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .nodeHashJoin("x")
+      .|.cartesianProduct()
+      .|.|.allNodeScan("x")
+      .|.allNodeScan("y")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
+      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
+    })
+
+    // then
+    val expectedResultRows =
+      for {
+        x <- nodes
+        y <- unfilteredNodes
+      } yield Array(x, y)
+
+    runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
 }
