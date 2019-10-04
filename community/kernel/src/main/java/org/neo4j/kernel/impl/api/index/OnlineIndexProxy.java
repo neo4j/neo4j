@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
 public class OnlineIndexProxy implements IndexProxy
@@ -217,5 +218,11 @@ public class OnlineIndexProxy implements IndexProxy
     public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {
         accessor.verifyDeferredConstraints( nodePropertyAccessor );
+    }
+
+    @VisibleForTesting
+    public IndexAccessor accessor()
+    {
+        return accessor;
     }
 }

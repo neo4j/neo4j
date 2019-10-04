@@ -41,7 +41,7 @@ import org.neo4j.values.storable.Value;
 
 public abstract class AbstractDelegatingIndexProxy implements IndexProxy
 {
-    protected abstract IndexProxy getDelegate();
+    public abstract IndexProxy getDelegate();
 
     @Override
     public void start()

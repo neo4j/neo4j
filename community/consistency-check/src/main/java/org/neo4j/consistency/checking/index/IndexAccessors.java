@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
@@ -47,13 +48,25 @@ public class IndexAccessors implements Closeable
     private final List<IndexDescriptor> onlineIndexRules = new ArrayList<>();
     private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
 
-    public IndexAccessors( IndexProviderMap providers,
-                           StoreAccess storeAccess,
-                           IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessors(
+            IndexProviderMap providers,
+            StoreAccess storeAccess,
+            IndexSamplingConfig samplingConfig )
+            throws IOException
+    {
+        this( providers, storeAccess, samplingConfig, null /*we'll use a default below, if this is null*/ );
+    }
+
+    public IndexAccessors(
+            IndexProviderMap providers,
+            StoreAccess storeAccess,
+            IndexSamplingConfig samplingConfig,
+            ThrowingFunction<IndexDescriptor,IndexAccessor,IOException> accessorLookup )
+            throws IOException
     {
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders ).indexesGetAll();
-        for (; ; )
+        for ( ; ; )
         {
             try
             {
@@ -69,8 +82,7 @@ public class IndexAccessors implements Closeable
                     }
                     else
                     {
-                        if ( InternalIndexState.ONLINE ==
-                                provider( providers, indexDescriptor ).getInitialState( indexDescriptor ) )
+                        if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor ) )
                         {
                             onlineIndexRules.add( indexDescriptor );
                         }
@@ -91,10 +103,12 @@ public class IndexAccessors implements Closeable
             }
         }
 
+        // Default to the instantiate new accessors
+        accessorLookup = accessorLookup != null ? accessorLookup : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig );
         for ( IndexDescriptor indexRule : onlineIndexRules )
         {
             long indexId = indexRule.getId();
-            accessors.put( indexId, provider( providers, indexRule ).getOnlineAccessor( indexRule, samplingConfig ) );
+            accessors.put( indexId, accessorLookup.apply( indexRule ) );
         }
     }
 

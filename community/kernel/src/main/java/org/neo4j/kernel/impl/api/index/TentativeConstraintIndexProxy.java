@@ -134,7 +134,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    protected IndexProxy getDelegate()
+    public IndexProxy getDelegate()
     {
         return target;
     }

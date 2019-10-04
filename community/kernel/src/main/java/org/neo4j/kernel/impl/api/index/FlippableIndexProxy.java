@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
-public class FlippableIndexProxy implements IndexProxy
+public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
 {
     private volatile boolean closed;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
@@ -67,6 +67,12 @@ public class FlippableIndexProxy implements IndexProxy
     FlippableIndexProxy( IndexProxy originalDelegate )
     {
         this.delegate = originalDelegate;
+    }
+
+    @Override
+    public IndexProxy getDelegate()
+    {
+        return delegate;
     }
 
     @Override
