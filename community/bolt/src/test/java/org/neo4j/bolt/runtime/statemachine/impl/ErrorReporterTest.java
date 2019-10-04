@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.runtime.statemachine.impl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -31,10 +31,10 @@ import org.neo4j.logging.LogProvider;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ErrorReporterTest
+class ErrorReporterTest
 {
     @Test
-    public void onlyDatabaseErrorsAreLogged()
+    void onlyDatabaseErrorsAreLogged()
     {
         AssertableLogProvider userLog = new AssertableLogProvider();
         AssertableLogProvider internalLog = new AssertableLogProvider();
@@ -55,7 +55,7 @@ public class ErrorReporterTest
     }
 
     @Test
-    public void databaseErrorShouldLogFullMessageInDebugLogAndHelpfulPointerInUserLog()
+    void databaseErrorShouldLogFullMessageInDebugLogAndHelpfulPointerInUserLog()
     {
         // given
         AssertableLogProvider userLog = new AssertableLogProvider();

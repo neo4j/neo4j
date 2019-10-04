@@ -20,24 +20,21 @@
 package org.neo4j.bolt.testing.client;
 
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.extension.SuppressOutputExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith( SuppressOutputExtension.class )
 public class WebSocketConnectionTest
 {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldNotThrowAnyExceptionWhenDataReceivedBeforeClose() throws Throwable
@@ -70,8 +67,7 @@ public class WebSocketConnectionTest
         // When && Then
         conn.onWebSocketBinary( data, 0, 4 );
 
-        expectedException.expect( IOException.class );
-        expectedException.expectMessage( "Connection closed while waiting for data from the server." );
-        conn.recv( 10 );
+        var e = assertThrows( IOException.class, () -> conn.recv( 10 ) );
+        assertEquals( "Connection closed while waiting for data from the server.", e.getMessage() );
     }
 }

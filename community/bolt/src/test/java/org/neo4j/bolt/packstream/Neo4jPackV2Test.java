@@ -19,8 +19,8 @@
  */
 package org.neo4j.bolt.packstream;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,6 +33,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -48,8 +50,8 @@ import org.neo4j.values.virtual.ListValue;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.bolt.packstream.PackStream.INT_16;
 import static org.neo4j.bolt.packstream.PackStream.INT_32;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
@@ -62,6 +64,7 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.unsafePointValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
+@ExtendWith( RandomExtension.class )
 public class Neo4jPackV2Test
 {
     private static final String[] TIME_ZONE_NAMES =
@@ -73,11 +76,11 @@ public class Neo4jPackV2Test
     private static final int RANDOM_LISTS_TO_TEST = 1_000;
     private static final int RANDOM_LIST_MAX_SIZE = 500;
 
-    @Rule
-    public RandomRule random = new RandomRule();
+    @Inject
+    public RandomRule random;
 
     @Test
-    public void shouldFailToPackPointWithIllegalDimensions()
+    void shouldFailToPackPointWithIllegalDimensions()
     {
         testPackingPointsWithWrongDimensions( 0 );
         testPackingPointsWithWrongDimensions( 1 );
@@ -86,7 +89,7 @@ public class Neo4jPackV2Test
     }
 
     @Test
-    public void shouldFailToUnpack2DPointWithIncorrectCoordinate() throws IOException
+    void shouldFailToUnpack2DPointWithIncorrectCoordinate() throws IOException
     {
         Neo4jPackV2 neo4jPack = new Neo4jPackV2();
         PackedOutputArray output = new PackedOutputArray();
@@ -96,18 +99,11 @@ public class Neo4jPackV2Test
         packer.pack( intValue( WGS84.getCode() ) );
         packer.pack( doubleValue( 42.42 ) );
 
-        try
-        {
-            unpack( output );
-            fail( "Exception expected" );
-        }
-        catch ( UncheckedIOException ignore )
-        {
-        }
+        assertThrows(UncheckedIOException.class, () -> unpack( output ) );
     }
 
     @Test
-    public void shouldFailToUnpack3DPointWithIncorrectCoordinate() throws IOException
+    void shouldFailToUnpack3DPointWithIncorrectCoordinate() throws IOException
     {
         Neo4jPackV2 neo4jPack = new Neo4jPackV2();
         PackedOutputArray output = new PackedOutputArray();
@@ -118,132 +114,125 @@ public class Neo4jPackV2Test
         packer.pack( doubleValue( 1.0 ) );
         packer.pack( doubleValue( 100.1 ) );
 
-        try
-        {
-            unpack( output );
-            fail( "Exception expected" );
-        }
-        catch ( UncheckedIOException ignore )
-        {
-        }
+        assertThrows( UncheckedIOException.class, () -> unpack( output ) );
     }
 
     @Test
-    public void shouldPackAndUnpack2DPoints()
+    void shouldPackAndUnpack2DPoints()
     {
         testPackingAndUnpacking( this::randomPoint2D );
     }
 
     @Test
-    public void shouldPackAndUnpack3DPoints()
+    void shouldPackAndUnpack3DPoints()
     {
         testPackingAndUnpacking( this::randomPoint3D );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOf2DPoints()
+    void shouldPackAndUnpackListsOf2DPoints()
     {
         testPackingAndUnpacking( () -> randomList( this::randomPoint2D ) );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOf3DPoints()
+    void shouldPackAndUnpackListsOf3DPoints()
     {
         testPackingAndUnpacking( () -> randomList( this::randomPoint3D ) );
     }
 
     @Test
-    public void shouldPackAndUnpackDuration()
+    void shouldPackAndUnpackDuration()
     {
         testPackingAndUnpacking( this::randomDuration );
     }
 
     @Test
-    public void shouldPackAndUnpackPeriod()
+    void shouldPackAndUnpackPeriod()
     {
         testPackingAndUnpacking( this::randomPeriod );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOfDuration()
+    void shouldPackAndUnpackListsOfDuration()
     {
         testPackingAndUnpacking( () -> randomList( this::randomDuration ) );
     }
 
     @Test
-    public void shouldPackAndUnpackDate()
+    void shouldPackAndUnpackDate()
     {
         testPackingAndUnpacking( this::randomDate );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOfDate()
+    void shouldPackAndUnpackListsOfDate()
     {
         testPackingAndUnpacking( () -> randomList( this::randomDate ) );
     }
 
     @Test
-    public void shouldPackAndUnpackLocalTime()
+    void shouldPackAndUnpackLocalTime()
     {
         testPackingAndUnpacking( this::randomLocalTime );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOfLocalTime()
+    void shouldPackAndUnpackListsOfLocalTime()
     {
         testPackingAndUnpacking( () -> randomList( this::randomLocalTime ) );
     }
 
     @Test
-    public void shouldPackAndUnpackTime()
+    void shouldPackAndUnpackTime()
     {
         testPackingAndUnpacking( this::randomTime );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOfTime()
+    void shouldPackAndUnpackListsOfTime()
     {
         testPackingAndUnpacking( () -> randomList( this::randomTime ) );
     }
 
     @Test
-    public void shouldPackAndUnpackLocalDateTime()
+    void shouldPackAndUnpackLocalDateTime()
     {
         testPackingAndUnpacking( this::randomLocalDateTime );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOfLocalDateTime()
+    void shouldPackAndUnpackListsOfLocalDateTime()
     {
         testPackingAndUnpacking( () -> randomList( this::randomLocalDateTime ) );
     }
 
     @Test
-    public void shouldPackAndUnpackDateTimeWithTimeZoneName()
+    void shouldPackAndUnpackDateTimeWithTimeZoneName()
     {
         testPackingAndUnpacking( this::randomDateTimeWithTimeZoneName );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOfDateTimeWithTimeZoneName()
+    void shouldPackAndUnpackListsOfDateTimeWithTimeZoneName()
     {
         testPackingAndUnpacking( () -> randomList( this::randomDateTimeWithTimeZoneName ) );
     }
 
     @Test
-    public void shouldPackAndUnpackDateTimeWithTimeZoneOffset()
+    void shouldPackAndUnpackDateTimeWithTimeZoneOffset()
     {
         testPackingAndUnpacking( this::randomDateTimeWithTimeZoneOffset );
     }
 
     @Test
-    public void shouldPackAndUnpackListsOfDateTimeWithTimeZoneOffset()
+    void shouldPackAndUnpackListsOfDateTimeWithTimeZoneOffset()
     {
         testPackingAndUnpacking( () -> randomList( this::randomDateTimeWithTimeZoneOffset ) );
     }
 
     @Test
-    public void shouldPackLocalDateTimeWithTimeZoneOffset()
+    void shouldPackLocalDateTimeWithTimeZoneOffset()
     {
         LocalDateTime localDateTime = LocalDateTime.of( 2015, 3, 23, 19, 15, 59, 10 );
         ZoneOffset offset = ZoneOffset.ofHoursMinutes( -5, -15 );
@@ -261,7 +250,7 @@ public class Neo4jPackV2Test
     }
 
     @Test
-    public void shouldPackLocalDateTimeWithTimeZoneId()
+    void shouldPackLocalDateTimeWithTimeZoneId()
     {
         LocalDateTime localDateTime = LocalDateTime.of( 1999, 12, 30, 9, 49, 20, 999999999 );
         ZoneId zoneId = ZoneId.of( "Europe/Stockholm" );
@@ -300,14 +289,7 @@ public class Neo4jPackV2Test
     private void testPackingPointsWithWrongDimensions( int dimensions )
     {
         PointValue point = randomPoint( 0, dimensions );
-        try
-        {
-            pack( point );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalArgumentException ignore )
-        {
-        }
+        assertThrows(IllegalArgumentException.class, () -> pack( point ) );
     }
 
     private static <T extends AnyValue> T packAndUnpack( T value )

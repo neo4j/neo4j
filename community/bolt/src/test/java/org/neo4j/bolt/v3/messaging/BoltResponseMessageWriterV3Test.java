@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -35,8 +35,8 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -49,10 +49,10 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
-public class BoltResponseMessageWriterV3Test
+class BoltResponseMessageWriterV3Test
 {
     @Test
-    public void shouldWriteRecordMessage() throws Exception
+    void shouldWriteRecordMessage() throws Exception
     {
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
@@ -69,7 +69,7 @@ public class BoltResponseMessageWriterV3Test
     }
 
     @Test
-    public void shouldWriteSuccessMessage() throws Exception
+    void shouldWriteSuccessMessage() throws Exception
     {
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
@@ -86,7 +86,7 @@ public class BoltResponseMessageWriterV3Test
     }
 
     @Test
-    public void shouldWriteFailureMessage() throws Exception
+    void shouldWriteFailureMessage() throws Exception
     {
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
@@ -105,7 +105,7 @@ public class BoltResponseMessageWriterV3Test
     }
 
     @Test
-    public void shouldWriteIgnoredMessage() throws Exception
+    void shouldWriteIgnoredMessage() throws Exception
     {
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
@@ -121,7 +121,7 @@ public class BoltResponseMessageWriterV3Test
     }
 
     @Test
-    public void shouldFlush() throws Exception
+    void shouldFlush() throws Exception
     {
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
@@ -134,7 +134,7 @@ public class BoltResponseMessageWriterV3Test
     }
 
     @Test
-    public void shouldNotifyOutputAboutFailedRecordMessage() throws Exception
+    void shouldNotifyOutputAboutFailedRecordMessage() throws Exception
     {
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
@@ -143,15 +143,8 @@ public class BoltResponseMessageWriterV3Test
 
         BoltResponseMessageWriterV3 writer = newWriter( output, packer );
 
-        try
-        {
-            writer.write( new RecordMessage( new AnyValue[]{stringValue( "42" ), longValue( 42 )} ) );
-            fail( "Exception expected" );
-        }
-        catch ( IOException e )
-        {
-            assertEquals( error, e );
-        }
+        var e = assertThrows(IOException.class, () -> writer.write( new RecordMessage( new AnyValue[]{stringValue( "42" ), longValue( 42 )} ) ) );
+        assertEquals( error, e );
 
         InOrder inOrder = inOrder( output, packer );
         inOrder.verify( output ).beginMessage();
@@ -161,7 +154,7 @@ public class BoltResponseMessageWriterV3Test
     }
 
     @Test
-    public void shouldNotNotifyOutputWhenOutputItselfFails() throws Exception
+    void shouldNotNotifyOutputWhenOutputItselfFails() throws Exception
     {
         PackOutput output = mock( PackOutput.class );
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
@@ -170,15 +163,8 @@ public class BoltResponseMessageWriterV3Test
 
         BoltResponseMessageWriterV3 writer = newWriter( output, packer );
 
-        try
-        {
-            writer.write( new RecordMessage( new AnyValue[]{longValue( 1 ), longValue( 2 )} ) );
-            fail( "Exception expected" );
-        }
-        catch ( IOException e )
-        {
-            assertEquals( error, e );
-        }
+        var e = assertThrows(IOException.class, () -> writer.write( new RecordMessage( new AnyValue[]{longValue( 1 ), longValue( 2 )} ) ) );
+        assertEquals( error, e );
 
         InOrder inOrder = inOrder( output, packer );
         inOrder.verify( output ).beginMessage();

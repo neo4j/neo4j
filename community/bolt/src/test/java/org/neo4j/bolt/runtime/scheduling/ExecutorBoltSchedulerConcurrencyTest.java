@@ -19,9 +19,9 @@
  */
 package org.neo4j.bolt.runtime.scheduling;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
@@ -49,7 +49,7 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ExecutorBoltSchedulerConcurrencyTest
+class ExecutorBoltSchedulerConcurrencyTest
 {
     private static final String CONNECTOR_KEY = "connector-id";
     private static final int maxPoolSize = 5;
@@ -75,8 +75,8 @@ public class ExecutorBoltSchedulerConcurrencyTest
             new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, maxPoolSize, maxPoolSize, Duration.ofMinutes( 1 ), 0,
                     ForkJoinPool.commonPool(), Duration.ZERO );
 
-    @Before
-    public void setup() throws Throwable
+    @BeforeEach
+    void setup() throws Throwable
     {
         when( jobScheduler.threadFactory( any() ) ).thenReturn( Executors.defaultThreadFactory() );
 
@@ -84,15 +84,15 @@ public class ExecutorBoltSchedulerConcurrencyTest
         boltScheduler.start();
     }
 
-    @After
-    public void cleanup() throws Throwable
+    @AfterEach
+    void cleanup() throws Throwable
     {
         boltScheduler.stop();
         boltScheduler.shutdown();
     }
 
     @Test
-    public void shouldInvokeHandleSchedulingErrorIfNoThreadsAvailable() throws Throwable
+    void shouldInvokeHandleSchedulingErrorIfNoThreadsAvailable() throws Throwable
     {
         AtomicInteger handleSchedulingErrorCounter = new AtomicInteger( 0 );
         BoltConnection newConnection = newConnection( UUID.randomUUID().toString() );
@@ -116,7 +116,7 @@ public class ExecutorBoltSchedulerConcurrencyTest
     }
 
     @Test
-    public void shouldNotScheduleNewJobIfHandlingSchedulingError() throws Throwable
+    void shouldNotScheduleNewJobIfHandlingSchedulingError() throws Throwable
     {
         AtomicInteger handleSchedulingErrorCounter = new AtomicInteger( 0 );
         AtomicBoolean exitCondition = new AtomicBoolean();

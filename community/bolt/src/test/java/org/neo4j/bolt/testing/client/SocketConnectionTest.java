@@ -19,9 +19,7 @@
  */
 package org.neo4j.bolt.testing.client;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +27,7 @@ import java.net.Socket;
 
 import org.neo4j.internal.helpers.HostnamePort;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -38,12 +37,8 @@ import static org.mockito.Mockito.when;
 
 public class SocketConnectionTest
 {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
-    public void shouldOnlyReadOnceIfAllBytesAreRead() throws Exception
+    void shouldOnlyReadOnceIfAllBytesAreRead() throws Exception
     {
         // GIVEN
         Socket socket = mock( Socket.class );
@@ -61,7 +56,7 @@ public class SocketConnectionTest
     }
 
     @Test
-    public void shouldOnlyReadUntilAllBytesAreRead() throws Exception
+    void shouldOnlyReadUntilAllBytesAreRead() throws Exception
     {
         // GIVEN
         Socket socket = mock( Socket.class );
@@ -83,7 +78,7 @@ public class SocketConnectionTest
     }
 
     @Test
-    public void shouldThrowIfNotEnoughBytesAreRead() throws Exception
+    void shouldThrowIfNotEnoughBytesAreRead() throws Exception
     {
         // GIVEN
         Socket socket = mock( Socket.class );
@@ -95,10 +90,7 @@ public class SocketConnectionTest
         SocketConnection connection = new SocketConnection( socket );
         connection.connect( new HostnamePort( "my.domain", 1234 ) );
 
-        // EXPECT
-        expectedException.expect( IOException.class );
-
         // WHEN
-        connection.recv( 10 );
+        assertThrows(IOException.class, () -> connection.recv( 10 ) );
     }
 }

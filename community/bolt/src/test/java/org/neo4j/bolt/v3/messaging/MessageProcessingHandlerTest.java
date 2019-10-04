@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.PackOutputClosedException;
@@ -45,7 +45,7 @@ import static org.neo4j.test.matchers.CommonMatchers.hasSuppressed;
 public class MessageProcessingHandlerTest
 {
     @Test
-    public void shouldCallHaltOnUnexpectedFailures() throws Exception
+    void shouldCallHaltOnUnexpectedFailures() throws Exception
     {
         // Given
         BoltResponseMessageWriter msgWriter = newResponseHandlerMock();
@@ -64,33 +64,33 @@ public class MessageProcessingHandlerTest
     }
 
     @Test
-    public void shouldLogOriginalErrorWhenOutputIsClosed() throws Exception
+    void shouldLogOriginalErrorWhenOutputIsClosed() throws Exception
     {
         testLoggingOfOriginalErrorWhenOutputIsClosed( Neo4jError.from( new RuntimeException( "Non-fatal error" ) ) );
     }
 
     @Test
-    public void shouldLogOriginalFatalErrorWhenOutputIsClosed() throws Exception
+    void shouldLogOriginalFatalErrorWhenOutputIsClosed() throws Exception
     {
         testLoggingOfOriginalErrorWhenOutputIsClosed( Neo4jError.fatalFrom( new RuntimeException( "Fatal error" ) ) );
     }
 
     @Test
-    public void shouldLogWriteErrorAndOriginalErrorWhenUnknownFailure() throws Exception
+    void shouldLogWriteErrorAndOriginalErrorWhenUnknownFailure() throws Exception
     {
         testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(
                 Neo4jError.from( new RuntimeException( "Non-fatal error" ) ) );
     }
 
     @Test
-    public void shouldLogWriteErrorAndOriginalFatalErrorWhenUnknownFailure() throws Exception
+    void shouldLogWriteErrorAndOriginalFatalErrorWhenUnknownFailure() throws Exception
     {
         testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(
                 Neo4jError.fatalFrom( new RuntimeException( "Fatal error" ) ) );
     }
 
     @Test
-    public void shouldLogShortWarningOnClientDisconnectMidwayThroughQuery() throws Exception
+    void shouldLogShortWarningOnClientDisconnectMidwayThroughQuery() throws Exception
     {
         // Connections dying is not exceptional per-se, so we don't need to fill the log with
         // eye-catching stack traces; but it could be indicative of some issue, so log a brief

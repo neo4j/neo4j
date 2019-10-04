@@ -19,10 +19,7 @@
  */
 package org.neo4j.bolt.v3.messaging;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.invocation.InvocationOnMock;
+import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
@@ -74,15 +71,12 @@ import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
-public class BoltRequestMessageV3Test
+class BoltRequestMessageV3Test
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     private final Neo4jPack neo4jPack = newNeo4jPack();
 
     @Test
-    public void shouldHandleCommonMessages() throws Throwable
+    void shouldHandleCommonMessages() throws Throwable
     {
         assertSerializes( new HelloMessage( map( "user_agent", "MyClient/1.0", "scheme", "basic" ) ) );
         assertSerializes( new RunMessage( "CREATE (n) RETURN åäö" ) );
@@ -96,7 +90,7 @@ public class BoltRequestMessageV3Test
     }
 
     @Test
-    public void shouldHandleParameterizedStatements() throws Throwable
+    void shouldHandleParameterizedStatements() throws Throwable
     {
         // Given
         MapValue parameters = ValueUtils.asMapValue( map( "n", 12L ) );
@@ -112,7 +106,7 @@ public class BoltRequestMessageV3Test
     //"B1 71 91 B3 4E 0C 92 |84 55 73 65 72 | 86 42 61 6E\n61 6E 61 A284 6E 61 6D 65 83 42 6F 62 83 61 67\n65 0E"
     //"B1 71 91 B3 4E 0C 92 |86 42 61 6E 61 6E 61| 84 55\n73 65 72 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67\n65 0E
     @Test
-    public void shouldSerializeNode() throws Throwable
+    void shouldSerializeNode() throws Throwable
     {
         NodeValue nodeValue = nodeValue( 12L, stringArray( "User", "Banana" ), map( new String[]{"name", "age"},
                 new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
@@ -123,7 +117,7 @@ public class BoltRequestMessageV3Test
     }
 
     @Test
-    public void shouldSerializeRelationship() throws Throwable
+    void shouldSerializeRelationship() throws Throwable
     {
         RelationshipValue rel = relationshipValue( 12L,
                 nodeValue( 1L, stringArray(), VirtualValues.EMPTY_MAP ),
@@ -162,15 +156,11 @@ public class BoltRequestMessageV3Test
     {
         List<RequestMessage> messages = new ArrayList<>();
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
-        doAnswer( new Answer<Void>()
+        doAnswer( (Answer<Void>) invocationOnMock ->
         {
-            @Override
-            public Void answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                RequestMessage msg = invocationOnMock.getArgument( 0 );
-                messages.add( msg );
-                return null;
-            }
+            RequestMessage msg = invocationOnMock.getArgument( 0 );
+            messages.add( msg );
+            return null;
         } ).when( stateMachine ).process( any(), any() );
         BoltRequestMessageReader reader = new BoltRequestMessageReaderV3( new SynchronousBoltConnection( stateMachine ),
                 mock( BoltResponseMessageWriter.class ), NullLogService.getInstance() );

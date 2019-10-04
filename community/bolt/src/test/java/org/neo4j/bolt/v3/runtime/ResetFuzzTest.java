@@ -19,9 +19,9 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.util.LinkedList;
@@ -108,8 +108,8 @@ public class ResetFuzzTest
 
     private final List<RequestMessage> sent = new LinkedList<>();
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         boltChannel = mock( BoltChannel.class, RETURNS_MOCKS );
         when( boltChannel.id() ).thenReturn( UUID.randomUUID().toString() );
@@ -117,7 +117,7 @@ public class ResetFuzzTest
     }
 
     @Test
-    public void shouldAlwaysReturnToReadyAfterReset() throws Throwable
+    void shouldAlwaysReturnToReadyAfterReset() throws Throwable
     {
         // given
         life.start();
@@ -171,8 +171,8 @@ public class ResetFuzzTest
         }
     }
 
-    @After
-    public void cleanup()
+    @AfterEach
+    void cleanup()
     {
         life.shutdown();
     }
@@ -190,7 +190,7 @@ public class ResetFuzzTest
      * We can't use mockito to create this, because it stores all invocations,
      * so we run out of RAM in like five seconds.
      */
-    private class FuzzStubSPI implements BoltStateMachineSPI
+    private static class FuzzStubSPI implements BoltStateMachineSPI
     {
 
         @Override

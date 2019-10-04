@@ -19,21 +19,19 @@
  */
 package org.neo4j.bolt.messaging;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import org.neo4j.bolt.packstream.BufferedChannelInput;
+import org.neo4j.bolt.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV1;
+import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.bolt.v3.messaging.response.RecordMessage;
 import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
-import org.neo4j.bolt.packstream.BufferedChannelInput;
-import org.neo4j.bolt.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.common.HexPrinter;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -55,8 +53,8 @@ import static org.neo4j.bolt.packstream.example.Paths.PATH_WITH_LOOP;
 import static org.neo4j.bolt.packstream.example.Paths.PATH_WITH_NODES_VISITED_MULTIPLE_TIMES;
 import static org.neo4j.bolt.packstream.example.Paths.PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION;
 import static org.neo4j.bolt.packstream.example.Paths.PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION;
-import static org.neo4j.bolt.v3.messaging.response.IgnoredMessage.IGNORED_MESSAGE;
 import static org.neo4j.bolt.testing.MessageMatchers.serialize;
+import static org.neo4j.bolt.v3.messaging.response.IgnoredMessage.IGNORED_MESSAGE;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
@@ -73,13 +71,10 @@ import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
  */
 public class BoltResponseMessageTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     private final Neo4jPack neo4jPack = new Neo4jPackV1();
 
     @Test
-    public void shouldHandleCommonMessages() throws Throwable
+    void shouldHandleCommonMessages() throws Throwable
     {
         assertSerializes( new RecordMessage( new AnyValue[]{longValue( 1L ), stringValue( "b" ), longValue( 2L )} ) );
         assertSerializes( new SuccessMessage( VirtualValues.EMPTY_MAP ) );
@@ -88,7 +83,7 @@ public class BoltResponseMessageTest
     }
 
     @Test
-    public void shouldSerializeBasicTypes() throws Throwable
+    void shouldSerializeBasicTypes() throws Throwable
     {
         assertSerializesNeoValue( null );
         assertSerializesNeoValue( true );
@@ -122,7 +117,7 @@ public class BoltResponseMessageTest
     }
 
     @Test
-    public void shouldSerializeNode() throws Throwable
+    void shouldSerializeNode() throws Throwable
     {
         NodeValue nodeValue = nodeValue( 12L, stringArray( "User", "Banana" ), VirtualValues
                 .map( new String[]{"name", "age"},
@@ -135,7 +130,7 @@ public class BoltResponseMessageTest
     }
 
     @Test
-    public void shouldSerializeRelationship() throws Throwable
+    void shouldSerializeRelationship() throws Throwable
     {
         RelationshipValue rel = relationshipValue( 12L,
                 nodeValue( 1L, stringArray(), VirtualValues.EMPTY_MAP ),
@@ -149,7 +144,7 @@ public class BoltResponseMessageTest
     }
 
     @Test
-    public void shouldSerializePaths() throws Throwable
+    void shouldSerializePaths() throws Throwable
     {
         // NOTE: This class ensures that the path are encoded correctly by bolt server.
         // Changing of the expected binaries will break the Bolt PackStream Specification V1 encoding.

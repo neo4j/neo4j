@@ -25,9 +25,9 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -36,10 +36,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -53,28 +53,28 @@ public class ChunkedOutputTest
     private final EmbeddedChannel channel = new EmbeddedChannel();
     private ChunkedOutput out;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         out = new ChunkedOutput( channel, DEFAULT_TEST_BUFFER_SIZE, DEFAULT_TEST_BUFFER_SIZE, NO_THROTTLE );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         out.close();
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldFlushNothingWhenEmpty() throws Exception
+    void shouldFlushNothingWhenEmpty() throws Exception
     {
         out.flush();
         assertEquals( 0, channel.outboundMessages().size() );
     }
 
     @Test
-    public void shouldFlushNothingWhenClosed() throws Exception
+    void shouldFlushNothingWhenClosed() throws Exception
     {
         out.close();
         out.flush();
@@ -82,7 +82,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldWriteAndFlushByte() throws Exception
+    void shouldWriteAndFlushByte() throws Exception
     {
         out.beginMessage();
         out.writeByte( (byte) 42 );
@@ -95,7 +95,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldWriteAndFlushShort() throws Exception
+    void shouldWriteAndFlushShort() throws Exception
     {
         out.beginMessage();
         out.writeShort( (short) 42 );
@@ -108,7 +108,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldWriteAndFlushInt() throws Exception
+    void shouldWriteAndFlushInt() throws Exception
     {
         out.beginMessage();
         out.writeInt( 424242 );
@@ -121,7 +121,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldWriteAndFlushLong() throws Exception
+    void shouldWriteAndFlushLong() throws Exception
     {
         out.beginMessage();
         out.writeLong( 42424242 );
@@ -134,7 +134,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldWriteAndFlushDouble() throws Exception
+    void shouldWriteAndFlushDouble() throws Exception
     {
         out.beginMessage();
         out.writeDouble( 42.4224 );
@@ -147,7 +147,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldWriteAndFlushByteBuffer() throws Exception
+    void shouldWriteAndFlushByteBuffer() throws Exception
     {
         out.beginMessage();
         out.writeBytes( ByteBuffer.wrap( new byte[]{9, 8, 7, 6, 5, 4, 3, 2, 1} ) );
@@ -161,7 +161,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldWriteAndFlushByteArray() throws Exception
+    void shouldWriteAndFlushByteArray() throws Exception
     {
         out.beginMessage();
         out.writeBytes( new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9}, 1, 5 );
@@ -174,21 +174,14 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldThrowWhenByteArrayContainsInsufficientBytes() throws Exception
+    void shouldThrowWhenByteArrayContainsInsufficientBytes() throws Exception
     {
-        try
-        {
-            out.writeBytes( new byte[]{1, 2, 3}, 1, 5 );
-            fail( "Exception expected" );
-        }
-        catch ( IOException e )
-        {
-            assertEquals( "Asked to write 5 bytes, but there is only 2 bytes available in data provided.", e.getMessage() );
-        }
+        var e = assertThrows( IOException.class, () -> out.writeBytes( new byte[]{1, 2, 3}, 1, 5 ) );
+        assertEquals( "Asked to write 5 bytes, but there is only 2 bytes available in data provided.", e.getMessage() );
     }
 
     @Test
-    public void shouldFlushOnClose() throws Exception
+    void shouldFlushOnClose() throws Exception
     {
         out.beginMessage();
         out.writeInt( 42 ).writeInt( 4242 ).writeInt( 424242 );
@@ -201,7 +194,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldCloseNothingWhenAlreadyClosed() throws Exception
+    void shouldCloseNothingWhenAlreadyClosed() throws Exception
     {
         out.beginMessage();
         out.writeLong( 42 );
@@ -216,7 +209,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldChunkSingleMessage() throws Throwable
+    void shouldChunkSingleMessage() throws Throwable
     {
         out.beginMessage();
         out.writeByte( (byte) 1 );
@@ -229,7 +222,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldChunkMessageSpanningMultipleChunks() throws Throwable
+    void shouldChunkMessageSpanningMultipleChunks() throws Throwable
     {
         out.beginMessage();
         out.writeLong( 1 );
@@ -244,7 +237,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldChunkDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
+    void shouldChunkDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
     {
         out.beginMessage();
         byte[] bytes = new byte[16];
@@ -265,7 +258,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldNotThrowIfOutOfSyncFlush() throws Throwable
+    void shouldNotThrowIfOutOfSyncFlush() throws Throwable
     {
         out.beginMessage();
         out.writeLong( 1 );
@@ -284,7 +277,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldNotBeAbleToWriteAfterClose() throws Throwable
+    void shouldNotBeAbleToWriteAfterClose() throws Throwable
     {
         out.beginMessage();
         out.writeLong( 1 );
@@ -295,18 +288,11 @@ public class ChunkedOutputTest
         out.flush();
         out.close();
 
-        try
-        {
-            out.writeShort( (short) 42 );
-            fail( "Should have thrown IOException" );
-        }
-        catch ( IOException ignore )
-        {
-        }
+        assertThrows( IOException.class, () -> out.writeShort( (short) 42 ) );
     }
 
     @Test
-    public void shouldThrowErrorWithRemoteAddressWhenClosed() throws Exception
+    void shouldThrowErrorWithRemoteAddressWhenClosed() throws Exception
     {
         Channel channel = mock( Channel.class );
         ByteBufAllocator allocator = mock( ByteBufAllocator.class );
@@ -320,19 +306,12 @@ public class ChunkedOutputTest
         ChunkedOutput output = new ChunkedOutput( channel, DEFAULT_TEST_BUFFER_SIZE, DEFAULT_TEST_BUFFER_SIZE, NO_THROTTLE );
         output.close();
 
-        try
-        {
-            output.writeInt( 42 );
-            fail( "Exception expected" );
-        }
-        catch ( PackOutputClosedException e )
-        {
-            assertThat( e.getMessage(), containsString( remoteAddressString ) );
-        }
+        var e = assertThrows( PackOutputClosedException.class, () -> output.writeInt( 42 ) );
+        assertThat( e.getMessage(), containsString( remoteAddressString ) );
     }
 
     @Test
-    public void shouldTruncateFailedMessage() throws Exception
+    void shouldTruncateFailedMessage() throws Exception
     {
         out.beginMessage();
         out.writeInt( 1 );
@@ -352,7 +331,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldAllowWritingAfterFailedMessage() throws Exception
+    void shouldAllowWritingAfterFailedMessage() throws Exception
     {
         out.beginMessage();
         out.writeInt( 1 );
@@ -378,7 +357,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldWriteOnlyMessageBoundaryWhenWriterIsEmpty() throws Exception
+    void shouldWriteOnlyMessageBoundaryWhenWriterIsEmpty() throws Exception
     {
         out.beginMessage();
         // write nothing in the message body
@@ -391,7 +370,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldAutoFlushOnlyWhenMaxBufferSizeReachedAfterFullMessage() throws Exception
+    void shouldAutoFlushOnlyWhenMaxBufferSizeReachedAfterFullMessage() throws Exception
     {
         out.beginMessage();
         out.writeInt( 1 );
@@ -423,7 +402,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldAutoFlushMultipleMessages() throws Exception
+    void shouldAutoFlushMultipleMessages() throws Exception
     {
         out.beginMessage();
         out.writeLong( 1 );
@@ -449,139 +428,69 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldFailToBeginMultipleMessages()
+    void shouldFailToBeginMultipleMessages()
     {
         out.beginMessage();
 
-        try
-        {
-            out.beginMessage();
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.beginMessage() );
     }
 
     @Test
-    public void shouldFailToMarkMessageAsSuccessfulWhenMessageNotStarted() throws Exception
+    void shouldFailToMarkMessageAsSuccessfulWhenMessageNotStarted() throws Exception
     {
-        try
-        {
-            out.messageSucceeded();
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.messageSucceeded() );
     }
 
     @Test
-    public void shouldFailToMarkMessageAsFialedWhenMessageNotStarted() throws Exception
+    void shouldFailToMarkMessageAsFialedWhenMessageNotStarted() throws Exception
     {
-        try
-        {
-            out.messageFailed();
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.messageFailed() );
     }
 
     @Test
-    public void shouldFailToWriteByteOutsideOfMessage() throws Exception
+    void shouldFailToWriteByteOutsideOfMessage() throws Exception
     {
-        try
-        {
-            out.writeByte( (byte) 1 );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.writeByte( (byte) 1 ) );
     }
 
     @Test
-    public void shouldFailToWriteShortOutsideOfMessage() throws Exception
+    void shouldFailToWriteShortOutsideOfMessage() throws Exception
     {
-        try
-        {
-            out.writeShort( (short) 1 );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.writeShort( (short) 1 ) );
     }
 
     @Test
-    public void shouldFailToWriteIntOutsideOfMessage() throws Exception
+    void shouldFailToWriteIntOutsideOfMessage() throws Exception
     {
-        try
-        {
-            out.writeInt( 1 );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.writeInt( 1 ) );
     }
 
     @Test
-    public void shouldFailToWriteLongOutsideOfMessage() throws Exception
+    void shouldFailToWriteLongOutsideOfMessage() throws Exception
     {
-        try
-        {
-            out.writeLong( 1 );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.writeLong( 1 ) );
     }
 
     @Test
-    public void shouldFailToWriteDoubleOutsideOfMessage() throws Exception
+    void shouldFailToWriteDoubleOutsideOfMessage() throws Exception
     {
-        try
-        {
-            out.writeDouble( 1.1 );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.writeDouble( 1.1 ) );
     }
 
     @Test
-    public void shouldFailToWriteBytesOutsideOfMessage() throws Exception
+    void shouldFailToWriteBytesOutsideOfMessage() throws Exception
     {
-        try
-        {
-            out.writeBytes( ByteBuffer.wrap( new byte[10] ) );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.writeBytes( ByteBuffer.wrap( new byte[10] ) ) );
     }
 
     @Test
-    public void shouldFailToMarkMessageAsSuccessfulAndThenAsFailed() throws Exception
+    void shouldFailToMarkMessageAsSuccessfulAndThenAsFailed() throws Exception
     {
         out.beginMessage();
         out.writeInt( 42 );
         out.messageSucceeded();
 
-        try
-        {
-            out.messageFailed();
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.messageFailed() );
 
         out.flush();
 
@@ -589,20 +498,13 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldFailToMarkMessageAsFailedAndThenAsSuccessful() throws Exception
+    void shouldFailToMarkMessageAsFailedAndThenAsSuccessful() throws Exception
     {
         out.beginMessage();
         out.writeInt( 42 );
         out.messageFailed();
 
-        try
-        {
-            out.messageSucceeded();
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException ignore )
-        {
-        }
+        assertThrows( IllegalStateException.class, () -> out.messageSucceeded() );
 
         out.flush();
 
@@ -610,7 +512,7 @@ public class ChunkedOutputTest
     }
 
     @Test
-    public void shouldAllowMultipleFailedMessages() throws Exception
+    void shouldAllowMultipleFailedMessages() throws Exception
     {
         for ( int i = 0; i < 7; i++ )
         {

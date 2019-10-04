@@ -22,10 +22,8 @@ package org.neo4j.bolt.security.auth;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -37,19 +35,19 @@ import org.neo4j.server.security.systemgraph.BasicInMemoryUserManager;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
-public class BasicAuthenticationTest
+class BasicAuthenticationTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     private Authentication authentication;
 
     @Test
-    public void shouldNotDoAnythingOnSuccess() throws Exception
+    void shouldNotDoAnythingOnSuccess() throws Exception
     {
         // When
         AuthenticationResult result =
@@ -60,19 +58,16 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldThrowAndLogOnFailure() throws Exception
+    void shouldThrowAndLogOnFailure() throws Exception
     {
-        // Expect
-        exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.Unauthorized ) );
-        exception.expectMessage( "The client is unauthorized due to authentication failure." );
-
-        // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "banana" ) ) );
+        var e = assertThrows( AuthenticationException.class,
+                () -> authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "banana" ) ) ) );
+        assertEquals( Status.Security.Unauthorized, e.status() );
+        assertEquals( "The client is unauthorized due to authentication failure.", e.getMessage() );
     }
 
     @Test
-    public void shouldIndicateThatCredentialsExpired() throws Exception
+    void shouldIndicateThatCredentialsExpired() throws Exception
     {
         // When
         AuthenticationResult result =
@@ -83,7 +78,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldFailWhenTooManyAttempts() throws Exception
+    void shouldFailWhenTooManyAttempts() throws Exception
     {
         // Given
         int maxFailedAttempts = ThreadLocalRandom.current().nextInt( 1, 10 );
@@ -101,17 +96,14 @@ public class BasicAuthenticationTest
             }
         }
 
-        // Expect
-        exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.AuthenticationRateLimit ) );
-        exception.expectMessage( "The client has provided incorrect authentication details too many times in a row." );
-
-        //When
-        auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ) ) );
+        var e = assertThrows( AuthenticationException.class,
+                () -> auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ) ) ) );
+        assertEquals( Status.Security.AuthenticationRateLimit, e.status() );
+        assertEquals( "The client has provided incorrect authentication details too many times in a row.", e.getMessage() );
     }
 
     @Test
-    public void shouldBeAbleToUpdateCredentials() throws Exception
+    void shouldBeAbleToUpdateCredentials() throws Exception
     {
         // When
         authentication.authenticate(
@@ -123,7 +115,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldClearCredentialsAfterUse() throws Exception
+    void shouldClearCredentialsAfterUse() throws Exception
     {
         // When
         byte[] oldPassword = password( "secret2" );
@@ -143,7 +135,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldBeAbleToUpdateExpiredCredentials() throws Exception
+    void shouldBeAbleToUpdateExpiredCredentials() throws Exception
     {
         // When
         AuthenticationResult result = authentication.authenticate(
@@ -154,56 +146,42 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldNotBeAbleToUpdateCredentialsIfOldCredentialsAreInvalid() throws Exception
+    void shouldNotBeAbleToUpdateCredentialsIfOldCredentialsAreInvalid() throws Exception
     {
-        // Expect
-        exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.Unauthorized ) );
-        exception.expectMessage( "The client is unauthorized due to authentication failure." );
-
-        // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ),
-                "new_credentials", password( "secret2" ) ) );
+        var e = assertThrows( AuthenticationException.class, () ->
+                authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ),
+                        "new_credentials", password( "secret2" ) ) ) );
+        assertEquals( Status.Security.Unauthorized, e.status() );
+        assertEquals( "The client is unauthorized due to authentication failure.", e.getMessage() );
     }
 
     @Test
-    public void shouldThrowWithNoScheme() throws Exception
+    void shouldThrowWithNoScheme() throws Exception
     {
-        // Expect
-        exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.Unauthorized ) );
-
-        // When
-        authentication.authenticate( map( "principal", "bob", "credentials", password( "secret" ) ) );
+        var e = assertThrows( AuthenticationException.class,
+                () -> authentication.authenticate( map( "principal", "bob", "credentials", password( "secret" ) ) ) );
+        assertEquals( Status.Security.Unauthorized, e.status() );
     }
 
     @Test
-    public void shouldFailOnInvalidAuthToken() throws Exception
+    void shouldFailOnInvalidAuthToken() throws Exception
     {
-        // Expect
-        exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.Unauthorized ) );
-
-        // When
-        authentication.authenticate( map( "this", "does", "not", "matter", "for", "test" ) );
+        var e = assertThrows( AuthenticationException.class, () -> authentication.authenticate( map( "this", "does", "not", "matter", "for", "test" ) ) );
+        assertEquals( Status.Security.Unauthorized, e.status() );
     }
 
     @Test
-    public void shouldFailOnMalformedToken() throws Exception
+    void shouldFailOnMalformedToken() throws Exception
     {
-        // Expect
-        exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.Unauthorized ) );
-        exception.expectMessage( "Unsupported authentication token, the value associated with the key `principal` " +
-                "must be a String but was: SingletonList" );
-
-        // When
-        authentication
-                .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", password( "secret" ) ) );
+        var e = assertThrows( AuthenticationException.class, () -> authentication
+                .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", password( "secret" ) ) ) );
+        assertEquals( Status.Security.Unauthorized, e.status() );
+        assertEquals( "Unsupported authentication token, the value associated with the key `principal` " +
+                "must be a String but was: SingletonList", e.getMessage() );
     }
 
-    @Before
-    public void setup() throws Throwable
+    @BeforeEach
+    void setup() throws Throwable
     {
         authentication = createAuthentication( 3 );
     }
@@ -226,7 +204,7 @@ public class BasicAuthenticationTest
 
     static class HasStatus extends TypeSafeMatcher<Status.HasStatus>
     {
-        private Status status;
+        private final Status status;
 
         HasStatus( Status status )
         {
@@ -267,9 +245,9 @@ public class BasicAuthenticationTest
             if ( o instanceof byte[] )
             {
                 byte[] bytes = (byte[]) o;
-                for ( int i = 0; i < bytes.length; i++ )
+                for ( byte aByte : bytes )
                 {
-                    if ( bytes[i] != (byte) 0 )
+                    if ( aByte != (byte) 0 )
                     {
                         return false;
                     }

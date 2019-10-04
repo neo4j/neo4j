@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.runtime.scheduling;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,10 +32,10 @@ import static org.mockito.Mockito.verify;
 
 public class BoltConnectionQueueMonitorAggregateTest
 {
-    private BoltConnection connection = mock( BoltConnection.class );
+    private final BoltConnection connection = mock( BoltConnection.class );
 
     @Test
-    public void shouldCallEnqueuedOnSingleMonitor()
+    void shouldCallEnqueuedOnSingleMonitor()
     {
         Job job = mock( Job.class );
         BoltConnectionQueueMonitor monitor = mock( BoltConnectionQueueMonitor.class );
@@ -47,7 +47,7 @@ public class BoltConnectionQueueMonitorAggregateTest
     }
 
     @Test
-    public void shouldCallDrainedOnSingleMonitor()
+    void shouldCallDrainedOnSingleMonitor()
     {
         Collection<Job> batch = new ArrayList<>();
         BoltConnectionQueueMonitor monitor = mock( BoltConnectionQueueMonitor.class );
@@ -59,7 +59,7 @@ public class BoltConnectionQueueMonitorAggregateTest
     }
 
     @Test
-    public void shouldCallEnqueuedOnEachMonitor()
+    void shouldCallEnqueuedOnEachMonitor()
     {
         Job job = mock( Job.class );
         BoltConnectionQueueMonitor monitor1 = mock( BoltConnectionQueueMonitor.class );
@@ -73,7 +73,7 @@ public class BoltConnectionQueueMonitorAggregateTest
     }
 
     @Test
-    public void shouldCallDrainedOnEachMonitor()
+    void shouldCallDrainedOnEachMonitor()
     {
         Collection<Job> batch = new ArrayList<>();
         BoltConnectionQueueMonitor monitor1 = mock( BoltConnectionQueueMonitor.class );

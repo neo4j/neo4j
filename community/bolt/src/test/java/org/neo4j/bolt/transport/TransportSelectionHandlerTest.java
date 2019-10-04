@@ -21,7 +21,7 @@ package org.neo4j.bolt.transport;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -34,10 +34,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class TransportSelectionHandlerTest
+class TransportSelectionHandlerTest
 {
     @Test
-    public void shouldLogOnUnexpectedExceptionsAndClosesContext() throws Throwable
+    void shouldLogOnUnexpectedExceptionsAndClosesContext() throws Throwable
     {
         // Given
         ChannelHandlerContext context = channelHandlerContextMock();
@@ -55,7 +55,7 @@ public class TransportSelectionHandlerTest
     }
 
     @Test
-    public void shouldLogConnectionResetErrorsAtWarningLevelAndClosesContext() throws Exception
+    void shouldLogConnectionResetErrorsAtWarningLevelAndClosesContext() throws Exception
     {
         // Given
         ChannelHandlerContext context = channelHandlerContextMock();

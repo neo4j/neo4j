@@ -22,8 +22,8 @@ package org.neo4j.bolt.transport;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -43,26 +43,26 @@ import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AbstractBoltProtocolTest
+class AbstractBoltProtocolTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
-    @After
-    public void cleanup()
+    @AfterEach
+    void cleanup()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldInstallChannelHandlersInCorrectOrder() throws Throwable
+    void shouldInstallChannelHandlersInCorrectOrder() throws Throwable
     {
         // Given
         BoltChannel boltChannel = newBoltChannel( channel );

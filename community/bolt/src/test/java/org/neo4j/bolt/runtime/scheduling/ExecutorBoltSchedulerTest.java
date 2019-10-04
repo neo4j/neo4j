@@ -19,9 +19,9 @@
  */
 package org.neo4j.bolt.runtime.scheduling;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
@@ -46,13 +46,13 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -65,7 +65,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.matchers.CommonMatchers.matchesExceptionMessage;
 
-public class ExecutorBoltSchedulerTest
+class ExecutorBoltSchedulerTest
 {
     private static final String CONNECTOR_KEY = "connector-id";
 
@@ -77,21 +77,21 @@ public class ExecutorBoltSchedulerTest
             new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(),
                     Duration.ZERO );
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         when( jobScheduler.threadFactory( any() ) ).thenReturn( Executors.defaultThreadFactory() );
     }
 
-    @After
-    public void cleanup() throws Throwable
+    @AfterEach
+    void cleanup() throws Throwable
     {
         boltScheduler.stop();
         boltScheduler.shutdown();
     }
 
     @Test
-    public void initShouldCreateThreadPool() throws Throwable
+    void initShouldCreateThreadPool() throws Throwable
     {
         ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
         when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
@@ -106,7 +106,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void shutdownShouldTerminateThreadPool() throws Throwable
+    void shutdownShouldTerminateThreadPool() throws Throwable
     {
         ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
         ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
@@ -122,7 +122,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void createdShouldAddConnectionToActiveConnections() throws Throwable
+    void createdShouldAddConnectionToActiveConnections() throws Throwable
     {
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
@@ -136,7 +136,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void destroyedShouldRemoveConnectionFromActiveConnections() throws Throwable
+    void destroyedShouldRemoveConnectionFromActiveConnections() throws Throwable
     {
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
@@ -150,7 +150,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void enqueuedShouldScheduleJob() throws Throwable
+    void enqueuedShouldScheduleJob() throws Throwable
     {
         String id = UUID.randomUUID().toString();
         AtomicBoolean exitCondition = new AtomicBoolean();
@@ -170,7 +170,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void enqueuedShouldNotScheduleJobWhenActiveWorkItemExists() throws Throwable
+    void enqueuedShouldNotScheduleJobWhenActiveWorkItemExists() throws Throwable
     {
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
@@ -191,7 +191,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void failingJobShouldLogAndStopConnection() throws Throwable
+    void failingJobShouldLogAndStopConnection() throws Throwable
     {
         AtomicBoolean stopped = new AtomicBoolean();
         String id = UUID.randomUUID().toString();
@@ -204,7 +204,7 @@ public class ExecutorBoltSchedulerTest
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
 
-        Predicates.await( () -> stopped.get(), 1, MINUTES );
+        Predicates.await( stopped::get, 1, MINUTES );
 
         assertFalse( boltScheduler.isActive( connection ) );
         verify( connection ).processNextBatch();
@@ -216,7 +216,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void successfulJobsShouldTriggerSchedulingOfPendingJobs() throws Throwable
+    void successfulJobsShouldTriggerSchedulingOfPendingJobs() throws Throwable
     {
         AtomicInteger counter = new AtomicInteger();
         String id = UUID.randomUUID().toString();
@@ -235,7 +235,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void destroyedShouldCancelActiveWorkItem() throws Throwable
+    void destroyedShouldCancelActiveWorkItem() throws Throwable
     {
         AtomicInteger processNextBatchCount = new AtomicInteger();
         String id = UUID.randomUUID().toString();
@@ -265,7 +265,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void createdWorkerThreadsShouldContainConnectorName() throws Exception
+    void createdWorkerThreadsShouldContainConnectorName() throws Exception
     {
         AtomicInteger executeBatchCompletionCount = new AtomicInteger();
         AtomicReference<Thread> poolThread = new AtomicReference<>();
@@ -298,7 +298,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void createdWorkerThreadsShouldContainConnectorNameAndRemoteAddressInTheirNamesWhenActive() throws Exception
+    void createdWorkerThreadsShouldContainConnectorNameAndRemoteAddressInTheirNamesWhenActive() throws Exception
     {
         final AtomicReference<String> capturedThreadName = new AtomicReference<>();
 
@@ -327,7 +327,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void stopShouldStopIdleConnections() throws Exception
+    void stopShouldStopIdleConnections() throws Exception
     {
         boltScheduler.init();
         boltScheduler.start();
@@ -344,7 +344,7 @@ public class ExecutorBoltSchedulerTest
     }
 
     @Test
-    public void shutdownShouldStopAllConnections() throws Exception
+    void shutdownShouldStopAllConnections() throws Exception
     {
         boltScheduler.init();
         boltScheduler.start();

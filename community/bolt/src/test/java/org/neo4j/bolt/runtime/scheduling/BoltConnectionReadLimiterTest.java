@@ -20,9 +20,9 @@
 package org.neo4j.bolt.runtime.scheduling;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -35,10 +35,10 @@ import org.neo4j.logging.internal.LogService;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singleton;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -49,15 +49,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
-public class BoltConnectionReadLimiterTest
+class BoltConnectionReadLimiterTest
 {
     private static final Job job = machine -> machine.process( new HelloMessage( emptyMap() ), nullResponseHandler() );
     private BoltConnection connection;
     private EmbeddedChannel channel;
     private Log log;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         channel = new EmbeddedChannel();
         log = mock( Log.class );
@@ -67,14 +67,14 @@ public class BoltConnectionReadLimiterTest
         when( connection.channel() ).thenReturn( channel );
     }
 
-    @After
-    public void cleanup()
+    @AfterEach
+    void cleanup()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldNotDisableAutoReadBelowHighWatermark()
+    void shouldNotDisableAutoReadBelowHighWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -87,7 +87,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldDisableAutoReadWhenAtHighWatermark()
+    void shouldDisableAutoReadWhenAtHighWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -102,7 +102,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldDisableAutoReadOnlyOnceWhenAboveHighWatermark()
+    void shouldDisableAutoReadOnlyOnceWhenAboveHighWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -119,7 +119,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldEnableAutoReadWhenAtLowWatermark()
+    void shouldEnableAutoReadWhenAtLowWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -136,7 +136,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldEnableAutoReadOnlyOnceWhenBelowLowWatermark()
+    void shouldEnableAutoReadOnlyOnceWhenBelowLowWatermark()
     {
         BoltConnectionReadLimiter limiter = newLimiter( 1, 2 );
 
@@ -153,7 +153,7 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldDisableAndEnableAutoRead()
+    void shouldDisableAndEnableAutoRead()
     {
         int lowWatermark = 3;
         int highWatermark = 5;
@@ -186,73 +186,38 @@ public class BoltConnectionReadLimiterTest
     }
 
     @Test
-    public void shouldNotAcceptNegativeLowWatermark()
+    void shouldNotAcceptNegativeLowWatermark()
     {
-        try
-        {
-            newLimiter( -1, 5 );
-            fail( "exception expected" );
-        }
-        catch ( IllegalArgumentException exc )
-        {
-            assertThat( exc.getMessage(), startsWith( "invalid lowWatermark value" )  );
-        }
+        var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( -1, 5 ) );
+        assertThat( e.getMessage(), startsWith( "invalid lowWatermark value" )  );
     }
 
     @Test
-    public void shouldNotAcceptLowWatermarkEqualToHighWatermark()
+    void shouldNotAcceptLowWatermarkEqualToHighWatermark()
     {
-        try
-        {
-            newLimiter( 5, 5 );
-            fail( "exception expected" );
-        }
-        catch ( IllegalArgumentException exc )
-        {
-            assertThat( exc.getMessage(), startsWith( "invalid lowWatermark value" )  );
-        }
+        var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( 5, 5 ) );
+        assertThat( e.getMessage(), startsWith( "invalid lowWatermark value" )  );
     }
 
     @Test
-    public void shouldNotAcceptLowWatermarkLargerThanHighWatermark()
+    void shouldNotAcceptLowWatermarkLargerThanHighWatermark()
     {
-        try
-        {
-            newLimiter( 6, 5 );
-            fail( "exception expected" );
-        }
-        catch ( IllegalArgumentException exc )
-        {
-            assertThat( exc.getMessage(), startsWith( "invalid lowWatermark value" )  );
-        }
+        var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( 6, 5 ) );
+        assertThat( e.getMessage(), startsWith( "invalid lowWatermark value" )  );
     }
 
     @Test
-    public void shouldNotAcceptZeroHighWatermark()
+    void shouldNotAcceptZeroHighWatermark()
     {
-        try
-        {
-            newLimiter( 1, 0 );
-            fail( "exception expected" );
-        }
-        catch ( IllegalArgumentException exc )
-        {
-            assertThat( exc.getMessage(), startsWith( "invalid highWatermark value" )  );
-        }
+        var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( 1, 0 ) );
+        assertThat( e.getMessage(), startsWith( "invalid highWatermark value" )  );
     }
 
     @Test
-    public void shouldNotAcceptNegativeHighWatermark()
+    void shouldNotAcceptNegativeHighWatermark()
     {
-        try
-        {
-            newLimiter( 1, -1 );
-            fail( "exception expected" );
-        }
-        catch ( IllegalArgumentException exc )
-        {
-            assertThat( exc.getMessage(), startsWith( "invalid highWatermark value" )  );
-        }
+        var e = assertThrows( IllegalArgumentException.class, () -> newLimiter( 1, -1 ) );
+        assertThat( e.getMessage(), startsWith( "invalid highWatermark value" )  );
     }
 
     private BoltConnectionReadLimiter newLimiter( int low, int high )

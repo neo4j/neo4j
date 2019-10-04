@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.messaging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
@@ -30,7 +30,7 @@ public class RecordingByteChannelTest
 {
 
     @Test
-    public void shouldBeAbleToWriteToThenReadFromChannel()
+    void shouldBeAbleToWriteToThenReadFromChannel()
     {
         // Given
         RecordingByteChannel channel = new RecordingByteChannel();

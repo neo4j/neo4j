@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.EnumMap;
@@ -35,15 +35,15 @@ import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class ExecutionPlanConverterTest
+class ExecutionPlanConverterTest
 {
 
     @Test
-    public void fullProfileStatisticConversion()
+    void fullProfileStatisticConversion()
     {
         MapValue convertedMap = ExecutionPlanConverter.convert(
                 new TestExecutionPlanDescription( "description", getFullProfilerStatistics(), getIdentifiers(),
@@ -62,7 +62,7 @@ public class ExecutionPlanConverterTest
     }
 
     @Test
-    public void partialProfileStatisticConversion()
+    void partialProfileStatisticConversion()
     {
         MapValue convertedMap = ExecutionPlanConverter.convert(
                 new TestExecutionPlanDescription( "description", getPartialProfilerStatistics(), getIdentifiers(),
@@ -79,7 +79,7 @@ public class ExecutionPlanConverterTest
     }
 
     @Test
-    public void noStatisticConversion()
+    void noStatisticConversion()
     {
         MapValue convertedMap = ExecutionPlanConverter.convert(
                 new TestExecutionPlanDescription( "description", null, getIdentifiers(),
@@ -187,7 +187,7 @@ public class ExecutionPlanConverterTest
     private static class TestProfilerStatistics implements ExecutionPlanDescription.ProfilerStatistics
     {
 
-        private Map<ProfilerArguments,Long> arguments;
+        private final Map<ProfilerArguments,Long> arguments;
 
         private TestProfilerStatistics( Map<ProfilerArguments,Long> arguments )
         {
