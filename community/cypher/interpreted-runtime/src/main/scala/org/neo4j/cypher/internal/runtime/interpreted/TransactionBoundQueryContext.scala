@@ -732,9 +732,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropIndexRule(name: String): Unit = {
     val ktx = transactionalContext.kernelTransaction
-    val index = ktx.schemaRead().indexGetForName(name)
-    if (index == IndexDescriptor.NO_INDEX) throw new DropIndexFailureException(name, new NoSuchIndexException(name))
-    ktx.schemaWrite().indexDrop(index)
+    ktx.schemaWrite().indexDrop(name)
   }
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean = try {

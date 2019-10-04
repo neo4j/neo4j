@@ -77,6 +77,12 @@ public interface SchemaWrite
     void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException;
 
     /**
+     * Drop the index by the given name.
+     * @param indexName the name of the index to drop.
+     */
+    void indexDrop( String indexName ) throws SchemaKernelException;
+
+    /**
      * Create unique property constraint
      *
      * @param descriptor description of the constraint

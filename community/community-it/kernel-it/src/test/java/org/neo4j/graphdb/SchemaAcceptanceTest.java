@@ -210,7 +210,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "otherName" ).create(),
                 ConstraintViolationException.class );
         Class<AlreadyConstrainedException> expectedCause = AlreadyConstrainedException.class;
-        String expectedMessage = "Constraint already exists: CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT (my_label.my_property_key) IS UNIQUE";
+        String expectedMessage = "Constraint already exists: Constraint( UNIQUE, :MY_LABEL(my_property_key) )";
         assertExpectedException( expectedCause, expectedMessage, exception );
     }
 
@@ -319,7 +319,8 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             }
             catch ( ConstraintViolationException e )
             {
-                assertThat( e.getMessage(), containsString( "Unable to drop index on :MY_LABEL(my_property_key): No such index :MY_LABEL(my_property_key)." ) );
+                assertThat( e.getMessage(), containsString( "Unable to drop index: Index does not exist: " +
+                        "Index( 1, 'Index on :MY_LABEL (my_property_key)', GENERAL, :MY_LABEL(my_property_key), native-btree-1.0 )" ) );
             }
             tx.commit();
         }

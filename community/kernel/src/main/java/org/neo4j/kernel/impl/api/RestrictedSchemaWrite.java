@@ -97,6 +97,13 @@ public class RestrictedSchemaWrite implements SchemaWrite
     }
 
     @Override
+    public void indexDrop( String indexName ) throws SchemaKernelException
+    {
+        assertSchemaWrites( PrivilegeAction.DROP_INDEX );
+        inner.indexDrop( indexName );
+    }
+
+    @Override
     public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );

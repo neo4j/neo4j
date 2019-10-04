@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -73,6 +72,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.lock.LockTracer;
@@ -640,6 +640,27 @@ class OperationsTest
         order.verify( txState ).indexDoDrop( indexA );
         order.verify( txState ).indexDoDrop( indexC );
         verify( txState, never() ).indexDoDrop( indexB );
+    }
+
+    @Test
+    void shouldAcquireSchemaNameWriteLockBeforeRemovingIndexByName() throws Exception
+    {
+        // given
+        String indexName = "My fancy index";
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( indexName ).materialise( 0 );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( index );
+        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
+        when( storageReader.indexGetForName( indexName ) ).thenReturn( index );
+        when( storageReader.indexExists( index ) ).thenReturn( true );
+
+        // when
+        operations.indexDrop( indexName );
+
+        // then
+        long indexNameLock = ResourceIds.schemaNameResourceId( indexName );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.SCHEMA_NAME, indexNameLock );
+        order.verify( txState ).indexDoDrop( index );
     }
 
     @Test

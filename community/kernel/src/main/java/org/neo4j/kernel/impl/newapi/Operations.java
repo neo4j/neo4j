@@ -933,6 +933,18 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
+    public void indexDrop( String indexName ) throws SchemaKernelException
+    {
+        exclusiveSchemaNameLock( indexName );
+        IndexDescriptor index = allStoreHolder.indexGetForName( indexName );
+        if ( index == IndexDescriptor.NO_INDEX )
+        {
+            throw new DropIndexFailureException( "Unable to drop index called `" + indexName + "`. There is no such index." );
+        }
+        indexDrop( index );
+    }
+
+    @Override
     public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String name ) throws KernelException
     {
         String provider = config.get( GraphDatabaseSettings.default_schema_provider );

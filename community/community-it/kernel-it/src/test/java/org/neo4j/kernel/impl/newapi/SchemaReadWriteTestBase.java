@@ -175,6 +175,29 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
+    void shouldDropInByName() throws Exception
+    {
+        String indexName = "My fancy index";
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ), indexName );
+            transaction.commit();
+        }
+
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexDrop( indexName );
+            transaction.commit();
+        }
+
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ).hasNext() );
+        }
+    }
+
+    @Test
     void shouldFailToDropNoIndex() throws Exception
     {
         try ( KernelTransaction transaction = beginTransaction() )
@@ -228,6 +251,30 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index.schema() ) );
+            transaction.commit();
+        }
+    }
+
+    @Test
+    void shouldFailToDropNonExistentIndexByName() throws Exception
+    {
+        String indexName = "My fancy index";
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ), indexName );
+            transaction.commit();
+        }
+
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexDrop( indexName );
+            transaction.commit();
+        }
+
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            assertThrows( SchemaKernelException.class, () ->
+                    transaction.schemaWrite().indexDrop( indexName ) );
             transaction.commit();
         }
     }
@@ -581,6 +628,26 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             IndexDescriptor index = transaction.schemaRead().indexGetForName( schemaName );
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index.schema() ) );
+            transaction.commit();
+        }
+    }
+
+    @Test
+    void shouldFailToDropIndexByNameIfExistingUniqueConstraint() throws Exception
+    {
+        //Given
+        String schemaName = "constraint name";
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ), schemaName );
+            transaction.commit();
+        }
+
+        //When
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            assertThrows( SchemaKernelException.class, () ->
+                    transaction.schemaWrite().indexDrop( schemaName ) );
             transaction.commit();
         }
     }

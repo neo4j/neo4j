@@ -295,6 +295,40 @@ class IndexIT extends KernelIntegrationTest
     }
 
     @Test
+    void shouldDisallowDroppingIndexByNameThatDoesNotExist() throws KernelException
+    {
+        // given
+        String indexName = "My fancy index";
+        IndexDescriptor index;
+        {
+            SchemaWrite statement = schemaWriteInNewTransaction();
+            index = statement.indexCreate( descriptor, indexName );
+            commit();
+        }
+        {
+            SchemaWrite statement = schemaWriteInNewTransaction();
+            statement.indexDrop( index );
+            commit();
+        }
+
+        // when
+        SchemaWrite statement = schemaWriteInNewTransaction();
+        try
+        {
+            statement.indexDrop( indexName );
+            fail( "Expected to fail." );
+        }
+        catch ( SchemaKernelException e )
+        {
+            assertEquals( e.getMessage(), "Unable to drop index called `My fancy index`. There is no such index." );
+        }
+        finally
+        {
+            rollback();
+        }
+    }
+
+    @Test
     void shouldFailToCreateIndexWhereAConstraintAlreadyExists() throws Exception
     {
         // given
