@@ -111,16 +111,6 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     assert(stats.indexesRemoved === 0)
   }
 
-  test("correctIndexStatisticsForIndexAddedTwice") {
-    execute("create index on :Person(name)")
-
-    val result = execute("create index for (n:Person) on (n.name)")
-    val stats  = result.queryStatistics()
-
-    assert(stats.indexesAdded === 0)
-    assert(stats.indexesRemoved === 0)
-  }
-
   test("correctIndexStatisticsForIndexWithNameAdded") {
     val result = execute("create index my_index for (n:Person) on (n.name)")
     val stats  = result.queryStatistics()
@@ -134,16 +124,6 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     val stats  = result.queryStatistics()
 
     assert(stats.uniqueConstraintsAdded === 1)
-    assert(stats.uniqueConstraintsRemoved === 0)
-  }
-
-  test("correctConstraintStatisticsForUniquenessConstraintAddedTwice") {
-    execute("create constraint on (n:Person) assert n.name is unique")
-
-    val result = execute("create constraint on (n:Person) assert n.name is unique")
-    val stats  = result.queryStatistics()
-
-    assert(stats.uniqueConstraintsAdded === 0)
     assert(stats.uniqueConstraintsRemoved === 0)
   }
 

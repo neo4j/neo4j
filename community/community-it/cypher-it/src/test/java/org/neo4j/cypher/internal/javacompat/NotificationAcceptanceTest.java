@@ -280,40 +280,37 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     void shouldNotNotifyOnDynamicPropertyLookupWithNoLabels()
     {
+        db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
+        db.executeTransactionally( "Call db.awaitIndexes()" );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
-        {
-            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
-            db.executeTransactionally( "Call db.awaitIndexes()" );
-            shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' RETURN n" );
-        } );
+            shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' RETURN n" )
+        );
     }
 
     @Test
     void shouldWarnOnDynamicPropertyLookupWithBothStaticAndDynamicProperties()
     {
+        db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
+        db.executeTransactionally( "Call db.awaitIndexes()" );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
-        {
-            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
-            db.executeTransactionally( "Call db.awaitIndexes()" );
             assertNotifications( version + "EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n",
-                    containsItem( dynamicPropertyWarning ));
-        } );
+                    containsItem( dynamicPropertyWarning ))
+        );
     }
 
     @Test
     void shouldNotNotifyOnDynamicPropertyLookupWithLabelHavingNoIndex()
     {
+        db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
+        db.executeTransactionally( "Call db.awaitIndexes()" );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
-            db.executeTransactionally( "Call db.awaitIndexes()" );
             try ( Transaction tx = db.beginTx() )
             {
                 tx.createNode().addLabel( label( "Foo" ) );
                 tx.commit();
             }
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Foo) WHERE n['key-' + n.name] = 'value' RETURN n" );
-
         } );
     }
 
@@ -346,12 +343,12 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         // dynamic property lookup with a single label and IN
         queries.add( "EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] IN ['Foo', 'Bar'] RETURN n" );
 
+        db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
+        db.executeTransactionally( "Call db.awaitIndexes()" );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
             for ( String query : queries )
             {
-                db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
-                db.executeTransactionally( "Call db.awaitIndexes()" );
                 assertNotifications( version + query, containsItem( dynamicPropertyWarning ) );
             }
         } );
@@ -360,39 +357,34 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     void shouldNotNotifyOnDynamicPropertyLookupWithSingleLabelAndNegativePredicate()
     {
+        db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
+        db.executeTransactionally( "Call db.awaitIndexes()" );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
-        {
-            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
-            db.executeTransactionally( "Call db.awaitIndexes()" );
-            shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] <> 'value' RETURN n" );
-        } );
+            shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] <> 'value' RETURN n" )
+        );
     }
 
     @Test
     void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleLabels()
     {
+        db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
+        db.executeTransactionally( "Call db.awaitIndexes()" );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
-        {
-            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
-            db.executeTransactionally( "Call db.awaitIndexes()" );
-
             assertNotifications( version + "EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n",
-                    containsItem( dynamicPropertyWarning ) );
-        } );
+                    containsItem( dynamicPropertyWarning ) )
+        );
     }
 
     @Test
     void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleIndexedLabels()
     {
+        db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
+        db.executeTransactionally( "CREATE INDEX FOR (n:Jedi) ON (n.weapon)" );
+        db.executeTransactionally( "Call db.awaitIndexes()" );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
-        {
-            db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
-            db.executeTransactionally( "CREATE INDEX FOR (n:Jedi) ON (n.weapon)" );
-            db.executeTransactionally( "Call db.awaitIndexes()" );
-
             assertNotifications( version + "EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n",
-                    containsItem( dynamicPropertyWarning ) );
-        } );
+                    containsItem( dynamicPropertyWarning ) )
+        );
     }
 
     @Test

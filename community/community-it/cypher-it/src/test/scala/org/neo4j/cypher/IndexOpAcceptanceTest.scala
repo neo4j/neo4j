@@ -47,14 +47,15 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     })
   }
 
-  test("createIndexShouldBeIdempotent") {
+  test("createIndexShouldFailWhenCreatedTwice") {
     // GIVEN
     execute("CREATE INDEX FOR (n:Person) ON (n.name)")
 
     // WHEN
-    execute("CREATE INDEX FOR (n:Person) ON (n.name)")
+    val e = intercept[CypherExecutionException](execute("CREATE INDEX FOR (n:Person) ON (n.name)"))
 
-    // THEN no exception is thrown
+    // THEN
+    e should have message "An equivalent index already exists, 'Index( 1, 'Index on :Person (name)', GENERAL, :Person(name), native-btree-1.0 )'."
   }
 
   test("secondIndexCreationShouldFailIfIndexesHasFailed") {
