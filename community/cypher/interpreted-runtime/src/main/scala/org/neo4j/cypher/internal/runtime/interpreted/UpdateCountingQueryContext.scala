@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics, _}
 import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}
 import org.neo4j.values.storable.Value
@@ -103,9 +102,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IdempotentResult[IndexDescriptor] = {
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IndexDescriptor = {
     val result = inner.addIndexRule(labelId, propertyKeyIds, name)
-    result.ifCreated { indexesAdded.increase() }
+    indexesAdded.increase()
     result
   }
 
@@ -119,10 +118,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     indexesRemoved.increase()
   }
 
-  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean = {
-    val result = inner.createNodeKeyConstraint(labelId, propertyKeyIds, name)
-    if ( result ) nodekeyConstraintsAdded.increase()
-    result
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit = {
+    inner.createNodeKeyConstraint(labelId, propertyKeyIds, name)
+    nodekeyConstraintsAdded.increase()
   }
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
@@ -130,10 +128,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     nodekeyConstraintsRemoved.increase()
   }
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean = {
-    val result = inner.createUniqueConstraint(labelId, propertyKeyIds, name)
-    if ( result ) uniqueConstraintsAdded.increase()
-    result
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit = {
+    inner.createUniqueConstraint(labelId, propertyKeyIds, name)
+    uniqueConstraintsAdded.increase()
   }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
@@ -141,10 +138,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     uniqueConstraintsRemoved.increase()
   }
 
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Boolean = {
-    val result = inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId, name)
-    if ( result ) propertyExistenceConstraintsAdded.increase()
-    result
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit = {
+    inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId, name)
+    propertyExistenceConstraintsAdded.increase()
   }
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit = {
@@ -152,10 +148,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     propertyExistenceConstraintsRemoved.increase()
   }
 
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Boolean = {
-    val result = inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name)
-    if ( result ) propertyExistenceConstraintsAdded.increase()
-    result
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit = {
+    inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name)
+    propertyExistenceConstraintsAdded.increase()
   }
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) {

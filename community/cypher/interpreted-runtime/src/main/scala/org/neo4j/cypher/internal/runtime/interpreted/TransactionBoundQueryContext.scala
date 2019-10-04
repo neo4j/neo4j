@@ -25,7 +25,6 @@ import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.PrimitiveLongResourceIterator
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexOrderAscending, IndexOrderDescending, IndexOrderNone}
-import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.RANGE_SEEKABLE_VALUE_GROUPS
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
@@ -710,18 +709,18 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IdempotentResult[IndexDescriptor] = {
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
     try {
-      IdempotentResult(ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull))
+      ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull)
     } catch {
-      case _: EquivalentSchemaRuleAlreadyExistsException =>
+      case e: EquivalentSchemaRuleAlreadyExistsException =>
         val indexReference = ktx.schemaRead().index(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)).next()
         if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
           val message = ktx.schemaRead().indexGetFailure(indexReference)
           throw new FailedIndexException(indexReference.userDescription(tokenNameLookup), message)
         }
-        IdempotentResult(indexReference, wasCreated = false)
+        throw e
     }
   }
 
@@ -735,49 +734,31 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     ktx.schemaWrite().indexDrop(name)
   }
 
-  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean = try {
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull)
-    true
-  } catch {
-    case _: EquivalentSchemaRuleAlreadyExistsException => false
-  }
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean = try {
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull)
-    true
-  } catch {
-    case _: EquivalentSchemaRuleAlreadyExistsException => false
-  }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
 
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Boolean =
-    try {
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
       transactionalContext.kernelTransaction.schemaWrite().nodePropertyExistenceConstraintCreate(
         SchemaDescriptor.forLabel(labelId, propertyKeyId), name.orNull)
-      true
-    } catch {
-      case _: EquivalentSchemaRuleAlreadyExistsException => false
-    }
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyId))
 
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Boolean =
-    try {
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit =
       transactionalContext.kernelTransaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
         SchemaDescriptor.forRelType(relTypeId, propertyKeyId), name.orNull)
-      true
-    } catch {
-      case _: EquivalentSchemaRuleAlreadyExistsException => false
-    }
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()

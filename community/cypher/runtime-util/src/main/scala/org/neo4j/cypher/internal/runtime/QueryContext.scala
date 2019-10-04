@@ -24,7 +24,7 @@ import java.util.Optional
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.planner.spi.{IdempotentResult, TokenContext}
+import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.exceptions.EntityNotFoundException
@@ -91,7 +91,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
 
-  def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IdempotentResult[IndexDescriptor]
+  def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): IndexDescriptor
 
   def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
@@ -125,22 +125,22 @@ trait QueryContext extends TokenContext with DbAccess {
   def getNodesByLabelPrimitive(id: Int): LongIterator
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean
+  def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit
 
   def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Boolean
+  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit
 
   def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Boolean
+  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit
 
   def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int)
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Boolean
+  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit
 
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int)
 

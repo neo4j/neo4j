@@ -23,12 +23,11 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics, _}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.storable.Values
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.schema.{IndexDescriptor, IndexPrototype, SchemaDescriptor}
+import org.neo4j.internal.schema.{IndexPrototype, SchemaDescriptor}
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 
@@ -58,16 +57,8 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     }
   } )
 
-  when(inner.createUniqueConstraint(anyInt(), any(), any())).thenReturn(true)
-
-  when(inner.createNodeKeyConstraint(anyInt(), any(), any())).thenReturn(true)
-
-  when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt(), any()) ).thenReturn(true)
-
-  when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt(), any()) ).thenReturn(true)
-
   when(inner.addIndexRule(anyInt(), any(), any()))
-    .thenReturn(IdempotentResult(IndexPrototype.forSchema(SchemaDescriptor.forLabel(1, 2)).withName("index_1").materialise(1)))
+    .thenReturn(IndexPrototype.forSchema(SchemaDescriptor.forLabel(1, 2)).withName("index_1").materialise(1))
 
   var context: UpdateCountingQueryContext = _
 
