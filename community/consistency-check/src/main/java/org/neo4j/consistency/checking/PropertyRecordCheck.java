@@ -47,11 +47,11 @@ public class PropertyRecordCheck
         }
         for ( PropertyBlock block : record )
         {
-            checkDataBlock( block, engine, records );
+            checkDataBlock( record.getId(), block, engine, records );
         }
     }
 
-    public static void checkDataBlock( PropertyBlock block,
+    public static void checkDataBlock( long propertyRecordId, PropertyBlock block,
                                  CheckerEngine<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> engine,
                                  RecordAccess records )
     {
@@ -86,7 +86,7 @@ public class PropertyRecordCheck
                 }
                 catch ( Exception e )
                 {
-                    engine.report().invalidPropertyValue( block );
+                    engine.report().invalidPropertyValue( propertyRecordId, block.getKeyIndexId() );
                 }
                 break;
             }

@@ -395,7 +395,7 @@ class PropertyRecordCheckTest
         ConsistencyReport.PropertyConsistencyReport report = check( property );
 
         // then
-        verify( report ).invalidPropertyValue( block );
+        verify( report ).invalidPropertyValue( property.getId(), block.getKeyIndexId() );
         verifyNoMoreInteractions( report );
     }
 

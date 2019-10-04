@@ -317,8 +317,12 @@ public interface ConsistencyReport
         @Documented( "The array block is empty." )
         void arrayEmpty( PropertyBlock block, DynamicRecord value );
 
+        /*
+         * Pass in property record id and property key id, not PropertyRecord or PropertyBlock because if this record contains
+         * and invalid value it will throw exception when trying to do a toString() of it.
+         */
         @Documented( "The property value is invalid." )
-        void invalidPropertyValue( PropertyBlock block );
+        void invalidPropertyValue( long propertyRecordId, int propertyKeyId );
 
         @Documented( "This record is first in a property chain, but no Node or Relationship records reference this record." )
         void orphanPropertyChain();

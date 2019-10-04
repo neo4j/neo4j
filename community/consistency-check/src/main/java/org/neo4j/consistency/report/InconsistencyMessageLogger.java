@@ -81,9 +81,21 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
 
     private static String buildMessage( String message, AbstractBaseRecord record, Object[] args )
     {
-        StringBuilder builder = joinLines( message ).append( System.lineSeparator() ).append( TAB ).append( record );
+        StringBuilder builder = joinLines( message ).append( System.lineSeparator() ).append( TAB ).append( safeToString( record ) );
         appendArgs( builder, args );
         return builder.toString();
+    }
+
+    private static String safeToString( AbstractBaseRecord record )
+    {
+        try
+        {
+            return record.toString();
+        }
+        catch ( Exception e )
+        {
+            return String.format( "%s[%d,Error generating toString: %s]", record.getClass().getSimpleName(), record.getId(), e.toString() );
+        }
     }
 
     private static String buildMessage( String message, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, Object[] args )
