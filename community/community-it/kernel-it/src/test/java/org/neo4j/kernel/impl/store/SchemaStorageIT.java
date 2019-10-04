@@ -307,7 +307,7 @@ class SchemaStorageIT
 
     private int labelId( String labelName )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             return ((InternalTransaction) tx).kernelTransaction().tokenRead().nodeLabel( labelName );
         }
@@ -315,7 +315,7 @@ class SchemaStorageIT
 
     private int propId( String propName )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             return ((InternalTransaction) tx).kernelTransaction().tokenRead().propertyKey( propName );
         }

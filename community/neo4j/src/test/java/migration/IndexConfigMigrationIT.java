@@ -429,7 +429,7 @@ class IndexConfigMigrationIT
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private static SchemaRead schemaRead( GraphDatabaseAPI db )
+    private static SchemaRead schemaRead( Transaction tx )
     {
         return ((InternalTransaction) tx).kernelTransaction().schemaRead();
     }
