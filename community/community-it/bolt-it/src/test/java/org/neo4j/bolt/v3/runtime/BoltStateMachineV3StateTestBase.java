@@ -20,10 +20,11 @@
 package org.neo4j.bolt.v3.runtime;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.runtime.SessionExtension;
+import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
@@ -31,6 +32,7 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+@ResourceLock( "boltStateMachine" )
 public class BoltStateMachineV3StateTestBase
 {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
