@@ -32,7 +32,7 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-@ResourceLock( "boltStateMachine" )
+@ResourceLock( "boltStateMachineV3" )
 public class BoltStateMachineV3StateTestBase
 {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;

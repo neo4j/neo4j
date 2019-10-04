@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v4.runtime;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
@@ -35,6 +36,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
+@ResourceLock( "boltStateMachineV4" )
 public class BoltStateMachineV4StateTestBase
 {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
