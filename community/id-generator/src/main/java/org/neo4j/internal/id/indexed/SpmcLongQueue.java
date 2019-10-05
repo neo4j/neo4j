@@ -22,10 +22,9 @@ package org.neo4j.internal.id.indexed;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 
-import static java.lang.Integer.bitCount;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
-import static org.neo4j.util.Preconditions.checkArgument;
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * Single Producer Multiple Consumers FIFO queue.
@@ -39,7 +38,7 @@ class SpmcLongQueue implements ConcurrentLongQueue
 
     SpmcLongQueue( int capacity )
     {
-        checkArgument( bitCount( capacity ) == 1, "capacity is not power of 2: %d", capacity );
+        requirePowerOfTwo( capacity );
         this.idxMask = capacity - 1;
         this.array = new AtomicLongArray( capacity );
     }

@@ -44,7 +44,6 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -55,6 +54,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * At the heart of this free-list sits a {@link GBPTree}, containing all deleted and freed ids. The tree is used as a bit-set and since it's
@@ -197,7 +197,7 @@ public class IndexedIdGenerator implements IdGenerator
             int idsPerEntryOnCreate, LongSupplier initialHighId, long maxId, OpenOption... openOptions )
     {
         this.file = file;
-        Preconditions.checkArgument( Integer.bitCount( idsPerEntryOnCreate ) == 1, "Requires idsPerEntry to be a power of 2, was %d", idsPerEntryOnCreate );
+        requirePowerOfTwo( idsPerEntryOnCreate );
         int cacheCapacity = idType.highActivity() ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
         this.cacheOptimisticRefillThreshold = cacheCapacity / 4;

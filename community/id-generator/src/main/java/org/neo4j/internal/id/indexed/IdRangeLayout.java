@@ -22,7 +22,8 @@ package org.neo4j.internal.id.indexed;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.util.Preconditions;
+
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * {@link Layout} for a {@link GBPTree} writing and reading the ID ranges that make up the contents of an {@link IndexedIdGenerator}.
@@ -34,7 +35,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     IdRangeLayout( int idsPerEntry )
     {
         super( true, 3735929054L + idsPerEntry, 1, 2 );
-        Preconditions.checkArgument( Integer.bitCount( idsPerEntry ) == 1, "idsPerEntry must be power of 2, was %d", idsPerEntry );
+        requirePowerOfTwo( idsPerEntry );
         this.longsPerEntry = ((idsPerEntry - 1) / (IdRange.BITSET_SIZE)) + 1;
     }
 

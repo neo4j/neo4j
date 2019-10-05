@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * A simple PageSwapper implementation that directs all page swapping to a
@@ -107,7 +108,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private static int stripeMask( int count )
     {
-        assert Integer.bitCount( count ) == 1;
+        requirePowerOfTwo( count );
         return count - 1;
     }
 

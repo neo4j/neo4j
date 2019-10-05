@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 
 import static java.lang.Integer.max;
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * Concurrent bit-set for longs. Basically a {@link ConcurrentHashMap} where each map entry is a small bit-set.
@@ -43,7 +44,7 @@ class ConcurrentSparseLongBitSet
 
     ConcurrentSparseLongBitSet( int idsPerEntry )
     {
-        assert Integer.bitCount( idsPerEntry ) == 1 : "Invalid idsPerEntry " + idsPerEntry;
+        requirePowerOfTwo( idsPerEntry );
         this.idsPerEntry = idsPerEntry;
         this.longsPerRange = max( 1, ((idsPerEntry - 1) / Long.SIZE) + 1 );
     }
