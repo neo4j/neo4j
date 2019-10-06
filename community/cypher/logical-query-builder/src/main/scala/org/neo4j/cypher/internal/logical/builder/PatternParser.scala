@@ -28,6 +28,12 @@ object PatternParser
   private val ID = "([a-zA-Z0-9` @]*)"
   private val REL_TYPES = "([a-zA-Z_|]*)"
   private val regex = s"\\($ID\\)(<?)-\\[?$ID:?$REL_TYPES(\\*?)([0-9]*)\\.?\\.?([0-9]*)\\]?-(>?)\\($ID\\)".r
+  private var unnamedCount = 0
+
+  private def nextUnnamed(): String = {
+    unnamedCount += 1
+    "UNNAMED" + unnamedCount
+  }
 
   def parse(pattern: String): Pattern = {
     pattern match {
@@ -48,7 +54,13 @@ object PatternParser
             case ("*", "", _)  => VarPatternLength(0, Some(max.toInt))
             case ("*", _, _)   => VarPatternLength(min.toInt, Some(max.toInt))
           }
-        Pattern(VariableParser.unescaped(from), dir, relTypes, relName, VariableParser.unescaped(to), length)
+        val relNameOrUnnamed =
+          if (relName.isEmpty) {
+            nextUnnamed()
+          } else {
+           relName
+          }
+        Pattern(VariableParser.unescaped(from), dir, relTypes, relNameOrUnnamed, VariableParser.unescaped(to), length)
       case _ => throw new IllegalArgumentException(s"'$pattern' cannot be parsed as a pattern")
     }
   }
