@@ -97,8 +97,6 @@ class ClosingRuntimeResult(inner: RuntimeResult,
 
     resourceManager.close()
     assertAllReleased()
-    txContext.close()
-    tx.close()
   }
 
   def pageCacheHits: Long = _pageCacheHits

@@ -162,10 +162,8 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
-    inTx( tx =>
-      tx.createNode(Label.label("NotThereYet")).createRelationshipTo(tx.createNode(),
-                                                                          RelationshipType.withName("RelType"))
-      )
+    tx.createNode(Label.label("NotThereYet")).createRelationshipTo(tx.createNode(),
+      RelationshipType.withName("RelType"))
 
     // then
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))
@@ -183,10 +181,9 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
-    inTx( tx =>
-      tx.createNode().createRelationshipTo(tx.createNode(Label.label("NotThereYet")),
-                                                                          RelationshipType.withName("RelType"))
-      )
+    tx.createNode().createRelationshipTo(tx.createNode(Label.label("NotThereYet")),
+      RelationshipType.withName("RelType"))
+
 
     // then
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))
@@ -204,10 +201,8 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
     val plan = buildPlan(logicalQuery, runtime)
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
-    inTx( tx =>
-      tx.createNode().createRelationshipTo(tx.createNode(),
-                                                RelationshipType.withName("NotThereYet"))
-      )
+    tx.createNode().createRelationshipTo(tx.createNode(),
+      RelationshipType.withName("NotThereYet"))
 
     // then
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))

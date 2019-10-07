@@ -212,7 +212,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle existing types") {
     // given
-    val (r1, r2, r3) = inTx { tx =>
+    val (r1, r2, r3) = {
       val node = tx.createNode(Label.label("L"))
       val other = tx.createNode(Label.label("L"))
       (node.createRelationshipTo(other, RelationshipType.withName("R")),
@@ -241,10 +241,9 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle types missing on compile") {
     // given
-    inTx( tx =>
-      1 to sizeHint foreach { _ =>
-        tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
-      })
+    1 to sizeHint foreach { _ =>
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -255,30 +254,23 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(List.empty)
 
     //CREATE S
-    inTx( tx =>
-      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S"))
-      )
+    tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S"))
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
 
     //CREATE R
-    inTx( tx =>
-      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
-    )
+    tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(2))
 
     //CREATE T
-    inTx( tx =>
-      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T"))
-    )
+    tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T"))
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(3))
   }
 
   test("cached plan should adapt to new relationship types") {
     // given
-    inTx( tx =>
-      1 to sizeHint foreach { _ =>
-        tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
-      })
+    1 to sizeHint foreach { _ =>
+      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
+    }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -291,21 +283,15 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x", "y").withRows(List.empty)
 
     //CREATE S
-    inTx( tx =>
-      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S"))
-    )
+    tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S"))
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
 
     //CREATE R
-    inTx( tx =>
-      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
-      )
+    tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(2))
 
     //CREATE T
-    inTx( tx =>
-      tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T"))
-      )
+    tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T"))
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
 
@@ -338,7 +324,6 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   }
 
   protected def smallTestGraph: (Node, Node, Node, Node, Node, Node) = {
-    inTx { tx =>
       val a1 = tx.createNode(Label.label("A"))
       val a2 = tx.createNode(Label.label("A"))
       val b1 = tx.createNode(Label.label("B"))
@@ -358,7 +343,6 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
       b3.createRelationshipTo(c, RelationshipType.withName("R"))
       (a1, a2, b1, b2, b3, c)
     }
-  }
 }
 
 // Supported by interpreted, slotted, morsel, parallel
@@ -419,6 +403,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
         (i, (i + 1) % n, "NEXT")
         )
     }).reduce(_ ++ _)
+    val input = inputValues(nodes.map(n => Array[Any](n)): _*).stream()
 
     val rels = connect(nodes, relTuples)
 
@@ -429,9 +414,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(nodes.map(n => tx.getNodeById(n.getId)).map(Array[Any](_)):_*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = relTuples.zip(rels).map {

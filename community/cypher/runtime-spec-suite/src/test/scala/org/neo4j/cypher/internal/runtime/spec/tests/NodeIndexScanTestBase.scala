@@ -31,11 +31,11 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of an index with a property") {
     // given
+    index("Honey", "calories")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("calories" -> i)
     },"Honey")
-    index("Honey", "calories")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -46,20 +46,17 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val tx = runtimeTestSupport.txHolder.get()
-    val expected = nodes.filter {
-      node => tx.getNodeById(node.getId).hasProperty("calories")
-    }
+    val expected = nodes.filter{ _.hasProperty("calories") }
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should scan all nodes of a unique index with a property") {
     // given
+    uniqueIndex("Honey", "calories")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("calories" -> i)
     },"Honey")
-    uniqueIndex("Honey", "calories")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -70,19 +67,18 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val tx = runtimeTestSupport.txHolder.get()
-    val expected = nodes.filter{ node => tx.getNodeById(node.getId).hasProperty("calories") }
+    val expected = nodes.filter{ _.hasProperty("calories") }
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should scan all nodes of an index with multiple properties") {
     // given
+    index("Honey", "calories", "taste")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("calories" -> i, "taste" -> i)
       case i if i % 5 == 0 => Map("calories" -> i)
     },"Honey")
-    index("Honey", "calories", "taste")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -93,21 +89,17 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val tx = runtimeTestSupport.txHolder.get()
-    val expected = nodes.filter{ n => {
-      val node = tx.getNodeById(n.getId)
-      node.hasProperty("calories") && node.hasProperty("taste")
-    } }
+    val expected = nodes.filter{ n => n.hasProperty("calories") && n.hasProperty("taste") }
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should cache properties") {
     // given
+    index("Honey", "calories")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("calories" -> i)
     },"Honey")
-    index("Honey", "calories")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -119,18 +111,17 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val tx = runtimeTestSupport.txHolder.get()
-    val expected = nodes.map(n => tx.getNodeById(n.getId)).zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
+    val expected = nodes.zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
     runtimeResult should beColumns("x", "calories").withRows(expected)
   }
 
   test("should cache properties with a unique index") {
     // given
+    uniqueIndex("Honey", "calories")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("calories" -> i)
     },"Honey")
-    uniqueIndex("Honey", "calories")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -142,8 +133,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val tx = runtimeTestSupport.txHolder.get()
-    val expected = nodes.map(n => tx.getNodeById(n.getId)).zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
+    val expected = nodes.zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
     runtimeResult should beColumns("x", "calories").withRows(expected)
   }
 }

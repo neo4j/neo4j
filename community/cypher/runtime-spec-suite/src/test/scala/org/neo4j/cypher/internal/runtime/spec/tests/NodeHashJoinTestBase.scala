@@ -97,6 +97,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -107,17 +108,14 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .input(nodes = Seq("x"))
       .build()
 
-    var expectedResultRows:Seq[Array[Node]] = null
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      expectedResultRows = for {node <- nodes if node != null
-                                    rel <- tx.getNodeById(node.getId).getRelationships().asScala
-                                    otherNode = rel.getOtherNode(node)
-                                    } yield Array(node, otherNode)
-
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(node, otherNode)
+
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
 
@@ -125,6 +123,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -135,17 +134,14 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .input(nodes = Seq("y"))
       .build()
 
-    var expectedResultRows:Seq[Array[Node]] = null
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      expectedResultRows = for {node <- nodes if node != null
-                                    attached = tx.getNodeById(node.getId)
-                                    rel <- attached.getRelationships().asScala
-                                    otherNode = rel.getOtherNode(attached)
-                                    } yield Array(otherNode, attached)
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(otherNode, node)
+
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
 
@@ -153,6 +149,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -164,18 +161,13 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .input(nodes = Seq("y"))
       .build()
 
-    var expectedResultRows:Seq[Array[Node]] = null
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      expectedResultRows = for {node <- nodes if node != null
-                                    attached = tx.getNodeById(node.getId)
-                                    rel <- attached.getRelationships().asScala
-                                    otherNode = rel.getOtherNode(attached)
-                                    } yield Array(otherNode, attached)
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
-
+    val expectedResultRows = for {node <- nodes if node != null
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(otherNode, node)
 
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
@@ -205,9 +197,8 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val tx = runtimeTestSupport.txHolder.get()
     val expectedResultRows = for {node <- withAllLabels
-                                  i = tx.getNodeById(node.getId).getProperty("prop").asInstanceOf[Int]
+                                  i = node.getProperty("prop").asInstanceOf[Int]
                                   if i % 20 == 0 && i <= 80
     } yield Array(node)
 
@@ -218,6 +209,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = inputValues(nodes.map(n => Array[Any](n)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -231,20 +223,16 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .input(nodes = Seq("x"))
       .build()
 
-    var expectedResultRows:Seq[Array[Node]] = null
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      expectedResultRows = for {x <- nodes if x != null
-                                    node = tx.getNodeById(x.getId)
-                                    rel1 <- node.getRelationships(Direction.OUTGOING).asScala
-                                    rel2 <- node.getRelationships(Direction.INCOMING).asScala
-                                    y = rel1.getOtherNode(node)
-                                    z = rel2.getOtherNode(node)
-                                    } yield Array(x, y, z)
-
-      inputValues(nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
+    val expectedResultRows = for {x <- nodes if x != null
+                                  rel1 <- x.getRelationships(Direction.OUTGOING).asScala
+                                  rel2 <- x.getRelationships(Direction.INCOMING).asScala
+                                  y = rel1.getOtherNode(x)
+                                  z = rel2.getOtherNode(x)
+                                  } yield Array(x, y, z)
+
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResultRows)
   }
 
@@ -252,6 +240,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = inputValues(nodes.map(n => Array[Any](n)): _*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -266,21 +255,17 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .input(nodes = Seq("x"))
       .build()
 
-    var expectedResult:Seq[Array[Node]] = null
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      val unsortedExpectedResult = for {x <- nodes if x != null
-                                        node = tx.getNodeById(x.getId)
-                                        rel1 <- node.getRelationships(Direction.OUTGOING).asScala
-                                        rel2 <- node.getRelationships(Direction.INCOMING).asScala
-                                        y = rel1.getOtherNode(node)
-                                        z = rel2.getOtherNode(node)
-                                        } yield Array(x, y, z)
-      expectedResult = unsortedExpectedResult.sortBy(arr => (-arr(0).getId, -arr(1).getId, -arr(2).getId))
-
-      inputValues(nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
+    val unsortedExpectedResult = for {x <- nodes if x != null
+                                      rel1 <- x.getRelationships(Direction.OUTGOING).asScala
+                                      rel2 <- x.getRelationships(Direction.INCOMING).asScala
+                                      y = rel1.getOtherNode(x)
+                                      z = rel2.getOtherNode(x)
+                                      } yield Array(x, y, z)
+    val expectedResult = unsortedExpectedResult.sortBy(arr => (-arr(0).getId, -arr(1).getId, -arr(2).getId))
+
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResult)
   }
 
@@ -288,6 +273,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
 
     // when
@@ -302,18 +288,15 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .input(nodes = Seq("x"))
       .build()
 
-    var expectedResultRows:Seq[Array[Node]] = null
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      val allRows = for {node <- nodes if node != null
-                         attached = tx.getNodeById(node.getId)
-                         rel <- attached.getRelationships().asScala
-                         otherNode = rel.getOtherNode(attached)
-                         } yield Array(attached, otherNode)
-      expectedResultRows = allRows.sortBy(arr => (-arr(0).getId, arr(1).getId)).take(limitCount)
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
+    val allRows = for {node <- nodes if node != null
+                       rel <- node.getRelationships().asScala
+                       otherNode = rel.getOtherNode(node)
+                       } yield Array(node, otherNode)
+    val expectedResultRows = allRows.sortBy(arr => (-arr(0).getId, arr(1).getId)).take(limitCount)
+
     runtimeResult should beColumns("x", "y").withRows(inOrder(expectedResultRows))
   }
 
@@ -321,7 +304,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
-    batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
 
     // when
@@ -335,18 +318,15 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .input(nodes = Seq("x"))
       .build()
 
-    var expectedResultRows:Seq[Array[Node]] = null
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      val allRows = for {node <- nodes if node != null
-                         attached = tx.getNodeById(node.getId)
-                         rel <- attached.getRelationships().asScala
-                         otherNode = rel.getOtherNode(attached)
-                         } yield Array(attached, otherNode)
-      expectedResultRows = allRows.sortBy(arr => (-arr(0).getId, arr(1).getId)).take(limitCount)
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
+    val allRows = for {node <- nodes if node != null
+                       rel <- node.getRelationships().asScala
+                       otherNode = rel.getOtherNode(node)
+                       } yield Array(node, otherNode)
+    val expectedResultRows = allRows.sortBy(arr => (-arr(0).getId, arr(1).getId)).take(limitCount)
+
     runtimeResult should beColumns("x", "y").withRows(inOrder(expectedResultRows))
   }
 
@@ -354,6 +334,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
 
     // when
@@ -367,16 +348,14 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .input(nodes = Seq("x"))
       .build()
 
-    var expectedResultRows:Seq[Array[Node]] = null
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      expectedResultRows = for {node <- nodes.filter(_ != null).sortBy(_.getId).take(limitCount)
-                                    rel <- tx.getNodeById(node.getId).getRelationships().asScala
-                                    otherNode = rel.getOtherNode(node)
-                                    } yield Array(node, otherNode)
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
+    val expectedResultRows = for {node <- nodes.filter(_ != null).sortBy(_.getId).take(limitCount)
+                                  rel <- node.getRelationships().asScala
+                                  otherNode = rel.getOtherNode(node)
+                                  } yield Array(node, otherNode)
+
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
 
@@ -434,6 +413,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
 
     // when
@@ -447,24 +427,21 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .input(nodes = Seq("x"))
       .build()
 
-    var expectedResultRows:Seq[Array[Node]] = null
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      val rhsRows = {
-        for {y <- unfilteredNodes
-             node = tx.getNodeById(y.getId)
-             rel <- node.getRelationships(Direction.OUTGOING).asScala
-             rhsX = rel.getOtherNode(node)
-             } yield (rhsX, node)
-        }.sortBy {
-        case (rhsX, y) => (-rhsX.getId, -y.getId)
-      }.take(limitCount)
-      expectedResultRows = for {(rhsX, y) <- rhsRows
-                                    lhsX <- nodes.filter(_ == rhsX)
-                                    } yield Array(lhsX, y)
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
 
     // then
+    val rhsRows = {
+      for {y <- unfilteredNodes
+           rel <- y.getRelationships(Direction.OUTGOING).asScala
+           rhsX = rel.getOtherNode(y)
+           } yield (rhsX, y)
+      }.sortBy {
+      case (rhsX, y) => (-rhsX.getId, -y.getId)
+    }.take(limitCount)
+    val expectedResultRows = for {(rhsX, y) <- rhsRows
+                                  lhsX <- nodes.filter(_ == rhsX)
+                                  } yield Array(lhsX, y)
+
     runtimeResult should beColumns("x", "y").withRows(expectedResultRows)
   }
 

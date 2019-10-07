@@ -211,6 +211,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -220,9 +221,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n==null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = for(node <- nodes if node != null) yield Array(node, 2)
@@ -254,6 +253,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -264,9 +264,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n==null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = for(node <- nodes if node != null) yield Array(node, 2)
@@ -678,7 +676,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     def outerAgg(from: Node): Seq[(Long, Seq[Node])] = {
       (for {
-        rel <- runtimeTestSupport.txHolder.get().getNodeById(from.getId).getRelationships().asScala.toSeq
+        rel <- from.getRelationships().asScala.toSeq
         to = rel.getOtherNode(from)
       } yield (from, to)).groupBy{ case (_, to) => to.getId % 2}
         .map{ case (key, seq) => (key, seq.map(_._2))}.toSeq

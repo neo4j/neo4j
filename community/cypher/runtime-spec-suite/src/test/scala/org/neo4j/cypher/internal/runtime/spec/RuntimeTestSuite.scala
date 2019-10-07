@@ -82,15 +82,17 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     logProvider.clear()
     runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
     runtimeTestSupport.start()
+    runtimeTestSupport.startTx()
     super.beforeEach()
   }
 
   override def afterEach(): Unit = {
+    runtimeTestSupport.stopTx()
     DebugLog.log("")
     shutdownDatabase()
     afterTest()
   }
-  
+
   protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
                                          edition: Edition[CONTEXT],
                                          workloadMode: Boolean,
@@ -115,41 +117,21 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   // HELPERS
 
   override def getLabelId(label: String): Int = {
-    val tx = graphDb.beginTx()
-    try {
-      val result = tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().nodeLabel(label)
-      tx.commit()
-      result
-    } finally tx.close()
+    tx.kernelTransaction().tokenRead().nodeLabel(label)
   }
 
-  override def getPropertyKeyId(prop: String): Int =  {
-    val tx = graphDb.beginTx()
-    try {
-      val result = tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().propertyKey(prop)
-      tx.commit()
-      result
-    } finally tx.close()
+  override def getPropertyKeyId(prop: String): Int = {
+    tx.kernelTransaction().tokenRead().propertyKey(prop)
   }
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = {
-    val tx = graphDb.beginTx()
-    try {
-      val ktx = tx.asInstanceOf[InternalTransaction].kernelTransaction()
-      val result = TransactionBoundPlanContext.procedureSignature(ktx, name)
-      tx.commit()
-      result
-    } finally tx.close()
+    val ktx = tx.kernelTransaction()
+    TransactionBoundPlanContext.procedureSignature(ktx, name)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
-    val tx = graphDb.beginTx()
-    try {
-      val ktx = tx.asInstanceOf[InternalTransaction].kernelTransaction()
-      val result = TransactionBoundPlanContext.functionSignature(ktx, name)
-      tx.commit()
-      result
-    } finally tx.close()
+    val ktx = tx.kernelTransaction()
+    TransactionBoundPlanContext.functionSignature(ktx, name)
   }
 
   def select[X](things: Seq[X],
@@ -174,37 +156,15 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
-              generateData: Transaction => InputDataStream): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, (_, result) => result, subscriber, profile = false, generateData)
-    RecordingRuntimeResult(result, subscriber)
-  }
-
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
               input: InputDataStream,
               subscriber: QuerySubscriber): RuntimeResult =
     runtimeTestSupport.run(logicalQuery, runtime, input, (_, result) => result, subscriber, profile = false)
 
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
-              subscriber: QuerySubscriber,
-              generateData: Transaction => InputDataStream): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, (_, result) => result, subscriber, profile = false, generateData)
-
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
               inputStream: InputDataStream): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
     val result = runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result,subscriber, profile = false)
-    RecordingRuntimeResult(result, subscriber)
-  }
-
-  def profile(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT],
-              generateData: Transaction => InputDataStream): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
-    val result = runtimeTestSupport.run(logicalQuery, runtime, (_, result) => result, subscriber, profile = true, generateData)
     RecordingRuntimeResult(result, subscriber)
   }
 
@@ -223,6 +183,18 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     val result = runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result, subscriber, profile = false)
 
     RecordingRuntimeResult(result, subscriber)
+  }
+
+  def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
+                                       runtime: CypherRuntime[CONTEXT]
+             ): IndexedSeq[Array[AnyValue]] = {
+    val subscriber = new RecordingQuerySubscriber
+    runtimeTestSupport.runTransactionally(logicalQuery, runtime, NoInput, (_, result) => {
+      val recordingRuntimeResult = RecordingRuntimeResult(result, subscriber)
+      val seq = recordingRuntimeResult.awaitAll()
+      recordingRuntimeResult.runtimeResult.close()
+      seq
+    }, subscriber, profile = false)
   }
 
   def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT],  subscriber: QuerySubscriber): RuntimeResult =
@@ -274,11 +246,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def bipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relType: String): (Seq[Node], Seq[Node]) = {
     val aNodes = nodeGraph(nNodes, aLabel)
     val bNodes = nodeGraph(nNodes, bLabel)
-    inTx { tx =>
-      val relationshipType = RelationshipType.withName(relType)
-      for {a <- aNodes; b <- bNodes} {
-        tx.getNodeById(a.getId).createRelationshipTo(tx.getNodeById(b.getId), relationshipType)
-      }
+    val relationshipType = RelationshipType.withName(relType)
+    for {a <- aNodes; b <- bNodes} {
+      a.createRelationshipTo(b, relationshipType)
     }
     (aNodes, bNodes)
   }
@@ -286,31 +256,21 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def bidirectionalBipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relTypeAB: String, relTypeBA: String): (Seq[Node], Seq[Node], Seq[Relationship], Seq[Relationship]) = {
     val aNodes = nodeGraph(nNodes, aLabel)
     val bNodes = nodeGraph(nNodes, bLabel)
-    var aRels: Seq[Relationship] = null
-    var bRels: Seq[Relationship] = null
-    inTx { tx =>
-      val relationshipTypeAB = RelationshipType.withName(relTypeAB)
-      val relationshipTypeBA = RelationshipType.withName(relTypeBA)
-      val (_aRels, _bRels) =
-        (for {a <- aNodes; b <- bNodes} yield {
-          val aNode = tx.getNodeById(a.getId)
-          val bNode = tx.getNodeById(b.getId)
-          val aRel = aNode.createRelationshipTo(bNode, relationshipTypeAB)
-          val bRel = bNode.createRelationshipTo(aNode, relationshipTypeBA)
-          (aRel, bRel)
-        }).unzip
-      aRels = _aRels
-      bRels = _bRels
-    }
+    val relationshipTypeAB = RelationshipType.withName(relTypeAB)
+    val relationshipTypeBA = RelationshipType.withName(relTypeBA)
+    val (aRels, bRels) =
+      (for {a <- aNodes; b <- bNodes} yield {
+        val aRel = a.createRelationshipTo(b, relationshipTypeAB)
+        val bRel = b.createRelationshipTo(a, relationshipTypeBA)
+        (aRel, bRel)
+      }).unzip
     (aNodes, bNodes, aRels, bRels)
   }
 
   def nodeGraph(nNodes: Int, labels: String*): Seq[Node] = {
-    inTx { tx =>
       for (_ <- 0 until nNodes) yield {
         tx.createNode(labels.map(Label.label): _*)
       }
-    }
   }
 
   /**
@@ -321,7 +281,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     * creation of chains with varying relationship direction.
     */
   def chainGraphs(nChains: Int, relTypeNames: String*): IndexedSeq[TestPath] = {
-    inTx { tx =>
       val relTypes = relTypeNames.map(RelationshipType.withName)
       val startLabel = Label.label("START")
       val endLabel = Label.label("END")
@@ -347,7 +306,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
           }
         new TestPath(head, relationships)
       }
-    }
   }
 
   /**
@@ -358,7 +316,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     *             -[r2:R]->
     */
   def lollipopGraph(): (Seq[Node], Seq[Relationship]) = {
-    inTx { tx =>
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -367,7 +324,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       val r2 = n1.createRelationshipTo(n2, relType)
       val r3 = n2.createRelationshipTo(n3, relType)
       (Seq(n1, n2, n3), Seq(r1, r2, r3))
-    }
   }
 
   /**
@@ -389,7 +345,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     *   +> has type :B
     */
   def sineGraph(): SineGraph = {
-    inTx { tx =>
       val start = tx.createNode(Label.label("START"))
       val middle = tx.createNode(Label.label("MIDDLE"))
       val end = tx.createNode(Label.label("END"))
@@ -429,25 +384,21 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       chain(A, middle, ec1, ec2, ec3, end)
 
       SineGraph(start, middle, end, sa1, sb1, sb2, sc1, sc2, sc3, ea1, eb1, eb2, ec1, ec2, ec3, startMiddle, endMiddle)
-    }
   }
 
   def circleGraph(nNodes: Int, labels: String*): (Seq[Node], Seq[Relationship]) = {
-    val nodes = inTx { tx =>
+    val nodes =
       for (_ <- 0 until nNodes) yield {
         tx.createNode(labels.map(Label.label): _*)
       }
-    }
 
     val rels = new ArrayBuffer[Relationship]
-    inTx { tx =>
       val rType = RelationshipType.withName("R")
       for (i <- 0 until nNodes) {
         val a = tx.getNodeById(nodes(i).getId)
         val b = tx.getNodeById(nodes((i + 1) % nNodes).getId)
         rels += a.createRelationshipTo(b, rType)
       }
-    }
     (nodes, rels)
   }
 
@@ -468,7 +419,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     */
   def randomlyConnect(nodes: Seq[Node], connectivities: Connectivity*): Seq[NodeConnections] = {
     val random = new Random(12345)
-    inTx { tx =>
       for (from <- nodes) yield {
         val source = tx.getNodeById(from.getId)
         val relationshipsByType =
@@ -490,77 +440,62 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
         NodeConnections(source, relationshipsByType.toMap)
       }
-    }
-  }
-
-  def inTx[T](f:Transaction => T): T = {
-    val tx = graphDb.beginTx()
-    try {
-      val result = f(tx)
-      tx.commit()
-      result
-    }
-    finally tx.close()
   }
 
   def nodePropertyGraph(nNodes: Int, properties: PartialFunction[Int, Map[String, Any]], labels: String*): Seq[Node] = {
-    val tx = graphDb.beginTx()
-    try {
-      val labelArray = labels.map(Label.label)
-      val result = for (i <- 0 until nNodes) yield {
-        val node = tx.createNode(labelArray: _*)
-        properties.runWith(_.foreach(kv => node.setProperty(kv._1, kv._2)))(i)
-        node
-      }
-      tx.commit()
-      result
-    } finally tx.close()
+    val labelArray = labels.map(Label.label)
+    for (i <- 0 until nNodes) yield {
+      val node = tx.createNode(labelArray: _*)
+      properties.runWith(_.foreach(kv => node.setProperty(kv._1, kv._2)))(i)
+      node
+    }
   }
 
   def connect(nodes: Seq[Node], rels: Seq[(Int, Int, String)]): Seq[Relationship] = {
-    val tx = graphDb.beginTx()
-    try {
-      val result = rels.map {
-        case (from, to, typ) =>
-          tx.getNodeById(nodes(from).getId)
-            .createRelationshipTo(tx.getNodeById(nodes(to).getId), RelationshipType.withName(typ))
-      }
-      tx.commit()
-      result
-    } finally tx.close()
+    rels.map {
+      case (from, to, typ) =>
+        nodes(from).createRelationshipTo(nodes(to), RelationshipType.withName(typ))
+    }
   }
+
+  // TX
+
+  def tx: InternalTransaction = runtimeTestSupport.tx
+
+  /**
+   * Call this to ensure that everything is commited and a new TX is opened. Be sure to not
+   * use data from the previous tx afterwards. If you need to, get them again from the new
+   * tx by id.
+   */
+  def restartTx(): Unit = runtimeTestSupport.restartTx()
 
   // INDEXES
 
+  /**
+   * Creates an index and restarts the transaction. This should be called before any data creation operation.
+   */
   def index(label: String, properties: String*): Unit = {
-    var tx = graphDb.beginTx()
     try {
       var creator = tx.schema().indexFor(Label.label(label))
       properties.foreach(p => creator = creator.on(p))
       creator.create()
-      tx.commit()
-    } finally tx.close()
-
-    tx = graphDb.beginTx()
-    try {
-      tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      tx.commit()
-    } finally tx.close()
+    } finally {
+      runtimeTestSupport.restartTx()
+    }
+    tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
 
+  /**
+   * Creates a unique index and restarts the transaction. This should be called before any data creation operation.
+   */
   def uniqueIndex(label: String, property: String): Unit = {
-    var tx = graphDb.beginTx()
     try {
       val creator = tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property)
       creator.create()
-      tx.commit()
-    } finally tx.close()
-
-    tx = graphDb.beginTx()
-    try {
-      tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      tx.commit()
-    } finally tx.close()
+    } finally {
+      runtimeTestSupport.restartTx()
+    }
+    tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
 
   // MATCHERS

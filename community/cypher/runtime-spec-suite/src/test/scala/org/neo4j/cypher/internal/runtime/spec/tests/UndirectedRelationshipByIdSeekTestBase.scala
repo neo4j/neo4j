@@ -88,6 +88,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     // given
     val (_, relationships) = circleGraph(sizeHint)
     val toFind = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
+    restartTx()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -109,6 +110,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val toNotFind1 = relationships.map(_.getId).max + 1
     val toNotFind2 = toNotFind1 + 1
     val relationshipsToLookFor = toNotFind1 +: toFind.map(_.getId) :+ toNotFind2
+    restartTx()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -128,6 +130,8 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val (_, relationships) = circleGraph(sizeHint)
     val toSeekFor = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
+    restartTx()
+
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")

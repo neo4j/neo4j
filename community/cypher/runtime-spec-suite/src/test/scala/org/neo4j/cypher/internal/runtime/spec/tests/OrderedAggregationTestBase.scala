@@ -99,6 +99,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -109,12 +110,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8,
-        nodes
-        .map(n => if (n != null) tx.getNodeById(n.getId) else null)
-        .map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = for(node <- nodes if node != null) yield Array(node, 2)
@@ -167,6 +163,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -178,12 +175,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8,
-        nodes
-          .map(n => if (n != null) tx.getNodeById(n.getId) else null)
-          .map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = for(node <- nodes if node != null) yield Array(node, 2)
@@ -194,6 +186,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -205,12 +198,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8,
-        nodes
-          .map(n => if (n != null) tx.getNodeById(n.getId) else null)
-          .map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = for(node <- nodes if node != null) yield Array(node, 2)

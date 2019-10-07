@@ -182,6 +182,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = closestMultipleOf(10, 4)
     val paths = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -190,11 +191,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputColumns(4, n/4,
-        i => tx.getNodeById(paths(i).startNode.getId),
-        i => tx.getNodeById(paths(i).endNode().getId)).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected: IndexedSeq[Array[Node]] = paths.map(p => Array(p.startNode, p.endNode()))
@@ -266,11 +263,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
         InputDef(paths(i).startNode, endNode, matches)
       }
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputColumns(4, n/4,
-        i => tx.getNodeById(input(i).start.getId),
-        i => tx.getNodeById(input(i).end.getId)).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, inputColumns(4, n/4, i => input(i).start, i => input(i).end))
 
     // then
     val expected: IndexedSeq[Array[Node]] =
@@ -290,11 +283,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(Array(
-        tx.getNodeById(n1.getId),
-        tx.getNodeById(n3.getId))).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(n1, n3)))
 
     // then
     val expected =
@@ -308,10 +297,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("var-length-expand-into with max length") {
     // given
     val (Seq(n1, n2, n3), _) = lollipopGraph()
-    val r4 =
-      inTx { tx =>
-        tx.getNodeById(n1.getId).createRelationshipTo(tx.getNodeById(n3.getId), RelationshipType.withName("R"))
-      }
+    val r4 = n1.createRelationshipTo(n3, RelationshipType.withName("R"))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -320,11 +306,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(Array(
-        tx.getNodeById(n1.getId),
-        tx.getNodeById(n3.getId))).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(n1, n3)))
 
     // then
     val expected = Array(Array(n1, Array(r4), n3))
@@ -335,10 +317,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("var-length-expand-into with min length") {
     // given
     val (Seq(n1, n2, n3), Seq(r1, r2, r3)) = lollipopGraph()
-    val r4 =
-      inTx { tx =>
-        tx.getNodeById(n1.getId).createRelationshipTo(tx.getNodeById(n3.getId), RelationshipType.withName("R"))
-      }
+    val r4 = tx.getNodeById(n1.getId).createRelationshipTo(tx.getNodeById(n3.getId), RelationshipType.withName("R"))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -347,9 +326,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(Array(tx.getNodeById(n1.getId), tx.getNodeById(n3.getId))).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(n1, n3)))
 
     // then
     val expected = Array(
@@ -364,6 +341,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should project (x)-[r*]->(y) correctly when from matching from x") {
     // given
     val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -372,11 +350,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(paths.map(p => Array[Any](
-        tx.getNodeById(p.startNode.getId),
-        tx.getNodeById(p.endNode().getId))):_*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
@@ -386,6 +360,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should project (x)-[r*]->(y) correctly when from matching from y") {
     // given
     val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -394,11 +369,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(paths.map(p => Array[Any](
-        tx.getNodeById(p.startNode.getId),
-        tx.getNodeById(p.endNode().getId))):_*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
@@ -408,6 +379,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should project (y)<-[r*]-(x) correctly when from matching from x") {
     // given
     val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -416,11 +388,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(paths.map(p => Array[Any](
-        tx.getNodeById(p.startNode.getId),
-        tx.getNodeById(p.endNode().getId))):_*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = paths.map(p => Array(p.startNode, p.reverseRelationships(), p.endNode()))
@@ -430,6 +398,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should project (y)<-[r*]-(x) correctly when from matching from y") {
     // given
     val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -438,11 +407,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(paths.map(p => Array[Any](
-        tx.getNodeById(p.startNode.getId),
-        tx.getNodeById(p.endNode().getId))):_*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = paths.map(p => Array(p.startNode, p.reverseRelationships(), p.endNode()))
@@ -452,6 +417,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should project (x)-[r*]-(y) correctly when from matching from x") {
     // given
     val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -460,11 +426,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(paths.map(p => Array[Any](
-        tx.getNodeById(p.startNode.getId),
-        tx.getNodeById(p.endNode().getId))):_*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
@@ -474,6 +436,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should project (x)-[r*]-(y) correctly when from matching from y") {
     // given
     val paths = chainGraphs(3, "TO", "TO", "TO", "TOO", "TO")
+    val input = inputValues(paths.map(p => Array[Any](p.startNode, p.endNode())):_*)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -482,11 +445,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(paths.map(p => Array[Any](
-        tx.getNodeById(p.startNode.getId),
-        tx.getNodeById(p.endNode().getId))):_*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
@@ -771,11 +730,8 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputColumns(4, n/4,
-                   i => tx.getNodeById(paths(i).startNode.getId),
-                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
-    })
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected =
@@ -798,11 +754,8 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputColumns(4, n/4,
-                   i => tx.getNodeById(paths(i).startNode.getId),
-                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
-    })
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected: IndexedSeq[Array[Node]] = paths.map(p => Array(p.startNode, p.endNode()))
@@ -821,11 +774,8 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputColumns(4, n/4,
-                   i => tx.getNodeById(paths(i).startNode.getId),
-                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
-    })
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected =
@@ -848,11 +798,8 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputColumns(4, n/4,
-                   i => tx.getNodeById(paths(i).startNode.getId),
-                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
-    })
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected: IndexedSeq[Array[Node]] = paths.map(p => Array(p.startNode, p.endNode()))
@@ -872,11 +819,8 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputColumns(4, n/4,
-                   i => tx.getNodeById(paths(i).startNode.getId),
-                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
-    })
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected =
@@ -900,11 +844,8 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "other"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputColumns(4, n/4,
-                   i => tx.getNodeById(paths(i).startNode.getId),
-                   i => tx.getNodeById(paths(i).endNode().getId)).stream()
-    })
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected =

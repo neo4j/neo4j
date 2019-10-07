@@ -120,15 +120,15 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .expandAll("(x)-->(y)") // NOTE: This assumes Expand is a pipeline breaker
+      .produceResults("x", "y")
+      .expandAll("(x)-->(y)")
       .limit(9)
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "A")
       .build()
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("y").withRows(rowCount(900))
+    runtimeResult should beColumns("x", "y").withRows(rowCount(900))
   }
 
   test("should support apply-limit") {

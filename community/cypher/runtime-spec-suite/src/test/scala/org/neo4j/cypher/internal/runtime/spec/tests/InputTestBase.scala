@@ -38,19 +38,16 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x", "y", "z"))
       .build()
 
-    var resultInput:InputValues = null
+    val resultInput = inputValues(
+      Array(11, 12, 13),
+      Array(21, 22, 23),
+      Array(31, 32, 33))
+      .and(
+        Array("11", "12", "13"),
+        nodes.map(n => tx.getNodeById(n.getId)).toArray
+      )
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      resultInput = inputValues(
-        Array(11, 12, 13),
-        Array(21, 22, 23),
-        Array(31, 32, 33))
-        .and(
-          Array("11", "12", "13"),
-          nodes.map(n => tx.getNodeById(n.getId)).toArray
-        )
-      resultInput.stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, resultInput.stream())
 
     // then
     runtimeResult should beColumns("x", "y", "z").withRows(resultInput.flatten)

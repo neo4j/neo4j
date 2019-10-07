@@ -52,6 +52,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val nodes = select(nodeGraph(sizeHint), nullProbability = 0.52)
     val limit = nodes.size - 1
+    val input = inputValues(nodes.map(n => Array[Any](n)): _*)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -59,9 +60,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = nodes.sortBy(n => if (n == null) Long.MaxValue else n.getId).take(limit)
@@ -258,7 +257,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
     val allRows = for {
       x <- nodes
-      rel <- runtimeTestSupport.txHolder.get().getNodeById(x.getId).getRelationships().asScala
+      rel <- x.getRelationships().asScala
       y = rel.getOtherNode(x)
     } yield Array[Any](x, y)
 
@@ -292,7 +291,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
     def outerTop(from: Node): Seq[(Node, Node)] = {
       (for {
-        rel <- runtimeTestSupport.txHolder.get().getNodeById(from.getId).getRelationships().asScala.toSeq
+        rel <- from.getRelationships().asScala.toSeq
         to = rel.getOtherNode(from)
       } yield (from, to)).sortBy(tuple => -tuple._2.getId).take(limit1)
     }

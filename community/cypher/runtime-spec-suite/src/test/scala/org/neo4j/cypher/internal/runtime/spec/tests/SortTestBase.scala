@@ -48,6 +48,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
   test("should handle null values, one column") {
     // when
     val nodes = select(nodeGraph(sizeHint), nullProbability = 0.52)
+    val input = inputValues(nodes.map(n => Array[Any](n)): _*)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -55,11 +56,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      inputValues(nodes
-        .map(n => Array[Any](if (n == null) n else tx.getNodeById(n.getId))): _*)
-        .stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expected = nodes.sortBy(n => if (n == null) Long.MaxValue else n.getId)

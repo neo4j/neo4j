@@ -57,11 +57,10 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
 
   test("should profile page cache stats of branched plan") {
     // given
+    index("M", "prop")
     nodePropertyGraph(SIZE, {
       case i => Map("prop" -> i)
     },"N", "M")
-
-    index("M", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

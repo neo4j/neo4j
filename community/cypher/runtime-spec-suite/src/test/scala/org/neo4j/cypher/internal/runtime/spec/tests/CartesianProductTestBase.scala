@@ -35,10 +35,10 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("handle cached properties and cartesian product on LHS of apply") {
     // given
+    index("Label", "prop")
     val nodes = nodePropertyGraph(sizeHint, {
       case i: Int => Map("prop" -> i)
     }, "Label")
-    index("Label", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -198,6 +198,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   test("cartesian product after expand on rhs") {
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -208,14 +209,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expectedResultRows = for {x <- nodes
                                   y <- unfilteredNodes
-                                  rel <- runtimeTestSupport.txHolder.get().getNodeById(y.getId).getRelationships.asScala
+                                  rel <- y.getRelationships.asScala
                                   z = rel.getOtherNode(y)
                                   } yield Array(x, y, z)
 
@@ -226,6 +225,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -236,13 +236,11 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expectedResultRows = for {y <- nodes if y != null
-                                  rel <- runtimeTestSupport.txHolder.get().getNodeById(y.getId).getRelationships().asScala
+                                  rel <- y.getRelationships().asScala
                                   x = rel.getOtherNode(y)
                                   z <- unfilteredNodes
                                   } yield Array(x, y, z)
@@ -254,6 +252,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   test("cartesian product with apply everywhere") {
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -270,9 +269,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expectedResultRows = for {x <- nodes if x != null
@@ -286,6 +283,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -299,9 +297,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expectedResultRows = for {y <- nodes
@@ -315,6 +311,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -328,9 +325,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("y"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expectedResultRows = for {y <- nodes
@@ -377,6 +372,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val n = Math.pow(sizeHint, 1.0 / 3).toInt * 2
     val (as, _) = bipartiteGraph(n, "A", "B", "REL")
     val nodes = select(as, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -390,14 +386,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("a"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expectedResultRows = for {a <- nodes if a != null
-                                  r1 <- runtimeTestSupport.txHolder.get().getNodeById(a.getId).getRelationships(Direction.OUTGOING).asScala
-                                  r2 <- runtimeTestSupport.txHolder.get().getNodeById(a.getId).getRelationships(Direction.OUTGOING).asScala
+                                  r1 <- a.getRelationships(Direction.OUTGOING).asScala
+                                  r2 <- a.getRelationships(Direction.OUTGOING).asScala
     } yield Array(a, r1, r2)
 
     runtimeResult should beColumns("a", "r1", "r2").withRows(expectedResultRows)
@@ -408,6 +402,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       val limit = nodesPerLabel - 1
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       val nodes = select(aNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+      val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -419,9 +414,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
         .input(nodes = Seq("x"))
         .build()
 
-      val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-        batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-      })
+      val runtimeResult = execute(logicalQuery, runtime, input)
 
       // then
       runtimeResult should beColumns("x", "y", "z").withRows(rowCount(nodes.size * limit))
@@ -432,6 +425,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
     val limitCount = nodes.size / 2
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -445,14 +439,12 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val allRows = for {x <- nodes
                        y <- unfilteredNodes
-                       rel <- runtimeTestSupport.txHolder.get().getNodeById(y.getId).getRelationships().asScala
+                       rel <- y.getRelationships().asScala
                        z = rel.getOtherNode(y)
                        } yield Array(x, y, z)
     val expectedResultRows = allRows.sortBy(arr => (-arr(0).getId, arr(1).getId, arr(2).getId)).take(limitCount)
@@ -465,6 +457,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
     val limitCount = nodes.size / 2
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -476,9 +469,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     runtimeResult should beColumns("x", "y", "z").withRows(rowCount(limitCount))
@@ -490,6 +481,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -503,16 +495,14 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expectedResultRows =
       for {
         x <- nodes
         y1 <- unfilteredNodes
-        r1 <- runtimeTestSupport.txHolder.get().getNodeById(y1.getId).getRelationships(Direction.OUTGOING).asScala
+        r1 <- y1.getRelationships(Direction.OUTGOING).asScala
         z = r1.getOtherNode(y1)
         r2 <- z.getRelationships(Direction.BOTH).asScala
         y2 = r2.getOtherNode(z)
@@ -526,6 +516,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -543,16 +534,14 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expectedResultRows =
       for {
         x <- nodes
         y1 <- unfilteredNodes
-        r1 <- runtimeTestSupport.txHolder.get().getNodeById(y1.getId).getRelationships(Direction.OUTGOING).asScala
+        r1 <- y1.getRelationships(Direction.OUTGOING).asScala
         z = r1.getOtherNode(y1)
         r2 <- z.getRelationships(Direction.BOTH).asScala
         y2 = r2.getOtherNode(z)
@@ -565,6 +554,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -576,9 +566,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, generateData = tx => {
-      batchedInputValues(sizeHint / 8, nodes.map(n => if (n == null) null else tx.getNodeById(n.getId)).map(n => Array[Any](n)): _*).stream()
-    })
+    val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
     val expectedResultRows =

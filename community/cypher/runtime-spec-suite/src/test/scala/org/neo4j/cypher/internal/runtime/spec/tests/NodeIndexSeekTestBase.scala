@@ -32,11 +32,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (single) seek nodes of an index with a property") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -53,12 +53,12 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (single) seek nodes of an index with a property with multiple matches") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val numMatches = sizeHint / 5
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i < numMatches => Map("prop" -> "foo")
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -74,11 +74,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("exact single seek should handle null") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -94,11 +94,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple) seek nodes of an index with a property") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -115,11 +115,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle null in exact multiple seek") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -136,11 +136,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple, but empty) seek nodes of an index with a property") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -156,11 +156,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple, with null) seek nodes of an index with a property") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -176,11 +176,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple, but identical) seek nodes of an index with a property") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -197,11 +197,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact seek nodes of a unique index with a property") {
     // given
+    uniqueIndex("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    uniqueIndex("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -218,11 +218,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple, but identical) seek nodes of a unique index with a property") {
     // given
+    uniqueIndex("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    uniqueIndex("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -239,11 +239,11 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple, with null) seek nodes of a unique index with a property") {
     // given
+    uniqueIndex("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    uniqueIndex("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -265,11 +265,11 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
   test("should exact seek nodes of a locking unique index with a property") {
     // given
+    uniqueIndex("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    uniqueIndex("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -286,11 +286,11 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
   test("should exact (multiple, but identical) seek nodes of a locking unique index with a property") {
     // given
+    uniqueIndex("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    uniqueIndex("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -309,11 +309,11 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
   test("should cache properties in locking unique index") {
     // given
+    uniqueIndex("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    uniqueIndex("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -335,11 +335,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should seek nodes of an index with a property") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -356,11 +356,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should seek nodes of a unique index with a property") {
     // given
+    uniqueIndex("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    uniqueIndex("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -377,11 +377,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should support composite index") {
     // given
+    index("Honey", "prop", "prop2")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
     },"Honey")
-    index("Honey", "prop", "prop2")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -398,11 +398,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should support composite index (multiple results)") {
     // given
+    index("Honey", "prop", "prop2")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 2 == 0 => Map("prop" -> i % 5, "prop2" -> i % 3)
     },"Honey")
-    index("Honey", "prop", "prop2")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -419,11 +419,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should support composite index (multiple values)") {
     // given
+    index("Honey", "prop", "prop2")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
     },"Honey")
-    index("Honey", "prop", "prop2")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -440,11 +440,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should cache properties") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -462,11 +462,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should cache properties in composite index") {
     // given
+    index("Honey", "prop", "prop2")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
     },"Honey")
-    index("Honey", "prop", "prop2")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -483,11 +483,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should use existing values from arguments when available") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -507,11 +507,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should seek nodes of an index with a property in ascending order") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -528,11 +528,11 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should seek nodes of an index with a property in descending order") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -554,11 +554,11 @@ trait ArrayIndexSupport[CONTEXT <: RuntimeContext] {
 
   test("should exact (single) seek nodes of an index with an array property") {
     // given
+    index("Honey", "prop")
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> Array[Int](i))
     },"Honey")
-    index("Honey", "prop")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

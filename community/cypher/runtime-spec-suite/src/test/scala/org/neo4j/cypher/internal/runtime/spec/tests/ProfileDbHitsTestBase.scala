@@ -78,11 +78,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of node index seek") {
     // given
+    index("Language", "difficulty")
     nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("difficulty" -> i)
     },"Language")
-
-    index("Language", "difficulty")
 
     // when
     val seekProfile = profileIndexSeek(s"x:Language(difficulty >= ${sizeHint / 2})")
@@ -92,11 +91,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of node index scan") {
     // given
+    index("Language", "difficulty")
     nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("difficulty" -> i)
     },"Language")
-
-    index("Language", "difficulty")
 
     // when
     val scanProfile = profileIndexSeek("x:Language(difficulty)")
@@ -106,11 +104,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of node index contains") {
     // given
+    index("Language", "difficulty")
     nodePropertyGraph(sizeHint, {
       case i => Map("difficulty" -> s"x${i%2}")
     },"Language")
-
-    index("Language", "difficulty")
 
     // when
     val seekProfile = profileIndexSeek(s"x:Language(difficulty CONTAINS '1')")
@@ -202,7 +199,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   test("should profile dbHits of input + produce results") {
     // given
     val nodes = nodeGraph(sizeHint)
-    inputColumns(sizeHint / 4, 4, i => nodes(i % nodes.size))
+    val input = inputColumns(sizeHint / 4, 4, i => nodes(i % nodes.size))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -210,10 +207,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       .input(Seq("x"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, generateData = tx => {
-      inputColumns(sizeHint / 4, 4,
-        i => tx.getNodeById(nodes(i % nodes.size).getId)).stream()
-    })
+    val runtimeResult = profile(logicalQuery, runtime, input)
     consume(runtimeResult)
 
     // then
@@ -265,14 +259,13 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits with limit + expand") {
     // given
-    val nodes = nodeGraph(sizeHint * 10)
-    connect(nodes, Seq((1, 2, "REL")))
+   bipartiteGraph(sizeHint, "A", "B", "R")
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .expand("(x)-->(y)")
-      .limit(sizeHint * 2)
-      .allNodeScan("x")
+      .limit(sizeHint / 2)
+      .nodeByLabelScan("x", "A")
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -280,21 +273,20 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * 2L + costOfExpand) // expand
+    queryProfile.operatorProfile(1).dbHits() shouldBe >= (sizeHint / 2L * costOfExpand) // expand
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint * 2L) // all node scan
+    queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint / 2L) // all node scan
   }
 
   test("should profile dbHits with limit + optional expand all") {
     // given
-    val nodes = nodeGraph(sizeHint * 10)
-    connect(nodes, Seq((1, 2, "REL")))
+    bipartiteGraph(sizeHint, "A", "B", "R")
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .optionalExpandAll("(x)-->(y)", Some("true"))
-      .limit(sizeHint * 2)
-      .allNodeScan("x")
+      .limit(sizeHint / 2)
+      .nodeByLabelScan("x", "A")
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -302,15 +294,15 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * 2L + LegacyDbHitsTestBase.costOfExpand) // optional expand all (uses legacy pipe)
+    queryProfile.operatorProfile(1).dbHits() shouldBe >= (sizeHint / 2L * LegacyDbHitsTestBase.costOfExpand) // optional expand all (uses legacy pipe)
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint * 2L) // all node scan
+    queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint / 2L) // all node scan
   }
 
   test("should profile dbHits with var-expand") {
     // given
     val SIZE = sizeHint / 4
-    val (nodes, relationships) = circleGraph(SIZE)
+    circleGraph(SIZE)
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -357,7 +349,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of cached properties") {
     // given
-    val nodes = nodePropertyGraph(sizeHint, { case i => Map("p" -> i)})
+    nodePropertyGraph(sizeHint, { case i => Map("p" -> i)})
+    restartTx()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
