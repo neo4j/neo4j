@@ -563,6 +563,30 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
+    void shouldDropConstraintByName() throws Exception
+    {
+        ConstraintDescriptor constraint;
+        String constraintName = "my constraint";
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( label, prop1 ), constraintName );
+            transaction.commit();
+        }
+
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().constraintDrop( constraintName );
+            transaction.commit();
+        }
+
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertFalse( schemaRead.constraintExists( constraint ) );
+        }
+    }
+
+    @Test
     void shouldFailToCreateUniqueConstraintIfExistingIndex() throws Exception
     {
         //Given

@@ -404,7 +404,7 @@ class IndexingServiceTest
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
-        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ), config ) );
+        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider, fulltextProvider() ), config ) );
 
         IndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
         IndexDescriptor populatingIndex = storeIndex( 2, 1, 2, PROVIDER_DESCRIPTOR );
@@ -440,7 +440,7 @@ class IndexingServiceTest
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ), config );
+        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider, fulltextProvider() ), config );
         providerMap.init();
 
         IndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
@@ -494,7 +494,7 @@ class IndexingServiceTest
 
         Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
         DependencyResolver dependencies =
-                buildIndexDependencies( native30Provider, nativeBtree10Provider );
+                buildIndexDependencies( native30Provider, nativeBtree10Provider, fulltextProvider );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         providerMap.init();
 
@@ -569,7 +569,7 @@ class IndexingServiceTest
         when( fulltextProvider.getInitialState( fulltextIndex ) ).thenReturn( ONLINE );
 
         Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
-        DependencyResolver dependencies = buildIndexDependencies( native30Provider, nativeBtree10Provider );
+        DependencyResolver dependencies = buildIndexDependencies( native30Provider, nativeBtree10Provider, fulltextProvider );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         providerMap.init();
 
@@ -1142,7 +1142,7 @@ class IndexingServiceTest
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
-        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ), config ) );
+        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider, fulltextProvider() ), config ) );
 
         List<IndexDescriptor> indexes = new ArrayList<>();
         int nextIndexId = 1;
@@ -1187,7 +1187,7 @@ class IndexingServiceTest
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ), config );
+        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider, fulltextProvider() ), config );
         providerMap.init();
 
         List<IndexDescriptor> indexes = new ArrayList<>();
@@ -1494,7 +1494,7 @@ class IndexingServiceTest
                 .set( multi_threaded_schema_index_population_enabled, false )
                 .set( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).build();
 
-        DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider ), config ) );
+        DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider, fulltextProvider() ), config ) );
         return life.add( IndexingServiceFactory.createIndexingService( config,
                         life.add( JobSchedulerFactory.createScheduler() ), providerMap,
                         storeView,
@@ -1664,12 +1664,23 @@ class IndexingServiceTest
 
     private static IndexProvider mockIndexProviderWithAccessor( IndexProviderDescriptor descriptor ) throws IOException
     {
-        IndexProvider provider = mock( IndexProvider.class );
-        when( provider.getProviderDescriptor() ).thenReturn( descriptor );
+        IndexProvider provider = mockIndexProvider( descriptor );
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
         return provider;
+    }
+
+    private static IndexProvider mockIndexProvider( IndexProviderDescriptor descriptor )
+    {
+        IndexProvider provider = mock( IndexProvider.class );
+        when( provider.getProviderDescriptor() ).thenReturn( descriptor );
+        return provider;
+    }
+
+    private static IndexProvider fulltextProvider()
+    {
+        return mockIndexProvider( fulltextDescriptor );
     }
 
     private void onBothLogProviders( Consumer<AssertableLogProvider> logProviderAction )

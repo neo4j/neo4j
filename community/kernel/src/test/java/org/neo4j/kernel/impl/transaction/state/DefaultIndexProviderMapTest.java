@@ -21,9 +21,12 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
@@ -38,34 +41,43 @@ class DefaultIndexProviderMapTest
     void shouldNotSupportMultipleProvidersWithSameDescriptor()
     {
         // given
-        IndexProviderDescriptor descriptor = new IndexProviderDescriptor( "provider", "1.2" );
-        IndexProvider provider1 = mock( IndexProvider.class );
-        when( provider1.getProviderDescriptor() ).thenReturn( descriptor );
-        IndexProvider provider2 = mock( IndexProvider.class );
-        when( provider2.getProviderDescriptor() ).thenReturn( descriptor );
+        IndexProvider provider;
 
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( provider1 );
-        dependencies.satisfyDependency( provider2 );
+        dependencies.satisfyDependency( provider = provider( "provider", "1.2" ) );
+        dependencies.satisfyDependency( provider( "provider", "1.2" ) );
+        dependencies.satisfyDependency( fulltext() );
 
         // when
-        assertThrows( IllegalArgumentException.class, () -> createDefaultProviderMap( dependencies, descriptor ).init() );
+        assertThrows( IllegalArgumentException.class, () -> createDefaultProviderMap( dependencies, provider.getProviderDescriptor() ).init() );
     }
 
     @Test
     void shouldThrowOnLookupOnUnknownProvider()
     {
         // given
-        IndexProvider provider = mock( IndexProvider.class );
-        IndexProviderDescriptor descriptor = new IndexProviderDescriptor( "provider", "1.2" );
-        when( provider.getProviderDescriptor() ).thenReturn( descriptor );
+        IndexProvider provider;
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( provider );
+        dependencies.satisfyDependency( provider = provider( "provider", "1.2" ) );
+        dependencies.satisfyDependency( fulltext() );
 
         // when
-        DefaultIndexProviderMap defaultIndexProviderMap = createDefaultProviderMap( dependencies, descriptor );
+        DefaultIndexProviderMap defaultIndexProviderMap = createDefaultProviderMap( dependencies, provider.getProviderDescriptor() );
         defaultIndexProviderMap.init();
         assertThrows( IndexProviderNotFoundException.class, () -> defaultIndexProviderMap.lookup( new IndexProviderDescriptor( "provider2", "1.2" ) ) );
+    }
+
+    private static IndexProvider provider( String name, String version )
+    {
+        IndexProviderDescriptor descriptor = new IndexProviderDescriptor( name, version );
+        IndexProvider provider = mock( IndexProvider.class );
+        when( provider.getProviderDescriptor() ).thenReturn( descriptor );
+        return provider;
+    }
+
+    private static IndexProvider fulltext()
+    {
+        return provider( "fulltext", "1.0" );
     }
 
     private static DefaultIndexProviderMap createDefaultProviderMap( Dependencies dependencies, IndexProviderDescriptor descriptor )

@@ -304,24 +304,24 @@ public class BatchInserterImpl implements BatchInserter
             schemaStore = neoStores.getSchemaStore();
             labelTokenStore = neoStores.getLabelTokenStore();
 
+            TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
+            TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, TokenHolder.TYPE_RELATIONSHIP_TYPE );
+            TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, TokenHolder.TYPE_LABEL );
+            tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
+            tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ) );
+
             monitors = new Monitors();
 
             storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ) );
             Dependencies deps = new Dependencies();
             Monitors monitors = new Monitors();
-            deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, immediate() );
+            deps.satisfyDependencies( fileSystem, jobScheduler, config, logService, storeIndexStoreView, tokenHolders, pageCache, monitors, immediate() );
 
             DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
                 new DatabaseExtensionContext( this.databaseLayout, DatabaseInfo.TOOL, deps ),
                 extensions, deps, ExtensionFailureStrategies.ignore() ) );
 
             indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
-
-            TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
-            TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, TokenHolder.TYPE_RELATIONSHIP_TYPE );
-            TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, TokenHolder.TYPE_LABEL );
-            tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
-            tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ) );
 
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
             schemaCache = new SchemaCache( getConstraintSemantics(), indexProviderMap );
