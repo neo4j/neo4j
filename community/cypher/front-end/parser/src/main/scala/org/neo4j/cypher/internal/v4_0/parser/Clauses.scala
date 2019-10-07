@@ -43,10 +43,6 @@ trait Clauses extends Parser
     group(keyword("FROM") ~~ optional(keyword("GRAPH"))) ~~ Expression ~~>> (ast.FromGraph(_))
   }
 
-  def UseGraph: Rule1[ast.UseGraph] = rule("USE GRAPH") {
-    group(keyword("USE") ~~ optional(keyword("GRAPH"))) ~~ Expression ~~>> (ast.UseGraph(_))
-  }
-
   def ConstructGraph: Rule1[ast.ConstructGraph] = rule("CONSTRUCT") {
     group(keyword("CONSTRUCT") ~~ optional(keyword("ON") ~~ oneOrMore(CatalogName, CommaSep)) ~~
       zeroOrMore(WS ~ Clone) ~~

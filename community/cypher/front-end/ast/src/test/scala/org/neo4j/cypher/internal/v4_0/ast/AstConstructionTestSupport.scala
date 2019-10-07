@@ -317,9 +317,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def from(e: Expression): FromGraph =
     FromGraph(e)(pos)
 
-  def use(e: Expression): UseGraph =
-    UseGraph(e)(pos)
-
   def union(part: QueryPart, query: SingleQuery): UnionDistinct = UnionDistinct(part, query)(pos)
 
   implicit class ExpressionOps(expr: Expression) {
