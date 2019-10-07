@@ -52,7 +52,7 @@ Feature: ShortestPathAcceptance
       | 'D'  |
     And no side effects
 
-  Scenario: Find a shortest path among paths that fulfill a predicate on all relationships
+  Scenario: Find a shortest path among paths that fulfill a predicate on none relationships
     And having executed:
       """
       CREATE (a:A {name: 'A'}), (b:B {name: 'B'}),
@@ -79,7 +79,7 @@ Feature: ShortestPathAcceptance
       | 'D'  |
     And no side effects
 
-  Scenario: Find a shortest path among paths that fulfill a predicate on all relationships 2
+  Scenario: Find a shortest path among paths that fulfill a predicate on none relationships 2
     And having executed:
       """
       CREATE (a:A {name: 'A'}), (b:B {name: 'B'}),
