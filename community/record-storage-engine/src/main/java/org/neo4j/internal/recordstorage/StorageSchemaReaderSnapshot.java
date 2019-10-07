@@ -36,6 +36,18 @@ class StorageSchemaReaderSnapshot implements StorageSchemaReader
     }
 
     @Override
+    public IndexDescriptor indexGetForName( String name )
+    {
+        return schema.indexForName( name );
+    }
+
+    @Override
+    public ConstraintDescriptor constraintGetForName( String name )
+    {
+        return schema.constraintForName( name );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schema.indexesForSchema( descriptor );

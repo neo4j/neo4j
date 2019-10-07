@@ -27,6 +27,21 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 
 public interface StorageSchemaReader
 {
+
+    /**
+     * Get the index with the given name.
+     * @param name name of index to find.
+     * @return {@link IndexDescriptor} associated with the given {@code name}.
+     */
+    IndexDescriptor indexGetForName( String name );
+
+    /**
+     * Get the constraint with the given name.
+     * @param name name of the constraint to find.
+     * @return {@link ConstraintDescriptor} associated with the given {@code name}.
+     */
+    ConstraintDescriptor constraintGetForName( String name );
+
     /**
      * Looks for a stored index by given {@code descriptor}
      *

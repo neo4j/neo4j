@@ -33,7 +33,9 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -45,12 +47,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.schema.IndexDescriptor.NO_INDEX;
+import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
+import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -323,23 +330,27 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     {
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ), "my index 1" );
             transaction.commit();
         }
 
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaReadCore schemaReadBefore = transaction.schemaRead().snapshot();
-            transaction.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
+            IndexDescriptor createdIndex = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop2 ), "my index 2" );
             SchemaReadCore schemaReadAfter = transaction.schemaRead().snapshot();
 
             IndexDescriptor index = single( schemaReadBefore.index( labelDescriptor( label, prop2 ) ) );
             assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
             assertThat( 2, equalTo( Iterators.asList( schemaReadBefore.indexesGetAll() ).size() ) );
+            assertThat( index, is( createdIndex ) );
+            assertThat( schemaReadBefore.indexGetForName( "my index 2" ), is( createdIndex ) );
 
             index = single( schemaReadAfter.index( labelDescriptor( label, prop2 ) ) );
             assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
             assertThat( 2, equalTo( Iterators.asList( schemaReadAfter.indexesGetAll() ).size() ) );
+            assertThat( index, is( createdIndex ) );
+            assertThat( schemaReadAfter.indexGetForName( "my index 2" ), is( createdIndex ) );
         }
     }
 
@@ -367,7 +378,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ), "my index" );
             transaction.commit();
         }
 
@@ -379,6 +390,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             assertFalse( schemaReadBefore.index( labelDescriptor( label, prop2 ) ).hasNext() );
             assertFalse( schemaReadAfter.index( labelDescriptor( label, prop2 ) ).hasNext() );
+            assertThat( schemaReadBefore.indexGetForName( "my index" ), is( NO_INDEX ) );
         }
     }
 
@@ -431,10 +443,10 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaReadCore before = tx.schemaRead().snapshot();
             created = tx.schemaWrite().indexCreate( labelDescriptor( label2, prop2 ) );
             tx.schemaWrite().indexDrop( toDrop );
+            SchemaReadCore after = tx.schemaRead().snapshot();
 
-            Iterable<IndexDescriptor> allIndexes = () -> tx.schemaRead().snapshot().indexesGetAll();
-            assertThat( allIndexes, containsInAnyOrder( toRetain, toRetain2, created ) );
             assertThat( before::indexesGetAll, containsInAnyOrder( toRetain, toRetain2, created ) );
+            assertThat( after::indexesGetAll, containsInAnyOrder( toRetain, toRetain2, created ) );
 
             tx.commit();
         }
@@ -693,11 +705,16 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             ConstraintDescriptor newConstraint =
                     transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop2 ), "new constraint" );
             SchemaRead schemaRead = transaction.schemaRead();
+            SchemaReadCore after = schemaRead.snapshot();
             assertTrue( schemaRead.constraintExists( existing ) );
             assertTrue( schemaRead.constraintExists( newConstraint ) );
             assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
-            assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
             assertThat( asList( before.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
+            assertThat( asList( after.constraintsGetForLabel( label ) ), containsInAnyOrder( existing, newConstraint ) );
+            assertThat( before.constraintGetForName( "existing constraint" ), is( existing ) );
+            assertThat( after.constraintGetForName( "existing constraint" ), is( existing ) );
+            assertThat( before.constraintGetForName( "new constraint" ), is( newConstraint ) );
+            assertThat( after.constraintGetForName( "new constraint" ), is( newConstraint ) );
         }
     }
 
@@ -1153,6 +1170,58 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat( () -> before.constraintsGetForLabel( label ), containsInAnyOrder( inStore, createdInTx ) );
 
             tx.commit();
+        }
+    }
+
+    @Test
+    void oldSnapshotShouldNotSeeNewlyCommittedIndexes() throws Exception
+    {
+        try ( KernelTransaction longRunning = beginTransaction() )
+        {
+            SchemaReadCore snapshot = longRunning.schemaRead().snapshot();
+
+            try ( KernelTransaction overlapping = beginTransaction() )
+            {
+                overlapping.schemaWrite().indexCreate( labelDescriptor( label, prop1 ), "a" );
+                overlapping.schemaWrite().indexCreate( IndexPrototype.forSchema(
+                        fulltext( RELATIONSHIP, IndexConfig.empty(), new int[] {type}, new int[] {prop2} ) ).withName( "b" ) );
+                overlapping.commit();
+            }
+
+            assertThat( snapshot.indexGetForName( "a" ), is( NO_INDEX ) );
+            assertThat( snapshot.indexGetForName( "b" ), is( NO_INDEX ) );
+            assertFalse( snapshot.indexesGetAll().hasNext() );
+            assertFalse( snapshot.index( labelDescriptor( label, prop1 ) ).hasNext() );
+            assertFalse( snapshot.indexesGetForLabel( label ).hasNext() );
+            assertFalse( snapshot.indexesGetForRelationshipType( type ).hasNext() );
+        }
+    }
+
+    @Test
+    void oldSnapshotShouldNotSeeNewlyCommittedConstraints() throws Exception
+    {
+        try ( KernelTransaction longRunning = beginTransaction() )
+        {
+            SchemaReadCore snapshot = longRunning.schemaRead().snapshot();
+
+            try ( KernelTransaction overlapping = beginTransaction() )
+            {
+                overlapping.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ), "a" );
+                overlapping.schemaWrite().nodeKeyConstraintCreate( labelDescriptor( label2, prop1 ), "b" );
+                overlapping.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptor( label, prop2 ), "c" );
+                overlapping.schemaWrite().relationshipPropertyExistenceConstraintCreate( forRelType( type, prop1 ), "d" );
+                overlapping.commit();
+            }
+
+            assertThat( snapshot.constraintGetForName( "a" ), is( nullValue() ) );
+            assertThat( snapshot.indexGetForName( "a" ), is( NO_INDEX ) );
+            assertThat( snapshot.constraintGetForName( "b" ), is( nullValue() ) );
+            assertThat( snapshot.indexGetForName( "b" ), is( NO_INDEX ) );
+            assertThat( snapshot.constraintGetForName( "c" ), is( nullValue() ) );
+            assertThat( snapshot.constraintGetForName( "d" ), is( nullValue() ) );
+            assertFalse( snapshot.constraintsGetAll().hasNext() );
+            assertFalse( snapshot.constraintsGetForLabel( label ).hasNext() );
+            assertFalse( snapshot.constraintsGetForRelationshipType( type ).hasNext() );
         }
     }
 

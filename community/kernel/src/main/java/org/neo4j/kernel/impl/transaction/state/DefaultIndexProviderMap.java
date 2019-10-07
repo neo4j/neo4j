@@ -42,6 +42,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
     private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
     private final DependencyResolver dependencies;
     private IndexProvider defaultIndexProvider;
+    private IndexProvider fulltextIndexProvider;
     private final Config config;
 
     public DefaultIndexProviderMap( DependencyResolver dependencies, Config config )
@@ -65,7 +66,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
                         providerDescriptor + ". First loaded " + existing + " then " + provider );
             }
         }
-        initDefaultProvider();
+        initDefaultProviders();
     }
 
     @Override
@@ -73,6 +74,13 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
     {
         assertInit();
         return defaultIndexProvider;
+    }
+
+    @Override
+    public IndexProvider getFulltextProvider()
+    {
+        assertInit();
+        return fulltextIndexProvider;
     }
 
     @Override
@@ -112,19 +120,24 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
 
     private void assertInit()
     {
-        if ( defaultIndexProvider == null )
+        if ( defaultIndexProvider == null || fulltextIndexProvider == null )
         {
             throw new IllegalStateException( "DefaultIndexProviderMap must be part of life cycle and initialized before getting providers." );
         }
     }
 
-    private void initDefaultProvider()
+    private void initDefaultProviders()
     {
         String providerName = config.get( GraphDatabaseSettings.default_schema_provider );
         IndexProvider configuredDefaultProvider = indexProvidersByName.get( providerName );
         requireNonNull( configuredDefaultProvider, () -> format( "Configured default provider: `%s` not found. Available index providers: %s.", providerName,
                 indexProvidersByName.keySet().toString() ) );
         defaultIndexProvider = configuredDefaultProvider;
+
+        String fulltextProviderName = config.get( GraphDatabaseSettings.default_fulltext_provider );
+        IndexProvider fulltextProvider = indexProvidersByName.get( fulltextProviderName );
+        requireNonNull( fulltextProvider, "Configured full-text provider: `" + fulltextProviderName + "` not found." );
+        fulltextIndexProvider = fulltextProvider;
     }
 
     private IndexProvider put( IndexProviderDescriptor providerDescriptor, IndexProvider provider )

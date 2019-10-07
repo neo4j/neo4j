@@ -45,6 +45,18 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     }
 
     @Override
+    public IndexDescriptor indexGetForName( String name )
+    {
+        return stores.indexGetForName( snapshot, name );
+    }
+
+    @Override
+    public ConstraintDescriptor constraintGetForName( String name )
+    {
+        return stores.constraintGetForName( snapshot, name );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> index( SchemaDescriptor schema )
     {
         ktx.assertOpen();

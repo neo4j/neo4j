@@ -23,6 +23,7 @@ import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.Value;
 
 public interface IndexingProvidersService extends IndexConfigCompleter
@@ -48,4 +49,18 @@ public interface IndexingProvidersService extends IndexConfigCompleter
      * @param prototype The prototype to the validated.
      */
     void validateIndexPrototype( IndexPrototype prototype );
+
+    /**
+     * There's always a default {@link IndexProvider}, this method returns it.
+     *
+     * @return the default index provider for this instance.
+     */
+    IndexProviderDescriptor getDefaultProvider();
+
+    /**
+     * The preferred {@link IndexProvider} for handling full-text indexes.
+     *
+     * @return the default or preferred index provider for full-text indexes.
+     */
+    IndexProviderDescriptor getFulltextProvider();
 }

@@ -60,6 +60,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexKind;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -795,6 +796,7 @@ public class Operations implements Write, SchemaWrite
         ktx.assertOpen();
         assertValidDescriptor( prototype.schema(), INDEX_CREATION );
         prototype = ensureIndexPrototypeHasName( prototype );
+        prototype = ensureIndexPrototypeHasIndexProvider( prototype );
         Optional<String> nameOptional = prototype.getName();
         assert nameOptional.isPresent();
         String name = nameOptional.get();
@@ -880,6 +882,24 @@ public class Operations implements Write, SchemaWrite
             names[i] = resolver.apply( tokenIds[i] );
         }
         return names;
+    }
+
+    private IndexPrototype ensureIndexPrototypeHasIndexProvider( IndexPrototype prototype )
+    {
+        if ( prototype.getIndexProvider() == IndexProviderDescriptor.UNDECIDED )
+        {
+            IndexProviderDescriptor provider;
+            if ( prototype.schema().getIndexType() == IndexType.FULLTEXT )
+            {
+                provider = indexProviders.getFulltextProvider();
+            }
+            else
+            {
+                provider = indexProviders.getDefaultProvider();
+            }
+            prototype = prototype.withIndexProvider( provider );
+        }
+        return prototype;
     }
 
     @Override

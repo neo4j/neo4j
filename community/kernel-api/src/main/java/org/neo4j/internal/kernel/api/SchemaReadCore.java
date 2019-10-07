@@ -32,6 +32,22 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 public interface SchemaReadCore
 {
     /**
+     * Returns the index with the given name.
+     *
+     * @param name The name of the index you are looking for.
+     * @return The index associated with the given name.
+     */
+    IndexDescriptor indexGetForName( String name );
+
+    /**
+     * Returns the constraint with the given name.
+     *
+     * @param name The name of the constraint you are looking for.
+     * @return The constraint associated with the given name.
+     */
+    ConstraintDescriptor constraintGetForName( String name );
+
+    /**
      * Acquire a reference to the index mapping the given {@code SchemaDescriptor}.
      *
      * @param schema {@link SchemaDescriptor} for the index

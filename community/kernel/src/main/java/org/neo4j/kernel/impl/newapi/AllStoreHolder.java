@@ -528,9 +528,14 @@ public class AllStoreHolder extends Read
     @Override
     public IndexDescriptor indexGetForName( String name )
     {
+        return indexGetForName( storageReader, name );
+    }
+
+    IndexDescriptor indexGetForName( StorageSchemaReader reader, String name )
+    {
         ktx.assertOpen();
 
-        IndexDescriptor index = storageReader.indexGetForName( name );
+        IndexDescriptor index = reader.indexGetForName( name );
         if ( ktx.hasTxStateWithChanges() )
         {
             Predicate<IndexDescriptor> namePredicate = indexDescriptor -> indexDescriptor.getName().equals( name );
@@ -543,9 +548,14 @@ public class AllStoreHolder extends Read
     @Override
     public ConstraintDescriptor constraintGetForName( String name )
     {
+        return constraintGetForName( storageReader, name );
+    }
+
+    ConstraintDescriptor constraintGetForName( StorageSchemaReader reader, String name )
+    {
         ktx.assertOpen();
 
-        ConstraintDescriptor constraint = storageReader.constraintGetForName( name );
+        ConstraintDescriptor constraint = reader.constraintGetForName( name );
         if ( ktx.hasTxStateWithChanges() )
         {
             Predicate<ConstraintDescriptor> namePredicate = constraintDescriptor -> constraintDescriptor.getName().equals( name );

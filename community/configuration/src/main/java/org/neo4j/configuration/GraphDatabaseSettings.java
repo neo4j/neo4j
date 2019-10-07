@@ -706,6 +706,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<String> default_schema_provider =
             newBuilder( "dbms.index.default_schema_provider", STRING, SchemaIndex.NATIVE_BTREE10.toString() ).build();
 
+    @Description( "The default index provider used for managing full-text indexes. Only 'fulltext-1.0' is supported." )
+    @Internal
+    public static final Setting<String> default_fulltext_provider =
+            newBuilder( "unsupported.dbms.index.default_fulltext_provider", STRING, "fulltext-1.0" ).build();
+
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +

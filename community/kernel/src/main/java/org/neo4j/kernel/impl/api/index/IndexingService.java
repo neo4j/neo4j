@@ -540,6 +540,18 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
+    public IndexProviderDescriptor getDefaultProvider()
+    {
+        return providerMap.getDefaultProvider().getProviderDescriptor();
+    }
+
+    @Override
+    public IndexProviderDescriptor getFulltextProvider()
+    {
+        return providerMap.getFulltextProvider().getProviderDescriptor();
+    }
+
+    @Override
     public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
         return providerMap.completeConfiguration( index );
