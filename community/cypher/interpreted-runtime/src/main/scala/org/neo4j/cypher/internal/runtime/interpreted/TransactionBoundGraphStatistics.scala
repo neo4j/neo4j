@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.lang.Math.min
+
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.v3_5.spi.StatisticsCompletingGraphStatistics
@@ -49,12 +51,16 @@ object TransactionBoundGraphStatistics {
           // Probability of any node in the index, to have a property with a given value
           val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(
             schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
-          val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
+          if (indexEntrySelectivity == 0.0) {
+            Some(Selectivity.ZERO)
+          } else {
+            val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
 
-          // This is = 1 / number of unique values
-          val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
+            // This is = 1 / number of unique values
+            val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
 
-          Selectivity.of(indexSelectivity)
+            Selectivity.of(min(indexSelectivity, 1.0))
+          }
         }
       }
       catch {
@@ -71,11 +77,13 @@ object TransactionBoundGraphStatistics {
           val indexSize = schemaRead.indexSize(schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
           val indexSelectivity = indexSize / labeledNodes
 
-          Selectivity.of(indexSelectivity)
+          //Even though semantically impossible the index can get into a state where
+          //the indexSize > labeledNodes
+          Selectivity.of(min(indexSelectivity, 1.0))
         }
       }
       catch {
-        case e: IndexNotFoundKernelException => None
+        case _: IndexNotFoundKernelException => None
       }
 
     override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
