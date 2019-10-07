@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.v4_0.expressions.functions
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CTString
 
-case object Filename extends Function with TypeSignatures {
-  def name = "filename"
+case object File extends Function with TypeSignatures {
+  def name = "file"
   override val signatures = Vector(
-    TypeSignature.noArg(name, CTString, "Returns the name of the file that LOAD CSV is using.")
+    TypeSignature.noArg(name, CTString, "Returns the absolute path of the file that LOAD CSV is using.")
   )
 }

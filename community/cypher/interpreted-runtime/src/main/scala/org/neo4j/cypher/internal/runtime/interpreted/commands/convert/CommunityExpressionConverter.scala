@@ -244,7 +244,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
             throw new InternalException("should have been rewritten away")
         }
       case Exp => commandexpressions.ExpFunction(self.toCommandExpression(id, invocation.arguments.head))
-      case Filename => commandexpressions.Filename()
+      case File => commandexpressions.File()
       case Floor => commandexpressions.FloorFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Haversin => commandexpressions.HaversinFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Head =>

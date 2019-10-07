@@ -39,13 +39,13 @@ case class Linenumber() extends Expression {
 }
 
 
-case class Filename() extends Expression {
+case class File() extends Expression {
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getLinenumber match {
     case Some(ResourceLinenumber(name, _, _)) => Values.stringValue(name)
     case _ => Values.NO_VALUE
   }
 
-  override def rewrite(f: Expression => Expression): Expression = f(Filename())
+  override def rewrite(f: Expression => Expression): Expression = f(File())
 
   override def arguments: Seq[Expression] = Seq.empty
 
