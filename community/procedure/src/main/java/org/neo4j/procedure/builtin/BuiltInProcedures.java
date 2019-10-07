@@ -289,7 +289,7 @@ public class BuiltInProcedures
     }
 
     @SystemProcedure
-    @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
+    @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\", 300))." )
     @Procedure( name = "db.awaitIndex", mode = READ )
     public void awaitIndex( @Name( "index" ) String index,
             @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
@@ -307,7 +307,7 @@ public class BuiltInProcedures
     }
 
     @SystemProcedure
-    @Description( "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." )
+    @Description( "Wait for all indexes to come online (for example: CALL db.awaitIndexes(300))." )
     @Procedure( name = "db.awaitIndexes", mode = READ )
     public void awaitIndexes( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
     {
