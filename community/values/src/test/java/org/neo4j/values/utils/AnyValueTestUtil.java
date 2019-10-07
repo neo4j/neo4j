@@ -19,8 +19,6 @@
  */
 package org.neo4j.values.utils;
 
-import java.util.function.Supplier;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Equality;
 
@@ -65,26 +63,5 @@ public class AnyValueTestUtil
         assertNotEquals( b, a, b + " should not be equivalent to " + a );
         assertEquals( a.ternaryEquals( b ), Equality.UNDEFINED, a + " should be incomparable to " + b );
         assertEquals( b.ternaryEquals( a ), Equality.UNDEFINED, b + " should be incomparable to " + a );
-    }
-
-    public static <X extends Exception, T> X assertThrows( Class<X> exception, Supplier<T> thunk )
-    {
-        T value;
-        try
-        {
-            value = thunk.get();
-        }
-        catch ( Exception e )
-        {
-            if ( exception.isInstance( e ) )
-            {
-                return exception.cast( e );
-            }
-            else
-            {
-                throw new AssertionError( "Expected " + exception.getName(), e );
-            }
-        }
-        throw new AssertionError( "Expected " + exception.getName() + " but returned: " + value );
     }
 }
