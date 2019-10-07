@@ -766,9 +766,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropNamedConstraint(name: String): Unit = {
     val ktx = transactionalContext.kernelTransaction
-    val constraint = ktx.schemaRead().constraintGetForName(name)
-    if (constraint == null) throw new DropConstraintFailureException(name, new NoSuchConstraintException(name))
-    ktx.schemaWrite().constraintDrop(constraint)
+    ktx.schemaWrite().constraintDrop(name)
   }
 
   override def getImportURL(url: URL): Either[String, URL] = transactionalContext.graph match {

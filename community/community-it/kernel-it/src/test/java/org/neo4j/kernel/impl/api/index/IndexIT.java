@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -279,18 +280,9 @@ class IndexIT extends KernelIntegrationTest
         }
 
         // when
-        try
-        {
-            SchemaWrite statement = schemaWriteInNewTransaction();
-            statement.indexDrop( index.schema() );
-            fail( "Expected to fail" );
-            commit();
-        }
-        // then
-        catch ( SchemaKernelException e )
-        {
-            assertEquals( "Unable to drop index on :" + LABEL + "(" + PROPERTY_KEY + "). There is no such index.", e.getMessage() );
-        }
+        SchemaWrite statement = schemaWriteInNewTransaction();
+        SchemaKernelException e = assertThrows( SchemaKernelException.class, () -> statement.indexDrop( index.schema() ) );
+        assertEquals( "Unable to drop index on :" + LABEL + "(" + PROPERTY_KEY + "). There is no such index.", e.getMessage() );
         commit();
     }
 
@@ -313,19 +305,51 @@ class IndexIT extends KernelIntegrationTest
 
         // when
         SchemaWrite statement = schemaWriteInNewTransaction();
-        try
+        SchemaKernelException e = assertThrows( SchemaKernelException.class, () -> statement.indexDrop( indexName ) );
+        assertEquals( e.getMessage(), "Unable to drop index called `My fancy index`. There is no such index." );
+        rollback();
+    }
+
+    @Test
+    void shouldDisallowDroppingConstraintByNameThatDoesNotExist() throws KernelException
+    {
+        // given
+        String constraintName = "my constraint";
+        ConstraintDescriptor constraint;
         {
-            statement.indexDrop( indexName );
-            fail( "Expected to fail." );
+            SchemaWrite statement = schemaWriteInNewTransaction();
+            constraint = statement.uniquePropertyConstraintCreate( descriptor, "constraint name" );
+            commit();
         }
-        catch ( SchemaKernelException e )
         {
-            assertEquals( e.getMessage(), "Unable to drop index called `My fancy index`. There is no such index." );
+            SchemaWrite statement = schemaWriteInNewTransaction();
+            statement.constraintDrop( constraint );
+            commit();
         }
-        finally
+
+        // when
+        SchemaWrite statement = schemaWriteInNewTransaction();
+        SchemaKernelException e = assertThrows( SchemaKernelException.class, () -> statement.constraintDrop( constraintName ) );
+        assertEquals( "Unable to drop constraint `my constraint`: No such constraint my constraint.", e.getMessage() );
+        rollback();
+    }
+
+    @Test
+    void shouldDisallowDroppingIndexByNameThatBelongsToConstraint() throws KernelException
+    {
+        // given
+        String constraintName = "my constraint";
         {
-            rollback();
+            SchemaWrite statement = schemaWriteInNewTransaction();
+            statement.uniquePropertyConstraintCreate( descriptor, "constraint name" );
+            commit();
         }
+
+        // when
+        SchemaWrite statement = schemaWriteInNewTransaction();
+        SchemaKernelException e = assertThrows( SchemaKernelException.class, () -> statement.indexDrop( constraintName ) );
+        assertEquals( "Unable to drop index called `my constraint`. There is no such index.", e.getMessage() );
+        rollback();
     }
 
     @Test

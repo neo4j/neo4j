@@ -32,9 +32,9 @@ public class NoSuchConstraintException extends SchemaKernelException
     private final String name;
     private static final String message = "No such constraint %s.";
 
-    public NoSuchConstraintException( SchemaDescriptorSupplier constraint )
+    public NoSuchConstraintException( SchemaDescriptorSupplier constraint, TokenNameLookup lookup )
     {
-        super( Status.Schema.ConstraintNotFound, format( message, constraint ) );
+        super( Status.Schema.ConstraintNotFound, format( message, constraint.userDescription( lookup ) ) );
         this.constraint = constraint;
         this.name = "";
     }

@@ -134,6 +134,13 @@ public interface SchemaWrite
     void constraintDrop( SchemaDescriptor schema ) throws SchemaKernelException;
 
     /**
+     * Drop the constraint with the given name.
+     *
+     * @param name The name of the constraint to be dropped.
+     */
+    void constraintDrop( String name ) throws SchemaKernelException;
+
+    /**
      * Drop the specific constraint.
      *
      * @param descriptor description of the constraint

@@ -94,7 +94,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -876,6 +875,27 @@ class OperationsTest
     }
 
     @Test
+    void shouldAcquireSchemaNameWriteLockBeforeDroppingConstraintByName() throws Exception
+    {
+        // given
+        UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor ).withName( "constraint" );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).withName( "constraint" ).materialise( 13 );
+        storageReaderWithConstraints( constraint );
+        when( storageReader.indexExists( index ) ).thenReturn( true );
+        when( storageReader.indexGetForName( "constraint" ) ).thenReturn( index );
+        when( storageReader.constraintGetForName( "constraint" ) ).thenReturn( constraint );
+
+        // when
+        operations.constraintDrop( "constraint" );
+
+        // then
+        long nameLock = ResourceIds.schemaNameResourceId( "constraint" );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.SCHEMA_NAME, nameLock );
+        order.verify( txState ).constraintDoDrop( constraint );
+        order.verify( txState ).indexDoDrop( index );
+    }
+
+    @Test
     void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException
     {
         long nodeId = 1L;
@@ -1131,7 +1151,7 @@ class OperationsTest
         when( statementLocks.pessimistic() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         IndexingProvidersService indexingProvidersService = mock( IndexingProvidersService.class );
-        when( indexingProvidersService.indexProviderByName( anyString() ) ).thenReturn( mock( IndexProviderDescriptor.class ) );
+        when( indexingProvidersService.getDefaultProvider() ).thenReturn( mock( IndexProviderDescriptor.class ) );
         AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
         when( allStoreHolder.index( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
         when( allStoreHolder.indexGetForName( any() ) ).thenReturn( IndexDescriptor.NO_INDEX );

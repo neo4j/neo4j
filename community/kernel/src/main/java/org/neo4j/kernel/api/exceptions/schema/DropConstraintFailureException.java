@@ -22,32 +22,24 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class DropConstraintFailureException extends SchemaKernelException
 {
-    private final ConstraintDescriptor constraint;
+    private final SchemaDescriptorSupplier constraint;
 
-    public DropConstraintFailureException( ConstraintDescriptor constraint, Throwable cause )
+    public DropConstraintFailureException( SchemaDescriptorSupplier constraint, TokenNameLookup lookup, Throwable cause )
     {
-        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint %s: %s", constraint, cause.getMessage() );
+        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint %s: %s", constraint.userDescription( lookup ), cause.getMessage() );
         this.constraint = constraint;
     }
 
     public DropConstraintFailureException( String nameOrSchema, Throwable cause )
     {
         // nameOrSchema is just 'name' or 'on schema'
-        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint %s: %s", nameOrSchema, cause.getMessage() );
+        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint `%s`: %s", nameOrSchema, cause.getMessage() );
         this.constraint = null;
-    }
-
-    /*
-     * Returns null if the exception was created with name.
-     */
-    public ConstraintDescriptor constraint()
-    {
-        return constraint;
     }
 
     @Override

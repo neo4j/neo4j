@@ -153,6 +153,13 @@ public class RestrictedSchemaWrite implements SchemaWrite
     }
 
     @Override
+    public void constraintDrop( String name ) throws SchemaKernelException
+    {
+        assertSchemaWrites( PrivilegeAction.DROP_CONSTRAINT );
+        inner.constraintDrop( name );
+    }
+
+    @Override
     public void constraintDrop( ConstraintDescriptor descriptor ) throws SchemaKernelException
     {
         assertSchemaWrites( PrivilegeAction.DROP_CONSTRAINT );

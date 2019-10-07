@@ -1215,15 +1215,26 @@ public class Operations implements Write, SchemaWrite
             {
                 String schemaDescription = schema.userDescription( tokenNameLookup );
                 String constraintDescription = constraints.next().userDescription( tokenNameLookup );
-                throw new DropConstraintFailureException( constraint, new IllegalArgumentException(
+                throw new DropConstraintFailureException( constraint, tokenNameLookup, new IllegalArgumentException(
                         "More than one constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription ) );
             }
         }
         else
         {
-            throw new DropConstraintFailureException( "on " + schema.userDescription( tokenNameLookup ),
-                    new NoSuchConstraintException( schema.userDescription( tokenNameLookup ) ) );
+            throw new DropConstraintFailureException( schema, tokenNameLookup, new NoSuchConstraintException( schema, tokenNameLookup ) );
         }
+    }
+
+    @Override
+    public void constraintDrop( String name ) throws SchemaKernelException
+    {
+        exclusiveSchemaNameLock( name );
+        ConstraintDescriptor constraint = allStoreHolder.constraintGetForName( name );
+        if ( constraint == null )
+        {
+            throw new DropConstraintFailureException( name, new NoSuchConstraintException( name ) );
+        }
+        constraintDrop( constraint );
     }
 
     @Override
@@ -1242,7 +1253,7 @@ public class Operations implements Write, SchemaWrite
         }
         catch ( NoSuchConstraintException e )
         {
-            throw new DropConstraintFailureException( descriptor, e );
+            throw new DropConstraintFailureException( descriptor, tokenNameLookup, e );
         }
 
         //Drop it like it's hot
@@ -1339,7 +1350,7 @@ public class Operations implements Write, SchemaWrite
     {
         if ( !allStoreHolder.constraintExists( constraint ) )
         {
-            throw new NoSuchConstraintException( constraint );
+            throw new NoSuchConstraintException( constraint, tokenNameLookup );
         }
     }
 
