@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.Neo4jException
-import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
@@ -137,6 +137,10 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def close(reason: CloseReason): Unit =
       closeReason = reason
+
+    override def isVisitable: Boolean = false
+
+    override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): Unit = fail()
   }
 
   class NiceInner(values: Array[Int]) extends ClosingInner {

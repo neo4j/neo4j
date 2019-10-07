@@ -20,14 +20,16 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.RuntimeName
-import org.neo4j.cypher.internal.javacompat.ResultSubscriber
+import org.neo4j.cypher.internal.javacompat.{ResultRowImpl, ResultSubscriber}
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.TaskCloser
-import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
+import org.neo4j.cypher.result.{QueryResult, RuntimeResult, VisitableRuntimeResult}
 import org.neo4j.exceptions.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 class StandardInternalExecutionResult(context: QueryContext,
@@ -113,6 +115,38 @@ class StandardInternalExecutionResult(context: QueryContext,
   }
 
   override def notifications: Iterable[Notification] = Set.empty
+
+  protected def accept(body: ResultRow => Unit): Unit = {
+    accept(new ResultVisitor[RuntimeException] {
+      override def visit(row: ResultRow): Boolean = {
+        body(row)
+        true
+      }
+    })
+  }
+
+  override def isVisitable: Boolean = runtimeResult.isInstanceOf[VisitableRuntimeResult]
+
+  override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit =  runtimeResult match {
+    case v: VisitableRuntimeResult =>
+      v.accept(new QueryResultVisitor[E] {
+        private val names = fieldNames()
+        override def visit(record: QueryResult.Record): Boolean = {
+          val fields = record.fields()
+          val mapData = new java.util.HashMap[String, AnyRef](names.length)
+
+          val length = names.length
+          var i = 0
+          while (i < length) {
+            mapData.put(names(i), context.asObject(fields(i)))
+            i += 1
+          }
+          visitor.visit(new ResultRowImpl(mapData))
+        }
+      })
+    case _ => throw new IllegalStateException("Can't call accept on a non-visitable result")
+
+  }
 }
 
 

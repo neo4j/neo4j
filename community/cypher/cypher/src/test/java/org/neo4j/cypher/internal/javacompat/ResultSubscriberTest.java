@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.Result;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
@@ -368,6 +369,18 @@ class ResultSubscriberTest
         public boolean isClosed()
         {
             return cancelled;
+        }
+
+        @Override
+        public boolean isVisitable()
+        {
+            return false;
+        }
+
+        @Override
+        public <VisitationException extends Exception> void accept( Result.ResultVisitor<VisitationException> visitor )
+        {
+            throw new AssertionError( "not supported" );
         }
     }
 }

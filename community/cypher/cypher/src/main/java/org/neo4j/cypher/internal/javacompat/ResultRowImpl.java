@@ -32,7 +32,7 @@ public class ResultRowImpl implements Result.ResultRow
 {
     private final Map<String,Object> results;
 
-    ResultRowImpl( Map<String,Object> results )
+    public ResultRowImpl( Map<String,Object> results )
     {
         this.results = results;
     }

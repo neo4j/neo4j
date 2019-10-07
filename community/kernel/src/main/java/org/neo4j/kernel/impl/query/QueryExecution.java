@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.Result;
 
 /**
  * The execution of a query is a {@link QuerySubscription} with added methods describing the actual execution of a
@@ -50,4 +51,21 @@ public interface QueryExecution extends QuerySubscription
      * @return an array of the field names of each record.
      */
     String[] fieldNames();
+
+    /**
+     * @return <code>true</code> if results should be consumed via a visitor, otherwise <code>false</code>
+     * @deprecated will be removed once the compiled runtime is removed.
+     */
+    boolean isVisitable();
+
+    /**
+     * A backdoor for handling results that are more efficiently handled via a ResultVisitor than via a QuerySubscriber.
+     *
+     * Should only be called after first checking that {@link #isVisitable} returs <code>true</code>
+     * @param visitor the provided visitor
+     * @param <VisitationException> the exception type declared by the visitor
+     * @deprecated will be removed once the compiled runtime is removed.
+     */
+    <VisitationException extends Exception> void accept( Result.ResultVisitor<VisitationException> visitor )
+            throws VisitationException;
 }

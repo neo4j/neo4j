@@ -270,6 +270,10 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         {
             acceptFromMaterialized( visitor );
         }
+        else if ( execution.isVisitable() )
+        {
+            execution.accept( visitor );
+        }
         else
         {
             acceptFromSubscriber( visitor );

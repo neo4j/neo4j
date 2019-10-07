@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.graphdb.{ExecutionPlanDescription, Notification}
+import org.neo4j.graphdb.{ExecutionPlanDescription, Notification, Result}
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriber}
 
@@ -160,6 +160,12 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
     }
     hasMore
   }
+
+  override def isVisitable: Boolean =
+    inner.isVisitable
+
+  override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): Unit =
+    inner.accept(visitor)
 }
 
 object ClosingExecutionResult {
