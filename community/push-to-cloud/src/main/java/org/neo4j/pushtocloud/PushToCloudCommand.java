@@ -57,7 +57,7 @@ public class PushToCloudCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( ARG_DUMP_TO, "/path/to/dump-file-to-be-created", null,
                     "Target path for dump file. Used in combination with the --database argument." ) )
             .withArgument( new MandatoryNamedArg( ARG_BOLT_URI, "bolt+routing://mydatabaseid.databases.neo4j.io",
-                    "Bolt URI of target location to push the database to" ) )
+                    "Bolt URI of target database" ) )
             .withArgument( new OptionalNamedArg( ARG_VERBOSE, "true/false", null,
                     "Enable verbose output." ) )
             .withArgument( new OptionalNamedArg( ARG_USERNAME, "neo4j", null,
