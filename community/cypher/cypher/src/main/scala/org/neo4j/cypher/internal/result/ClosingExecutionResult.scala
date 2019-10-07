@@ -164,7 +164,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
   override def isVisitable: Boolean =
     inner.isVisitable
 
-  override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): Unit =
+  override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): org.neo4j.graphdb.QueryStatistics =
     inner.accept(visitor)
 }
 

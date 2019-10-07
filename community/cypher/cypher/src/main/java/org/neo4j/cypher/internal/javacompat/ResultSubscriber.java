@@ -272,7 +272,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         }
         else if ( execution.isVisitable() )
         {
-            execution.accept( visitor );
+            this.statistics = execution.accept( visitor );
         }
         else
         {

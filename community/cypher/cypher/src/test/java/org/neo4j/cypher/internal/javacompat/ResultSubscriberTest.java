@@ -378,7 +378,7 @@ class ResultSubscriberTest
         }
 
         @Override
-        public <VisitationException extends Exception> void accept( Result.ResultVisitor<VisitationException> visitor )
+        public <VisitationException extends Exception> QueryStatistics accept( Result.ResultVisitor<VisitationException> visitor )
         {
             throw new AssertionError( "not supported" );
         }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 
 /**
@@ -66,6 +67,6 @@ public interface QueryExecution extends QuerySubscription
      * @param <VisitationException> the exception type declared by the visitor
      * @deprecated will be removed once the compiled runtime is removed.
      */
-    <VisitationException extends Exception> void accept( Result.ResultVisitor<VisitationException> visitor )
+    <VisitationException extends Exception> QueryStatistics accept( Result.ResultVisitor<VisitationException> visitor )
             throws VisitationException;
 }

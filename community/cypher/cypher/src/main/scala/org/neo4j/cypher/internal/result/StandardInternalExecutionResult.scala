@@ -127,7 +127,7 @@ class StandardInternalExecutionResult(context: QueryContext,
 
   override def isVisitable: Boolean = runtimeResult.isInstanceOf[VisitableRuntimeResult]
 
-  override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit =  runtimeResult match {
+  override def accept[E <: Exception](visitor: ResultVisitor[E]): QueryStatistics =  runtimeResult match {
     case v: VisitableRuntimeResult =>
       v.accept(new QueryResultVisitor[E] {
         private val names = fieldNames()
@@ -144,6 +144,7 @@ class StandardInternalExecutionResult(context: QueryContext,
           visitor.visit(new ResultRowImpl(mapData))
         }
       })
+      v.queryStatistics()
     case _ => throw new IllegalStateException("Can't call accept on a non-visitable result")
 
   }

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, ExplainMode, InternalQueryType}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, ExplainMode, InternalQueryType, QueryStatistics}
 import org.neo4j.graphdb.{Notification, Result}
 
 abstract class EmptyExecutionResult(val fieldNames: Array[String],
@@ -41,6 +41,6 @@ abstract class EmptyExecutionResult(val fieldNames: Array[String],
 
   override def isVisitable: Boolean = false
 
-  override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): Unit =
+  override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): QueryStatistics =
     throw new IllegalStateException("EmptyExecutionResult is not visitable")
 }

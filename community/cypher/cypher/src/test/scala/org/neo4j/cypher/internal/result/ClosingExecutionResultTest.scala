@@ -140,7 +140,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def isVisitable: Boolean = false
 
-    override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): Unit = fail()
+    override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): QueryStatistics = fail()
   }
 
   class NiceInner(values: Array[Int]) extends ClosingInner {
