@@ -50,9 +50,24 @@ public abstract class NaiveQuerySubscription extends EagerQuerySubscription impl
     }
 
     @Override
+    public void request( long numberOfRecords ) throws Exception
+    {
+        //The client asked for all the results, no need to materialize in an intermediate
+        //collection, just stream it directly back
+        if ( numberOfRecords == Long.MAX_VALUE )
+        {
+            streamResultsDirectly();
+        }
+        else
+        {
+            super.request( numberOfRecords );
+        }
+    }
+
+    @Override
     protected int resultSize()
     {
-        return materializedResult.size();
+        return materializedResult != null ? materializedResult.size() : -1;
     }
 
     @Override
@@ -77,6 +92,30 @@ public abstract class NaiveQuerySubscription extends EagerQuerySubscription impl
 
             //only call onResult first time
             subscriber.onResult( fieldNames().length );
+        }
+    }
+
+    private void streamResultsDirectly() throws Exception
+    {
+        //only call onResult first time
+        int length = fieldNames().length;
+        subscriber.onResult( length );
+        try
+        {
+            accept( record -> {
+                subscriber.onRecord();
+                for ( AnyValue field : record.fields() )
+                {
+                    subscriber.onField( field );
+                }
+                subscriber.onRecordCompleted();
+                record.release();
+                return true;
+            } );
+        }
+        catch ( Exception t )
+        {
+            this.error = t;
         }
     }
 }
