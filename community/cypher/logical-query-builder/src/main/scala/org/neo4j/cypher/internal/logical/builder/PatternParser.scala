@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.ir.{PatternLength, SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.logical.builder.PatternParser.Pattern
 import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
 
-object PatternParser
+class PatternParser
 {
   private val ID = "([a-zA-Z0-9` @]*)"
   private val REL_TYPES = "([a-zA-Z_|]*)"
@@ -64,7 +65,9 @@ object PatternParser
       case _ => throw new IllegalArgumentException(s"'$pattern' cannot be parsed as a pattern")
     }
   }
+}
 
+object PatternParser {
   case class Pattern(from: String,
                      dir: SemanticDirection,
                      relTypes: Seq[RelTypeName],

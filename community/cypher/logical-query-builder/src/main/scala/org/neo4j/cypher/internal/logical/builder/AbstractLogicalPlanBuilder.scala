@@ -52,6 +52,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   self: IMPL =>
 
+  val patternParser = new PatternParser
+
   private sealed trait OperatorBuilder
   private case class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder{
     private val id = idGen.id()
@@ -134,7 +136,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
              projectedDir: SemanticDirection = OUTGOING,
              nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
              relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
-    val p = PatternParser.parse(pattern)
+    val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
     if (expandMode == ExpandAll) {
       newNode(varFor(p.to))
@@ -162,7 +164,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)
 
   def optionalExpandAll(pattern: String, predicate: Option[String]): IMPL = {
-    val p = PatternParser.parse(pattern)
+    val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
         val pred = predicate.map(Parser.parseExpression)
@@ -174,7 +176,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def optionalExpandInto(pattern: String, predicate: Option[String]): IMPL = {
-    val p = PatternParser.parse(pattern)
+    val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
         val pred = predicate.map(Parser.parseExpression)
@@ -186,7 +188,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def projectEndpoints(pattern: String, startInScope: Boolean, endInScope: Boolean): IMPL = {
-    val p = PatternParser.parse(pattern)
+    val p = patternParser.parse(pattern)
     val relTypesAsNonEmptyOption = if (p.relTypes.isEmpty) None else Some(p.relTypes)
     val directed = p.dir != SemanticDirection.BOTH
     appendAtCurrentIndent(UnaryOperator(lp => ProjectEndpoints(lp, p.relName, p.from, startInScope, p.to, endInScope,

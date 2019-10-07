@@ -28,55 +28,57 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, TestNam
 
 class PatternParserTest extends CypherFunSuite with TestName
 {
+  val patternParser = new PatternParser
+
   test("(a)--(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "", "b", SimplePatternLength))
   }
 
   test("(a)-->(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", OUTGOING, Seq.empty, "", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern("a", OUTGOING, Seq.empty, "", "b", SimplePatternLength))
   }
 
   test("(a)<--(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", INCOMING, Seq.empty, "", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern("a", INCOMING, Seq.empty, "", "b", SimplePatternLength))
   }
 
   test("(a)-[r]-(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "r", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "r", "b", SimplePatternLength))
   }
 
   test("(a)-[:R]-(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", SimplePatternLength))
   }
 
   test("(a)-[r:R]-(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "r", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "r", "b", SimplePatternLength))
   }
 
   test("(a)-[r:R|T]-(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE), RelTypeName("T")(NONE)), "r", "b", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE), RelTypeName("T")(NONE)), "r", "b", SimplePatternLength))
   }
 
   test("(p)-[investigated:IS_BEING_INVESTIGATED|WAS_INVESTIGATED]->(agent)") {
-    PatternParser.parse(testName) should be(Pattern("p", OUTGOING, Seq(RelTypeName("IS_BEING_INVESTIGATED")(NONE), RelTypeName("WAS_INVESTIGATED")(NONE)), "investigated", "agent", SimplePatternLength))
+    patternParser.parse(testName) should be(Pattern("p", OUTGOING, Seq(RelTypeName("IS_BEING_INVESTIGATED")(NONE), RelTypeName("WAS_INVESTIGATED")(NONE)), "investigated", "agent", SimplePatternLength))
   }
 
   test("(a)-[*]-(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "", "b", VarPatternLength(0, None)))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "", "b", VarPatternLength(0, None)))
   }
 
   test("(a)-[:R*]-(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", VarPatternLength(0, None)))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", VarPatternLength(0, None)))
   }
 
   test("(a)-[:R*2]-(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", VarPatternLength(2, Some(2))))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", VarPatternLength(2, Some(2))))
   }
 
   test("(a)-[:R*1..2]-(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", VarPatternLength(1, Some(2))))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", VarPatternLength(1, Some(2))))
   }
 
   test("(a)-[:R*..2]-(b)") {
-    PatternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", VarPatternLength(0, Some(2))))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "", "b", VarPatternLength(0, Some(2))))
   }
 }
