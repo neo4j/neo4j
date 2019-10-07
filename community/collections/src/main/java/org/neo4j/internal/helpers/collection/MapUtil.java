@@ -20,7 +20,6 @@
 package org.neo4j.internal.helpers.collection;
 
 import java.io.BufferedOutputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -151,14 +150,6 @@ public abstract class MapUtil
         return result;
     }
 
-    private static void closeIfNotNull( Closeable closeable ) throws IOException
-    {
-        if ( closeable != null )
-        {
-            closeable.close();
-        }
-    }
-
     /**
      * Stores the data in {@code config} into {@code file} in a standard java
      * {@link Properties} format.
@@ -168,15 +159,9 @@ public abstract class MapUtil
      */
     public static void store( Map<String, String> config, File file ) throws IOException
     {
-        OutputStream stream = null;
-        try
+        try ( OutputStream stream = new BufferedOutputStream( new FileOutputStream( file ) ) )
         {
-            stream = new BufferedOutputStream( new FileOutputStream( file ) );
             store( config, stream );
-        }
-        finally
-        {
-            closeIfNotNull( stream );
         }
     }
 
