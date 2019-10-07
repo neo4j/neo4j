@@ -32,6 +32,7 @@ import org.neo4j.values.storable.{DoubleValue, DurationValue, StringValue, Value
 import org.neo4j.values.virtual.ListValue
 
 import scala.collection.JavaConverters._
+import scala.util.Random
 
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
@@ -420,6 +421,23 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("c").withSingleRow((0 until sizeHint by 2).min)
   }
 
+  test("should min(n.prop) with nulls correctly") {
+    // given
+    val input = batchedInputValues(sizeHint / 8, Random.shuffle(Seq.fill(sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("min(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(1)
+  }
+
   test("should max(n.prop)") {
     // given
     nodePropertyGraph(sizeHint, {
@@ -437,6 +455,23 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("c").withSingleRow((0 until sizeHint by 2).max)
+  }
+
+  test("should max(n.prop) with nulls correctly") {
+    // given
+    val input = batchedInputValues(sizeHint / 8, Random.shuffle(Seq.fill(sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("max(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(1)
   }
 
   test("should avg(n.prop)") {
