@@ -53,6 +53,8 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.compress.utils.IOUtils.toByteArray;
+import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
+import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 
 public class HttpCopier implements PushToCloudCommand.Copier
 {
@@ -80,7 +82,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
      * Do the actual transfer of the source (a Neo4j database dump) to the target.
      */
     @Override
-    public void copy( boolean verbose, String consoleURL, Path source, String bearerToken ) throws CommandFailed
+    public void copy( boolean verbose, String consoleURL, String boltUri, Path source, String bearerToken ) throws CommandFailed
     {
         try
         {
@@ -96,7 +98,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             ThreadLocalRandom random = ThreadLocalRandom.current();
             ProgressTrackingOutputStream.Progress
                     uploadProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Upload", sourceLength ), position );
-            while ( !resumeUpload( verbose, source, sourceLength, position, uploadLocation, uploadProgress ) )
+            while ( !resumeUpload( verbose, source, boltUri, sourceLength, position, uploadLocation, uploadProgress ) )
             {
                 position = getResumablePosition( verbose, sourceLength, uploadLocation );
                 if ( position == POSITION_UPLOAD_COMPLETED )
@@ -116,7 +118,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             }
             uploadProgress.done();
 
-            triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), crc32Sum, bearerTokenHeader );
+            triggerImportProtocol( verbose, safeUrl( consoleURL + "/import/upload-complete" ), boltUri, source, crc32Sum, bearerTokenHeader );
 
             doStatusPolling( verbose, consoleURL, bearerToken );
         }
@@ -316,7 +318,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     /**
      * Uploads source from the given position to the upload location.
      */
-    private boolean resumeUpload( boolean verbose, Path source, long sourceLength, long position, URL uploadLocation,
+    private boolean resumeUpload( boolean verbose, Path source, String boltUri, long sourceLength, long position, URL uploadLocation,
             ProgressTrackingOutputStream.Progress uploadProgress )
             throws IOException, CommandFailed
     {
@@ -350,7 +352,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 debugErrorResponse( verbose, connection );
                 return false;
             default:
-                throw unexpectedResponse( verbose, connection, "Resumable database upload" );
+                throw resumePossibleErrorResponse( connection, source, boltUri );
             }
         }
         finally
@@ -359,7 +361,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private void triggerImportProtocol( boolean verbose, URL importURL, long crc32Sum, String bearerToken )
+    private void triggerImportProtocol( boolean verbose, URL importURL, String boltUri, Path source, long crc32Sum, String bearerToken )
             throws IOException, CommandFailed
     {
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
@@ -381,6 +383,8 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 // fallthrough
             case HTTP_MOVED_PERM:
                 throw updatePluginErrorResponse( connection );
+            case 429: // HTTP_TOO_MANY_REQUESTS, unfortunately not in the java code base ¯\_(ツ)_/¯
+                throw resumePossibleErrorResponse( connection, source, boltUri );
             case HTTP_CONFLICT:
                 throw errorResponse( verbose, connection,
                         "A non-empty database already exists at the given location and overwrite consent not given, aborting" );
@@ -388,7 +392,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 // All good, we managed to trigger the import protocol after our completed upload
                 break;
             default:
-                throw unexpectedResponse( verbose, connection, "Trigger import/restore after successful upload" );
+                throw resumePossibleErrorResponse( connection, source, boltUri );
             }
         }
         finally
@@ -432,7 +436,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
     /**
      * Asks about how far the upload has gone so far, typically after being interrupted one way or another. The result of this method
-     * can be fed into {@link #resumeUpload(boolean, Path, long, long, URL, ProgressTrackingOutputStream.Progress)} to resume an upload.
+     * can be fed into {@link #resumeUpload(boolean, Path, String, long, long, URL, ProgressTrackingOutputStream.Progress)} to resume an upload.
      */
     private long getResumablePosition( boolean verbose, long sourceLength, URL uploadLocation ) throws IOException, CommandFailed
     {
@@ -610,6 +614,14 @@ public class HttpCopier implements PushToCloudCommand.Copier
     {
         debugErrorResponse( verbose, connection );
         return new CommandFailed( errorDescription );
+    }
+
+    private CommandFailed resumePossibleErrorResponse( HttpURLConnection connection, Path dump, String boltUri ) throws IOException
+    {
+        debugErrorResponse( true, connection );
+        return new CommandFailed( "We encountered a problem while communicating to the Neo4j cloud system. \n" +
+                "You can re-try using the existing dump by running this command: \n" +
+                String.format( "neo4j-admin push-to-cloud --%s=%s --$s=%s", ARG_DUMP, dump.toFile().getAbsolutePath(), ARG_BOLT_URI, boltUri ) );
     }
 
     private CommandFailed updatePluginErrorResponse( HttpURLConnection connection ) throws IOException

@@ -146,7 +146,7 @@ public class PushToCloudCommand implements AdminCommand
 
             Path source = initiateSource( arguments );
 
-            copier.copy( verbose, consoleURL, source, bearerToken );
+            copier.copy( verbose, consoleURL, boltURI, source, bearerToken );
         }
         catch ( Exception e )
         {
@@ -245,11 +245,12 @@ public class PushToCloudCommand implements AdminCommand
          *
          * @param verbose whether or not to print verbose debug messages/statuses.
          * @param consoleURL console URI to target.
+         * @param boltUri bolt URI to target database.
          * @param source dump to copy to the target.
          * @param bearerToken token from successful {@link #authenticate(boolean, String, String, char[])} call.
          * @throws CommandFailed on copy failure or some other unexpected failure.
          */
-        void copy( boolean verbose, String consoleURL, Path source, String bearerToken ) throws CommandFailed;
+        void copy( boolean verbose, String consoleURL, String boltUri, Path source, String bearerToken ) throws CommandFailed;
     }
 
     public interface DumpCreator
