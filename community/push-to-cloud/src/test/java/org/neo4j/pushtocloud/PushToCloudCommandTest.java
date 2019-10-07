@@ -53,7 +53,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DATABASE;
-import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_CONFIRMED;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP_TO;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_PASSWORD;
