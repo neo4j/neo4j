@@ -36,30 +36,30 @@ import org.neo4j.graphdb.TransactionFailureException;
  * rolled back, {@link Transaction#rollback()}.
  * <p>
  * Right before a transaction is about to be committed the
- * {@link #beforeCommit(TransactionData, GraphDatabaseService)} method is called with the entire diff
+ * {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} method is called with the entire diff
  * of modifications made in the transaction. At this point the transaction is
  * still running so changes can still be made. However there's no guarantee that
  * other handlers will see such changes since the order in which handlers are
  * executed is undefined. This method can also throw an exception and will, in
  * such a case, prevent the transaction from being committed.
  * <p>
- * If {@link #beforeCommit(TransactionData, GraphDatabaseService)} is successfully executed the
+ * If {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} is successfully executed the
  * transaction will be committed and the
  * {@link #afterCommit(TransactionData, Object, GraphDatabaseService)} method will be called with the
  * same transaction data as well as the object returned from
- * {@link #beforeCommit(TransactionData, GraphDatabaseService)}. This assumes that all other handlers
+ * {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)}. This assumes that all other handlers
  * (if more were registered) also executed
- * {@link #beforeCommit(TransactionData, GraphDatabaseService)} successfully.
+ * {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} successfully.
  * <p>
- * If {@link #beforeCommit(TransactionData, GraphDatabaseService)} isn't executed successfully, but
+ * If {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} isn't executed successfully, but
  * instead throws an exception the transaction won't be committed and a
  * {@link TransactionFailureException} will (eventually) be thrown from
  * {@link Transaction#close()}. All handlers which at this point have had its
- * {@link #beforeCommit(TransactionData, GraphDatabaseService)} method executed successfully will
+ * {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} method executed successfully will
  * receive a call to {@link #afterRollback(TransactionData, Object, GraphDatabaseService)}.
  *
  * @param <T> The type of a state object that the transaction handler can use to
- *            pass information from the {@link #beforeCommit(TransactionData, GraphDatabaseService)}
+ *            pass information from the {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)}
  *            event dispatch method to the
  *            {@link #afterCommit(TransactionData, Object, GraphDatabaseService)} or
  *            {@link #afterRollback(TransactionData, Object, GraphDatabaseService)} method, depending
@@ -82,24 +82,25 @@ public interface TransactionEventListener<T>
      * visible by this or other {@link TransactionEventListener}s.
      *
      * @param data the changes that will be committed in this transaction.
+     * @param transaction ongoing transaction
      * @param databaseService underlying database service
      * @return a state object (or <code>null</code>) that will be passed on to
      *         {@link #afterCommit(TransactionData, Object, GraphDatabaseService)} or
      *         {@link #afterRollback(TransactionData, Object, GraphDatabaseService)} of this object.
      * @throws Exception to indicate that the transaction should be rolled back.
      */
-    T beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception;
+    T beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception;
 
     /**
      * Invoked after the transaction has been committed successfully.
      * Any {@link TransactionData} being passed in to this method is guaranteed
-     * to first have been called with {@link #beforeCommit(TransactionData, GraphDatabaseService)}.
+     * to first have been called with {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)}.
      * At the point of calling this method the transaction have been closed
      * and so accessing data outside that of what the {@link TransactionData}
      * can provide will require a new transaction to be opened.
      *  @param data the changes that were committed in this transaction.
      * @param state the object returned by
-     *            {@link #beforeCommit(TransactionData, GraphDatabaseService)}.
+     *            {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)}.
      * @param databaseService underlying database service
      */
     void afterCommit( TransactionData data, T state, GraphDatabaseService databaseService );
@@ -108,13 +109,13 @@ public interface TransactionEventListener<T>
      * Invoked after the transaction has been rolled back if committing the
      * transaction failed for some reason.
      * Any {@link TransactionData} being passed in to this method is guaranteed
-     * to first have been called with {@link #beforeCommit(TransactionData, GraphDatabaseService)}.
+     * to first have been called with {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)}.
      * At the point of calling this method the transaction have been closed
      * and so accessing data outside that of what the {@link TransactionData}
      * can provide will require a new transaction to be opened.
      *  @param data the changes that were attempted to be committed in this transaction.
-     * @param state the object returned by {@link #beforeCommit(TransactionData, GraphDatabaseService)}.
-     * If this handler failed when executing {@link #beforeCommit(TransactionData, GraphDatabaseService)} this
+     * @param state the object returned by {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)}.
+     * If this handler failed when executing {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} this
      * {@code state} will be {@code null}.
      * @param databaseService underlying database service
      */

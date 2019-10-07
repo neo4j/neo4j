@@ -50,7 +50,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -68,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 
 /**
@@ -87,10 +87,29 @@ class TransactionEventsIT
     private RandomRule random;
 
     @Test
+    void createAdditionalDataInTransactionOnBeforeCommit()
+    {
+        var additionalLabel = Label.label( "additional" );
+        var mainLabel = Label.label( "main" );
+        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new BeforeCommitNodeCreator( additionalLabel ) );
+
+        try ( var transaction = db.beginTx() )
+        {
+            transaction.createNode(mainLabel);
+            transaction.commit();
+        }
+
+        try ( var transaction = db.beginTx() )
+        {
+            assertEquals( 1, count( transaction.findNodes( additionalLabel ) ) );
+        }
+    }
+
+    @Test
     void shouldSeeExpectedTransactionData()
     {
         // GIVEN
-        final Graph state = new Graph( db, random );
+        final Graph state = new Graph( random );
         final ExpectedTransactionData expected = new ExpectedTransactionData( true );
         final TransactionEventListener<Object> listener = new VerifyingTransactionEventListener( expected );
         try ( Transaction tx = db.beginTx() )
@@ -319,10 +338,10 @@ class TransactionEventsIT
         return new TransactionEventListenerAdapter<>()
         {
             @Override
-            public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
+            public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
             {
                 dataConsumer.accept( data );
-                return super.beforeCommit( data, databaseService );
+                return super.beforeCommit( data, transaction, databaseService );
             }
         };
     }
@@ -334,9 +353,9 @@ class TransactionEventsIT
 
     private void runTransaction( LoginContext loginContext, Map<String,Object> metaData )
     {
-        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, loginContext ) )
+        try ( var transaction = db.beginTransaction( KernelTransaction.Type.explicit, loginContext ) )
         {
-            KernelTransaction kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
+            KernelTransaction kernelTransaction = transaction.kernelTransaction();
             kernelTransaction.setMetaData( metaData );
             transaction.createNode();
             transaction.commit();
@@ -531,14 +550,12 @@ class TransactionEventsIT
     {
         private static final String[] TOKENS = {"A", "B", "C", "D", "E"};
 
-        private final GraphDatabaseService db;
         private final RandomRule random;
         private final List<Node> nodes = new ArrayList<>();
         private final List<Relationship> relationships = new ArrayList<>();
 
-        Graph( GraphDatabaseService db, RandomRule random )
+        Graph( RandomRule random )
         {
-            this.db = db;
             this.random = random;
         }
 
@@ -621,9 +638,9 @@ class TransactionEventsIT
         private long commitTimeAfterCommit;
 
         @Override
-        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
+        public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
         {
-            return super.beforeCommit( data, databaseService );
+            return super.beforeCommit( data, transaction, databaseService );
         }
 
         @Override
@@ -651,7 +668,7 @@ class TransactionEventsIT
     {
 
         @Override
-        public CountingTransactionEventListener beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        public CountingTransactionEventListener beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
         {
             getAndIncrement();
             return this;
@@ -669,6 +686,23 @@ class TransactionEventsIT
         {
             getAndDecrement();
             assertThat( state, sameInstance( this ) );
+        }
+    }
+
+    private static class BeforeCommitNodeCreator extends TransactionEventListenerAdapter<Void>
+    {
+        private final Label additionalLabel;
+
+        BeforeCommitNodeCreator( Label additionalLabel )
+        {
+            this.additionalLabel = additionalLabel;
+        }
+
+        @Override
+        public Void beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
+        {
+            transaction.createNode( additionalLabel );
+            return null;
         }
     }
 }

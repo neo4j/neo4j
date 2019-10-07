@@ -308,6 +308,12 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
     void bindToUserTransaction( InternalTransaction internalTransaction );
 
     /**
+     * Return user transaction that is bound to current kernel transaction
+     * @return
+     */
+    InternalTransaction internalTransaction();
+
+    /**
      * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
      * {@link Kernel#beginTransaction(Type, LoginContext)}.
      */

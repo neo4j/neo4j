@@ -464,7 +464,7 @@ class TestTransactionEvents
         TransactionEventListener<Void> listener = new TransactionEventListenerAdapter<>()
         {
             @Override
-            public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+            public Void beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
             {
                 Node modifiedNode = data.assignedNodeProperties().iterator().next().entity();
                 assertEquals( node, modifiedNode );
@@ -500,7 +500,7 @@ class TestTransactionEvents
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
-            public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+            public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
             {
                 Iterator<Node> nodes = data.createdNodes().iterator();
                 if ( nodes.hasNext() )
@@ -544,7 +544,7 @@ class TestTransactionEvents
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
-            public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+            public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
             {
                 Iterator<Node> nodes = data.createdNodes().iterator();
                 if ( nodes.hasNext() )
@@ -765,7 +765,7 @@ class TestTransactionEvents
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Void>()
         {
             @Override
-            public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+            public Void beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
             {
                 for ( PropertyEntry<Relationship> entry : data.assignedRelationshipProperties() )
                 {
@@ -811,7 +811,7 @@ class TestTransactionEvents
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Void>()
         {
             @Override
-            public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+            public Void beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
             {
                 assertTrue( data.createdNodes().iterator().hasNext() ||
                         data.createdRelationships().iterator().hasNext(), "Expected only transactions that had nodes or relationships created" );
@@ -1117,7 +1117,7 @@ class TestTransactionEvents
         }
 
         @Override
-        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
         {
             return null;
         }
@@ -1174,11 +1174,11 @@ class TestTransactionEvents
         }
 
         @Override
-        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
+        public T beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
         {
             try
             {
-                return source.beforeCommit( data, databaseService );
+                return source.beforeCommit( data, transaction, databaseService );
             }
             finally
             {
@@ -1210,7 +1210,7 @@ class TestTransactionEvents
         }
 
         @Override
-        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
+        public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
         {
             if ( beforeCommitException != null )
             {
@@ -1270,7 +1270,7 @@ class TestTransactionEvents
         }
 
         @Override
-        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        public T beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
         {
             assertNotNull( data );
             this.receivedTransactionData = data;
@@ -1339,7 +1339,7 @@ class TestTransactionEvents
         private boolean active;
 
         @Override
-        public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        public Void beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
         {
             if ( active )
             {
@@ -1433,7 +1433,7 @@ class TestTransactionEvents
         }
 
         @Override
-        public T beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        public T beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
         {
             beforeCommitCalled = true;
             return stateSource.get();
@@ -1461,7 +1461,7 @@ class TestTransactionEvents
         final AtomicInteger afterRollbackInvocations = new AtomicInteger();
 
         @Override
-        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
         {
             beforeCommitInvocations.incrementAndGet();
             return null;

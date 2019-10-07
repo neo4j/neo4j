@@ -703,6 +703,12 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public InternalTransaction internalTransaction()
+        {
+            return internal.internalTransaction();
+        }
+
+        @Override
         public long startTime()
         {
             return internal.startTime();

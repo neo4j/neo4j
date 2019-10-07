@@ -69,7 +69,7 @@ public class DatabaseTransactionEventListeners
             Object listenerState = null;
             try
             {
-                listenerState = listener.beforeCommit( txData, databaseFacade );
+                listenerState = listener.beforeCommit( txData, transaction.internalTransaction(), databaseFacade );
             }
             catch ( Throwable t )
             {

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.event;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -47,7 +48,7 @@ public class VerifyingTransactionEventListener implements TransactionEventListen
     }
 
     @Override
-    public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+    public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
     {
         return verify( data );
     }

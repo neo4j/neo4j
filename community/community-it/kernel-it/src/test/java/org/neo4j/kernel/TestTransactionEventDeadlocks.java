@@ -80,7 +80,7 @@ class TestTransactionEventDeadlocks
 
         @SuppressWarnings( "boxing" )
         @Override
-        public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        public Void beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
         {
             if ( Iterables.count( data.createdRelationships() ) == 0 )
             {

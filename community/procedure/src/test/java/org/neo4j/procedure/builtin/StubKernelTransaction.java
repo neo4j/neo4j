@@ -225,6 +225,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public InternalTransaction internalTransaction()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public long startTime()
     {
         throw new UnsupportedOperationException( "not implemented" );

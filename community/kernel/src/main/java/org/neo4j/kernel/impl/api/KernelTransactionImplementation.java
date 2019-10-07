@@ -297,6 +297,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.internalTransaction = internalTransaction;
     }
 
+    @Override
+    public InternalTransaction internalTransaction()
+    {
+        return internalTransaction;
+    }
+
     int getReuseCount()
     {
         return reuseCount;
@@ -1160,11 +1166,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void addIndexDoDropToTxState( IndexDescriptor index )
     {
         txState().indexDoDrop( index );
-    }
-
-    public InternalTransaction internalTransaction()
-    {
-        return internalTransaction;
     }
 
     public static class Statistics

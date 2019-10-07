@@ -20,18 +20,19 @@
 package org.neo4j.graphdb.event;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 
 /**
  * Adapter for a {@link TransactionEventListener}
  *
  * @param <T> the type of object communicated from a successful
- * {@link TransactionEventListener#beforeCommit(TransactionData, GraphDatabaseService)} to
+ * {@link TransactionEventListener#beforeCommit(TransactionData, Transaction, GraphDatabaseService)} to
  * {@link TransactionEventListener#afterCommit(TransactionData, Object, GraphDatabaseService)}.
  */
 public class TransactionEventListenerAdapter<T> implements TransactionEventListener<T>
 {
     @Override
-    public T beforeCommit( TransactionData data, GraphDatabaseService databaseService ) throws Exception
+    public T beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
     {
         return null;
     }
