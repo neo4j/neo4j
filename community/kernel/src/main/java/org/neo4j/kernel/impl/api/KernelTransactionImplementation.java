@@ -453,7 +453,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public KernelStatement acquireStatement()
     {
-        assertTransactionOpen();
+        assertOpen();
         currentStatement.acquire();
         return currentStatement;
     }
@@ -551,7 +551,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( closed )
         {
-            throw new IllegalStateException( "This transaction has already been completed." );
+            throw new NotInTransactionException( "This transaction has already been closed." );
         }
     }
 
@@ -563,10 +563,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             throw new TransactionTerminatedException( reason );
         }
-        if ( closed )
-        {
-            throw new NotInTransactionException( "The transaction has been closed." );
-        }
+        assertTransactionOpen();
     }
 
     private boolean hasChanges()

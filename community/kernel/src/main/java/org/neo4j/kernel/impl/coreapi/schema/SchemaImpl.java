@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.common.EntityType;
@@ -37,7 +36,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -66,7 +64,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
@@ -94,13 +91,13 @@ import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreate
 
 public class SchemaImpl implements Schema
 {
-    private final Supplier<KernelTransaction> transactionSupplier;
     private final InternalSchemaActions actions;
+    private final KernelTransaction transaction;
 
-    public SchemaImpl( Supplier<KernelTransaction> transactionSupplier )
+    public SchemaImpl( KernelTransaction transaction )
     {
-        this.transactionSupplier = transactionSupplier;
-        this.actions = new GDBSchemaActions( transactionSupplier );
+        this.transaction = transaction;
+        this.actions = new GDBSchemaActions( transaction );
     }
 
     @Override
@@ -112,7 +109,6 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes( final Label label )
     {
-        KernelTransaction transaction = transactionSupplier.get();
         try ( Statement ignore = transaction.acquireStatement() )
         {
             TokenRead tokenRead = transaction.tokenRead();
@@ -132,7 +128,6 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes()
     {
-        KernelTransaction transaction = transactionSupplier.get();
         SchemaRead schemaRead = transaction.schemaRead();
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -249,7 +244,6 @@ public class SchemaImpl implements Schema
     public ConstraintDefinition getConstraintByName( String constraintName )
     {
         Objects.requireNonNull( constraintName );
-        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             ConstraintDescriptor constraint = transaction.schemaRead().constraintGetForName( constraintName );
@@ -290,7 +284,6 @@ public class SchemaImpl implements Schema
     @Override
     public IndexState getIndexState( final IndexDefinition index )
     {
-        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
 
@@ -323,7 +316,6 @@ public class SchemaImpl implements Schema
     @Override
     public IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index )
     {
-        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
@@ -340,7 +332,6 @@ public class SchemaImpl implements Schema
     @Override
     public String getIndexFailure( IndexDefinition index )
     {
-        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
@@ -370,7 +361,6 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints()
     {
-        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             return asConstraintDefinitions( transaction.schemaRead().constraintsGetAll(), transaction.tokenRead() );
@@ -380,7 +370,6 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
-        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             TokenRead tokenRead = transaction.tokenRead();
@@ -397,7 +386,6 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( RelationshipType type )
     {
-        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             TokenRead tokenRead = transaction.tokenRead();
@@ -550,31 +538,18 @@ public class SchemaImpl implements Schema
         throw new IllegalArgumentException( "Unknown constraint " + constraint );
     }
 
-    private static KernelTransaction safeAcquireTransaction( Supplier<KernelTransaction> transactionSupplier )
-    {
-        KernelTransaction transaction = transactionSupplier.get();
-        if ( transaction.isTerminated() )
-        {
-            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
-            throw new TransactionTerminatedException( terminationReason );
-        }
-        return transaction;
-    }
-
     private static class GDBSchemaActions implements InternalSchemaActions
     {
-        private final Supplier<KernelTransaction> transactionSupplier;
+        private final KernelTransaction transaction;
 
-        GDBSchemaActions( Supplier<KernelTransaction> transactionSupplier )
+        GDBSchemaActions( KernelTransaction transaction )
         {
-            this.transactionSupplier = transactionSupplier;
+            this.transaction = transaction;
         }
 
         @Override
         public IndexDefinition createIndexDefinition( Label label, String indexName, String... propertyKeys )
         {
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
-
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -605,7 +580,6 @@ public class SchemaImpl implements Schema
         @Override
         public void dropIndexDefinitions( IndexDefinition indexDefinition )
         {
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -638,7 +612,6 @@ public class SchemaImpl implements Schema
                         "That is, only a single label is supported, but the following labels were provided: " +
                         labelNameList( indexDefinition.getLabels(), "", "." ) );
             }
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -684,7 +657,6 @@ public class SchemaImpl implements Schema
                         "That is, only a single label is supported, but the following labels were provided: " +
                         labelNameList( indexDefinition.getLabels(), "", "." ) );
             }
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -724,7 +696,6 @@ public class SchemaImpl implements Schema
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint( String name, Label label, String... propertyKeys )
         {
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -764,7 +735,6 @@ public class SchemaImpl implements Schema
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint( String name, RelationshipType type, String propertyKey )
         {
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -800,7 +770,6 @@ public class SchemaImpl implements Schema
         @Override
         public void dropConstraint( ConstraintDescriptor constraint )
         {
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -822,7 +791,6 @@ public class SchemaImpl implements Schema
         @Override
         public String getUserMessage( KernelException e )
         {
-            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 return e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) );
@@ -832,12 +800,7 @@ public class SchemaImpl implements Schema
         @Override
         public void assertInOpenTransaction()
         {
-            KernelTransaction transaction = transactionSupplier.get();
-            if ( transaction.isTerminated() )
-            {
-                Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
-                throw new TransactionTerminatedException( terminationReason );
-            }
+            transaction.assertOpen();
         }
     }
 }

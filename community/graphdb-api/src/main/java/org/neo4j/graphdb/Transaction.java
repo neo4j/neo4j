@@ -395,32 +395,6 @@ public interface Transaction extends AutoCloseable
     ResourceIterable<Relationship> getAllRelationships();
 
     /**
-     * Commit and close current transaction.
-     * <p>
-     * When {@code commit()} is completed, all resources are released and no more changes are possible in this transaction.
-     */
-    void commit();
-
-    /**
-     * Roll back and close current transaction.
-     * When {@code rollback()} is completed, all resources are released and no more changes are possible in this transaction
-     */
-    void rollback();
-
-    /**
-     * Close transaction. If {@link #commit()} or {@link #rollback()} have been called this does nothing.
-     * If none of them are called, the transaction will be rolled back.
-     *
-     * <p>All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside this
-     * transaction will be automatically closed by this method in they were not closed before.
-     *
-     * <p>This method comes from {@link AutoCloseable} so that a {@link Transaction} can participate
-     * in try-with-resource statements.
-     */
-    @Override
-    void close();
-
-    /**
      * Acquires a write lock for {@code entity} for this transaction.
      * The lock (returned from this method) can be released manually, but
      * if not it's released automatically when the transaction finishes.
@@ -458,4 +432,30 @@ public interface Transaction extends AutoCloseable
      * @return the {@link Schema schema manager} for this database.
      */
     Schema schema();
+
+    /**
+     * Commit and close current transaction.
+     * <p>
+     * When {@code commit()} is completed, all resources are released and no more changes are possible in this transaction.
+     */
+    void commit();
+
+    /**
+     * Roll back and close current transaction.
+     * When {@code rollback()} is completed, all resources are released and no more changes are possible in this transaction
+     */
+    void rollback();
+
+    /**
+     * Close transaction. If {@link #commit()} or {@link #rollback()} have been called this does nothing.
+     * If none of them are called, the transaction will be rolled back.
+     *
+     * <p>All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside this
+     * transaction will be automatically closed by this method in they were not closed before.
+     *
+     * <p>This method comes from {@link AutoCloseable} so that a {@link Transaction} can participate
+     * in try-with-resource statements.
+     */
+    @Override
+    void close();
 }

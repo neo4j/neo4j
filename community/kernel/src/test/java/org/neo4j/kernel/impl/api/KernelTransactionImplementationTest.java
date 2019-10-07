@@ -34,6 +34,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -203,7 +204,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     void shouldRollbackAndThrowOnFailedAndSuccess( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer )
     {
         // GIVEN
-        assertThrows( IllegalStateException.class, () ->
+        assertThrows( NotInTransactionException.class, () ->
         {
             try ( KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) ) )
             {

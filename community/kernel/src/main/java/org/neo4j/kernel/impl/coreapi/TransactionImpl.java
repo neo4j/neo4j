@@ -144,9 +144,10 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public Node createNode()
     {
-        try ( Statement ignore = transaction.acquireStatement() )
+        var ktx = kernelTransaction();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            return newNodeEntity( transaction.dataWrite().nodeCreate() );
+            return newNodeEntity( ktx.dataWrite().nodeCreate() );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -157,9 +158,10 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public Node createNode( Label... labels )
     {
-        try ( Statement ignore = transaction.acquireStatement() )
+        var ktx = kernelTransaction();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            TokenWrite tokenWrite = transaction.tokenWrite();
+            TokenWrite tokenWrite = ktx.tokenWrite();
             int[] labelIds = new int[labels.length];
             String[] labelNames = new String[labels.length];
             for ( int i = 0; i < labelNames.length; i++ )
@@ -168,7 +170,7 @@ public class TransactionImpl implements InternalTransaction
             }
             tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
 
-            Write write = transaction.dataWrite();
+            Write write = ktx.dataWrite();
             long nodeId = write.nodeCreateWithLabels( labelIds );
             return newNodeEntity( nodeId );
         }
@@ -219,9 +221,10 @@ public class TransactionImpl implements InternalTransaction
         return execute( this, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
-    public Result execute( InternalTransaction transaction, String query, MapValue parameters )
+    private Result execute( InternalTransaction transaction, String query, MapValue parameters )
             throws QueryExecutionException
     {
+        checkInTransaction();
         TransactionalContext context = contextFactory.newContext( transaction, query, parameters );
         try
         {
@@ -262,12 +265,14 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public BidirectionalTraversalDescription bidirectionalTraversalDescription()
     {
+        checkInTransaction();
         return new BidirectionalTraversalDescriptionImpl( () -> kernelTransaction().acquireStatement() );
     }
 
     @Override
     public TraversalDescription traversalDescription()
     {
+        checkInTransaction();
         return new MonoDirectionalTraversalDescription( () -> kernelTransaction().acquireStatement() );
     }
 
@@ -528,12 +533,6 @@ public class TransactionImpl implements InternalTransaction
         transaction.bindToUserTransaction( this );
     }
 
-    @FunctionalInterface
-    private interface TransactionalOperation
-    {
-        void perform( KernelTransaction transaction ) throws Exception;
-    }
-
     private String closeFailureMessage()
     {
         return "Unable to rollback transaction";
@@ -548,21 +547,13 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public Lock acquireReadLock( Entity entity )
     {
-        return locker.sharedLock(transaction, entity);
+        return locker.sharedLock( transaction, entity );
     }
 
     @Override
     public KernelTransaction kernelTransaction()
     {
-        if ( closed )
-        {
-            throw new NotInTransactionException( "The transaction has been closed." );
-        }
-        if ( transaction.isTerminated() )
-        {
-            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
-            throw new TransactionTerminatedException( terminationReason );
-        }
+        checkInTransaction();
         return transaction;
     }
 
@@ -637,7 +628,7 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public Schema schema()
     {
-        return new SchemaImpl( this::kernelTransaction );
+        return new SchemaImpl( kernelTransaction() );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )
@@ -675,6 +666,19 @@ public class TransactionImpl implements InternalTransaction
         }
 
         return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, query );
+    }
+
+    private void checkInTransaction()
+    {
+        if ( closed )
+        {
+            throw new NotInTransactionException( "The transaction has been closed." );
+        }
+        if ( transaction.isTerminated() )
+        {
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
+        }
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex(
@@ -850,11 +854,19 @@ public class TransactionImpl implements InternalTransaction
 
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
     {
-        return () -> tokens.inUse( kernelTransaction() );
+        var transaction = kernelTransaction();
+        return () -> tokens.inUse( transaction );
     }
 
     private <T> ResourceIterable<T> all( final TokenAccess<T> tokens )
     {
-        return () -> tokens.all( kernelTransaction() );
+        var transaction = kernelTransaction();
+        return () -> tokens.all( transaction );
+    }
+
+    @FunctionalInterface
+    private interface TransactionalOperation
+    {
+        void perform( KernelTransaction transaction ) throws Exception;
     }
 }

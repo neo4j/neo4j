@@ -50,7 +50,7 @@ class SchemaImplMockTest
         IndexDefinitionImpl indexDefinition = mockIndexDefinition();
         when( indexDefinition.toString() ).thenReturn( "IndexDefinition( of-some-sort )" );
         KernelTransaction kernelTransaction = mockKernelTransaction();
-        SchemaImpl schema = new SchemaImpl( () -> kernelTransaction );
+        SchemaImpl schema = new SchemaImpl( kernelTransaction );
 
         // when
         IllegalStateException e = assertThrows( IllegalStateException.class, () -> schema.awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES ) );
