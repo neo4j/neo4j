@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.spi
 
+import java.lang.Math.min
+
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, MinimumGraphStatistics}
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
-import org.neo4j.internal.kernel.api.{Read, SchemaRead, TokenRead}
-import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 import org.neo4j.internal.helpers.collection.Iterators
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
+import org.neo4j.internal.kernel.api.{Read, SchemaRead, TokenRead}
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.kernel.impl.query.TransactionalContext
 
 object TransactionBoundGraphStatistics {
   def apply(transactionalContext: TransactionalContext): MinimumGraphStatistics =
@@ -47,12 +49,16 @@ object TransactionBoundGraphStatistics {
         else {
           // Probability of any node in the index, to have a property with a given value
           val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(indexDescriptor)
-          val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
+          if (indexEntrySelectivity == 0.0) {
+            Some(Selectivity.ZERO)
+          } else {
+            val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
 
-          // This is = 1 / number of unique values
-          val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
+            // This is = 1 / number of unique values
+            val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
 
-          Selectivity.of(indexSelectivity)
+            Selectivity.of(min(indexSelectivity, 1.0))
+          }
         }
       }
       catch {
@@ -71,7 +77,9 @@ object TransactionBoundGraphStatistics {
           val indexSize = schemaRead.indexSize(indexDescriptor)
           val indexSelectivity = indexSize / labeledNodes
 
-          Selectivity.of(indexSelectivity)
+          //Even though semantically impossible the index can get into a state where
+          //the indexSize > labeledNodes
+          Selectivity.of(min(indexSelectivity, 1.0))
         }
       }
       catch {
