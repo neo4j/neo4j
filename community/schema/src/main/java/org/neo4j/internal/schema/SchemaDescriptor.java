@@ -55,7 +55,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
 
     static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
     {
-        return forLabelOfType( IndexType.ANY_GENERAL, labelId, propertyIds );
+        return forLabelOfType( IndexType.BTREE, labelId, propertyIds );
     }
 
     static LabelSchemaDescriptor forLabelOfType( IndexType indexType, int labelId, int... propertyIds )
@@ -67,7 +67,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
 
     static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
-        return forRelTypeOfType( IndexType.ANY_GENERAL, relTypeId, propertyIds );
+        return forRelTypeOfType( IndexType.BTREE, relTypeId, propertyIds );
     }
 
     static RelationTypeSchemaDescriptor forRelTypeOfType( IndexType indexType, int relTypeId, int... propertyIds )

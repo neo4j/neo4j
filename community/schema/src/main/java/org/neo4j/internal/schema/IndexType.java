@@ -25,27 +25,15 @@ package org.neo4j.internal.schema;
 public enum IndexType
 {
     /**
-     * Used for indicating an arbitrary index type of kind {@link IndexKind#GENERAL}. This is used for when the concrete index type is not so important,
-     * as long as the index kind is GENERAL. For instance, when creating indexes an no type is explicitly asked for, or when querying for available indexes.
-     * <p>
-     * We might be able to remove this once indexes are referenced by name, rather than by schema.
-     */
-    ANY_GENERAL( IndexKind.GENERAL ),
-    /**
      * For GBPTree based indexes. All types of values are indexed and stored in sort-order. This means they are good at all types of exact matching,
      * and range queries. They also support index-backed order-by.
      */
-    TREE( IndexKind.GENERAL ),
+    BTREE( IndexKind.GENERAL ),
     /**
      * For the fulltext schema indexes. These indexes do not index all value types, and cannot answer all types of queries.
      * On the other hand, they are good at CONTAINS and ENDS_WITH queries, and they can do fuzzy matching, and scoring.
      */
     FULLTEXT( IndexKind.SPECIAL ),
-    /**
-     * For Lucene based indexes. Lucene is an inverted-index implementation. These indexes are good at exact matching, and can also do CONTAINS and
-     * ENDS_WITH queries on string values, but they cannot do fuzzy matching, and they also do not support index-backed order-by.
-     */
-    INVERTED( IndexKind.GENERAL ),
     ;
 
     private final IndexKind kind;

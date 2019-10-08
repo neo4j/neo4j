@@ -128,7 +128,7 @@ class NoSchemaDescriptor implements SchemaDescriptor
     @Override
     public IndexType getIndexType()
     {
-        return IndexType.ANY_GENERAL;
+        return IndexType.BTREE;
     }
 
     @Override
