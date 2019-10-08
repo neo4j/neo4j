@@ -34,7 +34,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -81,9 +80,9 @@ class SchemaCacheTest
     private SchemaRule schema3_4 = newIndexRule( 10, 3, 4 );
     private SchemaRule schema5_6_7 = newIndexRule( 11, 5, 6, 7 );
     private SchemaRule schema5_8 = newIndexRule( 12, 5, 8 );
-    private SchemaRule node35_8 = IndexPrototype.forSchema( fulltext( NODE, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ) )
+    private SchemaRule node35_8 = IndexPrototype.forSchema( fulltext( NODE, new int[]{3, 5}, new int[]{8} ) )
             .withName( "index_13" ).materialise( 13 );
-    private SchemaRule rel35_8 = IndexPrototype.forSchema( fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ) )
+    private SchemaRule rel35_8 = IndexPrototype.forSchema( fulltext( RELATIONSHIP, new int[]{3, 5}, new int[]{8} ) )
             .withName( "index_14" ).materialise( 14 );
 
     @Test
@@ -382,7 +381,7 @@ class SchemaCacheTest
 
         final int id = 1;
         final int[] repeatedLabels = {0, 1, 0};
-        final FulltextSchemaDescriptor schema = fulltext( NODE, IndexConfig.empty(), repeatedLabels, new int[]{1} );
+        final FulltextSchemaDescriptor schema = fulltext( NODE, repeatedLabels, new int[]{1} );
         IndexDescriptor index = newIndexRule( schema, id );
         cache.addSchemaRule( index );
         cache.removeSchemaRule( id );
@@ -395,7 +394,7 @@ class SchemaCacheTest
 
         final int id = 1;
         final int[] repeatedRelTypes = {0, 1, 0};
-        final FulltextSchemaDescriptor schema = fulltext( RELATIONSHIP, IndexConfig.empty(), repeatedRelTypes, new int[]{1} );
+        final FulltextSchemaDescriptor schema = fulltext( RELATIONSHIP, repeatedRelTypes, new int[]{1} );
         IndexDescriptor index = newIndexRule( schema, id );
         cache.addSchemaRule( index );
         cache.removeSchemaRule( id );

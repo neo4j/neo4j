@@ -56,7 +56,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
@@ -418,7 +417,7 @@ public class SchemaImpl implements Schema
 
             if ( index.isMultiTokenIndex() )
             {
-                schema = fulltext( EntityType.NODE, IndexConfig.empty(), labelIds, propertyKeyIds );
+                schema = fulltext( EntityType.NODE, labelIds, propertyKeyIds );
             }
             else
             {
@@ -432,7 +431,7 @@ public class SchemaImpl implements Schema
 
             if ( index.isMultiTokenIndex() )
             {
-                schema = fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), relTypes, propertyKeyIds );
+                schema = fulltext( EntityType.RELATIONSHIP, relTypes, propertyKeyIds );
             }
             else
             {

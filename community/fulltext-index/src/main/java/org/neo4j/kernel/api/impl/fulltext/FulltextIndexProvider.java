@@ -269,7 +269,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
             tokenHolders.propertyKeyTokens().getOrCreateIds( properties, propertyIds );
 
             indexConfig = addMissingDefaultIndexConfig( indexConfig );
-            return SchemaDescriptor.fulltext( type, indexConfig, entityTokenIds, propertyIds );
+            return SchemaDescriptor.fulltext( type, entityTokenIds, propertyIds ).withIndexConfig( indexConfig );
         }
         catch ( KernelException e )
         {

@@ -27,7 +27,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
@@ -87,7 +86,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{0, 0}, new int[]{1} );
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{0, 0}, new int[]{1} );
         // then
         assertThrows( RepeatedLabelInSchemaException.class, () -> schemaWrite.indexCreate( descriptor ) );
     }
@@ -110,7 +109,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{0, 0}, new int[]{1} );
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{0, 0}, new int[]{1} );
         // then
         assertThrows( RepeatedRelationshipTypeInSchemaException.class, () -> schemaWrite.indexCreate( descriptor ) );
     }
@@ -133,7 +132,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{0}, new int[]{1, 1} );
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{0}, new int[]{1, 1} );
         // then
         assertThrows( RepeatedPropertyInSchemaException.class, () -> schemaWrite.indexCreate( descriptor ) );
     }

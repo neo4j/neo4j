@@ -587,8 +587,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.success();
         }
 
-        IndexConfig indexConfig = IndexConfig.empty().withIfAbsent( EVENTUALLY_CONSISTENT, Values.booleanValue( true ) );
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, indexConfig, new int[]{label}, new int[]{propertyKey} );
+        IndexConfig indexConfig = IndexConfig.with( EVENTUALLY_CONSISTENT, Values.booleanValue( true ) );
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{label}, new int[]{propertyKey} );
 
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
@@ -602,8 +602,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void completeConfigurationMustNotOverwriteExistingConfiguration()
     {
-        IndexConfig indexConfig = IndexConfig.empty().withIfAbsent( "A", Values.stringValue( "B" ) );
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, indexConfig, new int[]{1}, new int[]{1} );
+        IndexConfig indexConfig = IndexConfig.with( "A", Values.stringValue( "B" ) );
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).materialise( 1 ) );
@@ -613,7 +613,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void completeConfigurationMustBeIdempotent()
     {
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{1}, new int[]{1} );
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor onceCompleted = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).materialise( 1 ) );
@@ -624,7 +624,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void mustAssignCapabilitiesToDescriptorsThatHaveNone()
     {
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{1}, new int[]{1} );
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor completed = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).materialise( 1 ) );
@@ -651,7 +651,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
                 return IndexValueCapability.NO;
             }
         };
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{1}, new int[]{1} );
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor index = IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).materialise( 1 ).withIndexCapability( capability );

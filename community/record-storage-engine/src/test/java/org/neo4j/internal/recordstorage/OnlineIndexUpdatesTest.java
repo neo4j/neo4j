@@ -33,7 +33,6 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -152,7 +151,7 @@ class OnlineIndexUpdatesTest
         PropertyCommand propertyCommand = new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema(
-                fulltext( NODE, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index" ).materialise( 0 );
+                fulltext( NODE, ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index" ).materialise( 0 );
         createIndexes( indexDescriptor );
 
         onlineIndexUpdates.feed( nodeGroup( nodeCommand, propertyCommand ), relationshipGroup( null ) );
@@ -181,7 +180,7 @@ class OnlineIndexUpdatesTest
         PropertyCommand propertyCommand = new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema(
-                fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index" ).materialise( 0 );
+                fulltext( RELATIONSHIP, ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index" ).materialise( 0 );
         createIndexes( indexDescriptor );
 
         onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand ) );
@@ -211,7 +210,7 @@ class OnlineIndexUpdatesTest
                 new PropertyCommand( recordAccess.getIfLoaded( nodePropertyId ).forReadingData(), nodePropertyBlocks );
 
         IndexDescriptor nodeIndexDescriptor = IndexPrototype.forSchema(
-                fulltext( NODE, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index" ).materialise( 0 );
+                fulltext( NODE, ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index" ).materialise( 0 );
         createIndexes( nodeIndexDescriptor );
 
         long relId = 0;
@@ -227,7 +226,7 @@ class OnlineIndexUpdatesTest
         PropertyCommand relationshipPropertyCommand =
                 new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), relationshipPropertyBlocks );
 
-        FulltextSchemaDescriptor schema = fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} );
+        FulltextSchemaDescriptor schema = fulltext( RELATIONSHIP, ENTITY_TOKENS, new int[]{1, 4, 6} );
         IndexDescriptor relationshipIndexDescriptor = IndexPrototype.forSchema( schema ).withName( "index" ).materialise( 1 );
         createIndexes( relationshipIndexDescriptor );
 
@@ -263,14 +262,14 @@ class OnlineIndexUpdatesTest
         PropertyCommand propertyCommand2 = new PropertyCommand( recordAccess.getIfLoaded( propertyId2 ).forReadingData(), propertyBlocks2 );
 
         IndexDescriptor indexDescriptor0 = IndexPrototype.forSchema(
-                fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index_0" ).materialise( 0 );
+                fulltext( RELATIONSHIP, ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index_0" ).materialise( 0 );
         IndexDescriptor indexDescriptor1 = IndexPrototype.forSchema(
-                fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{2, 4, 6} ) ).withName( "index_1" ).materialise( 1 );
+                fulltext( RELATIONSHIP, ENTITY_TOKENS, new int[]{2, 4, 6} ) ).withName( "index_1" ).materialise( 1 );
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema(
-                fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, new int[]{1} ) )
+                fulltext( RELATIONSHIP, new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, new int[]{1} ) )
                 .withName( "index_2" ).materialise( 2 );
         IndexDescriptor indexDescriptor3 = IndexPrototype.forSchema(
-                fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{OTHER_ENTITY_TOKEN}, new int[]{1} ) ).withName( "index_3" ).materialise( 3 );
+                fulltext( RELATIONSHIP, new int[]{OTHER_ENTITY_TOKEN}, new int[]{1} ) ).withName( "index_3" ).materialise( 3 );
         createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor );
 
         onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand, propertyCommand2 ) );

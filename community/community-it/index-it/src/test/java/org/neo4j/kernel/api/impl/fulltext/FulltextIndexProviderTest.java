@@ -52,7 +52,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -190,7 +189,7 @@ public class FulltextIndexProviderTest
         IndexDescriptor indexReference;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{labelIdHej, labelIdHa, labelIdHe},
+            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{labelIdHej, labelIdHa, labelIdHe},
                     new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
             indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), "fulltext" );
             transaction.success();
@@ -220,7 +219,7 @@ public class FulltextIndexProviderTest
         IndexDescriptor indexReference;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{labelIdHej, labelIdHa, labelIdHe},
+            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{labelIdHej, labelIdHa, labelIdHe},
                     new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
             indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), "fulltext" );
             transaction.success();
@@ -466,7 +465,7 @@ public class FulltextIndexProviderTest
         IndexDescriptor fulltext;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), entityTokens, propertyIds );
+            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.NODE, entityTokens, propertyIds );
             fulltext = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), NAME );
             transaction.success();
         }

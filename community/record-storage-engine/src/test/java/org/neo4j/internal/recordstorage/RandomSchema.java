@@ -26,7 +26,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -235,12 +234,12 @@ public class RandomSchema implements Supplier<SchemaRule>
 
     public SchemaDescriptor nextNodeFulltextSchema()
     {
-        return SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), nextLabelIdsArray(), nextPropertyKeyIdsArray() );
+        return SchemaDescriptor.fulltext( EntityType.NODE, nextLabelIdsArray(), nextPropertyKeyIdsArray() );
     }
 
     public SchemaDescriptor nextRelationshipFulltextSchema()
     {
-        return SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), nextRelationTypeIdsArray(), nextPropertyKeyIdsArray() );
+        return SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, nextRelationTypeIdsArray(), nextPropertyKeyIdsArray() );
     }
 
     public int nextRuleId()

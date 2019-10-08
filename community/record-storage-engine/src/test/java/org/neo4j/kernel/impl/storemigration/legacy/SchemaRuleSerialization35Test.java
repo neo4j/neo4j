@@ -29,7 +29,6 @@ import java.util.stream.IntStream;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -134,7 +133,7 @@ class SchemaRuleSerialization35Test
 
     private final IndexDescriptor indexMultiTokenRegular = withId(
             indexPrototype( false, null,
-                    fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{LABEL_ID, LABEL_ID_2}, new int[]{PROPERTY_ID_1, PROPERTY_ID_2} ) ),
+                    fulltext( EntityType.NODE, new int[]{LABEL_ID, LABEL_ID_2}, new int[]{PROPERTY_ID_1, PROPERTY_ID_2} ) ),
             RULE_ID );
 
     private final IndexDescriptor indexCompositeUnique = withIds( uniqueForLabelProto( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID );
@@ -143,7 +142,7 @@ class SchemaRuleSerialization35Test
 
     private final IndexDescriptor indexBigMultiToken = withId(
             indexPrototype( false, null,
-                    fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ) ),
+                    fulltext( EntityType.RELATIONSHIP, IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ) ),
             RULE_ID );
 
     private final ConstraintDescriptor constraintExistsLabel = withId( existsForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );

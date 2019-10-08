@@ -54,6 +54,11 @@ public final class IndexConfig
         return EMPTY;
     }
 
+    public static IndexConfig with( String key, Value value )
+    {
+        return new IndexConfig( Maps.immutable.with( key, value ) );
+    }
+
     public static IndexConfig with( Map<String,Value> map )
     {
         for ( Value value : map.values() )

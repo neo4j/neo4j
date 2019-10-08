@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -42,9 +41,9 @@ class IndexMapTest
     private final IndexDescriptor index5_6_7 = forSchema( schema5_6_7 ).withName( "index_2" ).materialise( 2 );
     private final LabelSchemaDescriptor schema5_8 = SchemaDescriptor.forLabel( 5, 8 );
     private final IndexDescriptor index5_8 = forSchema( schema5_8 ).withName( "index_3" ).materialise( 3 );
-    private final SchemaDescriptor node35_8 = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} );
+    private final SchemaDescriptor node35_8 = SchemaDescriptor.fulltext( NODE, new int[]{3, 5}, new int[]{8} );
     private final IndexDescriptor index_node35_8 = forSchema( node35_8 ).withName( "index_4" ).materialise( 4 );
-    private final SchemaDescriptor rel35_8 = SchemaDescriptor.fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} );
+    private final SchemaDescriptor rel35_8 = SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{3, 5}, new int[]{8} );
     private final IndexDescriptor index_rel35_8 = forSchema( rel35_8 ).withName( "index_5" ).materialise( 5 );
 
     @BeforeEach

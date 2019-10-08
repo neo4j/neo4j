@@ -249,7 +249,7 @@ class SchemaDescriptorLookupSetTest
         int numberOfPropertyKeys = random.nextInt( 1, maxNumberOfPropertyKeys );
         int[] propertyKeys = randomUniqueUnsortedIntArray( highPropertyKeyId, numberOfPropertyKeys );
         return entityKeys.length > 1
-               ? SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), entityKeys, propertyKeys )
+               ? SchemaDescriptor.fulltext( EntityType.NODE, entityKeys, propertyKeys )
                : SchemaDescriptor.forLabel( entityKeys[0], propertyKeys );
     }
 

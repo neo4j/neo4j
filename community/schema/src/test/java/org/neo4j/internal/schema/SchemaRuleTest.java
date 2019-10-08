@@ -32,13 +32,12 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 class SchemaRuleTest
 {
-    private IndexConfig indexConfig = IndexConfig.empty();
     private LabelSchemaDescriptor labelSchema = SchemaDescriptor.forLabel( 1, 2, 3 );
     private RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptor.forRelType( 1, 2, 3 );
-    private FulltextSchemaDescriptor fulltextNodeSchema = SchemaDescriptor.fulltext( NODE, indexConfig, new int[]{1, 2}, new int[]{1, 2} );
-    private FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptor.fulltext( RELATIONSHIP, indexConfig, new int[]{1, 2}, new int[]{1, 2} );
+    private FulltextSchemaDescriptor fulltextNodeSchema = SchemaDescriptor.fulltext( NODE, new int[]{1, 2}, new int[]{1, 2} );
+    private FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
     private LabelSchemaDescriptor labelSchema2 = SchemaDescriptor.forLabel( 0, 0, 1 );
-    private FulltextSchemaDescriptor fulltextNodeSchema2 = SchemaDescriptor.fulltext( NODE, indexConfig, new int[]{0, 1}, new int[]{0, 1} );
+    private FulltextSchemaDescriptor fulltextNodeSchema2 = SchemaDescriptor.fulltext( NODE, new int[]{0, 1}, new int[]{0, 1} );
     private IndexPrototype labelPrototype = IndexPrototype.forSchema( labelSchema );
     private IndexPrototype labelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema );
     private IndexPrototype relTypePrototype = IndexPrototype.forSchema( relTypeSchema );

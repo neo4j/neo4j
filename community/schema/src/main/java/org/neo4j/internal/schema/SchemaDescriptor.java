@@ -48,9 +48,9 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         return NoSchemaDescriptor.NO_SCHEMA;
     }
 
-    static FulltextSchemaDescriptor fulltext( EntityType entityType, IndexConfig indexConfig, int[] entityTokenIds, int[] propertyKeyIds )
+    static FulltextSchemaDescriptor fulltext( EntityType entityType, int[] entityTokenIds, int[] propertyKeyIds )
     {
-        return new SchemaDescriptorImplementation( FULLTEXT, entityType, PARTIAL_ANY_TOKEN, indexConfig, entityTokenIds, propertyKeyIds );
+        return new SchemaDescriptorImplementation( FULLTEXT, entityType, PARTIAL_ANY_TOKEN, IndexConfig.empty(), entityTokenIds, propertyKeyIds );
     }
 
     static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )

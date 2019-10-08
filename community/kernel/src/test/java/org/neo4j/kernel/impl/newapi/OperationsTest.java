@@ -46,7 +46,6 @@ import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -621,7 +620,7 @@ class OperationsTest
     void shouldDropAllGeneralIndexesMatchingSchema() throws Exception
     {
         SchemaDescriptor schema = SchemaDescriptor.forLabel( 0, 0 );
-        SchemaDescriptor ftsSchema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[] {0}, new int[] {0} );
+        SchemaDescriptor ftsSchema = SchemaDescriptor.fulltext( NODE, new int[] {0}, new int[] {0} );
         IndexDescriptor indexA = IndexPrototype.forSchema( schema ).withName( "a" ).materialise( 0 );
         IndexDescriptor indexB = IndexPrototype.forSchema( ftsSchema ).withName( "b" ).materialise( 1 );
         IndexDescriptor indexC = IndexPrototype.forSchema( schema ).withName( "c" ).materialise( 2 );
@@ -1038,7 +1037,7 @@ class OperationsTest
         storageReaderWithoutConstraints();
         when( storageReader.indexGetForSchema( any() ) ).thenReturn( Collections.emptyIterator() );
         operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ) );
-        operations.indexCreate( SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[] {2, 3}, new int[] {1, 2} ), null );
+        operations.indexCreate( SchemaDescriptor.fulltext( NODE, new int[] {2, 3}, new int[] {1, 2} ), null );
         operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", null );
         IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
                 .stream()

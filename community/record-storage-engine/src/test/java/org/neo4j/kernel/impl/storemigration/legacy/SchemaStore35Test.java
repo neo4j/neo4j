@@ -32,7 +32,6 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -133,7 +132,7 @@ class SchemaStore35Test
         int[] entityTokens = {2, 3, 4};
         long id = store.nextId();
         IndexDescriptor indexRule = IndexPrototype.forSchema(
-                fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), entityTokens, propertyIds ), PROVIDER ).withName( "index_" + id ).materialise( id );
+                fulltext( EntityType.RELATIONSHIP, entityTokens, propertyIds ), PROVIDER ).withName( "index_" + id ).materialise( id );
 
         // WHEN
         IndexDescriptor readIndexRule =
@@ -170,7 +169,7 @@ class SchemaStore35Test
     void storeAndLoad_Big_CompositeMultiTokenSchemaRule() throws Exception
     {
         // GIVEN
-        FulltextSchemaDescriptor schema = fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), range( 1, 200 ).toArray(), range( 1, 200 ).toArray() );
+        FulltextSchemaDescriptor schema = fulltext( EntityType.RELATIONSHIP, range( 1, 200 ).toArray(), range( 1, 200 ).toArray() );
         long id = store.nextId();
         IndexDescriptor indexRule = IndexPrototype.forSchema( schema, PROVIDER ).withName( "index_" + id ).materialise( id );
 
