@@ -279,15 +279,6 @@ public class FulltextIndexProviderTest
                             containsInAnyOrder( RelationshipType.withName( "RelType1" ), RelationshipType.withName( "RelType2" ) ) );
                     try
                     {
-                        //noinspection deprecation
-                        index.getRelationshipType();
-                        fail( "index.getRelationshipType() on multi-token IndexDefinition should have thrown." );
-                    }
-                    catch ( IllegalStateException ignore )
-                    {
-                    }
-                    try
-                    {
                         index.getLabels();
                         fail( "index.getLabels() on node IndexDefinition should have thrown." );
                     }

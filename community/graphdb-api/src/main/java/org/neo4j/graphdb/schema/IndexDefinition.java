@@ -41,18 +41,6 @@ public interface IndexDefinition
     Iterable<Label> getLabels();
 
     /**
-     * Return the relationship type that this index applies to. Relationships with this type are indexed by this index.
-     * <p>
-     * Note that this assumes that this is a relationship index (that {@link #isRelationshipIndex()} returns {@code true}) and not a multi-token index
-     * (that {@link #isMultiTokenIndex()} returns {@code false}). If this is not the case, then an {@link IllegalStateException} is thrown.
-     *
-     * @return the {@link RelationshipType relationship type} this index definition is associated with.
-     * @deprecated This method is deprecated and will be removed in next major release. Please consider using {@link #getRelationshipTypes()} instead.
-     */
-    @Deprecated
-    RelationshipType getRelationshipType();
-
-    /**
      * Return the set of relationship types (in no particular order) that this index applies to. This method works for both
      * {@link #isMultiTokenIndex() mult-token} indexes, and "single-token" indexes.
      * <p>

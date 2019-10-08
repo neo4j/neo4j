@@ -418,7 +418,6 @@ class IndexIT extends KernelIntegrationTest
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            assertThrows( IllegalStateException.class, index::getRelationshipType );
             assertThrows( IllegalStateException.class, index::getRelationshipTypes );
             assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ), label( LABEL2 ) ) );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
@@ -447,7 +446,6 @@ class IndexIT extends KernelIntegrationTest
             IndexDefinition index = indexes.iterator().next();
             assertEquals( LABEL, single( index.getLabels() ).name() );
             assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ) ) );
-            assertThrows( IllegalStateException.class, index::getRelationshipType );
             assertThrows( IllegalStateException.class, index::getRelationshipTypes );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertFalse( index.isMultiTokenIndex(), "should not be a multi-token index" );
@@ -474,7 +472,6 @@ class IndexIT extends KernelIntegrationTest
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
             assertThrows( IllegalStateException.class, index::getLabels );
-            assertEquals( REL_TYPE, index.getRelationshipType().name() );
             assertEquals( singletonList( withName( REL_TYPE ) ), index.getRelationshipTypes() );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertFalse( index.isMultiTokenIndex(), "should not be a multi-token index" );
@@ -502,7 +499,6 @@ class IndexIT extends KernelIntegrationTest
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
             assertThrows( IllegalStateException.class, index::getLabels );
-            assertThrows( IllegalStateException.class, index::getRelationshipType );
             assertThat( index.getRelationshipTypes(), containsInAnyOrder( withName( REL_TYPE ), withName( REL_TYPE2 ) ) );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertTrue( index.isMultiTokenIndex(), "should be a multi-token index" );
