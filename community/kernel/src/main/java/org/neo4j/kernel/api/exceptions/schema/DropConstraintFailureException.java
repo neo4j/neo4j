@@ -38,7 +38,7 @@ public class DropConstraintFailureException extends SchemaKernelException
     public DropConstraintFailureException( String nameOrSchema, Throwable cause )
     {
         // nameOrSchema is just 'name' or 'on schema'
-        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint: " + cause.getMessage() );
+        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint `" + nameOrSchema + "`: " + cause.getMessage() );
         this.constraint = nameOrSchema;
     }
 
