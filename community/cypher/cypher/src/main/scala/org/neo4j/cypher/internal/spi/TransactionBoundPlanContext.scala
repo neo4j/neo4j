@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, symbols => t
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.{InternalIndexState, procs}
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, IndexLimitation, IndexOrder, IndexValueCapability, SchemaDescriptor}
+import org.neo4j.internal.schema.{ConstraintDescriptor, IndexLimitation, IndexOrder, IndexType, IndexValueCapability, SchemaDescriptor}
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.values.storable.ValueCategory
 
@@ -151,7 +151,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
-        if (reference.getIndexType.getKind != IndexKind.GENERAL || reference.getCapability.limitations().contains(IndexLimitation.EVENTUALLY_CONSISTENT)) {
+        if (reference.getIndexType != IndexType.BTREE || reference.getCapability.limitations().contains(IndexLimitation.EVENTUALLY_CONSISTENT)) {
           // Ignore IndexKind.SPECIAL indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None

@@ -57,7 +57,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexKind;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -935,7 +934,7 @@ public class Operations implements Write, SchemaWrite
     {
         exclusiveSchemaLock( schema );
         Iterator<IndexDescriptor> iterator = Iterators.filter(
-                index -> index.getIndexType().getKind() == IndexKind.GENERAL,
+                index -> index.getIndexType() == IndexType.BTREE,
                 allStoreHolder.index( schema ) );
 
         if ( !iterator.hasNext() )

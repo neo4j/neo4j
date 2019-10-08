@@ -28,23 +28,10 @@ public enum IndexType
      * For GBPTree based indexes. All types of values are indexed and stored in sort-order. This means they are good at all types of exact matching,
      * and range queries. They also support index-backed order-by.
      */
-    BTREE( IndexKind.GENERAL ),
+    BTREE,
     /**
      * For the fulltext schema indexes. These indexes do not index all value types, and cannot answer all types of queries.
      * On the other hand, they are good at CONTAINS and ENDS_WITH queries, and they can do fuzzy matching, and scoring.
      */
-    FULLTEXT( IndexKind.SPECIAL ),
-    ;
-
-    private final IndexKind kind;
-
-    IndexType( IndexKind kind )
-    {
-        this.kind = kind;
-    }
-
-    public IndexKind getKind()
-    {
-        return kind;
-    }
+    FULLTEXT
 }

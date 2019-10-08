@@ -26,7 +26,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexKind;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.register.Register;
@@ -56,7 +56,7 @@ public interface SchemaRead extends SchemaReadCore
         while ( indexes.hasNext() )
         {
             IndexDescriptor index = indexes.next();
-            if ( index.getIndexType().getKind() == IndexKind.GENERAL )
+            if ( index.getIndexType() == IndexType.BTREE )
             {
                 return index;
             }

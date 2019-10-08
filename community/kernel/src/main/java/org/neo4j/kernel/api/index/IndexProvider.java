@@ -27,9 +27,9 @@ import java.io.IOException;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexKind;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -255,8 +255,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      */
     public void validatePrototype( IndexPrototype prototype )
     {
-        // By default we accept any index of the general kind.
-        if ( prototype.getIndexType().getKind() != IndexKind.GENERAL )
+        // By default we only accept BTREE indexes.
+        if ( prototype.getIndexType() != IndexType.BTREE )
         {
             throw new IllegalArgumentException( "The '" + getProviderDescriptor().name() + "' index provider do not support SPECIAL indexes: " + prototype );
         }

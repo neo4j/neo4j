@@ -35,7 +35,7 @@ import org.neo4j.token.api.TokenIdPrettyPrinter;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.schema.IndexKind.GENERAL;
+import static org.neo4j.internal.schema.IndexType.BTREE;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
@@ -96,7 +96,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         }
         validatePropertyIds( propertyKeyIds );
 
-        boolean generalSingleEntity = indexType.getKind() == GENERAL && entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS;
+        boolean generalSingleEntity = indexType == BTREE && entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS;
 
         this.archetypalLabelSchema = entityType == NODE && generalSingleEntity;
         this.archetypalRelationshipTypeSchema = entityType == RELATIONSHIP && generalSingleEntity;

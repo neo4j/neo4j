@@ -69,8 +69,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexKind;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -645,7 +645,7 @@ public class TransactionImpl implements InternalTransaction
         while ( iterator.hasNext() )
         {
             IndexDescriptor index = iterator.next();
-            if ( index.getIndexType().getKind() != IndexKind.GENERAL )
+            if ( index.getIndexType() != IndexType.BTREE )
             {
                 // Skip special indexes, such as the full-text indexes, because they can't handle all the queries we might throw at them.
                 continue;
@@ -775,7 +775,7 @@ public class TransactionImpl implements InternalTransaction
         while ( iterator.hasNext() )
         {
             IndexDescriptor index = iterator.next();
-            if ( index.getIndexType().getKind() == IndexKind.GENERAL )
+            if ( index.getIndexType() == IndexType.BTREE )
             {
                 return index;
             }
@@ -792,7 +792,7 @@ public class TransactionImpl implements InternalTransaction
         {
             IndexDescriptor index = indexes.next();
             int[] original = index.schema().getPropertyIds();
-            if ( index.getIndexType().getKind() == IndexKind.GENERAL && hasSamePropertyIds( original, workingCopy, propertyIds ) )
+            if ( index.getIndexType() == IndexType.BTREE && hasSamePropertyIds( original, workingCopy, propertyIds ) )
             {
                 // Ha! We found an index with the same properties in another order
                 return index;
