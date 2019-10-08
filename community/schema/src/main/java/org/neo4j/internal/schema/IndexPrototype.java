@@ -24,6 +24,8 @@ import java.util.Optional;
 
 import org.neo4j.common.TokenNameLookup;
 
+import static org.neo4j.internal.schema.IndexType.BTREE;
+
 /**
  * The prototype of an index that may or may not exist.
  */
@@ -33,37 +35,40 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     private final boolean isUnique;
     private final IndexProviderDescriptor indexProvider;
     private final String name;
+    private final IndexType indexType;
 
     public static IndexPrototype forSchema( SchemaDescriptor schema )
     {
-        return new IndexPrototype( schema, false, IndexProviderDescriptor.UNDECIDED, null );
+        return new IndexPrototype( schema, false, IndexProviderDescriptor.UNDECIDED, null, BTREE );
     }
 
     public static IndexPrototype forSchema( SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
     {
-        return new IndexPrototype( schema, false, indexProvider, null );
+        return new IndexPrototype( schema, false, indexProvider, null, BTREE );
     }
 
     public static IndexPrototype uniqueForSchema( SchemaDescriptor schema )
     {
-        return new IndexPrototype( schema, true, IndexProviderDescriptor.UNDECIDED, null );
+        return new IndexPrototype( schema, true, IndexProviderDescriptor.UNDECIDED, null, BTREE );
     }
 
     public static IndexPrototype uniqueForSchema( SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
     {
-        return new IndexPrototype( schema, true, indexProvider, null );
+        return new IndexPrototype( schema, true, indexProvider, null, BTREE );
     }
 
-    private IndexPrototype( SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, String name )
+    private IndexPrototype( SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, String name, IndexType indexType )
     {
         Objects.requireNonNull( schema, "Schema of index cannot be null." );
         Objects.requireNonNull( indexProvider, "Index provider cannot be null." );
+        Objects.requireNonNull( indexType, "Index type cannot be null." );
         // Note that 'name' is allowed to be null in the constructor, as that is the case initially for new index prototypes.
 
         this.schema = schema;
         this.isUnique = isUnique;
         this.indexProvider = indexProvider;
         this.name = name;
+        this.indexType = indexType;
     }
 
     @Override
@@ -104,7 +109,7 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     @Override
     public IndexType getIndexType()
     {
-        return schema().getIndexType();
+        return indexType;
     }
 
     @Override
@@ -116,13 +121,13 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     @Override
     public IndexPrototype withIndexProvider( IndexProviderDescriptor indexProvider )
     {
-        return new IndexPrototype( schema, isUnique, indexProvider, name );
+        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType );
     }
 
     @Override
     public IndexPrototype withSchemaDescriptor( SchemaDescriptor schema )
     {
-        return new IndexPrototype( schema, isUnique, indexProvider, name );
+        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType );
     }
 
     /**
@@ -138,7 +143,18 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
         {
             return this;
         }
-        return new IndexPrototype( schema, isUnique, indexProvider, name );
+        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType );
+    }
+
+    /**
+     * Produce a new index prototype that is the same as this index prototype in every way, except it has the given index type.
+     *
+     * @param indexType The index type assigned to the new index prototype.
+     * @return A new index prototype with the given index type.
+     */
+    public IndexPrototype withIndexType( IndexType indexType )
+    {
+        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType );
     }
 
     /**

@@ -44,16 +44,17 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     private final IndexProviderDescriptor indexProvider;
     private final Long owningConstraintId;
     private final IndexCapability capability;
+    private final IndexType indexType;
 
     IndexDescriptor( long id, IndexPrototype prototype )
     {
         this( id, SchemaRule.sanitiseName( prototype.getName() ), prototype.schema(), prototype.isUnique(),
                 prototype.getIndexProvider(), null,
-                IndexCapability.NO_CAPABILITY );
+                IndexCapability.NO_CAPABILITY, prototype.getIndexType() );
     }
 
     private IndexDescriptor( long id, String name, SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, Long owningConstraintId,
-            IndexCapability capability )
+            IndexCapability capability, IndexType indexType )
     {
         if ( id < 0 )
         {
@@ -72,6 +73,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         this.indexProvider = indexProvider;
         this.owningConstraintId = owningConstraintId;
         this.capability = capability;
+        this.indexType = indexType;
     }
 
     /**
@@ -86,6 +88,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         this.indexProvider = IndexProviderDescriptor.UNDECIDED;
         this.owningConstraintId = null;
         this.capability = IndexCapability.NO_CAPABILITY;
+        this.indexType = IndexType.BTREE;
     }
 
     @Override
@@ -122,7 +125,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
             return this;
         }
         name = SchemaRule.sanitiseName( name );
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType );
     }
 
     /**
@@ -136,7 +139,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return "Index( " + id + ", '" + name + "', " + (isUnique ? "UNIQUE" : "GENERAL") + ", " +
+        return "Index( " + id + ", '" + name + "', " + (isUnique ? "UNIQUE" : "GENERAL") + " " + indexType + ", " +
                 schema().userDescription( tokenNameLookup ) + ", " +
                 getIndexProvider().name() + " )";
     }
@@ -150,7 +153,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     @Override
     public IndexType getIndexType()
     {
-        return schema().getIndexType();
+        return indexType;
     }
 
     @Override
@@ -170,13 +173,13 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     @Override
     public IndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider )
     {
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType );
     }
 
     @Override
     public IndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
     {
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType );
     }
 
     /**
@@ -197,7 +200,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
             throw new IllegalArgumentException(
                     "The owning constraint id of an index must not be negative, but it was attempted to assign " + owningConstraintId + "." );
         }
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType );
     }
 
     /**
@@ -208,7 +211,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
      */
     public IndexDescriptor withIndexCapability( IndexCapability capability )
     {
-        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType );
     }
 
     @Override
@@ -233,6 +236,10 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         {
             return false;
         }
+        if ( indexType != that.indexType )
+        {
+            return false;
+        }
         if ( !name.equals( that.name ) )
         {
             return false;
@@ -251,6 +258,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         result = 31 * result + name.hashCode();
         result = 31 * result + schema.hashCode();
         result = 31 * result + Boolean.hashCode( isUnique );
+        result = 31 * result + indexType.hashCode();
         result = 31 * result + indexProvider.hashCode();
         return result;
     }
