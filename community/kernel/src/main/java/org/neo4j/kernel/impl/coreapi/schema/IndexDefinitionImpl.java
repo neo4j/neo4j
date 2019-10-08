@@ -72,36 +72,11 @@ public class IndexDefinitionImpl implements IndexDefinition
     }
 
     @Override
-    public Label getLabel()
-    {
-        assertInUnterminatedTransaction();
-        assertIsNodeIndex();
-        if ( labels.length > 1 )
-        {
-            throw new IllegalStateException( "This is a multi-token index, which has more than one label. Call the getLabels() method instead." );
-        }
-        return labels[0];
-    }
-
-    @Override
     public Iterable<Label> getLabels()
     {
         assertInUnterminatedTransaction();
         assertIsNodeIndex();
         return Arrays.asList( labels );
-    }
-
-    @Override
-    public RelationshipType getRelationshipType()
-    {
-        assertInUnterminatedTransaction();
-        assertIsRelationshipIndex();
-        if ( relTypes.length > 1 )
-        {
-            throw new IllegalStateException(
-                    "This is a multi-token index, which has more than one relationship type. " + "Call the getRelationshipTypes() method instead." );
-        }
-        return relTypes[0];
     }
 
     @Override
