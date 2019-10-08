@@ -153,6 +153,17 @@ class ArgumentsTest
     }
 
     @Test
+    void usageShouldPlacePositionalArgumentsInTheRightPosition()
+    {
+        final Arguments arguments = builder.withPositionalArgument( new MandatoryPositionalArgument( 2, "arg2" ) ).withArgument(
+                new MandatoryNamedArg( "argument", "false", "argument description" ) ).withPositionalArgument(
+                new OptionalPositionalArgument( 0, "arg0" ) ).withArgument(
+                new OptionalNamedArg( "anotherArgument", "false", "false", "another argument description" ) );
+
+        assertEquals( "[<arg0>] --argument=<false> <arg2> [--anotherArgument=<false>]" , arguments.usage() );
+    }
+
+    @Test
     void withDatabaseToDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +

@@ -109,18 +109,28 @@ public class Arguments
     {
         StringBuilder sb = new StringBuilder();
 
-        if ( !namedArgs.isEmpty() )
-        {
-            sb.append( namedArgs.values().stream().map( NamedArgument::usage ).collect( Collectors.joining( " " ) ) );
-        }
-
         if ( !positionalArgs.isEmpty() )
         {
-            sb.append( " " );
             positionalArgs.sort( Comparator.comparingInt( PositionalArgument::position ) );
-            sb.append( positionalArgs.stream().map( PositionalArgument::usage ).collect( Collectors.joining( " " ) ) );
         }
 
+        final List<String> namedArgsUsage = namedArgs.values().stream().map( NamedArgument::usage ).collect( Collectors.toList() );
+
+        int nbrOfArgs = positionalArgs.size() + namedArgs.size();
+
+        for ( int i = 0; i < nbrOfArgs; i++ )
+        {
+            sb.append( " " );
+
+            if ( !positionalArgs.isEmpty() && positionalArgs.get( 0 ).position() == i )
+            {
+                sb.append( positionalArgs.remove( 0 ).usage() );
+            }
+            else
+            {
+                sb.append( namedArgsUsage.remove( 0 ) );
+            }
+        }
         return sb.toString().trim();
     }
 
