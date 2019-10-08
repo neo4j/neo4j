@@ -90,11 +90,11 @@ abstract class CommunityProcedureITBase extends KernelIntegrationTest implements
 
     private String printElementsOfArray( AnyValue[] array )
     {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for ( AnyValue anyValue : array )
         {
-            result += anyValue.toString() + "\n";
+            result.append( anyValue ).append( "\n" );
         }
-        return result;
+        return result.toString();
     }
 }

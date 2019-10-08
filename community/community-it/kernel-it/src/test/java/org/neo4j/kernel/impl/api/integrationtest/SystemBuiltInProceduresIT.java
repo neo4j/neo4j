@@ -277,7 +277,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     }
 
     @Test
-    void fulltextAwaitIndex() throws Throwable
+    void fulltextAwaitIndex()
     {
         // Don't need any setup because creating those indexes is also faked on system so we cannot test against it
 
@@ -290,7 +290,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     }
 
     @Test
-    void queryNodes() throws Throwable
+    void queryNodes()
     {
         // Don't need any setup because creating those indexes is also faked on system so we cannot test against it
 
@@ -302,7 +302,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     }
 
     @Test
-    void queryRelationships() throws Throwable
+    void queryRelationships()
     {
         // Don't need any setup because creating those indexes is also faked on system so we cannot test against it
 
@@ -369,7 +369,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     }
 
     @Test
-    void stats() throws Throwable
+    void stats()
     {
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
