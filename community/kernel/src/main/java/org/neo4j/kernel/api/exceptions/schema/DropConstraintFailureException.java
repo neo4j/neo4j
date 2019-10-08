@@ -27,38 +27,52 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class DropConstraintFailureException extends SchemaKernelException
 {
-    private final SchemaDescriptorSupplier constraint;
+    private final Object constraint;
 
-    public DropConstraintFailureException( SchemaDescriptorSupplier constraint, TokenNameLookup lookup, Throwable cause )
+    public DropConstraintFailureException( SchemaDescriptorSupplier constraint, Throwable cause )
     {
-        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint %s: %s", constraint.userDescription( lookup ), cause.getMessage() );
+        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint: " + cause.getMessage() );
         this.constraint = constraint;
     }
 
     public DropConstraintFailureException( String nameOrSchema, Throwable cause )
     {
         // nameOrSchema is just 'name' or 'on schema'
-        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint `%s`: %s", nameOrSchema, cause.getMessage() );
-        this.constraint = null;
+        super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint: " + cause.getMessage() );
+        this.constraint = nameOrSchema;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        if ( constraint == null )
+        String message;
+        if ( constraint instanceof SchemaDescriptorSupplier )
         {
-            return getMessage();
+            SchemaDescriptorSupplier schemaish = (SchemaDescriptorSupplier) constraint;
+            message = "Unable to drop constraint on " + schemaish.userDescription( tokenNameLookup ) + ": ";
+
+        }
+        else if ( constraint instanceof String )
+        {
+            String name = (String) constraint;
+            message = "Unable to drop constraint `" + name + "`: ";
         }
         else
         {
-            String message = "Unable to drop " + constraint.userDescription( tokenNameLookup );
-            if ( getCause() instanceof KernelException )
-            {
-                KernelException cause = (KernelException) getCause();
-
-                return String.format( "%s:%n%s", message, cause.getUserMessage( tokenNameLookup ) );
-            }
-            return message;
+            return getMessage();
         }
+
+        Throwable cause = getCause();
+        if ( cause instanceof KernelException )
+        {
+            KernelException exception = (KernelException) cause;
+            message += exception.getUserMessage( tokenNameLookup );
+        }
+        else
+        {
+            message += cause.getMessage();
+        }
+
+        return message;
     }
 }

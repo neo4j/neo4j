@@ -1215,13 +1215,13 @@ public class Operations implements Write, SchemaWrite
             {
                 String schemaDescription = schema.userDescription( tokenNameLookup );
                 String constraintDescription = constraints.next().userDescription( tokenNameLookup );
-                throw new DropConstraintFailureException( constraint, tokenNameLookup, new IllegalArgumentException(
+                throw new DropConstraintFailureException( constraint, new IllegalArgumentException(
                         "More than one constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription ) );
             }
         }
         else
         {
-            throw new DropConstraintFailureException( schema, tokenNameLookup, new NoSuchConstraintException( schema, tokenNameLookup ) );
+            throw new DropConstraintFailureException( schema, new NoSuchConstraintException( schema, tokenNameLookup ) );
         }
     }
 
@@ -1253,7 +1253,7 @@ public class Operations implements Write, SchemaWrite
         }
         catch ( NoSuchConstraintException e )
         {
-            throw new DropConstraintFailureException( descriptor, tokenNameLookup, e );
+            throw new DropConstraintFailureException( descriptor, e );
         }
 
         //Drop it like it's hot
