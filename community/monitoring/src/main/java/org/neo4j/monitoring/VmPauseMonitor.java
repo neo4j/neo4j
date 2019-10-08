@@ -33,7 +33,6 @@ import org.neo4j.util.VisibleForTesting;
 import static java.lang.Math.max;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
-import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -44,6 +43,7 @@ public class VmPauseMonitor
     private final Monitor monitor;
     private final JobScheduler jobScheduler;
     private final Consumer<VmPauseInfo> listener;
+    private volatile boolean stopped;
     private JobHandle job;
 
     public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Monitor monitor, JobScheduler jobScheduler, Consumer<VmPauseInfo> listener )
@@ -59,6 +59,7 @@ public class VmPauseMonitor
     {
         monitor.started();
         Preconditions.checkState( job == null, "VM pause monitor is already started" );
+        stopped = false;
         job = requireNonNull( jobScheduler.schedule( Group.VM_PAUSE_MONITOR, this::run ) );
     }
 
@@ -66,6 +67,7 @@ public class VmPauseMonitor
     {
         monitor.stopped();
         Preconditions.checkState( job != null, "VM pause monitor is not started" );
+        stopped = true;
         job.cancel();
         job = null;
     }
@@ -117,7 +119,7 @@ public class VmPauseMonitor
     @VisibleForTesting
     boolean isStopped()
     {
-        return currentThread().isInterrupted();
+        return stopped;
     }
 
     public static class VmPauseInfo
