@@ -206,6 +206,8 @@ class ConstraintIndexCreatorTest
         // given
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
+        when( tokenRead.nodeLabelName( LABEL_ID ) ).thenReturn( "Label" );
+        when( tokenRead.propertyKeyName( PROPERTY_KEY_ID ) ).thenReturn( "prop" );
 
         long orphanedConstraintIndexId = 111;
         String orphanedName = "constraint";

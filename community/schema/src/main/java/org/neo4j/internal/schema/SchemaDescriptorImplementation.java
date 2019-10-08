@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.IntFunction;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
@@ -230,7 +231,8 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     {
         String prefix = entityType == RELATIONSHIP ? "-[" : "";
         String suffix = entityType == RELATIONSHIP ? "]-" : "";
-        return prefix + ":" + String.join( ",", tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) ) +
+        IntFunction<String> lookup = entityType == NODE ? tokenNameLookup::labelGetName : tokenNameLookup::relationshipTypeGetName;
+        return prefix + TokenIdPrettyPrinter.niceEntityLabels( lookup, entityTokens ) +
                 TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds ) + suffix;
     }
 
