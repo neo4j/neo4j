@@ -39,7 +39,7 @@ public interface QuerySubscription
     void cancel();
 
     /**
-     * Synchronously await until all the demanded records has been streamed the {@link QuerySubscriber}
+     * Synchronously await until all the demanded records have been streamed to the {@link QuerySubscriber}
      *
      * @return <code>true</code> if there could be more data in the stream (when request exactly equals available data this method may return true),
      * otherwise <code>false</code>

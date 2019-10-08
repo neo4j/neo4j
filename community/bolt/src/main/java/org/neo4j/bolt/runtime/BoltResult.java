@@ -33,7 +33,15 @@ public interface BoltResult extends AutoCloseable
     /** Positional names for all fields in every record of this stream. */
     String[] fieldNames();
 
+    /**
+     * @return {@code true} if there could be more records, {@code false} otherwise.
+     */
     boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Throwable;
+
+    /**
+     * @return {@code true} if there could be more records, {@code false} otherwise.
+     */
+    boolean discardRecords( DiscardingRecordConsumer recordConsumer, long size ) throws Throwable;
 
     @Override
     void close();
@@ -91,6 +99,12 @@ public interface BoltResult extends AutoCloseable
 
         @Override
         public boolean handleRecords( RecordConsumer recordConsumer, long size )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean discardRecords( DiscardingRecordConsumer recordConsumer, long size )
         {
             return false;
         }

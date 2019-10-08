@@ -93,11 +93,83 @@ class AbstractCypherAdapterStreamTest
         Clock clock = mock( Clock.class );
         var stream = new TestAbstractCypherAdapterStream( queryExecution, subscriber, clock );
         // When
-        stream.handleRecords( mock( BoltResult.RecordConsumer.class ), -1 );
+        stream.handleRecords( mock( BoltResult.RecordConsumer.class ), STREAM_LIMIT_UNLIMITED );
 
         // Then
         verify( queryExecution, times( 2 ) ).request( Long.MAX_VALUE );
         verify( queryExecution, times( 2 ) ).await();
+    }
+
+    @Test
+    void shouldDiscardAllReadQuery() throws Throwable
+    {
+        // Given
+        QueryExecution queryExecution = mock( QueryExecution.class );
+        when( queryExecution.fieldNames() ).thenReturn( new String[]{ "foo" } );
+        when( queryExecution.executionType() ).thenReturn( query( READ_ONLY ) );
+        when( queryExecution.getNotifications() ).thenReturn( Collections.emptyList() );
+        when( queryExecution.await() ).thenReturn( false );
+
+        BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
+        QueryStatistics queryStatistics = mock( QueryStatistics.class );
+        when( queryStatistics.containsUpdates() ).thenReturn( false );
+        when( queryStatistics.getNodesCreated() ).thenReturn( 0 );
+        when( queryStatistics.getNodesDeleted() ).thenReturn( 0 );
+        when( queryStatistics.getRelationshipsCreated() ).thenReturn( 0 );
+        when( queryStatistics.getRelationshipsDeleted() ).thenReturn( 0 );
+        when( queryStatistics.getPropertiesSet() ).thenReturn( 0 );
+        when( queryStatistics.getIndexesAdded() ).thenReturn( 0 );
+        when( queryStatistics.getIndexesRemoved() ).thenReturn( 0 );
+        when( queryStatistics.getConstraintsAdded() ).thenReturn( 0 );
+        when( queryStatistics.getConstraintsRemoved() ).thenReturn( 0 );
+        when( queryStatistics.getLabelsAdded() ).thenReturn( 0 );
+        when( queryStatistics.getLabelsRemoved() ).thenReturn( 0 );
+        subscriber.onResultCompleted( queryStatistics );
+
+        Clock clock = mock( Clock.class );
+        var stream = new TestAbstractCypherAdapterStream( queryExecution, subscriber, clock );
+        // When
+        stream.discardRecords( mock( BoltResult.DiscardingRecordConsumer.class ), STREAM_LIMIT_UNLIMITED );
+
+        // Then
+        verify( queryExecution, times( 1 ) ).cancel();
+        verify( queryExecution, times( 1 ) ).await();
+    }
+
+    @Test
+    void shouldDiscardAllReadWriteQuery() throws Throwable
+    {
+        // Given
+        QueryExecution queryExecution = mock( QueryExecution.class );
+        when( queryExecution.fieldNames() ).thenReturn( new String[]{ "foo" } );
+        when( queryExecution.executionType() ).thenReturn( query( READ_WRITE ) );
+        when( queryExecution.getNotifications() ).thenReturn( Collections.emptyList() );
+        when( queryExecution.await() ).thenReturn( false );
+
+        BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
+        QueryStatistics queryStatistics = mock( QueryStatistics.class );
+        when( queryStatistics.containsUpdates() ).thenReturn( false );
+        when( queryStatistics.getNodesCreated() ).thenReturn( 0 );
+        when( queryStatistics.getNodesDeleted() ).thenReturn( 0 );
+        when( queryStatistics.getRelationshipsCreated() ).thenReturn( 0 );
+        when( queryStatistics.getRelationshipsDeleted() ).thenReturn( 0 );
+        when( queryStatistics.getPropertiesSet() ).thenReturn( 0 );
+        when( queryStatistics.getIndexesAdded() ).thenReturn( 0 );
+        when( queryStatistics.getIndexesRemoved() ).thenReturn( 0 );
+        when( queryStatistics.getConstraintsAdded() ).thenReturn( 0 );
+        when( queryStatistics.getConstraintsRemoved() ).thenReturn( 0 );
+        when( queryStatistics.getLabelsAdded() ).thenReturn( 0 );
+        when( queryStatistics.getLabelsRemoved() ).thenReturn( 0 );
+        subscriber.onResultCompleted( queryStatistics );
+
+        Clock clock = mock( Clock.class );
+        var stream = new TestAbstractCypherAdapterStream( queryExecution, subscriber, clock );
+        // When
+        stream.discardRecords( mock( BoltResult.DiscardingRecordConsumer.class ), STREAM_LIMIT_UNLIMITED );
+
+        // Then
+        verify( queryExecution, times( 1 ) ).request( Long.MAX_VALUE );
+        verify( queryExecution, times( 1 ) ).await();
     }
 
     @Test

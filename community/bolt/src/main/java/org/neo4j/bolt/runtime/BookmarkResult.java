@@ -44,6 +44,12 @@ public class BookmarkResult implements BoltResult
     }
 
     @Override
+    public boolean discardRecords( DiscardingRecordConsumer recordConsumer, long size )
+    {
+        return false;
+    }
+
+    @Override
     public void close()
     {
     }

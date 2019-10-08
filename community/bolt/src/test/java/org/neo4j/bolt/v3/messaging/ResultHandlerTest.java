@@ -118,6 +118,12 @@ class ResultHandlerTest
         }
 
         @Override
+        public boolean discardRecords( DiscardingRecordConsumer recordConsumer, long size )
+        {
+            return false;
+        }
+
+        @Override
         public void close()
         {
         }

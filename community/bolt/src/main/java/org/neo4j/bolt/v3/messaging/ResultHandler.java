@@ -44,7 +44,7 @@ public class ResultHandler extends MessageProcessingHandler
     @Override
     public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
     {
-        return markHasMore( result.handleRecords( new RecordDiscardingBoltResultRecordConsumer(), size ) );
+        return markHasMore( result.discardRecords( new RecordDiscardingBoltResultRecordConsumer(), size ) );
     }
 
     private class RecordWritingBoltResultRecordConsumer implements BoltResult.RecordConsumer

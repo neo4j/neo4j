@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -113,6 +114,24 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
             addMetadata( querySubscriber.queryStatistics(), recordConsumer );
         }
         return hasMore;
+    }
+
+    public boolean discardRecords( DiscardingRecordConsumer consumer, long size ) throws Throwable
+    {
+        Preconditions.checkArgument( size == STREAM_LIMIT_UNLIMITED,
+                                     "Currently it is only supported to discard ALL records, but it was requested to discard " + size );
+
+        if ( queryExecution.executionType().queryType() == QueryExecutionType.QueryType.READ_ONLY )
+        {
+            queryExecution.cancel();
+            queryExecution.await();
+            return false;
+        }
+        else
+        {
+            // For READ-WRITE or WRITE queries, we need to continue execution but do not need to send records any longer
+            return handleRecords( consumer, size );
+        }
     }
 
     protected abstract void addDatabaseName( RecordConsumer recordConsumer );
