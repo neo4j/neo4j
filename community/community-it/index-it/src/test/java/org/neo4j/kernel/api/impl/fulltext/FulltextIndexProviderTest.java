@@ -265,15 +265,6 @@ public class FulltextIndexProviderTest
                     assertThat( index.getLabels(), containsInAnyOrder( Label.label( "Label1" ), Label.label( "Label2" ) ) );
                     try
                     {
-                        //noinspection deprecation
-                        index.getLabel();
-                        fail( "index.getLabel() on multi-token IndexDefinition should have thrown." );
-                    }
-                    catch ( IllegalStateException ignore )
-                    {
-                    }
-                    try
-                    {
                         index.getRelationshipTypes();
                         fail( "index.getRelationshipTypes() on node IndexDefinition should have thrown." );
                     }

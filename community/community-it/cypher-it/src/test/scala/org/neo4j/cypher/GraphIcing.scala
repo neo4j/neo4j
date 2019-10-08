@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.{RuntimeJavaValueConverter, isGraphKern
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.schema.{ConstraintDefinition, ConstraintType, IndexDefinition}
+import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -155,7 +156,7 @@ trait GraphIcing {
     def getIndexSchemaByName(name: String): (String, Seq[String]) = {
       withTx( tx =>  {
         val index = tx.schema().getIndexByName(name)
-        val label = index.getLabel.name()
+        val label = Iterables.single( index.getLabels ).name()
         val properties = index.getPropertyKeys.asScala.toList
         (label, properties)
       } )

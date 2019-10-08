@@ -27,7 +27,6 @@ import static org.neo4j.graphdb.FacadeMethod.consume;
 
 public enum IndexDefinitionFacadeMethods implements Consumer<IndexDefinition>
 {
-    GET_LABEL( new FacadeMethod<>( "Label getLabel()", IndexDefinition::getLabel ) ),
     GET_LABELS( new FacadeMethod<>( "Iterable<Label> getLabels()", self -> consume( self.getLabels() ) ) ),
     GET_RELATIONSHIP_TYPE( new FacadeMethod<>( "RelationshipType getRelationshipType()", IndexDefinition::getRelationshipType ) ),
     GET_RELATIONSHIP_TYPES( new FacadeMethod<>( "Iterable<RelationshipType> getRelationshipTypes()", self -> consume( self.getRelationshipTypes() ) ) ),

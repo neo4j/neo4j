@@ -418,7 +418,6 @@ class IndexIT extends KernelIntegrationTest
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            assertThrows( IllegalStateException.class, index::getLabel );
             assertThrows( IllegalStateException.class, index::getRelationshipType );
             assertThrows( IllegalStateException.class, index::getRelationshipTypes );
             assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ), label( LABEL2 ) ) );
@@ -474,7 +473,6 @@ class IndexIT extends KernelIntegrationTest
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            assertThrows( IllegalStateException.class, index::getLabel );
             assertThrows( IllegalStateException.class, index::getLabels );
             assertEquals( REL_TYPE, index.getRelationshipType().name() );
             assertEquals( singletonList( withName( REL_TYPE ) ), index.getRelationshipTypes() );
@@ -503,7 +501,6 @@ class IndexIT extends KernelIntegrationTest
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            assertThrows( IllegalStateException.class, index::getLabel );
             assertThrows( IllegalStateException.class, index::getLabels );
             assertThrows( IllegalStateException.class, index::getRelationshipType );
             assertThat( index.getRelationshipTypes(), containsInAnyOrder( withName( REL_TYPE ), withName( REL_TYPE2 ) ) );

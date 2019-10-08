@@ -30,18 +30,6 @@ import org.neo4j.graphdb.RelationshipType;
 public interface IndexDefinition
 {
     /**
-     * Return the node label that this index applies to. Nodes with this label are indexed by this index.
-     * <p>
-     * Note that this assumes that this is a node index (that {@link #isNodeIndex()} returns {@code true}) and not a multi-token index
-     * (that {@link #isMultiTokenIndex()} returns {@code false}). If this is not the case, then an {@link IllegalStateException} is thrown.
-     *
-     * @return the {@link Label label} this index definition is associated with.
-     * @deprecated This method is deprecated and will be removed in next major release. Please consider using {@link #getLabels()} instead.
-     */
-    @Deprecated
-    Label getLabel();
-
-    /**
      * Return the set of node labels (in no particular order) that this index applies to. This method works for both {@link #isMultiTokenIndex() multi-token}
      * indexes, and "single-token" indexes.
      * <p>

@@ -176,6 +176,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_p
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
@@ -1225,7 +1226,7 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name )
         {
-            int labelId = getOrCreateLabelId( indexDefinition.getLabel().name() );
+            int labelId = getOrCreateLabelId( single( indexDefinition.getLabels() ).name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
 
@@ -1237,7 +1238,7 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name )
         {
-            int labelId = getOrCreateLabelId( indexDefinition.getLabel().name() );
+            int labelId = getOrCreateLabelId( single( indexDefinition.getLabels() ).name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
 
