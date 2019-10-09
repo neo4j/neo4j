@@ -88,7 +88,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         // when
         final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{0, 0}, new int[]{1} );
         // then
-        assertThrows( RepeatedLabelInSchemaException.class, () -> schemaWrite.indexCreate( descriptor ) );
+        assertThrows( RepeatedLabelInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
     }
 
     @Test
@@ -111,7 +111,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         // when
         final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{0, 0}, new int[]{1} );
         // then
-        assertThrows( RepeatedRelationshipTypeInSchemaException.class, () -> schemaWrite.indexCreate( descriptor ) );
+        assertThrows( RepeatedRelationshipTypeInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
     }
 
     @Test
@@ -134,7 +134,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         // when
         final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{0}, new int[]{1, 1} );
         // then
-        assertThrows( RepeatedPropertyInSchemaException.class, () -> schemaWrite.indexCreate( descriptor ) );
+        assertThrows( RepeatedPropertyInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
     }
 
     protected void shouldFailWithNonExistentProviderName( IndexCreator creator ) throws KernelException

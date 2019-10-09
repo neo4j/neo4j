@@ -217,9 +217,9 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor );
+        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
         transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor, "constraint name" );
-        transaction.schemaWrite().indexCreate( personFooBarDescriptor );
+        transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
         commit();
 
         //let indexes come online
@@ -321,9 +321,9 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
         LabelSchemaDescriptor personBazDescriptor = forLabel( labelId1, propertyKeyId3 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor );
+        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
         transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor, "age foo constraint" );
-        transaction.schemaWrite().indexCreate( personFooBarDescriptor );
+        transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
         commit();
 
         //let indexes come online

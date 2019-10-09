@@ -38,29 +38,21 @@ public interface SchemaWrite
     /**
      * Create index from schema descriptor
      *
-     * @param descriptor description of the index
-     * @return the newly created index
-     */
-    IndexDescriptor indexCreate( SchemaDescriptor descriptor ) throws KernelException;
-
-    /**
-     * Create index from schema descriptor
-     *
-     * @param descriptor description of the index
+     * @param schema description of the index
      * @param name name of the index
      * @return the newly created index
      */
-    IndexDescriptor indexCreate( SchemaDescriptor descriptor, String name ) throws KernelException;
+    IndexDescriptor indexCreate( SchemaDescriptor schema, String name ) throws KernelException;
 
     /**
      * Create index from schema descriptor
      *
-     * @param descriptor description of the index
+     * @param schema description of the index
      * @param provider name of the desired index provider implementation
      * @param name name of the index
      * @return the newly created index
      */
-    IndexDescriptor indexCreate( SchemaDescriptor descriptor, String provider, String name ) throws KernelException;
+    IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException;
 
     /**
      * Drop the given index
@@ -85,46 +77,46 @@ public interface SchemaWrite
     /**
      * Create unique property constraint
      *
-     * @param descriptor description of the constraint
+     * @param schema description of the constraint
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String name ) throws KernelException;
+    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String name ) throws KernelException;
 
     /**
      * Create unique property constraint
      *
-     * @param descriptor description of the constraint
+     * @param schema description of the constraint
      * @param provider name of the desired index provider implementation
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider, String name ) throws KernelException;
+    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException;
 
     /**
      * Create node key constraint
      *
-     * @param descriptor description of the constraint
+     * @param schema description of the constraint
      */
-    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String name ) throws KernelException;
+    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException;
 
     /**
      * Create node key constraint
      *
-     * @param descriptor description of the constraint
+     * @param schema description of the constraint
      * @param provider name of the desired index provider implementation
      */
-    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String provider, String name ) throws KernelException;
+    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String provider, String name ) throws KernelException;
 
     /**
      * Create node property existence constraint
      *
-     * @param descriptor description of the constraint
+     * @param schema description of the constraint
      */
-    ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor, String name ) throws KernelException;
+    ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException;
 
     /**
      * Create relationship property existence constraint
      *
-     * @param descriptor description of the constraint
+     * @param schema description of the constraint
      */
-    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor, String name ) throws KernelException;
+    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor schema, String name ) throws KernelException;
 
     /**
      * Drop a constraint with the given schema.
@@ -143,7 +135,7 @@ public interface SchemaWrite
     /**
      * Drop the specific constraint.
      *
-     * @param descriptor description of the constraint
+     * @param constraint description of the constraint
      */
-    void constraintDrop( ConstraintDescriptor descriptor ) throws SchemaKernelException;
+    void constraintDrop( ConstraintDescriptor constraint ) throws SchemaKernelException;
 }

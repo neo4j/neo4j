@@ -93,7 +93,7 @@ class CompositeIndexingIT
             }
             else
             {
-                index = ktx.schemaWrite().indexCreate( prototype.schema() );
+                index = ktx.schemaWrite().indexCreate( prototype.schema(), null );
             }
             tx.commit();
         }

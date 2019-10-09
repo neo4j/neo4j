@@ -80,7 +80,7 @@ class SchemaProcedureIT extends KernelIntegrationTest
         commit();
 
         SchemaWrite schemaOps = schemaWriteInNewTransaction();
-        schemaOps.indexCreate( SchemaDescriptor.forLabel( labelId, propertyIdName ) );
+        schemaOps.indexCreate( SchemaDescriptor.forLabel( labelId, propertyIdName ), "my index" );
         schemaOps.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId, propertyIdAge ), "constraint name" );
         commit();
 

@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -170,8 +171,8 @@ class KernelSchemaStateFlushingTest
     {
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            IndexDescriptor reference = transaction.schemaWrite().indexCreate(
-                    SchemaDescriptor.forLabel( 1, 1 ) );
+            LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( 1, 1 );
+            IndexDescriptor reference = transaction.schemaWrite().indexCreate( schema, null );
             transaction.commit();
             return reference;
         }

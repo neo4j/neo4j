@@ -89,7 +89,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             schema = SchemaDescriptor.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( schema );
+            tx.schemaWrite().indexCreate( schema, "my index" );
             tx.commit();
         }
 
@@ -118,7 +118,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             schema = SchemaDescriptor.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( schema );
+            tx.schemaWrite().indexCreate( schema, "my index" );
             tx.commit();
         }
 
@@ -146,7 +146,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             schema = SchemaDescriptor.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( schema );
+            tx.schemaWrite().indexCreate( schema, "my index" );
             tx.commit();
         }
 
@@ -173,7 +173,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             schema = SchemaDescriptor.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( schema );
+            tx.schemaWrite().indexCreate( schema, "my index" );
             tx.commit();
         }
 

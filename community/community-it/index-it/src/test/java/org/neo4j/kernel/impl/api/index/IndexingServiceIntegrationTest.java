@@ -139,7 +139,7 @@ public class IndexingServiceIntegrationTest
             int foodId = tx.tokenWrite().relationshipTypeGetOrCreateForName( FOOD_LABEL );
             int propertyId = tx.tokenWrite().propertyKeyGetOrCreateForName( PROPERTY_NAME );
             RelationTypeSchemaDescriptor schema = forRelType( foodId, propertyId );
-            index = tx.schemaWrite().indexCreate( schema );
+            index = tx.schemaWrite().indexCreate( schema, "food names" );
             tx.commit();
         }
 

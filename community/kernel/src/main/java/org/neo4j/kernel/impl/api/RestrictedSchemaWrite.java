@@ -62,24 +62,17 @@ public class RestrictedSchemaWrite implements SchemaWrite
     }
 
     @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor descriptor ) throws KernelException
+    public IndexDescriptor indexCreate( SchemaDescriptor schema, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_INDEX );
-        return inner.indexCreate( descriptor );
+        return inner.indexCreate( schema, name );
     }
 
     @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor descriptor, String name ) throws KernelException
+    public IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_INDEX );
-        return inner.indexCreate( descriptor, name );
-    }
-
-    @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor descriptor, String provider, String name ) throws KernelException
-    {
-        assertSchemaWrites( PrivilegeAction.CREATE_INDEX );
-        return inner.indexCreate( descriptor, provider, name );
+        return inner.indexCreate( schema, provider, name );
     }
 
     @Override
@@ -104,45 +97,45 @@ public class RestrictedSchemaWrite implements SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String name ) throws KernelException
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.uniquePropertyConstraintCreate( descriptor, name );
+        return inner.uniquePropertyConstraintCreate( schema, name );
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider, String name ) throws KernelException
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.uniquePropertyConstraintCreate( descriptor, provider, name );
+        return inner.uniquePropertyConstraintCreate( schema, provider, name );
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String name ) throws KernelException
+    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.nodeKeyConstraintCreate( descriptor, name );
+        return inner.nodeKeyConstraintCreate( schema, name );
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String provider, String name ) throws KernelException
+    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String provider, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.nodeKeyConstraintCreate( descriptor, provider, name );
+        return inner.nodeKeyConstraintCreate( schema, provider, name );
     }
 
     @Override
-    public ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor, String name ) throws KernelException
+    public ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.nodePropertyExistenceConstraintCreate( descriptor, name );
+        return inner.nodePropertyExistenceConstraintCreate( schema, name );
     }
 
     @Override
-    public ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor, String name ) throws KernelException
+    public ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor schema, String name ) throws KernelException
     {
         assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
-        return inner.relationshipPropertyExistenceConstraintCreate( descriptor, name );
+        return inner.relationshipPropertyExistenceConstraintCreate( schema, name );
     }
 
     @Override
@@ -160,9 +153,9 @@ public class RestrictedSchemaWrite implements SchemaWrite
     }
 
     @Override
-    public void constraintDrop( ConstraintDescriptor descriptor ) throws SchemaKernelException
+    public void constraintDrop( ConstraintDescriptor constraint ) throws SchemaKernelException
     {
         assertSchemaWrites( PrivilegeAction.DROP_CONSTRAINT );
-        inner.constraintDrop( descriptor );
+        inner.constraintDrop( constraint );
     }
 }

@@ -806,22 +806,16 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor descriptor ) throws KernelException
+    public IndexDescriptor indexCreate( SchemaDescriptor schema, String indexName ) throws KernelException
     {
-        return indexCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ), null );
+        return indexCreate( schema, config.get( GraphDatabaseSettings.default_schema_provider ), indexName );
     }
 
     @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor descriptor, String indexName ) throws KernelException
-    {
-        return indexCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ), indexName );
-    }
-
-    @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor descriptor, String provider, String name ) throws KernelException
+    public IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException
     {
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexPrototype prototype = IndexPrototype.forSchema( descriptor, providerDescriptor ).withName( name );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, providerDescriptor ).withName( name );
         return indexCreate( prototype );
     }
 
@@ -964,10 +958,10 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String name ) throws KernelException
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor schema, String name ) throws KernelException
     {
         String provider = config.get( GraphDatabaseSettings.default_schema_provider );
-        return uniquePropertyConstraintCreate( descriptor, provider, name );
+        return uniquePropertyConstraintCreate( schema, provider, name );
     }
 
     @Override
@@ -1104,9 +1098,9 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String name ) throws KernelException
+    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException
     {
-        return nodeKeyConstraintCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ), name );
+        return nodeKeyConstraintCreate( schema, config.get( GraphDatabaseSettings.default_schema_provider ), name );
     }
 
     @Override
@@ -1145,15 +1139,15 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor, String name ) throws KernelException
+    public ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException
     {
-        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( descriptor, name );
+        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( schema, name );
 
         //enforce constraints
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
         {
-            allStoreHolder.nodeLabelScan( descriptor.getLabelId(), nodes );
-            constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, descriptor );
+            allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes );
+            constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, schema );
         }
 
         //create constraint
@@ -1162,13 +1156,13 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor, String name ) throws KernelException
+    public ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor schema, String name ) throws KernelException
     {
-        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( descriptor, name );
+        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( schema, name );
 
         //enforce constraints
-        allStoreHolder.relationshipTypeScan( descriptor.getRelTypeId(), relationshipCursor );
-        constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, descriptor );
+        allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), relationshipCursor );
+        constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, schema );
 
         //Create
         ktx.txState().constraintDoAdd( constraint );
@@ -1237,30 +1231,30 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public void constraintDrop( ConstraintDescriptor descriptor ) throws SchemaKernelException
+    public void constraintDrop( ConstraintDescriptor constraint ) throws SchemaKernelException
     {
         //Lock
-        SchemaDescriptor schema = descriptor.schema();
+        SchemaDescriptor schema = constraint.schema();
         exclusiveOptimisticLock( schema.keyType(), schema.lockingKeys() );
-        exclusiveSchemaNameLock( descriptor.getName() );
+        exclusiveSchemaNameLock( constraint.getName() );
         ktx.assertOpen();
 
         //verify data integrity
         try
         {
-            assertConstraintExists( descriptor );
+            assertConstraintExists( constraint );
         }
         catch ( NoSuchConstraintException e )
         {
-            throw new DropConstraintFailureException( descriptor, e );
+            throw new DropConstraintFailureException( constraint, e );
         }
 
         //Drop it like it's hot
         TransactionState txState = ktx.txState();
-        txState.constraintDoDrop( descriptor );
-        if ( descriptor.enforcesUniqueness() )
+        txState.constraintDoDrop( constraint );
+        if ( constraint.enforcesUniqueness() )
         {
-            IndexDescriptor index = allStoreHolder.indexGetForName( descriptor.getName() );
+            IndexDescriptor index = allStoreHolder.indexGetForName( constraint.getName() );
             if ( index != IndexDescriptor.NO_INDEX )
             {
                 txState.indexDoDrop( index );

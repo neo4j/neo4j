@@ -606,8 +606,8 @@ public class IndexStatisticsTest
             {
                 int labelId = ktx.tokenWrite().labelGetOrCreateForName( PERSON_LABEL );
                 int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( NAME_PROPERTY );
-                LabelSchemaDescriptor descriptor = forLabel( labelId, propertyKeyId );
-                index = ktx.schemaWrite().indexCreate( descriptor );
+                LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyId );
+                index = ktx.schemaWrite().indexCreate( schema, "my index" );
             }
             tx.commit();
             return index;

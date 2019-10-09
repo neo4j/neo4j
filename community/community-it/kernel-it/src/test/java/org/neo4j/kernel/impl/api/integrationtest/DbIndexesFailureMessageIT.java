@@ -70,7 +70,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         failNextIndexPopulation.set( true );
         LabelSchemaDescriptor schema = forLabel( failedLabel, propertyKeyId1 );
-        IndexDescriptor index = transaction.schemaWrite().indexCreate( schema );
+        IndexDescriptor index = transaction.schemaWrite().indexCreate( schema, "fail foo index" );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )

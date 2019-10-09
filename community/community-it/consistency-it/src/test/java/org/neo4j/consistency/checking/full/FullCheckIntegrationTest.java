@@ -2088,7 +2088,7 @@ public class FullCheckIntegrationTest
                         key1 = tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
                         int key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
                         label3 = ktx.tokenRead().nodeLabel( "label3" );
-                        ktx.schemaWrite().indexCreate( forLabel( label3, key1, key2 ) );
+                        ktx.schemaWrite().indexCreate( forLabel( label3, key1, key2 ), null );
                     }
 
                     tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();

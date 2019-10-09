@@ -1036,7 +1036,7 @@ class OperationsTest
         when( tokenHolders.propertyKeyTokens().getTokenById( 2 ) ).thenReturn( new NamedToken( "PropB", 2 ) );
         storageReaderWithoutConstraints();
         when( storageReader.indexGetForSchema( any() ) ).thenReturn( Collections.emptyIterator() );
-        operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ) );
+        operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ), null );
         operations.indexCreate( SchemaDescriptor.fulltext( NODE, new int[] {2, 3}, new int[] {1, 2} ), null );
         operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", null );
         IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
