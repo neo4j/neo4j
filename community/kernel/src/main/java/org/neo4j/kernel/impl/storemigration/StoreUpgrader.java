@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -46,6 +47,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
+import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -78,7 +80,7 @@ public class StoreUpgrader
 
     private final StoreVersionCheck storeVersionCheck;
     private final MigrationProgressMonitor progressMonitor;
-    private final List<StoreMigrationParticipant> participants = new ArrayList<>();
+    private final LinkedHashMap<String, StoreMigrationParticipant> participants = new LinkedHashMap<>();
     private final Config config;
     private final FileSystemAbstraction fileSystem;
     private final Log log;
@@ -109,9 +111,15 @@ public class StoreUpgrader
     public void addParticipant( StoreMigrationParticipant participant )
     {
         assert participant != null;
-        if ( !StoreMigrationParticipant.NOT_PARTICIPATING.equals( participant ) )
+        if ( !NOT_PARTICIPATING.equals( participant ) )
         {
-            this.participants.add( participant );
+            var newParticipantName = participant.getName();
+            if ( participants.containsKey( newParticipantName ) )
+            {
+                throw new IllegalStateException(
+                        "Migration participants should have unique names. Participant with name: `" + newParticipantName + "` is already registered." );
+            }
+            this.participants.put( newParticipantName, participant );
         }
     }
 
@@ -196,14 +204,14 @@ public class StoreUpgrader
         {
             versionToMigrateFrom = MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
             String versionToMigrateTo = storeVersionCheck.configuredVersion();
-            moveMigratedFilesToStoreDirectory( participants, migrationLayout, dbDirectoryLayout, versionToMigrateFrom, versionToMigrateTo );
+            moveMigratedFilesToStoreDirectory( participants.values(), migrationLayout, dbDirectoryLayout, versionToMigrateFrom, versionToMigrateTo );
         }
 
         progressMonitor.startTransactionLogsMigration();
         migrateTransactionLogs( dbDirectoryLayout, legacyLogsLocator );
         progressMonitor.completeTransactionLogsMigration();
 
-        cleanup( participants, migrationLayout );
+        cleanup( participants.values(), migrationLayout );
 
         progressMonitor.completed();
     }
@@ -287,7 +295,7 @@ public class StoreUpgrader
 
     List<StoreMigrationParticipant> getParticipants()
     {
-        return participants;
+        return List.copyOf( participants.values() );
     }
 
     private boolean isUpgradeAllowed()
@@ -344,11 +352,11 @@ public class StoreUpgrader
     {
         try
         {
-            for ( StoreMigrationParticipant participant : participants )
+            for ( Map.Entry<String, StoreMigrationParticipant> participantEntry : participants.entrySet() )
             {
-                ProgressReporter progressReporter = progressMonitor.startSection( participant.getName() );
+                ProgressReporter progressReporter = progressMonitor.startSection( participantEntry.getKey() );
                 String versionToMigrateTo = storeVersionCheck.configuredVersion();
-                participant.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom, versionToMigrateTo );
+                participantEntry.getValue().migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom, versionToMigrateTo );
                 progressReporter.completed();
             }
         }

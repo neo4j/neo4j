@@ -131,7 +131,7 @@ public class LuceneIndexProvider extends IndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return new SchemaIndexMigrator( fs, this, storageEngineFactory );
+        return new SchemaIndexMigrator( "Lucene indexes", fs, this, storageEngineFactory );
     }
 
     @Override

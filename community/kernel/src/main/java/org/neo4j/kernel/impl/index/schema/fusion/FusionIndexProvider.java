@@ -172,6 +172,6 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return new SchemaIndexMigrator( fs, this, storageEngineFactory );
+        return new SchemaIndexMigrator( "Schema indexes", fs, this, storageEngineFactory );
     }
 }

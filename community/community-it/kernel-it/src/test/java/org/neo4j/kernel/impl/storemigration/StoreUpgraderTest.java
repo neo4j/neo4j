@@ -141,6 +141,17 @@ public class StoreUpgraderTest
 
     @ParameterizedTest
     @MethodSource( "versions" )
+    void forbidRegistrationOfParticipantsWithSameName( RecordFormats formats ) throws IOException
+    {
+        init( formats );
+        StoreVersionCheck check = getVersionCheck( pageCache );
+        StoreUpgrader upgrader = newUpgrader( check, allowMigrateConfig, pageCache );
+        upgrader.addParticipant( new EmptyNamedMigrationParticipant( "foo" ) );
+        assertThrows( IllegalStateException.class, () -> upgrader.addParticipant( new EmptyNamedMigrationParticipant( "foo" ) ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "versions" )
     void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess( RecordFormats formats ) throws IOException
     {
         init( formats );
@@ -470,7 +481,7 @@ public class StoreUpgraderTest
         NullLogService instance = NullLogService.getInstance();
         RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler );
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, IndexProvider.EMPTY, storageEngineFactory );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( "test index migrator", fileSystem, IndexProvider.EMPTY, storageEngineFactory );
 
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem )
                 .withLogEntryReader( new VersionAwareLogEntryReader(  ) ).build();
@@ -525,5 +536,33 @@ public class StoreUpgraderTest
         File logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
         long byteOffset = logPosition.getByteOffset();
         fileSystem.truncate( logFile, byteOffset );
+    }
+
+    private static class EmptyNamedMigrationParticipant extends AbstractStoreMigrationParticipant
+    {
+        protected EmptyNamedMigrationParticipant( String name )
+        {
+            super( name );
+        }
+
+        @Override
+        public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
+                String versionToMigrateTo )
+        {
+            // empty
+        }
+
+        @Override
+        public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom,
+                String versionToMigrateTo )
+        {
+            // empty
+        }
+
+        @Override
+        public void cleanup( DatabaseLayout migrationLayout )
+        {
+            // empty
+        }
     }
 }
