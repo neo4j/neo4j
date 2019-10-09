@@ -888,7 +888,7 @@ public class Operations implements Write, SchemaWrite
         if ( prototype.getIndexProvider() == IndexProviderDescriptor.UNDECIDED )
         {
             IndexProviderDescriptor provider;
-            if ( prototype.schema().getIndexType() == IndexType.FULLTEXT )
+            if ( prototype.getIndexType() == IndexType.FULLTEXT )
             {
                 provider = indexProviders.getFulltextProvider();
             }
