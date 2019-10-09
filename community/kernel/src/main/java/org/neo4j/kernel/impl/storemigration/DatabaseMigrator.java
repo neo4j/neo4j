@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,8 +31,6 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant.Order;
 
 /**
  * DatabaseMigrator collects all dependencies required for store migration,
@@ -84,14 +81,11 @@ public class DatabaseMigrator
 
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants( fs, config, pageCache, jobScheduler, logService );
-        addParticipants( storeUpgrader, storeParticipants, Order.FIRST );
-        addParticipants( storeUpgrader, storeParticipants, Order.UNSPECIFIED );
+        storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,
                 logService.getUserLog( IndexConfigMigrator.class ) );
         storeUpgrader.addParticipant( indexConfigMigrator );
-
-        addParticipants( storeUpgrader, storeParticipants, Order.AFTER_STORE );
 
         IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator( fs, config, pageCache, logService, storageEngineFactory );
         storeUpgrader.addParticipant( indexProviderMigrator );
@@ -99,13 +93,6 @@ public class DatabaseMigrator
         // Do individual index provider migration last because they may delete files that we need in earlier steps.
         this.indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
 
-        addParticipants( storeUpgrader, storeParticipants, Order.LAST );
-
         storeUpgrader.migrateIfNeeded( databaseLayout );
-    }
-
-    private void addParticipants( StoreUpgrader target, List<StoreMigrationParticipant> storeParticipants, Order order )
-    {
-        storeParticipants.stream().filter( p -> p.getOrder() == order ).forEach( target::addParticipant );
     }
 }

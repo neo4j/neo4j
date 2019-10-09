@@ -209,11 +209,4 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
     {
         // There's nothing to clean up
     }
-
-    @Override
-    public Order getOrder()
-    {
-        // We want to do this after any store migration, i.e. after potential index configuration and schema migration, which potentially create tokens
-        return Order.AFTER_STORE;
-    }
 }

@@ -78,7 +78,6 @@ import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
@@ -106,7 +105,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler );
         IdGeneratorMigrator idGeneratorMigrator = new IdGeneratorMigrator( fs, pageCache, config );
-        return asList( recordStorageMigrator, idGeneratorMigrator );
+        return List.of( recordStorageMigrator, idGeneratorMigrator );
     }
 
     @Override

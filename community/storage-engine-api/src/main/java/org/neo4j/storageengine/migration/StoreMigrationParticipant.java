@@ -95,32 +95,4 @@ public interface StoreMigrationParticipant
      * @return descriptive name of this migration participant.
      */
     String getName();
-
-    /**
-     * @return if there's an particular order concern that this migration participant has, like being last or first.
-     */
-    Order getOrder();
-
-    enum Order
-    {
-        /**
-         * Put this participant before all other participants.
-         */
-        FIRST,
-
-        /**
-         * Put this participant after all other store related migration participants.
-         */
-        AFTER_STORE,
-
-        /**
-         * Put this participant after all other participants.
-         */
-        LAST,
-
-        /**
-         * Not specified how this participant should be ordered.
-         */
-        UNSPECIFIED
-    }
 }
