@@ -134,7 +134,7 @@ public class HttpCopierTest
         wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
-        wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( aResponse().withStatus( 429 ) ) );
+        wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( aResponse().withStatus( HttpCopier.HTTP_TOO_MANY_REQUESTS ) ) );
 
         // when
         assertThrows( CommandFailed.class, containsString( "You can re-try using the existing dump by running this command" ),
@@ -158,7 +158,7 @@ public class HttpCopierTest
                 .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
         wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
         wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
-        wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( aResponse().withStatus( 429 ) ) );
+        wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( aResponse().withStatus( HttpCopier.HTTP_TOO_MANY_REQUESTS ) ) );
         wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
         wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
 

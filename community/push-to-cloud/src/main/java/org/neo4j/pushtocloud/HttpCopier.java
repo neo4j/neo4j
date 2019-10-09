@@ -59,6 +59,7 @@ import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 public class HttpCopier implements PushToCloudCommand.Copier
 {
     static final int HTTP_RESUME_INCOMPLETE = 308;
+    static final int HTTP_TOO_MANY_REQUESTS = 429;
     private static final long POSITION_UPLOAD_COMPLETED = -1;
     private static final long MAXIMUM_RETRY_BACKOFF = SECONDS.toMillis( 64 );
 
@@ -383,7 +384,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 // fallthrough
             case HTTP_MOVED_PERM:
                 throw updatePluginErrorResponse( connection );
-            case 429: // HTTP_TOO_MANY_REQUESTS, unfortunately not in the java code base ¯\_(ツ)_/¯
+            case HTTP_TOO_MANY_REQUESTS:
                 throw resumePossibleErrorResponse( connection, source, boltUri );
             case HTTP_CONFLICT:
                 throw errorResponse( verbose, connection,
