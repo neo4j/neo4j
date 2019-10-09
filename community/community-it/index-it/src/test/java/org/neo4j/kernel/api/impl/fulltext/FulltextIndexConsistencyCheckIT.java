@@ -83,7 +83,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.array;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.SKIP_ONLINE_UPDATES;
 import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
@@ -128,7 +128,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "prop" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "Label" ), asCypherStringsList( "prop" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -147,7 +147,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "p1", "p2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "Label" ), asCypherStringsList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -170,7 +170,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", array( "L1", "L2" ), array( "prop" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "L1", "L2" ), asCypherStringsList( "prop" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -193,7 +193,7 @@ class FulltextIndexConsistencyCheckIT
         String[] labels = {"L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16"};
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", array( labels ), array( "prop" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( labels ), asCypherStringsList( "prop" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -212,7 +212,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", array( "L1", "L2" ), array( "p1", "p2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "L1", "L2" ), asCypherStringsList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -256,7 +256,7 @@ class FulltextIndexConsistencyCheckIT
         RelationshipType relationshipType = RelationshipType.withName( "R1" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1" ), array( "p1" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( "R1" ), asCypherStringsList( "p1" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -278,7 +278,7 @@ class FulltextIndexConsistencyCheckIT
         RelationshipType relationshipType = RelationshipType.withName( "R1" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1" ), array( "p1", "p2" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( "R1" ), asCypherStringsList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -307,7 +307,7 @@ class FulltextIndexConsistencyCheckIT
         RelationshipType relType2 = RelationshipType.withName( "R2" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1", "R2" ), array( "p1" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( "R1", "R2" ), asCypherStringsList( "p1" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -333,7 +333,7 @@ class FulltextIndexConsistencyCheckIT
         RelationshipType relType2 = RelationshipType.withName( "R2" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1", "R2" ), array( "p1", "p2" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( "R1", "R2" ), asCypherStringsList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -369,8 +369,8 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", array( "L1", "L2", "L3" ), array( "p1", "p2" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1", "R2" ), array( "p1", "p2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "L1", "L2", "L3" ), asCypherStringsList( "p1", "p2" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( "R1", "R2" ), asCypherStringsList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -397,7 +397,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", array( "L1" ), array( "p1" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "L1" ), asCypherStringsList( "p1" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -416,7 +416,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1" ), array( "p1" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( "R1" ), asCypherStringsList( "p1" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -462,14 +462,17 @@ class FulltextIndexConsistencyCheckIT
         {
             for ( int i = 1; i < labels.length; i++ )
             {
-                tx.execute( format( NODE_CREATE, "nodes" + i, array( Arrays.stream( labels ).limit( i ).map( Label::name ).toArray( String[]::new ) ),
-                        array( Arrays.copyOf( propertyKeys, i ) ) ) ).close();
+                tx
+                        .execute( format( NODE_CREATE, "nodes" + i,
+                                asCypherStringsList( Arrays.stream( labels ).limit( i ).map( Label::name ).toArray( String[]::new ) ),
+                                asCypherStringsList( Arrays.copyOf( propertyKeys, i ) ) ) )
+                        .close();
             }
             for ( int i = 1; i < relTypes.length; i++ )
             {
                 tx.execute( format( RELATIONSHIP_CREATE, "rels" + i,
-                        array( Arrays.stream( relTypes ).limit( i ).map( RelationshipType::name ).toArray( String[]::new ) ),
-                        array( Arrays.copyOf( propertyKeys, i ) ) ) ).close();
+                        asCypherStringsList( Arrays.stream( relTypes ).limit( i ).map( RelationshipType::name ).toArray( String[]::new ) ),
+                        asCypherStringsList( Arrays.copyOf( propertyKeys, i ) ) ) ).close();
             }
             tx.commit();
         }
@@ -491,7 +494,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "prop" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "Label" ), asCypherStringsList( "prop" ) ) ).close();
             tx.commit();
         }
         IndexDescriptor indexDescriptor;
@@ -526,7 +529,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "prop" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( "Label" ), asCypherStringsList( "prop" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -565,7 +568,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( "REL" ), array( "prop" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( "REL" ), asCypherStringsList( "prop" ) ) ).close();
             tx.commit();
         }
         IndexDescriptor indexDescriptor;
@@ -601,7 +604,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", array( "REL" ), array( "prop" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asCypherStringsList( "REL" ), asCypherStringsList( "prop" ) ) ).close();
             tx.commit();
         }
         long relId;

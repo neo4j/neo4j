@@ -81,8 +81,8 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.array;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.assertQueryFindsIds;
 
 public class FulltextIndexProviderTest
@@ -247,8 +247,11 @@ public class FulltextIndexProviderTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodeIndex", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, "relIndex", array( "RelType1", "RelType2" ), array( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
+            tx
+                    .execute(
+                            format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList( "RelType1", "RelType2" ), asCypherStringsList( "prop1", "prop2" ) ) )
+                    .close();
             tx.commit();
         }
 
@@ -345,9 +348,8 @@ public class FulltextIndexProviderTest
         // Test that multi-token node indexes can be waited for.
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodeIndex",
-                    array( label1.name(), label2.name(), label3.name() ),
-                    array( prop1, prop2, prop3 ) ) ).close();
+            tx.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList( label1.name(), label2.name(), label3.name() ),
+                    asCypherStringsList( prop1, prop2, prop3 ) ) ).close();
             tx.commit();
         }
 
@@ -364,9 +366,8 @@ public class FulltextIndexProviderTest
         // Test that multi-token relationship indexes can be waited for.
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "relIndex",
-                    array( relType1.name(), relType2.name(), relType3.name() ),
-                    array( prop1, prop2, prop3 ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList( relType1.name(), relType2.name(), relType3.name() ),
+                    asCypherStringsList( prop1, prop2, prop3 ) ) ).close();
             tx.commit();
         }
 

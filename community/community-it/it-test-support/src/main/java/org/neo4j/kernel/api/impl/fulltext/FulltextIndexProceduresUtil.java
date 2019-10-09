@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALY
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
 
-public class FulltextIndexProceduresUtil
+public final class FulltextIndexProceduresUtil
 {
     public static final String DB_INDEXES = "CALL db.indexes()";
     public static final String DROP = "CALL db.index.fulltext.drop(\"%s\")";
@@ -47,7 +47,11 @@ public class FulltextIndexProceduresUtil
     public static final String NODE_CREATE_WITH_CONFIG = "CALL db.index.fulltext.createNodeIndex(\"%s\", %s, %s, %s)";
     public static final String RELATIONSHIP_CREATE_WITH_CONFIG = "CALL db.index.fulltext.createRelationshipIndex(\"%s\", %s, %s, %s)";
 
-    public static String array( String... args )
+    private FulltextIndexProceduresUtil()
+    {
+    }
+
+    public static String asCypherStringsList( String... args )
     {
         return Arrays.stream( args ).map( s -> "\"" + s + "\"" ).collect( Collectors.joining( ", ", "[", "]" ) );
     }
@@ -62,10 +66,7 @@ public class FulltextIndexProceduresUtil
 
     public static Map<String,Value> asConfigMap( String analyzer, boolean eventuallyConsistent )
     {
-        Map<String,Value> map = new HashMap<>();
-        map.put( ANALYZER, Values.stringValue( analyzer ) );
-        map.put( FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
-        return map;
+        return Map.of( ANALYZER, Values.stringValue( analyzer ), FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
     }
 
     public static String asConfigString( Map<String,Value> configMap )
