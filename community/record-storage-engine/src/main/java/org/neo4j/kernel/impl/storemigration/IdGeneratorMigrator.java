@@ -65,7 +65,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
 
     public IdGeneratorMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
     {
-        super( "IdGenerator migrator" );
+        super( "Id files" );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.config = config;
