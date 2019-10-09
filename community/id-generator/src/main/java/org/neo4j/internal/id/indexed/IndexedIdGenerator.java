@@ -92,9 +92,9 @@ public class IndexedIdGenerator implements IdGenerator
 
     /**
      * Used for id generators that generally has high activity.
-     * 2^15 == 32768 and one ID takes up 8B, which results in a memory usage of 32768 * 8 = 262k memory
+     * 2^14 == 16384 and one ID takes up 8B, which results in a memory usage of 16384 * 8 = ~131k memory
      */
-    private static final int LARGE_CACHE_CAPACITY = 1 << 15;
+    private static final int LARGE_CACHE_CAPACITY = 1 << 14;
 
     /**
      * First generation the tree entries will start at. Generation will be incremented each time an IndexedIdGenerator is opened,
