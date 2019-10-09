@@ -295,6 +295,24 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("should not kill hash join query with large RHS") {
+    // given
+    val nodes = nodeGraph(100000)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeHashJoin("x")
+      .|.allNodeScan("x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val input = finiteInput(1, expectedRowSize, nodes.head)
+
+    // then no exception
+    consume(execute(logicalQuery, runtime, input))
+  }
+
   test("should kill multi-column node hash join query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -386,6 +404,25 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
     val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
     val input = finiteInput(100000, expectedRowSize)
+
+    // then no exception
+    consume(execute(logicalQuery, runtime, input))
+  }
+
+  test("should not kill cartesian product query with large RHS") {
+    // given
+    nodeGraph(100000)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .input(variables = Seq("x"))
+      .build()
+
+    // when
+    // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
+    val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
+    val input = finiteInput(1, expectedRowSize)
 
     // then no exception
     consume(execute(logicalQuery, runtime, input))
