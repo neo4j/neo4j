@@ -236,7 +236,8 @@ public final class ValueUtils
 
     public static MapValue asMapValue( Map<String,?> map )
     {
-        MapValueBuilder builder = new MapValueBuilder( map.size() );
+        //use a slightly bigger capacity to avoid resizing
+        MapValueBuilder builder = new MapValueBuilder( (int) (map.size() * 1.33) );
         for ( Map.Entry<String,?> entry : map.entrySet() )
         {
             builder.add( entry.getKey(), ValueUtils.of( entry.getValue() ) );
