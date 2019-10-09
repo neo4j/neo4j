@@ -35,14 +35,11 @@ import org.neo4j.token.api.TokenIdPrettyPrinter;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.schema.IndexType.BTREE;
-import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
 public final class SchemaDescriptorImplementation implements SchemaDescriptor, LabelSchemaDescriptor, RelationTypeSchemaDescriptor, FulltextSchemaDescriptor
 {
-    private final IndexType indexType;
     private final EntityType entityType;
     private final PropertySchemaType propertySchemaType;
     private final IndexConfig indexConfig;
@@ -65,10 +62,9 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
      * This constructor is only public so that it can be called directly from the SchemaStore.
      * Use the static methods on {@link SchemaDescriptor} to create the usual kinds of schemas.
      */
-    public SchemaDescriptorImplementation( IndexType indexType, EntityType entityType, PropertySchemaType propertySchemaType, IndexConfig indexConfig,
+    public SchemaDescriptorImplementation( EntityType entityType, PropertySchemaType propertySchemaType, IndexConfig indexConfig,
             int[] entityTokens, int[] propertyKeyIds )
     {
-        this.indexType = requireNonNull( indexType, "IndexType cannot be null." );
         this.entityType = requireNonNull( entityType, "EntityType cannot be null." );
         this.propertySchemaType = requireNonNull( propertySchemaType, "PropertySchemaType cannot be null." );
         this.entityTokens = requireNonNull( entityTokens, "Entity tokens array cannot be null." );
@@ -96,11 +92,11 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         }
         validatePropertyIds( propertyKeyIds );
 
-        boolean generalSingleEntity = indexType == BTREE && entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS;
+        boolean generalSingleEntity = entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS;
 
         this.archetypalLabelSchema = entityType == NODE && generalSingleEntity;
         this.archetypalRelationshipTypeSchema = entityType == RELATIONSHIP && generalSingleEntity;
-        this.archetypalFulltextSchema = indexType == FULLTEXT && propertySchemaType == PARTIAL_ANY_TOKEN;
+        this.archetypalFulltextSchema = propertySchemaType == PARTIAL_ANY_TOKEN;
     }
 
     private static void validatePropertyIds( int[] propertyIds )
@@ -273,12 +269,6 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     }
 
     @Override
-    public IndexType getIndexType()
-    {
-        return indexType;
-    }
-
-    @Override
     public IndexConfig getIndexConfig()
     {
         return indexConfig;
@@ -287,7 +277,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     @Override
     public SchemaDescriptorImplementation withIndexConfig( IndexConfig indexConfig )
     {
-        return new SchemaDescriptorImplementation( indexType, entityType, propertySchemaType, indexConfig, entityTokens, propertyKeyIds );
+        return new SchemaDescriptorImplementation( entityType, propertySchemaType, indexConfig, entityTokens, propertyKeyIds );
     }
 
     @Override
@@ -302,14 +292,14 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
             return false;
         }
         SchemaDescriptor that = (SchemaDescriptor) o;
-        return indexType == that.getIndexType() && entityType == that.entityType() && propertySchemaType == that.propertySchemaType() &&
+        return entityType == that.entityType() && propertySchemaType == that.propertySchemaType() &&
                 Arrays.equals( entityTokens, that.getEntityTokenIds() ) && Arrays.equals( propertyKeyIds, that.getPropertyIds() );
     }
 
     @Override
     public int hashCode()
     {
-        int result = Objects.hash( indexType, entityType, propertySchemaType );
+        int result = Objects.hash( entityType, propertySchemaType );
         result = 31 * result + Arrays.hashCode( entityTokens );
         result = 31 * result + Arrays.hashCode( propertyKeyIds );
         return result;

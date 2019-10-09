@@ -353,7 +353,6 @@ public class RandomSchema implements Supplier<SchemaRule>
     public static boolean schemaDeepEquals( SchemaDescriptor a, SchemaDescriptor b )
     {
         return a.entityType() == b.entityType() &&
-                a.getIndexType() == b.getIndexType() &&
                 a.propertySchemaType() == b.propertySchemaType() &&
                 Arrays.equals( a.getEntityTokenIds(), b.getEntityTokenIds() ) &&
                 Arrays.equals( a.getPropertyIds(), b.getPropertyIds() ) &&

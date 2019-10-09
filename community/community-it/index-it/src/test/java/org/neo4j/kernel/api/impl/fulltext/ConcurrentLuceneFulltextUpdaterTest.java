@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -41,6 +42,8 @@ import org.neo4j.test.rule.RepeatRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.internal.schema.IndexType.FULLTEXT;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
 
 /**
  * Concurrent updates and index changes should result in valid state, and not create conflicts or exceptions during
@@ -77,26 +80,27 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         return indexProvider.schemaFor( NODE, entityTokens, indexConfig, PROP );
     }
 
-    private IndexDescriptor createInitialIndex( SchemaDescriptor descriptor ) throws Exception
+    private IndexDescriptor createInitialIndex( SchemaDescriptor schema ) throws Exception
     {
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
         IndexDescriptor index;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();
-            index = schemaWrite.indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "nodes" );
+            index = schemaWrite.indexCreate( prototype );
             transaction.success();
         }
         await( index );
         return index;
     }
 
-    private void raceContestantsAndVerifyResults( SchemaDescriptor newDescriptor, Runnable aliceWork, Runnable changeConfig, Runnable bobWork ) throws Throwable
+    private void raceContestantsAndVerifyResults( SchemaDescriptor schema, Runnable aliceWork, Runnable changeConfig, Runnable bobWork ) throws Throwable
     {
         race.addContestants( aliceThreads, aliceWork );
         race.addContestant( changeConfig );
         race.addContestants( bobThreads, bobWork );
         race.go();
-        await( newDescriptor );
+        await( schema );
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
@@ -149,7 +153,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         };
     }
 
-    private ThrowingAction<Exception> dropAndReCreateIndex( IndexDescriptor descriptor, SchemaDescriptor newDescriptor )
+    private ThrowingAction<Exception> dropAndReCreateIndex( IndexDescriptor descriptor, SchemaDescriptor schema )
     {
         return () ->
         {
@@ -159,7 +163,8 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
             {
                 SchemaWrite schemaWrite = transaction.schemaWrite();
                 schemaWrite.indexDrop( descriptor );
-                schemaWrite.indexCreate( newDescriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "nodes" );
+                IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
+                schemaWrite.indexCreate( prototype );
                 transaction.success();
             }
         };
@@ -169,9 +174,9 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
     public void labelledNodesCoreAPI() throws Throwable
     {
         String[] entityTokens = {LABEL.name()};
-        SchemaDescriptor descriptor = getExistingDescriptor( entityTokens );
-        SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
-        IndexDescriptor initialIndex = createInitialIndex( descriptor );
+        SchemaDescriptor schema = getExistingDescriptor( entityTokens );
+        SchemaDescriptor newSchema = getNewDescriptor( entityTokens );
+        IndexDescriptor initialIndex = createInitialIndex( schema );
 
         Runnable aliceWork = work( nodesCreatedPerThread, tx ->
         {
@@ -183,17 +188,17 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
             tx.getNodeById( createNodeWithProperty( tx, LABEL, "otherProp", "bob" ) );
             bobLatch.countDown();
         } );
-        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newDescriptor ).apply() );
-        raceContestantsAndVerifyResults( newDescriptor, aliceWork, changeConfig, bobWork );
+        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newSchema ).apply() );
+        raceContestantsAndVerifyResults( newSchema, aliceWork, changeConfig, bobWork );
     }
 
     @Test
     public void labelledNodesCypherCurrent() throws Throwable
     {
         String[] entityTokens = {LABEL.name()};
-        SchemaDescriptor descriptor = getExistingDescriptor( entityTokens );
-        SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
-        IndexDescriptor initialIndex = createInitialIndex( descriptor );
+        SchemaDescriptor schema = getExistingDescriptor( entityTokens );
+        SchemaDescriptor newSchema = getNewDescriptor( entityTokens );
+        IndexDescriptor initialIndex = createInitialIndex( schema );
 
         Runnable aliceWork = work( nodesCreatedPerThread, tx ->
         {
@@ -205,7 +210,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
             tx.execute( "create (:LABEL {otherProp: \"bob\"})" ).close();
             bobLatch.countDown();
         } );
-        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newDescriptor ).apply() );
-        raceContestantsAndVerifyResults( newDescriptor, aliceWork, changeConfig, bobWork );
+        Runnable changeConfig = work( 1, tx -> dropAndReCreateIndex( initialIndex, newSchema ).apply() );
+        raceContestantsAndVerifyResults( newSchema, aliceWork, changeConfig, bobWork );
     }
 }

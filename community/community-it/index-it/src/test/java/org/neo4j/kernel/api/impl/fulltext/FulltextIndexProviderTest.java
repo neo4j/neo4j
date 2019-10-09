@@ -54,6 +54,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -78,6 +80,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
+import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
@@ -191,7 +194,8 @@ public class FulltextIndexProviderTest
         {
             SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{labelIdHej, labelIdHa, labelIdHe},
                     new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
-            indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), "fulltext" );
+            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "fulltext" );
+            indexReference = transaction.schemaWrite().indexCreate( prototype );
             transaction.success();
         }
         await( indexReference );
@@ -221,7 +225,8 @@ public class FulltextIndexProviderTest
         {
             SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{labelIdHej, labelIdHa, labelIdHe},
                     new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
-            indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), "fulltext" );
+            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "fulltext" );
+            indexReference = transaction.schemaWrite().indexCreate( prototype );
             transaction.success();
         }
         await( indexReference );
@@ -246,11 +251,12 @@ public class FulltextIndexProviderTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList( "Label1", "Label2" ), asCypherStringsList( "prop1", "prop2" ) ) ).close();
-            tx
-                    .execute(
-                            format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList( "RelType1", "RelType2" ), asCypherStringsList( "prop1", "prop2" ) ) )
-                    .close();
+            tx.execute( format( NODE_CREATE, "nodeIndex",
+                    asCypherStringsList( "Label1", "Label2" ),
+                    asCypherStringsList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "relIndex",
+                    asCypherStringsList( "RelType1", "RelType2" ),
+                    asCypherStringsList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
 
@@ -347,7 +353,8 @@ public class FulltextIndexProviderTest
         // Test that multi-token node indexes can be waited for.
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodeIndex", asCypherStringsList( label1.name(), label2.name(), label3.name() ),
+            tx.execute( format( NODE_CREATE, "nodeIndex",
+                    asCypherStringsList( label1.name(), label2.name(), label3.name() ),
                     asCypherStringsList( prop1, prop2, prop3 ) ) ).close();
             tx.commit();
         }
@@ -365,7 +372,8 @@ public class FulltextIndexProviderTest
         // Test that multi-token relationship indexes can be waited for.
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "relIndex", asCypherStringsList( relType1.name(), relType2.name(), relType3.name() ),
+            tx.execute( format( RELATIONSHIP_CREATE, "relIndex",
+                    asCypherStringsList( relType1.name(), relType2.name(), relType3.name() ),
                     asCypherStringsList( prop1, prop2, prop3 ) ) ).close();
             tx.commit();
         }
@@ -466,7 +474,8 @@ public class FulltextIndexProviderTest
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.NODE, entityTokens, propertyIds );
-            fulltext = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), NAME );
+            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( IndexType.FULLTEXT ).withName( NAME );
+            fulltext = transaction.schemaWrite().indexCreate( prototype );
             transaction.success();
         }
         return fulltext;

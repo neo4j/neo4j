@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
@@ -88,7 +89,8 @@ public class SchemaRuleException extends SchemaKernelException
         }
         else
         {
-            IndexType indexType = schema.getIndexType();
+            IndexDescriptor index = (IndexDescriptor) schemaThing;
+            IndexType indexType = index.getIndexType();
             if ( indexType != IndexType.BTREE )
             {
                 String indexTypeName = indexType.name().toLowerCase();

@@ -117,7 +117,7 @@ public interface SchemaRule extends SchemaDescriptorSupplier
     private static String generateName( IndexRef<?> indexRef, String[] entityTokenNames, String[] propertyNames )
     {
         SchemaDescriptor schema = indexRef.schema();
-        String indexType = schema.getIndexType() == IndexType.FULLTEXT ? "Full-Text Index" : indexRef.isUnique() ? "Unique Index" : "Index";
+        String indexType = indexRef.getIndexType() == IndexType.FULLTEXT ? "Full-Text Index" : indexRef.isUnique() ? "Unique Index" : "Index";
         String entityPart = generateEntityNamePart( schema, entityTokenNames );
         return indexType + " on " + entityPart + " (" + String.join( ",", propertyNames ) + ")";
     }

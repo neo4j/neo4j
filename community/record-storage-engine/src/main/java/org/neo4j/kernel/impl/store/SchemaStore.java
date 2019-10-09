@@ -93,7 +93,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
  *     <li>INDEXes</li>
  *     <ul>
  *         <li>schemaRuleType = "INDEX"</li>
- *         <li>indexRuleTyoe: String, "UNIQUE" or "NON_UNIQUE"</li>
+ *         <li>indexRuleType: String, "UNIQUE" or "NON_UNIQUE"</li>
  *         <li>owningConstraint: long -- only present for indexRuleType=UNIQUE indexes</li>
  *         <li>indexProviderName: String</li>
  *         <li>indexProviderVersion: String</li>
@@ -234,13 +234,11 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
 
     private static void schemaDescriptorToMap( SchemaDescriptor schemaDescriptor, Map<String,Value> map )
     {
-        IndexType indexType = schemaDescriptor.getIndexType();
         EntityType entityType = schemaDescriptor.entityType();
         PropertySchemaType propertySchemaType = schemaDescriptor.propertySchemaType();
         int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
         int[] propertyIds = schemaDescriptor.getPropertyIds();
         IndexConfig indexConfig = schemaDescriptor.getIndexConfig();
-        putStringProperty( map, PROP_INDEX_TYPE, indexType.name() );
         putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, entityType.name() );
         putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, propertySchemaType.name() );
         putIntArrayProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, entityTokenIds );
@@ -261,6 +259,10 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     {
         // Rule
         putStringProperty( map, PROP_SCHEMA_RULE_TYPE, "INDEX" );
+
+        IndexType indexType = rule.getIndexType();
+        putStringProperty( map, PROP_INDEX_TYPE, indexType.name() );
+
         if ( rule.isUnique() )
         {
             putStringProperty( map, PROP_INDEX_RULE_TYPE, "UNIQUE" );
@@ -354,6 +356,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         IndexPrototype prototype = unique ? IndexPrototype.uniqueForSchema( schema ) : IndexPrototype.forSchema( schema );
 
         prototype = prototype.withName( getString( PROP_SCHEMA_RULE_NAME, props ) );
+        prototype = prototype.withIndexType( getIndexType( getString( PROP_INDEX_TYPE, props ) ) );
 
         String providerKey = getString( PROP_INDEX_PROVIDER_NAME, props );
         String providerVersion = getString( PROP_INDEX_PROVIDER_VERSION, props );
@@ -459,14 +462,13 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
 
     private static SchemaDescriptor buildSchemaDescriptor( Map<String,Value> props ) throws MalformedSchemaRuleException
     {
-        IndexType indexType = getIndexType( getString( PROP_INDEX_TYPE, props ) );
         EntityType entityType = getEntityType( getString( PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, props ) );
         PropertySchemaType propertySchemaType = getPropertySchemaType( getString( PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, props ) );
         int[] entityIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, props );
         int[] propertyIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, props );
         IndexConfig indexConfig = extractIndexConfig( props );
 
-        return new SchemaDescriptorImplementation( indexType, entityType, propertySchemaType, indexConfig, entityIds, propertyIds );
+        return new SchemaDescriptorImplementation( entityType, propertySchemaType, indexConfig, entityIds, propertyIds );
     }
 
     private static IndexConfig extractIndexConfig( Map<String,Value> props )

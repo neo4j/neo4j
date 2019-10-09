@@ -50,7 +50,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
 
     static FulltextSchemaDescriptor fulltext( EntityType entityType, int[] entityTokenIds, int[] propertyKeyIds )
     {
-        return new SchemaDescriptorImplementation( FULLTEXT, entityType, PARTIAL_ANY_TOKEN, IndexConfig.empty(), entityTokenIds, propertyKeyIds );
+        return new SchemaDescriptorImplementation( entityType, PARTIAL_ANY_TOKEN, IndexConfig.empty(), entityTokenIds, propertyKeyIds );
     }
 
     static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
@@ -62,7 +62,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     {
         validateLabelIds( labelId );
         validatePropertyIds( propertyIds );
-        return new SchemaDescriptorImplementation( indexType, NODE, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{labelId}, propertyIds );
+        return new SchemaDescriptorImplementation( NODE, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{labelId}, propertyIds );
     }
 
     static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
@@ -74,7 +74,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     {
         validateRelationshipTypeIds( relTypeId );
         validatePropertyIds( propertyIds );
-        return new SchemaDescriptorImplementation( indexType, RELATIONSHIP, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{relTypeId}, propertyIds );
+        return new SchemaDescriptorImplementation( RELATIONSHIP, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{relTypeId}, propertyIds );
     }
 
     /**
@@ -282,11 +282,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return PropertySchemaType of this schema unit.
      */
     PropertySchemaType propertySchemaType();
-
-    /**
-     * @return the {@link IndexType} that is defined by this schema.
-     */
-    IndexType getIndexType();
 
     /**
      * @return the {@link IndexConfig}, if any

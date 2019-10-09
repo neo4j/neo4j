@@ -126,12 +126,6 @@ class NoSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
-    public IndexType getIndexType()
-    {
-        return IndexType.BTREE;
-    }
-
-    @Override
     public IndexConfig getIndexConfig()
     {
         return IndexConfig.empty();

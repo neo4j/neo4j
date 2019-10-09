@@ -47,7 +47,6 @@ class SchemaDescriptorTest
         LabelSchemaDescriptor labelDesc;
         labelDesc = SchemaDescriptor.forLabel( LABEL_ID, 1 );
         assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
-        assertThat( labelDesc.getIndexType(), is( IndexType.BTREE ) );
         assertThat( labelDesc.entityType(), is( EntityType.NODE ) );
         assertThat( labelDesc.propertySchemaType(), is( PropertySchemaType.COMPLETE_ALL_TOKENS ) );
         assertArray( labelDesc.getPropertyIds(), 1 );
@@ -63,7 +62,6 @@ class SchemaDescriptorTest
         RelationTypeSchemaDescriptor relTypeDesc;
         relTypeDesc = SchemaDescriptor.forRelType( REL_TYPE_ID, 1 );
         assertThat( relTypeDesc.getRelTypeId(), equalTo( REL_TYPE_ID ) );
-        assertThat( relTypeDesc.getIndexType(), is( IndexType.BTREE ) );
         assertThat( relTypeDesc.entityType(), is( EntityType.RELATIONSHIP ) );
         assertThat( relTypeDesc.propertySchemaType(), is( PropertySchemaType.COMPLETE_ALL_TOKENS ) );
         assertArray( relTypeDesc.getPropertyIds(), 1 );

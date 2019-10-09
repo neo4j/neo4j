@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -156,8 +157,11 @@ public class FulltextProcedures
             throws KernelException
     {
         IndexConfig indexConfig = createIndexConfig( config );
-        SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.NODE, stringArray( labels ), indexConfig, stringArray( properties ) );
-        tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), name );
+        SchemaDescriptor schema = accessor.schemaFor( EntityType.NODE, stringArray( labels ), indexConfig, stringArray( properties ) );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR );
+        prototype = prototype.withIndexType( IndexType.FULLTEXT );
+        prototype = prototype.withName( name );
+        tx.schemaWrite().indexCreate( prototype );
     }
 
     private String[] stringArray( List<String> strings )
@@ -181,8 +185,11 @@ public class FulltextProcedures
             throws KernelException
     {
         IndexConfig indexConfig = createIndexConfig( config );
-        SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.RELATIONSHIP, stringArray( relTypes ), indexConfig, stringArray( properties ) );
-        tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), name );
+        SchemaDescriptor schema = accessor.schemaFor( EntityType.RELATIONSHIP, stringArray( relTypes ), indexConfig, stringArray( properties ) );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR );
+        prototype = prototype.withIndexType( IndexType.FULLTEXT );
+        prototype = prototype.withName( name );
+        tx.schemaWrite().indexCreate( prototype );
     }
 
     private IndexConfig createIndexConfig( @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )

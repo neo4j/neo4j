@@ -25,11 +25,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.internal.schema.IndexType.FULLTEXT;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
@@ -42,12 +45,13 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
 
-        SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();
-            nodes = schemaWrite.indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "nodes" );
+            nodes = schemaWrite.indexCreate( prototype );
             transaction.success();
         }
         await( nodes );
@@ -77,12 +81,13 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, SWEDISH );
-        SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();
-            nodes = schemaWrite.indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "nodes" );
+            nodes = schemaWrite.indexCreate( prototype );
             transaction.success();
         }
         await( nodes );
@@ -112,12 +117,13 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifyFoldingAnalyzer() throws Exception
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, FOLDING );
-        SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();
-            nodes = schemaWrite.indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "nodes" );
+            nodes = schemaWrite.indexCreate( prototype );
             transaction.success();
         }
         await( nodes );
@@ -147,12 +153,13 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         long secondID;
         applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
-        SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();
-            nodes = schemaWrite.indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "nodes" );
+            nodes = schemaWrite.indexCreate( prototype );
             transaction.success();
         }
         await( nodes );
