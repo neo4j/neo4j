@@ -44,7 +44,6 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
@@ -54,7 +53,6 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.util.FeatureToggles.flag;
-import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * At the heart of this free-list sits a {@link GBPTree}, containing all deleted and freed ids. The tree is used as a bit-set and since it's
@@ -187,18 +185,10 @@ public class IndexedIdGenerator implements IdGenerator
     private volatile boolean started;
 
     public IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            LongSupplier initialHighId, long maxId, OpenOption... openOptions )
-    {
-        this( pageCache, file, recoveryCleanupWorkCollector, idType, IDS_PER_ENTRY, initialHighId, maxId, openOptions );
-    }
-
-    @VisibleForTesting
-    IndexedIdGenerator( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            int idsPerEntryOnCreate, LongSupplier initialHighId, long maxId, OpenOption... openOptions )
+            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, OpenOption... openOptions )
     {
         this.file = file;
-        requirePowerOfTwo( idsPerEntryOnCreate );
-        int cacheCapacity = idType.highActivity() ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
+        int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
         this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
         this.cache = new SpmcLongQueue( cacheCapacity );
@@ -227,7 +217,7 @@ public class IndexedIdGenerator implements IdGenerator
             this.highId.set( initialHighId.getAsLong() );
             this.highestWrittenId.set( highId.get() - 1 );
             this.generation = STARTING_GENERATION + 1;
-            this.idsPerEntry = idsPerEntryOnCreate;
+            this.idsPerEntry = IDS_PER_ENTRY;
         }
 
         this.layout = new IdRangeLayout( idsPerEntry );

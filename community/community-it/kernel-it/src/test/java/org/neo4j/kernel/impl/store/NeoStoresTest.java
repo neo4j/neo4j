@@ -1473,7 +1473,7 @@ public class NeoStoresTest
             if ( idType == IdType.NODE )
             {
                 // Return a special id generator which will throw exception on close
-                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, () -> 6 * 7, maxValue )
+                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue )
                 {
                     @Override
                     public synchronized void close()

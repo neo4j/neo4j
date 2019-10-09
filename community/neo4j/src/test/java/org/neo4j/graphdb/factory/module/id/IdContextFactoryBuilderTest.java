@@ -25,6 +25,7 @@ import java.io.File;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.BufferedIdController;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -62,7 +63,7 @@ class IdContextFactoryBuilderTest
     @Test
     void requireFileSystemWhenIdGeneratorFactoryNotProvided()
     {
-        NullPointerException exception = assertThrows( NullPointerException.class, () -> IdContextFactoryBuilder.of( jobScheduler ).build() );
+        NullPointerException exception = assertThrows( NullPointerException.class, () -> IdContextFactoryBuilder.of( null, jobScheduler, null ).build() );
         assertThat( exception.getMessage(), containsString( "File system is required" ) );
     }
 
@@ -70,7 +71,8 @@ class IdContextFactoryBuilderTest
     void createContextWithCustomIdGeneratorFactoryWhenProvided()
     {
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
-        IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, jobScheduler ).withIdGenerationFactoryProvider( any -> idGeneratorFactory ).build();
+        IdContextFactory contextFactory =
+                IdContextFactoryBuilder.of( fs, jobScheduler, Config.defaults() ).withIdGenerationFactoryProvider( any -> idGeneratorFactory ).build();
         DatabaseIdContext idContext = contextFactory.createIdContext( databaseIdRepository.getByName( "database" ).get() );
 
         IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();
@@ -94,7 +96,7 @@ class IdContextFactoryBuilderTest
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper = ignored -> idGeneratorFactory;
 
-        IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, jobScheduler )
+        IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, jobScheduler, Config.defaults() )
                                         .withFactoryWrapper( factoryWrapper )
                                         .build();
 

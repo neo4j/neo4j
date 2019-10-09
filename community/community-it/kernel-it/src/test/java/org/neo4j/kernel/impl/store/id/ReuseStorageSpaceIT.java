@@ -36,6 +36,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.function.ThrowingConsumer;
@@ -80,7 +81,7 @@ import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 class ReuseStorageSpaceIT
 {
     // Data size control center
-    private static final int DATA_SIZE = 100_000;
+    private static final int DATA_SIZE = 1_000;
     private static final int CREATION_THREADS = Runtime.getRuntime().availableProcessors();
     private static final int NUMBER_OF_TRANSACTIONS_PER_THREAD = 100;
 
@@ -137,7 +138,7 @@ class ReuseStorageSpaceIT
         Sizes initialStoreSizes = withDb( storeDirectory, db -> initialState.perform( db, seed ) );
 
         // when going into a loop deleting, re-creating, crashing and recovering that db
-        for ( int i = 0; i < 4; i++ )
+        for ( int i = 0; i < 3; i++ )
         {
             Pair<Integer,Sizes> result = launcher.launch( storeDirectory, seed, operation );
             assertEquals( CUSTOM_EXIT_CODE, result.getLeft() );
@@ -198,7 +199,10 @@ class ReuseStorageSpaceIT
 
     private static Sizes withDb( File storeDir, ThrowingConsumer<GraphDatabaseService,Exception> transaction )
     {
-        DatabaseManagementService dbms = new DatabaseManagementServiceBuilder( storeDir ).build();
+        DatabaseManagementService dbms = new DatabaseManagementServiceBuilder( storeDir )
+                // This test specifically exercises the ID caches and refilling of those as it goes, so the smaller the better for this test
+                .setConfig( GraphDatabaseSettings.force_small_id_cache, true )
+                .build();
         try
         {
             GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
@@ -267,7 +271,7 @@ class ReuseStorageSpaceIT
     private static void deleteStuff( GraphDatabaseService db )
     {
         batchedDelete( db, Transaction::getAllRelationships, Relationship::delete );
-        batchedDelete( db, tx -> tx.getAllNodes(), Node::delete );
+        batchedDelete( db, Transaction::getAllNodes, Node::delete );
     }
 
     private static <ENTITY> void batchedDelete( GraphDatabaseService db,

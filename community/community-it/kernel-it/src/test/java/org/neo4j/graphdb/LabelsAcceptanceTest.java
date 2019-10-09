@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
@@ -806,7 +807,7 @@ class LabelsAcceptanceTest
 
     private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        return IdContextFactoryBuilder.of( jobScheduler ).withIdGenerationFactoryProvider(
+        return IdContextFactoryBuilder.of( fileSystem, jobScheduler, Config.defaults() ).withIdGenerationFactoryProvider(
                 any -> new DefaultIdGeneratorFactory( fileSystem, immediate() )
                 {
                     @Override

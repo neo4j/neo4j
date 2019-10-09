@@ -39,11 +39,31 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     private final EnumMap<IdType, IndexedIdGenerator> generators = new EnumMap<>( IdType.class );
     protected final FileSystemAbstraction fs;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
+    protected final boolean allowLargeIdCaches;
 
+    /**
+     * By default doesn't allow large ID caches.
+     *
+     * @param fs {@link FileSystemAbstraction} to back the id generators.
+     * @param recoveryCleanupWorkCollector {@link RecoveryCleanupWorkCollector} for cleanup on starting the id generators.
+     */
     public DefaultIdGeneratorFactory( FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
+        this( fs, recoveryCleanupWorkCollector, false );
+    }
+
+    /**
+     * @param fs {@link FileSystemAbstraction} to back the id generators.
+     * @param recoveryCleanupWorkCollector {@link RecoveryCleanupWorkCollector} for cleanup on starting the id generators.
+     * @param allowLargeIdCaches override the "activity" setting from {@link IdType} to always use low activity. This is useful for databases
+     * that generally see very low activity so that the id generators won't benefit from having large ID caches and instead use small ID caches.
+     * Functionally this makes no difference, it only affects performance (and memory usage which is the main driver for forcing low activity).
+     */
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean allowLargeIdCaches )
     {
         this.fs = fs;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
+        this.allowLargeIdCaches = allowLargeIdCaches;
     }
 
     @Override
@@ -58,7 +78,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
             File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, OpenOption[] openOptions )
     {
         // highId not used when opening an IndexedIdGenerator
-        return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, highIdSupplier, maxValue, openOptions );
+        return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, highIdSupplier, maxValue, openOptions );
     }
 
     @Override
@@ -75,7 +95,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
         fs.deleteFile( fileName );
 
-        IndexedIdGenerator generator = new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, () -> highId, maxId, openOptions );
+        IndexedIdGenerator generator =
+                new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, openOptions );
         generator.checkpoint( UNLIMITED );
         generators.put( idType, generator );
         return generator;
