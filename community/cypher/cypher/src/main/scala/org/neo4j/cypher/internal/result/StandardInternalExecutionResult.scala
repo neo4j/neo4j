@@ -133,9 +133,10 @@ class StandardInternalExecutionResult(context: QueryContext,
         private val names = fieldNames()
         override def visit(record: QueryResult.Record): Boolean = {
           val fields = record.fields()
-          val mapData = new java.util.HashMap[String, AnyRef](names.length)
-
           val length = names.length
+          //to avoid resize we do lenght/ loadfactor
+          val mapData = new java.util.HashMap[String, AnyRef]((length * 1.33).asInstanceOf[Int])
+
           var i = 0
           while (i < length) {
             mapData.put(names(i), context.asObject(fields(i)))
