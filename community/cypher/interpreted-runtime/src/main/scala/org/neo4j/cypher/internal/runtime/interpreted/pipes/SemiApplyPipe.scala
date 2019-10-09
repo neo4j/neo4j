@@ -22,15 +22,26 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
-case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
-                        (val id: Id = Id.INVALID_ID)
+case class SemiApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.filter {
       outerContext =>
         val innerState = state.withInitialContext(outerContext)
         val innerResults = inner.createResults(innerState)
-        if (negated) innerResults.isEmpty else innerResults.nonEmpty
+        innerResults.hasNext
+    }
+  }
+}
+
+case class AntiSemiApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID)
+  extends PipeWithSource(source) {
+  def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    input.filter {
+      outerContext =>
+        val innerState = state.withInitialContext(outerContext)
+        val innerResults = inner.createResults(innerState)
+        !innerResults.hasNext
     }
   }
 }

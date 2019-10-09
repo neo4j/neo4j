@@ -471,10 +471,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         AssertSameNodePipe(lhs, rhs, node)(id = id)
 
       case SemiApply(_, _) =>
-        SemiApplyPipe(lhs, rhs, negated = false)(id = id)
+        SemiApplyPipe(lhs, rhs)(id = id)
 
       case AntiSemiApply(_, _) =>
-        SemiApplyPipe(lhs, rhs, negated = true)(id = id)
+        AntiSemiApplyPipe(lhs, rhs)(id = id)
 
       case LetSemiApply(_, _, idName) =>
         LetSemiApplyPipe(lhs, rhs, idName, negated = false)(id = id)
