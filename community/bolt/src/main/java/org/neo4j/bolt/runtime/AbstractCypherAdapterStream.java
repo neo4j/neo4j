@@ -123,8 +123,13 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
 
         if ( queryExecution.executionType().queryType() == QueryExecutionType.QueryType.READ_ONLY )
         {
+            long start = clock.millis();
             queryExecution.cancel();
             queryExecution.await();
+            addRecordStreamingTime( clock.millis() - start, consumer );
+            // The subscriber didn't get statistics since the query did not finish execution, but
+            // for read queries we know that empty statistics are correct.
+            addMetadata( QueryStatistics.EMPTY, consumer );
             return false;
         }
         else
