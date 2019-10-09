@@ -882,7 +882,7 @@ case class SubQuery(part: QueryPart)(val position: InputPosition) extends Horizo
     // Create empty scope under root
     val empty: SemanticState = outer.newBaseScope
     // Check inner query. Allow it to import from outer scope
-    val inner: SemanticCheckResult = part.semanticCheckWithImports(outer)(empty)
+    val inner: SemanticCheckResult = part.semanticCheckInSubqueryContext(outer)(empty)
     val output: Scope = part.finalScope(inner.state.currentScope.scope)
 
     // Keep working from the latest state

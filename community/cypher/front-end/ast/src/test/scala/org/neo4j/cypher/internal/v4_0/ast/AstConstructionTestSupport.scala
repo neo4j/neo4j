@@ -273,8 +273,11 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def subQuery(part: QueryPart): SubQuery =
     SubQuery(part)(pos)
 
-  def create(pattern: PatternElement, where: Option[Where] = None): Create =
+  def create(pattern: PatternElement): Create =
     Create(Pattern(Seq(EveryPath(pattern)))(pos))(pos)
+
+  def merge(pattern: PatternElement): Merge =
+    Merge(Pattern(Seq(EveryPath(pattern)))(pos), Seq.empty)(pos)
 
   def match_(pattern: PatternElement, where: Option[Where] = None): Match =
     Match(false, Pattern(Seq(EveryPath(pattern)))(pos), Seq(), where)(pos)

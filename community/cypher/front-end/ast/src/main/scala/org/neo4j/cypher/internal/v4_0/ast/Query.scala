@@ -53,7 +53,7 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
    * Semantic check for when this `QueryPart` is in a subquery, and might import
    * variables from the `outer` scope
    */
-  def semanticCheckWithImports(outer: SemanticState): SemanticCheck
+  def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck
 }
 
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart with SemanticAnalysisTooling {
@@ -108,7 +108,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   override def semanticCheck: SemanticCheck =
     semanticCheckAbstract(clauses)
 
-  override def semanticCheckWithImports(outer: SemanticState): SemanticCheck = {
+  override def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck = {
     def importVariables: SemanticCheck =
       importWith.foldSemanticCheck(wth =>
         withState(outer)(wth.semanticCheck) chain
@@ -119,8 +119,15 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     checkCorrelatedSubQueriesFeature chain
     checkLeadingFrom(outer) chain
     importVariables chain
+    checkConcludesWithReturn(clausesExceptLeadingFromAndImportWith) chain
     semanticCheckAbstract(clausesExceptLeadingFromAndImportWith)
   }
+
+  private def checkConcludesWithReturn(clauses: Seq[Clause]): SemanticCheck =
+    clauses.last match {
+      case _: Return => success
+      case clause    => error(s"CALL subquery cannot conclude with ${clause.name} (must be RETURN)", clause.position)
+    }
 
   private def checkCorrelatedSubQueriesFeature: SemanticCheck =
     importWith match {
@@ -285,10 +292,10 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
       query => query.semanticCheck
     )
 
-  def semanticCheckWithImports(outer: SemanticState): SemanticCheck =
+  def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
     semanticCheckAbstract(
-      part => part.semanticCheckWithImports(outer),
-      query => query.semanticCheckWithImports(outer)
+      part => part.semanticCheckInSubqueryContext(outer),
+      query => query.semanticCheckInSubqueryContext(outer)
     )
 
   private def defineUnionVariables: SemanticCheck = (state: SemanticState) => {

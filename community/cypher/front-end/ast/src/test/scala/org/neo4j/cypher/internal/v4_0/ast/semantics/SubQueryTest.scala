@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.NodePattern
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
+//noinspection ZeroIndexToHead
 class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val clean =
@@ -151,7 +152,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .errors.size.shouldEqual(0)
   }
 
-  test("subquery allows union without return statement at the end") {
+  test("subquery does not allow union without return statements at the end") {
     // CALL {
     //   CREATE (a)
     //     UNION
@@ -164,6 +165,59 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
           singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos))),
           singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)))
         )
+      ),
+      return_(countStar().as("count"))
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(2))
+      .tap(_.errors(0).msg.should(include("CALL subquery cannot conclude with CREATE (must be RETURN)")))
+      .tap(_.errors(1).msg.should(include("CALL subquery cannot conclude with CREATE (must be RETURN)")))
+  }
+
+  test("subquery allows union with create and return statement at the end") {
+    // CALL {
+    //   CREATE (a) RETURN a
+    //     UNION
+    //   CREATE (a) RETURN a
+    // }
+    // RETURN count(*) AS count
+    singleQuery(
+      subQuery(
+        union(
+          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)), return_(varFor("a").as("a"))),
+          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)), return_(varFor("a").as("a")))
+        )
+      ),
+      return_(countStar().as("count"))
+    )
+      .semanticCheck(clean)
+      .errors.size.shouldEqual(0)
+  }
+
+  test("subquery does not allow single query without return statement at the end") {
+    // CALL {
+    //   MERGE (a)
+    // }
+    // RETURN count(*) AS count
+    singleQuery(
+      subQuery(
+        singleQuery(merge(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)))
+      ),
+      return_(countStar().as("count"))
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.should(include("CALL subquery cannot conclude with MERGE (must be RETURN)")))
+  }
+
+  test("subquery allows single query with create and return statement at the end") {
+    // CALL {
+    //   MERGE (a) RETURN a
+    // }
+    // RETURN count(*) AS count
+    singleQuery(
+      subQuery(
+        singleQuery(merge(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)), return_(varFor("a").as("a")))
       ),
       return_(countStar().as("count"))
     )
@@ -621,27 +675,6 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .semanticCheck(clean)
       .tap(_.errors.size.shouldEqual(1))
       .tap(_.errors(0).msg.should(include("Variable `y` not defined")))
-  }
-
-  test("subquery ending in update exports nothing") {
-    // WITH 1 AS x, 2 AS y
-    // CALL {
-    //   WITH 2 AS y
-    //   CREATE (n)
-    // }
-    // RETURN x, n, y
-    singleQuery(
-      with_(literal(1).as("x")),
-      subQuery(
-        with_(literal(2).as("y")),
-        create(nodePat("n"))
-      ),
-      return_(varFor("x").aliased, varFor("n").aliased, varFor("y").aliased)
-    )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(2))
-      .tap(_.errors(0).msg.should(include("Variable `n` not defined")))
-      .tap(_.errors(1).msg.should(include("Variable `y` not defined")))
   }
 
   test("extracting imported variables from leading WITH") {
