@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -38,6 +40,8 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 /**
  * Base class for native indexes on top of {@link GBPTree}.
@@ -102,16 +106,12 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor, boolean readOnly ) throws IOException;
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor )
     {
         try
         {
             String failureMessage = NativeIndexes.readFailureMessage( pageCache, storeFile( descriptor ) );
-            if ( failureMessage == null )
-            {
-                throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
-            }
-            return failureMessage;
+            return defaultIfEmpty( failureMessage, StringUtils.EMPTY );
         }
         catch ( IOException e )
         {

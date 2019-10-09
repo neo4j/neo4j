@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 
 import java.io.IOException;
@@ -64,6 +65,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
 
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAnalyzer;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
@@ -149,14 +151,9 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor )
     {
-        String failure = getIndexStorage( descriptor.getId() ).getStoredIndexFailure();
-        if ( failure == null )
-        {
-            throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
-        }
-        return failure;
+        return defaultIfEmpty( getIndexStorage( descriptor.getId() ).getStoredIndexFailure(), StringUtils.EMPTY );
     }
 
     @Override

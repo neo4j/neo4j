@@ -136,7 +136,7 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
             }
 
             @Override
-            public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
+            public String getPopulationFailure( IndexDescriptor descriptor )
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? INITIAL_STATE_FAILURE_MESSAGE : actualProvider.getPopulationFailure( descriptor );
             }

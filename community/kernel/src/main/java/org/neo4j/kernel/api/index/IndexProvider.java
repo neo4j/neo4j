@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -187,9 +189,9 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
+                public String getPopulationFailure( IndexDescriptor descriptor )
                 {
-                    throw new IllegalStateException();
+                    return StringUtils.EMPTY;
                 }
             };
 
@@ -225,10 +227,9 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      *
      * Implementations are expected to persist this failure
      * @param descriptor {@link IndexDescriptor} of the index.
-     * @return failure, in the form of a stack trace, that happened during population.
-     * @throws IllegalStateException If there was no failure during population.
+     * @return failure, in the form of a stack trace, that happened during population or empty string if there is no failure
      */
-    public abstract String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException;
+    public abstract String getPopulationFailure( IndexDescriptor descriptor );
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
@@ -316,9 +317,9 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
+        public String getPopulationFailure( IndexDescriptor descriptor )
         {
-            throw new IllegalStateException();
+            return StringUtils.EMPTY;
         }
 
         @Override
@@ -363,7 +364,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
+        public String getPopulationFailure( IndexDescriptor descriptor )
         {
             return provider.getPopulationFailure( descriptor );
         }

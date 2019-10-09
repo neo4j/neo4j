@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
@@ -43,6 +45,8 @@ import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 public class LuceneIndexProvider extends IndexProvider
 {
@@ -133,12 +137,7 @@ public class LuceneIndexProvider extends IndexProvider
     @Override
     public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
     {
-        String failure = getIndexStorage( descriptor.getId() ).getStoredIndexFailure();
-        if ( failure == null )
-        {
-            throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
-        }
-        return failure;
+        return defaultIfEmpty( getIndexStorage( descriptor.getId() ).getStoredIndexFailure(), StringUtils.EMPTY );
     }
 
     private PartitionedIndexStorage getIndexStorage( long indexId )

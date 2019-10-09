@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +46,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -190,17 +190,14 @@ abstract class FusionIndexProviderTest
     }
 
     @Test
-    void getPopulationFailureMustThrowIfNoFailure()
+    void getPopulationFailureReturnEmptyStringIfNoFailure()
     {
-        // when
-        // ... no failure
-        IllegalStateException failure = new IllegalStateException( "not failed" );
         for ( IndexProvider provider : aliveProviders )
         {
-            when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenThrow( failure );
+            when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenReturn( StringUtils.EMPTY );
         }
 
-        assertThrows( IllegalStateException.class, () -> fusionIndexProvider.getPopulationFailure( AN_INDEX ) );
+        assertEquals( StringUtils.EMPTY, fusionIndexProvider.getPopulationFailure( AN_INDEX ) );
     }
 
     @Test
@@ -210,7 +207,6 @@ abstract class FusionIndexProviderTest
         {
             // when
             String failure = "failure";
-            IllegalStateException exception = new IllegalStateException( "not failed" );
             for ( IndexProvider provider : aliveProviders )
             {
                 if ( provider == failingProvider )
@@ -219,7 +215,7 @@ abstract class FusionIndexProviderTest
                 }
                 else
                 {
-                    when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenThrow( exception );
+                    when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenReturn( StringUtils.EMPTY );
                 }
             }
 

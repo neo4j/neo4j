@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.hamcrest.Matchers;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -129,7 +129,7 @@ abstract class NativeIndexProviderTests
     /* getPopulationFailure */
 
     @Test
-    void getPopulationFailureMustThrowIfNoFailure()
+    void getPopulationFailureReturnEmptyStringIfNoFailure()
     {
         // given
         provider = newProvider();
@@ -140,12 +140,11 @@ abstract class NativeIndexProviderTests
         // when
         // ... no failure on populator
 
-        var e = assertThrows( IllegalStateException.class, () -> provider.getPopulationFailure( descriptor() ) );
-        assertThat( e.getMessage(), Matchers.containsString( Long.toString( indexId ) ) );
+        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor() ) );
     }
 
     @Test
-    void getPopulationFailureMustThrowEvenIfFailureOnOtherIndex()
+    void getPopulationFailureReturnEmptyStringIfFailureOnOtherIndex()
     {
         // given
         provider = newProvider();
@@ -163,8 +162,8 @@ abstract class NativeIndexProviderTests
         failedPopulator.markAsFailed( "failure" );
         failedPopulator.close( false );
 
-        var e = assertThrows( IllegalStateException.class, () -> provider.getPopulationFailure( descriptor( nonFailedIndexId ) ) );
-        assertThat( e.getMessage(), Matchers.containsString( Long.toString( nonFailedIndexId ) ) );
+        var populationFailure = provider.getPopulationFailure( descriptor( nonFailedIndexId ) );
+        assertEquals( StringUtils.EMPTY, populationFailure );
     }
 
     @Test
@@ -212,7 +211,7 @@ abstract class NativeIndexProviderTests
         // then
         assertThat( provider.getPopulationFailure( descriptor( first ) ), is( firstFailure ) );
         assertThat( provider.getPopulationFailure( descriptor( third ) ), is( thirdFailure ) );
-        assertThrows( IllegalStateException.class, () -> provider.getPopulationFailure( descriptor( second ) ) );
+        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor( second ) ) );
     }
 
     @Test
