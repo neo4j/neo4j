@@ -252,7 +252,7 @@ public class PushToCloudCommand implements AdminCommand
          * @param consoleURL console URI to target.
          * @param boltUri bolt URI to target database.
          * @param source dump to copy to the target.
-         * @param bearerToken token from successful {@link #authenticate(boolean, String, String, char[])} call.
+         * @param bearerToken token from successful {@link #authenticate(boolean, String, String, char[], boolean)} call.
          * @throws CommandFailed on copy failure or some other unexpected failure.
          */
         void copy( boolean verbose, String consoleURL, String boltUri, Path source, String bearerToken ) throws CommandFailed;
