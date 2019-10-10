@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -78,7 +77,6 @@ public class LuceneFulltextTestSupport
     @Rule
     public RuleChain rules = RuleChain.outerRule( repeatRule ).around( db );
 
-    IndexConfig indexConfig;
     FulltextIndexProvider indexProvider;
 
     protected RepeatRule createRepeatRule()
@@ -89,7 +87,6 @@ public class LuceneFulltextTestSupport
     @Before
     public void setUp()
     {
-        indexConfig = IndexConfig.empty();
         indexProvider = getAdapter();
     }
 

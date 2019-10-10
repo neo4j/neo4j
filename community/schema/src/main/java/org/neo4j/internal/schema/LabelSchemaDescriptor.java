@@ -27,6 +27,4 @@ import org.neo4j.util.MarkerInterface;
 @MarkerInterface
 public interface LabelSchemaDescriptor extends SchemaDescriptor
 {
-    @Override
-    LabelSchemaDescriptor withIndexConfig( IndexConfig indexConfig );
 }

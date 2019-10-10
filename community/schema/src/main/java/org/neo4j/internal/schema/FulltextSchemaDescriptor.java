@@ -28,6 +28,4 @@ import org.neo4j.util.MarkerInterface;
 @MarkerInterface
 public interface FulltextSchemaDescriptor extends SchemaDescriptor
 {
-    @Override
-    FulltextSchemaDescriptor withIndexConfig( IndexConfig indexConfig );
 }

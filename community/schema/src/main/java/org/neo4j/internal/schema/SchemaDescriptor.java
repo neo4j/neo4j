@@ -50,7 +50,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
 
     static FulltextSchemaDescriptor fulltext( EntityType entityType, int[] entityTokenIds, int[] propertyKeyIds )
     {
-        return new SchemaDescriptorImplementation( entityType, PARTIAL_ANY_TOKEN, IndexConfig.empty(), entityTokenIds, propertyKeyIds );
+        return new SchemaDescriptorImplementation( entityType, PARTIAL_ANY_TOKEN, entityTokenIds, propertyKeyIds );
     }
 
     static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
@@ -62,7 +62,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     {
         validateLabelIds( labelId );
         validatePropertyIds( propertyIds );
-        return new SchemaDescriptorImplementation( NODE, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{labelId}, propertyIds );
+        return new SchemaDescriptorImplementation( NODE, COMPLETE_ALL_TOKENS, new int[]{labelId}, propertyIds );
     }
 
     static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
@@ -74,7 +74,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     {
         validateRelationshipTypeIds( relTypeId );
         validatePropertyIds( propertyIds );
-        return new SchemaDescriptorImplementation( RELATIONSHIP, COMPLETE_ALL_TOKENS, IndexConfig.empty(), new int[]{relTypeId}, propertyIds );
+        return new SchemaDescriptorImplementation( RELATIONSHIP, COMPLETE_ALL_TOKENS, new int[]{relTypeId}, propertyIds );
     }
 
     /**
@@ -282,16 +282,4 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return PropertySchemaType of this schema unit.
      */
     PropertySchemaType propertySchemaType();
-
-    /**
-     * @return the {@link IndexConfig}, if any
-     */
-    IndexConfig getIndexConfig();
-
-    /**
-     * Produce a new schema descriptor that is the same as this schema descriptor in every way, except it has the given index config.
-     * @param indexConfig The index config of the new schema descriptor.
-     * @return A new schema descriptor with the given index config.
-     */
-    SchemaDescriptor withIndexConfig( IndexConfig indexConfig );
 }

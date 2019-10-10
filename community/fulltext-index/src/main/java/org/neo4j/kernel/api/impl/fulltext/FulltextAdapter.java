@@ -23,12 +23,11 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 public interface FulltextAdapter
 {
-    SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, IndexConfig indexConfig, String... properties );
+    SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, String... properties );
 
     void awaitRefresh();
 

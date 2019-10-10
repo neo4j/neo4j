@@ -157,10 +157,11 @@ public class FulltextProcedures
             throws KernelException
     {
         IndexConfig indexConfig = createIndexConfig( config );
-        SchemaDescriptor schema = accessor.schemaFor( EntityType.NODE, stringArray( labels ), indexConfig, stringArray( properties ) );
+        SchemaDescriptor schema = accessor.schemaFor( EntityType.NODE, stringArray( labels ), stringArray( properties ) );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR );
         prototype = prototype.withIndexType( IndexType.FULLTEXT );
         prototype = prototype.withName( name );
+        prototype = prototype.withIndexConfig( indexConfig );
         tx.schemaWrite().indexCreate( prototype );
     }
 
@@ -185,10 +186,11 @@ public class FulltextProcedures
             throws KernelException
     {
         IndexConfig indexConfig = createIndexConfig( config );
-        SchemaDescriptor schema = accessor.schemaFor( EntityType.RELATIONSHIP, stringArray( relTypes ), indexConfig, stringArray( properties ) );
+        SchemaDescriptor schema = accessor.schemaFor( EntityType.RELATIONSHIP, stringArray( relTypes ), stringArray( properties ) );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR );
         prototype = prototype.withIndexType( IndexType.FULLTEXT );
         prototype = prototype.withName( name );
+        prototype = prototype.withIndexConfig( indexConfig );
         tx.schemaWrite().indexCreate( prototype );
     }
 

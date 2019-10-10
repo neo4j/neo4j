@@ -236,7 +236,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, IndexConfig indexConfig, String... properties )
+    public SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, String... properties )
     {
         if ( entityTokens.length == 0 )
         {
@@ -266,8 +266,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
             int[] propertyIds = new int[properties.length];
             tokenHolders.propertyKeyTokens().getOrCreateIds( properties, propertyIds );
 
-            indexConfig = addMissingDefaultIndexConfig( indexConfig );
-            return SchemaDescriptor.fulltext( type, entityTokenIds, propertyIds ).withIndexConfig( indexConfig );
+            return SchemaDescriptor.fulltext( type, entityTokenIds, propertyIds );
         }
         catch ( KernelException e )
         {

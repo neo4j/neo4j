@@ -124,16 +124,4 @@ class NoSchemaDescriptor implements SchemaDescriptor
     {
         return null;
     }
-
-    @Override
-    public IndexConfig getIndexConfig()
-    {
-        return IndexConfig.empty();
-    }
-
-    @Override
-    public SchemaDescriptor withIndexConfig( IndexConfig indexConfig )
-    {
-        throw new IllegalStateException( "NO_SCHEMA cannot be assigned an index configuration." );
-    }
 }

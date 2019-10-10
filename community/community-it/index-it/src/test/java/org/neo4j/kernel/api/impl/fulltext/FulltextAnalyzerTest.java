@@ -45,7 +45,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
 
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
@@ -81,7 +81,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, SWEDISH );
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
@@ -117,7 +117,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifyFoldingAnalyzer() throws Exception
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, FOLDING );
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
@@ -153,7 +153,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         long secondID;
         applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "nodes" );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )

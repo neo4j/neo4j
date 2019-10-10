@@ -42,7 +42,6 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
 {
     private final EntityType entityType;
     private final PropertySchemaType propertySchemaType;
-    private final IndexConfig indexConfig;
     private final int[] entityTokens;
     private final int[] propertyKeyIds;
     /**
@@ -62,14 +61,12 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
      * This constructor is only public so that it can be called directly from the SchemaStore.
      * Use the static methods on {@link SchemaDescriptor} to create the usual kinds of schemas.
      */
-    public SchemaDescriptorImplementation( EntityType entityType, PropertySchemaType propertySchemaType, IndexConfig indexConfig,
-            int[] entityTokens, int[] propertyKeyIds )
+    public SchemaDescriptorImplementation( EntityType entityType, PropertySchemaType propertySchemaType, int[] entityTokens, int[] propertyKeyIds )
     {
         this.entityType = requireNonNull( entityType, "EntityType cannot be null." );
         this.propertySchemaType = requireNonNull( propertySchemaType, "PropertySchemaType cannot be null." );
         this.entityTokens = requireNonNull( entityTokens, "Entity tokens array cannot be null." );
         this.propertyKeyIds = requireNonNull( propertyKeyIds, "Property key ids array cannot be null." );
-        this.indexConfig = requireNonNull( indexConfig, "IndexConfig cannot be null." );
         if ( entityTokens.length == 0 )
         {
             throw new IllegalArgumentException( "Schema descriptor must have at least one " + (entityType == NODE ? "label." : "relationship type.") );
@@ -266,18 +263,6 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     public SchemaDescriptor schema()
     {
         return this;
-    }
-
-    @Override
-    public IndexConfig getIndexConfig()
-    {
-        return indexConfig;
-    }
-
-    @Override
-    public SchemaDescriptorImplementation withIndexConfig( IndexConfig indexConfig )
-    {
-        return new SchemaDescriptorImplementation( entityType, propertySchemaType, indexConfig, entityTokens, propertyKeyIds );
     }
 
     @Override

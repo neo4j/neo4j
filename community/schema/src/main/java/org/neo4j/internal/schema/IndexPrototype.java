@@ -36,32 +36,35 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     private final IndexProviderDescriptor indexProvider;
     private final String name;
     private final IndexType indexType;
+    private final IndexConfig indexConfig;
 
     public static IndexPrototype forSchema( SchemaDescriptor schema )
     {
-        return new IndexPrototype( schema, false, IndexProviderDescriptor.UNDECIDED, null, BTREE );
+        return new IndexPrototype( schema, false, IndexProviderDescriptor.UNDECIDED, null, BTREE, IndexConfig.empty() );
     }
 
     public static IndexPrototype forSchema( SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
     {
-        return new IndexPrototype( schema, false, indexProvider, null, BTREE );
+        return new IndexPrototype( schema, false, indexProvider, null, BTREE, IndexConfig.empty() );
     }
 
     public static IndexPrototype uniqueForSchema( SchemaDescriptor schema )
     {
-        return new IndexPrototype( schema, true, IndexProviderDescriptor.UNDECIDED, null, BTREE );
+        return new IndexPrototype( schema, true, IndexProviderDescriptor.UNDECIDED, null, BTREE, IndexConfig.empty() );
     }
 
     public static IndexPrototype uniqueForSchema( SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
     {
-        return new IndexPrototype( schema, true, indexProvider, null, BTREE );
+        return new IndexPrototype( schema, true, indexProvider, null, BTREE, IndexConfig.empty() );
     }
 
-    private IndexPrototype( SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, String name, IndexType indexType )
+    private IndexPrototype( SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, String name, IndexType indexType,
+            IndexConfig indexConfig )
     {
         Objects.requireNonNull( schema, "Schema of index cannot be null." );
         Objects.requireNonNull( indexProvider, "Index provider cannot be null." );
         Objects.requireNonNull( indexType, "Index type cannot be null." );
+        Objects.requireNonNull( indexConfig, "Index configuration cannot be null." );
         // Note that 'name' is allowed to be null in the constructor, as that is the case initially for new index prototypes.
 
         this.schema = schema;
@@ -69,6 +72,7 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
         this.indexProvider = indexProvider;
         this.name = name;
         this.indexType = indexType;
+        this.indexConfig = indexConfig;
     }
 
     @Override
@@ -121,13 +125,25 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     @Override
     public IndexPrototype withIndexProvider( IndexProviderDescriptor indexProvider )
     {
-        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType );
+        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType, indexConfig );
     }
 
     @Override
     public IndexPrototype withSchemaDescriptor( SchemaDescriptor schema )
     {
-        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType );
+        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType, indexConfig );
+    }
+
+    @Override
+    public IndexConfig getIndexConfig()
+    {
+        return indexConfig;
+    }
+
+    @Override
+    public IndexPrototype withIndexConfig( IndexConfig indexConfig )
+    {
+        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType, indexConfig );
     }
 
     /**
@@ -143,7 +159,7 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
         {
             return this;
         }
-        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType );
+        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType, indexConfig );
     }
 
     /**
@@ -154,7 +170,7 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
      */
     public IndexPrototype withIndexType( IndexType indexType )
     {
-        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType );
+        return new IndexPrototype( schema, isUnique, indexProvider, name, indexType, indexConfig );
     }
 
     /**

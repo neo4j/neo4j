@@ -472,7 +472,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         int[] entityIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, props );
         int[] propertyIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, props );
 
-        return new SchemaDescriptorImplementation( entityType, propertySchemaType, extractIndexConfig( props ), entityIds, propertyIds );
+        return new SchemaDescriptorImplementation( entityType, propertySchemaType, entityIds, propertyIds );
     }
 
     private static IndexConfig extractIndexConfig( Map<String,Value> props )

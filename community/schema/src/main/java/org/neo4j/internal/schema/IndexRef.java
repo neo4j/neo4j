@@ -51,4 +51,16 @@ interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplier
      * @return A new index reference with the given schema descriptor.
      */
     T withSchemaDescriptor( SchemaDescriptor schema );
+
+    /**
+     * @return the attached {@link IndexConfig}.
+     */
+    IndexConfig getIndexConfig();
+
+    /**
+     * Produce a new index reference that is the same as this index reference in every way, except it has the given index config.
+     * @param indexConfig The index config of the new index reference.
+     * @return A new index reference with the given index config.
+     */
+    T withIndexConfig( IndexConfig indexConfig );
 }

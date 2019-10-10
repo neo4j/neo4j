@@ -66,7 +66,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
@@ -100,7 +100,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
@@ -145,7 +145,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
@@ -188,7 +188,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, "prop", "prop2" );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
@@ -244,7 +244,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
@@ -278,7 +278,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, "prop", "prop2" );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
@@ -314,7 +314,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "first", "last" );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, "first", "last" );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
@@ -352,8 +352,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
+        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
+        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, PROP );
         IndexDescriptor nodesIndex;
         IndexDescriptor relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
@@ -398,8 +398,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotReturnNonMatches() throws Exception
     {
-        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
+        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
+        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, PROP );
         IndexDescriptor nodesIndex;
         IndexDescriptor relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
@@ -456,8 +456,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.commit();
         }
 
-        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
+        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
+        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, PROP );
         IndexDescriptor nodesIndex;
         IndexDescriptor relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
@@ -491,7 +491,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
@@ -521,7 +521,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop2" );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, "prop2" );
             tx.schemaWrite().indexDrop( index );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
@@ -548,7 +548,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToDropAndReadIndex() throws Exception
     {
-        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
@@ -683,7 +683,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
@@ -709,7 +709,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP, PROP2 );
+            SchemaDescriptor schema = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, PROP, PROP2 );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.success();
