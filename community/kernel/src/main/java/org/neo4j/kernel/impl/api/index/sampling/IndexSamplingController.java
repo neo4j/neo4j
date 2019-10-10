@@ -29,10 +29,14 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
@@ -47,6 +51,9 @@ public class IndexSamplingController
     private final RecoveryCondition indexRecoveryCondition;
     private final boolean backgroundSampling;
     private final Lock samplingLock = new ReentrantLock();
+    private final Log log;
+    private final boolean LOG_RECOVER_INDEX_SAMPLES = FeatureToggles.flag(getClass(), "logging", false);
+    private final boolean ASYNC_RECOVER_INDEX_SAMPLES = FeatureToggles.flag(getClass(), "async", false);
 
     private JobHandle backgroundSamplingHandle;
 
@@ -57,7 +64,8 @@ public class IndexSamplingController
                              IndexSamplingJobTracker jobTracker,
                              IndexMapSnapshotProvider indexMapSnapshotProvider,
                              JobScheduler scheduler,
-                             RecoveryCondition indexRecoveryCondition )
+                             RecoveryCondition indexRecoveryCondition,
+                             LogProvider logProvider )
     {
         this.backgroundSampling = config.backgroundSampling();
         this.jobFactory = jobFactory;
@@ -66,6 +74,7 @@ public class IndexSamplingController
         this.jobTracker = jobTracker;
         this.scheduler = scheduler;
         this.indexRecoveryCondition = indexRecoveryCondition;
+        this.log = logProvider.getLog(this.getClass());
     }
 
     public void sampleIndexes( IndexSamplingMode mode )
@@ -92,9 +101,30 @@ public class IndexSamplingController
             while ( indexIds.hasNext() )
             {
                 long indexId = indexIds.next();
-                if ( indexRecoveryCondition.test( indexMap.getIndexProxy( indexId ).getDescriptor() ) )
+                CapableIndexDescriptor descriptor = indexMap.getIndexProxy( indexId ).getDescriptor();
+                if ( indexRecoveryCondition.test( descriptor ) )
                 {
-                    sampleIndexOnCurrentThread( indexMap, indexId );
+                    if ( LOG_RECOVER_INDEX_SAMPLES )
+                    {
+                        log.info( "index %d, %s, %s requires sampling", indexId,
+                                  descriptor.getName(), descriptor.getUserSuppliedName().orElse( "<N/A>" ) );
+                    }
+
+                    if ( ASYNC_RECOVER_INDEX_SAMPLES )
+                    {
+                        sampleIndexOnTracker( indexMap, indexId );
+                    }
+                    else
+                    {
+                        sampleIndexOnCurrentThread( indexMap, indexId );
+                    }
+                }
+                else
+                {
+                    if ( LOG_RECOVER_INDEX_SAMPLES )
+                    {
+                        log.info( "index %d, %s doesn't require sampling", indexId, descriptor.getName() );
+                    }
                 }
             }
         }

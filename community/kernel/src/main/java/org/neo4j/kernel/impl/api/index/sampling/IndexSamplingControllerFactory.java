@@ -61,8 +61,8 @@ public class IndexSamplingControllerFactory
         IndexSamplingController.RecoveryCondition
                 indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );
         return new IndexSamplingController(
-                config, jobFactory, jobQueue, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition
-        );
+                config, jobFactory, jobQueue, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition,
+                logProvider );
     }
 
     private Predicate<Long> createSamplingPredicate()
