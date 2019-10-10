@@ -83,6 +83,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
+import org.neo4j.kernel.impl.scheduler.GroupedDaemonThreadFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -91,6 +92,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -99,6 +101,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -188,6 +191,7 @@ class IndexingServiceTest
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
+    private final JobScheduler scheduler = JobSchedulerFactory.createScheduler();
 
     @BeforeEach
     void setUp()
@@ -893,6 +897,19 @@ class IndexingServiceTest
     void shouldNotLoseIndexDescriptorDueToOtherVerySimilarIndexDuringRecovery() throws Exception
     {
         // GIVEN
+        AtomicReference<BinaryLatch> populationStartLatch = new AtomicReference<>( new BinaryLatch() );
+        scheduler.setThreadFactory( Group.INDEX_POPULATION, ( group, parent ) -> new GroupedDaemonThreadFactory( group, parent )
+        {
+            @Override
+            public Thread newThread( Runnable job )
+            {
+                return super.newThread( () ->
+                {
+                    populationStartLatch.get().await();
+                    job.run();
+                } );
+            }
+        } );
         long nodeId = 0;
         EntityUpdates update = addNodeUpdate( nodeId, "value" );
         DoubleLongRegister register = mock( DoubleLongRegister.class );
@@ -907,6 +924,7 @@ class IndexingServiceTest
         );
         when( indexProvider.getInitialState( index ) ).thenReturn( ONLINE );
         life.init();
+        populationStartLatch.getAndSet( new BinaryLatch() ).release();
 
         // WHEN dropping another index, which happens to be identical to the existing one except for different index config... while recovering
         SchemaDescriptor schema = index.schema();
@@ -921,8 +939,16 @@ class IndexingServiceTest
         // and WHEN starting, i.e. completing recovery
         life.start();
 
-        assertNull( indexing.getIndexProxy( index ).getDescriptor().schema().getIndexConfig().get( "a" ) );
-        assertThat( indexing.getIndexProxy( index ).getState(), Matchers.is( POPULATING ) ); // The existing online index got nuked during recovery.
+        IndexProxy indexProxy = indexing.getIndexProxy( index );
+        try
+        {
+            assertNull( indexProxy.getDescriptor().schema().getIndexConfig().get( "a" ) );
+            assertThat( indexProxy.getState(), Matchers.is( POPULATING ) ); // The existing online index got nuked during recovery.
+        }
+        finally
+        {
+            populationStartLatch.get().release();
+        }
     }
 
     @Test
@@ -1496,7 +1522,7 @@ class IndexingServiceTest
 
         DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider, fulltextProvider() ), config ) );
         return life.add( IndexingServiceFactory.createIndexingService( config,
-                        life.add( JobSchedulerFactory.createScheduler() ), providerMap,
+                        life.add( scheduler ), providerMap,
                         storeView,
                         nameLookup,
                         loop( iterator( rules ) ),
