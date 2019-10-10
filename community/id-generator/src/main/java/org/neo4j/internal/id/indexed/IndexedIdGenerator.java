@@ -329,7 +329,7 @@ public class IndexedIdGenerator implements IdGenerator
         try
         {
             return new IdRangeMarker( idsPerEntry, layout, tree.writer(), commitAndReuseLock,
-                    strict ? IdRangeMerger.DEFAULT : IdRangeMerger.RECOVERY,
+                    started && strict ? IdRangeMerger.DEFAULT : IdRangeMerger.RECOVERY,
                     started, atLeastOneIdOnFreelist, generation, highestWrittenId, bridgeIdGaps );
         }
         catch ( Exception e )

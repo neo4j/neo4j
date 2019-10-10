@@ -53,6 +53,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
+import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
 
 @PageCacheExtension
 class IdRangeMarkerTest
@@ -291,6 +292,33 @@ class IdRangeMarkerTest
         // then
         // one time for the bridging and one time for the delete
         verify( writer, times( 2 ) ).merge( any(), any(), any() );
+    }
+
+    @Test
+    void shouldMarkDeletedAndFree() throws IOException
+    {
+        // given
+        try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, tree.writer(), mock( Lock.class ), IdRangeMerger.DEFAULT, true,
+                new AtomicBoolean(), 1, new AtomicLong( -1 ), true ) )
+        {
+            marker.markUsed( 0 );
+            marker.markReserved( 0 );
+        }
+
+        // when
+        try ( IdRangeMarker marker = new IdRangeMarker( idsPerEntry, layout, tree.writer(), mock( Lock.class ), IdRangeMerger.DEFAULT, true,
+                new AtomicBoolean(), 1, new AtomicLong( -1 ), true ) )
+        {
+            marker.markDeletedAndFree( 0 );
+        }
+
+        // then
+        try ( Seeker<IdRangeKey, IdRange> seek = tree.seek( new IdRangeKey( 0 ), new IdRangeKey( Long.MAX_VALUE ) ) )
+        {
+            assertTrue( seek.next() );
+            assertEquals( 0, seek.key().getIdRangeIdx() );
+            assertEquals( FREE, seek.value().getState( 0 ) );
+        }
     }
 
     private ValueMerger realMergerMock()

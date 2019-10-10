@@ -199,10 +199,12 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
         bridgeGapBetweenHighestWrittenIdAndThisId( id );
         if ( !isReservedId( id ) )
         {
-            prepareRange( id, true );
+            key.setIdRangeIdx( idRangeIndex( id ) );
+            value.clear( generation, true, true, false );
             int offset = idOffset( id );
-            value.setBit( BITSET_COMMIT, offset );
-            value.setBit( BITSET_REUSE, offset );
+            value.setBit( BITSET_COMMIT, offset );   // set this
+            value.setBit( BITSET_REUSE, offset );    // set this
+            value.setBit( BITSET_RESERVED, offset ); // clear this
             writer.merge( key, value, merger );
         }
 
