@@ -95,7 +95,7 @@ class TransactionEventsIT
 
         try ( var transaction = db.beginTx() )
         {
-            transaction.createNode(mainLabel);
+            transaction.createNode( mainLabel );
             transaction.commit();
         }
 
