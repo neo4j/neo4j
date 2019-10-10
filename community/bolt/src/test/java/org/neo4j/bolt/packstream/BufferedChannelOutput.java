@@ -21,8 +21,11 @@ package org.neo4j.bolt.packstream;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
+
+import org.neo4j.io.memory.ByteBuffers;
+
+import static java.nio.ByteOrder.BIG_ENDIAN;
 
 public class BufferedChannelOutput implements PackOutput
 {
@@ -31,7 +34,7 @@ public class BufferedChannelOutput implements PackOutput
 
     public BufferedChannelOutput( int bufferSize )
     {
-        this.buffer = ByteBuffer.allocate( bufferSize ).order( ByteOrder.BIG_ENDIAN );
+        this.buffer = ByteBuffers.allocate( bufferSize, BIG_ENDIAN );
     }
 
     public BufferedChannelOutput( WritableByteChannel channel )

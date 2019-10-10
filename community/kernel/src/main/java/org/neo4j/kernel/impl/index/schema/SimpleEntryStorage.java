@@ -27,9 +27,9 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.memory.ByteBufferFactory;
 
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.util.concurrent.Runnables.runAll;

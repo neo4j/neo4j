@@ -26,6 +26,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_VERSION_SIZE;
@@ -50,7 +51,7 @@ public class LogHeaderReader
     {
         try ( StoreChannel channel = fileSystem.read( file ) )
         {
-            return readLogHeader( ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE ), channel, strict, file );
+            return readLogHeader( ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE ), channel, strict, file );
         }
     }
 

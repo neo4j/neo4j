@@ -25,7 +25,8 @@ import java.util.List;
 
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.memory.ByteBufferFactory;
+import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.util.Preconditions;
 
@@ -74,7 +75,7 @@ public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Alloca
 
     private ByteBuffer allocateHeapBuffer( int bufferSize )
     {
-        return ByteBuffer.allocate( bufferSize );
+        return ByteBuffers.allocate( bufferSize );
     }
 
     @Override

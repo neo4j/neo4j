@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.memory.ByteBuffers;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -38,7 +40,7 @@ public class RecordingByteChannelTest
         // When
         byte[] data = new byte[]{1, 2, 3, 4, 5};
         channel.write( ByteBuffer.wrap( data ) );
-        ByteBuffer buffer = ByteBuffer.allocate( 10 );
+        ByteBuffer buffer = ByteBuffers.allocate( 10 );
         int bytesRead = channel.read( buffer );
 
         // Then

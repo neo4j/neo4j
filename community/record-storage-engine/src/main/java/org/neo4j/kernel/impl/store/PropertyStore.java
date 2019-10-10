@@ -33,6 +33,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -361,7 +362,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     {
         if ( buffer == null )
         {
-            buffer = ByteBuffer.allocate( 512 );
+            buffer = ByteBuffers.allocate( 512 );
         }
         else
         {
@@ -394,7 +395,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             capacity *= 2;
         }
         while ( capacity - buffer.limit() < required );
-        return ByteBuffer.allocate( capacity ).order( ByteOrder.LITTLE_ENDIAN ).put( buffer );
+        return ByteBuffers.allocate( capacity ).put( buffer );
     }
 
     private static class PropertyBlockValueWriter extends TemporalValueWriterAdapter<IllegalArgumentException>

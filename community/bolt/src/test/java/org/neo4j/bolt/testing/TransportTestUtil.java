@@ -43,6 +43,7 @@ import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -119,7 +120,7 @@ public class TransportTestUtil
 
     public byte[] chunk( int chunkSize, byte[]... messages )
     {
-        ByteBuffer output = ByteBuffer.allocate( 10000 ).order( BIG_ENDIAN );
+        ByteBuffer output = ByteBuffers.allocate( 10000, BIG_ENDIAN );
 
         for ( byte[] wholeMessage : messages )
         {
@@ -205,7 +206,7 @@ public class TransportTestUtil
 
     public byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
     {
-        ByteBuffer bb = ByteBuffer.allocate( 5 * Integer.BYTES ).order( BIG_ENDIAN );
+        ByteBuffer bb = ByteBuffers.allocate( 5 * Integer.BYTES, BIG_ENDIAN );
         bb.putInt( 0x6060B017 );
         bb.putInt( (int) option1 );
         bb.putInt( (int) option2 );

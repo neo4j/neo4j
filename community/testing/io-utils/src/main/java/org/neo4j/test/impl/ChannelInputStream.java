@@ -24,11 +24,12 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 
 public class ChannelInputStream extends InputStream
 {
     private final StoreChannel channel;
-    private final ByteBuffer buffer = ByteBuffer.allocate( 8096 );
+    private final ByteBuffer buffer = ByteBuffers.allocate( 8096 );
     private int position;
 
     public ChannelInputStream( StoreChannel channel )

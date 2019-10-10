@@ -26,6 +26,8 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
 
+import static org.neo4j.io.memory.ByteBuffers.allocate;
+
 /**
  * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushablePositionAwareChannel}. This
  * implementation uses a {@link PhysicalFlushableChannel}, which provides buffering for write operations over the
@@ -33,7 +35,7 @@ import org.neo4j.io.fs.PhysicalFlushableChannel;
  */
 public class PositionAwarePhysicalFlushableChannel implements FlushablePositionAwareChannel
 {
-    private static final ByteBuffer EMPTY_READ_ONLY_BUFFER = ByteBuffer.allocate( 0 ).asReadOnlyBuffer();
+    private static final ByteBuffer EMPTY_READ_ONLY_BUFFER = allocate( 0 ).asReadOnlyBuffer();
     private LogVersionedStoreChannel logVersionedStoreChannel;
     private final PhysicalFlushableLogChannel channel;
 

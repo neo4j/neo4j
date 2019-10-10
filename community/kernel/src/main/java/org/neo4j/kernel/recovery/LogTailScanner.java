@@ -25,6 +25,7 @@ import java.nio.channels.ClosedByInterruptException;
 import java.util.Arrays;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
@@ -222,7 +223,7 @@ public class LogTailScanner
         try
         {
             channel.position( logPosition.getByteOffset() );
-            ByteBuffer byteBuffer = ByteBuffer.allocate( safeCastLongToInt( min( kibiBytes( 12 ), channelLeftovers ) ) );
+            ByteBuffer byteBuffer = ByteBuffers.allocate( safeCastLongToInt( min( kibiBytes( 12 ), channelLeftovers ) ) );
             channel.readAll( byteBuffer );
             byteBuffer.flip();
             if ( !isAllZerosBuffer( byteBuffer ) )

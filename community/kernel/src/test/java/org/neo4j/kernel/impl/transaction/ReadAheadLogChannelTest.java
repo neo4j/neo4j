@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -38,6 +39,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 
 @TestDirectoryExtension
@@ -75,7 +77,7 @@ class ReadAheadLogChannelTest
         StoreChannel storeChannel = fileSystem.read( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file );
-        try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 16 ) )
+        try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS ) )
         {
             // THEN
             assertEquals( byteValue, channel.get() );
@@ -131,7 +133,7 @@ class ReadAheadLogChannelTest
                 }
                 return channel;
             }
-        }, 10 ) )
+        } ) )
         {
             // THEN
             for ( long i = 0; i < 20; i++ )
@@ -145,7 +147,7 @@ class ReadAheadLogChannelTest
     {
         try ( StoreChannel channel = fileSystem.write( file ) )
         {
-            ByteBuffer buffer = ByteBuffer.allocate( 1024 );
+            ByteBuffer buffer = ByteBuffers.allocate( 1, KibiByte );
             visitor.visit( buffer );
             buffer.flip();
             channel.write( buffer );

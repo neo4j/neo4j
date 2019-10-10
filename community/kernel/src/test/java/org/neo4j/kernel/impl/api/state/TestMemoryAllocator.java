@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.util.collection.Memory;
 import org.neo4j.kernel.impl.util.collection.MemoryAllocator;
 import org.neo4j.memory.LocalMemoryTracker;
@@ -46,7 +47,7 @@ class TestMemoryAllocator implements MemoryAllocator
     @Override
     public Memory allocate( long size, boolean zeroed )
     {
-        final ByteBuffer buf = ByteBuffer.allocate( toIntExact( size ) );
+        final ByteBuffer buf = ByteBuffers.allocate( toIntExact( size ) );
         if ( zeroed )
         {
             Arrays.fill( buf.array(), (byte) 0 );

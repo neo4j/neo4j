@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.memory.ByteBuffers;
 
 import static java.lang.Math.min;
 
@@ -48,7 +49,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
 
     public PhysicalFlushableChannel( StoreChannel channel, int bufferSize )
     {
-        this( channel, ByteBuffer.allocate( bufferSize ) );
+        this( channel, ByteBuffers.allocate( bufferSize ) );
     }
 
     public PhysicalFlushableChannel( StoreChannel channel, ByteBuffer byteBuffer )

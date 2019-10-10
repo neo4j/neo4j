@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
  */
 public interface LogFile
 {
+    @FunctionalInterface
     interface LogFileVisitor
     {
         boolean visit( ReadableClosablePositionAwareChannel channel ) throws IOException;

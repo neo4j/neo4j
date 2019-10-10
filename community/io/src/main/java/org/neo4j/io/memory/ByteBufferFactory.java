@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.memory;
+package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.neo4j.util.Preconditions;
-
-import static java.lang.Math.toIntExact;
 
 /**
  * Factory for {@link ByteBuffer} instances. The type of {@link ByteBuffer} allocated will be decided by the given {@link Allocator} passed into it.
@@ -122,7 +120,7 @@ public class ByteBufferFactory implements AutoCloseable
         @Override
         public ByteBuffer allocate( int bufferSize )
         {
-            return ByteBuffer.allocate( toIntExact( bufferSize ) );
+            return ByteBuffers.allocate( bufferSize );
         }
 
         @Override

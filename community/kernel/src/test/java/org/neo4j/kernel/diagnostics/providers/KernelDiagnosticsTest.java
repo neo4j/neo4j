@@ -32,6 +32,7 @@ import java.util.Collections;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -123,7 +124,7 @@ class KernelDiagnosticsTest
         File file = new File( parent, name );
         try ( StoreChannel channel = fs.write( file ) )
         {
-            ByteBuffer buffer = ByteBuffer.allocate( size );
+            ByteBuffer buffer = ByteBuffers.allocate( size );
             buffer.position( size ).flip();
             channel.write( buffer );
         }

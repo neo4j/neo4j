@@ -27,6 +27,7 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -165,7 +166,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
             }
             try ( StoreChannel channel = fileSystem.read( logFile ) )
             {
-                ByteBuffer buffer = ByteBuffer.allocate( headerSize + 1 );
+                ByteBuffer buffer = ByteBuffers.allocate( headerSize + 1 );
                 channel.readAll( buffer );
                 buffer.flip();
                 return buffer.get( headerSize ) != 0;

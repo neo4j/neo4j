@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -736,7 +737,7 @@ public abstract class FileSystemAbstractionTest
         {
             ThreadLocalRandom rng = ThreadLocalRandom.current();
             int fileSize = (int) channel.size();
-            ByteBuffer buffer = ByteBuffer.allocate( fileSize );
+            ByteBuffer buffer = ByteBuffers.allocate( fileSize );
             for ( int i = 0; i < fileSize; i++ )
 
             {
@@ -775,7 +776,7 @@ public abstract class FileSystemAbstractionTest
     {
         try ( StoreChannel channel = fsa.write( file ) )
         {
-            ByteBuffer buf = ByteBuffer.allocate( recordSize );
+            ByteBuffer buf = ByteBuffers.allocate( recordSize );
             for ( int i = 0; i < recordCount; i++ )
             {
                 generateRecordForId( i, buf );
@@ -793,8 +794,8 @@ public abstract class FileSystemAbstractionTest
     {
         try ( StoreChannel channel = fsa.write( file ) )
         {
-            ByteBuffer buf = ByteBuffer.allocate( recordSize );
-            ByteBuffer observation = ByteBuffer.allocate( recordSize );
+            ByteBuffer buf = ByteBuffers.allocate( recordSize );
+            ByteBuffer observation = ByteBuffers.allocate( recordSize );
             for ( int i = 0; i < recordCount; i++ )
             {
                 generateRecordForId( i, buf );
@@ -867,7 +868,7 @@ public abstract class FileSystemAbstractionTest
     private void writeIntegerIntoFile( File targetFile ) throws IOException
     {
         StoreChannel storeChannel = fsa.write( targetFile );
-        ByteBuffer byteBuffer = ByteBuffer.allocate( Integer.SIZE ).putInt( 7 );
+        ByteBuffer byteBuffer = ByteBuffers.allocate( Integer.SIZE ).putInt( 7 );
         byteBuffer.flip();
         storeChannel.writeAll( byteBuffer );
         storeChannel.close();

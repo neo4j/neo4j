@@ -37,6 +37,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
@@ -130,7 +131,7 @@ public class SchemaRuleSerialization35
      */
     public static byte[] serialize( IndexDescriptor indexDescriptor )
     {
-        ByteBuffer target = ByteBuffer.allocate( lengthOf( indexDescriptor ) );
+        ByteBuffer target = ByteBuffers.allocate( lengthOf( indexDescriptor ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( INDEX_RULE );
 
@@ -161,7 +162,7 @@ public class SchemaRuleSerialization35
      */
     public static byte[] serialize( ConstraintDescriptor constraint )
     {
-        ByteBuffer target = ByteBuffer.allocate( lengthOf( constraint ) );
+        ByteBuffer target = ByteBuffers.allocate( lengthOf( constraint ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( CONSTRAINT_RULE );
 

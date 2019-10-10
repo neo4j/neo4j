@@ -34,6 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
@@ -244,7 +245,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             totalBytesRequired += 4/*byte[].length*/ + bytes.length;
         }
 
-        ByteBuffer buf = ByteBuffer.allocate( totalBytesRequired );
+        ByteBuffer buf = ByteBuffers.allocate( totalBytesRequired );
         buf.put( PropertyType.STRING.byteValue() );
         buf.putInt( array.length );
         for ( byte[] stringAsBytes : stringsAsBytes )

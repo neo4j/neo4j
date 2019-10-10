@@ -34,6 +34,7 @@ import java.util.Map;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
@@ -166,7 +167,7 @@ class SpatialConfigExtractorTest
             int size = 100;
             byte[] bytes = new byte[size];
             Arrays.fill( bytes, (byte) 9 );
-            ByteBuffer byteBuffer = ByteBuffer.allocate( size );
+            ByteBuffer byteBuffer = ByteBuffers.allocate( size );
             byteBuffer.put( bytes );
             write.writeAll( byteBuffer );
         }

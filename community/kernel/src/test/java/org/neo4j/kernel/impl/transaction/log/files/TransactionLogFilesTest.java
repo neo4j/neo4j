@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -237,7 +238,7 @@ class TransactionLogFilesTest
     {
         try ( StoreChannel storeChannel = fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) ) ) )
         {
-            ByteBuffer byteBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE_3_5 + bytesOfData);
+            ByteBuffer byteBuffer = ByteBuffers.allocate( LOG_HEADER_SIZE_3_5 + bytesOfData);
             while ( byteBuffer.hasRemaining() )
             {
                 byteBuffer.put( LOG_VERSION_3_5 );

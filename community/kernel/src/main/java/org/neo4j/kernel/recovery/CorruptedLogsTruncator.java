@@ -28,14 +28,15 @@ import java.util.function.LongConsumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 
 import static java.lang.String.format;
+import static org.neo4j.io.ByteUnit.MebiByte;
 
 /**
  * Transaction log truncator used during recovery to truncate all the logs after some specified position, that
@@ -105,7 +106,7 @@ public class CorruptedLogsTruncator
         try ( ZipOutputStream recoveryContent = new ZipOutputStream(
                 new BufferedOutputStream( fs.openAsOutputStream( corruptedLogArchive, false ) ) ) )
         {
-            ByteBuffer zipBuffer = ByteBuffer.allocate( (int) ByteUnit.mebiBytes( 1 ) );
+            ByteBuffer zipBuffer = ByteBuffers.allocate( 1, MebiByte );
             copyTransactionLogContent( recoveredTransactionLogVersion, recoveredTransactionOffset, recoveryContent,
                     zipBuffer );
             forEachSubsequentLogFile( recoveredTransactionLogVersion, fileIndex ->

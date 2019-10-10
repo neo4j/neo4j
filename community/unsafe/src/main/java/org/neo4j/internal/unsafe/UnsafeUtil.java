@@ -409,7 +409,6 @@ public final class UnsafeUtil
     public static void freeByteBuffer( ByteBuffer byteBuffer )
     {
         int capacity = byteBuffer.capacity();
-        byteBuffer.clear();
         UnsafeUtil.invokeCleaner( byteBuffer );
         GlobalMemoryTracker.INSTANCE.deallocated( capacity );
     }

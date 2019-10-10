@@ -26,10 +26,10 @@ import org.mockito.Mockito;
 
 import java.io.Flushable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -235,7 +235,7 @@ class BatchingTransactionAppenderTest
         long txId = 3;
         String failureMessage = "Forces a failure";
         FlushablePositionAwareChannel channel =
-                spy( new PositionAwarePhysicalFlushableChannel( mock( PhysicalLogVersionedStoreChannel.class ), ByteBuffer.allocate( Long.BYTES ) ) );
+                spy( new PositionAwarePhysicalFlushableChannel( mock( PhysicalLogVersionedStoreChannel.class ), ByteBuffers.allocate( Long.BYTES ) ) );
         IOException failure = new IOException( failureMessage );
         when( channel.putInt( anyInt() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );

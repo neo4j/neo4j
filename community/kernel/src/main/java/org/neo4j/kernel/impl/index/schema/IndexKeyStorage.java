@@ -24,8 +24,8 @@ import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.memory.ByteBufferFactory;
 
 import static java.lang.String.format;
 

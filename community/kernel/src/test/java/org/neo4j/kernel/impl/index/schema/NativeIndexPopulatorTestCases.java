@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
-import static org.neo4j.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 
 class NativeIndexPopulatorTestCases
 {

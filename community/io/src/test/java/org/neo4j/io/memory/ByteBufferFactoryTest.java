@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.memory;
+package org.neo4j.io.memory;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -43,7 +43,8 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
-import static org.neo4j.memory.ByteBufferFactory.HEAP_ALLOCATOR;
+import static org.neo4j.io.memory.ByteBufferFactory.HEAP_ALLOCATOR;
+import static org.neo4j.io.memory.ByteBuffers.allocate;
 
 class ByteBufferFactoryTest
 {
@@ -52,7 +53,7 @@ class ByteBufferFactoryTest
     {
         // given
         ByteBufferFactory.Allocator allocator = mock( ByteBufferFactory.Allocator.class );
-        when( allocator.allocate( anyInt() ) ).thenAnswer( invocationOnMock -> ByteBuffer.allocate( invocationOnMock.getArgument( 0 ) ) );
+        when( allocator.allocate( anyInt() ) ).thenAnswer( invocationOnMock -> allocate( invocationOnMock.getArgument( 0 ) ) );
         ByteBufferFactory factory = new ByteBufferFactory( () -> allocator, 100 );
 
         // when doing some allocations that are counted as global

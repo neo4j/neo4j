@@ -39,6 +39,7 @@ import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
@@ -781,7 +782,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         try ( StoreChannel channel = fs.write( file ) )
         {
-            ByteBuffer buf = ByteBuffer.allocate( 16 );
+            ByteBuffer buf = ByteBuffers.allocate( 16 );
             buf.putLong( x );
             buf.putLong( y );
             buf.flip();
@@ -791,7 +792,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
     private ByteBuffer readIntoBuffer( String fileName ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( 16 );
+        ByteBuffer buffer = ByteBuffers.allocate( 16 );
         try ( StoreChannel channel = fs.read( file( fileName ) ) )
         {
             channel.readAll( buffer );

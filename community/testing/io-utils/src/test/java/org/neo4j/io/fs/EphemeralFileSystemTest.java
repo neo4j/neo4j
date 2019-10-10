@@ -37,11 +37,11 @@ import java.util.concurrent.Future;
 
 import org.neo4j.io.ByteUnit;
 
-import static java.nio.ByteBuffer.allocate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.memory.ByteBuffers.allocate;
 
 class EphemeralFileSystemTest
 {

@@ -21,8 +21,11 @@ package org.neo4j.bolt.packstream;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
+
+import org.neo4j.io.memory.ByteBuffers;
+
+import static java.nio.ByteOrder.BIG_ENDIAN;
 
 /**
  * An {@link PackInput} implementation that reads from an input channel into an internal buffer.
@@ -34,7 +37,7 @@ public class BufferedChannelInput implements PackInput
 
     public BufferedChannelInput( int bufferCapacity )
     {
-        this.buffer = ByteBuffer.allocate( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
+        this.buffer = ByteBuffers.allocate( bufferCapacity, BIG_ENDIAN );
     }
 
     public BufferedChannelInput reset( ReadableByteChannel ch )

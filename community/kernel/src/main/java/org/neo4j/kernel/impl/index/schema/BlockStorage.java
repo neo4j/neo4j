@@ -33,9 +33,9 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.io.memory.ByteBufferFactory.Allocator;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
-import org.neo4j.memory.ByteBufferFactory;
-import org.neo4j.memory.ByteBufferFactory.Allocator;
 import org.neo4j.util.Preconditions;
 
 import static java.lang.Math.ceil;

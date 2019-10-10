@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.memory.ByteBuffers;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -33,7 +35,7 @@ class OffsetChannelTest
     private static final long offset = 128;
     private final StoreChannel actual = mock( StoreChannel.class );
     private final OffsetChannel channel = new OffsetChannel( actual, offset );
-    private final ByteBuffer buf = ByteBuffer.allocate( 0 );
+    private final ByteBuffer buf = ByteBuffers.allocate( 0 );
     private final ByteBuffer[] buffers = new ByteBuffer[0];
 
     @Test

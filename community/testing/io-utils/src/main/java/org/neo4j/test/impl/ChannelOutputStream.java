@@ -24,11 +24,12 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 
 public class ChannelOutputStream extends OutputStream
 {
     private final StoreChannel channel;
-    private final ByteBuffer buffer = ByteBuffer.allocate( 8096 );
+    private final ByteBuffer buffer = ByteBuffers.allocate( 8096 );
 
     public ChannelOutputStream( StoreChannel channel, boolean append ) throws IOException
     {

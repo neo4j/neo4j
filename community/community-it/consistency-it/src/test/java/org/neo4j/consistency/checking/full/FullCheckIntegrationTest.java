@@ -75,6 +75,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -138,6 +139,7 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -150,7 +152,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -2150,7 +2151,7 @@ public class FullCheckIntegrationTest
             try ( RandomAccessFile accessFile = new RandomAccessFile( file, "rw" ) )
             {
                 FileChannel channel = accessFile.getChannel();
-                ByteBuffer buffer = ByteBuffer.allocate( 30 );
+                ByteBuffer buffer = ByteBuffers.allocate( 30 );
                 while ( buffer.hasRemaining() )
                 {
                     buffer.put( (byte) 9 );

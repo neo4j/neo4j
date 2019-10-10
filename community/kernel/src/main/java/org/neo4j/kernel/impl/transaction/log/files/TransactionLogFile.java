@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -27,9 +26,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.nativeimpl.NativeAccess;
-import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -47,6 +46,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
+import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
@@ -64,7 +64,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private LogVersionRepository logVersionRepository;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
-    private CloseableByteBuffer closeableByteBuffer;
+    private ByteBuffer byteBuffer;
 
     TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context )
     {
@@ -92,8 +92,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         //try to set position
         seekChannelPosition( currentLogVersion );
 
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect( calculateLogBufferSize() );
-        closeableByteBuffer = new CloseableByteBuffer( byteBuffer );
+        this.byteBuffer = ByteBuffers.allocateDirect( calculateLogBufferSize() );
         writer = new PositionAwarePhysicalFlushableChannel( channel, byteBuffer );
     }
 
@@ -145,9 +144,9 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         {
             writer.close();
         }
-        if ( closeableByteBuffer != null )
+        if ( byteBuffer != null )
         {
-            closeableByteBuffer.close();
+            releaseBuffer( byteBuffer );
         }
     }
 
@@ -296,38 +295,5 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private static int calculateLogBufferSize()
     {
         return (int) ByteUnit.kibiBytes( min( (getRuntime().availableProcessors() / 4) + 1, 8 ) * 512 );
-    }
-
-    /**
-     * Invokes cleaner if required of provided byte buffer.
-     * In case if byte buffer is not direct - nothing will gonna be executed on close.
-     * <br/>
-     * For direct byte buffers: unsafe helper method will be invoked to clean native buffer resources.
-     */
-    private static class CloseableByteBuffer implements Closeable
-    {
-        private final ByteBuffer byteBuffer;
-
-        CloseableByteBuffer( ByteBuffer byteBuffer )
-        {
-            this.byteBuffer = byteBuffer;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            if ( !byteBuffer.isDirect() )
-            {
-                return;
-            }
-            try
-            {
-                UnsafeUtil.invokeCleaner( byteBuffer );
-            }
-            catch ( Throwable t )
-            {
-                throw new RuntimeException( t );
-            }
-        }
     }
 }

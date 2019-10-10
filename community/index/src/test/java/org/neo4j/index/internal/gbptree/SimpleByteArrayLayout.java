@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCursor;
 
 public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
@@ -233,7 +234,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
 
     private long toSeed( RawBytes rawBytes )
     {
-        ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES );
+        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES );
         // Because keySearch is done inside the same shouldRetry block as keyCount()
         // We risk reading crap data. This is not a problem because we will retry
         // but buffer will throw here if we don't take that into consideration.
@@ -254,7 +255,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         {
             tail = largeEntriesSize - Long.BYTES;
         }
-        ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES + tail );
+        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES + tail );
         buffer.putLong( seed );
         buffer.put( new byte[tail] );
         return buffer.array();

@@ -65,6 +65,7 @@ import java.util.zip.Checksum;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
@@ -555,7 +556,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
     private static ByteBuffer newCopyBuffer()
     {
-        return ByteBuffer.allocate( (int) ByteUnit.mebiBytes( 1 ) );
+        return ByteBuffers.allocate( 1, ByteUnit.MebiByte );
     }
 
     private void copyRecursivelyFromOtherFs( File from, FileSystemAbstraction fromFs, File to, ByteBuffer buffer )
@@ -789,7 +790,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             try
             {
                 long transferred = 0;
-                ByteBuffer intermediary = ByteBuffer.allocate( (int) ByteUnit.mebiBytes( 8 ) );
+                ByteBuffer intermediary = ByteBuffers.allocate( 8, ByteUnit.MebiByte );
                 while ( transferred < count )
                 {
                     intermediary.clear();
@@ -1136,7 +1137,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         private ByteBuffer allocate( long capacity )
         {
-            return ByteBuffer.allocate( Math.toIntExact( capacity ) );
+            return ByteBuffers.allocate( Math.toIntExact( capacity ) );
         }
 
         void free()

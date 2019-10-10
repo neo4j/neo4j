@@ -35,6 +35,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.io.memory.ByteBuffers;
+
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -590,7 +592,7 @@ public class ChunkedOutputTest
             }
         }
 
-        ByteBuffer buffer = ByteBuffer.allocate( chunkSize + CHUNK_HEADER_SIZE );
+        ByteBuffer buffer = ByteBuffers.allocate( chunkSize + CHUNK_HEADER_SIZE );
         buffer.putShort( chunkSize );
 
         for ( Number value : values )
@@ -627,7 +629,7 @@ public class ChunkedOutputTest
 
     private static String messageBoundary()
     {
-        ByteBuffer buffer = ByteBuffer.allocate( Short.BYTES );
+        ByteBuffer buffer = ByteBuffers.allocate( Short.BYTES );
         buffer.putShort( (short) 0 );
         buffer.flip();
         return ByteBufUtil.hexDump( buffer.array() );

@@ -34,6 +34,7 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.IoPrimitiveUtils;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
@@ -84,7 +85,7 @@ class LogHeaderReaderTest
     void shouldReadAnOldLogHeaderFromAByteChannel() throws IOException
     {
         // given
-        final ByteBuffer buffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
+        final ByteBuffer buffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
         final ReadableByteChannel channel = mock( ReadableByteChannel.class );
         byte oldVersion = 6;
 
@@ -119,7 +120,7 @@ class LogHeaderReaderTest
     void shouldReadALogHeaderFromAByteChannel() throws IOException
     {
         // given
-        final ByteBuffer buffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
+        final ByteBuffer buffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
         final ReadableByteChannel channel = mock( ReadableByteChannel.class );
 
         when( channel.read( buffer ) ).thenAnswer( new Answer<>()
@@ -159,7 +160,7 @@ class LogHeaderReaderTest
     void shouldFailWhenUnableToReadALogHeaderFromAChannel() throws IOException
     {
         // given
-        final ByteBuffer buffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
+        final ByteBuffer buffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
         final ReadableByteChannel channel = mock( ReadableByteChannel.class );
 
         when( channel.read( buffer ) ).thenReturn( 1 );
@@ -173,7 +174,7 @@ class LogHeaderReaderTest
         // given
         final File file = testDirectory.file( "ReadLogHeader" );
 
-        final ByteBuffer buffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
+        final ByteBuffer buffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
         buffer.putLong( encodeLogVersion( expectedLogVersion, CURRENT_LOG_FORMAT_VERSION ) );
         buffer.putLong( expectedTxId );
         buffer.putLong( expectedStoreId.getCreationTime() );
@@ -228,7 +229,7 @@ class LogHeaderReaderTest
     @Test
     void readEmptyPreallocatedFileHeaderAsNoHeader() throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
+        ByteBuffer buffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
         ReadableByteChannel channel = mock( ReadableByteChannel.class );
 
         when( channel.read( buffer ) ).thenAnswer( invocation ->

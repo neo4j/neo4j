@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 
@@ -51,7 +52,7 @@ public abstract class RecordFormat
 
     public final void writeRecord( Record record, StoreChannel channel ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( getRecordSize() );
+        ByteBuffer buffer = ByteBuffers.allocate( getRecordSize() );
         StubPageCursor cursor = new StubPageCursor( 0, buffer );
         write( record, cursor );
         channel.writeAll( buffer );
@@ -95,7 +96,7 @@ public abstract class RecordFormat
     {
         int recordSize = getRecordSize();
         long recordsInFile = channel.size() / recordSize;
-        ByteBuffer buffer = ByteBuffer.allocate( recordSize );
+        ByteBuffer buffer = ByteBuffers.allocate( recordSize );
         StubPageCursor cursor = new StubPageCursor( 0, buffer );
         for ( int i = 0; i < recordsInFile; i++ )
         {

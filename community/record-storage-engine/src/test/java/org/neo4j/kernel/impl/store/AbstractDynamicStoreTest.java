@@ -33,6 +33,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -67,7 +68,7 @@ class AbstractDynamicStoreTest
     {
         try ( StoreChannel channel = fs.write( storeFile ) )
         {
-            ByteBuffer buffer = ByteBuffer.allocate( 4 );
+            ByteBuffer buffer = ByteBuffers.allocate( 4 );
             buffer.putInt( BLOCK_SIZE );
             buffer.flip();
             channel.write( buffer );

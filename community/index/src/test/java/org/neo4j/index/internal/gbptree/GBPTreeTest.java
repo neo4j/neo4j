@@ -65,6 +65,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -1765,7 +1766,7 @@ class GBPTreeTest
         try ( StoreChannel storeChannel = fileSystem.open( indexFile, options ) )
         {
             int fileSize = (int) storeChannel.size();
-            ByteBuffer expectedContent = ByteBuffer.allocate( fileSize );
+            ByteBuffer expectedContent = ByteBuffers.allocate( fileSize );
             storeChannel.readAll( expectedContent );
             expectedContent.flip();
             byte[] bytes = new byte[fileSize];

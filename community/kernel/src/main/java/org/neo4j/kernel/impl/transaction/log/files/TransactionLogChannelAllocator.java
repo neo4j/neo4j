@@ -28,6 +28,7 @@ import java.util.function.LongSupplier;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -67,7 +68,7 @@ class TransactionLogChannelAllocator
         AllocatedFile allocatedFile = allocateFile( version );
         var storeChannel = allocatedFile.getStoreChannel();
         var logFile = allocatedFile.getFile();
-        ByteBuffer headerBuffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
+        ByteBuffer headerBuffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
         LogHeader header = readLogHeader( headerBuffer, storeChannel, false, logFile );
         if ( header == null )
         {
@@ -98,7 +99,7 @@ class TransactionLogChannelAllocator
         try
         {
             rawChannel = fileSystem.read( fileToOpen );
-            ByteBuffer buffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
+            ByteBuffer buffer = ByteBuffers.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
             LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );
             if ( (header == null) || (header.getLogVersion() != version) )
             {

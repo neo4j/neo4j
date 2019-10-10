@@ -51,6 +51,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
@@ -429,7 +430,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     private ByteBuffer wrap( byte[] bytes )
     {
-        ByteBuffer buffer = ByteBuffer.allocate( bytes.length );
+        ByteBuffer buffer = ByteBuffers.allocate( bytes.length );
         for ( byte b : bytes )
         {
             buffer.put( b );

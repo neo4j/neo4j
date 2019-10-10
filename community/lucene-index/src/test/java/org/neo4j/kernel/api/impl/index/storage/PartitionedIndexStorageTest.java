@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +40,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.InMemoryDirectoryFactory;
 import org.neo4j.test.extension.Inject;
@@ -239,7 +239,7 @@ class PartitionedIndexStorageTest
         File file = new File( rootFolder, RandomStringUtils.randomNumeric( 5 ) );
         try ( StoreChannel channel = fs.write( file ) )
         {
-            channel.writeAll( ByteBuffer.allocate( 100 ) );
+            channel.writeAll( ByteBuffers.allocate( 100 ) );
         }
     }
 

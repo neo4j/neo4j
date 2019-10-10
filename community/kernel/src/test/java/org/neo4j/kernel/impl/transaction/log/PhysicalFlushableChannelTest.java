@@ -32,6 +32,7 @@ import java.util.Random;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -39,6 +40,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 
 @TestDirectoryExtension
 class PhysicalFlushableChannelTest
@@ -190,7 +192,7 @@ class PhysicalFlushableChannelTest
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file );
         PositionAwarePhysicalFlushableChannel channel =
-                new PositionAwarePhysicalFlushableChannel( versionedStoreChannel, ByteBuffer.allocateDirect( 1024 ) );
+                new PositionAwarePhysicalFlushableChannel( versionedStoreChannel, allocateDirect( 1024 ) );
         LogPositionMarker positionMarker = new LogPositionMarker();
         LogPosition initialPosition = channel.getCurrentPosition( positionMarker ).newPosition();
 
@@ -247,7 +249,7 @@ class PhysicalFlushableChannelTest
     {
         try ( StoreChannel channel = fileSystem.read( file ) )
         {
-            ByteBuffer buffer = ByteBuffer.allocate( (int) channel.size() );
+            ByteBuffer buffer = ByteBuffers.allocate( (int) channel.size() );
             channel.readAll( buffer );
             buffer.flip();
             return buffer;

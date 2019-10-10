@@ -27,12 +27,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.io.memory.ByteBuffers;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.packstream.ChunkedOutput.CHUNK_HEADER_SIZE;
+import static org.neo4j.io.ByteUnit.KibiByte;
 
 /** Helper to chunk up serialized data for testing */
 public class Chunker
@@ -43,7 +45,7 @@ public class Chunker
 
     public static byte[] chunk( int maxChunkSize, byte[][] messages ) throws IOException
     {
-        final ByteBuffer outputBuffer = ByteBuffer.allocate( 1024 * 8 );
+        final ByteBuffer outputBuffer = ByteBuffers.allocate( 8, KibiByte );
 
         Channel ch = mock( Channel.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );

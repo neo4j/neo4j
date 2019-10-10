@@ -26,10 +26,10 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -62,6 +62,6 @@ class ClassLevelTestDirectoryExtensionTestSupport
         // This will fail if the test directory is not initialised,
         // or if the file is deleted by the clearing of the test directory,
         // in between the runs.
-        channel.write( ByteBuffer.allocate( 1 ) );
+        channel.write( ByteBuffers.allocate( 1 ) );
     }
 }

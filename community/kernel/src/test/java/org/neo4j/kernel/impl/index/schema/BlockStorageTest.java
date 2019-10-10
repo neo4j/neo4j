@@ -56,10 +56,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.memory.ByteBufferFactory.HEAP_ALLOCATOR;
+import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.NOT_CANCELLABLE;
-import static org.neo4j.memory.ByteBufferFactory.HEAP_ALLOCATOR;
-import static org.neo4j.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.test.OtherThreadExecutor.command;
 
 @TestDirectoryExtension
