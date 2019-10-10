@@ -474,20 +474,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     /**
-     * Frees an id for this store's {@link IdGenerator}.
-     *
-     * @param id The id to free
-     */
-    @Override
-    public void freeId( long id )
-    {
-        try ( IdGenerator.ReuseMarker marker = idGenerator.reuseMarker() )
-        {
-            marker.markFree( id );
-        }
-    }
-
-    /**
      * Return the highest id in use. If this store is not OK yet, the high id is calculated from the highest
      * in use record on the store, using {@link #scanForHighId()}.
      *

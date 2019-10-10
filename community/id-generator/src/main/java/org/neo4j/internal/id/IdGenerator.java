@@ -33,8 +33,8 @@ public interface IdGenerator extends IdSequence, Closeable
     void markHighestWrittenAtHighId();
     long getHighId();
     long getHighestPossibleIdInUse();
-    ReuseMarker reuseMarker();
-    CommitMarker commitMarker();
+    Marker marker();
+    Marker lessStrictMarker();
 
     @Override
     void close();
@@ -63,17 +63,12 @@ public interface IdGenerator extends IdSequence, Closeable
      */
     void clearCache();
 
-    interface CommitMarker extends AutoCloseable
+    interface Marker extends AutoCloseable
     {
         void markUsed( long id );
         void markDeleted( long id );
-        @Override
-        void close();
-    }
-
-    interface ReuseMarker extends AutoCloseable
-    {
         void markFree( long id );
+        void markDeletedAndFree( long id );
         @Override
         void close();
     }
@@ -124,15 +119,15 @@ public interface IdGenerator extends IdSequence, Closeable
         }
 
         @Override
-        public ReuseMarker reuseMarker()
+        public Marker marker()
         {
-            return delegate.reuseMarker();
+            return delegate.marker();
         }
 
         @Override
-        public CommitMarker commitMarker()
+        public Marker lessStrictMarker()
         {
-            return delegate.commitMarker();
+            return delegate.lessStrictMarker();
         }
 
         @Override
@@ -178,7 +173,7 @@ public interface IdGenerator extends IdSequence, Closeable
         }
     }
 
-    ReuseMarker NOOP_REUSE_MARKER = new ReuseMarker()
+    Marker NOOP_MARKER = new Marker()
     {
         @Override
         public void markFree( long id )
@@ -186,20 +181,17 @@ public interface IdGenerator extends IdSequence, Closeable
         }
 
         @Override
-        public void close()
-        {   // no-op
-        }
-    };
-
-    CommitMarker NOOP_COMMIT_MARKER = new CommitMarker()
-    {
-        @Override
         public void markUsed( long id )
         {   // no-op
         }
 
         @Override
         public void markDeleted( long id )
+        {   // no-op
+        }
+
+        @Override
+        public void markDeletedAndFree( long id )
         {   // no-op
         }
 

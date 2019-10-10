@@ -29,8 +29,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
-import org.neo4j.internal.id.IdGenerator.CommitMarker;
-import org.neo4j.internal.id.IdGenerator.ReuseMarker;
+import org.neo4j.internal.id.IdGenerator.Marker;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.internal.id.IdValidator.isReservedId;
@@ -42,7 +41,7 @@ import static org.neo4j.internal.id.indexed.IdRange.BITSET_REUSE;
  * Contains logic for merging ID state changes into the tree backing an {@link IndexedIdGenerator}.
  * Basically manipulates {@link IdRangeKey} and {@link IdRange} instances and sends to {@link Writer#merge(Object, Object, ValueMerger)}.
  */
-class IdRangeMarker implements CommitMarker, ReuseMarker, IndexedIdGenerator.ReservedMarker
+class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
 {
     /**
      * Number of ids that is contained in one {@link IdRange}
@@ -142,7 +141,6 @@ class IdRangeMarker implements CommitMarker, ReuseMarker, IndexedIdGenerator.Res
         bridgeGapBetweenHighestWrittenIdAndThisId( id );
         if ( !isReservedId( id ) )
         {
-            // this is by convention: if reserved ID is marked as RESERVED again then it becomes USED
             prepareRange( id, false );
             value.setBitsForAllTypes( idOffset( id ) );
             writer.mergeIfExists( key, value, merger );
@@ -152,7 +150,6 @@ class IdRangeMarker implements CommitMarker, ReuseMarker, IndexedIdGenerator.Res
     @Override
     public void markDeleted( long id )
     {
-        bridgeGapBetweenHighestWrittenIdAndThisId( id );
         if ( !isReservedId( id ) )
         {
             prepareRange( id, true );
@@ -190,6 +187,22 @@ class IdRangeMarker implements CommitMarker, ReuseMarker, IndexedIdGenerator.Res
         {
             prepareRange( id, true );
             value.setBit( BITSET_REUSE, idOffset( id ) );
+            writer.merge( key, value, merger );
+        }
+
+        freeIdsNotifier.set( true );
+    }
+
+    @Override
+    public void markDeletedAndFree( long id )
+    {
+        bridgeGapBetweenHighestWrittenIdAndThisId( id );
+        if ( !isReservedId( id ) )
+        {
+            prepareRange( id, true );
+            int offset = idOffset( id );
+            value.setBit( BITSET_COMMIT, offset );
+            value.setBit( BITSET_REUSE, offset );
             writer.merge( key, value, merger );
         }
 

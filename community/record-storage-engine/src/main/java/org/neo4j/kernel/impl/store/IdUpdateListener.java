@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
 
 public interface IdUpdateListener
@@ -33,7 +34,7 @@ public interface IdUpdateListener
         @Override
         public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id )
         {
-            try ( IdGenerator.CommitMarker marker = idGenerator.commitMarker() )
+            try ( Marker marker = idGenerator.marker() )
             {
                 marker.markUsed( id );
             }
@@ -42,7 +43,7 @@ public interface IdUpdateListener
         @Override
         public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id )
         {
-            try ( IdGenerator.CommitMarker marker = idGenerator.commitMarker() )
+            try ( Marker marker = idGenerator.marker() )
             {
                 marker.markDeleted( id );
             }

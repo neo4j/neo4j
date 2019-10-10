@@ -28,8 +28,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdGenerator.CommitMarker;
-import org.neo4j.internal.id.IdGenerator.ReuseMarker;
+import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -258,7 +257,7 @@ class IndexedIdGeneratorRecoverabilityTest
 
     private static void markUsed( IdGenerator freelist, long... ids )
     {
-        try ( CommitMarker commitMarker = freelist.commitMarker() )
+        try ( Marker commitMarker = freelist.marker() )
         {
             for ( long id : ids )
             {
@@ -269,7 +268,7 @@ class IndexedIdGeneratorRecoverabilityTest
 
     private static void markDeleted( IdGenerator freelist, long... ids )
     {
-        try ( CommitMarker commitMarker = freelist.commitMarker() )
+        try ( Marker commitMarker = freelist.marker() )
         {
             for ( long id : ids )
             {
@@ -280,7 +279,7 @@ class IndexedIdGeneratorRecoverabilityTest
 
     private static void markFree( IdGenerator freelist, long... ids )
     {
-        try ( ReuseMarker reuseMarker = freelist.reuseMarker() )
+        try ( Marker reuseMarker = freelist.marker() )
         {
             for ( long id : ids )
             {

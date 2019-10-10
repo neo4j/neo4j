@@ -778,21 +778,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // those ids won't be marked as reusable, which is bad for this session. However a restart will see those ids as
                     // reusable again so they aren't entirely lost, just for this session.
                     // So what we currently do is to release the readily available lists of created nodes/relationships.
-
+                    commandCreationContext.releaseNodes( txState.addedAndRemovedNodes().getAdded().longIterator() );
+                    commandCreationContext.releaseRelationships( txState.addedAndRemovedRelationships().getAdded().longIterator() );
                     txState.accept( new TxStateVisitor.Adapter()
                     {
-                        @Override
-                        public void visitCreatedNode( long id )
-                        {
-                            commandCreationContext.releaseNode( id );
-                        }
-
-                        @Override
-                        public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                        {
-                            commandCreationContext.releaseRelationship( id );
-                        }
-
                         @Override
                         public void visitAddedIndex( IndexDescriptor index )
                         {

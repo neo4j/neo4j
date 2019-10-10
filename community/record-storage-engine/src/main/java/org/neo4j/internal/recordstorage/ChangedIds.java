@@ -26,7 +26,7 @@ import java.util.BitSet;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdGenerator.CommitMarker;
+import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -47,7 +47,7 @@ class ChangedIds
         ids.add( id );
     }
 
-    void accept( CommitMarker visitor )
+    void accept( Marker visitor )
     {
         ids.forEachWithIndex( ( id, index ) ->
         {

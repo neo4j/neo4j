@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.internal.id.IdGenerator.CommitMarker;
+import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -105,13 +105,13 @@ class LargeFreelistCreationDeletionIT
                 assertAllUnique( allocatedIds );
 
                 // Delete
-                try ( CommitMarker commitMarker = freelist.commitMarker() )
+                try ( Marker marker = freelist.marker() )
                 {
                     for ( long[] perThread : allocatedIds )
                     {
                         for ( long id : perThread )
                         {
-                            commitMarker.markDeleted( id );
+                            marker.markDeleted( id );
                         }
                     }
                 }
@@ -154,7 +154,7 @@ class LargeFreelistCreationDeletionIT
         @Override
         public void apply( IndexedIdGenerator freelist )
         {
-            try ( CommitMarker commitMarker = freelist.commitMarker() )
+            try ( Marker commitMarker = freelist.marker() )
             {
                 for ( long[] ids : idLists )
                 {

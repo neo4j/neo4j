@@ -58,13 +58,13 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public ReuseMarker reuseMarker()
+    public Marker marker()
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
 
     @Override
-    public CommitMarker commitMarker()
+    public Marker lessStrictMarker()
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }

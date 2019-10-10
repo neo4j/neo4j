@@ -34,6 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -169,7 +170,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             try ( PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds() );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
                     IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE );
-                    IdGenerator.CommitMarker marker = idGenerator.commitMarker() )
+                    Marker marker = idGenerator.marker() )
             {
                 AbstractBaseRecord record = store.newRecord();
                 for ( long id = 0; id < highId; id++ )

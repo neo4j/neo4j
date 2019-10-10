@@ -35,7 +35,7 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     {
         buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, freedIds ->
         {
-            try ( ReuseMarker reuseMarker = super.reuseMarker() )
+            try ( Marker reuseMarker = super.marker() )
             {
                 for ( long id : freedIds )
                 {
@@ -45,13 +45,11 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         } );
     }
 
-    // NOTE: there will be calls to freeId, which comes from transactions that have allocated ids and are rolling back instead of committing
-
     @Override
-    public CommitMarker commitMarker()
+    public Marker marker()
     {
-        CommitMarker actual = super.commitMarker();
-        return new CommitMarker()
+        Marker actual = super.marker();
+        return new Marker()
         {
             @Override
             public void markUsed( long id )
@@ -66,6 +64,18 @@ class BufferingIdGenerator extends IdGenerator.Delegate
                 // Run these by the buffering too
                 actual.markDeleted( id );
                 buffer.offer( id );
+            }
+
+            @Override
+            public void markFree( long id )
+            {
+                actual.markFree( id );
+            }
+
+            @Override
+            public void markDeletedAndFree( long id )
+            {
+                actual.markDeletedAndFree( id );
             }
 
             @Override

@@ -41,8 +41,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
-import org.neo4j.internal.id.IdGenerator.CommitMarker;
-import org.neo4j.internal.id.IdGenerator.ReuseMarker;
+import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -341,7 +340,7 @@ class IndexedIdGeneratorTest
         markUsed( id );
         markDeleted( id );
         markFree( id );
-        try ( IdRangeMarker marker = freelist.lockAndInstantiateMarker( true ) )
+        try ( IdRangeMarker marker = freelist.lockAndInstantiateMarker( true, true ) )
         {
             marker.markReserved( id );
         }
@@ -364,7 +363,7 @@ class IndexedIdGeneratorTest
         long id2 = freelist.nextId();
 
         // when
-        try ( CommitMarker commitMarker = freelist.commitMarker() )
+        try ( Marker commitMarker = freelist.marker() )
         {
             commitMarker.markUsed( id );
             commitMarker.markUsed( id2 );
@@ -585,7 +584,7 @@ class IndexedIdGeneratorTest
 
     private void markUsed( long id )
     {
-        try ( CommitMarker marker = freelist.commitMarker() )
+        try ( Marker marker = freelist.marker() )
         {
             marker.markUsed( id );
         }
@@ -593,7 +592,7 @@ class IndexedIdGeneratorTest
 
     private void markDeleted( long id )
     {
-        try ( CommitMarker marker = freelist.commitMarker() )
+        try ( Marker marker = freelist.marker() )
         {
             marker.markDeleted( id );
         }
@@ -601,7 +600,7 @@ class IndexedIdGeneratorTest
 
     private void markReusable( long id )
     {
-        try ( ReuseMarker marker = freelist.reuseMarker() )
+        try ( Marker marker = freelist.marker() )
         {
             marker.markFree( id );
         }
@@ -609,7 +608,7 @@ class IndexedIdGeneratorTest
 
     private void markFree( long id )
     {
-        try ( ReuseMarker marker = freelist.reuseMarker() )
+        try ( Marker marker = freelist.marker() )
         {
             marker.markFree( id );
         }

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdGenerator.CommitMarker;
+import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.util.concurrent.Work;
 
 public class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdateWork>
@@ -43,13 +43,13 @@ public class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdate
     }
 
     @Override
-    public void apply( IdGenerator idGenerator ) throws Exception
+    public void apply( IdGenerator idGenerator )
     {
-        try ( CommitMarker commitMarker = idGenerator.commitMarker() )
+        try ( Marker marker = idGenerator.marker() )
         {
             for ( ChangedIds changes : this.changeList )
             {
-                changes.accept( commitMarker );
+                changes.accept( marker );
             }
         }
     }

@@ -25,7 +25,7 @@ import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
-import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -199,7 +199,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch )
     {
         // Free unused property ids still in the last pre-allocated batch
-        try ( IdGenerator.CommitMarker marker = store.getIdGenerator().commitMarker() )
+        try ( Marker marker = store.getIdGenerator().marker() )
         {
             idBatch.visitUnused( marker::markDeleted );
         }

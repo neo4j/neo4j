@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -26,6 +30,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 
 /**
  * Holds commit data structures for creating records in a {@link NeoStores}.
@@ -63,21 +68,32 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     }
 
     @Override
-    public void releaseNode( long id )
+    public void releaseNodes( LongIterator ids )
     {
-        neoStores.getNodeStore().freeId( id );
+        deleteIds( ids, neoStores.getNodeStore() );
     }
 
     @Override
-    public void releaseRelationship( long id )
+    public void releaseRelationships( LongIterator ids )
     {
-        neoStores.getRelationshipStore().freeId( id );
+        deleteIds( ids, neoStores.getRelationshipStore() );
+    }
+
+    private void deleteIds( LongIterator ids, CommonAbstractStore<?,?> store )
+    {
+        try ( IdGenerator.Marker marker = store.getIdGenerator().lessStrictMarker() )
+        {
+            while ( ids.hasNext() )
+            {
+                marker.markDeletedAndFree( ids.next() );
+            }
+        }
     }
 
     @Override
     public void releaseSchema( long id )
     {
-        neoStores.getSchemaStore().freeId( id );
+        deleteIds( iterator( id ), neoStores.getSchemaStore() );
     }
 
     @Override

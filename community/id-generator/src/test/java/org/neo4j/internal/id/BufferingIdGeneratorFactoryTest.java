@@ -32,8 +32,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.id.IdController.ConditionSnapshot;
-import org.neo4j.internal.id.IdGenerator.CommitMarker;
-import org.neo4j.internal.id.IdGenerator.ReuseMarker;
+import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
@@ -63,23 +62,24 @@ class BufferingIdGeneratorFactoryTest
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
 
         // WHEN
-        try ( CommitMarker marker = idGenerator.commitMarker() )
+        try ( Marker marker = idGenerator.marker() )
         {
             marker.markDeleted( 7 );
         }
-        verify( actual.commitMarkers[STRING_BLOCK.ordinal()] ).markDeleted( 7 );
-        verifyNoMoreInteractions( actual.reuseMarkers[STRING_BLOCK.ordinal()] );
+        verify( actual.markers[STRING_BLOCK.ordinal()] ).markDeleted( 7 );
+        verify( actual.markers[STRING_BLOCK.ordinal()] ).close();
+        verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // after some maintenance and transaction still not closed
         bufferingIdGeneratorFactory.maintenance();
-        verifyNoMoreInteractions( actual.reuseMarkers[STRING_BLOCK.ordinal()] );
+        verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
         bufferingIdGeneratorFactory.maintenance();
 
         // THEN
-        verify( actual.reuseMarkers[STRING_BLOCK.ordinal()] ).markFree( 7 );
+        verify( actual.markers[STRING_BLOCK.ordinal()] ).markFree( 7 );
     }
 
     private static class ControllableSnapshotSupplier implements Supplier<ConditionSnapshot>
@@ -101,21 +101,17 @@ class BufferingIdGeneratorFactoryTest
     private static class MockedIdGeneratorFactory implements IdGeneratorFactory
     {
         private final IdGenerator[] generators = new IdGenerator[IdType.values().length];
-        private final CommitMarker[] commitMarkers = new CommitMarker[IdType.values().length];
-        private final ReuseMarker[] reuseMarkers = new ReuseMarker[IdType.values().length];
+        private final Marker[] markers = new Marker[IdType.values().length];
 
         @Override
         public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
-            CommitMarker commitMarker = mock( CommitMarker.class );
-            ReuseMarker reuseMarker = mock( ReuseMarker.class );
+            Marker marker = mock( Marker.class );
             int ordinal = idType.ordinal();
             generators[ordinal] = idGenerator;
-            commitMarkers[ordinal] = commitMarker;
-            reuseMarkers[ordinal] = reuseMarker;
-            when( idGenerator.commitMarker() ).thenReturn( commitMarker );
-            when( idGenerator.reuseMarker() ).thenReturn( reuseMarker );
+            markers[ordinal] = marker;
+            when( idGenerator.marker() ).thenReturn( marker );
             return idGenerator;
         }
 

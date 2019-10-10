@@ -57,7 +57,7 @@ import static org.neo4j.util.FeatureToggles.flag;
 /**
  * At the heart of this free-list sits a {@link GBPTree}, containing all deleted and freed ids. The tree is used as a bit-set and since it's
  * sorted then it can be later extended to allocate multiple consecutive ids. Another design feature of this free-list is that it's crash-safe,
- * that is if the {@link #commitMarker()} is only used for applying committed data.
+ * that is if the {@link #marker()} is only used for applying committed data.
  */
 public class IndexedIdGenerator implements IdGenerator
 {
@@ -226,7 +226,7 @@ public class IndexedIdGenerator implements IdGenerator
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
         this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
-                () -> lockAndInstantiateMarker( true ), generation, strictlyPrioritizeFreelist );
+                () -> lockAndInstantiateMarker( true, true ), generation, strictlyPrioritizeFreelist );
     }
 
     @Override
@@ -301,36 +301,35 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public CommitMarker commitMarker()
+    public Marker marker()
     {
-        if ( !started && needsRebuild )
-        {
-            // If we're in recovery and know that we're building the id generator from scratch after recovery has completed then don't make any updates
-            return NOOP_COMMIT_MARKER;
-        }
-
-        return lockAndInstantiateMarker( true );
+        return internalMarker( true );
     }
 
     @Override
-    public ReuseMarker reuseMarker()
+    public Marker lessStrictMarker()
+    {
+        return internalMarker( false );
+    }
+
+    private Marker internalMarker( boolean strict )
     {
         if ( !started && needsRebuild )
         {
             // If we're in recovery and know that we're building the id generator from scratch after recovery has completed then don't make any updates
-            return NOOP_REUSE_MARKER;
+            return NOOP_MARKER;
         }
 
-        return lockAndInstantiateMarker( true );
+        return lockAndInstantiateMarker( true, strict );
     }
 
-    IdRangeMarker lockAndInstantiateMarker( boolean bridgeIdGaps )
+    IdRangeMarker lockAndInstantiateMarker( boolean bridgeIdGaps, boolean strict )
     {
         commitAndReuseLock.lock();
         try
         {
             return new IdRangeMarker( idsPerEntry, layout, tree.writer(), commitAndReuseLock,
-                    started ? IdRangeMerger.DEFAULT : IdRangeMerger.RECOVERY,
+                    strict ? IdRangeMerger.DEFAULT : IdRangeMerger.RECOVERY,
                     started, atLeastOneIdOnFreelist, generation, highestWrittenId, bridgeIdGaps );
         }
         catch ( Exception e )
@@ -372,7 +371,7 @@ public class IndexedIdGenerator implements IdGenerator
         if ( needsRebuild )
         {
             // This id generator was created right now, it needs to be populated with all free ids from its owning store so that it's in sync
-            try ( IdRangeMarker idRangeMarker = lockAndInstantiateMarker( false ) )
+            try ( IdRangeMarker idRangeMarker = lockAndInstantiateMarker( false, true ) )
             {
                 // We can mark the ids as free right away since this is before started which means we get the very liberal merger
                 long highestFreeId = freeIdsForRebuild.accept( id ->
