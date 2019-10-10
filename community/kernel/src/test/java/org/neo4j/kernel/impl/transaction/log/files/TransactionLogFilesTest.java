@@ -23,10 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -46,7 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_3_5;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_3_5;
 
 @TestDirectoryExtension
 class TransactionLogFilesTest
@@ -71,6 +75,36 @@ class TransactionLogFilesTest
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         final File expected = createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) );
         assertEquals( expected, versionFileName );
+    }
+
+    @Test
+    void extractHeaderOf3_5Format() throws IOException
+    {
+        LogFiles files = createLogFiles();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
+        create3_5FileWithHeader( databaseLayout, "0" );
+        create3_5FileWithHeader( databaseLayout, "1", 1 );
+        create3_5FileWithHeader( databaseLayout, "2", 2 );
+
+        var logHeader = files.extractHeader( 0 );
+        assertEquals( LOG_HEADER_SIZE_3_5, logHeader.getStartPosition().getByteOffset() );
+        assertEquals( LOG_VERSION_3_5, logHeader.getLogFormatVersion() );
+        assertEquals( LOG_HEADER_SIZE_3_5, files.extractHeader( 1 ).getStartPosition().getByteOffset() );
+        assertEquals( LOG_HEADER_SIZE_3_5, files.extractHeader( 2 ).getStartPosition().getByteOffset() );
+    }
+
+    @Test
+    void detectEntriesIn3_5Format() throws IOException
+    {
+        LogFiles files = createLogFiles();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+
+        create3_5FileWithHeader( databaseLayout, "0" );
+        create3_5FileWithHeader( databaseLayout, "1", 10 );
+
+        assertFalse( files.hasAnyEntries( 0 ) );
+        assertTrue( files.hasAnyEntries( 1 ) );
     }
 
     @Test
@@ -203,9 +237,28 @@ class TransactionLogFilesTest
         LogFiles logFiles = createLogFiles();
         try ( PhysicalLogVersionedStoreChannel channel = logFiles.createLogChannelForVersion( 1, () -> 1L ) )
         {
-            assertThat( channel.size(), greaterThanOrEqualTo( (long) LOG_HEADER_SIZE ) );
+            assertThat( channel.size(), greaterThanOrEqualTo( (long) CURRENT_FORMAT_LOG_HEADER_SIZE ) );
             assertFalse( logFiles.hasAnyEntries( 1 ) );
         }
+    }
+
+    private void create3_5FileWithHeader( DatabaseLayout databaseLayout, String version, int bytesOfData ) throws IOException
+    {
+        try ( StoreChannel storeChannel = fileSystem.write( createTransactionLogFile( databaseLayout, getVersionedLogFileName( version ) ) ) )
+        {
+            ByteBuffer byteBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE_3_5 + bytesOfData);
+            while ( byteBuffer.hasRemaining() )
+            {
+                byteBuffer.put( LOG_VERSION_3_5 );
+            }
+            byteBuffer.flip();
+            storeChannel.writeAll( byteBuffer );
+        }
+    }
+
+    private void create3_5FileWithHeader( DatabaseLayout databaseLayout, String version ) throws IOException
+    {
+        create3_5FileWithHeader( databaseLayout, version, 0 );
     }
 
     private File createTransactionLogFile( DatabaseLayout databaseLayout, String fileName )

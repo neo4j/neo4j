@@ -99,7 +99,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_corrupted_lo
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -112,7 +112,7 @@ class RecoveryCorruptedTransactionLogIT
     @Inject
     private RandomRule random;
 
-    private static final int HEADER_OFFSET = LOG_HEADER_SIZE;
+    private static final int HEADER_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE;
     private static final byte CHECKPOINT_COMMAND_SIZE = 2 /*header*/ + 2 * Long.BYTES /*command content*/;
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final RecoveryMonitor recoveryMonitor = new RecoveryMonitor();
@@ -668,7 +668,7 @@ class RecoveryCorruptedTransactionLogIT
 
         LogFile transactionLogFile = logFiles.getLogFile();
         VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
-        LogPosition startPosition = LogPosition.start( logFiles.getHighestLogVersion() );
+        LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
         {
             LogEntry logEntry;
@@ -739,7 +739,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
         long logVersion = logFiles.getLogVersion( logFile );
-        LogPosition startPosition = LogPosition.start( logVersion );
+        LogPosition startPosition = logFiles.extractHeader( logVersion ).getStartPosition();
         try ( ReadableLogChannel reader = openTransactionFileChannel( logVersion, startPosition ) )
         {
             while ( entryReader.readLogEntry( reader ) != null )
@@ -764,7 +764,7 @@ class RecoveryCorruptedTransactionLogIT
     private LogPosition getLastReadablePosition( LogFile logFile ) throws IOException
     {
         VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
-        LogPosition startPosition = LogPosition.start( logFiles.getHighestLogVersion() );
+        LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = logFile.getReader( startPosition ) )
         {
             while ( entryReader.readLogEntry( reader ) != null )
@@ -833,7 +833,7 @@ class RecoveryCorruptedTransactionLogIT
     {
         LogFile transactionLogFile = logFiles.getLogFile();
 
-        LogPosition fileStartPosition = new LogPosition( 0, LOG_HEADER_SIZE );
+        LogPosition fileStartPosition = logFiles.extractHeader( 0 ).getStartPosition();
         VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
 
         MutableObjectLongMap<Class> multiset = new ObjectLongHashMap<>();

@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.io.File;
 import java.io.IOException;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-
 /**
  * Used to signal an incomplete log header, i.e. if file is smaller than the header.
  * This exception is still an {@link IOException}, but a specific subclass of it as to make possible
@@ -31,17 +29,17 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
  */
 public class IncompleteLogHeaderException extends IOException
 {
-    public IncompleteLogHeaderException( File file, int readSize )
+    public IncompleteLogHeaderException( File file, int readSize, int expectedSize )
     {
-        super( template( file, readSize ) );
+        super( template( file, readSize, expectedSize ) );
     }
 
-    public IncompleteLogHeaderException( int readSize )
+    public IncompleteLogHeaderException( int readSize, int expectedSize )
     {
-        super( template( null, readSize ) );
+        super( template( null, readSize, expectedSize ) );
     }
 
-    private static String template( File file, int readSize )
+    private static String template( File file, int readSize, int expectedSize )
     {
         StringBuilder builder = new StringBuilder( "Unable to read log version and last committed tx" );
         if ( file != null )
@@ -49,7 +47,7 @@ public class IncompleteLogHeaderException extends IOException
             builder.append( " from '" ).append( file.getAbsolutePath() ).append( '\'' );
         }
         builder.append( ". Was only able to read " ).append( readSize ).append( " bytes, but was expecting " )
-               .append( LOG_HEADER_SIZE );
+               .append( expectedSize );
         return builder.toString();
     }
 }

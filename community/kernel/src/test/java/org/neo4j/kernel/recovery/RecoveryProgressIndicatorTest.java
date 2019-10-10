@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 class RecoveryProgressIndicatorTest
 {
@@ -52,7 +53,7 @@ class RecoveryProgressIndicatorTest
         int transactionsToRecover = 5;
         int expectedMax = transactionsToRecover * 2;
         int lastCommittedTransactionId = 14;
-        LogPosition recoveryStartPosition = LogPosition.start( 0 );
+        LogPosition recoveryStartPosition = new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE );
         int firstTxIdAfterLastCheckPoint = 10;
         RecoveryStartInformation startInformation = new RecoveryStartInformation( recoveryStartPosition, firstTxIdAfterLastCheckPoint );
 

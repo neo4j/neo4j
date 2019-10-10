@@ -39,12 +39,12 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogFormatVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_MASK;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
 @TestDirectoryExtension
@@ -111,11 +111,11 @@ class LogHeaderWriterTest
         channel.close();
 
         // then
-        final byte[] array = new byte[LOG_HEADER_SIZE];
+        final byte[] array = new byte[CURRENT_FORMAT_LOG_HEADER_SIZE];
         try ( InputStream stream = fileSystem.openAsInputStream( file ) )
         {
             int read = stream.read( array );
-            assertEquals( LOG_HEADER_SIZE, read );
+            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, read );
         }
         final ByteBuffer result = ByteBuffer.wrap( array );
 

@@ -76,7 +76,6 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -115,6 +114,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class NeoStoresTest
@@ -712,7 +712,7 @@ public class NeoStoresTest
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP,
-                    LogHeader.LOG_HEADER_SIZE, 0 );
+                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0 );
 
             // WHEN
             store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP );
@@ -720,7 +720,7 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 42, 6666, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40, 0, LogHeader.LOG_HEADER_SIZE} );
+            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40, 0, CURRENT_FORMAT_LOG_HEADER_SIZE} );
         }
     }
 
@@ -735,7 +735,7 @@ public class NeoStoresTest
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP,
-                    LogHeader.LOG_HEADER_SIZE, 0 );
+                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0 );
 
             // WHEN
             store.transactionCommitted( 39, 3333, BASE_TX_COMMIT_TIMESTAMP );
@@ -743,7 +743,7 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40, 0, LogHeader.LOG_HEADER_SIZE} );
+            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40, 0, CURRENT_FORMAT_LOG_HEADER_SIZE} );
         }
     }
 

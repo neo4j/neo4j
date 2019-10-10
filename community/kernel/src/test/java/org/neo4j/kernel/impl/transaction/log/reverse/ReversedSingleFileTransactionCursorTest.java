@@ -62,7 +62,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
-import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
@@ -81,17 +80,18 @@ class ReversedSingleFileTransactionCursorTest
     private RandomRule random;
 
     private long txId = TransactionIdStore.BASE_TX_ID;
-    private LogProvider logProvider = new AssertableLogProvider( true );
-    private ReverseTransactionCursorLoggingMonitor monitor = new ReverseTransactionCursorLoggingMonitor(
+    private final LogProvider logProvider = new AssertableLogProvider( true );
+    private final ReverseTransactionCursorLoggingMonitor monitor = new ReverseTransactionCursorLoggingMonitor(
             logProvider.getLog( ReversedSingleFileTransactionCursor.class ) );
     private LogFile logFile;
+    private LogFiles logFiles;
 
     @BeforeEach
     void setUp() throws IOException
     {
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
+        logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
@@ -161,7 +161,7 @@ class ReversedSingleFileTransactionCursorTest
         writeTransactions( 1, 1, 1 );
 
         // when
-        try ( ReadAheadLogChannel channel = (ReadAheadLogChannel) logFile.getReader( start( 0 ) ) )
+        try ( ReadAheadLogChannel channel = (ReadAheadLogChannel) logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition() ) )
         {
             new ReversedSingleFileTransactionCursor( channel, logEntryReader(), false, monitor );
             fail( "Should've failed" );
@@ -225,7 +225,7 @@ class ReversedSingleFileTransactionCursorTest
 
     private ReversedSingleFileTransactionCursor txCursor( boolean failOnCorruptedLogFiles ) throws IOException
     {
-        ReadAheadLogChannel fileReader = (ReadAheadLogChannel) logFile.getReader( start( 0 ), NO_MORE_CHANNELS );
+        ReadAheadLogChannel fileReader = (ReadAheadLogChannel) logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition(), NO_MORE_CHANNELS );
         try
         {
             return new ReversedSingleFileTransactionCursor( fileReader, logEntryReader(), failOnCorruptedLogFiles, monitor );

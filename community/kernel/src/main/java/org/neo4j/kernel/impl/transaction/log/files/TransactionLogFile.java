@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -125,7 +124,8 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         LogPosition logPosition = context.getLastClosedTransactionPosition();
         long lastTxOffset = logPosition.getByteOffset();
         long lastTxLogVersion = logPosition.getLogVersion();
-        if ( lastTxOffset < LogHeader.LOG_HEADER_SIZE || channel.size() < lastTxOffset )
+        final long headerSize = logFiles.extractHeader( currentLogVersion ).getStartPosition().getByteOffset();
+        if ( lastTxOffset < headerSize || channel.size() < lastTxOffset )
         {
             return;
         }

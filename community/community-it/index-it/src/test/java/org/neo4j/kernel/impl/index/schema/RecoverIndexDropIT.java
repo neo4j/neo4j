@@ -132,7 +132,7 @@ class RecoverIndexDropIT
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
         LogFile logFile = logFiles.getLogFile();
 
-        try ( ReadableLogChannel reader = logFile.getReader( LogPosition.start( 0 ) ) )
+        try ( ReadableLogChannel reader = logFile.getReader( logFiles.extractHeader( 0 ).getStartPosition() ) )
         {
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
             while ( logEntryReader.readLogEntry( reader ) != null )

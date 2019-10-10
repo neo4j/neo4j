@@ -28,8 +28,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.StoreId;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_VERSION_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_3_5;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_4_0;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_3_5;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_4_0;
 
@@ -48,7 +50,7 @@ public class LogHeaderReader
     {
         try ( StoreChannel channel = fileSystem.read( file ) )
         {
-            return readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), channel, strict, file );
+            return readLogHeader( ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE ), channel, strict, file );
         }
     }
 
@@ -95,18 +97,18 @@ public class LogHeaderReader
                 return null;
             }
             long previousCommittedTx = buffer.getLong();
-            return new LogHeader( logFormatVersion, logVersion, previousCommittedTx );
+            return new LogHeader( logFormatVersion, logVersion, previousCommittedTx, LOG_HEADER_SIZE_3_5 );
         }
         if ( logFormatVersion == LOG_VERSION_4_0 )
         {
-            if ( !safeRead( buffer, channel, LOG_HEADER_SIZE - LOG_HEADER_VERSION_SIZE, strict, fileForAdditionalErrorInformationOrNull ) )
+            if ( !safeRead( buffer, channel, LOG_HEADER_SIZE_4_0 - LOG_HEADER_VERSION_SIZE, strict, fileForAdditionalErrorInformationOrNull ) )
             {
                 return null;
             }
             long previousCommittedTx = buffer.getLong();
             StoreId storeId = new StoreId( buffer.getLong(), buffer.getLong(), buffer.getLong(), buffer.getLong(), buffer.getLong() );
             buffer.getLong(); // reserved
-            return new LogHeader( logFormatVersion, logVersion, previousCommittedTx, storeId );
+            return new LogHeader( logFormatVersion, logVersion, previousCommittedTx, storeId, LOG_HEADER_SIZE_4_0 );
         }
 
         throw new IOException( "Unrecognized transaction log format version: " + logFormatVersion );
@@ -129,9 +131,9 @@ public class LogHeaderReader
             {
                 if ( fileForAdditionalErrorInformationOrNull != null )
                 {
-                    throw new IncompleteLogHeaderException( fileForAdditionalErrorInformationOrNull, read );
+                    throw new IncompleteLogHeaderException( fileForAdditionalErrorInformationOrNull, read, size );
                 }
-                throw new IncompleteLogHeaderException( read );
+                throw new IncompleteLogHeaderException( read, size );
             }
             return false;
         }

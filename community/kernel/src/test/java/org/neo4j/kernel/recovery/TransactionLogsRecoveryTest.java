@@ -83,6 +83,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
@@ -104,7 +105,7 @@ class TransactionLogsRecoveryTest
     private LogEntry lastCommittedTxCommitEntry;
     private LogEntry expectedStartEntry;
     private LogEntry expectedCommitEntry;
-    private Monitors monitors = new Monitors();
+    private final Monitors monitors = new Monitors();
     private final SimpleLogVersionRepository versionRepository = new SimpleLogVersionRepository();
     private LogFiles logFiles;
     private File storeDir;
@@ -170,7 +171,7 @@ class TransactionLogsRecoveryTest
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, NO_MONITOR, mock( Log.class ) )
+                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) )
             {
                 private int nr;
 
@@ -270,7 +271,7 @@ class TransactionLogsRecoveryTest
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, NO_MONITOR, mock( Log.class ) )
+                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) )
             {
                 @Override
                 public void startRecovery()
@@ -326,10 +327,10 @@ class TransactionLogsRecoveryTest
             LogEntryWriter writer = pair.first();
             writer.writeStartEntry( 1, 1, 1L, 1L, ArrayUtils.EMPTY_BYTE_ARRAY );
             writer.writeCommitEntry( 1L, 2L );
-            writer.writeCheckPointEntry( new LogPosition( logVersion, LogHeader.LOG_HEADER_SIZE ) );
-            writer.writeCheckPointEntry( new LogPosition( logVersion, LogHeader.LOG_HEADER_SIZE ) );
-            writer.writeCheckPointEntry( new LogPosition( logVersion, LogHeader.LOG_HEADER_SIZE ) );
-            writer.writeCheckPointEntry( new LogPosition( logVersion, LogHeader.LOG_HEADER_SIZE ) );
+            writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
+            writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
+            writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
+            writer.writeCheckPointEntry( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
             Consumer<LogPositionMarker> other = pair.other();
             other.accept( marker );
             return true;
@@ -443,7 +444,7 @@ class TransactionLogsRecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, NO_MONITOR, mock( Log.class ) )
+                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) )
             {
                 @Override
                 public void startRecovery()

@@ -68,7 +68,7 @@ public class TransactionLogFileInformation implements LogFileInformation
         LogHeader logHeader = logHeaderCache.getLogHeader( version );
         if ( logHeader != null )
         {   // It existed in cache
-            return logHeader.lastCommittedTxId + 1;
+            return logHeader.getLastCommittedTxId() + 1;
         }
 
         // Wasn't cached, go look for it
@@ -76,7 +76,7 @@ public class TransactionLogFileInformation implements LogFileInformation
         {
             logHeader = logFiles.extractHeader( version );
             logHeaderCache.putHeader( version, logHeader );
-            return logHeader.lastCommittedTxId + 1;
+            return logHeader.getLastCommittedTxId() + 1;
         }
         return -1;
     }
@@ -113,7 +113,7 @@ public class TransactionLogFileInformation implements LogFileInformation
 
         long getTimestampForVersion( long version ) throws IOException
         {
-            LogPosition position = LogPosition.start( version );
+            LogPosition position = logFiles.extractHeader( version ).getStartPosition();
             try ( ReadableLogChannel channel = logFiles.getLogFile().getReader( position ) )
             {
                 LogEntry entry;

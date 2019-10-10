@@ -560,6 +560,7 @@ class LogTailScannerTest
         };
     }
 
+    @FunctionalInterface
     interface LogCreator
     {
         void create( long version, Map<Entry, LogPosition> positions );

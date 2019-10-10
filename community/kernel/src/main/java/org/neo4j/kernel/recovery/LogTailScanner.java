@@ -28,7 +28,6 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -105,7 +104,7 @@ public class LogTailScanner
                   LogEntryCursor cursor = new LogEntryCursor( logEntryReader, readAheadLogChannel ) )
             {
                 LogHeader logHeader = logFiles.extractHeader( version );
-                storeId = logHeader.storeId;
+                storeId = logHeader.getStoreId();
                 LogEntry entry;
                 while ( cursor.next() )
                 {
@@ -193,7 +192,7 @@ public class LogTailScanner
 
             // to double check that even when we encountered end of records position we do not have anything after that
             // we will try to read some data (up to 12K) in advance to check that only zero's are available there
-            verifyNoMoreRedableDataAvailable( version, channel, logPosition, channelLeftovers );
+            verifyNoMoreReadableDataAvailable( version, channel, logPosition, channelLeftovers );
         }
     }
 
@@ -217,7 +216,7 @@ public class LogTailScanner
         }
     }
 
-    private void verifyNoMoreRedableDataAvailable( long version, LogVersionedStoreChannel channel, LogPosition logPosition, long channelLeftovers )
+    private void verifyNoMoreReadableDataAvailable( long version, LogVersionedStoreChannel channel, LogPosition logPosition, long channelLeftovers )
             throws IOException
     {
         long initialPosition = channel.position();
@@ -269,13 +268,14 @@ public class LogTailScanner
      */
     protected ExtractedTransactionRecord extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion ) throws IOException
     {
-        LogPosition currentPosition = initialPosition;
-        while ( currentPosition.getLogVersion() <= maxLogVersion )
+        long initialVersion = initialPosition.getLogVersion();
+        long logVersion = initialVersion;
+        while ( logVersion <= maxLogVersion )
         {
-            LogVersionedStoreChannel storeChannel = tryOpenStoreChannel( currentPosition );
-            if ( storeChannel != null )
+            if ( logFiles.versionExists( logVersion ) )
             {
-                try
+                LogPosition currentPosition = logVersion != initialVersion ? logFiles.extractHeader( logVersion ).getStartPosition() : initialPosition;
+                try ( LogVersionedStoreChannel storeChannel = logFiles.openForVersion( logVersion ) )
                 {
                     storeChannel.position( currentPosition.getByteOffset() );
                     try ( ReadAheadLogChannel logChannel = new ReadAheadLogChannel( storeChannel );
@@ -296,13 +296,12 @@ public class LogTailScanner
                     monitor.corruptedLogFile( currentPosition.getLogVersion(), t );
                     return new ExtractedTransactionRecord( true );
                 }
-                finally
-                {
-                    storeChannel.close();
-                }
+                logVersion = currentPosition.getLogVersion() + 1;
             }
-
-            currentPosition = LogPosition.start( currentPosition.getLogVersion() + 1 );
+            else
+            {
+                logVersion += 1;
+            }
         }
         return new ExtractedTransactionRecord();
     }
@@ -333,18 +332,6 @@ public class LogTailScanner
         }
 
         return logTailInformation;
-    }
-
-    private PhysicalLogVersionedStoreChannel tryOpenStoreChannel( LogPosition currentPosition )
-    {
-        try
-        {
-            return logFiles.openForVersion( currentPosition.getLogVersion() );
-        }
-        catch ( IOException e )
-        {
-            return null;
-        }
     }
 
     private static String dumpBufferToString( ByteBuffer byteBuffer )

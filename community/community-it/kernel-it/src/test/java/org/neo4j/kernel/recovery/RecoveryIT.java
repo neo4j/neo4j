@@ -538,7 +538,7 @@ class RecoveryIT
         LogFiles logFiles = buildLogFiles();
         LogFile transactionLogFile = logFiles.getLogFile();
         VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
-        LogPosition startPosition = LogPosition.start( logFiles.getHighestLogVersion() );
+        LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
         {
             LogEntry logEntry;
@@ -597,7 +597,7 @@ class RecoveryIT
         LogFiles logFiles = buildLogFiles();
         LogFile transactionLogFile = logFiles.getLogFile();
         VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
-        LogPosition startPosition = LogPosition.start( logFiles.getHighestLogVersion() );
+        LogPosition startPosition = logFiles.extractHeader( logFiles.getHighestLogVersion() ).getStartPosition();
         try ( ReadableLogChannel reader = transactionLogFile.getReader( startPosition ) )
         {
             LogEntry logEntry;

@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 /**
  * Tracer used to trace database scoped events, like transaction logs rotations, checkpoints, transactions etc
@@ -44,7 +44,7 @@ public class DefaultTracer implements DatabaseTracer
     private final AtomicLong appendedBytes = new AtomicLong();
 
     private final CountingLogRotateEvent countingLogRotateEvent = new CountingLogRotateEvent();
-    private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.addAndGet( LOG_HEADER_SIZE );
+    private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.addAndGet( CURRENT_FORMAT_LOG_HEADER_SIZE );
     private final CountingLogCheckPointEvent logCheckPointEvent = new CountingLogCheckPointEvent( this::appendLogBytes );
     private final LogAppendEvent logAppendEvent = new DefaultLogAppendEvent();
     private final CommitEvent commitEvent = new DefaultCommitEvent();

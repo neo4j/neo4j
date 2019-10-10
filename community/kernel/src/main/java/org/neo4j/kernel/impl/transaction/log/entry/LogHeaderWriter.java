@@ -26,7 +26,7 @@ import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.StoreId;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 /**
  * Write the transaction log file header.
@@ -51,9 +51,9 @@ public class LogHeaderWriter
 
     public static void writeLogHeader( FlushableChannel channel, LogHeader logHeader ) throws IOException
     {
-        channel.putLong( encodeLogVersion( logHeader.logVersion, logHeader.logFormatVersion ) );
-        channel.putLong( logHeader.lastCommittedTxId );
-        StoreId storeId = logHeader.storeId;
+        channel.putLong( encodeLogVersion( logHeader.getLogVersion(), logHeader.getLogFormatVersion() ) );
+        channel.putLong( logHeader.getLastCommittedTxId() );
+        StoreId storeId = logHeader.getStoreId();
         channel.putLong( storeId.getCreationTime() );
         channel.putLong( storeId.getRandomId() );
         channel.putLong( storeId.getStoreVersion() );
@@ -64,10 +64,10 @@ public class LogHeaderWriter
 
     public static void writeLogHeader( StoreChannel channel, LogHeader logHeader ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-        buffer.putLong( encodeLogVersion( logHeader.logVersion, logHeader.logFormatVersion ) );
-        buffer.putLong( logHeader.lastCommittedTxId );
-        StoreId storeId = logHeader.storeId;
+        ByteBuffer buffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
+        buffer.putLong( encodeLogVersion( logHeader.getLogVersion(), logHeader.getLogFormatVersion() ) );
+        buffer.putLong( logHeader.getLastCommittedTxId() );
+        StoreId storeId = logHeader.getStoreId();
         buffer.putLong( storeId.getCreationTime() );
         buffer.putLong( storeId.getRandomId() );
         buffer.putLong( storeId.getStoreVersion() );

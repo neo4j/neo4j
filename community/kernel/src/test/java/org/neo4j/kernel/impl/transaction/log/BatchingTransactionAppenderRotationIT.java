@@ -101,7 +101,7 @@ class BatchingTransactionAppenderRotationIT
         assertEquals( 1, logFiles.getHighestLogVersion() );
         File highestLogFile = logFiles.getHighestLogFile();
         LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, highestLogFile );
-        assertEquals( 2, logHeader.lastCommittedTxId );
+        assertEquals( 2, logHeader.getLastCommittedTxId() );
     }
 
     private static TransactionToApply prepareTransaction()

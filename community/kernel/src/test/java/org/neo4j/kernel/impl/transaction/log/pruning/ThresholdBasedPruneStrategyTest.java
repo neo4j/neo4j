@@ -38,7 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 class ThresholdBasedPruneStrategyTest
 {
@@ -75,7 +75,7 @@ class ThresholdBasedPruneStrategyTest
         when( fileSystem.fileExists( fileName1 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName0 ) ).thenReturn( true );
 
-        when( fileSystem.getFileSize( any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
+        when( fileSystem.getFileSize( any() ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE + 1L );
 
         when( threshold.reached( any(), anyLong(), any() ) ).thenReturn( false );
 
@@ -118,7 +118,7 @@ class ThresholdBasedPruneStrategyTest
         when( logFiles.getLogFileForVersion( 1 ) ).thenReturn( fileName1 );
         when( logFiles.getLowestLogVersion() ).thenReturn( 1L );
 
-        when( fileSystem.getFileSize( any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
+        when( fileSystem.getFileSize( any() ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE + 1L );
 
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
 

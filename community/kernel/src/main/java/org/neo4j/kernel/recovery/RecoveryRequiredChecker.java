@@ -57,11 +57,27 @@ class RecoveryRequiredChecker
 
     public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
     {
-        LogTailScanner tailScanner = getLogTailScanner( databaseLayout );
-        return isRecoveryRequiredAt( databaseLayout, tailScanner );
+        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
+        LogFiles logFiles = buildLogFiles( databaseLayout, reader );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, new Monitors() );
+        return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
     }
 
-    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner )
+    private LogFiles buildLogFiles( DatabaseLayout databaseLayout, LogEntryReader<ReadableClosablePositionAwareChannel> reader ) throws IOException
+    {
+        return LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
+                    .withConfig( config )
+                    .withLogEntryReader( reader ).build();
+    }
+
+    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner ) throws IOException
+    {
+        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
+        LogFiles logFiles = buildLogFiles( databaseLayout, reader );
+        return isRecoveryRequiredAt( databaseLayout, tailScanner, logFiles );
+    }
+
+    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner, LogFiles logFiles )
     {
         if ( !storageEngineFactory.storageExists( fs, databaseLayout, pageCache ) )
         {
@@ -75,15 +91,6 @@ class RecoveryRequiredChecker
         {
             return true;
         }
-        return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
-    }
-
-    private LogTailScanner getLogTailScanner( DatabaseLayout databaseLayout ) throws IOException
-    {
-        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
-                .withConfig( config )
-                .withLogEntryReader( reader ).build();
-        return new LogTailScanner( logFiles, reader, new Monitors() );
+        return new RecoveryStartInformationProvider( tailScanner, logFiles, NO_MONITOR ).get().isRecoveryRequired();
     }
 }

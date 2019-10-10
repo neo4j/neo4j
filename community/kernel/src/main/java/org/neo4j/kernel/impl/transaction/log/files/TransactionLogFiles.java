@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 /**
@@ -129,10 +128,19 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     @Override
     public LogHeader extractHeader( long version ) throws IOException
     {
+        return extractHeader( version, true );
+    }
+
+    private LogHeader extractHeader( long version, boolean strict ) throws IOException
+    {
         LogHeader logHeader = logHeaderCache.getLogHeader( version );
         if ( logHeader == null )
         {
-            logHeader = readLogHeader( fileSystem, getLogFileForVersion( version ) );
+            logHeader = readLogHeader( fileSystem, getLogFileForVersion( version ), strict );
+            if ( !strict && logHeader == null )
+            {
+                return null;
+            }
             logHeaderCache.putHeader( version, logHeader );
         }
 
@@ -142,17 +150,26 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     @Override
     public boolean hasAnyEntries( long version )
     {
-        File logFile = getLogFileForVersion( version );
-        if ( fileSystem.getFileSize( logFile ) <= LOG_HEADER_SIZE )
+        try
         {
-            return false;
-        }
-        try ( StoreChannel channel = fileSystem.read( logFile ) )
-        {
-            ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE + 1 );
-            channel.readAll( buffer );
-            buffer.flip();
-            return buffer.get( LOG_HEADER_SIZE ) != 0;
+            File logFile = getLogFileForVersion( version );
+            var logHeader = extractHeader( version, false );
+            if ( logHeader == null )
+            {
+                return false;
+            }
+            int headerSize = StrictMath.toIntExact( logHeader.getStartPosition().getByteOffset() );
+            if ( fileSystem.getFileSize( logFile ) <= headerSize )
+            {
+                return false;
+            }
+            try ( StoreChannel channel = fileSystem.read( logFile ) )
+            {
+                ByteBuffer buffer = ByteBuffer.allocate( headerSize + 1 );
+                channel.readAll( buffer );
+                buffer.flip();
+                return buffer.get( headerSize ) != 0;
+            }
         }
         catch ( IOException e )
         {
@@ -216,26 +233,16 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         long highTransactionId = logFilesContext.getLastCommittedTransactionId();
         while ( versionExists( logVersion ) )
         {
-            LogHeader logHeader = logHeaderCache.getLogHeader( logVersion );
-            if ( logHeader == null )
-            {
-                logHeader = readLogHeader( fileSystem, getLogFileForVersion( logVersion ), false );
-                if ( logHeader != null )
-                {
-                    assert logVersion == logHeader.logVersion;
-                    logHeaderCache.putHeader( logHeader.logVersion, logHeader );
-                }
-            }
-
+            LogHeader logHeader = extractHeader( logVersion, false );
             if ( logHeader != null )
             {
-                long lowTransactionId = logHeader.lastCommittedTxId + 1;
-                LogPosition position = LogPosition.start( logVersion );
+                long lowTransactionId = logHeader.getLastCommittedTxId() + 1;
+                LogPosition position = logHeader.getStartPosition();
                 if ( !visitor.visit( logHeader, position, lowTransactionId, highTransactionId ) )
                 {
                     break;
                 }
-                highTransactionId = logHeader.lastCommittedTxId;
+                highTransactionId = logHeader.getLastCommittedTxId();
             }
             logVersion--;
         }

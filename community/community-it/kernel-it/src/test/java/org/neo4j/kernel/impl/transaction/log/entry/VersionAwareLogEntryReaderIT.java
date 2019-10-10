@@ -58,19 +58,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 @DbmsExtension
 class VersionAwareLogEntryReaderIT
 {
     // this offset includes log header and transaction that create node on test setup
-    private static final long END_OF_DATA_OFFSET = LOG_HEADER_SIZE + 135L;
+    private static final long END_OF_DATA_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE + 135L;
     @Inject
     private FileSystemAbstraction fs;
     @Inject
     private DatabaseManagementService managementService;
     private DatabaseLayout databaseLayout;
-    private VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
+    private final VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
 
     @BeforeEach
     void setUp()
@@ -154,7 +154,7 @@ class VersionAwareLogEntryReaderIT
 
             try ( StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( 1 ) ) )
             {
-                storeChannel.position( LOG_HEADER_SIZE );
+                storeChannel.position( CURRENT_FORMAT_LOG_HEADER_SIZE );
                 storeChannel.write( ByteBuffer.wrap( new byte[]{0} ) );
             }
 
@@ -177,7 +177,7 @@ class VersionAwareLogEntryReaderIT
                 }
                 // channel should be switched now and position should be just after the header
                 LogPosition position = entryReader.lastPosition();
-                assertEquals( LOG_HEADER_SIZE, position.getByteOffset() );
+                assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, position.getByteOffset() );
                 assertEquals( 1, position.getLogVersion() );
             }
         }
@@ -203,7 +203,7 @@ class VersionAwareLogEntryReaderIT
 
     private long getLastReadablePosition( LogFiles logFiles ) throws IOException
     {
-        try ( ReadableLogChannel logChannel = logFiles.getLogFile().getReader( LogPosition.start( 0 ) ) )
+        try ( ReadableLogChannel logChannel = logFiles.getLogFile().getReader( logFiles.extractHeader( 0 ).getStartPosition() ) )
         {
             while ( entryReader.readLogEntry( logChannel ) != null )
             {

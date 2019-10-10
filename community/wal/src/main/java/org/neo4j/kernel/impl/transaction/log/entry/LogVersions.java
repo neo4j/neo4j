@@ -39,13 +39,37 @@ public class LogVersions
     public static final byte LOG_VERSION_3_5 = 6;
 
     /**
+     * 3.5 log header byte size
+     */
+    public static final int LOG_HEADER_SIZE_3_5 = 16;
+
+    /**
      * Total 64 bytes
      * - 8 bytes version
      * - 8 bytes last committed tx id
      * - 40 bytes {@link StoreId}
      * - 8 bytes reserved
+     * <pre>
+     *   |<-                      LOG_HEADER_SIZE                  ->|
+     *   |<-LOG_HEADER_VERSION_SIZE->|                               |
+     *   |-----------------------------------------------------------|
+     *   |          version          | last tx | store id | reserved |
+     *  </pre>
      */
     public static final byte LOG_VERSION_4_0 = 7;
 
+    /**
+     * 4.0 log header byte size
+     */
+    public static final int LOG_HEADER_SIZE_4_0 = 64;
+
+    /**
+     * Current and latest log format version
+     */
     public static final byte CURRENT_LOG_FORMAT_VERSION = LOG_VERSION_4_0;
+
+    /**
+     * Current and latest header format byte size.
+     */
+    public static final int CURRENT_FORMAT_LOG_HEADER_SIZE = LOG_HEADER_SIZE_4_0;
 }

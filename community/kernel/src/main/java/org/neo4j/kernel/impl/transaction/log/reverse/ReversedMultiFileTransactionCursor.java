@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
-import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTransactionCursor.eagerlyReverse;
 
@@ -52,6 +51,7 @@ import static org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTrans
 public class ReversedMultiFileTransactionCursor implements TransactionCursor
 {
     private final LogPosition backToPosition;
+    private final LogFiles logFiles;
     private final ThrowingFunction<LogPosition,TransactionCursor,IOException> cursorFactory;
 
     private long currentVersion;
@@ -88,19 +88,21 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
             // Fall back to simply eagerly reading each single log file and reversing in memory
             return eagerlyReverse( new PhysicalTransactionCursor<>( channel, logEntryReader ) );
         };
-        return new ReversedMultiFileTransactionCursor( factory, highestVersion, backToPosition );
+        return new ReversedMultiFileTransactionCursor( logFiles, factory, highestVersion, backToPosition );
     }
 
     /**
+     * @param logFiles accessor of log files.
      * @param cursorFactory creates {@link TransactionCursor} from a given {@link LogPosition}. The returned cursor must
      * return transactions from the end of that {@link LogPosition#getLogVersion() log version} and backwards in reverse order
      * to, and including, the transaction at the {@link LogPosition} given to it.
      * @param highestVersion highest log version right now.
      * @param backToPosition the start position of the last transaction to return from this cursor.
      */
-    ReversedMultiFileTransactionCursor( ThrowingFunction<LogPosition,TransactionCursor,IOException> cursorFactory, long highestVersion,
+    ReversedMultiFileTransactionCursor( LogFiles logFiles, ThrowingFunction<LogPosition,TransactionCursor,IOException> cursorFactory, long highestVersion,
             LogPosition backToPosition )
     {
+        this.logFiles = logFiles;
         this.cursorFactory = cursorFactory;
         this.backToPosition = backToPosition;
         this.currentVersion = highestVersion + 1;
@@ -125,7 +127,8 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
             }
 
             closeCurrent();
-            LogPosition position = currentVersion > backToPosition.getLogVersion() ? start( currentVersion ) : backToPosition;
+            LogPosition position = currentVersion > backToPosition.getLogVersion() ?
+                                   logFiles.extractHeader( currentVersion ).getStartPosition() : backToPosition;
             currentLogTransactionCursor = cursorFactory.apply( position );
         }
         return true;

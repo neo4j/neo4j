@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -37,6 +37,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 public class DefaultRecoveryService implements RecoveryService
 {
@@ -48,7 +49,7 @@ public class DefaultRecoveryService implements RecoveryService
     private final Log log;
 
     DefaultRecoveryService( StorageEngine storageEngine, LogTailScanner logTailScanner, TransactionIdStore transactionIdStore,
-            LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
+            LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository, LogFiles logFiles,
             RecoveryStartInformationProvider.Monitor monitor, Log log )
     {
         this.storageEngine = storageEngine;
@@ -56,7 +57,7 @@ public class DefaultRecoveryService implements RecoveryService
         this.logicalTransactionStore = logicalTransactionStore;
         this.logVersionRepository = logVersionRepository;
         this.log = log;
-        this.recoveryStartInformationProvider = new RecoveryStartInformationProvider( logTailScanner, monitor );
+        this.recoveryStartInformationProvider = new RecoveryStartInformationProvider( logTailScanner, logFiles, monitor );
     }
 
     @Override
@@ -108,7 +109,7 @@ public class DefaultRecoveryService implements RecoveryService
             long logVersion = lastClosedTransaction[1];
             log.warn( "Recovery detected that transaction logs were missing. " +
                     "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
-            transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, LogHeader.LOG_HEADER_SIZE, true );
+            transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true );
             return;
         }
         if ( lastRecoveredTransaction != null )

@@ -54,7 +54,7 @@ class LogHeaderCacheTest
         final LogHeader logHeader = cache.getLogHeader( 5 );
 
         // then
-        assertEquals( 3, logHeader.lastCommittedTxId );
+        assertEquals( 3, logHeader.getLastCommittedTxId() );
     }
 
     @Test

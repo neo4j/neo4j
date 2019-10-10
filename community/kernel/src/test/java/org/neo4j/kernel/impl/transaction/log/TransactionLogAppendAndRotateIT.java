@@ -73,7 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent.NULL;
 
 @TestDirectoryExtension
@@ -153,7 +153,7 @@ class TransactionLogAppendAndRotateIT
 
     private static void assertWholeTransactionsIn( LogFile logFile, long logVersion ) throws IOException
     {
-        try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( logVersion, LOG_HEADER_SIZE ) ) )
+        try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE ) ) )
         {
             LogEntryReader<ReadableLogChannel> entryReader = logEntryReader();
             LogEntry entry;

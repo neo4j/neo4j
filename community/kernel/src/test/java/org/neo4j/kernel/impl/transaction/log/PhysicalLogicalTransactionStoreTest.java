@@ -80,7 +80,7 @@ class PhysicalLogicalTransactionStoreTest
     @Inject
     private TestDirectory directory;
     private File databaseDirectory;
-    private Monitors monitors = new Monitors();
+    private final Monitors monitors = new Monitors();
 
     @BeforeEach
     void setup()
@@ -215,9 +215,9 @@ class PhysicalLogicalTransactionStoreTest
             }
 
             @Override
-            public RecoveryStartInformation getRecoveryStartInformation()
+            public RecoveryStartInformation getRecoveryStartInformation() throws IOException
             {
-                return new RecoveryStartInformation( LogPosition.start( 0 ), 1 );
+                return new RecoveryStartInformation( logFiles.extractHeader( 0 ).getStartPosition(), 1 );
             }
 
             @Override

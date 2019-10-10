@@ -35,6 +35,7 @@ import org.neo4j.logging.Logger;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 class TransactionRangeDiagnosticsTest
 {
@@ -118,7 +119,8 @@ class TransactionRangeDiagnosticsTest
         when( files.getLowestLogVersion() ).thenReturn( logVersion );
         when( files.hasAnyEntries( logVersion ) ).thenReturn( true );
         when( files.versionExists( logVersion ) ).thenReturn( true );
-        when( files.extractHeader( logVersion ) ).thenReturn( new LogHeader( LogEntryVersion.LATEST_VERSION.version(), logVersion, headerTxId ) );
+        when( files.extractHeader( logVersion ) )
+                .thenReturn( new LogHeader( LogEntryVersion.LATEST_VERSION.version(), logVersion, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
         return files;
     }
 

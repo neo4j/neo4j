@@ -37,8 +37,8 @@ import org.neo4j.kernel.impl.transaction.tracing.LogFileCreateEvent;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
 class TransactionLogChannelAllocator
@@ -67,7 +67,7 @@ class TransactionLogChannelAllocator
         AllocatedFile allocatedFile = allocateFile( version );
         var storeChannel = allocatedFile.getStoreChannel();
         var logFile = allocatedFile.getFile();
-        ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
+        ByteBuffer headerBuffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
         LogHeader header = readLogHeader( headerBuffer, storeChannel, false, logFile );
         if ( header == null )
         {
@@ -81,7 +81,7 @@ class TransactionLogChannelAllocator
                 logHeaderCache.putHeader( version, logHeader );
             }
         }
-        byte formatVersion = header == null ? CURRENT_LOG_FORMAT_VERSION : header.logFormatVersion;
+        byte formatVersion = header == null ? CURRENT_LOG_FORMAT_VERSION : header.getLogFormatVersion();
         return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion, logFile );
     }
 
@@ -98,15 +98,15 @@ class TransactionLogChannelAllocator
         try
         {
             rawChannel = fileSystem.read( fileToOpen );
-            ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
+            ByteBuffer buffer = ByteBuffer.allocate( CURRENT_FORMAT_LOG_HEADER_SIZE );
             LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );
-            if ( (header == null) || (header.logVersion != version) )
+            if ( (header == null) || (header.getLogVersion() != version) )
             {
                 throw new IllegalStateException(
                         format( "Unexpected log file header. Expected header version: %d, actual header: %s", version,
                                 header != null ? header.toString() : "null header." ) );
             }
-            return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion, fileToOpen );
+            return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.getLogFormatVersion(), fileToOpen );
         }
         catch ( FileNotFoundException cause )
         {

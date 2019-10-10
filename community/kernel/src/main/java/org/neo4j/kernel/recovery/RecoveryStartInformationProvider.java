@@ -25,7 +25,9 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
@@ -70,11 +72,13 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
     };
 
     private final LogTailScanner logTailScanner;
+    private final LogFiles logFiles;
     private final Monitor monitor;
 
-    public RecoveryStartInformationProvider( LogTailScanner logTailScanner, Monitor monitor )
+    public RecoveryStartInformationProvider( LogTailScanner logTailScanner, LogFiles logFiles, Monitor monitor )
     {
         this.logTailScanner = logTailScanner;
+        this.logFiles = logFiles;
         this.monitor = monitor;
     }
 
@@ -112,7 +116,8 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
                             "No check point found in any log file from version " + fromLogVersion + " to " + logTailInformation.currentLogVersion );
                 }
                 monitor.noCheckPointFound();
-                return createRecoveryInformation( LogPosition.start( 0 ), txIdAfterLastCheckPoint );
+                LogPosition position = tryExtractHeaderSize();
+                return createRecoveryInformation( position, txIdAfterLastCheckPoint );
             }
             LogPosition checkpointLogPosition = lastCheckPoint.getLogPosition();
             monitor.commitsAfterLastCheckPoint( checkpointLogPosition, txIdAfterLastCheckPoint );
@@ -121,6 +126,19 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         else
         {
             throw new UnderlyingStorageException( "Fail to determine recovery information Log tail info: " + logTailInformation );
+        }
+    }
+
+    private LogPosition tryExtractHeaderSize()
+    {
+        try
+        {
+            return logFiles.extractHeader( 0 ).getStartPosition();
+        }
+        catch ( IOException e )
+        {
+            // we can't event read header, lets assume we need to recover from the most latest format and from the begining
+            return new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE );
         }
     }
 

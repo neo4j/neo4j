@@ -45,7 +45,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 @TestDirectoryExtension
 class TransactionLogChannelAllocatorIT
@@ -79,7 +79,7 @@ class TransactionLogChannelAllocatorIT
     {
         try ( PhysicalLogVersionedStoreChannel logChannel = fileAllocator.createLogChannel( 10, () -> 1L ) )
         {
-            assertEquals( LOG_HEADER_SIZE, logChannel.size() );
+            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, logChannel.size() );
         }
     }
 
@@ -92,7 +92,7 @@ class TransactionLogChannelAllocatorIT
         TransactionLogChannelAllocator fileAllocator = createLogFileAllocator();
         try ( PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel( 11, () -> 1L ) )
         {
-            assertEquals( LOG_HEADER_SIZE, channel.size() );
+            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, channel.size() );
         }
     }
 

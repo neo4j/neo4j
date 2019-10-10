@@ -50,8 +50,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 
 @TestDirectoryExtension
@@ -143,7 +143,7 @@ class ReaderLogVersionBridgeTest
         // given
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles );
         final StoreChannel nextVersionWithIncompleteHeader = mock( StoreChannel.class );
-        when( nextVersionWithIncompleteHeader.read( any( ByteBuffer.class ) ) ).thenReturn( LOG_HEADER_SIZE / 2 );
+        when( nextVersionWithIncompleteHeader.read( any( ByteBuffer.class ) ) ).thenReturn( CURRENT_FORMAT_LOG_HEADER_SIZE / 2 );
 
         when( channel.getVersion() ).thenReturn( version );
         when( fs.fileExists( any( File.class ) ) ).thenReturn( true );
