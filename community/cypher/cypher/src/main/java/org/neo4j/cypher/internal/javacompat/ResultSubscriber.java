@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.NonFatalCypherError;
 import org.neo4j.cypher.internal.result.string.ResultStringBuilder;
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.exceptions.Neo4jException;
@@ -385,7 +386,10 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     {
         if ( error != null )
         {
-            close();
+            if ( NonFatalCypherError.isNonFatal( error ) )
+            {
+                close();
+            }
             throw converted( error );
         }
     }
