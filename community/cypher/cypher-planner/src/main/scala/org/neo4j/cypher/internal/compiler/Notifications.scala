@@ -62,3 +62,5 @@ case object DeprecatedCompiledRuntimeNotification extends InternalNotification
 case class MissingParametersNotification(parameters: Seq[String]) extends InternalNotification
 
 case class ExperimentalFeatureNotification(msg: String) extends InternalNotification
+
+case class CodeGenerationFailedNotification(msg: String) extends InternalNotification

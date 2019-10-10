@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
@@ -37,6 +38,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
     nodePropertyGraph(SIZE,{
       case i => Map("prop" -> i)
     })
+    restartTx()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -61,6 +63,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](edition:
     nodePropertyGraph(SIZE, {
       case i => Map("prop" -> i)
     },"N", "M")
+    restartTx()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

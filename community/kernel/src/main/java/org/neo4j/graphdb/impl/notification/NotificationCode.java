@@ -185,7 +185,11 @@ public enum NotificationCode
             SeverityLevel.INFORMATION,
             Status.Statement.SuboptimalIndexForWildcardQuery,
             "If the performance of this statement using `ENDS WITH` doesn't meet your expectations check out the alternative index-providers, see " +
-                    "documentation on index configuration." );
+                    "documentation on index configuration." ),
+    CODE_GENERATION_FAILED(
+            SeverityLevel.WARNING,
+            Status.Statement.CodeGenerationFailed,
+            "The database was unable to generate code for the query. A stacktrace can be found in the debug.log." );
 
     private final Status status;
     private final String description;

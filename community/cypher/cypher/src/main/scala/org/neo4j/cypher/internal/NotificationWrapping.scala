@@ -85,6 +85,8 @@ object NotificationWrapping {
       NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
     case MissingParametersNotification(names) =>
       NotificationCode.MISSING_PARAMETERS_FOR_EXPLAIN.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Explain with missing parameters", names.mkString("Missing parameters: ",", ","")))
+    case CodeGenerationFailedNotification(msg) =>
+      NotificationCode.CODE_GENERATION_FAILED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Error from code generation", msg))
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: InputPosition) {

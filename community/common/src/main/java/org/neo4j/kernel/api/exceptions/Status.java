@@ -215,6 +215,8 @@ public interface Status
         // database errors
         ExecutionFailed( DatabaseError,
                 "The database was unable to execute the statement." ),
+        CodeGenerationFailed( DatabaseError,
+                              "The database was unable to generate code for the query. A stacktrace can be found in the debug.log." ),
 
         // transient errors
         ExternalResourceFailed( ClientError,
