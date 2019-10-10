@@ -280,6 +280,16 @@ public class Arguments
         return get( argName, Boolean::parseBoolean );
     }
 
+    /**
+     * If the argument is not specified at all, @code{defaultValueIfNotSpecified} will be returned
+     * If the argument is specified with a value like <pre>--booleanArgument false</pre> , that value will be returned
+     * If the argument is specified without a value like <pre>--booleanArgument</pre>, @code{defaultValueIfSpecifiedButNoValue} will be returned
+     */
+    public boolean getBoolean( String argName, boolean defaultValueIfNotSpecified, boolean defaultValueIfSpecifiedButNoValue )
+    {
+            return parsedArgs.getBoolean( argName, defaultValueIfNotSpecified, defaultValueIfSpecifiedButNoValue );
+    }
+
     public Optional<Path> getOptionalPath( String argName )
     {
         String p = get( argName );

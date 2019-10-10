@@ -28,6 +28,7 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.security.auth.LegacyCredential;
@@ -45,7 +46,11 @@ import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 public class SetInitialPasswordCommand implements AdminCommand
 {
 
-    private static final Arguments arguments = new Arguments().withMandatoryPositionalArgument( 0, "password" );
+    private static Arguments arguments = new Arguments()
+            .withMandatoryPositionalArgument( 0, "password" )
+            .withArgument( new OptionalBooleanArg( "require-password-change", true,
+                    "If set to true, the user must change the password on first login.\n" +
+                            "Only --require-password-change without any value will default to true, while omitting it entirely will default to false." ) );
 
     private final Path homeDir;
     private final Path configDir;
@@ -68,7 +73,9 @@ public class SetInitialPasswordCommand implements AdminCommand
     {
         try
         {
-            setPassword( arguments.parse( args ).get( 0 ) );
+            String initialPassword = arguments.parse( args ).get( 0 );
+            boolean passwordChangeRequired = arguments.getBoolean( "require-password-change", false, true );
+            setUser( initialPassword, passwordChangeRequired );
         }
         catch ( IncorrectUsage | CommandFailed e )
         {
@@ -80,7 +87,7 @@ public class SetInitialPasswordCommand implements AdminCommand
         }
     }
 
-    private void setPassword( String password ) throws Throwable
+    private void setUser( String password, boolean passwordChangeRequired ) throws Throwable
     {
         Config config = loadNeo4jConfig();
         FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
@@ -103,7 +110,7 @@ public class SetInitialPasswordCommand implements AdminCommand
             userRepository.start();
             userRepository.create(
                     new User.Builder( INITIAL_USER_NAME, LegacyCredential.forPassword( UTF8.encode( password ) ) )
-                            .withRequiredPasswordChange( false )
+                            .withRequiredPasswordChange( passwordChangeRequired )
                             .build()
                 );
             userRepository.shutdown();

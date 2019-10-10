@@ -24,11 +24,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.lang.reflect.Field;
 
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.BlockerLocator;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,6 +40,7 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileUserRepository;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -60,7 +64,7 @@ public class SetInitialPasswordCommandIT
     private static final String SET_PASSWORD = "set-initial-password";
 
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
         File graphDir = new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         confDir = new File( graphDir, "conf" );
@@ -68,6 +72,7 @@ public class SetInitialPasswordCommandIT
         out = mock( OutsideWorld.class );
         resetOutsideWorldMock();
         tool = new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), out, true );
+        setArguments();
     }
 
     @After
@@ -80,7 +85,34 @@ public class SetInitialPasswordCommandIT
     public void shouldSetPassword() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
-        assertAuthIniFile( "abc" );
+        assertAuthIniFile( "abc", false );
+
+        verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
+    }
+
+    @Test
+    public void shouldSetPasswordWithRequirePasswordChangeFalse() throws Throwable
+    {
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc", "--require-password-change", "false" );
+        assertAuthIniFile( "abc", false );
+
+        verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
+    }
+
+    @Test
+    public void shouldSetPasswordWithRequirePasswordChangeTrue() throws Throwable
+    {
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc", "--require-password-change", "true" );
+        assertAuthIniFile( "abc", true );
+
+        verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
+    }
+
+    @Test
+    public void shouldSetPasswordWithRequirePasswordChangeWithoutValue() throws Throwable
+    {
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc", "--require-password-change" );
+        assertAuthIniFile( "abc", true );
 
         verify( out ).stdOutLine( "Changed password for user 'neo4j'." );
     }
@@ -89,9 +121,9 @@ public class SetInitialPasswordCommandIT
     public void shouldOverwriteIfSetPasswordAgain() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "abc" );
-        assertAuthIniFile( "abc" );
+        assertAuthIniFile( "abc", false );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "muchBetter" );
-        assertAuthIniFile( "muchBetter" );
+        assertAuthIniFile( "muchBetter", false );
 
         verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
     }
@@ -100,9 +132,9 @@ public class SetInitialPasswordCommandIT
     public void shouldWorkWithSamePassword() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "neo4j" );
-        assertAuthIniFile( "neo4j" );
+        assertAuthIniFile( "neo4j", false );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "neo4j" );
-        assertAuthIniFile( "neo4j" );
+        assertAuthIniFile( "neo4j", false );
 
         verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
     }
@@ -114,18 +146,7 @@ public class SetInitialPasswordCommandIT
         assertNoAuthIniFile();
 
         verify( out ).stdErrLine( "not enough arguments" );
-        verify( out, times( 3 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
-        verify( out ).stdErrLine( String.format( "environment variables:" ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
-        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
-        verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
-        verify( out ).exit( 1 );
-        verifyNoMoreInteractions( out );
-        verify( out, never() ).stdOutLine( anyString() );
+        verifyUsage();
     }
 
     @Test
@@ -135,19 +156,7 @@ public class SetInitialPasswordCommandIT
         assertNoAuthIniFile();
 
         verify( out ).stdErrLine( "unrecognized arguments: 'bar'" );
-        verify( out, times( 3 ) ).stdErrLine( "" );
-        verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
-        verify( out ).stdErrLine( String.format( "environment variables:" ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
-        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
-        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
-
-        verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
-        verify( out ).exit( 1 );
-        verifyNoMoreInteractions( out );
-        verify( out, never() ).stdOutLine( anyString() );
+        verifyUsage();
     }
 
     @Test
@@ -232,11 +241,24 @@ public class SetInitialPasswordCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "should-not-be-ignored" );
 
         // Then
-        assertAuthIniFile( "should-not-be-ignored" );
+        assertAuthIniFile( "should-not-be-ignored", false );
         verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
     }
 
-    private void assertAuthIniFile( String password ) throws Throwable
+    private void setArguments() throws Exception
+    {
+        Arguments setInitialPasswordArguments = new Arguments()
+                .withMandatoryPositionalArgument( 0, "password" )
+                .withArgument( new OptionalBooleanArg( "require-password-change", true,
+                        "If set to true, the user must change the password on first login.\n" +
+                                "Only --require-password-change without any value will default to true, while omitting it entirely will default to false." ) );
+
+        Field arguments = SetInitialPasswordCommand.class.getDeclaredField( "arguments" );
+        arguments.setAccessible(true);
+        arguments.set(null, setInitialPasswordArguments);
+    }
+
+    private void assertAuthIniFile( String password, boolean passwordChangeRequired ) throws Throwable
     {
         File authIniFile = getAuthFile( "auth.ini" );
         assertTrue( fileSystem.fileExists( authIniFile ) );
@@ -245,7 +267,7 @@ public class SetInitialPasswordCommandIT
         User neo4j = userRepository.getUserByName( UserManager.INITIAL_USER_NAME );
         assertNotNull( neo4j );
         assertTrue( neo4j.credentials().matchesPassword( password ) );
-        assertFalse( neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
+        assertEquals( passwordChangeRequired, neo4j.hasFlag( User.PASSWORD_CHANGE_REQUIRED ) );
     }
 
     private void assertNoAuthIniFile()
@@ -262,5 +284,33 @@ public class SetInitialPasswordCommandIT
     {
         reset(out);
         when( out.fileSystem() ).thenReturn( fileSystem );
+    }
+
+    private void verifyUsage()
+    {
+        verify( out, times( 3 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( String.format("usage: neo4j-admin set-initial-password <password>%n" +
+                "                                        [--require-password-change[=<true|false>]]" ) );
+        verify( out ).stdErrLine( "environment variables:" );
+        verify( out ).stdErrLine( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
+        verify( out ).stdErrLine( "    NEO4J_DEBUG   Set to anything to enable debug output." );
+        verify( out ).stdErrLine( "    NEO4J_HOME    Neo4j home directory." );
+        verify( out ).stdErrLine( "    HEAP_SIZE     Set JVM maximum heap size during command execution." );
+        verify( out ).stdErrLine( "                  Takes a number and a unit, for example 512m." );
+
+        String description = String.format(  "Sets the initial password of the initial admin user ('neo4j').%n" +
+                "%n" +
+                "options:%n" +
+                "  --require-password-change=<true|false>   If set to true, the user must change%n" +
+                "                                           the password on first login.%n" +
+                "                                           Only --require-password-change%n" +
+                "                                           without any value will default to%n" +
+                "                                           true, while omitting it entirely will%n" +
+                "                                           default to false. [default:true]");
+
+        verify( out ).stdErrLine( description );
+        verify( out ).exit( 1 );
+        verifyNoMoreInteractions( out );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 }

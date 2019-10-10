@@ -27,11 +27,14 @@ import org.junit.rules.RuleChain;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
+import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.impl.security.User;
@@ -53,7 +56,6 @@ public class SetInitialPasswordCommandTest
 {
     private SetInitialPasswordCommand setPasswordCommand;
     private File authInitFile;
-    private File authFile;
     private FileSystemAbstraction fileSystem;
 
     private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
@@ -63,7 +65,7 @@ public class SetInitialPasswordCommandTest
     public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDir );
 
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
         fileSystem = fileSystemRule.get();
         OutsideWorld mock = mock( OutsideWorld.class );
@@ -72,6 +74,7 @@ public class SetInitialPasswordCommandTest
                 testDir.directory( "conf" ).toPath(), mock );
         authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );
         CommunitySecurityModule.getUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );
+        setArguments();
     }
 
     @Test
@@ -138,6 +141,8 @@ public class SetInitialPasswordCommandTest
             usage.printUsageForCommand( new SetInitialPasswordCommandProvider(), ps::println );
 
             assertEquals( String.format( "usage: neo4j-admin set-initial-password <password>%n" +
+                            "                                        [--require-password-change[=<true|false>]]" +
+                            "%n" +
                             "%n" +
                             "environment variables:%n" +
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
@@ -146,9 +151,31 @@ public class SetInitialPasswordCommandTest
                             "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
-                            "Sets the initial password of the initial admin user ('neo4j').%n" ),
+                            "Sets the initial password of the initial admin user ('neo4j').%n" +
+                            "%n" +
+                            "options:" +
+                            "%n" +
+                            "  --require-password-change=<true|false>   If set to true, the user must change%n" +
+                            "                                           the password on first login.%n" +
+                            "                                           Only --require-password-change%n" +
+                            "                                           without any value will default to%n" +
+                            "                                           true, while omitting it entirely will%n" +
+                            "                                           default to false. [default:true]%n"),
                     baos.toString() );
         }
+    }
+
+    private void setArguments() throws Exception
+    {
+        Arguments setInitialPasswordArguments = new Arguments()
+                .withMandatoryPositionalArgument( 0, "password" )
+                .withArgument( new OptionalBooleanArg( "require-password-change", true,
+                        "If set to true, the user must change the password on first login.\n" +
+                                "Only --require-password-change without any value will default to true, while omitting it entirely will default to false." ) );
+
+        Field arguments = SetInitialPasswordCommand.class.getDeclaredField( "arguments" );
+        arguments.setAccessible(true);
+        arguments.set(null, setInitialPasswordArguments);
     }
 
     private void assertAuthIniFile( String password ) throws Throwable
