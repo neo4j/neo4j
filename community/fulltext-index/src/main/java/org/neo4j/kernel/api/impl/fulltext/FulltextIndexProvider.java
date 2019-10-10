@@ -145,9 +145,9 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         return index;
     }
 
-    private IndexCapability getCapability( IndexDescriptor descriptor )
+    private IndexCapability getCapability( IndexDescriptor index )
     {
-        return new FulltextIndexCapability( isEventuallyConsistent( descriptor.schema() ) );
+        return new FulltextIndexCapability( isEventuallyConsistent( index ) );
     }
 
     @Override
@@ -198,27 +198,27 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor index, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
+        PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-        Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
-        String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
+        Analyzer analyzer = createAnalyzer( index, tokenNameLookup );
+        String[] propertyNames = createPropertyNames( index, tokenNameLookup );
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder
-                .create( descriptor, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
+                .create( index, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                 .withFileSystem( fileSystem )
                 .withOperationalMode( operationalMode )
                 .withIndexStorage( indexStorage )
                 .withPopulatingMode( false );
-        if ( isEventuallyConsistent( descriptor.schema() ) )
+        if ( isEventuallyConsistent( index ) )
         {
             fulltextIndexBuilder = fulltextIndexBuilder.withIndexUpdateSink( indexUpdateSink );
         }
         DatabaseIndex<FulltextIndexReader> fulltextIndex = fulltextIndexBuilder.build();
         fulltextIndex.open();
 
-        FulltextIndexAccessor accessor = new FulltextIndexAccessor( indexUpdateSink, fulltextIndex, descriptor, propertyNames );
-        log.debug( "Created online accessor for fulltext schema index %s: %s", descriptor, accessor );
+        FulltextIndexAccessor accessor = new FulltextIndexAccessor( indexUpdateSink, fulltextIndex, index, propertyNames );
+        log.debug( "Created online accessor for fulltext schema index %s: %s", index, accessor );
         return accessor;
     }
 

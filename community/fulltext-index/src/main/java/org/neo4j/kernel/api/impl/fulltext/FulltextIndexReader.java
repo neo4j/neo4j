@@ -56,7 +56,7 @@ public class FulltextIndexReader implements IndexReader
 {
     private final List<SearcherReference> searchers;
     private final TokenHolder propertyKeyTokenHolder;
-    private final IndexDescriptor descriptor;
+    private final IndexDescriptor index;
     private final Analyzer analyzer;
     private final String[] propertyNames;
     private final FulltextIndexTransactionState transactionState;
@@ -66,7 +66,7 @@ public class FulltextIndexReader implements IndexReader
     {
         this.searchers = searchers;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.descriptor = descriptor;
+        this.index = descriptor;
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
         this.transactionState = new FulltextIndexTransactionState( descriptor, analyzer, propertyNames );
@@ -137,13 +137,13 @@ public class FulltextIndexReader implements IndexReader
         BooleanQuery query = queryBuilder.build();
         ValuesIterator itr = indexQuery( query );
         ReadableTransactionState state = context.getTransactionStateOrNull();
-        if ( state != null && !isEventuallyConsistent( descriptor.schema() ) )
+        if ( state != null && !isEventuallyConsistent( index ) )
         {
             transactionState.maybeUpdate( context );
             itr = transactionState.filter( itr, query );
         }
         IndexProgressor progressor = new FulltextIndexProgressor( itr, client );
-        client.initialize( getDescriptor(), progressor, queries, indexOrder, needsValues, true );
+        client.initialize( index, progressor, queries, indexOrder, needsValues, true );
     }
 
     @Override
@@ -196,11 +196,6 @@ public class FulltextIndexReader implements IndexReader
     private String getPropertyKeyName( int propertyKey ) throws TokenNotFoundException
     {
         return propertyKeyTokenHolder.getTokenById( propertyKey ).name();
-    }
-
-    private IndexDescriptor getDescriptor()
-    {
-        return descriptor;
     }
 
     private static class FulltextIndexProgressor implements IndexProgressor

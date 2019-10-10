@@ -41,15 +41,15 @@ import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure
 public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,DatabaseIndex<FulltextIndexReader>>
 {
     private final IndexUpdateSink indexUpdateSink;
-    private final IndexDescriptor descriptor;
+    private final IndexDescriptor index;
     private final String[] propertyNames;
 
-    FulltextIndexAccessor( IndexUpdateSink indexUpdateSink, DatabaseIndex<FulltextIndexReader> luceneIndex, IndexDescriptor descriptor,
+    FulltextIndexAccessor( IndexUpdateSink indexUpdateSink, DatabaseIndex<FulltextIndexReader> luceneIndex, IndexDescriptor index,
             String[] propertyNames )
     {
-        super( luceneIndex, descriptor );
+        super( luceneIndex, index );
         this.indexUpdateSink = indexUpdateSink;
-        this.descriptor = descriptor;
+        this.index = index;
         this.propertyNames = propertyNames;
     }
 
@@ -57,7 +57,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     public IndexUpdater getIndexUpdater( IndexUpdateMode mode )
     {
         IndexUpdater indexUpdater = new FulltextIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
-        if ( isEventuallyConsistent( descriptor.schema() ) )
+        if ( isEventuallyConsistent( index ) )
         {
             indexUpdater = new EventuallyConsistentIndexUpdater( luceneIndex, indexUpdater, indexUpdateSink );
         }
@@ -67,7 +67,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     @Override
     public void close()
     {
-        if ( isEventuallyConsistent( descriptor.schema() ) )
+        if ( isEventuallyConsistent( index ) )
         {
             indexUpdateSink.awaitUpdateApplication();
         }
@@ -89,7 +89,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     @Override
     public Map<String,Value> indexConfig()
     {
-        return descriptor.schema().getIndexConfig().asMap();
+        return index.schema().getIndexConfig().asMap();
     }
 
     public class FulltextIndexUpdater extends AbstractLuceneIndexUpdater

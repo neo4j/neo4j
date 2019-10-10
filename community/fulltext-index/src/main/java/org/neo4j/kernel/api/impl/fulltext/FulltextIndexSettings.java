@@ -104,9 +104,9 @@ final class FulltextIndexSettings
         return config;
     }
 
-    static boolean isEventuallyConsistent( SchemaDescriptor schema )
+    static boolean isEventuallyConsistent( IndexDescriptor index )
     {
-        BooleanValue eventuallyConsistent = schema.getIndexConfig().getOrDefault( EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
+        BooleanValue eventuallyConsistent = index.schema().getIndexConfig().getOrDefault( EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
         return eventuallyConsistent.booleanValue();
     }
 }
