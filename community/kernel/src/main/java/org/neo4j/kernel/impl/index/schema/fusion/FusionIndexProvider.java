@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.tuple.Pair;
 
 import java.io.IOException;
@@ -45,7 +44,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.values.storable.Value;
 
-import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -137,8 +135,7 @@ public class FusionIndexProvider extends IndexProvider
     {
         StringBuilder builder = new StringBuilder();
         providers.forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, descriptor ) );
-        String failure = builder.toString();
-        return defaultIfEmpty( failure, StringUtils.EMPTY );
+        return builder.toString();
     }
 
     private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, IndexDescriptor descriptor )
