@@ -52,10 +52,10 @@ public class IndexConfigurationCompletionCompatibility extends IndexProviderComp
     public void configurationCompletionMustNotOverwriteExistingConfiguration()
     {
         SchemaDescriptor schema = SchemaDescriptor.forLabel( 1, 1 );
-        schema = schema.withIndexConfig( IndexConfig.empty().withIfAbsent( "Bob", Values.stringValue( "Howard" ) ) );
         IndexDescriptor index = IndexPrototype.forSchema( schema ).withName( "index" ).materialise( 0 );
+        index = index.withIndexConfig( IndexConfig.with( "Bob", Values.stringValue( "Howard" ) ) );
         index = indexProvider.completeConfiguration( index );
-        assertEquals( index.schema().getIndexConfig().get( "Bob" ), Values.stringValue( "Howard" ) );
+        assertEquals( index.getIndexConfig().get( "Bob" ), Values.stringValue( "Howard" ) );
     }
 
     @Test
@@ -65,7 +65,7 @@ public class IndexConfigurationCompletionCompatibility extends IndexProviderComp
         IndexDescriptor index = IndexPrototype.forSchema( schema ).withName( "index" ).materialise( 0 );
         IndexDescriptor onceCompleted = indexProvider.completeConfiguration( index );
         IndexDescriptor twiceCompleted = indexProvider.completeConfiguration( onceCompleted );
-        assertEquals( onceCompleted.schema().getIndexConfig(), twiceCompleted.schema().getIndexConfig() );
+        assertEquals( onceCompleted.getIndexConfig(), twiceCompleted.getIndexConfig() );
     }
 
     @Test

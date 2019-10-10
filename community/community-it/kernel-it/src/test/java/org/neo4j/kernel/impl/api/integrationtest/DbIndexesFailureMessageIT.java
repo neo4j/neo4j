@@ -99,7 +99,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         assertEquals( VirtualValues.list( stringValue( "Fail" ) ), result[7] );
         assertEquals( VirtualValues.list( stringValue( "foo" ) ), result[8] );
         assertEquals( stringValue( NATIVE_BTREE10.providerName() ), result[9] );
-        assertMapsEqual( index.schema().getIndexConfig().asMap(), (MapValue)result[10] );
+        assertMapsEqual( index.getIndexConfig().asMap(), (MapValue)result[10] );
         assertThat( ((TextValue) result[11]).stringValue(),
                 containsString( "java.lang.RuntimeException: Fail on update during population" ) );
         assertEquals( 12, result.length );

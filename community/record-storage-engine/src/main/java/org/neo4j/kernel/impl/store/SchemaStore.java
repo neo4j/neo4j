@@ -238,12 +238,10 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         PropertySchemaType propertySchemaType = schemaDescriptor.propertySchemaType();
         int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
         int[] propertyIds = schemaDescriptor.getPropertyIds();
-        IndexConfig indexConfig = schemaDescriptor.getIndexConfig();
         putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, entityType.name() );
         putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, propertySchemaType.name() );
         putIntArrayProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, entityTokenIds );
         putIntArrayProperty( map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, propertyIds );
-        indexConfigToMap( indexConfig, map );
     }
 
     private static void indexConfigToMap( IndexConfig indexConfig, Map<String,Value> map )
@@ -278,6 +276,10 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
 
         // Provider
         indexProviderToMap( rule, map );
+
+        // Index config
+        IndexConfig indexConfig = rule.getIndexConfig();
+        indexConfigToMap( indexConfig, map );
     }
 
     private static void indexProviderToMap( IndexDescriptor rule, Map<String,Value> map )
@@ -364,6 +366,9 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         prototype = prototype.withIndexProvider( providerDescriptor );
 
         IndexDescriptor index = prototype.materialise( schemaRuleId );
+
+        IndexConfig indexConfig = extractIndexConfig( props );
+        index = index.withIndexConfig( indexConfig );
 
         if ( props.containsKey( PROP_OWNING_CONSTRAINT ) )
         {
@@ -466,9 +471,8 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         PropertySchemaType propertySchemaType = getPropertySchemaType( getString( PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, props ) );
         int[] entityIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, props );
         int[] propertyIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, props );
-        IndexConfig indexConfig = extractIndexConfig( props );
 
-        return new SchemaDescriptorImplementation( entityType, propertySchemaType, indexConfig, entityIds, propertyIds );
+        return new SchemaDescriptorImplementation( entityType, propertySchemaType, extractIndexConfig( props ), entityIds, propertyIds );
     }
 
     private static IndexConfig extractIndexConfig( Map<String,Value> props )

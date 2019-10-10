@@ -61,11 +61,10 @@ class GenericNativeIndexProviderTest
 
         // When
         IndexDescriptor completedDescriptor = provider.completeConfiguration( incompleteDescriptor );
-        SchemaDescriptor completedSchema = completedDescriptor.schema();
 
         // Then
-        IndexConfig sinfulIndexConfig = incompleteSchema.getIndexConfig();
-        IndexConfig completedIndexConfig = completedSchema.getIndexConfig();
+        IndexConfig sinfulIndexConfig = incompleteDescriptor.getIndexConfig();
+        IndexConfig completedIndexConfig = completedDescriptor.getIndexConfig();
         assertEquals( 0, sinfulIndexConfig.entries().count( p -> true ), "expected sinful index config to have no entries" );
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
@@ -98,16 +97,15 @@ class GenericNativeIndexProviderTest
         existingSettings.put( key( existingCrs.getName(), MIN ), min );
         existingSettings.put( key( existingCrs.getName(), MAX ), max );
         IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
-        LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 ).withIndexConfig( existingIndexConfig );
+        LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 );
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
-                .withName( "index" ).materialise( 1 );
+                .withName( "index" ).materialise( 1 ).withIndexConfig( existingIndexConfig );
 
         // When
         IndexDescriptor completedDescriptor = provider.completeConfiguration( incompleteDescriptor );
-        SchemaDescriptor completedSchema = completedDescriptor.schema();
 
         // Then
-        IndexConfig completedIndexConfig = completedSchema.getIndexConfig();
+        IndexConfig completedIndexConfig = completedDescriptor.getIndexConfig();
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
             if ( crs.equals( existingCrs ) )

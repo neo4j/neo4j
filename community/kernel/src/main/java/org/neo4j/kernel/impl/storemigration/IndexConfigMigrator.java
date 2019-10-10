@@ -109,8 +109,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
             IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, log );
 
-            SchemaDescriptor schemaDescriptorWithIndexConfig = old.schema().withIndexConfig( indexConfig );
-            IndexDescriptor newIndexReference = old.withSchemaDescriptor( schemaDescriptorWithIndexConfig );
+            IndexDescriptor newIndexReference = old.withIndexConfig( indexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );
             return indexProvider.completeConfiguration( newIndexReference );
         }

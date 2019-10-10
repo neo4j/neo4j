@@ -95,19 +95,4 @@ class SchemaDescriptorTest
         assertThat( SchemaDescriptor.forRelType( 1, 3 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ),
                 equalTo( "-[:RelType1(property3)]-" ) );
     }
-
-    @Test
-    void updatingIndexConfigLeavesOriginalDescriptorUntouched()
-    {
-        LabelSchemaDescriptor a = SchemaDescriptor.forLabel( 1, 2, 3 );
-        LabelSchemaDescriptor aa = SchemaDescriptor.forLabel( 1, 2, 3 );
-        LabelSchemaDescriptor b = a.withIndexConfig( a.getIndexConfig().withIfAbsent( "x", Values.stringValue( "y" ) ) );
-
-        assertThat( a.getIndexConfig(), not( equalTo( b.getIndexConfig() ) ) );
-        assertThat( a, equalTo( b ) );
-        assertThat( a, equalTo( aa ) );
-        assertThat( a.getIndexConfig(), equalTo( aa.getIndexConfig() ) );
-        assertThat( b.getIndexConfig().get( "x" ), equalTo( Values.stringValue( "y" ) ) );
-        assertThat( a.getIndexConfig().get( "x" ), is( nullValue() ) );
-    }
 }

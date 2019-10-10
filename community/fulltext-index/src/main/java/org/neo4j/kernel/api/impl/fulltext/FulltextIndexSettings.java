@@ -57,7 +57,7 @@ final class FulltextIndexSettings
 
     static Analyzer createAnalyzer( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
-        TextValue analyzerName = descriptor.schema().getIndexConfig().get( ANALYZER );
+        TextValue analyzerName = descriptor.getIndexConfig().get( ANALYZER );
         if ( analyzerName == null )
         {
             throw new RuntimeException( "Index has no analyzer configured: " + descriptor.userDescription( tokenNameLookup ) );
@@ -106,7 +106,7 @@ final class FulltextIndexSettings
 
     static boolean isEventuallyConsistent( IndexDescriptor index )
     {
-        BooleanValue eventuallyConsistent = index.schema().getIndexConfig().getOrDefault( EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
+        BooleanValue eventuallyConsistent = index.getIndexConfig().getOrDefault( EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
         return eventuallyConsistent.booleanValue();
     }
 }

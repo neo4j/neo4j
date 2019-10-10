@@ -90,7 +90,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
     @Override
     public Map<String,Value> indexConfig()
     {
-        return descriptor.schema().getIndexConfig().asMap();
+        return descriptor.getIndexConfig().asMap();
     }
 
     private Document updateAsDocument( IndexEntryUpdate<?> update )

@@ -355,7 +355,6 @@ public class RandomSchema implements Supplier<SchemaRule>
         return a.entityType() == b.entityType() &&
                 a.propertySchemaType() == b.propertySchemaType() &&
                 Arrays.equals( a.getEntityTokenIds(), b.getEntityTokenIds() ) &&
-                Arrays.equals( a.getPropertyIds(), b.getPropertyIds() ) &&
-                a.getIndexConfig().equals( b.getIndexConfig() );
+                Arrays.equals( a.getPropertyIds(), b.getPropertyIds() );
     }
 }

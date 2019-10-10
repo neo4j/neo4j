@@ -420,11 +420,11 @@ class BuiltInProceduresTest
         configMap.put( "config1", Values.stringValue( "value1" ) );
         configMap.put( "config2", Values.intValue( 2 ) );
         configMap.put( "config3", Values.booleanValue( true ) );
-        LabelSchemaDescriptor schema = forLabel( labelId, propId )
-                .withIndexConfig( IndexConfig.with( configMap ) );
+        LabelSchemaDescriptor schema = forLabel( labelId, propId );
         IndexDescriptor index = IndexPrototype.forSchema( schema, EMPTY.getProviderDescriptor() )
                 .withName( "index_" + id )
-                .materialise( id );
+                .materialise( id )
+                .withIndexConfig( IndexConfig.with( configMap ) );
         indexes.add( index );
     }
 

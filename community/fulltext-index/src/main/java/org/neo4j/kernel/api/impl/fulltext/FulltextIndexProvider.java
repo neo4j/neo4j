@@ -133,11 +133,9 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
-        SchemaDescriptor schema = index.schema();
-        IndexConfig indexConfig = schema.getIndexConfig();
+        IndexConfig indexConfig = index.getIndexConfig();
         indexConfig = addMissingDefaultIndexConfig( indexConfig );
-        schema = schema.withIndexConfig( indexConfig );
-        index = index.withSchemaDescriptor( schema );
+        index = index.withIndexConfig( indexConfig );
         if ( index.getCapability().equals( IndexCapability.NO_CAPABILITY ) )
         {
             index = index.withIndexCapability( getCapability( index ) );

@@ -89,7 +89,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     @Override
     public Map<String,Value> indexConfig()
     {
-        return index.schema().getIndexConfig().asMap();
+        return index.getIndexConfig().asMap();
     }
 
     public class FulltextIndexUpdater extends AbstractLuceneIndexUpdater

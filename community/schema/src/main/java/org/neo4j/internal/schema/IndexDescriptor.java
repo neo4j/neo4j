@@ -128,6 +128,16 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType );
     }
 
+    public IndexConfig getIndexConfig()
+    {
+        return schema.getIndexConfig();
+    }
+
+    public IndexDescriptor withIndexConfig( IndexConfig config )
+    {
+        return withSchemaDescriptor( schema.withIndexConfig( config ) );
+    }
+
     /**
      * @return The id of the constraint that owns this index, if such a constraint exists. Otherwise {@code empty}.
      */

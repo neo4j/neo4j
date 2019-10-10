@@ -250,17 +250,17 @@ class SchemaStorageIT
                 "value.doubleArray", Values.doubleArray( new double[]{0.4, 0.6, 1.0} ),
                 "value.boolean", Values.booleanValue( true )
         ) );
-        SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) ).withIndexConfig( expected );
+        SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) );
         long id = schemaStore.nextId();
-        IndexDescriptor storeIndexDescriptor = forSchema( schema ).withName( "index_" + id ).materialise( id );
+        IndexDescriptor storeIndexDescriptor = forSchema( schema ).withName( "index_" + id ).materialise( id ).withIndexConfig( expected );
         storage.writeSchemaRule( storeIndexDescriptor );
 
         // when
-        SchemaRule schemaRule = storage.loadSingleSchemaRule( id );
+        IndexDescriptor schemaRule = (IndexDescriptor) storage.loadSingleSchemaRule( id );
         storage.deleteSchemaRule( schemaRule ); // Clean up after ourselves.
 
         // then
-        IndexConfig actual = schemaRule.schema().getIndexConfig();
+        IndexConfig actual = schemaRule.getIndexConfig();
         assertEquals( expected, actual, "Read index config not same as written, expected " + expected + ", actual " + actual );
     }
 

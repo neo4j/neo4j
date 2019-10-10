@@ -135,15 +135,13 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     @Override
     public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
-        SchemaDescriptor incompleteSchema = index.schema();
-        IndexConfig indexConfig = incompleteSchema.getIndexConfig();
+        IndexConfig indexConfig = index.getIndexConfig();
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
             SpaceFillingCurveSettings spaceFillingCurveSettings = configuredSettings.forCRS( crs );
             indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
         }
-        SchemaDescriptor completedSchema = incompleteSchema.withIndexConfig( indexConfig );
-        index = index.withSchemaDescriptor( completedSchema );
+        index = index.withIndexConfig( indexConfig );
         if ( index.getCapability().equals( IndexCapability.NO_CAPABILITY ) )
         {
             index = index.withIndexCapability( CAPABILITY );
@@ -155,7 +153,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     GenericLayout layout( IndexDescriptor descriptor, File storeFile )
     {
         int numberOfSlots = descriptor.schema().getPropertyIds().length;
-        IndexConfig indexConfig = descriptor.schema().getIndexConfig();
+        IndexConfig indexConfig = descriptor.getIndexConfig();
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = SpatialIndexConfig.extractSpatialConfig( indexConfig );
         return new GenericLayout( numberOfSlots, new IndexSpecificSpaceFillingCurveSettings( settings ) );
     }

@@ -235,17 +235,17 @@ public class BuiltInProcedures
 
     private IndexDetailResult asIndexDetails( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
     {
-        SchemaDescriptor schema = index.schema();
         long id = index.getId();
         String name = index.getName();
         IndexStatus status = getIndexStatus( schemaRead, index );
         String uniqueness = IndexUniqueness.getUniquenessOf( index );
         String type = IndexType.getIndexTypeOf( index );
         String entityType = IndexEntityType.entityTypeOf( index );
+        SchemaDescriptor schema = index.schema();
         List<String> labelsOrTypes = Arrays.asList( tokenLookup.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
         List<String> properties = propertyNames( tokenLookup, index );
         String provider = index.getIndexProvider().name();
-        Map<String,Object> indexConfig = asObjectMap( schema.getIndexConfig().asMap() );
+        Map<String,Object> indexConfig = asObjectMap( index.getIndexConfig().asMap() );
 
         return new IndexDetailResult( id, name, status.state, status.populationProgress, uniqueness, type, entityType, labelsOrTypes, properties, provider,
                 indexConfig, status.failureMessage );

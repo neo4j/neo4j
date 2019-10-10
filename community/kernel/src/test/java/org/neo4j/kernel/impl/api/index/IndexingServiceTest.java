@@ -927,9 +927,8 @@ class IndexingServiceTest
         populationStartLatch.getAndSet( new BinaryLatch() ).release();
 
         // WHEN dropping another index, which happens to be identical to the existing one except for different index config... while recovering
-        SchemaDescriptor schema = index.schema();
-        IndexConfig indexConfig = schema.getIndexConfig().withIfAbsent( "a", Values.booleanValue( true ) );
-        IndexDescriptor otherIndex = index.withSchemaDescriptor( schema.withIndexConfig( indexConfig ) );
+        IndexConfig indexConfig = index.getIndexConfig().withIfAbsent( "a", Values.booleanValue( true ) );
+        IndexDescriptor otherIndex = index.withIndexConfig( indexConfig );
         indexing.createIndexes( otherIndex );
         indexing.dropIndex( otherIndex );
         // and WHEN finally creating our index again (at a later point in recovery)
@@ -942,7 +941,7 @@ class IndexingServiceTest
         IndexProxy indexProxy = indexing.getIndexProxy( index );
         try
         {
-            assertNull( indexProxy.getDescriptor().schema().getIndexConfig().get( "a" ) );
+            assertNull( indexProxy.getDescriptor().getIndexConfig().get( "a" ) );
             assertThat( indexProxy.getState(), Matchers.is( POPULATING ) ); // The existing online index got nuked during recovery.
         }
         finally

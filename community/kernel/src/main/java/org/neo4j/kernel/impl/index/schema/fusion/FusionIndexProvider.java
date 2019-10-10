@@ -98,16 +98,16 @@ public class FusionIndexProvider extends IndexProvider
             descriptors.put( slot, result );
             capabilities.put( slot, result.getCapability() );
         }
-        IndexConfig config = index.schema().getIndexConfig();
+        IndexConfig config = index.getIndexConfig();
         for ( IndexDescriptor result : descriptors.values() )
         {
-            IndexConfig resultConfig = result.schema().getIndexConfig();
+            IndexConfig resultConfig = result.getIndexConfig();
             for ( Pair<String,Value> entry : resultConfig.entries() )
             {
                 config = config.withIfAbsent( entry.getOne(), entry.getTwo() );
             }
         }
-        index = index.withSchemaDescriptor( index.schema().withIndexConfig( config ) );
+        index = index.withIndexConfig( config );
         if ( index.getCapability().equals( IndexCapability.NO_CAPABILITY ) )
         {
             index = index.withIndexCapability( new FusionIndexCapability( slotSelector, new InstanceSelector<>( capabilities ) ) );
