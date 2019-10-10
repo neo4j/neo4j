@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.result
 
+import org.neo4j.cypher.internal.NonFatalCypherError
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.graphdb.{ExecutionPlanDescription, Notification, Result}
 import org.neo4j.kernel.api.query.ExecutingQuery
@@ -133,14 +134,14 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
   override def request(numberOfRows: Long): Unit = try {
     inner.request(numberOfRows)
   } catch {
-    case e: Throwable => closeAndCallOnError(e)
+    case NonFatalCypherError(e) => closeAndCallOnError(e)
   }
 
   override def cancel(): Unit =  try {
     inner.cancel()
     monitor.endSuccess(query)
   } catch {
-    case e: Throwable => closeAndCallOnError(e)
+    case NonFatalCypherError(e) => closeAndCallOnError(e)
   }
 
   override def await(): Boolean = {
@@ -150,7 +151,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
     val hasMore = try {
       inner.await()
     } catch {
-      case e: Throwable =>
+      case NonFatalCypherError(e) =>
         closeAndCallOnError(e)
         false
     }
