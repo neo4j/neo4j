@@ -297,8 +297,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         //When
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexCreate( forLabel( label, prop1 ) ), "my other index" );
-            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexCreate( forLabel( label, prop2 ) ), "my index" );
+            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my other index" ) );
+            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexCreate( forLabel( label, prop2 ), "my index" ) );
             transaction.commit();
         }
     }
