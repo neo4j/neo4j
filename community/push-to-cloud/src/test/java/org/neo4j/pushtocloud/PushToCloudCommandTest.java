@@ -53,11 +53,11 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_BOLT_URI;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DATABASE;
-import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_CONFIRMED;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_DUMP_TO;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_PASSWORD;
 import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_USERNAME;
+import static org.neo4j.pushtocloud.PushToCloudCommand.ARG_OVERWRITE;
 
 public class PushToCloudCommandTest
 {
@@ -112,7 +112,7 @@ public class PushToCloudCommandTest
         command.execute( array(
                 arg( ARG_DUMP, createSimpleDatabaseDump().toString() ),
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ),
-                arg( ARG_CONFIRMED, "true" ) ) );
+                arg( ARG_OVERWRITE, "true" ) ) );
 
         // then
         verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), anyBoolean() );
