@@ -286,12 +286,14 @@ class IdRangeMarkerTest
                 new AtomicBoolean(), 1, new AtomicLong( 0 ), true ) )
         {
             // when
-            marker.markDeleted( 10 );
+            marker.markUsed( 10 );
         }
 
         // then
-        // one time for the bridging and one time for the delete
-        verify( writer, times( 2 ) ).merge( any(), any(), any() );
+        // for the id bridging (one time for ids 0-9)
+        verify( writer, times( 1 ) ).merge( any(), any(), any() );
+        // for the used bit update
+        verify( writer, times( 1 ) ).mergeIfExists( any(), any(), any() );
     }
 
     @Test

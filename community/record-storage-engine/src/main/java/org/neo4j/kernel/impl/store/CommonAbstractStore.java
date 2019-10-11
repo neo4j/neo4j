@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
@@ -1089,6 +1090,21 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     public IdGenerator getIdGenerator()
     {
         return idGenerator;
+    }
+
+    public void freeIdsOnRollback( LongIterator ids )
+    {
+        if ( idGenerator != null )
+        {
+            try ( IdGenerator.Marker marker = idGenerator.lessStrictMarker() )
+            {
+                while ( ids.hasNext() )
+                {
+                    marker.markDeletedAndFree( ids.next() );
+                }
+            }
+        }
+        // else the store has been shut down
     }
 
     @Override

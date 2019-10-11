@@ -21,9 +21,12 @@ package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.lock.ResourceLocker;
@@ -43,6 +46,9 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     private final RelationshipDeleter relationshipDeleter;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
+    private final NodeStore nodeStore;
+    private final RelationshipStore relationshipStore;
+    private final SchemaStore schemaStore;
 
     RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold )
     {
@@ -53,13 +59,14 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         this.propertyDeleter = new PropertyDeleter( propertyTraverser );
         this.relationshipDeleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter );
+        PropertyStore propertyStore = neoStores.getPropertyStore();
         this.propertyCreator = new PropertyCreator(
-                new StandardDynamicRecordAllocator( neoStores.getPropertyStore().getStringStore(),
-                        neoStores.getPropertyStore().getStringStore().getRecordDataSize() ),
-                new StandardDynamicRecordAllocator( neoStores.getPropertyStore().getArrayStore(),
-                        neoStores.getPropertyStore().getArrayStore().getRecordDataSize() ),
-                neoStores.getPropertyStore(),
-                propertyTraverser, neoStores.getPropertyStore().allowStorePointsAndTemporal() );
+                new StandardDynamicRecordAllocator( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordDataSize() ),
+                new StandardDynamicRecordAllocator( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordDataSize() ), propertyStore,
+                propertyTraverser, propertyStore.allowStorePointsAndTemporal() );
+        this.nodeStore = neoStores.getNodeStore();
+        this.relationshipStore = neoStores.getRelationshipStore();
+        this.schemaStore = neoStores.getSchemaStore();
     }
 
     private long nextId( StoreType storeType )
@@ -70,30 +77,24 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     @Override
     public void releaseNodes( LongIterator ids )
     {
-        deleteIds( ids, neoStores.getNodeStore() );
+        deleteIds( ids, nodeStore );
     }
 
     @Override
     public void releaseRelationships( LongIterator ids )
     {
-        deleteIds( ids, neoStores.getRelationshipStore() );
+        deleteIds( ids, relationshipStore );
     }
 
     private void deleteIds( LongIterator ids, CommonAbstractStore<?,?> store )
     {
-        try ( IdGenerator.Marker marker = store.getIdGenerator().lessStrictMarker() )
-        {
-            while ( ids.hasNext() )
-            {
-                marker.markDeletedAndFree( ids.next() );
-            }
-        }
+        store.freeIdsOnRollback( ids );
     }
 
     @Override
     public void releaseSchema( long id )
     {
-        deleteIds( iterator( id ), neoStores.getSchemaStore() );
+        deleteIds( iterator( id ), schemaStore );
     }
 
     @Override

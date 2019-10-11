@@ -315,18 +315,6 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node1 = tx.createNode();
             assertThrows( Exception.class, () -> node1.setProperty( key, new Object() ) );
         }
-        Node node3 = createNode();
-        Node node2 = createNode();
-        try ( Transaction transaction = getGraphDb().beginTx() )
-        {
-            var txNode3 = transaction.getNodeById( node3.getId() );
-            var txNode2 = transaction.getNodeById( node2.getId() );
-
-            Relationship rel = txNode3.createRelationshipTo( txNode2, MyRelTypes.TEST );
-            assertThrows( NotFoundException.class, () -> transaction.getNodeById( node1.getId() ) );
-            assertThrows( Exception.class, () -> rel.setProperty( key, new Object() ) );
-            assertThrows( Exception.class, transaction::commit );
-        }
     }
 
     @Test
