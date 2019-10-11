@@ -52,6 +52,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
     protected List<String> usernames = new ArrayList<>();
 
     protected final DatabaseManager<?> databaseManager;
+    protected GraphDatabaseService systemDb;
     protected final SystemGraphInitializer systemGraphInitializer;
     protected Log log;
 
@@ -70,16 +71,16 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         this.secureHasher = secureHasher;
     }
 
+    public void initializeSecurityGraph() throws Exception
+    {
+        initializeSecurityGraph( getSystemDb() );
+    }
+
     @Override
     public void initializeSecurityGraph( GraphDatabaseService database ) throws Exception
     {
         systemGraphInitializer.initializeSystemGraph( database );
-        doInitializeSecurityGraph();
-    }
-
-    public void initializeSecurityGraph() throws Exception
-    {
-        systemGraphInitializer.initializeSystemGraph();
+        systemDb = database;
         doInitializeSecurityGraph();
     }
 
@@ -88,7 +89,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         // Must be done outside main transaction since it changes the schema
         setupConstraints();
 
-        try ( Transaction tx = getSystemDb().beginTx() )
+        try ( Transaction tx = systemDb.beginTx() )
         {
             userNodes = findInitialNodes( tx, USER_LABEL );
             userNodes.forEach( node -> usernames.add( (String) node.getProperty( "name" ) ) );
@@ -117,7 +118,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
     private void setupConstraints()
     {
         // Ensure that multiple users cannot have the same name and are indexed
-        try ( Transaction tx = getSystemDb().beginTx() )
+        try ( Transaction tx = systemDb.beginTx() )
         {
             try
             {
