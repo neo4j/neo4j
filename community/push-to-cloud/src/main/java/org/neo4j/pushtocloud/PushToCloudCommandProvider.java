@@ -52,8 +52,9 @@ public class PushToCloudCommandProvider extends AdminCommand.Provider
     @Override
     public String description()
     {
-        return "Push database to Neo4j cloud. The database can either be a running database or a snapshot in the form of a dump or backup. " +
-                "Target location is... well, some neo4j cloud service somewhere, right?";
+        return "Push your local database to a Neo4j cloud instance. The database must be shutdown in order to take a dump to upload. " +
+                "The target location is your Neo4j Cloud Bolt URI. You will be asked your Neo4j Cloud username and password during " +
+                "the push-to-cloud operation.";
     }
 
     @Override
