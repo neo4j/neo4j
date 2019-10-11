@@ -135,6 +135,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
              nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
              relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
     val p = PatternParser.parse(pattern)
+    newRelationship(varFor(p.relName))
     if (expandMode == ExpandAll) {
       newNode(varFor(p.to))
     }
@@ -387,12 +388,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def union(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Union(lhs, rhs)(_)))
 
-  def expandAll(pattern: String): IMPL = {
-    val p = PatternParser.parse(pattern)
-    newNode(varFor(p.to))
-    newRelationship(varFor(p.relName))
-    appendAtCurrentIndent(UnaryOperator(source => Expand(source, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll)(_)))
-  }
+  def expandAll(pattern: String): IMPL = expand(pattern, ExpandAll)
 
   def cacheProperties(properties: String*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => CacheProperties(source,

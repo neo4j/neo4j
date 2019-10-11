@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.{InternalException, ParameterWrongTypeException}
 import org.neo4j.values.virtual.NodeValue
 
 /**
@@ -64,7 +64,7 @@ case class ExpandIntoPipe(source: Pipe,
 
                 if (relationships.isEmpty) Iterator.empty
                 else relationships.map(r => executionContextFactory.copyWith(row, relName, r))
-              case _ => throw new InternalException(s"$toNode must be node or null")
+              case value => throw new ParameterWrongTypeException(s"Expected to find a node at '$fromName' but found $value instead")
             }
 
           case IsNoValue() => Iterator.empty

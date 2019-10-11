@@ -21,9 +21,35 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.runtime.spec.tests.ExpandAllTestBase.smallTestGraph
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.{Label, Node, RelationshipType}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
+
+object ExpandAllTestBase {
+  def smallTestGraph(tx: InternalTransaction): (Node, Node, Node, Node, Node, Node) = {
+    val a1 = tx.createNode(Label.label("A"))
+    val a2 = tx.createNode(Label.label("A"))
+    val b1 = tx.createNode(Label.label("B"))
+    val b2 = tx.createNode(Label.label("B"))
+    val b3 = tx.createNode(Label.label("B"))
+    val c = tx.createNode(Label.label("C"))
+
+    a1.createRelationshipTo(b1, RelationshipType.withName("R"))
+    a1.createRelationshipTo(b2, RelationshipType.withName("R"))
+    a1.createRelationshipTo(b3, RelationshipType.withName("R"))
+    a2.createRelationshipTo(b1, RelationshipType.withName("R"))
+    a2.createRelationshipTo(b2, RelationshipType.withName("R"))
+    a2.createRelationshipTo(b3, RelationshipType.withName("R"))
+
+    b1.createRelationshipTo(c, RelationshipType.withName("R"))
+    b2.createRelationshipTo(c, RelationshipType.withName("R"))
+    b3.createRelationshipTo(c, RelationshipType.withName("R"))
+    (a1, a2, b1, b2, b3, c)
+  }
+
+}
 
 abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -300,7 +326,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     // where an argument will span two morsels that are put into a MorselBuffer
 
     // given
-    val (a1, a2, b1, b2, b3, c) = smallTestGraph
+    val (a1, a2, b1, b2, b3, c) = smallTestGraph(tx)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -322,27 +348,6 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("a", "b", "c").withRows(expected)
   }
-
-  protected def smallTestGraph: (Node, Node, Node, Node, Node, Node) = {
-      val a1 = tx.createNode(Label.label("A"))
-      val a2 = tx.createNode(Label.label("A"))
-      val b1 = tx.createNode(Label.label("B"))
-      val b2 = tx.createNode(Label.label("B"))
-      val b3 = tx.createNode(Label.label("B"))
-      val c = tx.createNode(Label.label("C"))
-
-      a1.createRelationshipTo(b1, RelationshipType.withName("R"))
-      a1.createRelationshipTo(b2, RelationshipType.withName("R"))
-      a1.createRelationshipTo(b3, RelationshipType.withName("R"))
-      a2.createRelationshipTo(b1, RelationshipType.withName("R"))
-      a2.createRelationshipTo(b2, RelationshipType.withName("R"))
-      a2.createRelationshipTo(b3, RelationshipType.withName("R"))
-
-      b1.createRelationshipTo(c, RelationshipType.withName("R"))
-      b2.createRelationshipTo(c, RelationshipType.withName("R"))
-      b3.createRelationshipTo(c, RelationshipType.withName("R"))
-      (a1, a2, b1, b2, b3, c)
-    }
 }
 
 // Supported by interpreted, slotted, morsel, parallel
@@ -369,7 +374,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     // NOTE: This is a specific test for morsel runtime with morsel size _4_
     // where an argument will span two morsels that are put into a MorselBuffer
 
-    val (a1, a2, b1, b2, b3, c) = smallTestGraph
+    val (a1, a2, b1, b2, b3, c) = smallTestGraph(tx)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -427,16 +432,6 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("should gracefully handle non-node reference as input") {
     // given
     val n = sizeHint
-    val nodes = nodeGraph(n, "Honey")
-    val relTuples = (for(i <- 0 until n) yield {
-      Seq(
-        (i, (2 * i) % n, "OTHER"),
-        (i, (i + 1) % n, "NEXT")
-        )
-    }).reduce(_ ++ _)
-
-    val rels = connect(nodes, relTuples)
-
     val input = inputValues((1 to n).map(Array[Any](_)):_*)
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

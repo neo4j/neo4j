@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, QueryContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.internal.helpers.collection.PrefetchingIterator
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -126,8 +126,8 @@ trait CachingExpandInto {
   protected def getRowNode(row: ExecutionContext, col: String): AnyValue = {
     row.getByName(col) match {
       case n: NodeValue => n
-      case x if x eq NO_VALUE    => NO_VALUE
-      case value   => throw new InternalException(s"Expected to find a node at '$col' but found $value instead")
+      case IsNoValue() => NO_VALUE
+      case value => throw new ParameterWrongTypeException(s"Expected to find a node at '$col' but found $value instead")
     }
   }
 
