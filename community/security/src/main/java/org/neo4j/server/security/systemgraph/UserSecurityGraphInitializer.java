@@ -92,7 +92,9 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
         try ( Transaction tx = systemDb.beginTx() )
         {
             userNodes = findInitialNodes( tx, USER_LABEL );
-            userNodes.forEach( node -> usernames.add( (String) node.getProperty( "name" ) ) );
+            userNodes.stream().filter( node -> node.hasProperty( "name" ) && node.getProperty( "name" ).getClass().equals( String.class ) )
+                    .forEach( node -> usernames.add( (String) node.getProperty( "name" ) ) );
+
             boolean initialUsersExist = !userNodes.isEmpty();
 
             // If the security graph had not been initialized (typically the first time you start neo4j),
