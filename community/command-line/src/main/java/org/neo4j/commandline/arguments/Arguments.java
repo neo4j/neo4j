@@ -115,7 +115,7 @@ public class Arguments
         }
 
         final List<String> namedArgsUsage = namedArgs.values().stream().map( NamedArgument::usage ).collect( Collectors.toList() );
-        final List<String> positionalArgsUsage = positionalArgs.stream().map( PositionalArgument::usage ).collect( Collectors.toList() );
+        final List<PositionalArgument> positionalArgsTemp = new ArrayList<>( positionalArgs );
 
         int nbrOfArgs = positionalArgs.size() + namedArgs.size();
 
@@ -123,9 +123,9 @@ public class Arguments
         {
             sb.append( " " );
 
-            if ( !positionalArgs.isEmpty() && positionalArgs.get( 0 ).position() == i )
+            if ( !positionalArgsTemp.isEmpty() && positionalArgsTemp.get( 0 ).position() == i )
             {
-                sb.append( positionalArgsUsage.remove( 0 ) );
+                sb.append( positionalArgsTemp.remove( 0 ).usage() );
             }
             else
             {
