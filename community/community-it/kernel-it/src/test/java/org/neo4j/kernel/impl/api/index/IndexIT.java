@@ -186,7 +186,7 @@ class IndexIT extends KernelIntegrationTest
         // WHEN
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId2 );
-        IndexDescriptor addedRule = transaction.schemaWrite().indexCreate( schema, "my index" );
+        IndexDescriptor addedRule = transaction.schemaWrite().indexCreate( schema, "my other index" );
         Set<IndexDescriptor> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
         commit();
 
@@ -258,7 +258,7 @@ class IndexIT extends KernelIntegrationTest
             SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexDrop( index );
         } );
-        assertEquals( "Unable to drop index: Index does not exist: Index( 1, 'Index on :Label (prop)', GENERAL, :Label(prop), native-btree-1.0 )",
+        assertEquals( "Unable to drop index: Index does not exist: Index( 1, 'my index', GENERAL BTREE, :Label(prop), native-btree-1.0 )",
                 e.getUserMessage( idTokenNameLookup ) );
         commit();
     }
