@@ -476,7 +476,7 @@ public class HttpCopierTest
                 .withStatus( HTTP_CONFLICT ) ) );
 
         // when
-        assertThrows( CommandFailed.class, containsString( "A non-empty database already exists" ),
+        assertThrows( CommandFailed.class, containsString( "The target database contained data and consent to overwrite the data was not given." ),
                 () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 

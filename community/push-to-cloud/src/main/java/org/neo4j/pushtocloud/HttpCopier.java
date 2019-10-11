@@ -209,18 +209,19 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 case HTTP_UNAUTHORIZED:
                     throw errorResponse( verbose, connection, "Invalid username/password credentials" );
                 case HTTP_FORBIDDEN:
-                    throw errorResponse( verbose, connection, "The given credentials do not give administrative access to the target database" );
+                    throw errorResponse( verbose, connection, "The credentials provided do not give administrative access to the target database" );
                 case HTTP_CONFLICT:
                     // the cloud target database has already been populated with data, and importing the dump file would overwrite it.
                     boolean consent =
-                            askForBooleanConsent( "A non-empty database already exists at the given location, would you like to overwrite that database?" );
+                            askForBooleanConsent( "The target database contains data. Overwrite it? " +
+                                    "(Yes/No)" );
                     if ( consent )
                     {
                         return authenticate( verbose, consoleUrl, username, password, true );
                     }
                     else
                     {
-                        throw errorResponse( verbose, connection, "No consent to overwrite database, aborting upload" );
+                        throw errorResponse( verbose, connection, "No consent to overwrite database. Aborting" );
                     }
                 case HTTP_OK:
                     try ( InputStream responseData = connection.getInputStream() )
@@ -388,7 +389,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw resumePossibleErrorResponse( connection, source, boltUri );
             case HTTP_CONFLICT:
                 throw errorResponse( verbose, connection,
-                        "A non-empty database already exists at the given location and overwrite consent not given, aborting" );
+                        "The target database contained data and consent to overwrite the data was not given. Aborting" );
             case HTTP_OK:
                 // All good, we managed to trigger the import protocol after our completed upload
                 break;
