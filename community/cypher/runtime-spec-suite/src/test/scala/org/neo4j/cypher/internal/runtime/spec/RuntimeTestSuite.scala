@@ -75,7 +75,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
 
-  override def beforeEach(): Unit = {
+  override protected def beforeEach(): Unit = {
     DebugLog.beginTime()
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
@@ -86,7 +86,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     super.beforeEach()
   }
 
-  override def afterEach(): Unit = {
+  override protected def afterEach(): Unit = {
     runtimeTestSupport.stopTx()
     DebugLog.log("")
     shutdownDatabase()

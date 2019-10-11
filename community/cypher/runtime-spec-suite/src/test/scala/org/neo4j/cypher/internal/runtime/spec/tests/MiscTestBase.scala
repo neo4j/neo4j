@@ -111,9 +111,6 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     val runtimeResult =  execute(logicalQuery, runtime)
 
     //then
-    //this check is mostly for the morsel runtime, making sure we don't fail when fusing
-    logProvider.assertNone(inLog(any(classOf[String])).debug(containsString("Retrying physical planning")))
-
     val expected =
       for {
         path: TestPath <- paths
@@ -142,9 +139,6 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     val runtimeResult =  execute(logicalQuery, runtime)
 
     //then
-    //this check is mostly for the morsel runtime, making sure we don't fail when fusing
-    logProvider.assertNone(inLog(any(classOf[String])).debug(containsString("Retrying physical planning")))
-
     val expected =
       for {
         path: TestPath <- paths
