@@ -72,7 +72,6 @@ public class SetInitialPasswordCommandIT
         out = mock( OutsideWorld.class );
         resetOutsideWorldMock();
         tool = new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), out, true );
-        setArguments();
     }
 
     @After
@@ -243,19 +242,6 @@ public class SetInitialPasswordCommandIT
         // Then
         assertAuthIniFile( "should-not-be-ignored", false );
         verify( out, times( 2 ) ).stdOutLine( "Changed password for user 'neo4j'." );
-    }
-
-    private void setArguments() throws Exception
-    {
-        Arguments setInitialPasswordArguments = new Arguments()
-                .withMandatoryPositionalArgument( 0, "password" )
-                .withArgument( new OptionalBooleanArg( "require-password-change", true,
-                        "If set to true, the user must change the password on first login.\n" +
-                                "Only --require-password-change without any value will default to true, while omitting it entirely will default to false." ) );
-
-        Field arguments = SetInitialPasswordCommand.class.getDeclaredField( "arguments" );
-        arguments.setAccessible(true);
-        arguments.set(null, setInitialPasswordArguments);
     }
 
     private void assertAuthIniFile( String password, boolean passwordChangeRequired ) throws Throwable

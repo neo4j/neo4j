@@ -74,7 +74,6 @@ public class SetInitialPasswordCommandTest
                 testDir.directory( "conf" ).toPath(), mock );
         authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );
         CommunitySecurityModule.getUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );
-        setArguments();
     }
 
     @Test
@@ -163,19 +162,6 @@ public class SetInitialPasswordCommandTest
                             "                                           default to false. [default:true]%n"),
                     baos.toString() );
         }
-    }
-
-    private void setArguments() throws Exception
-    {
-        Arguments setInitialPasswordArguments = new Arguments()
-                .withMandatoryPositionalArgument( 0, "password" )
-                .withArgument( new OptionalBooleanArg( "require-password-change", true,
-                        "If set to true, the user must change the password on first login.\n" +
-                                "Only --require-password-change without any value will default to true, while omitting it entirely will default to false." ) );
-
-        Field arguments = SetInitialPasswordCommand.class.getDeclaredField( "arguments" );
-        arguments.setAccessible(true);
-        arguments.set(null, setInitialPasswordArguments);
     }
 
     private void assertAuthIniFile( String password ) throws Throwable
