@@ -63,8 +63,11 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.builtin.IndexProcedures;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
 import static org.neo4j.procedure.Mode.READ;
@@ -194,9 +197,25 @@ public class FulltextProcedures
         tx.schemaWrite().indexCreate( prototype );
     }
 
-    private IndexConfig createIndexConfig( @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
+    private IndexConfig createIndexConfig( @Name( value = "config", defaultValue = "{}" ) Map<String,String> configMap )
     {
-        return FulltextIndexSettings.procedureConfigToIndexConfig( config );
+        IndexConfig configObject = IndexConfig.empty();
+
+        String analyzer = configMap.remove( PROCEDURE_ANALYZER );
+        if ( analyzer != null )
+        {
+            configObject = configObject.withIfAbsent( ANALYZER, Values.stringValue( analyzer ) );
+        }
+
+        String eventuallyConsistent = configMap.remove( PROCEDURE_EVENTUALLY_CONSISTENT );
+        if ( eventuallyConsistent != null )
+        {
+            configObject = configObject.withIfAbsent( EVENTUALLY_CONSISTENT, Values.booleanValue( Boolean.parseBoolean( eventuallyConsistent ) ) );
+        }
+
+        // Ignore any other entries that the map might contain.
+
+        return configObject;
     }
 
     @Description( "Drop the specified index." )

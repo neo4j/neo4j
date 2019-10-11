@@ -21,22 +21,15 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import java.util.Map;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.service.Services;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
-import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
-import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
 
 final class FulltextIndexSettings
 {
@@ -81,27 +74,6 @@ final class FulltextIndexSettings
             propertyNames[i] = tokenNameLookup.propertyKeyGetName( propertyIds[i] );
         }
         return propertyNames;
-    }
-
-    static IndexConfig procedureConfigToIndexConfig( Map<String,String> map )
-    {
-        IndexConfig config = IndexConfig.empty();
-
-        String analyzer = map.remove( PROCEDURE_ANALYZER );
-        if ( analyzer != null )
-        {
-            config = config.withIfAbsent( ANALYZER, Values.stringValue( analyzer ) );
-        }
-
-        String eventuallyConsistent = map.remove( PROCEDURE_EVENTUALLY_CONSISTENT );
-        if ( eventuallyConsistent != null )
-        {
-            config = config.withIfAbsent( EVENTUALLY_CONSISTENT, Values.booleanValue( Boolean.parseBoolean( eventuallyConsistent ) ) );
-        }
-
-        // Ignore any other entries that the map might contain.
-
-        return config;
     }
 
     static boolean isEventuallyConsistent( IndexDescriptor index )
