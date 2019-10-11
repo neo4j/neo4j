@@ -19,37 +19,35 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.test.rule.NeoStoresRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class PropertyReaderTest
+@DbmsExtension
+class PropertyReaderIT
 {
-    @Rule
-    public final NeoStoresRule storesRule = new NeoStoresRule( PropertyReaderTest.class,
-            StoreType.NODE, StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
+    @Inject
+    private GraphDatabaseAPI databaseAPI;
 
     @Test
-    public void shouldDetectAndAbortPropertyChainLoadingOnCircularReference() throws IOException
+    void shouldDetectAndAbortPropertyChainLoadingOnCircularReference() throws IOException
     {
-        // given
-        NeoStores neoStores = storesRule.builder().build();
-
         // Create property chain 1 --> 2 --> 3 --> 4
         //                             ↑           │
         //                             └───────────┘
-        PropertyStore propertyStore = neoStores.getPropertyStore();
+        PropertyStore propertyStore = getNeoStores().getPropertyStore();
         PropertyRecord record = propertyStore.newRecord();
         // 1
         record.setId( 1 );
@@ -69,16 +67,13 @@ public class PropertyReaderTest
         propertyStore.updateRecord( record );
 
         // when
-        PropertyReader reader = new PropertyReader( new StoreAccess( neoStores ) );
-        try
-        {
-            reader.getPropertyRecordChain( 1 );
-            fail( "Should have detected circular reference" );
-        }
-        catch ( PropertyReader.CircularPropertyRecordChainException e )
-        {
-            // then good
-            assertEquals( 4, e.propertyRecordClosingTheCircle().getId() );
-        }
+        PropertyReader reader = new PropertyReader( new StoreAccess( getNeoStores() ) );
+        var e = assertThrows(PropertyReader.CircularPropertyRecordChainException.class, () -> reader.getPropertyRecordChain( 1 ) );
+        assertEquals( 4, e.propertyRecordClosingTheCircle().getId() );
+    }
+
+    private NeoStores getNeoStores()
+    {
+        return databaseAPI.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
     }
 }

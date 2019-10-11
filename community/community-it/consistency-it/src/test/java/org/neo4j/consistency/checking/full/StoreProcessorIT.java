@@ -19,37 +19,40 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.test.rule.NeoStoresRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class StoreProcessorTest
+@SuppressWarnings( "unchecked" )
+@DbmsExtension
+class StoreProcessorIT
 {
-    @Rule
-    public final NeoStoresRule stores = new NeoStoresRule( getClass(), StoreType.NODE, StoreType.NODE_LABEL );
+    @Inject
+    private GraphDatabaseAPI databaseAPI;
 
-    @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldProcessAllTheRecordsInAStore() throws Exception
+    void shouldProcessAllTheRecordsInAStore() throws Exception
     {
         // given
-        RecordStore<NodeRecord> nodeStore = stores.builder().build().getNodeStore();
+        RecordStore<NodeRecord> nodeStore = getNeoStores().getNodeStore();
         ConsistencyReport.Reporter reporter = mock( ConsistencyReport.Reporter.class );
         StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
                 reporter, Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
@@ -65,21 +68,14 @@ public class StoreProcessorTest
         verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ) );
     }
 
-    private NodeRecord node( long id, boolean dense, long nextRel, long nextProp )
-    {
-        return new NodeRecord( id ).initialize( true, nextProp, dense, nextRel, 0 );
-    }
-
-    @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldStopProcessingRecordsWhenSignalledToStop() throws Exception
+    void shouldStopProcessingRecordsWhenSignalledToStop() throws Exception
     {
         // given
         ConsistencyReport.Reporter reporter = mock( ConsistencyReport.Reporter.class );
         StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
                 reporter, Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
-        RecordStore<NodeRecord> nodeStore = new RecordStore.Delegator<NodeRecord>(
-                stores.builder().build().getNodeStore() )
+        RecordStore<NodeRecord> nodeStore = new RecordStore.Delegator<NodeRecord>( getNeoStores().getNodeStore() )
         {
             @Override
             public void getRecordByCursor( long id, NodeRecord target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException
@@ -103,5 +99,15 @@ public class StoreProcessorTest
 
         // then
         verify( reporter, times( 3 ) ).forNode( any( NodeRecord.class ), any( RecordCheck.class ) );
+    }
+
+    private NeoStores getNeoStores()
+    {
+        return databaseAPI.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+    }
+
+    private NodeRecord node( long id, boolean dense, long nextRel, long nextProp )
+    {
+        return new NodeRecord( id ).initialize( true, nextProp, dense, nextRel, 0 );
     }
 }
