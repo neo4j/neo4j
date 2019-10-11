@@ -63,7 +63,7 @@ class JUnitUsageGuardExtensionTest
     {
         Events testEvents = executeTest( MixRuleAndNewJUnit.class );
 
-        verifyFailureMessage( testEvents, "Detected Junit 4 classes: [org.junit.Rule]" );
+        verifyFailureMessage( testEvents, "Detected Junit 4 classes: [org.junit.Rule, org.junit.rules.ExpectedException]" );
     }
 
     @Test

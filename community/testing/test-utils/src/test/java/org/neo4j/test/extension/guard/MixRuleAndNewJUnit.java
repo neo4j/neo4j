@@ -21,15 +21,14 @@ package org.neo4j.test.extension.guard;
 
 import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-
-import org.neo4j.test.rule.LifeRule;
+import org.junit.rules.ExpectedException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MixRuleAndNewJUnit
 {
     @Rule
-    public LifeRule lifeRule = new LifeRule();
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     void anything()
