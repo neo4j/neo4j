@@ -59,7 +59,8 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
   }
 
-  test("should drop result") {
+  //Drop is not supported
+  ignore("should drop result") {
     // given
     nodeGraph(sizeHint)
 
