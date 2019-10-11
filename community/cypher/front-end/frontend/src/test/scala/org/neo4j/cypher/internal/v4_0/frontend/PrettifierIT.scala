@@ -652,7 +652,19 @@ class PrettifierIT extends CypherFunSuite {
             s"$action WRITE {*} ON GRAPH foo ELEMENTS * (*) $preposition role",
 
           s"$action write {*} on graphs foo elements * (*) $preposition role" ->
-            s"$action WRITE {*} ON GRAPH foo ELEMENTS * (*) $preposition role"
+            s"$action WRITE {*} ON GRAPH foo ELEMENTS * (*) $preposition role",
+
+          s"$action access on database * $preposition role" ->
+            s"$action ACCESS ON DATABASE * $preposition role",
+
+          s"$action access on databases * $preposition role" ->
+            s"$action ACCESS ON DATABASE * $preposition role",
+
+          s"$action access on database foo $preposition role" ->
+            s"$action ACCESS ON DATABASE foo $preposition role",
+
+          s"$action access on databases foo $preposition role" ->
+            s"$action ACCESS ON DATABASE foo $preposition role"
         )
     }
   }

@@ -174,9 +174,14 @@ case class Prettifier(expr: ExpressionStringifier) {
       val (dbName, dbAction) = Prettifier.extractDbScope(dbScope, action)
       s"DENY ${dbAction} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ RevokePrivilege(DatabasePrivilege(action), _, dbScope, _, roleNames, _) =>
+    case x @ RevokePrivilege(DatabasePrivilege(action), _, dbScope, _, roleNames, revokeType) =>
       val (dbName, dbAction) = Prettifier.extractDbScope(dbScope, action)
-      s"REVOKE ${dbAction} ON DATABASE $dbName FROM ${Prettifier.escapeNames(roleNames)}"
+      val revokeName = if (revokeType.name.nonEmpty) {
+        s"${revokeType.name} "
+      } else {
+        ""
+      }
+      s"REVOKE $revokeName$dbAction ON DATABASE $dbName FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
