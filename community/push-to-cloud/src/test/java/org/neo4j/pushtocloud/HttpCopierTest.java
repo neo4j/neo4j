@@ -41,6 +41,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
@@ -109,13 +110,63 @@ public class HttpCopierTest
 
         // then
         verify( postRequestedFor( urlEqualTo( "/import/auth" ) ) );
-        verify( postRequestedFor( urlEqualTo( "/import" ) ) );
+        verify( postRequestedFor( urlEqualTo( "/import" ) )
+                .withRequestBody( matchingJsonPath("DumpSize", equalTo( String.valueOf( sourceLength ) ) ) ) );
         verify( postRequestedFor( urlEqualTo( signedURIPath ) ) );
         verify( putRequestedFor( urlEqualTo( uploadLocationPath ) ) );
         verify( postRequestedFor( urlEqualTo( "/import/upload-complete" ) ) );
         assertTrue( progressListener.doneCalled );
         // we need to add 3 to the progress listener because of the database phases
         assertEquals( sourceLength + 3, progressListener.progress );
+    }
+
+    @Test
+    public void shouldHandleResumableFailureWhileUploading() throws Exception
+    {
+        // given
+        ControlledProgressListener progressListener = new ControlledProgressListener();
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, ( name, length ) -> progressListener );
+        Path source = createDump();
+        long sourceLength = fs.getFileSize( source.toFile() );
+
+        String authorizationTokenResponse = "abc";
+        String signedURIPath = "/signed";
+        String uploadLocationPath = "/upload";
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
+                .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
+        wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
+        wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( aResponse().withStatus( HttpCopier.HTTP_TOO_MANY_REQUESTS ) ) );
+
+        // when
+        assertThrows( CommandFailed.class, containsString( "You can re-try using the existing dump by running this command" ),
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    public void shouldHandleResumableFailureWhenImportIsTriggered() throws Exception
+    {
+        // given
+        ControlledProgressListener progressListener = new ControlledProgressListener();
+        HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ), millis -> {}, ( name, length ) -> progressListener );
+        Path source = createDump();
+        long sourceLength = fs.getFileSize( source.toFile() );
+
+        String authorizationTokenResponse = "abc";
+        String signedURIPath = "/signed";
+        String uploadLocationPath = "/upload";
+        wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
+        wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse )
+                .willReturn( successfulInitiateUploadTargetResponse( signedURIPath ) ) );
+        wireMock.stubFor( initiateUploadRequest( signedURIPath ).willReturn( successfulInitiateUploadResponse( uploadLocationPath ) ) );
+        wireMock.stubFor( resumeUploadRequest( uploadLocationPath, sourceLength ).willReturn( successfulResumeUploadResponse() ) );
+        wireMock.stubFor( triggerImportRequest( authorizationTokenResponse ).willReturn( aResponse().withStatus( HttpCopier.HTTP_TOO_MANY_REQUESTS ) ) );
+        wireMock.stubFor( firstStatusPollingRequest( authorizationTokenResponse ) );
+        wireMock.stubFor( secondStatusPollingRequest( authorizationTokenResponse ) );
+
+        // when
+        assertThrows( CommandFailed.class, containsString( "You can re-try using the existing dump by running this command" ),
+                () -> authenticateAndCopy( copier, source, "user", "pass".toCharArray() ) );
     }
 
     @Test
@@ -147,7 +198,7 @@ public class HttpCopierTest
     }
 
     @Test
-    public void shouldHandleMoveUploadTargetdRoute() throws IOException
+    public void shouldHandleMoveUploadTargetRoute() throws IOException
     {
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
@@ -169,7 +220,7 @@ public class HttpCopierTest
     }
 
     @Test
-    public void shouldHandleImportRequestestMovedRoute() throws IOException
+    public void shouldHandleImportRequestMovedRoute() throws IOException
     {
         // given
         HttpCopier copier = new HttpCopier( new ControlledOutsideWorld( fs ) );
@@ -613,7 +664,7 @@ public class HttpCopierTest
     private void authenticateAndCopy( PushToCloudCommand.Copier copier, Path source, String username, char[] password ) throws CommandFailed
     {
         String bearerToken = copier.authenticate( false, TEST_CONSOLE_URL, username, password, false );
-        copier.copy( false, TEST_CONSOLE_URL, source, bearerToken );
+        copier.copy( false, TEST_CONSOLE_URL, "bolt+routing://deadbeef.databases.neo4j.io", source,  bearerToken );
     }
 
     private interface ThrowingRunnable

@@ -90,7 +90,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), anyBoolean() );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
     }
 
     @Test
@@ -116,7 +116,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( targetCommunicator ).authenticate( anyBoolean(), any(), eq( username ), eq( password ), anyBoolean() );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
     }
 
     @Test
@@ -133,7 +133,7 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, SOME_EXAMPLE_BOLT_URI ) ) );
 
         // then
-        verify( targetCommunicator ).copy( anyBoolean(), any(), eq( dump ), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), eq( dump ), any() );
     }
 
     @Test
@@ -155,7 +155,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( eq( databaseName ), any() );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
     }
 
     @Test
@@ -179,7 +179,7 @@ public class PushToCloudCommandTest
 
         // then
         verify( dumpCreator ).dumpDatabase( databaseName, dumpFile );
-        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any() );
+        verify( targetCommunicator ).copy( anyBoolean(), any(), any(), any(), any() );
     }
 
     @Test
@@ -370,7 +370,7 @@ public class PushToCloudCommandTest
         // then
         String defaultDatabase = new Database().defaultValue();
         verify( dumpCreator ).dumpDatabase( eq( defaultDatabase ), any() );
-        verify( copier ).copy( anyBoolean(), any(), any(), any() );
+        verify( copier ).copy( anyBoolean(), any(), any(), any(), any() );
     }
 
     @Test
@@ -409,7 +409,8 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, "bolt+routing://mydbid-testenvironment.databases.neo4j.io" ) ) );
 
         // then
-        verify( copier ).copy( anyBoolean(), eq( "https://console-testenvironment.neo4j.io/v1/databases/mydbid" ), any(), any() );
+        verify( copier ).copy( anyBoolean(), eq( "https://console-testenvironment.neo4j.io/v1/databases/mydbid" ),
+                eq( "bolt+routing://mydbid-testenvironment.databases.neo4j.io" ), any(), any() );
     }
 
     @Test
@@ -425,7 +426,8 @@ public class PushToCloudCommandTest
                 arg( ARG_BOLT_URI, "bolt+routing://mydbid.databases.neo4j.io" ) ) );
 
         // then
-        verify( copier ).copy( anyBoolean(), eq( "https://console.neo4j.io/v1/databases/mydbid" ), any(), any() );
+        verify( copier ).copy( anyBoolean(), eq( "https://console.neo4j.io/v1/databases/mydbid" ),
+                eq( "bolt+routing://mydbid.databases.neo4j.io" ), any(), any() );
     }
 
     @Test
@@ -443,7 +445,7 @@ public class PushToCloudCommandTest
         InOrder inOrder = inOrder( copier, dumper );
         inOrder.verify( copier ).authenticate( anyBoolean(), anyString(), anyString(), any(), anyBoolean() );
         inOrder.verify( dumper ).dumpDatabase( anyString(), any() );
-        inOrder.verify( copier ).copy( anyBoolean(), anyString(), any(), anyString() );
+        inOrder.verify( copier ).copy( anyBoolean(), anyString(), eq( "bolt+routing://mydbid.databases.neo4j.io" ), any(), anyString() );
     }
 
     private Copier mockedTargetCommunicator() throws CommandFailed
