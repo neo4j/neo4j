@@ -272,14 +272,14 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
     graph.withTx { tx =>
       tx.execute("CYPHER runtime=interpreted RETURN 42 AS a").resultAsString()
-      tx.execute("CYPHER runtime=compiled RETURN 42 AS a").resultAsString()
+      tx.execute("CYPHER runtime=slotted RETURN 42 AS a").resultAsString()
     }
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
       "cacheMiss: (CYPHER 4.0 runtime=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.0 runtime=compiled RETURN 42 AS a, Map())"
+      "cacheMiss: (CYPHER 4.0 runtime=slotted RETURN 42 AS a, Map())"
     )
 
     actual should equal(expected)

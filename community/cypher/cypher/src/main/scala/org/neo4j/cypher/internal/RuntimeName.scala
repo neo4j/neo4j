@@ -37,7 +37,7 @@ case object MorselRuntimeName extends RuntimeName {
 }
 
 case object CompiledRuntimeName extends RuntimeName {
-  override val name = "COMPILED"
+  override val name = "LEGACY_COMPILED"
 }
 
 case object ParallelRuntimeName extends RuntimeName {

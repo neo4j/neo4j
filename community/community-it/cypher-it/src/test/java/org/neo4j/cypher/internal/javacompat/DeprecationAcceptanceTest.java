@@ -48,7 +48,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
         // when
         try ( Transaction transaction = db.beginTx() )
         {
-            try ( Result result = transaction.execute( "EXPLAIN CYPHER runtime=compiled RETURN 1" ) )
+            try ( Result result = transaction.execute( "EXPLAIN CYPHER runtime=legacy_compiled RETURN 1" ) )
             {
                 // then
                 assertThat( result.getNotifications(), containsItem( deprecatedCompiledRuntime ) );

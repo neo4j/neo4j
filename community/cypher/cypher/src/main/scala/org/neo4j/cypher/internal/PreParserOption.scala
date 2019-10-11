@@ -39,7 +39,7 @@ case object InterpretedRuntimeOption extends RuntimePreParserOption("interpreted
 case object SlottedRuntimeOption extends RuntimePreParserOption("slotted")
 case object MorselRuntimeOption extends RuntimePreParserOption("morsel")
 case object ParallelRuntimeOption extends RuntimePreParserOption("parallel")
-case object CompiledRuntimeOption extends RuntimePreParserOption("compiled")
+case object CompiledRuntimeOption extends RuntimePreParserOption("legacy_compiled")
 case object EagerOption extends UpdateStrategyOption("eager")
 case class DebugOption(key: String) extends PreParserOption
 case object CompiledExpressionOption extends ExpressionEnginePreParserOption("compiled")

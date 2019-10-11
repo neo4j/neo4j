@@ -28,7 +28,7 @@ case object CypherRuntimeOption extends CypherOptionCompanion[CypherRuntimeOptio
   case object slotted extends CypherRuntimeOption("slotted")
   case object morsel extends CypherRuntimeOption("morsel")
   case object parallel extends CypherRuntimeOption("parallel")
-  case object compiled extends CypherRuntimeOption("compiled")
+  case object compiled extends CypherRuntimeOption("legacy_compiled")
 
   val all: Set[CypherRuntimeOption] = Set(interpreted, compiled, slotted, morsel, parallel)
 }

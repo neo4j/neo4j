@@ -34,7 +34,7 @@ class PreParserTest extends CypherFunSuite {
     0)
 
   test("should not allow inconsistent runtime options") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=compiled runtime=interpreted RETURN 42"))
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=slotted runtime=interpreted RETURN 42"))
   }
 
   test("should not allow multiple versions") {

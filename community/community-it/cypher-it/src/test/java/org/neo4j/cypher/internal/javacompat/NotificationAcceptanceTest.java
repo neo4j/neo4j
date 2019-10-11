@@ -54,12 +54,12 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach(
                 version -> shouldNotifyInStreamWithDetail( version,
-                                                           "EXPLAIN CYPHER runtime=compiled RETURN 1",
+                                                           "EXPLAIN CYPHER runtime=legacy_compiled RETURN 1",
                                                            InputPosition.empty,
                                                            RUNTIME_UNSUPPORTED,
                                                            NotificationDetail.Factory.message( "Runtime unsupported",
                                                                                                "This version of Neo4j does not " +
-                                                                                                       "support requested runtime: compiled" ) ) );
+                                                                                                       "support requested runtime: legacy_compiled" ) ) );
     }
 
     @Test
@@ -392,9 +392,6 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
 
         assertNotifications( "explain match (a)-->(b), (c)-->(d) return *", containsItem( cartesianProductWarning ) );
-
-        assertNotifications( "explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return *",
-                containsItem( cartesianProductWarning ) );
 
         assertNotifications( "explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *",
                 containsItem( cartesianProductWarning ) );
