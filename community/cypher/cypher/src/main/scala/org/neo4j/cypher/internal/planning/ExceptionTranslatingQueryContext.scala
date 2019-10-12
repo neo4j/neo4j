@@ -196,7 +196,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     translateException(inner.aggregateFunction(id, allowed))
 
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean =
-    translateException(inner.isLabelSetOnNode(label, node, nodeCursor))
+    inner.isLabelSetOnNode(label, node, nodeCursor)
 
   override def getRelTypeId(relType: String): Int =
     translateException(inner.getRelTypeId(relType))
