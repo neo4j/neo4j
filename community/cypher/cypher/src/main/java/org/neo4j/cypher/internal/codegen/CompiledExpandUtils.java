@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.codegen;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
@@ -296,6 +297,12 @@ public abstract class CompiledExpandUtils
                 }
 
                 return false;
+            }
+
+            @Override
+            public void setTracer( KernelReadTracer tracer )
+            {
+                allRelationships.setTracer( tracer );
             }
 
             @Override

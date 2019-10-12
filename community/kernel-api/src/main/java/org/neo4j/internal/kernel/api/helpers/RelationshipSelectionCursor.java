@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 
 /**
  * Helper cursor for traversing specific types and directions.
@@ -28,6 +29,8 @@ import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 public interface RelationshipSelectionCursor extends AutoCloseablePlus
 {
     boolean next();
+
+    void setTracer( KernelReadTracer tracer );
 
     @Override
     void closeInternal();
@@ -98,6 +101,12 @@ public interface RelationshipSelectionCursor extends AutoCloseablePlus
         public boolean isClosed()
         {
             return true;
+        }
+
+        @Override
+        public void setTracer( KernelReadTracer tracer )
+        {
+            //do nothing
         }
     }
 

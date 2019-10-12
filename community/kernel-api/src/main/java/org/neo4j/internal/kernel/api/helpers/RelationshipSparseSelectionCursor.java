@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+
 /**
  * Helper cursor for traversing specific types and directions of a dense node.
  */
@@ -79,6 +82,12 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     }
 
     @Override
+    public void setTracer( KernelReadTracer tracer )
+    {
+        cursor.setTracer( tracer );
+    }
+
+    @Override
     public String toString()
     {
         if ( isClosed() )
@@ -89,5 +98,10 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
         {
             return "RelationshipSparseSelectionCursor[cursor=" + cursor.toString() + "]";
         }
+    }
+
+    public RelationshipTraversalCursor traversalCursor()
+    {
+        return cursor;
     }
 }

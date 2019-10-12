@@ -37,7 +37,7 @@ abstract class RelationshipDenseSelection extends DefaultCloseListenable
         LOOP
     }
 
-    private RelationshipGroupCursor groupCursor;
+    protected RelationshipGroupCursor groupCursor;
     protected RelationshipTraversalCursor relationshipCursor;
     private int[] types;
     private Dir[] directions;
