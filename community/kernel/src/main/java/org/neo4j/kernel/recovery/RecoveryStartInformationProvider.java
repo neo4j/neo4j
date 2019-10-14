@@ -65,6 +65,14 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         default void noCheckPointFound()
         {   // no-op by default
         }
+
+        /**
+         * Failure to read initial header of initial log file
+         */
+        default void failToExtractInitialFileHeader( Exception e )
+        {
+            // no-op by default
+        }
     }
 
     public static final Monitor NO_MONITOR = new Monitor()
@@ -137,7 +145,8 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         }
         catch ( IOException e )
         {
-            // we can't event read header, lets assume we need to recover from the most latest format and from the begining
+            monitor.failToExtractInitialFileHeader( e );
+            // we can't event read header, lets assume we need to recover from the most latest format and from the beginning
             return new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE );
         }
     }

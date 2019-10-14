@@ -77,6 +77,12 @@ public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInfo
     }
 
     @Override
+    public void failToExtractInitialFileHeader( Exception e )
+    {
+        log.warn( "Fail to read initial transaction log file header.", e );
+    }
+
+    @Override
     public void transactionRecovered( long txId )
     {
         if ( firstTransactionRecovered == -1 )

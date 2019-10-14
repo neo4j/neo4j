@@ -158,7 +158,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
             {
                 return false;
             }
-            int headerSize = StrictMath.toIntExact( logHeader.getStartPosition().getByteOffset() );
+            int headerSize = Math.toIntExact( logHeader.getStartPosition().getByteOffset() );
             if ( fileSystem.getFileSize( logFile ) <= headerSize )
             {
                 return false;
