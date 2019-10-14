@@ -166,22 +166,17 @@ case class Prettifier(expr: ExpressionStringifier) {
     case x @ RevokeRolesFromUsers(roleNames, userNames) =>
       s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", " )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
-    case x @ GrantPrivilege(DatabasePrivilege(action), _, dbScope, _, roleNames) =>
-      val (dbName, dbAction) = Prettifier.extractDbScope(dbScope, action)
-      s"GRANT ${dbAction} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"
+    case x @ GrantPrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames) =>
+      val dbName = Prettifier.extractDbScope(dbScope)
+      s"${x.name} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ DenyPrivilege(DatabasePrivilege(action), _, dbScope, _, roleNames) =>
-      val (dbName, dbAction) = Prettifier.extractDbScope(dbScope, action)
-      s"DENY ${dbAction} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"
+    case x @ DenyPrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames) =>
+      val dbName = Prettifier.extractDbScope(dbScope)
+      s"${x.name} ON DATABASE $dbName TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ RevokePrivilege(DatabasePrivilege(action), _, dbScope, _, roleNames, revokeType) =>
-      val (dbName, dbAction) = Prettifier.extractDbScope(dbScope, action)
-      val revokeName = if (revokeType.name.nonEmpty) {
-        s"${revokeType.name} "
-      } else {
-        ""
-      }
-      s"REVOKE $revokeName$dbAction ON DATABASE $dbName FROM ${Prettifier.escapeNames(roleNames)}"
+    case x @ RevokePrivilege(DatabasePrivilege(_), _, dbScope, _, roleNames, _) =>
+      val dbName = Prettifier.extractDbScope(dbScope)
+      s"${x.name} ON DATABASE $dbName FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
@@ -508,26 +503,6 @@ object Prettifier {
     case AllGraphsScope() => "*"
     case _ => "<unknown>"
   }
-
-  def extractDbScope(action: AdminAction): String = action match {
-    case AccessDatabaseAction => "ACCESS"
-    case StartDatabaseAction => "START"
-    case StopDatabaseAction => "STOP"
-    case CreateIndexAction => "CREATE INDEX"
-    case DropIndexAction => "DROP INDEX"
-    case IndexManagementAction => "INDEX MANAGEMENT"
-    case CreateConstraintAction => "CREATE CONSTRAINT"
-    case DropConstraintAction => "DROP CONSTRAINT"
-    case ConstraintManagementAction => "CONSTRAINT MANAGEMENT"
-    case CreateNodeLabelAction => "CREATE NEW NODE LABEL"
-    case CreateRelationshipTypeAction => "CREATE NEW RELATIONSHIP TYPE"
-    case CreatePropertyKeyAction => "CREATE NEW PROPERTY NAME"
-    case TokenManagementAction => "NAME MANAGEMENT"
-    case AllDatabaseAction => "ALL DATABASE PRIVILEGES"
-    case _ => "<unknown>"
-  }
-
-  def extractDbScope(dbScope: GraphScope, action: AdminAction): (String, String) = (extractDbScope(dbScope), extractDbScope(action))
 
   /*
    * Some strings (identifiers) were escaped with back-ticks to allow non-identifier characters

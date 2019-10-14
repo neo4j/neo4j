@@ -411,7 +411,7 @@ trait Statement extends Parser
         keyword("*") ~~~> ast.AllGraphsScope())
   )
 
-  private def DatabaseAction: Rule1[DatabaseAction] = rule("start/stop/create/drop a database and index, constraint and token management")(
+  private def DatabaseAction: Rule1[DatabaseAction] = rule("access/start/stop a database and index, constraint and token management")(
     keyword("ACCESS") ~~~> (_ => ast.AccessDatabaseAction) |
       keyword("START") ~~~> (_ => ast.StartDatabaseAction) |
       keyword("STOP") ~~~> (_ => ast.StopDatabaseAction) |

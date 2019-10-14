@@ -171,7 +171,7 @@ final case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[Str
 
 abstract class PrivilegeType(val name: String)
 
-final case class DatabasePrivilege(action: DatabaseAction)(val position: InputPosition) extends PrivilegeType("DATABASE_PRIVILEGE")
+final case class DatabasePrivilege(action: DatabaseAction)(val position: InputPosition) extends PrivilegeType(action.name)
 
 final case class TraversePrivilege()(val position: InputPosition) extends PrivilegeType("TRAVERSE")
 
@@ -247,26 +247,28 @@ final case class ShowUserPrivileges(user: String)(val position: InputPosition) e
 
 final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
 
-sealed trait AdminAction
+sealed trait AdminAction {
+  def name: String = "<unknown>"
+}
 
-sealed trait DatabaseAction extends AdminAction
+abstract class DatabaseAction(override val name: String = "<unknown>") extends AdminAction
 
-case object AccessDatabaseAction extends DatabaseAction
-case object StartDatabaseAction extends DatabaseAction
-case object StopDatabaseAction extends DatabaseAction
+case object AccessDatabaseAction extends DatabaseAction("ACCESS")
+case object StartDatabaseAction extends DatabaseAction("START")
+case object StopDatabaseAction extends DatabaseAction("STOP")
 case object CreateDatabaseAction extends DatabaseAction
 case object DropDatabaseAction extends DatabaseAction
-case object CreateIndexAction extends DatabaseAction
-case object DropIndexAction extends DatabaseAction
-case object IndexManagementAction extends DatabaseAction
-case object CreateConstraintAction extends DatabaseAction
-case object DropConstraintAction extends DatabaseAction
-case object ConstraintManagementAction extends DatabaseAction
-case object CreateNodeLabelAction extends DatabaseAction
-case object CreateRelationshipTypeAction extends DatabaseAction
-case object CreatePropertyKeyAction extends DatabaseAction
-case object TokenManagementAction extends DatabaseAction
-case object AllDatabaseAction extends DatabaseAction
+case object CreateIndexAction extends DatabaseAction("CREATE INDEX")
+case object DropIndexAction extends DatabaseAction("DROP INDEX")
+case object IndexManagementAction extends DatabaseAction("INDEX MANAGEMENT")
+case object CreateConstraintAction extends DatabaseAction("CREATE CONSTRAINT")
+case object DropConstraintAction extends DatabaseAction("DROP CONSTRAINT")
+case object ConstraintManagementAction extends DatabaseAction("CONSTRAINT MANAGEMENT")
+case object CreateNodeLabelAction extends DatabaseAction("CREATE NEW NODE LABEL")
+case object CreateRelationshipTypeAction extends DatabaseAction("CREATE NEW RELATIONSHIP TYPE")
+case object CreatePropertyKeyAction extends DatabaseAction("CREATE NEW PROPERTY NAME")
+case object TokenManagementAction extends DatabaseAction("NAME MANAGEMENT")
+case object AllDatabaseAction extends DatabaseAction("ALL DATABASE PRIVILEGES")
 
 sealed trait UserManagementAction extends AdminAction
 

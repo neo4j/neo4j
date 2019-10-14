@@ -714,6 +714,18 @@ class PrettifierIT extends CypherFunSuite {
           s"$action drop index on databases foo $preposition role" ->
             s"$action DROP INDEX ON DATABASE foo $preposition role",
 
+          s"$action index on database * $preposition role" ->
+            s"$action INDEX MANAGEMENT ON DATABASE * $preposition role",
+
+          s"$action index on databases * $preposition role" ->
+            s"$action INDEX MANAGEMENT ON DATABASE * $preposition role",
+
+          s"$action index on database foo $preposition role" ->
+            s"$action INDEX MANAGEMENT ON DATABASE foo $preposition role",
+
+          s"$action index on databases foo $preposition role" ->
+            s"$action INDEX MANAGEMENT ON DATABASE foo $preposition role",
+
           s"$action index management on database * $preposition role" ->
             s"$action INDEX MANAGEMENT ON DATABASE * $preposition role",
 
@@ -749,6 +761,18 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action drop constraint on databases foo $preposition role" ->
             s"$action DROP CONSTRAINT ON DATABASE foo $preposition role",
+
+          s"$action constraint on database * $preposition role" ->
+            s"$action CONSTRAINT MANAGEMENT ON DATABASE * $preposition role",
+
+          s"$action constraint on databases * $preposition role" ->
+            s"$action CONSTRAINT MANAGEMENT ON DATABASE * $preposition role",
+
+          s"$action constraint on database foo $preposition role" ->
+            s"$action CONSTRAINT MANAGEMENT ON DATABASE foo $preposition role",
+
+          s"$action constraint on databases foo $preposition role" ->
+            s"$action CONSTRAINT MANAGEMENT ON DATABASE foo $preposition role",
 
           s"$action constraint management on database * $preposition role" ->
             s"$action CONSTRAINT MANAGEMENT ON DATABASE * $preposition role",
@@ -833,6 +857,18 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action create new property name on databases foo $preposition role" ->
             s"$action CREATE NEW PROPERTY NAME ON DATABASE foo $preposition role",
+
+          s"$action name on database * $preposition role" ->
+            s"$action NAME MANAGEMENT ON DATABASE * $preposition role",
+
+          s"$action name on databases * $preposition role" ->
+            s"$action NAME MANAGEMENT ON DATABASE * $preposition role",
+
+          s"$action name on database foo $preposition role" ->
+            s"$action NAME MANAGEMENT ON DATABASE foo $preposition role",
+
+          s"$action name on databases foo $preposition role" ->
+            s"$action NAME MANAGEMENT ON DATABASE foo $preposition role",
 
           s"$action name management on database * $preposition role" ->
             s"$action NAME MANAGEMENT ON DATABASE * $preposition role",
