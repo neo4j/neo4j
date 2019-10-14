@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.parser.privilege
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.parser.AdministrationCommandParserTestBase
 
-class MultiDatabasePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
   Seq(
     ("GRANT", "TO", grantDatabasePrivilege: databasePrivilegeFunc),
@@ -33,7 +33,23 @@ class MultiDatabasePrivilegeAdministrationCommandParserTest extends Administrati
       Seq(
         ("ACCESS", ast.AccessDatabaseAction),
         ("START", ast.StartDatabaseAction),
-        ("STOP", ast.StopDatabaseAction)
+        ("STOP", ast.StopDatabaseAction),
+        ("CREATE INDEX", ast.CreateIndexAction),
+        ("DROP INDEX", ast.DropIndexAction),
+        ("INDEX MANAGEMENT", ast.IndexManagementAction),
+        ("CREATE CONSTRAINT", ast.CreateConstraintAction),
+        ("DROP CONSTRAINT", ast.DropConstraintAction),
+        ("CONSTRAINT MANAGEMENT", ast.ConstraintManagementAction),
+        ("CREATE NEW LABEL", ast.CreateNodeLabelAction),
+        ("CREATE NEW NODE LABEL", ast.CreateNodeLabelAction),
+        ("CREATE NEW TYPE", ast.CreateRelationshipTypeAction),
+        ("CREATE NEW RELATIONSHIP TYPE", ast.CreateRelationshipTypeAction),
+        ("CREATE NEW NAME", ast.CreatePropertyKeyAction),
+        ("CREATE NEW PROPERTY NAME", ast.CreatePropertyKeyAction),
+        ("NAME MANAGEMENT", ast.TokenManagementAction),
+        ("ALL", ast.AllDatabaseAction),
+        ("ALL PRIVILEGES", ast.AllDatabaseAction),
+        ("ALL DATABASE PRIVILEGES", ast.AllDatabaseAction)
       ).foreach {
         case (privilege: String, action: ast.DatabaseAction) =>
 
