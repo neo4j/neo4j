@@ -24,8 +24,7 @@ import scala.util.control.NonFatal
 /**
  * Extractor of non-fatal Throwables.
  *
- * For the most part this class delegates to [[scala.util.control.NonFatal]],
- * which not match fatal errors like [[VirtualMachineError]] (e.g., [[OutOfMemoryError]]).
+ * This class delegates to [[scala.util.control.NonFatal]], which does not match fatal errors like [[VirtualMachineError]] (e.g., [[OutOfMemoryError]]).
  * See [[scala.util.control.NonFatal]] for more info.
  */
 object NonFatalCypherError {
@@ -38,11 +37,9 @@ object NonFatalCypherError {
    */
   def unapply(t: Throwable): Option[Throwable] = Some(t).filter(apply)
 
+  // for use from Java code
   def isNonFatal(t: Throwable): Boolean = t match {
-    // NonFatal considers StackOverflowError as fatal, but if we catch it we can at least inform the user via QuerySubscriber.onError()
     case NonFatal(_) =>
-      true
-    case _:StackOverflowError =>
       true
     case _ =>
       false
