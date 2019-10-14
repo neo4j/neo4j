@@ -69,15 +69,55 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationCom
             yields(privilegeFunc(action, ast.NamedGraphScope("foo") _, Seq("role")))
           }
 
+          test(s"$command $privilege ON DATABASE `fo:o` $preposition role") {
+            yields(privilegeFunc(action, ast.NamedGraphScope("fo:o") _, Seq("role")))
+          }
+
+          test(s"$command $privilege ON DATABASE foo $preposition `r:ole`") {
+            yields(privilegeFunc(action, ast.NamedGraphScope("foo") _, Seq("r:ole")))
+          }
+
           test(s"$command $privilege ON DATABASE foo $preposition role1, role2") {
             yields(privilegeFunc(action, ast.NamedGraphScope("foo") _, Seq("role1", "role2")))
           }
 
           test(s"$command $privilege ON GRAPH * $preposition role") {
+            // GRAPH instead of DATABASE
             failsToParse
           }
 
           test(s"$command $privilege ON DATABASES foo, bar $preposition role") {
+            // multiple databases
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DATABASE fo:o $preposition role") {
+            // invalid database name
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DATABASE foo $preposition r:ole") {
+            // invalid role name
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DATABASES * $preposition") {
+            // Missing role
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DATABASES *") {
+            // Missing role and preposition
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DATABASES $preposition role") {
+            // Missing dbName
+            failsToParse
+          }
+
+          test(s"$command $privilege ON * $preposition role") {
+            // Missing DATABASE keyword
             failsToParse
           }
       }
