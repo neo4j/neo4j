@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.common.Validator;
-import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 

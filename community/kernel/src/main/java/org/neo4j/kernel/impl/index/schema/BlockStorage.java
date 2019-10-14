@@ -34,7 +34,8 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
-import org.neo4j.kernel.impl.index.schema.ByteBufferFactory.Allocator;
+import org.neo4j.memory.ByteBufferFactory;
+import org.neo4j.memory.ByteBufferFactory.Allocator;
 import org.neo4j.util.Preconditions;
 
 import static java.lang.Math.ceil;

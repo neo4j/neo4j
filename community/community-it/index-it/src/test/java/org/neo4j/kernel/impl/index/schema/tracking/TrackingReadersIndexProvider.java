@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
 public class TrackingReadersIndexProvider extends IndexProvider.Delegating
 {

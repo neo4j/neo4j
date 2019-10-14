@@ -39,11 +39,10 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
-import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.memory.ByteBufferFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
@@ -53,20 +52,20 @@ public class LuceneIndexProvider extends IndexProvider
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "lucene", "2.0" );
     private final IndexStorageFactory indexStorageFactory;
     private final Config config;
-    private final OperationalMode operationalMode;
+    private final boolean isSingleInstance;
     private final FileSystemAbstraction fileSystem;
     private final Monitor monitor;
 
     public LuceneIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
                                 IndexDirectoryStructure.Factory directoryStructureFactory, Monitor monitor, Config config,
-                                OperationalMode operationalMode )
+                                boolean isSingleInstance )
     {
         super( DESCRIPTOR, directoryStructureFactory );
         this.monitor = monitor;
         this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
         this.fileSystem = fileSystem;
         this.config = config;
-        this.operationalMode = operationalMode;
+        this.isSingleInstance = isSingleInstance;
     }
 
     /**
@@ -82,7 +81,7 @@ public class LuceneIndexProvider extends IndexProvider
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                                         .withFileSystem( fileSystem )
-                                        .withOperationalMode( operationalMode )
+                                        .withOperationalMode( isSingleInstance )
                                         .withSamplingConfig( samplingConfig )
                                         .withIndexStorage( getIndexStorage( descriptor.getId() ) )
                                         .withWriterConfig( IndexWriterConfigs::population )
@@ -100,7 +99,7 @@ public class LuceneIndexProvider extends IndexProvider
     public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
-                                            .withOperationalMode( operationalMode )
+                                            .withOperationalMode( isSingleInstance )
                                             .withSamplingConfig( samplingConfig )
                                             .withIndexStorage( getIndexStorage( descriptor.getId() ) )
                                             .build();
@@ -131,7 +130,7 @@ public class LuceneIndexProvider extends IndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return new SchemaIndexMigrator( "Lucene indexes", fs, this, storageEngineFactory );
+        return new SchemaIndexMigrator( "Lucene indexes", fs, this.directoryStructure(), storageEngineFactory );
     }
 
     @Override

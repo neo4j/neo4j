@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {

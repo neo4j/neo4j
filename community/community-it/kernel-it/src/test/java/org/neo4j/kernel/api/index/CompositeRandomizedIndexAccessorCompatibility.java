@@ -47,9 +47,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
+import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
-import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -84,7 +84,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                 IndexEntryUpdate<SchemaDescriptor> update;
                 do
                 {
-                    update = IndexQueryHelper.add( id, descriptor.schema(),
+                    update = add( id, descriptor.schema(),
                             random.randomValues().nextValueOfTypes( types ),
                             random.randomValues().nextValueOfTypes( types ),
                             random.randomValues().nextValueOfTypes( types ),
@@ -155,7 +155,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                             ValueTuple value = generateUniqueRandomValue( types, uniqueValues );
                             long id = nextId.getAndIncrement();
                             sortedValues.add( new ValueAndId( value, id ) );
-                            updates.add( IndexEntryUpdate.add( id, descriptor.schema(), value.getValues() ) );
+                            updates.add( add( id, descriptor.schema(), value.getValues() ) );
                         }
                         else if ( type == 1 )
                         {   // update
@@ -204,7 +204,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
 
                 // Depending on order capabilities we verify ids or order and ids.
                 IndexQuery[] predicates = new IndexQuery[]{
-                        IndexQuery.exact( 100, booleanValue ),
+                        exact( 100, booleanValue ),
                         IndexQuery.range( 101, from, fromInclusive, to, toInclusive )};
                 ValueCategory[] valueCategories = getValueCategories( predicates );
                 IndexOrder[] indexOrders = descriptor.getCapability().orderCapability( valueCategories );
@@ -266,7 +266,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
             List<IndexEntryUpdate<?>> updates = new ArrayList<>();
             for ( ValueTuple value : values )
             {
-                updates.add( add( nextId.getAndIncrement(), descriptor.schema(), (Object[]) value.getValues() ) );
+                updates.add( add( nextId.getAndIncrement(), descriptor.schema(), value.getValues() ) );
             }
             return updates;
         }

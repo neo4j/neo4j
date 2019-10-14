@@ -29,7 +29,7 @@ import java.util.Properties;
 
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys;
+import org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;

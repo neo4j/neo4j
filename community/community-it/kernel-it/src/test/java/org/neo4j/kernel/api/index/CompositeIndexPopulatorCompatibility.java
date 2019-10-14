@@ -31,9 +31,8 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -43,8 +42,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
-import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -72,8 +71,8 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.add( Arrays.asList(
-                    add( 1, descriptor.schema(), "v1", "v2" ),
-                    add( 2, descriptor.schema(), "v1", "v2" ) ) ) );
+                    add( 1, descriptor.schema(), Values.of( "v1" ), Values.of( "v2" ) ),
+                    add( 2, descriptor.schema(), Values.of( "v1" ), Values.of( "v2" ) ) ) ) );
 
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
@@ -112,8 +111,8 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
                 try
                 {
                     p.add( Arrays.asList(
-                            IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
-                            IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value2 ) ) );
+                            add( nodeId1, descriptor.schema(), value1, value2 ),
+                            add( nodeId2, descriptor.schema(), value1, value2 ) ) );
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
@@ -141,8 +140,8 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             {
                 // when
                 p.add( Arrays.asList(
-                        IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
-                        IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value3 ) ) );
+                        add( nodeId1, descriptor.schema(), value1, value2 ),
+                        add( nodeId2, descriptor.schema(), value1, value3 ) ) );
 
                 TestNodePropertyAccessor propertyAccessor =
                         new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );

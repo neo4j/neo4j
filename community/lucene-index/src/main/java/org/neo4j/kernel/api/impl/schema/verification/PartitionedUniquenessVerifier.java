@@ -192,7 +192,7 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
         }
     }
 
-    private Set<String> allFields() throws IOException
+    private Set<String> allFields()
     {
         Set<String> allFields = new HashSet<>();
         for ( LeafReader leafReader : allLeafReaders() )

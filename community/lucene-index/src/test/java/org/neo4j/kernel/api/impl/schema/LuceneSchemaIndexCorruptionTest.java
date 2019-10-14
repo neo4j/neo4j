@@ -41,7 +41,6 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -132,7 +131,7 @@ class LuceneSchemaIndexCorruptionTest
         File indexRootFolder = testDirectory.homeDir();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
         return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( indexRootFolder ), monitor,
-                Config.defaults(), OperationalMode.SINGLE )
+                Config.defaults(), true )
         {
             @Override
             protected IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )

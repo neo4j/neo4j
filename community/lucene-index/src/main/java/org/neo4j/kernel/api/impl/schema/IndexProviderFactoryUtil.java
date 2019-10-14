@@ -25,22 +25,21 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 
-class IndexProviderFactoryUtil
+public class IndexProviderFactoryUtil
 {
-    static boolean isReadOnly( Config config, OperationalMode operationalMode )
+    public static boolean isReadOnly( Config config, boolean isSingleInstance )
     {
-        return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.SINGLE == operationalMode);
+        return config.get( GraphDatabaseSettings.read_only ) && isSingleInstance;
     }
 
-    static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor,
-            Config config, OperationalMode operationalMode )
+    public static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
+            IndexProvider.Monitor monitor, Config config, boolean isSingleInstance )
     {
         boolean ephemeral = config.get( GraphDatabaseSettings.ephemeral_lucene );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral );
-        return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitor, config, operationalMode );
+        return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitor, config, isSingleInstance );
     }
 }

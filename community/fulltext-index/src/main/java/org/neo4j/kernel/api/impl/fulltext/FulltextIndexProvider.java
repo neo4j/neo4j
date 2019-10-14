@@ -51,17 +51,15 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys;
-import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.ByteBufferFactory;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
 
@@ -70,27 +68,27 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAna
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
 
-class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
+public class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
 {
     private final FileSystemAbstraction fileSystem;
     private final Config config;
     private final TokenHolders tokenHolders;
-    private final OperationalMode operationalMode;
+    private final boolean isSingleInstance;
     private final String defaultAnalyzerName;
     private final boolean defaultEventuallyConsistentSetting;
     private final Log log;
     private final IndexUpdateSink indexUpdateSink;
     private final IndexStorageFactory indexStorageFactory;
 
-    FulltextIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
-            FileSystemAbstraction fileSystem, Config config, TokenHolders tokenHolders, DirectoryFactory directoryFactory, OperationalMode operationalMode,
+    public FulltextIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
+            FileSystemAbstraction fileSystem, Config config, TokenHolders tokenHolders, DirectoryFactory directoryFactory, boolean isSingleInstance,
             JobScheduler scheduler, Log log )
     {
         super( descriptor, directoryStructureFactory );
         this.fileSystem = fileSystem;
         this.config = config;
         this.tokenHolders = tokenHolders;
-        this.operationalMode = operationalMode;
+        this.isSingleInstance = isSingleInstance;
         this.log = log;
 
         defaultAnalyzerName = config.get( FulltextSettings.fulltext_default_analyzer );
@@ -183,7 +181,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
                 .create( descriptor, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                 .withFileSystem( fileSystem )
-                .withOperationalMode( operationalMode )
+                .withOperationalMode( isSingleInstance )
                 .withIndexStorage( indexStorage )
                 .withPopulatingMode( true )
                 .build();
@@ -205,7 +203,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder
                 .create( index, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                 .withFileSystem( fileSystem )
-                .withOperationalMode( operationalMode )
+                .withOperationalMode( isSingleInstance )
                 .withIndexStorage( indexStorage )
                 .withPopulatingMode( false );
         if ( isEventuallyConsistent( index ) )
@@ -223,7 +221,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return new SchemaIndexMigrator( "Fulltext indexes",  fs, this, storageEngineFactory );
+        return new SchemaIndexMigrator( "Fulltext indexes",  fs, this.directoryStructure(), storageEngineFactory );
     }
 
     @Override

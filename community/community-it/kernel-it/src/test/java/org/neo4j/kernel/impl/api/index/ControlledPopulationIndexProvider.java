@@ -31,8 +31,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
+import org.neo4j.memory.ByteBufferFactory;
 import org.neo4j.test.DoubleLatch;
 
 import static org.mockito.Mockito.mock;

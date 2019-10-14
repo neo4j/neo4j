@@ -43,7 +43,7 @@ import org.neo4j.test.rule.RepeatRule;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 
 /**
  * Concurrent updates and index changes should result in valid state, and not create conflicts or exceptions during

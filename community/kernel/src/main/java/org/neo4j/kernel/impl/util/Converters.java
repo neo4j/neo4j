@@ -32,6 +32,7 @@ import java.util.function.Function;
 
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.internal.helpers.collection.NumberAwareStringComparator;
 
 public class Converters
 {

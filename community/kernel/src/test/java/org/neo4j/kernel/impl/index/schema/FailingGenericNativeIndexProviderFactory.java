@@ -34,9 +34,10 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.memory.ByteBufferFactory;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 import static java.util.Arrays.copyOfRange;

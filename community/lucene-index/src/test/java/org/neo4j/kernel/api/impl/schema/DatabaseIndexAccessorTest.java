@@ -43,13 +43,13 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -58,6 +58,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -67,6 +68,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -90,8 +92,8 @@ public class DatabaseIndexAccessorTest
     private final Object value = "value";
     private final Object value2 = "40";
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final IndexDescriptor GENERAL_INDEX = TestIndexDescriptorFactory.forLabel( 0, PROP_ID );
-    private static final IndexDescriptor UNIQUE_INDEX = TestIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
+    private static final IndexDescriptor GENERAL_INDEX = IndexPrototype.forSchema( forLabel( 0, PROP_ID ) ).withName( "a" ).materialise( 0 );
+    private static final IndexDescriptor UNIQUE_INDEX = IndexPrototype.uniqueForSchema( forLabel( 1, PROP_ID ) ).withName( "b" ).materialise( 1 );
     private static final Config CONFIG = Config.defaults();
 
     @Parameterized.Parameters( name = "{0}" )
@@ -218,11 +220,11 @@ public class DatabaseIndexAccessorTest
     public void indexReaderShouldHonorRepeatableReads() throws Exception
     {
         // GIVEN
-        updateAndCommit( asList( add( nodeId, value ) ) );
+        updateAndCommit( singletonList( add( nodeId, value ) ) );
         IndexReader reader = accessor.newReader();
 
         // WHEN
-        updateAndCommit( asList( remove( nodeId, value ) ) );
+        updateAndCommit( singletonList( remove( nodeId, value ) ) );
 
         // THEN
         assertEquals( asSet( nodeId ), resultSet( reader, exact( PROP_ID, value ) ) );
@@ -233,9 +235,9 @@ public class DatabaseIndexAccessorTest
     public void multipleIndexReadersFromDifferentPointsInTimeCanSeeDifferentResults() throws Exception
     {
         // WHEN
-        updateAndCommit( asList( add( nodeId, value ) ) );
+        updateAndCommit( singletonList( add( nodeId, value ) ) );
         IndexReader firstReader = accessor.newReader();
-        updateAndCommit( asList( add( nodeId2, value2 ) ) );
+        updateAndCommit( singletonList( add( nodeId2, value2 ) ) );
         IndexReader secondReader = accessor.newReader();
 
         // THEN
@@ -263,10 +265,10 @@ public class DatabaseIndexAccessorTest
     public void canChangeExistingData() throws Exception
     {
         // GIVEN
-        updateAndCommit( asList( add( nodeId, value ) ) );
+        updateAndCommit( singletonList( add( nodeId, value ) ) );
 
         // WHEN
-        updateAndCommit( asList( change( nodeId, value, value2 ) ) );
+        updateAndCommit( singletonList( change( nodeId, value, value2 ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
@@ -282,7 +284,7 @@ public class DatabaseIndexAccessorTest
         updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
 
         // WHEN
-        updateAndCommit( asList( remove( nodeId, value ) ) );
+        updateAndCommit( singletonList( remove( nodeId, value ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN

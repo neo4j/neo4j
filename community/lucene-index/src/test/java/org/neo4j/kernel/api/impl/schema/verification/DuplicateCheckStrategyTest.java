@@ -53,7 +53,7 @@ class DuplicateCheckStrategyTest
 
     @ParameterizedTest
     @MethodSource( "duplicateCheckStrategies" )
-    void checkStringSinglePropertyDuplicates( DuplicateCheckStrategy checkStrategy ) throws Exception
+    void checkStringSinglePropertyDuplicates( DuplicateCheckStrategy checkStrategy )
     {
         String duplicatedString = "duplicate";
         Value propertyValue = Values.stringValue( duplicatedString );
@@ -68,7 +68,7 @@ class DuplicateCheckStrategyTest
 
     @ParameterizedTest
     @MethodSource( "duplicateCheckStrategies" )
-    void checkNumericSinglePropertyDuplicates( DuplicateCheckStrategy checkStrategy ) throws Exception
+    void checkNumericSinglePropertyDuplicates( DuplicateCheckStrategy checkStrategy )
     {
         double duplicatedNumber = 0.33d;
         Value property = Values.doubleValue( duplicatedNumber );
@@ -113,8 +113,7 @@ class DuplicateCheckStrategyTest
         }
 
         int duplicateTarget = BUCKET_STRATEGY_ENTRIES_THRESHOLD - 8;
-        double duplicateValue = duplicateTarget;
-        Value duplicate = Values.doubleValue( duplicateValue );
+        Value duplicate = Values.doubleValue( duplicateTarget );
         var e = assertThrows( IndexEntryConflictException.class, () ->
             checkStrategy.checkForDuplicate( duplicate, 3 ) );
         assertEquals( format( "Both node %d and node 3 share the property value %s", duplicateTarget, ValueTuple.of( duplicate ) ), e.getMessage() );
@@ -151,7 +150,7 @@ class DuplicateCheckStrategyTest
 
     @ParameterizedTest
     @MethodSource( "duplicateCheckStrategies" )
-    void checkStringMultiplePropertiesDuplicates( DuplicateCheckStrategy checkStrategy ) throws Exception
+    void checkStringMultiplePropertiesDuplicates( DuplicateCheckStrategy checkStrategy )
     {
         String duplicateA = "duplicateA";
         String duplicateB = "duplicateB";
@@ -168,7 +167,7 @@ class DuplicateCheckStrategyTest
 
     @ParameterizedTest
     @MethodSource( "duplicateCheckStrategies" )
-    void checkNumericMultiplePropertiesDuplicates( DuplicateCheckStrategy checkStrategy ) throws Exception
+    void checkNumericMultiplePropertiesDuplicates( DuplicateCheckStrategy checkStrategy )
     {
         Number duplicatedNumberA = 0.33d;
         Number duplicatedNumberB = 2;
@@ -224,13 +223,12 @@ class DuplicateCheckStrategyTest
         }
 
         int duplicateTarget = BUCKET_STRATEGY_ENTRIES_THRESHOLD - 8;
-        double duplicateValueA = duplicateTarget;
         double duplicateValueB = -duplicateTarget;
-        Value propertyA = Values.doubleValue( duplicateValueA );
+        Value propertyA = Values.doubleValue( duplicateTarget );
         Value propertyB = Values.doubleValue( duplicateValueB );
         var e = assertThrows( IndexEntryConflictException.class, () -> checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 3 ) );
         assertEquals( format( "Both node %d and node 3 share the property value %s",
-            duplicateTarget, ValueTuple.of( duplicateValueA, duplicateValueB ) ), e.getMessage() );
+            duplicateTarget, ValueTuple.of( (double) duplicateTarget, duplicateValueB ) ), e.getMessage() );
     }
 
     @ParameterizedTest

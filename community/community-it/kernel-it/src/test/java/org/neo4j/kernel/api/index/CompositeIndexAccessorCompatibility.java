@@ -77,6 +77,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Pair.of;
+import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.kernel.api.IndexQuery.exists;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringContains;
@@ -84,7 +85,6 @@ import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -1313,7 +1313,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
 
     private static IndexQuery[] exactQuery( Value[] values )
     {
-        return Stream.of( values ).map( v -> IndexQuery.exact( 0, v ) ).toArray( IndexQuery[]::new );
+        return Stream.of( values ).map( v -> exact( 0, v ) ).toArray( IndexQuery[]::new );
     }
 
     // This behaviour is expected by General indexes

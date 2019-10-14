@@ -254,13 +254,13 @@ class DatabaseIndexIntegrationTest
         }
 
         @Override
-        protected AbstractIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
+        protected AbstractIndexReader createSimpleReader( List<AbstractIndexPartition> partitions )
         {
             return null;
         }
 
         @Override
-        protected AbstractIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
+        protected AbstractIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions )
         {
             return null;
         }

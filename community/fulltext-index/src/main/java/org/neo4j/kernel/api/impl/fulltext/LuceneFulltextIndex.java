@@ -86,11 +86,6 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
                '}';
     }
 
-    Analyzer getAnalyzer()
-    {
-        return analyzer;
-    }
-
     @Override
     public IndexDescriptor getDescriptor()
     {

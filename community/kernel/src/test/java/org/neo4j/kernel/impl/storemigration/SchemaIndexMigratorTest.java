@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
+import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -58,7 +59,7 @@ class SchemaIndexMigratorTest
         StoreVersion version = mock( StoreVersion.class );
         when( version.hasCompatibleCapabilities( any(), eq( CapabilityType.INDEX ) ) ).thenReturn( false );
         when( storageEngineFactory.versionInformation( anyString() ) ).thenReturn( version );
-        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, indexProvider, storageEngineFactory );
+        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, indexProvider.directoryStructure(), storageEngineFactory );
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
         File indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
         when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );

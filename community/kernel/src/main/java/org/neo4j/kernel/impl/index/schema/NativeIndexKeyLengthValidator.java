@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.impl.api.AbstractIndexKeyLengthValidator;
+import org.neo4j.kernel.impl.api.index.AbstractIndexKeyLengthValidator;
 import org.neo4j.values.storable.Value;
 
 public class NativeIndexKeyLengthValidator<KEY extends NativeIndexKey,VALUE extends NativeIndexValue> extends AbstractIndexKeyLengthValidator

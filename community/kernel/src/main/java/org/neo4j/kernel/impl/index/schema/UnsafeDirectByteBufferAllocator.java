@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.internal.unsafe.UnsafeUtil;
+import org.neo4j.memory.ByteBufferFactory;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.util.Preconditions;
 

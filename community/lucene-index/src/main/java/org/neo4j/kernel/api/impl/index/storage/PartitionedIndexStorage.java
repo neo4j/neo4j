@@ -31,12 +31,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.helpers.collection.NumberAwareStringComparator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.impl.index.storage.layout.FolderLayout;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
-import org.neo4j.kernel.impl.util.NumberAwareStringComparator;
 
 import static java.util.stream.Collectors.toList;
 

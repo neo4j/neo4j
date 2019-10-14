@@ -34,9 +34,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -44,20 +43,20 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.memory.ByteBufferFactory.heapBufferFactory;
 
 @TestDirectoryExtension
 class LuceneIndexProviderTest
 {
+    private static final IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), DESCRIPTOR ).withName( "index_1" ).materialise( 1 );
+
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
     private TestDirectory testDir;
-
     private File graphDbDir;
-    private static final IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), PROVIDER_DESCRIPTOR ).withName( "index_1" ).materialise( 1 );
 
     @BeforeEach
     void setup()
@@ -132,6 +131,6 @@ class LuceneIndexProviderTest
                                                         FileSystemAbstraction fs, File graphDbDir )
     {
         return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( graphDbDir ),
-                IndexProvider.Monitor.EMPTY, config, OperationalMode.SINGLE );
+                IndexProvider.Monitor.EMPTY, config, true );
     }
 }

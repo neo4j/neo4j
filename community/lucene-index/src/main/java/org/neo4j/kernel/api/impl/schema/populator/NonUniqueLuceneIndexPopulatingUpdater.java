@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 /**

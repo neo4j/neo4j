@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
+import org.neo4j.memory.ByteBufferFactory;
 import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
 import org.neo4j.memory.ThreadSafePeakMemoryAllocationTracker;
 import org.neo4j.scheduler.JobHandle;

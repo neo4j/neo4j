@@ -40,7 +40,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
-import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Arrays.asList;
@@ -56,7 +55,7 @@ import static org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator.mergeIterat
  * {@link ReadableTransactionState#getDataRevision()}  transaction data revision} has changed.
  * <p>
  * The actual transaction state indexing is done by the {@link FulltextIndexTransactionStateVisitor}, which for the most part only looks at the ids, and then
- * loads the modified entities up through the existing transaction state, via the {@link AllStoreHolder} API.
+ * loads the modified entities up through the existing transaction state, via the kernel API.
  */
 class FulltextIndexTransactionState implements Closeable
 {

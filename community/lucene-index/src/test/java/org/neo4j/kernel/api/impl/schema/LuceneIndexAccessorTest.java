@@ -27,13 +27,13 @@ import java.lang.reflect.InvocationHandler;
 
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.internal.schema.IndexPrototype;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 class LuceneIndexAccessorTest
 {
@@ -44,7 +44,7 @@ class LuceneIndexAccessorTest
     @BeforeEach
     void setUp()
     {
-        accessor = new LuceneIndexAccessor( schemaIndex, TestIndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
+        accessor = new LuceneIndexAccessor( schemaIndex, IndexPrototype.forSchema( forLabel( 1, 2 ) ).withName( "a" ).materialise( 1 ) );
     }
 
     @Test

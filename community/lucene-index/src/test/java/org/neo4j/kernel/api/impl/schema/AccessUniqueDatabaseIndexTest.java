@@ -26,6 +26,9 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -33,9 +36,7 @@ import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
@@ -47,7 +48,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
@@ -59,7 +60,7 @@ class AccessUniqueDatabaseIndexTest
     @Inject
     private TestDirectory testDirectory;
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private final IndexDescriptor index = TestIndexDescriptorFactory.uniqueForLabel( 1000, 100 );
+    private final IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1000, 100 ) ).withName( "a" ).materialise( 0 );
 
     @Test
     void shouldAddUniqueEntries() throws Exception
@@ -153,7 +154,8 @@ class AccessUniqueDatabaseIndexTest
 
     private PartitionedIndexStorage getIndexStorage()
     {
-        IndexDirectoryStructure parent = directoriesByProvider( testDirectory.databaseDir() ).forProvider( DESCRIPTOR );
+        IndexProviderDescriptor descriptor = new IndexProviderDescriptor( NATIVE30.providerKey(), NATIVE30.providerVersion() );
+        IndexDirectoryStructure parent = directoriesByProvider( testDirectory.databaseDir() ).forProvider( descriptor );
         IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, fileSystem,
                 directoriesBySubProvider( parent ).forProvider( LuceneIndexProvider.DESCRIPTOR ) );
         return storageFactory.indexStorageOf( 1 );
@@ -161,17 +163,17 @@ class AccessUniqueDatabaseIndexTest
 
     private IndexEntryUpdate<?> add( long nodeId, Object propertyValue )
     {
-        return IndexQueryHelper.add( nodeId, index.schema(), propertyValue );
+        return IndexEntryUpdate.add( nodeId, index.schema(), Values.of( propertyValue ) );
     }
 
     private IndexEntryUpdate<?> change( long nodeId, Object oldValue, Object newValue )
     {
-        return IndexQueryHelper.change( nodeId, index.schema(), oldValue, newValue );
+        return IndexEntryUpdate.change( nodeId, index.schema(), Values.of( oldValue ), Values.of( newValue ) );
     }
 
     private IndexEntryUpdate<?> remove( long nodeId, Object oldValue )
     {
-        return IndexQueryHelper.remove( nodeId, index.schema(), oldValue );
+        return IndexEntryUpdate.remove( nodeId, index.schema(), Values.of( oldValue ) );
     }
 
     private List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException

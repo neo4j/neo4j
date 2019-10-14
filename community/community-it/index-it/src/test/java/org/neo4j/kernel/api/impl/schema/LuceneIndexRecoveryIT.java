@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -343,8 +344,9 @@ class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
+            boolean isSingleInstance = context.databaseInfo().operationalMode == OperationalMode.SINGLE;
             return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ), IndexProvider.Monitor.EMPTY,
-                    dependencies.getConfig(), context.databaseInfo().operationalMode );
+                    dependencies.getConfig(), isSingleInstance );
         }
     }
 
@@ -359,8 +361,9 @@ class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
+            boolean isSingleInstance = context.databaseInfo().operationalMode == OperationalMode.SINGLE;
             return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ),
-                    IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
+                    IndexProvider.Monitor.EMPTY, dependencies.getConfig(), isSingleInstance )
             {
                 @Override
                 public InternalIndexState getInitialState( IndexDescriptor descriptor )
