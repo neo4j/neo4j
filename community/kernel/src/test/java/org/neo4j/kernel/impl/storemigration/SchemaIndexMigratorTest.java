@@ -59,11 +59,10 @@ class SchemaIndexMigratorTest
         StoreVersion version = mock( StoreVersion.class );
         when( version.hasCompatibleCapabilities( any(), eq( CapabilityType.INDEX ) ) ).thenReturn( false );
         when( storageEngineFactory.versionInformation( anyString() ) ).thenReturn( version );
-        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, indexProvider.directoryStructure(), storageEngineFactory );
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
         File indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
         when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
-        when( indexProvider.directoryStructure() ).thenReturn( directoryStructure );
+        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, directoryStructure, storageEngineFactory );
         when( indexProvider.getProviderDescriptor() )
                 .thenReturn( new IndexProviderDescriptor( "key", "version" ) );
 

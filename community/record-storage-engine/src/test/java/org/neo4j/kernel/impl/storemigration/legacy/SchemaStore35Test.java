@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -131,8 +132,8 @@ class SchemaStore35Test
         int[] propertyIds = {4, 5, 6, 7};
         int[] entityTokens = {2, 3, 4};
         long id = store.nextId();
-        IndexDescriptor indexRule = IndexPrototype.forSchema(
-                fulltext( EntityType.RELATIONSHIP, entityTokens, propertyIds ), PROVIDER ).withName( "index_" + id ).materialise( id );
+        IndexDescriptor indexRule = IndexPrototype.forSchema( fulltext( EntityType.RELATIONSHIP, entityTokens, propertyIds ), PROVIDER )
+                .withName( "index_" + id ).withIndexType( IndexType.FULLTEXT ).materialise( id );
 
         // WHEN
         IndexDescriptor readIndexRule =
@@ -171,7 +172,8 @@ class SchemaStore35Test
         // GIVEN
         FulltextSchemaDescriptor schema = fulltext( EntityType.RELATIONSHIP, range( 1, 200 ).toArray(), range( 1, 200 ).toArray() );
         long id = store.nextId();
-        IndexDescriptor indexRule = IndexPrototype.forSchema( schema, PROVIDER ).withName( "index_" + id ).materialise( id );
+        IndexDescriptor indexRule = IndexPrototype.forSchema( schema, PROVIDER )
+                .withName( "index_" + id ).withIndexType( IndexType.FULLTEXT ).materialise( id );
 
         // WHEN
         IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize( indexRule.getId(),

@@ -159,13 +159,7 @@ public class FulltextProcedures
             @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
             throws KernelException
     {
-        IndexConfig indexConfig = createIndexConfig( config );
-        SchemaDescriptor schema = accessor.schemaFor( EntityType.NODE, stringArray( labels ), stringArray( properties ) );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR );
-        prototype = prototype.withIndexType( IndexType.FULLTEXT );
-        prototype = prototype.withName( name );
-        prototype = prototype.withIndexConfig( indexConfig );
-        tx.schemaWrite().indexCreate( prototype );
+        createIndex( name, labels, properties, config, EntityType.NODE );
     }
 
     private String[] stringArray( List<String> strings )
@@ -188,11 +182,17 @@ public class FulltextProcedures
             @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
             throws KernelException
     {
-        IndexConfig indexConfig = createIndexConfig( config );
-        SchemaDescriptor schema = accessor.schemaFor( EntityType.RELATIONSHIP, stringArray( relTypes ), stringArray( properties ) );
+        createIndex( name, relTypes, properties, config, EntityType.RELATIONSHIP );
+    }
+
+    private void createIndex( String name, List<String> labelsOrTypes, List<String> properties,
+            Map<String,String> config, EntityType entityType ) throws KernelException
+    {
+        SchemaDescriptor schema = accessor.schemaFor( entityType, stringArray( labelsOrTypes ), stringArray( properties ) );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR );
         prototype = prototype.withIndexType( IndexType.FULLTEXT );
         prototype = prototype.withName( name );
+        IndexConfig indexConfig = createIndexConfig( config );
         prototype = prototype.withIndexConfig( indexConfig );
         tx.schemaWrite().indexCreate( prototype );
     }

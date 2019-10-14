@@ -46,6 +46,8 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -405,9 +407,10 @@ class IndexIT extends KernelIntegrationTest
     void shouldListMultiTokenIndexesInTheCoreAPI() throws Exception
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        SchemaDescriptor descriptor = SchemaDescriptor.fulltext(
+        SchemaDescriptor schema = SchemaDescriptor.fulltext(
                 EntityType.NODE, new int[]{labelId, labelId2}, new int[]{propertyKeyId} );
-        transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), null );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, FulltextIndexProviderFactory.DESCRIPTOR ).withIndexType( IndexType.FULLTEXT );
+        transaction.schemaWrite().indexCreate( prototype );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -485,9 +488,12 @@ class IndexIT extends KernelIntegrationTest
     void shouldListCompositeMultiTokenRelationshipIndexesInTheCoreAPI() throws Exception
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        SchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{relType, relType2},
+        SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{relType, relType2},
                 new int[]{propertyKeyId, propertyKeyId2} );
-        transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "index name" );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, FulltextIndexProviderFactory.DESCRIPTOR )
+                .withIndexType( IndexType.FULLTEXT )
+                .withName( "index name" );
+        transaction.schemaWrite().indexCreate( prototype );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )

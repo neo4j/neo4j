@@ -90,7 +90,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
 
         // Then
         assertEquals( longValue( index.getId() ), result[0] );
-        assertEquals( stringValue( "Index on :Fail (foo)" ), result[1] );
+        assertEquals( stringValue( "fail foo index" ), result[1] );
         assertEquals( stringValue( "FAILED" ), result[2] );
         assertEquals( doubleValue( 0.0 ), result[3] );
         assertEquals( stringValue( "NONUNIQUE" ), result[4] );

@@ -301,7 +301,7 @@ class RecordStorageMigratorIT
         SplittableRandom rng = new SplittableRandom();
         LongHashSet indexes = new LongHashSet();
         LongHashSet constraints = new LongHashSet();
-        for ( int i = 0; i < 1000; i++ )
+        for ( int i = 0; i < 10; i++ )
         {
             long id = schemaStore35.nextId();
             MutableLongSet target = rng.nextInt( 3 ) < 2 ? indexes : constraints;

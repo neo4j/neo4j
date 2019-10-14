@@ -44,7 +44,8 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     private final IndexDirectoryStructure indexDirectoryStructure;
     private final StorageEngineFactory storageEngineFactory;
 
-    public SchemaIndexMigrator( String name, FileSystemAbstraction fileSystem, IndexDirectoryStructure indexDirectoryStructure, StorageEngineFactory storageEngineFactory )
+    public SchemaIndexMigrator( String name, FileSystemAbstraction fileSystem, IndexDirectoryStructure indexDirectoryStructure,
+            StorageEngineFactory storageEngineFactory )
     {
         super( name );
         this.fileSystem = fileSystem;

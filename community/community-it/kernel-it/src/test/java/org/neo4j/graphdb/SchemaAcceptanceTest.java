@@ -144,7 +144,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
                 ConstraintViolationException.class );
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
-        String expectedMessage = "An equivalent index already exists, 'Index( 1, 'name', GENERAL, :MY_LABEL(my_property_key), native-btree-1.0 )'.";
+        String expectedMessage = "An equivalent index already exists, 'Index( 1, 'name', GENERAL BTREE, :MY_LABEL(my_property_key), native-btree-1.0 )'.";
         assertExpectedException( expectedCause, expectedMessage, exception );
     }
 
@@ -320,7 +320,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             catch ( ConstraintViolationException e )
             {
                 assertThat( e.getMessage(), containsString( "Unable to drop index: Index does not exist: " +
-                        "Index( 1, 'Index on :MY_LABEL (my_property_key)', GENERAL, :MY_LABEL(my_property_key), native-btree-1.0 )" ) );
+                        "Index( 1, 'Index on :MY_LABEL (my_property_key)', GENERAL BTREE, :MY_LABEL(my_property_key), native-btree-1.0 )" ) );
             }
             tx.commit();
         }

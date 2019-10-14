@@ -39,6 +39,8 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Values;
@@ -293,9 +295,9 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, array( connection ),
-                                                                 array( name ) );
-            index = tx.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), indexName );
+            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, array( connection ), array( name ) );
+            IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withName( indexName ).withIndexType( IndexType.FULLTEXT );
+            index = tx.schemaWrite().indexCreate( prototype );
             tx.commit();
         }
 

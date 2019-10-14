@@ -28,6 +28,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -253,6 +254,10 @@ public class SchemaRuleSerialization35
             SchemaDescriptor schema = readSchema( source );
             name = readRuleName( source );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, providerDescriptor );
+            if ( schema.isFulltextSchemaDescriptor() )
+            {
+                prototype = prototype.withIndexType( IndexType.FULLTEXT );
+            }
             if ( name.isPresent() )
             {
                 prototype = prototype.withName( name.get() );

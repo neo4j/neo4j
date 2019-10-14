@@ -94,8 +94,8 @@ class SchemaIndexDescriptorFactoryTest
         String providerName = forLabel.getIndexProvider().name();
         long uniqueForLabelId = uniqueForLabel.getId();
         assertThat( forLabel.userDescription( SIMPLE_NAME_LOOKUP ),
-                equalTo( "Index( " + forLabelId + ", 'index_" + forLabelId + "', GENERAL, :Label1(property2), " + providerName + " )" ) );
+                equalTo( "Index( " + forLabelId + ", 'index_" + forLabelId + "', GENERAL BTREE, :Label1(property2), " + providerName + " )" ) );
         assertThat( uniqueForLabel.userDescription( SIMPLE_NAME_LOOKUP ),
-                equalTo( "Index( " + uniqueForLabelId + ", 'index_" + uniqueForLabelId + "', UNIQUE, :Label2(property4), " + providerName + " )" ) );
+                equalTo( "Index( " + uniqueForLabelId + ", 'index_" + uniqueForLabelId + "', UNIQUE BTREE, :Label2(property4), " + providerName + " )" ) );
     }
 }

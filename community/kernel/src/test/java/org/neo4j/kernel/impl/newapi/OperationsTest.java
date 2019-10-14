@@ -49,6 +49,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -174,6 +175,8 @@ class OperationsTest
         creationContext = mock( CommandCreationContext.class );
         IndexingProvidersService indexingProvidersService = mock( IndexingProvidersService.class );
         when( indexingProvidersService.indexProviderByName( "native-btree-1.0" ) ).thenReturn( new IndexProviderDescriptor( "native-btree", "1.0" ) );
+        when( indexingProvidersService.indexProviderByName( "fulltext-1.0" ) ).thenReturn( new IndexProviderDescriptor( "fulltext", "1.0" ) );
+        when( indexingProvidersService.getFulltextProvider() ).thenReturn( new IndexProviderDescriptor( "fulltext", "1.0" ) );
         when( indexingProvidersService.indexProviderByName( "provider-1.0" ) ).thenReturn( new IndexProviderDescriptor( "provider", "1.0" ) );
         when( indexingProvidersService.completeConfiguration( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
         operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext,
@@ -622,7 +625,7 @@ class OperationsTest
         SchemaDescriptor schema = SchemaDescriptor.forLabel( 0, 0 );
         SchemaDescriptor ftsSchema = SchemaDescriptor.fulltext( NODE, new int[] {0}, new int[] {0} );
         IndexDescriptor indexA = IndexPrototype.forSchema( schema ).withName( "a" ).materialise( 0 );
-        IndexDescriptor indexB = IndexPrototype.forSchema( ftsSchema ).withName( "b" ).materialise( 1 );
+        IndexDescriptor indexB = IndexPrototype.forSchema( ftsSchema ).withName( "b" ).withIndexType( IndexType.FULLTEXT ).materialise( 1 );
         IndexDescriptor indexC = IndexPrototype.forSchema( schema ).withName( "c" ).materialise( 2 );
 
         // The full-text index would not actually ever match the given schema,
@@ -1037,7 +1040,9 @@ class OperationsTest
         storageReaderWithoutConstraints();
         when( storageReader.indexGetForSchema( any() ) ).thenReturn( Collections.emptyIterator() );
         operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ), null );
-        operations.indexCreate( SchemaDescriptor.fulltext( NODE, new int[] {2, 3}, new int[] {1, 2} ), null );
+        operations.indexCreate( IndexPrototype.forSchema(
+                SchemaDescriptor.fulltext( NODE, new int[] {2, 3}, new int[] {1, 2} ) )
+                .withIndexType( IndexType.FULLTEXT ) );
         operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", null );
         IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
                 .stream()

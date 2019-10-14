@@ -29,6 +29,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -165,13 +166,17 @@ public class RandomSchema implements Supplier<SchemaRule>
             throw new RuntimeException( "Bad index choice: " + choice );
         }
 
-        boolean isUnique = rng.nextBoolean();
+        boolean isUnique = rng.nextBoolean() && !schema.isFulltextSchemaDescriptor();
         IndexPrototype prototype = isUnique ? IndexPrototype.uniqueForSchema( schema ) : IndexPrototype.forSchema( schema );
 
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( nextName(), nextName() );
         prototype = prototype.withIndexProvider( providerDescriptor );
 
         prototype = prototype.withName( nextName() );
+        if ( schema.isFulltextSchemaDescriptor() )
+        {
+            prototype = prototype.withIndexType( IndexType.FULLTEXT );
+        }
 
         long ruleId = nextRuleIdForIndex();
         IndexDescriptor index = prototype.materialise( ruleId );
