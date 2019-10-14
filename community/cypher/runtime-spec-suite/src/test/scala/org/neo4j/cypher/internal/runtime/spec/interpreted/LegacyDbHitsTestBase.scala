@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ProfileDbHitsTestBase
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 object LegacyDbHitsTestBase {
-  final val costOfExpand: Int = 1
+  final val costOfExpand: Long = 2 // one to get the rel cursor and one for the one relationship in it
 }
 
 abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],

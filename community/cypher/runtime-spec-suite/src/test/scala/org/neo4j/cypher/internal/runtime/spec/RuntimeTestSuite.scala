@@ -395,11 +395,27 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     val rels = new ArrayBuffer[Relationship]
       val rType = RelationshipType.withName("R")
       for (i <- 0 until nNodes) {
-        val a = tx.getNodeById(nodes(i).getId)
-        val b = tx.getNodeById(nodes((i + 1) % nNodes).getId)
+        val a = nodes(i)
+        val b = nodes((i + 1) % nNodes)
         rels += a.createRelationshipTo(b, rType)
       }
     (nodes, rels)
+  }
+
+  def starGraph(ringSize: Int, labelCenter: String, labelRing: String): (Seq[Node], Seq[Relationship]) = {
+    val ring =
+      for (_ <- 0 until ringSize) yield {
+        tx.createNode(Label.label(labelRing))
+      }
+    val center = tx.createNode(Label.label(labelCenter))
+
+    val rels = new ArrayBuffer[Relationship]
+      val rType = RelationshipType.withName("R")
+      for (i <- 0 until ringSize) {
+        val a = ring(i)
+        rels += a.createRelationshipTo(center, rType)
+      }
+    (ring :+ center, rels)
   }
 
   case class Connectivity(atLeast: Int, atMost: Int, relType: String)

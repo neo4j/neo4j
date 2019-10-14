@@ -29,13 +29,13 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT],
                                                                  val sizeHint: Int,
-                                                                 costOfGetPropertyChain: Int, // the reported dbHits for getting the property chain
-                                                                 costOfPropertyJumpedOverInChain: Int, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
-                                                                 costOfProperty: Int, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
-                                                                 costOfLabelLookup: Int, // the reported dbHits for finding the id of a label
-                                                                 costOfExpand: Int, // the reported dbHits for expanding a one-relationship node
-                                                                 costOfRelationshipTypeLookup: Int, // the reported dbHits for finding the id of a relationship type
-                                                                 cartesianProductChunkSize: Int // The size of a LHS chunk for cartesian product
+                                                                 costOfGetPropertyChain: Long, // the reported dbHits for getting the property chain
+                                                                 costOfPropertyJumpedOverInChain: Long, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
+                                                                 costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
+                                                                 costOfLabelLookup: Long, // the reported dbHits for finding the id of a label
+                                                                 costOfExpand: Long, // the reported dbHits for expanding a one-relationship node
+                                                                 costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
+                                                                 cartesianProductChunkSize: Long // The size of a LHS chunk for cartesian product
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should profile dbHits of all nodes scan") {
@@ -259,12 +259,13 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits with limit + expand") {
     // given
-   bipartiteGraph(sizeHint, "A", "B", "R")
+    val SIZE = sizeHint / 4
+   bipartiteGraph(SIZE, "A", "B", "R")
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .expand("(x)-->(y)")
-      .limit(sizeHint / 2)
+      .limit(SIZE / 2)
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -273,19 +274,20 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe >= (sizeHint / 2L * costOfExpand) // expand
+    queryProfile.operatorProfile(1).dbHits() shouldBe >= (SIZE / 2L * costOfExpand) // expand
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint / 2L) // all node scan
+    queryProfile.operatorProfile(3).dbHits() should be >= (SIZE / 2L) // node by label scan
   }
 
   test("should profile dbHits with limit + optional expand all") {
     // given
-    bipartiteGraph(sizeHint, "A", "B", "R")
+    val SIZE = sizeHint / 4
+    bipartiteGraph(SIZE, "A", "B", "R")
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .optionalExpandAll("(x)-->(y)", Some("true"))
-      .limit(sizeHint / 2)
+      .limit(SIZE / 2)
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -294,9 +296,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe >= (sizeHint / 2L * LegacyDbHitsTestBase.costOfExpand) // optional expand all (uses legacy pipe)
+    queryProfile.operatorProfile(1).dbHits() shouldBe >= (SIZE / 2L * LegacyDbHitsTestBase.costOfExpand) // optional expand all (uses legacy pipe)
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
-    queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint / 2L) // all node scan
+    queryProfile.operatorProfile(3).dbHits() should be >= (SIZE / 2L) // node by label scan
   }
 
   test("should profile dbHits with var-expand") {
@@ -316,8 +318,49 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val matchesPerVarExpand = 3
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (SIZE * (1 + costOfExpand) * matchesPerVarExpand) // expand
-    queryProfile.operatorProfile(2).dbHits() should be >= SIZE.toLong // all node scan
+    queryProfile.operatorProfile(1).dbHits() should (be (SIZE * costOfExpand * matchesPerVarExpand) or be (SIZE * (costOfExpand + 1) * matchesPerVarExpand)) // expand
+    queryProfile.operatorProfile(2).dbHits() should (be (SIZE) or be (SIZE + 1)) // all node scan
+  }
+
+  test("should profile dbhits with expand all") {
+    // given
+    starGraph(sizeHint, "Center", "Ring")
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expandAll("(x)-->(y)")
+      .nodeByLabelScan("x", "Ring")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * costOfExpand) // expand
+    queryProfile.operatorProfile(2).dbHits() should be (sizeHint + 1 + costOfLabelLookup) // label scan
+  }
+
+  test("should profile dbhits with expand into") {
+    // given
+    circleGraph(sizeHint)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .expandInto("(x)-[r]->(y)")
+      .expandAll("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    // expand into (uses legacy pipe). If the no node is in the input twice the rel cache does not help and then you get
+    // 2 (check start end end for `isDense`) + costOfExpand per row.
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (2L + LegacyDbHitsTestBase.costOfExpand))
+    // No assertion on the expand because db hits can vary, given that the nodes have 2 relationships.
   }
 
   test("should profile dbHits with node hash join") {

@@ -136,6 +136,31 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
   }
 
+  test("should profile time with expand into") {
+    // given
+    val size = sizeHint / 10
+    circleGraph(size)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expandInto("(x)-[r]->(y)")
+      .expand("(x)-->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).time() should be > 0L // produce results
+    queryProfile.operatorProfile(1).time() should be > 0L // expand into
+    queryProfile.operatorProfile(2).time() should be > 0L // expand
+    queryProfile.operatorProfile(3).time() should be > 0L // all node scan
+    // Should not attribute anything to the invalid id
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+  }
+
   test("should profile time with optional") {
     // given
     val size = sizeHint / 10
