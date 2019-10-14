@@ -481,7 +481,7 @@ public class StoreUpgraderTest
         NullLogService instance = NullLogService.getInstance();
         RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler );
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( "test index migrator", fileSystem, IndexProvider.EMPTY, storageEngineFactory );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( "Indexes", fileSystem, IndexProvider.EMPTY, storageEngineFactory );
 
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem )
                 .withLogEntryReader( new VersionAwareLogEntryReader(  ) ).build();

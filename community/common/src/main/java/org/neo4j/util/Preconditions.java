@@ -155,7 +155,7 @@ public final class Preconditions
     {
         if ( !expression )
         {
-            throw new IllegalArgumentException( args.length > 0 ? format( message, args ) : message );
+            throw new IllegalStateException( args.length > 0 ? format( message, args ) : message );
         }
     }
 
