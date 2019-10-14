@@ -51,7 +51,7 @@ public enum NodeFacadeMethods implements Consumer<Node>
     GET_RELATIONSHIPS_BY_TYPE_AND_DIRECTION( new FacadeMethod<>( "Iterable<Relationship> getRelationships( RelationshipType type, Direction dir )",
             n -> consume( n.getRelationships( FOO, BOTH ) ) ) ),
     HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION(
-            new FacadeMethod<>( "boolean hasRelationship( RelationshipType type, Direction dir )", n -> n.hasRelationship( FOO, BOTH ) ) ),
+            new FacadeMethod<>( "boolean hasRelationship( RelationshipType type, Direction dir )", n -> n.hasRelationship( BOTH, FOO ) ) ),
     GET_SINGLE_RELATIONSHIP(
             new FacadeMethod<>( "Relationship getSingleRelationship( RelationshipType type, Direction dir )", n -> n.getSingleRelationship( FOO, BOTH ) ) ),
     CREATE_RELATIONSHIP_TO(

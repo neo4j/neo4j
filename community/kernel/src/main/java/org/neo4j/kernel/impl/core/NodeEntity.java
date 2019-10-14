@@ -187,12 +187,6 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         return innerHasRelationships( transaction, direction, typeIds );
     }
 
-    @Override
-    public boolean hasRelationship( RelationshipType type, Direction dir )
-    {
-        return hasRelationship( dir, type );
-    }
-
     private boolean innerHasRelationships( final KernelTransaction transaction, final Direction direction, int[] typeIds )
     {
         try ( ResourceIterator<Relationship> iterator =

@@ -423,12 +423,6 @@ public class SchemaProcedure
         }
 
         @Override
-        public boolean hasRelationship( RelationshipType type, Direction direction )
-        {
-            return false;
-        }
-
-        @Override
         public boolean hasRelationship( Direction direction )
         {
             return false;
