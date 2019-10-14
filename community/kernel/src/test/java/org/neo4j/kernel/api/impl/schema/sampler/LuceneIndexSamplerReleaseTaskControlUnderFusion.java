@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingJob;
 import org.neo4j.kernel.impl.api.index.sampling.OnlineIndexSamplingJobFactory;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.SlotSelector;
 import org.neo4j.storageengine.api.IndexEntryUpdate;

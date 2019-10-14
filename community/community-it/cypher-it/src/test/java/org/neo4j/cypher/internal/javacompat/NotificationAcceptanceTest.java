@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CSV;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.LENGTH_ON_NON_PATH;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.UNBOUNDED_SHORTEST_PATH;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.index;

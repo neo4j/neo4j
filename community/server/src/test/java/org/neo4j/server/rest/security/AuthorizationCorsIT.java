@@ -24,8 +24,6 @@ import org.junit.Test;
 import org.neo4j.server.web.HttpMethod;
 import org.neo4j.test.server.HTTP;
 
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.hamcrest.Matchers.containsString;

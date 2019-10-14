@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;

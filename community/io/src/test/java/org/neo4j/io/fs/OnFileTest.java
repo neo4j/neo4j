@@ -20,7 +20,6 @@
 package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
 import java.io.IOException;
 import java.nio.file.FileVisitor;

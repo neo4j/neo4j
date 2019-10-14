@@ -32,8 +32,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
 
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
-
 public class ServerHelper
 {
 

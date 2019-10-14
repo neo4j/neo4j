@@ -37,8 +37,6 @@ import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.UTF8;
 import org.neo4j.time.Clocks;
 
-import static org.mockito.Mockito.mock;
-
 public class BasicInMemoryUserManager extends BasicSystemGraphRealm
 {
 

@@ -27,7 +27,6 @@ import org.neo4j.token.api.TokenConstants;
 
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 

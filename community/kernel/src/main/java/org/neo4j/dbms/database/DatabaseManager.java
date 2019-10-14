@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.SortedMap;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseId;

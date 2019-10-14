@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegatingStoreChannel;

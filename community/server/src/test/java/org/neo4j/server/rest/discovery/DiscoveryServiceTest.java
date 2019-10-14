@@ -37,8 +37,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.NeoServer;

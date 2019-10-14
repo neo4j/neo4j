@@ -41,8 +41,6 @@ import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
-import org.neo4j.bolt.v4.messaging.PullMessage;
-import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.GraphDatabaseService;

@@ -20,11 +20,9 @@
 package org.neo4j.procedure.builtin;
 
 import java.util.Iterator;
-import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;

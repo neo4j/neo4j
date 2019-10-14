@@ -22,18 +22,14 @@ package org.neo4j.kernel.api.schema;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertArray;
 
 class SchemaDescriptorTest

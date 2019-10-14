@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
