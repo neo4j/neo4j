@@ -27,15 +27,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Neo4jLayoutExtension
 class GlobalStoreLockerTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject

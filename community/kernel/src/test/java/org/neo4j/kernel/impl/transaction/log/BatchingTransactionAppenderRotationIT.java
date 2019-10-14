@@ -59,7 +59,6 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -69,8 +68,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 @ExtendWith( LifeExtension.class )
 class BatchingTransactionAppenderRotationIT
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout layout;
     @Inject

@@ -31,6 +31,7 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -43,7 +44,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +59,7 @@ class RecordPropertyCursorTest
     @Inject
     private RandomRule random;
     @Inject
-    private TestDirectory testDirectory;
+    private FileSystemAbstraction fs;
     @Inject
     private PageCache pageCache;
     @Inject
@@ -73,9 +73,9 @@ class RecordPropertyCursorTest
     @BeforeEach
     void setup()
     {
-        idGeneratorFactory = new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate() );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory,
-                pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() ).openAllNeoStores( true );
+                pageCache, fs, NullLogProvider.getInstance() ).openAllNeoStores( true );
         creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         owner = neoStores.getNodeStore().newRecord();
     }

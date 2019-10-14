@@ -41,7 +41,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.api.NamedToken;
 
 import static java.lang.Integer.parseInt;
@@ -57,8 +56,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 @Neo4jLayoutExtension
 class BatchingTokenRepositoryTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject

@@ -47,7 +47,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -59,9 +58,6 @@ import static org.neo4j.io.ByteUnit.bytesToString;
 @Neo4jLayoutExtension
 class KernelDiagnosticsIT
 {
-    @Inject
-    private TestDirectory testDirectory;
-
     @Inject
     private FileSystemAbstraction fs;
 

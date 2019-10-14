@@ -40,7 +40,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -63,8 +62,6 @@ import static org.neo4j.logging.internal.NullLogService.getInstance;
 @ExtendWith( RandomExtension.class )
 class ImportLogicTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject

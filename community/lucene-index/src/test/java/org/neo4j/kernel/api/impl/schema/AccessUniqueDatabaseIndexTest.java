@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
@@ -58,8 +57,6 @@ class AccessUniqueDatabaseIndexTest
 {
     @Inject
     private EphemeralFileSystemAbstraction fileSystem;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();

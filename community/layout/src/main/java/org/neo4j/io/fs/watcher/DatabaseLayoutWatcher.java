@@ -80,7 +80,7 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
         watch( databaseLayout.databaseDirectory() );
         watch( databaseLayout.getTransactionLogsDirectory() );
         watch( layout.databasesDirectory() );
-        watch( layout.txLogsDirectory() );
+        watch( layout.transactionLogsRootDirectory() );
         watch( layout.homeDirectory() );
         startWatching();
     }

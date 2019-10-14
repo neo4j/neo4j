@@ -49,7 +49,6 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,8 +71,6 @@ class HumanUnderstandableExecutionMonitorIT
 
     @Inject
     private RandomRule random;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject

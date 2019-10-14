@@ -55,7 +55,6 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -73,8 +72,6 @@ class ReversedSingleFileTransactionCursorTest
 {
     @Inject
     private FileSystemAbstraction fs;
-    @Inject
-    private TestDirectory directory;
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject

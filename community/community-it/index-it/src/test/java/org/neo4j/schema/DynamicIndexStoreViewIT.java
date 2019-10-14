@@ -45,7 +45,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -59,15 +58,12 @@ public class DynamicIndexStoreViewIT
     private SuppressOutput suppressOutput;
 
     @Inject
-    private TestDirectory testDirectory;
-
-    @Inject
     private DatabaseLayout databaseLayout;
 
     @Test
     void populateDbWithConcurrentUpdates() throws Exception
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {

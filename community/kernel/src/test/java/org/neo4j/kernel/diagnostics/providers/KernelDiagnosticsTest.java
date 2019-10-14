@@ -49,10 +49,9 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 class KernelDiagnosticsTest
 {
     @Inject
-    DefaultFileSystemAbstraction fs;
-
+    private DefaultFileSystemAbstraction fs;
     @Inject
-    TestDirectory testDirectory;
+    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 

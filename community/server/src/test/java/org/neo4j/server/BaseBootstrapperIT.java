@@ -209,8 +209,8 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 
         assertEquals( relativePath( serverDir, serverLayout.homeDirectory() ), relativePath( embeddedDir, embeddedLayout.homeDirectory() ) );
         assertEquals( relativePath( serverDir, serverLayout.databasesDirectory() ), relativePath( embeddedDir, embeddedLayout.databasesDirectory() ) );
-        assertEquals( relativePath( serverDir, serverLayout.txLogsDirectory() ),
-                relativePath( embeddedDir, embeddedLayout.txLogsDirectory() ) );
+        assertEquals( relativePath( serverDir, serverLayout.transactionLogsRootDirectory() ),
+                relativePath( embeddedDir, embeddedLayout.transactionLogsRootDirectory() ) );
     }
 
     protected abstract DatabaseManagementService newEmbeddedDbms( File homeDir );

@@ -57,7 +57,6 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -85,8 +84,6 @@ class MetaDataStoreTest
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withInconsistentReads( false ) );
     @Inject
     private EphemeralFileSystemAbstraction fs;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 

@@ -33,7 +33,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.abs;
 import static java.lang.System.currentTimeMillis;
@@ -46,12 +45,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 @Neo4jLayoutExtension
-public class LabelScanWriteMonitorTest
+class LabelScanWriteMonitorTest
 {
     @Inject
     private DefaultFileSystemAbstraction fs;
-    @Inject
-    public TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 

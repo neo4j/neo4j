@@ -81,7 +81,6 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
@@ -111,8 +110,6 @@ public class ParallelBatchImporterTest
     private static final int RELATIONSHIP_TYPES = 3;
     private static final int NUMBER_OF_ID_GROUPS = 5;
 
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private RandomRule random;
     @Inject
@@ -201,7 +198,7 @@ public class ParallelBatchImporterTest
                             NODE_COUNT * TOKENS.length / 2 ), groups ) );
 
             // THEN
-            DatabaseManagementService managementService = getDBMSBuilder( testDirectory.homeDir() ).build();
+            DatabaseManagementService managementService = getDBMSBuilder( databaseLayout ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
@@ -252,9 +249,9 @@ public class ParallelBatchImporterTest
         return Standard.LATEST_RECORD_FORMATS;
     }
 
-    protected TestDatabaseManagementServiceBuilder getDBMSBuilder( File databaseRootDir )
+    protected TestDatabaseManagementServiceBuilder getDBMSBuilder( DatabaseLayout layout )
     {
-        return new TestDatabaseManagementServiceBuilder( databaseRootDir );
+        return new TestDatabaseManagementServiceBuilder( layout );
     }
 
     private static class ExistingId

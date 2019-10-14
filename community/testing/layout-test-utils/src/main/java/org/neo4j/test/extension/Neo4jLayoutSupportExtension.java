@@ -93,7 +93,7 @@ public class Neo4jLayoutSupportExtension implements BeforeAllCallback, BeforeEac
     {
         createDirectory( fs, neo4jLayout.homeDirectory() );
         createDirectory( fs, neo4jLayout.databasesDirectory() );
-        createDirectory( fs, neo4jLayout.txLogsDirectory() );
+        createDirectory( fs, neo4jLayout.transactionLogsRootDirectory() );
         createDirectory( fs, databaseLayout.databaseDirectory() );
         createDirectory( fs, databaseLayout.getTransactionLogsDirectory() );
     }

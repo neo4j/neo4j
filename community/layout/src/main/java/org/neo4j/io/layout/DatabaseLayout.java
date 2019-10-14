@@ -77,7 +77,7 @@ public class DatabaseLayout
 
     public File getTransactionLogsDirectory()
     {
-        return new File( neo4jLayout.txLogsDirectory(), getDatabaseName() );
+        return new File( neo4jLayout.transactionLogsRootDirectory(), getDatabaseName() );
     }
 
     public File databaseLockFile()

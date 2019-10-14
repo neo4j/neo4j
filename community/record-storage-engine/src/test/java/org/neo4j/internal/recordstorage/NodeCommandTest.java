@@ -47,7 +47,6 @@ import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,8 +65,6 @@ class NodeCommandTest
 {
     @Inject
     private EphemeralFileSystemAbstraction fs;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private PageCache pageCache;
     @Inject

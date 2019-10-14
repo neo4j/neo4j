@@ -255,7 +255,7 @@ public class BatchInserterImpl implements BatchInserter
                 .setDefaults( getDefaultParams() )
                 .set( neo4j_home, layout.homeDirectory().toPath() )
                 .set( databases_root_path, layout.databasesDirectory().toPath() )
-                .set( transaction_logs_root_path, layout.txLogsDirectory().toPath() )
+                .set( transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath() )
                 .set( logs_directory, Path.of( "" ) )
                 .fromConfig( fromConfig )
                 .build();

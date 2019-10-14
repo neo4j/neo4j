@@ -57,7 +57,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -74,8 +73,6 @@ class CountsComputerTest
     private static final Config CONFIG = Config.defaults();
 
     @Inject
-    private TestDirectory testDirectory;
-    @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
     private PageCache pageCache;
@@ -87,7 +84,7 @@ class CountsComputerTest
     @BeforeEach
     void setup()
     {
-        dbBuilder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        dbBuilder = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                 .impermanent();
     }

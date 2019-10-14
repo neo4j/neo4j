@@ -39,7 +39,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.importer.ImportCommandTest.assertExceptionContains;
@@ -49,8 +48,6 @@ import static org.neo4j.importer.ImportCommandTest.assertExceptionContains;
 @ResourceLock( Resources.SYSTEM_OUT )
 class ImportNumericalFailureTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 

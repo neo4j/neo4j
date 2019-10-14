@@ -38,7 +38,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -48,8 +47,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 @Neo4jLayoutExtension
 class NeoStoreOpenFailureTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject

@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -123,9 +124,10 @@ class RecordStorageMigratorIT
     }
 
     @BeforeEach
-    void setup()
+    void setup() throws IOException
     {
         migrationLayout = Neo4jLayout.of( testDirectory.homeDir( MIGRATION_DIRECTORY ) ).databaseLayout( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        testDirectory.getFileSystem().mkdirs( migrationLayout.databaseDirectory() );
     }
 
     @AfterEach

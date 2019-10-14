@@ -38,7 +38,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -55,8 +54,6 @@ class StoreFactoryTest
 {
     @Inject
     private FileSystemAbstraction fileSystem;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private PageCache pageCache;
     @Inject

@@ -24,7 +24,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
@@ -45,7 +44,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -58,8 +56,6 @@ public class RelationshipChainExplorerTest
 {
     private static final int degreeTwoNodes = 10;
 
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
@@ -135,8 +131,7 @@ public class RelationshipChainExplorerTest
 
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
-        File storeDirectory = testDirectory.homeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).setConfig( getConfig() ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setConfig( getConfig() ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction transaction = database.beginTx() )

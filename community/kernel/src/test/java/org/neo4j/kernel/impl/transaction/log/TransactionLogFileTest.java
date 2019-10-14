@@ -45,7 +45,6 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,8 +65,6 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 @ExtendWith( LifeExtension.class )
 class TransactionLogFileTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject

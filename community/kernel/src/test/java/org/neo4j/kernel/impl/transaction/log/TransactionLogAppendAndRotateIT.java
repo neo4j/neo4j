@@ -63,7 +63,6 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -81,8 +80,6 @@ import static org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent.NULL;
 @ExtendWith( LifeExtension.class )
 class TransactionLogAppendAndRotateIT
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject

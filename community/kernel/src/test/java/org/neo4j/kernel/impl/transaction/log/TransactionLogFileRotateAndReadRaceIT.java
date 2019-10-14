@@ -49,7 +49,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.OtherThreadRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -70,8 +69,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith( LifeExtension.class )
 class TransactionLogFileRotateAndReadRaceIT
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private LifeSupport life;
     @Inject

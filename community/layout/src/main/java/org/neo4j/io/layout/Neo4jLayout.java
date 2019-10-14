@@ -75,8 +75,8 @@ public class Neo4jLayout
     private static final String STORE_LOCK_FILENAME = "store_lock";
 
     private final File homeDirectory;
-    private final File databasesDirectory;
-    private final File txLogsDirectory;
+    private final File databasesRootDirectory;
+    private final File txLogsRootDirectory;
 
     public static Neo4jLayout of( File homeDirectory )
     {
@@ -106,8 +106,8 @@ public class Neo4jLayout
     private Neo4jLayout( File homeDirectory, File databasesRootDirectory, File txLogsRootDirectory )
     {
         this.homeDirectory = FileUtils.getCanonicalFile( homeDirectory );
-        this.databasesDirectory = FileUtils.getCanonicalFile( databasesRootDirectory );
-        this.txLogsDirectory = FileUtils.getCanonicalFile( txLogsRootDirectory );
+        this.databasesRootDirectory = FileUtils.getCanonicalFile( databasesRootDirectory );
+        this.txLogsRootDirectory = FileUtils.getCanonicalFile( txLogsRootDirectory );
     }
 
     /**
@@ -118,7 +118,7 @@ public class Neo4jLayout
      */
     public Collection<DatabaseLayout> databaseLayouts()
     {
-        File[] directories = databasesDirectory.listFiles( File::isDirectory );
+        File[] directories = databasesRootDirectory.listFiles( File::isDirectory );
         if ( ArrayUtils.isEmpty( directories ) )
         {
             return emptyList();
@@ -144,7 +144,7 @@ public class Neo4jLayout
      */
     public File databasesDirectory()
     {
-        return databasesDirectory;
+        return databasesRootDirectory;
     }
 
     /**
@@ -156,14 +156,14 @@ public class Neo4jLayout
         return homeDirectory;
     }
 
-    public File txLogsDirectory()
+    public File transactionLogsRootDirectory()
     {
-        return txLogsDirectory;
+        return txLogsRootDirectory;
     }
 
     public File storeLockFile()
     {
-        return new File( databasesDirectory, STORE_LOCK_FILENAME );
+        return new File( databasesRootDirectory, STORE_LOCK_FILENAME );
     }
 
     @Override
@@ -178,20 +178,20 @@ public class Neo4jLayout
             return false;
         }
         Neo4jLayout that = (Neo4jLayout) o;
-        return Objects.equals( homeDirectory, that.homeDirectory ) && Objects.equals( databasesDirectory, that.databasesDirectory ) &&
-                Objects.equals( txLogsDirectory, that.txLogsDirectory );
+        return Objects.equals( homeDirectory, that.homeDirectory ) && Objects.equals( databasesRootDirectory, that.databasesRootDirectory ) &&
+                Objects.equals( txLogsRootDirectory, that.txLogsRootDirectory );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( homeDirectory, databasesDirectory, txLogsDirectory );
+        return Objects.hash( homeDirectory, databasesRootDirectory, txLogsRootDirectory );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "Neo4JLayout{ homeDir=%s, databasesDir=%s, txLogsDir=%s}",
-                homeDirectory.toString(), databasesDirectory.toString(), txLogsDirectory.toString() );
+        return String.format( "Neo4JLayout{ homeDir=%s, databasesDir=%s, txLogsRootDir=%s}",
+                homeDirectory.toString(), databasesRootDirectory.toString(), txLogsRootDirectory.toString() );
     }
 }

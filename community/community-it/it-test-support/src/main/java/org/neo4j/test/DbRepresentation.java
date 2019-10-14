@@ -134,7 +134,7 @@ public class DbRepresentation
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         return of( databaseLayout.databaseDirectory(),
                 Config.newBuilder()
-                        .set( transaction_logs_root_path, layout.txLogsDirectory().toPath().toAbsolutePath() )
+                        .set( transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath().toAbsolutePath() )
                         .set( databases_root_path, layout.databasesDirectory().toPath().toAbsolutePath() )
                         .set( default_database, databaseLayout.getDatabaseName() )
                         .build());
@@ -144,7 +144,7 @@ public class DbRepresentation
     {
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         Config cfg = Config.newBuilder().fromConfig( config )
-                .setDefault( transaction_logs_root_path, layout.txLogsDirectory().toPath().toAbsolutePath() )
+                .setDefault( transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath().toAbsolutePath() )
                 .setDefault( databases_root_path, layout.databasesDirectory().toPath().toAbsolutePath() )
                 .setDefault( default_database, databaseLayout.getDatabaseName() )
                 .build();

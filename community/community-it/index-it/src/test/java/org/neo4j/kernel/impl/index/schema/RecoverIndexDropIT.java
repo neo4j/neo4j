@@ -89,7 +89,7 @@ class RecoverIndexDropIT
     {
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         createIndex( db );
         managementService.shutdown();
@@ -99,7 +99,7 @@ class RecoverIndexDropIT
         Monitors monitors = new Monitors();
         AssertRecoveryIsPerformed recoveryMonitor = new AssertRecoveryIsPerformed();
         monitors.addMonitorListener( recoveryMonitor );
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homeDir() ).setMonitors( monitors )
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setMonitors( monitors )
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try

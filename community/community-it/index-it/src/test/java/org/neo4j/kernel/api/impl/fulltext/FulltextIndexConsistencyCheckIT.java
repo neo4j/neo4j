@@ -72,7 +72,6 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
@@ -93,8 +92,6 @@ class FulltextIndexConsistencyCheckIT
     @Inject
     private FileSystemAbstraction fs;
     @Inject
-    private TestDirectory testDirectory;
-    @Inject
     private DatabaseLayout databaseLayout;
 
     private DatabaseManagementServiceBuilder builder;
@@ -104,7 +101,7 @@ class FulltextIndexConsistencyCheckIT
     @BeforeEach
     void before()
     {
-        builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() );
+        builder = new TestDatabaseManagementServiceBuilder( databaseLayout );
     }
 
     @AfterEach
@@ -547,7 +544,7 @@ class FulltextIndexConsistencyCheckIT
         // Remove the property without updating the index
         managementService.shutdown();
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( databaseLayout )
                         .setFileSystem( fs )
                         .removeExtensions( INDEX_PROVIDERS_FILTER )
                         .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )

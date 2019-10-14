@@ -40,7 +40,6 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -58,8 +57,6 @@ class PropertyPhysicalToLogicalConverterTest
     private PageCache pageCache;
     @Inject
     private FileSystemAbstraction fs;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 

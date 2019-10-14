@@ -90,7 +90,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.concurrent.WorkSync;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -149,8 +148,6 @@ class TransactionRecordStateTest
 
     @Inject
     private PageCache pageCache;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private EphemeralFileSystemAbstraction fs;
     @Inject

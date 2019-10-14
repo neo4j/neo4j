@@ -80,7 +80,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     {
         super( layout.homeDirectory() );
         setConfig( GraphDatabaseSettings.databases_root_path, layout.databasesDirectory().toPath() );
-        setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.txLogsDirectory().toPath() );
+        setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath() );
         setUserLogProvider( NullLogProvider.getInstance() );
     }
 

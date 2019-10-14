@@ -53,7 +53,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -72,8 +71,6 @@ class CheckPointerIntegrationTest
     @Inject
     private EphemeralFileSystemAbstraction fs;
     @Inject
-    private TestDirectory testDirectory;
-    @Inject
     private DatabaseLayout databaseLayout;
 
     private DatabaseManagementServiceBuilder builder;
@@ -81,7 +78,7 @@ class CheckPointerIntegrationTest
     @BeforeEach
     void setup()
     {
-        builder = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        builder = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent();
     }

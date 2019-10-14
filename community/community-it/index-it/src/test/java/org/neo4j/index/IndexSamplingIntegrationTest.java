@@ -43,7 +43,6 @@ import org.neo4j.register.Registers;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -57,8 +56,6 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 @Neo4jLayoutExtension
 class IndexSamplingIntegrationTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 
@@ -77,7 +74,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Given
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
@@ -147,7 +144,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Given
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
@@ -209,7 +206,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Then
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
@@ -233,7 +230,7 @@ class IndexSamplingIntegrationTest
         try
         {
             // Then
-            managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );

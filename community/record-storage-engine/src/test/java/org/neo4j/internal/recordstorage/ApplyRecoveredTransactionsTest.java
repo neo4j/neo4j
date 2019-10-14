@@ -46,7 +46,6 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,8 +62,6 @@ class ApplyRecoveredTransactionsTest
 {
     @Inject
     private PageCache pageCache;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject

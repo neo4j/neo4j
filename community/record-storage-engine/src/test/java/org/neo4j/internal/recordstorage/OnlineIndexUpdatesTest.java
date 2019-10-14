@@ -58,7 +58,6 @@ import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -85,8 +84,6 @@ class OnlineIndexUpdatesTest
     private static final int OTHER_ENTITY_TOKEN = 2;
     private static final int[] ENTITY_TOKENS = {ENTITY_TOKEN};
 
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject

@@ -51,7 +51,6 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RecordStorageEngineRule;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -78,8 +77,6 @@ public abstract class RecordStorageReaderTestBase
     private PageCache pageCache;
     @Inject
     private FileSystemAbstraction fs;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 

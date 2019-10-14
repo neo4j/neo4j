@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -57,8 +56,6 @@ class TransactionLogFilesTest
 {
     @Inject
     private FileSystemAbstraction fileSystem;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
     private final String filename = "filename";
@@ -82,7 +79,6 @@ class TransactionLogFilesTest
     void extractHeaderOf3_5Format() throws IOException
     {
         LogFiles files = createLogFiles();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
         create3_5FileWithHeader( databaseLayout, "0" );
         create3_5FileWithHeader( databaseLayout, "1", 1 );
@@ -99,7 +95,6 @@ class TransactionLogFilesTest
     void detectEntriesIn3_5Format() throws IOException
     {
         LogFiles files = createLogFiles();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
         create3_5FileWithHeader( databaseLayout, "0" );
         create3_5FileWithHeader( databaseLayout, "1", 10 );

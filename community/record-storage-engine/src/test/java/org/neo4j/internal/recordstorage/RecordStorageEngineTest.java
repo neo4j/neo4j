@@ -58,7 +58,6 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RecordStorageEngineRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -84,8 +83,6 @@ class RecordStorageEngineTest
     private EphemeralFileSystemAbstraction fs;
     @Inject
     private PageCache pageCache;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 

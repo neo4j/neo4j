@@ -54,7 +54,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -68,8 +67,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 @Neo4jLayoutExtension
 class ManyPropertyKeysIT
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
@@ -123,7 +120,7 @@ class ManyPropertyKeysIT
 
     private GraphDatabaseAPI database()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setConfig( GraphDatabaseSettings.fail_on_missing_files, false )
                 .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

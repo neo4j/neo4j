@@ -43,7 +43,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -56,8 +55,6 @@ class HighIdTransactionApplierTest
 
     @Inject
     private PageCache pageCache;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private EphemeralFileSystemAbstraction fs;
     @Inject

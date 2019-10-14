@@ -34,7 +34,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
@@ -48,8 +47,6 @@ class TestStoreAccess
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
     @Inject
     private EphemeralFileSystemAbstraction fs;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 
@@ -68,7 +65,7 @@ class TestStoreAccess
 
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( fs )
                 .impermanent()
                 .build();

@@ -232,7 +232,9 @@ class StoreMigratorTest
         // Monitor what happens
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
-        migrator.migrate( dbLayout, neo4jLayout.databaseLayout( "migrationDir" ), progressReporter,
+        DatabaseLayout migrationLayout = neo4jLayout.databaseLayout( "migrationDir" );
+        fileSystem.mkdirs( migrationLayout.databaseDirectory() );
+        migrator.migrate( dbLayout, migrationLayout, progressReporter,
                 StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION );
 
         // Should not have started any migration
@@ -244,7 +246,7 @@ class StoreMigratorTest
         Config config = Config.defaults( transaction_logs_root_path, customLogsLocation );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
 
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                         .setConfig( transaction_logs_root_path, customLogsLocation )
                         .build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

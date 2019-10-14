@@ -50,7 +50,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.valueOf;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
@@ -80,8 +79,6 @@ class RecoveryIT
     private static final int TEN_KB = (int) ByteUnit.kibiBytes( 10 );
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private PageCache pageCache;
     @Inject
@@ -347,7 +344,7 @@ class RecoveryIT
     void startDatabaseWithRemovedMultipleTransactionLogFiles() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( neo4jLayout )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -370,7 +367,7 @@ class RecoveryIT
     void killAndStartDatabaseAfterTransactionLogsRemoval() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( neo4jLayout )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -404,7 +401,7 @@ class RecoveryIT
     void killAndStartDatabaseAfterTransactionLogsRemovalWithSeveralFilesWithoutCheckpoint() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( neo4jLayout )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -436,7 +433,7 @@ class RecoveryIT
     void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Exception
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+                new TestDatabaseManagementServiceBuilder( neo4jLayout )
                         .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
@@ -642,7 +639,7 @@ class RecoveryIT
 
     private GraphDatabaseAPI createDatabase()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( neo4jLayout )
                 .setConfig( logical_log_rotation_threshold, logical_log_rotation_threshold.defaultValue() )
                 .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -656,7 +653,7 @@ class RecoveryIT
 
     private DatabaseManagementService forcedRecoveryManagement()
     {
-        return new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setConfig( fail_on_missing_files, false ).build();
+        return new TestDatabaseManagementServiceBuilder( neo4jLayout ).setConfig( fail_on_missing_files, false ).build();
     }
 
     private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )

@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,8 +51,6 @@ import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryR
 @Neo4jLayoutExtension
 public class TransactionAppenderStressTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 

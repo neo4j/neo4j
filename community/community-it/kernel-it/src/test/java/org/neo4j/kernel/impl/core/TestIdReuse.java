@@ -32,7 +32,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -42,8 +41,6 @@ class TestIdReuse
 {
     @Inject
     private EphemeralFileSystemAbstraction fileSystem;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 
@@ -77,7 +74,7 @@ class TestIdReuse
 
     private void makeSureIdsGetsReused( File storeFile, Object value, int iterations )
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .build();
@@ -88,7 +85,7 @@ class TestIdReuse
         }
         managementService.shutdown();
         long sizeBefore = storeFile.length();
-        DatabaseManagementService impermanentManagement = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService impermanentManagement = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .build();

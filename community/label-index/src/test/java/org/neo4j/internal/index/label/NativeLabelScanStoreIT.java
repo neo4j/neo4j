@@ -40,7 +40,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
@@ -57,8 +56,6 @@ class NativeLabelScanStoreIT
     private LifeSupport life;
     @Inject
     private PageCache pageCache;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject

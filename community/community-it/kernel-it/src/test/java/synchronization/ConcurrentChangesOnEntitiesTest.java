@@ -47,7 +47,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -57,8 +56,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 @ResourceLock( Resources.SYSTEM_OUT )
 class ConcurrentChangesOnEntitiesTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 
@@ -70,7 +67,7 @@ class ConcurrentChangesOnEntitiesTest
     @BeforeEach
     void setup()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 

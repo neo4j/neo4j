@@ -79,7 +79,6 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -100,8 +99,6 @@ public class BatchingTransactionAppenderConcurrencyTest
     private static ExecutorService executor;
     @Inject
     private LifeSupport life;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
 

@@ -44,7 +44,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.matchers.NestedThrowableMatcher;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,8 +58,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHEC
 class LogVersionUpgradeCheckerIT
 {
     @Inject
-    private TestDirectory testDirectory;
-    @Inject
     private DatabaseLayout databaseLayout;
     @Inject
     private FileSystemAbstraction fileSystem;
@@ -73,7 +70,7 @@ class LogVersionUpgradeCheckerIT
         createGraphDbAndKillIt();
 
         // Try to start with upgrading disabled
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .setConfig( allow_upgrade, false )
@@ -88,7 +85,7 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         // Try to start with upgrading disabled
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .setConfig( allow_upgrade, false )
@@ -114,7 +111,7 @@ class LogVersionUpgradeCheckerIT
         createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         // Try to start with upgrading enabled
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .setConfig( allow_upgrade, true )
@@ -125,7 +122,7 @@ class LogVersionUpgradeCheckerIT
 
     private void createGraphDbAndKillIt()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( fileSystem )
                 .impermanent()
                 .build();

@@ -42,6 +42,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
@@ -60,7 +61,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.Bits;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -82,7 +82,7 @@ class NodeLabelsFieldTest
     @Inject
     private RandomRule random;
     @Inject
-    private TestDirectory testDirectory;
+    private FileSystemAbstraction fs;
     @Inject
     private DatabaseLayout databaseLayout;
 
@@ -94,8 +94,8 @@ class NodeLabelsFieldTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.label_block_size, 60 );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, config,
-                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate() ),
-                pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() );
+                new DefaultIdGeneratorFactory( fs, immediate() ),
+                pageCache, fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }

@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -48,7 +47,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,21 +70,17 @@ class RebuildCountsTest
     @Inject
     private EphemeralFileSystemAbstraction fileSystem;
     @Inject
-    private TestDirectory testDirectory;
-    @Inject
     private DatabaseLayout databaseLayout;
 
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
 
     private GraphDatabaseService db;
-    private File storeDir;
     private DatabaseManagementService managementService;
 
     @BeforeEach
     void before() throws IOException
     {
-        storeDir = testDirectory.homeDir();
         restart( fileSystem );
     }
 
@@ -215,8 +209,7 @@ class RebuildCountsTest
             managementService.shutdown();
         }
 
-        fs.mkdirs( storeDir );
-        managementService = new TestDatabaseManagementServiceBuilder(  storeDir )
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setUserLogProvider( userLogProvider )
                 .setInternalLogProvider( internalLogProvider )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )

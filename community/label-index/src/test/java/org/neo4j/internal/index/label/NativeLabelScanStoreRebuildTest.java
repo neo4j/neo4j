@@ -34,7 +34,6 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -51,8 +50,6 @@ import static org.neo4j.internal.index.label.FullStoreChangeStream.asStream;
 @Neo4jLayoutExtension
 class NativeLabelScanStoreRebuildTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject

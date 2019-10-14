@@ -39,7 +39,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.limited.LimitedFilesystemAbstraction;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,8 +53,6 @@ class RunOutOfDiskSpaceIT
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
     @Inject
-    private TestDirectory testDirectory;
-    @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
     private DatabaseLayout databaseLayout;
@@ -66,8 +63,8 @@ class RunOutOfDiskSpaceIT
     @BeforeEach
     void setUp()
     {
-        limitedFs = new LimitedFilesystemAbstraction( new UncloseableDelegatingFileSystemAbstraction( testDirectory.getFileSystem() ) );
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        limitedFs = new LimitedFilesystemAbstraction( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) );
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( limitedFs )
                 .build();
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

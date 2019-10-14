@@ -51,7 +51,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,8 +67,6 @@ class DatabaseStartupTest
     @Inject
     FileSystemAbstraction fs;
     @Inject
-    private TestDirectory testDirectory;
-    @Inject
     private DatabaseLayout databaseLayout;
 
     @Test
@@ -78,8 +75,7 @@ class DatabaseStartupTest
         // given
         // create a store
 
-        File homeDirectory = testDirectory.homeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDirectory ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -97,7 +93,7 @@ class DatabaseStartupTest
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ) );
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( homeDirectory ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -121,8 +117,7 @@ class DatabaseStartupTest
         // given
         // create a store
 
-        File homeDirectory = testDirectory.homeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDirectory ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -141,7 +136,7 @@ class DatabaseStartupTest
                     MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( homeDirectory )
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true )
                 .build();
         GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -164,8 +159,7 @@ class DatabaseStartupTest
     void startDatabaseWithWrongTransactionFilesShouldFail() throws IOException
     {
         // Create a store
-        File homeDir = testDirectory.homeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDir ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseLayout databaseLayout = db.databaseLayout();
         try ( Transaction tx = db.beginTx() )
@@ -185,7 +179,7 @@ class DatabaseStartupTest
         }
 
         // Try to start
-        managementService = new TestDatabaseManagementServiceBuilder( homeDir ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         try
         {
             db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -225,7 +219,7 @@ class DatabaseStartupTest
     void dumpSystemDiagnosticLoggingOnStartup()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setInternalLogProvider( logProvider )
                 .build();
         managementService.database( DEFAULT_DATABASE_NAME );

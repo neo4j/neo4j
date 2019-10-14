@@ -86,7 +86,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyArray;
@@ -109,8 +108,6 @@ class RecoveryCorruptedTransactionLogIT
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
-    private TestDirectory directory;
-    @Inject
     private DatabaseLayout databaseLayout;
     @Inject
     private RandomRule random;
@@ -127,9 +124,9 @@ class RecoveryCorruptedTransactionLogIT
     @BeforeEach
     void setUp()
     {
-        databaseDirectory = directory.homeDir();
+        databaseDirectory = databaseLayout.databaseDirectory();
         monitors.addMonitorListener( recoveryMonitor );
-        databaseFactory = new TestDatabaseManagementServiceBuilder( databaseDirectory )
+        databaseFactory = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setInternalLogProvider( logProvider )
                 .setMonitors( monitors )
                 .setFileSystem( fileSystem );

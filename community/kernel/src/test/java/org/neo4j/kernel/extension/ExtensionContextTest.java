@@ -35,7 +35,6 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -48,8 +47,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 @Neo4jLayoutExtension
 class ExtensionContextTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject

@@ -52,7 +52,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,8 +60,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 @EphemeralNeo4jLayoutExtension
 class DatabaseShutdownTest
 {
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fs;
     @Inject
@@ -86,7 +83,7 @@ class DatabaseShutdownTest
     @Test
     void invokeDatabaseShutdownListenersOnShutdown()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homeDir() ).setFileSystem( fs ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setFileSystem( fs ).build();
         ShutdownListenerDatabaseEventListener shutdownHandler = new ShutdownListenerDatabaseEventListener();
         managementService.registerDatabaseEventListener( shutdownHandler );
         managementService.shutdown();
