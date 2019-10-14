@@ -21,8 +21,6 @@ import org.neo4j.cypher.internal.v4_0.parser.AdministrationCommandParserTestBase
 
 class MultiDatabasePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
-  // Access privilege
-
   Seq(
     ("GRANT", "TO", grantDatabasePrivilege: databasePrivilegeFunc),
     ("DENY", "TO", denyDatabasePrivilege: databasePrivilegeFunc),
@@ -30,35 +28,42 @@ class MultiDatabasePrivilegeAdministrationCommandParserTest extends Administrati
     ("REVOKE DENY", "FROM", revokeDenyDatabasePrivilege: databasePrivilegeFunc),
     ("REVOKE", "FROM", revokeDatabasePrivilege: databasePrivilegeFunc)
   ).foreach {
-    case (command: String, preposition: String, privilege: databasePrivilegeFunc) =>
+    case (command: String, preposition: String, privilegeFunc: databasePrivilegeFunc) =>
 
-      test(s"$command ACCESS ON DATABASE * $preposition role") {
-        yields(privilege(ast.AccessDatabaseAction, ast.AllGraphsScope() _, Seq("role")))
+      Seq(
+        ("ACCESS", ast.AccessDatabaseAction),
+        ("START", ast.StartDatabaseAction),
+        ("STOP", ast.StopDatabaseAction)
+      ).foreach {
+        case (privilege: String, action: ast.DatabaseAction) =>
+
+          test(s"$command $privilege ON DATABASE * $preposition role") {
+            yields(privilegeFunc(action, ast.AllGraphsScope() _, Seq("role")))
+          }
+
+          test(s"$command $privilege ON DATABASES * $preposition role") {
+            yields(privilegeFunc(action, ast.AllGraphsScope() _, Seq("role")))
+          }
+
+          test(s"$command $privilege ON DATABASE * $preposition role1, role2") {
+            yields(privilegeFunc(action, ast.AllGraphsScope() _, Seq("role1", "role2")))
+          }
+
+          test(s"$command $privilege ON DATABASE foo $preposition role") {
+            yields(privilegeFunc(action, ast.NamedGraphScope("foo") _, Seq("role")))
+          }
+
+          test(s"$command $privilege ON DATABASE foo $preposition role1, role2") {
+            yields(privilegeFunc(action, ast.NamedGraphScope("foo") _, Seq("role1", "role2")))
+          }
+
+          test(s"$command $privilege ON GRAPH * $preposition role") {
+            failsToParse
+          }
+
+          test(s"$command $privilege ON DATABASES foo, bar $preposition role") {
+            failsToParse
+          }
       }
-
-      test(s"$command ACCESS ON DATABASES * $preposition role") {
-        yields(privilege(ast.AccessDatabaseAction, ast.AllGraphsScope() _, Seq("role")))
-      }
-
-      test(s"$command ACCESS ON DATABASE * $preposition role1, role2") {
-        yields(privilege(ast.AccessDatabaseAction, ast.AllGraphsScope() _, Seq("role1", "role2")))
-      }
-
-      test(s"$command ACCESS ON DATABASE foo $preposition role") {
-        yields(privilege(ast.AccessDatabaseAction, ast.NamedGraphScope("foo") _, Seq("role")))
-      }
-
-      test(s"$command ACCESS ON DATABASE foo $preposition role1, role2") {
-        yields(privilege(ast.AccessDatabaseAction, ast.NamedGraphScope("foo") _, Seq("role1", "role2")))
-      }
-
-      test(s"$command ACCESS ON GRAPH * $preposition role") {
-        failsToParse
-      }
-
-      test(s"$command ACCESS ON DATABASES foo, bar $preposition role") {
-        failsToParse
-      }
-
   }
 }

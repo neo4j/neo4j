@@ -664,7 +664,31 @@ class PrettifierIT extends CypherFunSuite {
             s"$action ACCESS ON DATABASE foo $preposition role",
 
           s"$action access on databases foo $preposition role" ->
-            s"$action ACCESS ON DATABASE foo $preposition role"
+            s"$action ACCESS ON DATABASE foo $preposition role",
+
+          s"$action start on database * $preposition role" ->
+            s"$action START ON DATABASE * $preposition role",
+
+          s"$action start on databases * $preposition role" ->
+            s"$action START ON DATABASE * $preposition role",
+
+          s"$action start on database foo $preposition role" ->
+            s"$action START ON DATABASE foo $preposition role",
+
+          s"$action start on databases foo $preposition role" ->
+            s"$action START ON DATABASE foo $preposition role",
+
+          s"$action stop on database * $preposition role" ->
+            s"$action STOP ON DATABASE * $preposition role",
+
+          s"$action stop on databases * $preposition role" ->
+            s"$action STOP ON DATABASE * $preposition role",
+
+          s"$action stop on database foo $preposition role" ->
+            s"$action STOP ON DATABASE foo $preposition role",
+
+          s"$action stop on databases foo $preposition role" ->
+            s"$action STOP ON DATABASE foo $preposition role"
         )
     }
   }
