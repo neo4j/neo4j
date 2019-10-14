@@ -20,7 +20,6 @@
 package org.neo4j.procedure.impl;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.time.LocalDate;
@@ -164,7 +163,7 @@ public final class ProcedureCompilation
     private static final String TEMPORAL_AMOUNT = TemporalAmount.class.getCanonicalName();
     private static final String PACKAGE = "org.neo4j.kernel.impl.proc";
     private static final String SIGNATURE_NAME = "SIGNATURE";
-    private static final String USER_CLASS = "USER_CLASS";
+    private static final String USER_CLASS = "userClass";
     private static final String VALUE_MAPPER_NAME = "MAPPER";
     private static final AnyValue[] EMPTY_ARRAY = new AnyValue[0];
 
@@ -215,13 +214,13 @@ public final class ProcedureCompilation
      * <pre>
      *     class GeneratedAddPi implements CallableUserFunction {
      *         public static UserFunctionSignature SIGNATURE;
-     *         public static MyClass USER_CLASS;
      *         public static FieldSetter SETTER_0;
      *
      *         public AnyValue apply(Context ctx, AnyValue[] input) {
      *              try {
-     *                  USER_CLASS.log = (Log) SETTER_0.get(ctx);
-     *                  return Values.doubleValue(UDF.addPi( ((NumberValue) input[0]).longValue() );
+     *                  MyClass userClass = new MyClass();
+     *                  userClass.log = (Log) SETTER_0.get(ctx);
+     *                  return Values.doubleValue(userClass.addPi( ((NumberValue) input[0]).longValue() );
      *              } catch (Throwable T) {
      *                  throw new ProcedureException([appropriate error msg], T);
      *              }
@@ -252,14 +251,13 @@ public final class ProcedureCompilation
             {
                 //static fields
                 FieldReference signatureField = generator.publicStaticField( typeReference( UserFunctionSignature.class ), SIGNATURE_NAME );
-                FieldReference userClass = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS );
                 List<FieldReference> fieldsToSet = createContextSetters( fieldSetters, generator );
 
                 //CallableUserFunction::apply
                 try ( CodeBlock method = generator.generate( USER_FUNCTION ) )
                 {
                     method.tryCatch(
-                            body -> functionBody( body, fieldSetters, fieldsToSet, userClass, methodToCall ),
+                            body -> functionBody( body, fieldSetters, fieldsToSet, methodToCall ),
                             onError ->
                                     onError( onError, format( "function `%s`", signature.name() ) ),
                             param( Throwable.class, "T" )
@@ -311,13 +309,13 @@ public final class ProcedureCompilation
      * <pre>
      *     class GeneratedMyStream implements CallableProcedure {
      *         public static ProcedureSignature SIGNATURE;
-     *         public static MyClass USER_CLASS;
      *         public static FieldSetter SETTER_0;
      *
      *          RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] in, ResourceTracker tracker ) throws ProcedureException {
      *              try {
-     *                  USER_CLASS.log = (Log) SETTER_0.get(ctx);
-     *                  Stream<MyOut> fromUser = USER_CLASS.myStream(((NumberValue) input[0]).longValue() );
+     *                  MyClass userClass = new MyClass();
+     *                  userClass.log = (Log) SETTER_0.get(ctx);
+     *                  Stream<MyOut> fromUser = userClass.myStream(((NumberValue) input[0]).longValue() );
      *                  return new GeneratedIterator(fromUser, tracker, SIGNATURE);
      *              } catch (Throwable T) {
      *                  throw new ProcedureException([appropriate error msg], T);
@@ -352,14 +350,13 @@ public final class ProcedureCompilation
             {
                 //static fields
                 FieldReference signatureField = generator.publicStaticField( typeReference( ProcedureSignature.class ), SIGNATURE_NAME );
-                FieldReference userClass = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS );
                 List<FieldReference> fieldsToSet = createContextSetters( fieldSetters, generator );
 
                 //CallableProcedure::apply
                 try ( CodeBlock method = generator.generate( USER_PROCEDURE ) )
                 {
                     method.tryCatch(
-                            body -> procedureBody( body, fieldSetters, fieldsToSet, userClass, signatureField, methodToCall,
+                            body -> procedureBody( body, fieldSetters, fieldsToSet, signatureField, methodToCall,
                                             iterator, signature.admin() ),
                             onError -> onError( onError, format( "procedure `%s`", signature.name() ) ),
                             param( Throwable.class, "T" )
@@ -423,13 +420,13 @@ public final class ProcedureCompilation
      * <pre>
      *     class Generated implements CallableUserAggregationFunction {
      *         public static UserFunctionSignature SIGNATURE;
-     *         public static MyClass USER_CLASS;
      *         public static FieldSetter SETTER_0;
      *
      *         public UserAggregator create(Context ctx) {
      *              try {
-     *                  USER_CLASS.log = (Log) SETTER_0.get(ctx);
-     *                  return new GeneratedAdder(USER_CLASS.create());
+     *                  MyClass userClass = new MyClass();
+     *                  userClass.log = (Log) SETTER_0.get(ctx);
+     *                  return new GeneratedAdder(userClass.create());
      *              } catch (Throwable T) {
      *                  throw new ProcedureException([appropriate error msg], T);
      *              }
@@ -478,14 +475,13 @@ public final class ProcedureCompilation
             {
                 //static fields
                 FieldReference signatureField = generator.publicStaticField( typeReference( UserFunctionSignature.class ), SIGNATURE_NAME );
-                FieldReference userClass = generator.publicStaticField( typeReference( create.getDeclaringClass() ), USER_CLASS );
                 List<FieldReference> fieldsToSet = createContextSetters( fieldSetters, generator );
 
                 //CallableUserAggregationFunction::create
                 try ( CodeBlock method = generator.generate( AGGREGATION_CREATE ) )
                 {
                     method.tryCatch(
-                            body -> createAggregationBody( body, fieldSetters, fieldsToSet, userClass, create, aggregator ),
+                            body -> createAggregationBody( body, fieldSetters, fieldsToSet, create, aggregator ),
                             onError ->
                                     onError( onError, format( "function `%s`", signature.name() ) ),
                             param( Throwable.class, "T" )
@@ -738,26 +734,32 @@ public final class ProcedureCompilation
      * return [CONVERT TO AnyVALUE](USER_CLASS.call( [CONVERT_TO_JAVA] input[0], ... );
      */
     private static void functionBody( CodeBlock block,
-            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference userClass,
+            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet,
             Method methodToCall )
     {
+        //generate: `UserClass userClass = new UserClass();
+        block.assign( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS,
+                invoke( newInstance( methodToCall.getDeclaringClass() ), constructorReference( methodToCall.getDeclaringClass() )));
         //inject fields in user class
-        injectFields( block, fieldSetters, fieldsToSet, userClass );
+        injectFields( block, fieldSetters, fieldsToSet );
 
         //get parameters to the user-method to call
         Expression[] parameters = parameters( block, methodToCall, block.load("ctx") );
 
         //call the actual function
         block.assign( methodToCall.getReturnType(), "fromFunction",
-                invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
+                invoke( block.load( USER_CLASS ), methodReference( methodToCall ), parameters ) );
         block.returns( toAnyValue( block.load( "fromFunction" ), methodToCall.getReturnType() ) );
     }
 
     private static void procedureBody( CodeBlock block,
-            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference userClass,
+            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet,
             FieldReference signature, Method methodToCall, Class<?> iterator, boolean isAdmin )
     {
-        injectFields( block, fieldSetters, fieldsToSet, userClass );
+        //generate: `UserClass userClass = new UserClass();
+        block.assign( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS,
+                invoke( newInstance( methodToCall.getDeclaringClass() ), constructorReference( methodToCall.getDeclaringClass() )));
+        injectFields( block, fieldSetters, fieldsToSet );
         Expression[] parameters = parameters( block, methodToCall, block.load("ctx") );
 
         if ( isAdmin )
@@ -767,14 +769,14 @@ public final class ProcedureCompilation
         }
         if ( iterator.equals( VOID_ITERATOR.getClass() ) )
         {   //if we are calling a void method we just need to call and return empty
-            block.expression( invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
+            block.expression( invoke( block.load( USER_CLASS ), methodReference( methodToCall ), parameters ) );
             block.returns( getStatic( FieldReference.field( typeReference( ProcedureCompilation.class ),
                     typeReference( RawIterator.class ), "VOID_ITERATOR" ) ) );
         }
         else
         {   //here we must both call and map stream to an iterator
             block.assign( parameterizedType( Stream.class, procedureType( methodToCall ) ), "fromProcedure",
-                    invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
+                    invoke( block.load( USER_CLASS ), methodReference( methodToCall ), parameters ) );
             block.returns( invoke( newInstance( iterator ),
                     constructorReference( iterator, Stream.class, ResourceTracker.class, ProcedureSignature.class ),
                     block.load( "fromProcedure" ), block.load( "tracker" ), getStatic( signature ) ) );
@@ -796,15 +798,18 @@ public final class ProcedureCompilation
     }
 
     private static void createAggregationBody( CodeBlock block,
-            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference userClass,
+            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet,
             Method createMethod,  Class<?> aggregator )
     {
+        //generate: `UserClass userClass = new UserClass();
+        block.assign( typeReference( createMethod.getDeclaringClass() ), USER_CLASS,
+                invoke( newInstance( createMethod.getDeclaringClass() ), constructorReference( createMethod.getDeclaringClass() )));
         //inject fields in user class
-        injectFields( block, fieldSetters, fieldsToSet, userClass );
+        injectFields( block, fieldSetters, fieldsToSet );
 
         //call the actual function
         block.assign( createMethod.getReturnType(), "fromUser",
-                invoke( getStatic( userClass ), methodReference( createMethod ) ) );
+                invoke( block.load( USER_CLASS ), methodReference( createMethod ) ) );
         block.returns( invoke( newInstance( aggregator ),
                 constructorReference( aggregator, createMethod.getReturnType(), Context.class ),
                 block.load( "fromUser" ), block.load( "ctx" ) ) );
@@ -1142,14 +1147,14 @@ public final class ProcedureCompilation
     }
 
     private static void injectFields( CodeBlock block, List<FieldSetter> fieldSetters,
-            List<FieldReference> fieldsToSet, FieldReference userClass )
+            List<FieldReference> fieldsToSet )
     {
         for ( int i = 0; i < fieldSetters.size(); i++ )
         {
             FieldSetter setter = fieldSetters.get( i );
             Field field = setter.field();
             Class<?> fieldType = field.getType();
-            block.put( getStatic( userClass ), field( field ),
+            block.put( block.load( USER_CLASS ), field( field ),
                     unboxIfNecessary( fieldType,
                             invoke(
                                     getStatic( fieldsToSet.get( i ) ),
@@ -1171,11 +1176,9 @@ public final class ProcedureCompilation
 
     private static void setAllStaticFields( Object signature, List<FieldSetter> fieldSetters,
             Method methodToCall, Class<?> clazz )
-            throws IllegalAccessException, NoSuchFieldException, InstantiationException, NoSuchMethodException,
-            InvocationTargetException
+            throws IllegalAccessException, NoSuchFieldException
     {
         clazz.getDeclaredField( SIGNATURE_NAME ).set( null, signature );
-        clazz.getDeclaredField( USER_CLASS ).set( null, methodToCall.getDeclaringClass().getConstructor(  ).newInstance() );
         for ( int i = 0; i < fieldSetters.size(); i++ )
         {
             clazz.getDeclaredField( "SETTER_" + i ).set(null, fieldSetters.get( i ));
