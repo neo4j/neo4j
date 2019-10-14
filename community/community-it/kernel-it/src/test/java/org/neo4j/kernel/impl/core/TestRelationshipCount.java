@@ -523,7 +523,7 @@ public class TestRelationshipCount
     {
         Relationship last = null;
         int counter = 0;
-        Iterable<Relationship> relationships = node.getRelationships( type, direction );
+        Iterable<Relationship> relationships = node.getRelationships( direction, type );
         try ( ResourceIterator<Relationship> relationshipIterator = (ResourceIterator) relationships.iterator() )
         {
             while ( relationshipIterator.hasNext() )

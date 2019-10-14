@@ -247,8 +247,7 @@ public class SingleSourceShortestPathBFS implements
         // Follow all edges
         for ( RelationshipType relationshipType : relationShipTypes )
         {
-            for ( Relationship relationship : node.getRelationships(
-                relationshipType, relationShipDirection ) )
+            for ( Relationship relationship : node.getRelationships( relationShipDirection, relationshipType ) )
             {
                 Node targetNode = relationship.getOtherNode( node );
                 // Are we going back into the already finished area?

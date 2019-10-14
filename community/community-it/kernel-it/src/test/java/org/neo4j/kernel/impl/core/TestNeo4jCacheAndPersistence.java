@@ -229,10 +229,10 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             assertEquals( node1, rel.getStartNode() );
             assertEquals( node2, rel.getEndNode() );
 
-            Relationship[] relArray = getRelationshipArray( node1.getRelationships( MyRelTypes.TEST, OUTGOING ) );
+            Relationship[] relArray = getRelationshipArray( node1.getRelationships( OUTGOING, MyRelTypes.TEST ) );
             assertEquals( 1, relArray.length );
             assertEquals( rel, relArray[0] );
-            relArray = getRelationshipArray( node2.getRelationships( MyRelTypes.TEST, INCOMING ) );
+            relArray = getRelationshipArray( node2.getRelationships( INCOMING, MyRelTypes.TEST ) );
             assertEquals( 1, relArray.length );
             assertEquals( rel, relArray[0] );
             transaction.commit();

@@ -398,7 +398,6 @@ public class SchemaProcedure
             return null;
         }
 
-        @Override
         public Iterable<Relationship> getRelationships( RelationshipType type, Direction direction )
         {
             return null;

@@ -79,8 +79,8 @@ class TestRelationship extends AbstractNeo4jTestCase
             assertHasNext( (ResourceIterable<Relationship>) node2.getRelationships() );
             assertHasNext( (ResourceIterable<Relationship>) node1.getRelationships( TEST ) );
             assertHasNext( (ResourceIterable<Relationship>) node2.getRelationships( TEST ) );
-            assertHasNext( (ResourceIterable<Relationship>) node1.getRelationships( TEST, Direction.OUTGOING ) );
-            assertHasNext( (ResourceIterable<Relationship>) node2.getRelationships( TEST, Direction.INCOMING ) );
+            assertHasNext( (ResourceIterable<Relationship>) node1.getRelationships( Direction.OUTGOING, TEST ) );
+            assertHasNext( (ResourceIterable<Relationship>) node2.getRelationships( Direction.INCOMING, TEST ) );
             transaction.commit();
         }
     }
@@ -112,9 +112,9 @@ class TestRelationship extends AbstractNeo4jTestCase
 
             allGetRelationshipMethods( node1, Direction.OUTGOING );
             allGetRelationshipMethods( node2, Direction.INCOMING );
-            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( TEST, Direction.OUTGOING ) );
-            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( TEST_TRAVERSAL, Direction.OUTGOING ) );
-            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( TEST2, Direction.OUTGOING ) );
+            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( Direction.OUTGOING, TEST ) );
+            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( Direction.OUTGOING, TEST_TRAVERSAL ) );
+            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( Direction.OUTGOING, TEST2 ) );
             node1.createRelationshipTo( node2, TEST );
             node1.createRelationshipTo( node2, TEST_TRAVERSAL );
             node1.createRelationshipTo( node2, TEST2 );
@@ -166,9 +166,9 @@ class TestRelationship extends AbstractNeo4jTestCase
 
             allGetRelationshipMethods2( node1, Direction.OUTGOING );
             allGetRelationshipMethods2( node2, Direction.INCOMING );
-            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( TEST, Direction.OUTGOING ) );
-            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( TEST_TRAVERSAL, Direction.OUTGOING ) );
-            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( TEST2, Direction.OUTGOING ) );
+            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( Direction.OUTGOING, TEST ) );
+            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( Direction.OUTGOING, TEST_TRAVERSAL ) );
+            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( Direction.OUTGOING, TEST2 ) );
             node1.createRelationshipTo( node2, TEST );
             node1.createRelationshipTo( node2, TEST_TRAVERSAL );
             node1.createRelationshipTo( node2, TEST2 );
@@ -220,9 +220,9 @@ class TestRelationship extends AbstractNeo4jTestCase
 
             allGetRelationshipMethods3( node1, Direction.OUTGOING );
             allGetRelationshipMethods3( node2, Direction.INCOMING );
-            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( TEST, Direction.OUTGOING ) );
+            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( Direction.OUTGOING, TEST ) );
             int count = 0;
-            for ( Relationship rel : node1.getRelationships( TEST_TRAVERSAL, Direction.OUTGOING ) )
+            for ( Relationship rel : node1.getRelationships( Direction.OUTGOING, TEST_TRAVERSAL ) )
             {
                 if ( count == 1 )
                 {
@@ -230,7 +230,7 @@ class TestRelationship extends AbstractNeo4jTestCase
                 }
                 count++;
             }
-            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( TEST2, Direction.OUTGOING ) );
+            deleteFirst( (ResourceIterable<Relationship>) node1.getRelationships( Direction.OUTGOING, TEST2 ) );
             node1.createRelationshipTo( node2, TEST );
             node1.createRelationshipTo( node2, TEST_TRAVERSAL );
             node1.createRelationshipTo( node2, TEST2 );
@@ -266,9 +266,9 @@ class TestRelationship extends AbstractNeo4jTestCase
         countRelationships( 3, node.getRelationships( TEST ) );
         countRelationships( 3, node.getRelationships( TEST2 ) );
         countRelationships( 3, node.getRelationships( TEST_TRAVERSAL ) );
-        countRelationships( 3, node.getRelationships( TEST, dir ) );
-        countRelationships( 3, node.getRelationships( TEST2, dir ) );
-        countRelationships( 3, node.getRelationships( TEST_TRAVERSAL, dir ) );
+        countRelationships( 3, node.getRelationships( dir, TEST ) );
+        countRelationships( 3, node.getRelationships( dir, TEST2 ) );
+        countRelationships( 3, node.getRelationships( dir, TEST_TRAVERSAL ) );
     }
 
     private void allGetRelationshipMethods2( Node node, Direction dir )
@@ -282,9 +282,9 @@ class TestRelationship extends AbstractNeo4jTestCase
         countRelationships( 1, node.getRelationships( TEST ) );
         countRelationships( 1, node.getRelationships( TEST2 ) );
         countRelationships( 1, node.getRelationships( TEST_TRAVERSAL ) );
-        countRelationships( 1, node.getRelationships( TEST, dir ) );
-        countRelationships( 1, node.getRelationships( TEST2, dir ) );
-        countRelationships( 1, node.getRelationships( TEST_TRAVERSAL, dir ) );
+        countRelationships( 1, node.getRelationships( dir, TEST ) );
+        countRelationships( 1, node.getRelationships( dir, TEST2 ) );
+        countRelationships( 1, node.getRelationships( dir, TEST_TRAVERSAL ) );
     }
 
     private void allGetRelationshipMethods3( Node node, Direction dir )
@@ -298,9 +298,9 @@ class TestRelationship extends AbstractNeo4jTestCase
         countRelationships( 2, node.getRelationships( TEST ) );
         countRelationships( 2, node.getRelationships( TEST2 ) );
         countRelationships( 2, node.getRelationships( TEST_TRAVERSAL ) );
-        countRelationships( 2, node.getRelationships( TEST, dir ) );
-        countRelationships( 2, node.getRelationships( TEST2, dir ) );
-        countRelationships( 2, node.getRelationships( TEST_TRAVERSAL, dir ) );
+        countRelationships( 2, node.getRelationships( dir, TEST ) );
+        countRelationships( 2, node.getRelationships( dir, TEST2 ) );
+        countRelationships( 2, node.getRelationships( dir, TEST_TRAVERSAL ) );
     }
 
     private void countRelationships( int expectedCount, Iterable<Relationship> rels )
@@ -344,13 +344,13 @@ class TestRelationship extends AbstractNeo4jTestCase
             relArray2 = getRelationshipArray( node2.getRelationships( TEST ) );
             assertEquals( 1, relArray2.length );
             assertEquals( relationship, relArray2[0] );
-            relArray1 = getRelationshipArray( node1.getRelationships( TEST, Direction.OUTGOING ) );
+            relArray1 = getRelationshipArray( node1.getRelationships( Direction.OUTGOING, TEST ) );
             assertEquals( 1, relArray1.length );
-            relArray2 = getRelationshipArray( node2.getRelationships( TEST, Direction.INCOMING ) );
+            relArray2 = getRelationshipArray( node2.getRelationships( Direction.INCOMING, TEST ) );
             assertEquals( 1, relArray2.length );
-            relArray1 = getRelationshipArray( node1.getRelationships( TEST, Direction.INCOMING ) );
+            relArray1 = getRelationshipArray( node1.getRelationships( Direction.INCOMING, TEST ) );
             assertEquals( 0, relArray1.length );
-            relArray2 = getRelationshipArray( node2.getRelationships( TEST, Direction.OUTGOING ) );
+            relArray2 = getRelationshipArray( node2.getRelationships( Direction.OUTGOING, TEST ) );
             assertEquals( 0, relArray2.length );
             relationship.delete();
             node2.delete();
@@ -670,17 +670,17 @@ class TestRelationship extends AbstractNeo4jTestCase
             assertEquals( node2, rel3.getStartNode() );
             assertEquals( node1, rel3.getEndNode() );
 
-            Relationship[] relArray = getRelationshipArray( node1.getRelationships( TEST, Direction.OUTGOING ) );
+            Relationship[] relArray = getRelationshipArray( node1.getRelationships( Direction.OUTGOING, TEST ) );
             assertEquals( 1, relArray.length );
             assertEquals( rel2, relArray[0] );
-            relArray = getRelationshipArray( node1.getRelationships( TEST, Direction.INCOMING ) );
+            relArray = getRelationshipArray( node1.getRelationships( Direction.INCOMING, TEST ) );
             assertEquals( 1, relArray.length );
             assertEquals( rel3, relArray[0] );
 
-            relArray = getRelationshipArray( node2.getRelationships( TEST, Direction.OUTGOING ) );
+            relArray = getRelationshipArray( node2.getRelationships( Direction.OUTGOING, TEST ) );
             assertEquals( 1, relArray.length );
             assertEquals( rel3, relArray[0] );
-            relArray = getRelationshipArray( node2.getRelationships( TEST, Direction.INCOMING ) );
+            relArray = getRelationshipArray( node2.getRelationships( Direction.INCOMING, TEST ) );
             assertEquals( 1, relArray.length );
             assertEquals( rel2, relArray[0] );
 
@@ -1096,8 +1096,8 @@ class TestRelationship extends AbstractNeo4jTestCase
         try ( Transaction tx = db.beginTx() )
         {
             node = tx.getNodeById( node.getId() );
-            one = Iterables.count( node.getRelationships( TEST, Direction.OUTGOING ) );
-            two = Iterables.count( node.getRelationships( TEST, Direction.OUTGOING ) );
+            one = Iterables.count( node.getRelationships( Direction.OUTGOING, TEST ) );
+            two = Iterables.count( node.getRelationships( Direction.OUTGOING, TEST ) );
             tx.commit();
         }
 

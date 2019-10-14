@@ -182,23 +182,6 @@ public interface Node extends Entity
     boolean hasRelationship( Direction dir );
 
     /**
-     * Returns all relationships with the given type and direction that are
-     * attached to this node. If there are no matching relationships, an empty
-     * iterable will be returned.
-     *
-     * @param type the given type
-     * @param dir the given direction, where <code>Direction.OUTGOING</code>
-     *            means all relationships that have this node as
-     *            {@link Relationship#getStartNode() start node} and <code>
-     * Direction.INCOMING</code>
-     *            means all relationships that have this node as
-     *            {@link Relationship#getEndNode() end node}
-     * @return all relationships attached to this node that match the given type
-     *         and direction
-     */
-    Iterable<Relationship> getRelationships( RelationshipType type, Direction dir );
-
-    /**
      * Returns the only relationship of a given type and direction that is
      * attached to this node, or <code>null</code>. This is a convenience method
      * that is used in the commonly occurring situation where a node has exactly

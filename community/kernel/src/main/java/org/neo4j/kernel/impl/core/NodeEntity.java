@@ -141,12 +141,6 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( RelationshipType type, Direction dir )
-    {
-        return getRelationships( dir, type );
-    }
-
-    @Override
     public ResourceIterable<Relationship> getRelationships( final Direction direction, RelationshipType... types )
     {
         KernelTransaction transaction = safeAcquireTransaction();

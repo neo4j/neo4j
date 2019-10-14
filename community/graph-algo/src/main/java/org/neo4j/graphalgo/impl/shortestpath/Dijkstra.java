@@ -317,7 +317,7 @@ public class Dijkstra<CostType> implements
                 for ( RelationshipType costRelationType : costRelationTypes )
                 {
                     ResourceIterable<Relationship> relationships = Iterables.asResourceIterable(
-                            currentNode.getRelationships( costRelationType, getDirection() ) );
+                            currentNode.getRelationships( getDirection(), costRelationType ) );
                     try ( ResourceIterator<Relationship> iterator = relationships.iterator() )
                     {
                         while ( iterator.hasNext() )

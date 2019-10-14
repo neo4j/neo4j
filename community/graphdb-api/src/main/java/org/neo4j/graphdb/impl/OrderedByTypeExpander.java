@@ -106,7 +106,7 @@ public final class OrderedByTypeExpander extends StandardExpander.RegularExpande
             {
                 RelationshipType type = entry.first();
                 Direction dir = entry.other();
-                Iterable<Relationship> relationshipsIterable = (dir == Direction.BOTH) ? node.getRelationships( type ) : node.getRelationships( type, dir );
+                Iterable<Relationship> relationshipsIterable = (dir == Direction.BOTH) ? node.getRelationships( type ) : node.getRelationships( dir, type );
                 return Iterables.asResourceIterable( relationshipsIterable ).iterator();
             }
         };

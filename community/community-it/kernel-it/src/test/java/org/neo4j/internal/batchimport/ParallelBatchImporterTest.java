@@ -451,7 +451,7 @@ public class ParallelBatchImporterTest
             for ( Direction direction : Direction.values() )
             {
                 long degree = node.getDegree( type, direction );
-                long actualDegree = count( node.getRelationships( type, direction ) );
+                long actualDegree = count( node.getRelationships( direction, type ) );
                 assertEquals( actualDegree, degree );
             }
         }
