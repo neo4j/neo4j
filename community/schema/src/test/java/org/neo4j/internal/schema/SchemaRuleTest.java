@@ -42,10 +42,10 @@ class SchemaRuleTest
     private IndexPrototype labelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema );
     private IndexPrototype relTypePrototype = IndexPrototype.forSchema( relTypeSchema );
     private IndexPrototype relTypeUniquePrototype = IndexPrototype.uniqueForSchema( relTypeSchema );
-    private IndexPrototype nodeFtsPrototype = IndexPrototype.forSchema( fulltextNodeSchema );
-    private IndexPrototype relFtsPrototype = IndexPrototype.forSchema( fulltextRelSchema );
-    private IndexPrototype labelPrototype2 = IndexPrototype.forSchema( labelSchema2 );
-    private IndexPrototype nodeFtsPrototype2 = IndexPrototype.forSchema( fulltextNodeSchema2 );
+    private IndexPrototype nodeFtsPrototype = IndexPrototype.forSchema( fulltextNodeSchema ).withIndexType( IndexType.FULLTEXT );
+    private IndexPrototype relFtsPrototype = IndexPrototype.forSchema( fulltextRelSchema ).withIndexType( IndexType.FULLTEXT );
+    private IndexPrototype labelPrototype2 = IndexPrototype.forSchema( labelSchema2 ).withIndexType( IndexType.FULLTEXT );
+    private IndexPrototype nodeFtsPrototype2 = IndexPrototype.forSchema( fulltextNodeSchema2 ).withIndexType( IndexType.FULLTEXT );
     private ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema );
     private ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema( labelSchema );
     private ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema );
