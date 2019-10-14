@@ -152,6 +152,7 @@ trait Expressions extends Parser
       NumberLiteral
     | StringLiteral
     | Parameter
+    | OldParameter
     | keyword("TRUE") ~ push(ast.True()(_))
     | keyword("FALSE") ~ push(ast.False()(_))
     | keyword("NULL") ~ push(ast.Null()(_))

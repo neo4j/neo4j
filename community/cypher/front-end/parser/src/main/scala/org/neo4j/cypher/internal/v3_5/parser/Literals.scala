@@ -108,16 +108,12 @@ trait Literals extends Parser
     ) ~~>> ((a, b) => pos => ast.MapProjection(a, b)(pos, None))
   }
 
-  def Parameter: Rule1[org.neo4j.cypher.internal.v3_5.expressions.Parameter] = rule("a parameter") {
-    NewParameter | OldParameter
-  }
-
-  def NewParameter: Rule1[org.neo4j.cypher.internal.v3_5.expressions.Parameter] = rule("a parameter (new syntax") {
+  def Parameter: Rule1[org.neo4j.cypher.internal.v3_5.expressions.Parameter] = rule("a parameter (new syntax") {
     ((ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
   }
 
-  def OldParameter: Rule1[org.neo4j.cypher.internal.v3_5.expressions.Parameter] = rule("a parameter (old syntax)") {
-    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
+  def OldParameter: Rule1[org.neo4j.cypher.internal.v3_5.expressions.ParameterWithOldSyntax] = rule("a parameter (old syntax)") {
+    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.ParameterWithOldSyntax(_, CTAny))
   }
 
   def NumberLiteral: Rule1[org.neo4j.cypher.internal.v3_5.expressions.Literal] = rule("a number") (

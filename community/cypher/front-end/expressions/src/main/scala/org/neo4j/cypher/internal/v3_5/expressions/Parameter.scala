@@ -23,5 +23,12 @@ case class Parameter(name: String,
                      parameterType: CypherType)(val position: InputPosition)
   extends Expression {
 
-  override def asCanonicalStringVal: String = s"{$name}"
+  override def asCanonicalStringVal: String = "$" + name
+}
+
+case class ParameterWithOldSyntax(name: String,
+                                  parameterType: CypherType)(val position: InputPosition)
+  extends Expression {
+
+  override def asCanonicalStringVal: String = "$" + name
 }
