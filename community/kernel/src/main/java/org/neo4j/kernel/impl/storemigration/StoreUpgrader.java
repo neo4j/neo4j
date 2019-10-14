@@ -48,6 +48,7 @@ import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
+import static org.neo4j.util.Preconditions.checkState;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -114,11 +115,8 @@ public class StoreUpgrader
         if ( !NOT_PARTICIPATING.equals( participant ) )
         {
             var newParticipantName = participant.getName();
-            if ( participants.containsKey( newParticipantName ) )
-            {
-                throw new IllegalStateException(
-                        "Migration participants should have unique names. Participant with name: `" + newParticipantName + "` is already registered." );
-            }
+            checkState( !participants.containsKey( newParticipantName ),
+                    "Migration participants should have unique names. Participant with name: `%s` is already registered.", newParticipantName );
             this.participants.put( newParticipantName, participant );
         }
     }
