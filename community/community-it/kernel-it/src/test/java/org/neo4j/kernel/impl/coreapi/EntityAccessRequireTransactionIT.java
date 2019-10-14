@@ -47,7 +47,7 @@ public class EntityAccessRequireTransactionIT
 
     static Stream<EntityFactory<? extends Entity>> entities()
     {
-        return Stream.of( tx -> new NodeEntity(tx, 1), tx -> new RelationshipEntity(tx, 1) );
+        return Stream.of( tx -> new NodeEntity( tx, 1 ), tx -> new RelationshipEntity( tx, 1 ) );
     }
 
     @BeforeEach
