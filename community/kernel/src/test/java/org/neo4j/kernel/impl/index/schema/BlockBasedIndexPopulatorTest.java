@@ -34,7 +34,6 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -70,7 +69,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 @EphemeralPageCacheExtension
 class BlockBasedIndexPopulatorTest
 {
-    private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptor.forLabelOfType( IndexType.BTREE, 1, 1 );
+    private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptor.forLabel( 1, 1 );
     private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withName( "index" ).materialise( 1 );
 
     @Inject
