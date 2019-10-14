@@ -50,4 +50,6 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
     Optional<Status> terminationReason();
 
     void setMetaData( Map<String, Object> txMeta );
+
+    void checkInTransaction();
 }

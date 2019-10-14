@@ -165,6 +165,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     @Override
     public Node[] getNodes()
     {
+        internalTransaction.checkInTransaction();
         return new Node[]{
                 internalTransaction.newNodeEntity( sourceId() ),
                 internalTransaction.newNodeEntity( targetId() )};
@@ -173,18 +174,21 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     @Override
     public Node getOtherNode( Node node )
     {
+        internalTransaction.checkInTransaction();
         return internalTransaction.newNodeEntity( getOtherNodeId( node.getId() ) );
     }
 
     @Override
     public Node getStartNode()
     {
+        internalTransaction.checkInTransaction();
         return internalTransaction.newNodeEntity( sourceId() );
     }
 
     @Override
     public Node getEndNode()
     {
+        internalTransaction.checkInTransaction();
         return internalTransaction.newNodeEntity( targetId() );
     }
 
@@ -219,6 +223,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     @Override
     public RelationshipType getType()
     {
+        internalTransaction.checkInTransaction();
         return internalTransaction.getRelationshipTypeById( typeId() );
     }
 
@@ -498,7 +503,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     @Override
     public boolean isType( RelationshipType type )
     {
-        internalTransaction.kernelTransaction().assertOpen();
+        internalTransaction.checkInTransaction();
         return internalTransaction.getRelationshipTypeById( typeId() ).name().equals( type.name() );
     }
 

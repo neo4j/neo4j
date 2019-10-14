@@ -541,12 +541,14 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public Lock acquireWriteLock( Entity entity )
     {
+        checkInTransaction();
         return locker.exclusiveLock( transaction, entity );
     }
 
     @Override
     public Lock acquireReadLock( Entity entity )
     {
+        checkInTransaction();
         return locker.sharedLock( transaction, entity );
     }
 
@@ -590,6 +592,7 @@ public class TransactionImpl implements InternalTransaction
     @Override
     public void setMetaData( Map<String,Object> txMeta )
     {
+        checkInTransaction();
         transaction.setMetaData( txMeta );
     }
 
@@ -668,7 +671,8 @@ public class TransactionImpl implements InternalTransaction
         return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, query );
     }
 
-    private void checkInTransaction()
+    @Override
+    public void checkInTransaction()
     {
         if ( closed )
         {

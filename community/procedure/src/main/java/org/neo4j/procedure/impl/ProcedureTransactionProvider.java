@@ -283,6 +283,12 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
+        public void checkInTransaction()
+        {
+            transaction.checkInTransaction();
+        }
+
+        @Override
         public void terminate()
         {
             transaction.terminate();

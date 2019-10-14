@@ -28,6 +28,9 @@ import org.neo4j.annotations.api.PublicApi;
  * <p>
  * {@link Node Nodes} and {@link Relationship Relationships} are Entities.
  *
+ * Entities are attached to transaction in which they were accessed. Outside of transaction its possible only to access entity id.
+ * All other methods should be called only in the scope of the owning transaction.
+ *
  * Defines a common API for handling properties on both {@link Node nodes} and
  * {@link Relationship relationships}.
  * <p>
@@ -74,12 +77,9 @@ import org.neo4j.annotations.api.PublicApi;
 public interface Entity
 {
     /**
-     * Returns the unique id of this Entity. Id's are garbage
-     * collected over time so they are only guaranteed to be unique during a
-     * specific time span: if the Entity is deleted, it's
-     * likely that a new Entity at some point will get the old
-     * id. <b>Note</b>: this makes Entity id's brittle as
-     * public APIs.
+     * Returns the unique id of this entity. Id's are reused over time so they are only guaranteed to be unique
+     * during a specific transaction: if the entity is deleted, it is
+     * likely that some new entity will reuse this id at some point.
      *
      * @return The id of this Entity.
      */

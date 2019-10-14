@@ -39,7 +39,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -57,7 +56,6 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -105,7 +103,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public void delete()
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         try
         {
             boolean deleted = transaction.dataWrite().nodeDelete( getId() );
@@ -130,7 +128,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public ResourceIterable<Relationship> getRelationships( final Direction direction )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         return innerGetRelationships( transaction, direction, null );
     }
 
@@ -143,7 +141,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public ResourceIterable<Relationship> getRelationships( final Direction direction, RelationshipType... types )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int[] typeIds = relTypeIds( types, transaction.tokenRead() );
         return innerGetRelationships( transaction, direction, typeIds );
     }
@@ -163,7 +161,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public boolean hasRelationship( Direction direction )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         return innerHasRelationships( transaction, direction, null );
     }
 
@@ -176,7 +174,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int[] typeIds = relTypeIds( types, transaction.tokenRead() );
         return innerHasRelationships( transaction, direction, typeIds );
     }
@@ -307,7 +305,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         NodeCursor nodes = transaction.ambientNodeCursor();
         PropertyCursor properties = transaction.ambientPropertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
@@ -331,7 +329,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         List<String> keys = new ArrayList<>();
         try
         {
@@ -362,7 +360,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             return Collections.emptyMap();
         }
 
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
 
         int itemsToReturn = keys.length;
         Map<String,Object> properties = new HashMap<>( itemsToReturn );
@@ -407,7 +405,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public Map<String,Object> getAllProperties()
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         Map<String,Object> properties = new HashMap<>();
 
         try
@@ -437,7 +435,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
         if ( propertyKey == TokenRead.NO_TOKEN )
         {
@@ -471,7 +469,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             return false;
         }
 
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
         if ( propertyKey == TokenRead.NO_TOKEN )
         {
@@ -490,17 +488,6 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             }
         }
         return false;
-    }
-
-    private KernelTransaction safeAcquireTransaction()
-    {
-        KernelTransaction transaction = internalTransaction.kernelTransaction();
-        if ( transaction.isTerminated() )
-        {
-            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
-            throw new TransactionTerminatedException( terminationReason );
-        }
-        return transaction;
     }
 
     public int compareTo( Object node )
@@ -535,7 +522,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             throw new IllegalArgumentException( "Other node is null." );
         }
 
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int relationshipTypeId;
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -635,7 +622,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public boolean hasLabel( Label label )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         NodeCursor nodes = transaction.ambientNodeCursor();
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -652,7 +639,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public Iterable<Label> getLabels()
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         NodeCursor nodes = transaction.ambientNodeCursor();
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -675,7 +662,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public int getDegree()
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
 
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -689,7 +676,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public int getDegree( RelationshipType type )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int typeId = transaction.tokenRead().relationshipType( type.name() );
         if ( typeId == NO_TOKEN )
         {   // This type doesn't even exist. Return 0
@@ -708,7 +695,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public int getDegree( Direction direction )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         try ( Statement ignore = transaction.acquireStatement() )
         {
             NodeCursor nodes = transaction.ambientNodeCursor();
@@ -731,7 +718,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public int getDegree( RelationshipType type, Direction direction )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         int typeId = transaction.tokenRead().relationshipType( type.name() );
         if ( typeId == NO_TOKEN )
         {   // This type doesn't even exist. Return 0
@@ -759,7 +746,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
         try ( RelationshipGroupCursor relationships = transaction.cursors().allocateRelationshipGroupCursor();
               Statement ignore = transaction.acquireStatement() )
         {

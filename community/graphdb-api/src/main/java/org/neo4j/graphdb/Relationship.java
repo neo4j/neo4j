@@ -76,18 +76,6 @@ import org.neo4j.annotations.api.PublicApi;
 public interface Relationship extends Entity
 {
     /**
-     * Returns the unique id of this relationship. Ids are garbage collected
-     * over time so they are only guaranteed to be unique during a specific time
-     * span: if the relationship is deleted, it's likely that a new relationship
-     * at some point will get the old id. <b>Note</b>: This makes relationship
-     * ids brittle as public APIs.
-     *
-     * @return The id of this relationship
-     */
-    @Override
-    long getId();
-
-    /**
      * Deletes this relationship. Invoking any methods on this relationship
      * after <code>delete()</code> has returned is invalid and will lead to
      * {@link NotFoundException} being thrown.
