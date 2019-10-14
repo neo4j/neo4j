@@ -477,7 +477,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   // These tests are ignored because expand fused over pipelines is broken.
 
-  ignore("should support cartesian product with hash-join on RHS") {
+  test("should support cartesian product with hash-join on RHS") {
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
@@ -512,7 +512,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   }
 
   // This test was useful in showcasing we cannot use the LHS slot configuration in fused pipelines in the RHS of cartesian product
-  ignore("should support cartesian product with hash-join on RHS 2") {
+  test("should support cartesian product with hash-join on RHS 2") {
     // given
     val (unfilteredNodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
