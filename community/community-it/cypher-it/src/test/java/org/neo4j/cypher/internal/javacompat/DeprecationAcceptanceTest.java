@@ -198,6 +198,12 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
+    void deprecatedParameterSyntaxForPropertyMap()
+    {
+        assertNotifications( "CYPHER 3.5 EXPLAIN CREATE (:Label {props})", containsItem( deprecatedParameterSyntax ) );
+    }
+
+    @Test
     void deprecatedLengthOfString()
     {
         assertNotifications( "CYPHER 3.5 EXPLAIN RETURN length('a string')", containsItem( deprecatedLengthOnNonPath ) );
