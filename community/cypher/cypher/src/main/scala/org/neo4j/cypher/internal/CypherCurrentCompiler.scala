@@ -270,7 +270,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                              queryOptions: QueryOptions,
                              taskCloser: TaskCloser,
                              queryContext: QueryContext,
-                             params: MapValue, prePopulateResults: Boolean,
+                             params: MapValue,
+                             prePopulateResults: Boolean,
                              input: InputDataStream,
                              subscriber: QuerySubscriber): InternalExecutionResult = {
 

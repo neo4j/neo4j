@@ -108,7 +108,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       .build()
 
     // when
-    val runtimeResult =  execute(logicalQuery, runtime)
+    val runtimeResult = execute(logicalQuery, runtime)
 
     //then
     val expected =
