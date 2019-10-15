@@ -99,7 +99,10 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = toFind.flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
+    val expected = toFind.flatMap(r => {
+      val rel = tx.getRelationshipById(r.getId)
+      Seq(Array(rel, rel.getStartNode, rel.getEndNode), Array(rel, rel.getEndNode, rel.getStartNode))
+    })
     runtimeResult should beColumns("r", "x", "y").withRows(expected)
   }
 
@@ -121,7 +124,10 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = toFind.flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
+    val expected = toFind.flatMap(r => {
+      val rel = tx.getRelationshipById(r.getId)
+      Seq(Array(rel, rel.getStartNode, rel.getEndNode), Array(rel, rel.getEndNode, rel.getStartNode))
+    })
     runtimeResult should beColumns("r", "x", "y").withRows(expected)
   }
 
@@ -132,10 +138,11 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
     restartTx()
 
+    val attachedToFind = tx.getRelationshipById(toFind.getId);
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
-      .filter(s"id(r) = ${toFind.getId}")
+      .filter(s"id(r) = ${attachedToFind.getId}")
       .undirectedRelationshipByIdSeek("r", "x", "y", toSeekFor.map(_.getId):_*)
       .build()
 
@@ -143,7 +150,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
 
     // then
     runtimeResult should beColumns("r", "x", "y").withRows(Seq(
-      Array(toFind, toFind.getStartNode, toFind.getEndNode),
-      Array(toFind, toFind.getEndNode, toFind.getStartNode)))
+      Array(attachedToFind, attachedToFind.getStartNode, attachedToFind.getEndNode),
+      Array(attachedToFind, attachedToFind.getEndNode, attachedToFind.getStartNode)))
   }
 }
