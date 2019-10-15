@@ -62,8 +62,8 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       List.empty
     ),
     TestCase(
-      "MATCH (n) WHERE id(n) = 0 WITH collect(n) AS coll WHERE length(coll)={id} RETURN coll",
-      "MATCH (n) WHERE id(n) = 0 WITH collect(n) AS coll WHERE length(coll)={id} RETURN coll",
+      "MATCH (n) WHERE id(n) = 0 WITH collect(n) AS coll WHERE length(coll)=$id RETURN coll",
+      "MATCH (n) WHERE id(n) = 0 WITH collect(n) AS coll WHERE length(coll)=$id RETURN coll",
       List.empty
     ),
     TestCase(

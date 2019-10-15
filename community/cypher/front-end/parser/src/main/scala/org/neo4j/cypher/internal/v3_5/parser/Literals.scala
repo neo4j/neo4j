@@ -108,7 +108,7 @@ trait Literals extends Parser
     ) ~~>> ((a, b) => pos => ast.MapProjection(a, b)(pos, None))
   }
 
-  def Parameter: Rule1[org.neo4j.cypher.internal.v3_5.expressions.Parameter] = rule("a parameter (new syntax") {
+  def Parameter: Rule1[org.neo4j.cypher.internal.v3_5.expressions.Parameter] = rule("a parameter") {
     ((ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
   }
 

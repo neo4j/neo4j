@@ -40,16 +40,16 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should inline: WITH {b} AS tmp, {r} AS r WITH {a} AS b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b") {
+  test("should inline: WITH $b AS tmp, $r AS r WITH $a AS b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b") {
     val result = projectionInlinedAst(
-      """WITH {a} AS b, {b} AS tmp, {r} AS r
+      """WITH $a AS b, $b AS tmp, $r AS r
         |WITH b AS a, r LIMIT 1
         |MATCH (a)-[r]->(b)
         |RETURN a, r, b
       """.stripMargin)
 
     result should equal(ast( """
-                               |WITH {a} AS b, {r} AS r
+                               |WITH $a AS b, $r AS r
                                |WITH b AS a, r LIMIT 1
                                |MATCH (a)-[r]->(b)
                                |RETURN a, r, b
@@ -160,13 +160,13 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   test("should not inline variables into patterns: WITH {node} as a MATCH (a) RETURN a => WITH {node} as a MATCH (a) RETURN a AS `a`") {
     val result = projectionInlinedAst(
-      """WITH {node} as a
+      """WITH $node as a
         |MATCH (a)
         |RETURN a
       """.stripMargin)
 
     result should equal(ast(
-      """WITH {node} as a
+      """WITH $node as a
         |MATCH (a)
         |RETURN a AS `a`
       """.stripMargin))
