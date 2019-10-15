@@ -29,17 +29,34 @@ import static java.lang.String.format;
 public class IndexBelongsToConstraintException extends SchemaKernelException
 {
     private final SchemaDescriptor descriptor;
-    private static final String message = "Index belongs to constraint: %s";
+    private final String indexName;
+    private static final String messageSchema = "Index belongs to constraint: %s";
+    private static final String messageName = "Index belongs to constraint: `%s`";
 
     public IndexBelongsToConstraintException( SchemaDescriptor descriptor )
     {
-        super( Status.Schema.ForbiddenOnConstraintIndex, format( "Index belongs to constraint: %s", descriptor ) );
+        super( Status.Schema.ForbiddenOnConstraintIndex, format( messageSchema, descriptor ) );
         this.descriptor = descriptor;
+        this.indexName = null;
+    }
+
+    public IndexBelongsToConstraintException( String indexName, SchemaDescriptor descriptor )
+    {
+        super( Status.Schema.ForbiddenOnConstraintIndex, format( messageName, indexName ) );
+        this.descriptor = descriptor;
+        this.indexName = indexName;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( message, descriptor.userDescription( tokenNameLookup ) );
+        if ( indexName == null )
+        {
+            return format( messageSchema, descriptor.userDescription( tokenNameLookup ) );
+        }
+        else
+        {
+            return format( messageName, indexName );
+        }
     }
 }

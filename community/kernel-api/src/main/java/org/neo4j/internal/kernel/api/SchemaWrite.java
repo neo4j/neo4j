@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -123,7 +124,7 @@ public interface SchemaWrite
      *
      * @param schema The schema of the constraint to be dropped.
      */
-    void constraintDrop( SchemaDescriptor schema ) throws SchemaKernelException;
+    void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException;
 
     /**
      * Drop the constraint with the given name.

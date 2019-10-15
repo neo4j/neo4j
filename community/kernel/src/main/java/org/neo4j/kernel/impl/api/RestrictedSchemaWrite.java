@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -139,10 +140,10 @@ public class RestrictedSchemaWrite implements SchemaWrite
     }
 
     @Override
-    public void constraintDrop( SchemaDescriptor schema ) throws SchemaKernelException
+    public void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException
     {
         assertSchemaWrites( PrivilegeAction.DROP_CONSTRAINT );
-        inner.constraintDrop( schema );
+        inner.constraintDrop( schema, type );
     }
 
     @Override

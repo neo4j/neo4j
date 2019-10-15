@@ -47,7 +47,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, 
 import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
-import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
+import org.neo4j.internal.schema.{ConstraintType, IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema._
 import org.neo4j.kernel.api.{ResourceManager => _, _}
@@ -735,14 +735,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
+      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), ConstraintType.UNIQUE_EXISTS)
 
   override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull)
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
+      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), ConstraintType.UNIQUE)
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
       transactionalContext.kernelTransaction.schemaWrite().nodePropertyExistenceConstraintCreate(
@@ -750,7 +750,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyId))
+      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyId), ConstraintType.EXISTS)
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit =
       transactionalContext.kernelTransaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
@@ -758,7 +758,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(SchemaDescriptor.forRelType(relTypeId, propertyKeyId))
+      .constraintDrop(SchemaDescriptor.forRelType(relTypeId, propertyKeyId), ConstraintType.EXISTS)
 
   override def dropNamedConstraint(name: String): Unit =
    transactionalContext.kernelTransaction.schemaWrite().constraintDrop(name)

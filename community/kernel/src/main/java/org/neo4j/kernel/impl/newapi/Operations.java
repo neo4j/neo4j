@@ -904,14 +904,7 @@ public class Operations implements Write, SchemaWrite
         }
         exclusiveSchemaLock( index.schema() );
         exclusiveSchemaNameLock( index.getName() );
-        try
-        {
-            allStoreHolder.assertIndexExists( index );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new DropIndexFailureException( "Unable to drop index: " + e.getUserMessage( tokenNameLookup ), e );
-        }
+        assertIndexExistsForDrop( index );
         if ( index.isUnique() )
         {
             if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
@@ -921,6 +914,18 @@ public class Operations implements Write, SchemaWrite
             }
         }
         ktx.txState().indexDoDrop( index );
+    }
+
+    private void assertIndexExistsForDrop( IndexDescriptor index ) throws DropIndexFailureException
+    {
+        try
+        {
+            allStoreHolder.assertIndexExists( index );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new DropIndexFailureException( "Unable to drop index: " + e.getUserMessage( tokenNameLookup ), e );
+        }
     }
 
     @Override
@@ -954,7 +959,17 @@ public class Operations implements Write, SchemaWrite
         {
             throw new DropIndexFailureException( "Unable to drop index called `" + indexName + "`. There is no such index." );
         }
-        indexDrop( index );
+        exclusiveSchemaLock( index.schema() );
+        assertIndexExistsForDrop( index );
+        if ( index.isUnique() )
+        {
+            if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
+            {
+                IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException( indexName, index.schema() );
+                throw new DropIndexFailureException( "Unable to drop index: " + cause.getUserMessage( tokenNameLookup ), cause );
+            }
+        }
+        ktx.txState().indexDoDrop( index );
     }
 
     @Override
@@ -1193,10 +1208,11 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public void constraintDrop( SchemaDescriptor schema ) throws SchemaKernelException
+    public void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException
     {
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetForSchema( schema );
+        constraints = Iterators.filter( constraint -> constraint.type() == type, constraints );
         if ( constraints.hasNext() )
         {
             ConstraintDescriptor constraint = constraints.next();
@@ -1209,7 +1225,7 @@ public class Operations implements Write, SchemaWrite
                 String schemaDescription = schema.userDescription( tokenNameLookup );
                 String constraintDescription = constraints.next().userDescription( tokenNameLookup );
                 throw new DropConstraintFailureException( constraint, new IllegalArgumentException(
-                        "More than one constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription ) );
+                        "More than one " + type + " constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription ) );
             }
         }
         else
