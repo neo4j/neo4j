@@ -121,6 +121,24 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
+    public void deprecatedParameterSyntaxForPropertyMap()
+    {
+        assertNotifications( "EXPLAIN CREATE (:Label {props})", containsItem( deprecatedParameterSyntax ) );
+    }
+
+    @Test
+    public void deprecatedParameterSyntaxForExplicitIndex()
+    {
+        try (Transaction tx = db().beginTx())
+        {
+            db().index().forNodes( "indexName" );
+            tx.success();
+        }
+        assertNotifications( "EXPLAIN start n=node:indexName(key = {value}) return n", containsItem( deprecatedParameterSyntax ) );
+        assertNotifications( "EXPLAIN start n=node:indexName({value}) return n", containsItem( deprecatedParameterSyntax ) );
+    }
+
+    @Test
     public void deprecatedFilterShouldNotHitCacheForNewVersion()
     {
         assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds",

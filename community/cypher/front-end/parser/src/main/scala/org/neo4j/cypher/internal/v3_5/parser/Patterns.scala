@@ -127,7 +127,7 @@ trait Patterns extends Parser
   )
 
   private def MaybeProperties: Rule1[Option[org.neo4j.cypher.internal.v3_5.expressions.Expression]] = rule("a property map") (
-    optional(WS ~ (MapLiteral | Parameter))
+    optional(WS ~ (MapLiteral | Parameter | OldParameter))
   )
 }
 
