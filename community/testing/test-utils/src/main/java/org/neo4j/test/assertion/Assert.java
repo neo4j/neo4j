@@ -143,7 +143,7 @@ public final class Assert
                 break;
             }
 
-            Thread.sleep( 100 );
+            Thread.sleep( 10 );
         } while ( true );
 
         if ( !matched )
