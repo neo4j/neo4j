@@ -133,7 +133,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     }
 
     /**
-     * @return the {@link IndexConfig}, if any
+     * @return the {@link IndexConfig}
      */
     public IndexConfig getIndexConfig()
     {
@@ -141,9 +141,9 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     }
 
     /**
-     * Produce a new schema descriptor that is the same as this schema descriptor in every way, except it has the given index config.
-     * @param indexConfig The index config of the new schema descriptor.
-     * @return A new schema descriptor with the given index config.
+     * Produce a new index descriptor that is the same as this index descriptor in every way, except it has the given index config.
+     * @param indexConfig The index config of the new index descriptor.
+     * @return A new index descriptor with the given index config.
      */
     public IndexDescriptor withIndexConfig( IndexConfig indexConfig )
     {

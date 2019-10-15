@@ -39,7 +39,7 @@ public interface SchemaWrite
      * Create index from schema descriptor
      *
      * @param schema description of the index
-     * @param name name of the index
+     * @param name name of the index, or {@code null} to get a generated index name
      * @return the newly created index
      */
     IndexDescriptor indexCreate( SchemaDescriptor schema, String name ) throws KernelException;
@@ -48,8 +48,8 @@ public interface SchemaWrite
      * Create index from schema descriptor
      *
      * @param schema description of the index
-     * @param provider name of the desired index provider implementation
-     * @param name name of the index
+     * @param provider name of the desired index provider implementation, never {@code null}
+     * @param name name of the index, or {@code null} to get a generated index name
      * @return the newly created index
      */
     IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, String name ) throws KernelException;
