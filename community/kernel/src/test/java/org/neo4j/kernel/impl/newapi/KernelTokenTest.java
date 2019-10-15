@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import java.util.List;
+
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -30,22 +34,41 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class KernelTokenTest
 {
+    private KernelTransactionImplementation ktx;
+    private TransactionState transactionState;
+    private CommandCreationContext commandCreationContext;
+    private KernelToken kernelToken;
+    private StorageReader storageReader;
+    private TokenHolders tokenHolders;
+    private TokenHolder propertyKeyTokens;
+    private TokenHolder labelTokens;
+    private TokenHolder relationshipTypeTokens;
+
+    @BeforeEach
+    void setUp()
+    {
+        ktx = mock( KernelTransactionImplementation.class );
+        transactionState = mock( TransactionState.class );
+        when( ktx.txState() ).thenReturn( transactionState );
+        commandCreationContext = mock( CommandCreationContext.class );
+        storageReader = mock( StorageReader.class );
+        propertyKeyTokens = mock( TokenHolder.class );
+        labelTokens = mock( TokenHolder.class );
+        relationshipTypeTokens = mock( TokenHolder.class );
+        tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
+        kernelToken = new KernelToken( storageReader, commandCreationContext, ktx, tokenHolders );
+    }
+
     @Test
     void shouldAcquireTxStateBeforeAllocatingLabelTokenId() throws KernelException
     {
-        // given
-        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
-        when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
-        CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
-        KernelToken kernelToken = new KernelToken( mock( StorageReader.class ), commandCreationContext, ktx,
-                new TokenHolders( mock( TokenHolder.class ), mock( TokenHolder.class ), mock( TokenHolder.class ) ) );
-
         // when
         kernelToken.labelCreateForName( "MyLabel", false );
 
@@ -59,13 +82,6 @@ class KernelTokenTest
     @Test
     void shouldAcquireTxStateBeforeAllocatingPropertyKeyTokenId() throws KernelException
     {
-        // given
-        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
-        when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
-        CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
-        KernelToken kernelToken = new KernelToken( mock( StorageReader.class ), commandCreationContext, ktx,
-                new TokenHolders( mock( TokenHolder.class ), mock( TokenHolder.class ), mock( TokenHolder.class ) ) );
-
         // when
         kernelToken.propertyKeyCreateForName( "MyKey", false );
 
@@ -79,13 +95,6 @@ class KernelTokenTest
     @Test
     void shouldAcquireTxStateBeforeAllocatingRelationshipTypeTokenId() throws KernelException
     {
-        // given
-        KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
-        when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
-        CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
-        KernelToken kernelToken = new KernelToken( mock( StorageReader.class ), commandCreationContext, ktx,
-                new TokenHolders( mock( TokenHolder.class ), mock( TokenHolder.class ), mock( TokenHolder.class ) ) );
-
         // when
         kernelToken.relationshipTypeCreateForName( "MyType", false );
 
@@ -94,5 +103,41 @@ class KernelTokenTest
         inOrder.verify( ktx ).txState();
         inOrder.verify( commandCreationContext ).reserveRelationshipTypeTokenId();
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void invalidTokenNamesAreNotAllowed()
+    {
+        List<String> invalidNames = List.of( "", "\0", "`", "``", "`a`", "a`b", "a``b" );
+
+        assertThrows( IllegalTokenNameException.class, () -> kernelToken.labelGetOrCreateForName( null ),
+                "label name should be invalid: null" );
+        assertThrows( IllegalTokenNameException.class, () -> kernelToken.relationshipTypeGetOrCreateForName( null ),
+                "relationship type name should be invalid: null" );
+        assertThrows( IllegalTokenNameException.class, () -> kernelToken.propertyKeyGetOrCreateForName( null ),
+                "property key name should be invalid: null" );
+
+        for ( String invalidName : invalidNames )
+        {
+            assertThrows( IllegalTokenNameException.class, () -> kernelToken.labelGetOrCreateForName( invalidName ),
+                    "label name should be invalid: '" + invalidName + "'" );
+            assertThrows( IllegalTokenNameException.class, () -> kernelToken.relationshipTypeGetOrCreateForName( invalidName ),
+                    "relationship type name should be invalid: '" + invalidName + "'" );
+            assertThrows( IllegalTokenNameException.class, () -> kernelToken.propertyKeyGetOrCreateForName( invalidName ),
+                    "property key name name should be invalid: '" + invalidName + "'" );
+        }
+    }
+
+    @Test
+    void allowedSpecialCharactersInTokenNames() throws KernelException
+    {
+        List<String> validFancyTokenNames = List.of( "\t", " ", "  ", "\n", "\r", "\uD83D\uDE02", "\"", "'", "%", "@", "#", "$", "{", "}" );
+
+        for ( String validName : validFancyTokenNames )
+        {
+            kernelToken.labelGetOrCreateForName( validName );
+            kernelToken.relationshipTypeGetOrCreateForName( validName );
+            kernelToken.propertyKeyGetOrCreateForName( validName );
+        }
     }
 }

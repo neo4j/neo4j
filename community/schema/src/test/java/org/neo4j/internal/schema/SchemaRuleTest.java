@@ -22,11 +22,16 @@ package org.neo4j.internal.schema;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
@@ -125,5 +130,48 @@ class SchemaRuleTest
     private void assertUserDescription( String description, SchemaDescriptorSupplier schemaish )
     {
         assertEquals( description, schemaish.userDescription( lookup ), "wrong userDescription for " + schemaish );
+    }
+
+    @SuppressWarnings( {"OptionalAssignedToNull", "ConstantConditions"} )
+    @Test
+    void sanitiseNameMustRejectEmptyOptionalOrNullNames()
+    {
+        assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( Optional.empty() ) );
+        assertThrows( NullPointerException.class, () -> SchemaRule.sanitiseName( (Optional<String>) null ) );
+        assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( (String) null ) );
+    }
+
+    @Test
+    void sanitiseNameMustRejectReservedNames()
+    {
+        Set<String> reservedNames = ReservedSchemaRuleNames.getReservedNames();
+        reservedNames = reservedNames.stream().flatMap( n -> Stream.of( " " + n, n, n + " " ) ).collect( Collectors.toSet() );
+        for ( String reservedName : reservedNames )
+        {
+            assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( reservedName ), "reserved name: '" + reservedName + "'" );
+        }
+    }
+
+    @Test
+    void sanitiseNameMustRejectInvalidNames()
+    {
+        List<String> invalidNames = List.of( "", "\0", "`", "``", "`a`", "a`b", "a``b" , " ", "  ", "\t", " \t ", "\n", "\r" );
+
+        for ( String invalidName : invalidNames )
+        {
+            assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( invalidName ), "invalid name: '" + invalidName + "'" );
+        }
+    }
+
+    @Test
+    void sanitiseNameMustAcceptValudNames()
+    {
+        List<String> validNames = List.of(
+                ".", ",", "'", "a", " a", "a ", "a b", "a\n", "a\nb", "\"", "@", "#", "$", "%", "{", "}", "\uD83D\uDE02", ":", ";", "[", "]", "-", "_" );
+
+        for ( String validName : validNames )
+        {
+            SchemaRule.sanitiseName( validName );
+        }
     }
 }
