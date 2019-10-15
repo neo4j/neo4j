@@ -97,7 +97,7 @@ sealed trait NodeStartItem extends StartItem {
   def semanticCheck = declareVariable(variable, CTNode)
 }
 
-case class NodeByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
+case class NodeByParameter(variable: Variable, parameter: Param)(val position: InputPosition) extends NodeStartItem
 case class AllNodes(variable: Variable)(val position: InputPosition) extends NodeStartItem
 
 sealed trait RelationshipStartItem extends StartItem {
@@ -105,7 +105,7 @@ sealed trait RelationshipStartItem extends StartItem {
 }
 
 case class RelationshipByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition) extends RelationshipStartItem
+case class RelationshipByParameter(variable: Variable, parameter: Param)(val position: InputPosition) extends RelationshipStartItem
 case class AllRelationships(variable: Variable)(val position: InputPosition) extends RelationshipStartItem
 
 // no longer supported non-hint legacy start items

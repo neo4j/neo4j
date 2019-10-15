@@ -41,6 +41,7 @@ trait StartPoints extends Parser
     "(" ~~ (
         LiteralIds ~~> ((i: Variable, p: InputPosition, ids) => ast.NodeByIds(i, ids)(p))
       | Parameter ~~> ((i: Variable, p: InputPosition, param) => ast.NodeByParameter(i, param)(p))
+      | OldParameter ~~> ((i: Variable, p: InputPosition, param) => ast.NodeByParameter(i, param)(p))
       | "*" ~~> ((i: Variable, p: InputPosition) => ast.AllNodes(i)(p))
     ) ~~ ")"
   }
@@ -53,6 +54,7 @@ trait StartPoints extends Parser
     "(" ~~ (
         LiteralIds ~~> ((i: Variable, p: InputPosition, ids) => ast.RelationshipByIds(i, ids)(p))
       | Parameter ~~> ((i: Variable, p: InputPosition, param) => ast.RelationshipByParameter(i, param)(p))
+      | OldParameter ~~> ((i: Variable, p: InputPosition, param) => ast.RelationshipByParameter(i, param)(p))
       | "*" ~~> ((i: Variable, p: InputPosition) => ast.AllRelationships(i)(p))
     ) ~~ ")"
   }
