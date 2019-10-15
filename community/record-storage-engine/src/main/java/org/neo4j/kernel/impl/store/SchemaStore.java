@@ -492,10 +492,6 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     {
         try
         {
-            if ( indexType.equals( "ANY_GENERAL" ) || indexType.equals( "TREE" ) )
-            {
-                return IndexType.BTREE;
-            }
             return IndexType.valueOf( indexType );
         }
         catch ( Exception e )
