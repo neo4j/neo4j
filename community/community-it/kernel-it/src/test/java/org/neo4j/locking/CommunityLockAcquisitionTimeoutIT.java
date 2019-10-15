@@ -22,7 +22,6 @@ package org.neo4j.locking;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.time.Duration;
 import java.util.concurrent.Future;
@@ -99,7 +98,6 @@ public class CommunityLockAcquisitionTimeoutIT
     }
 
     @Test
-    @Timeout( 5 )
     void timeoutOnAcquiringExclusiveLock()
     {
         var e = assertThrows( Exception.class, () ->
@@ -137,7 +135,6 @@ public class CommunityLockAcquisitionTimeoutIT
     }
 
     @Test
-    @Timeout( 5 )
     void timeoutOnAcquiringSharedLock()
     {
         var e = assertThrows( Exception.class, () ->
