@@ -724,15 +724,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
-    val ktx = transactionalContext.kernelTransaction
-    ktx.schemaWrite().indexDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
-  }
+  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+    transactionalContext.kernelTransaction.schemaWrite().indexDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
 
-  override def dropIndexRule(name: String): Unit = {
-    val ktx = transactionalContext.kernelTransaction
-    ktx.schemaWrite().indexDrop(name)
-  }
+  override def dropIndexRule(name: String): Unit =
+    transactionalContext.kernelTransaction.schemaWrite().indexDrop(name)
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), name.orNull)
@@ -764,10 +760,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(SchemaDescriptor.forRelType(relTypeId, propertyKeyId))
 
-  override def dropNamedConstraint(name: String): Unit = {
-    val ktx = transactionalContext.kernelTransaction
-    ktx.schemaWrite().constraintDrop(name)
-  }
+  override def dropNamedConstraint(name: String): Unit =
+   transactionalContext.kernelTransaction.schemaWrite().constraintDrop(name)
 
   override def getImportURL(url: URL): Either[String, URL] = transactionalContext.graph match {
     case db: GraphDatabaseQueryService =>
