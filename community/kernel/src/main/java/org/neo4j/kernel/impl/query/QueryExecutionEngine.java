@@ -35,6 +35,9 @@ public interface QueryExecutionEngine
     Result profileQuery( String query, Map<String,Object> parameters, TransactionalContext context )
             throws QueryExecutionKernelException;
 
+    /**
+     * @return {@code true} if the query is a PERIODIC COMMIT query and not an EXPLAIN query
+     */
     boolean isPeriodicCommit( String query );
 
     String prettify( String query );

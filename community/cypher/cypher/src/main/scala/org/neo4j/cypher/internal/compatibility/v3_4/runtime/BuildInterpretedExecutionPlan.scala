@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, ProfileMode, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, ExplainMode, InternalExecutionResult, ProfileMode, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
@@ -85,7 +85,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
 
       builder.setQueryContext(builderContext)
 
-      if (periodicCommit.isDefined) {
+      if (periodicCommit.isDefined && planType != ExplainMode) {
         if (!builderContext.transactionalContext.isTopLevelTx)
           throw new PeriodicCommitInOpenTransactionException()
         builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)

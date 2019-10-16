@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_4.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper, ValueConversion}
-import org.neo4j.cypher.internal.runtime.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, isGraphKernelResultValue}
+import org.neo4j.cypher.internal.runtime.{ExplainMode, RuntimeJavaValueConverter, RuntimeScalaValueConverter, isGraphKernelResultValue}
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
@@ -118,9 +118,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
     preparedPlanExecution.execute(wrappedContext, mapParams)
   }
-
-  protected def parseQuery(queryText: String): ParsedQuery =
-    parsePreParsedQuery(preParseQuery(queryText), CompilationPhaseTracer.NO_TRACING)
 
   @throws(classOf[SyntaxException])
   private def parsePreParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
@@ -279,7 +276,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def prettify(query: String): String = Prettifier(query)
 
-  def isPeriodicCommit(query: String) = parseQuery(query).isPeriodicCommit
+  /**
+    * @return { @code true} if the query is a PERIODIC COMMIT query and not an EXPLAIN query
+    */
+  def isPeriodicCommit(query: String): Boolean = {
+    val preParsedQuery = preParseQuery(query)
+    preParsedQuery.executionMode != CypherExecutionMode.explain && parsePreParsedQuery(preParsedQuery, CompilationPhaseTracer.NO_TRACING).isPeriodicCommit
+  }
 
   private def createCompilerDelegator(): CompilerEngineDelegator = {
     val version: CypherVersion = CypherVersion(optGraphSetting[String](

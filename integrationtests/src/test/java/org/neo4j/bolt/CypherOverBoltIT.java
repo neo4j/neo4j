@@ -40,6 +40,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.io.fs.FileUtils;
@@ -87,6 +88,22 @@ public class CypherOverBoltIT
                 assertEquals( lineCountInCSV, countOfNodes );
                 session.reset();
             }
+        }
+    }
+
+    @Test
+    public void explainingPeriodicCommitInOpenTransactionShouldNotFail()
+    {
+        try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() ); Session session = driver.session() )
+        {
+            ResultSummary summary = session.readTransaction( tx ->
+                                                             {
+                                                                 StatementResult result =
+                                                                         tx.run( "EXPLAIN USING PERIODIC COMMIT " +
+                                                                                 "100 LOAD CSV FROM $file AS row CREATE (n:Row) SET n.row = row" );
+                                                                 return result.summary();
+                                                             } );
+            assertTrue( summary.hasPlan() );
         }
     }
 

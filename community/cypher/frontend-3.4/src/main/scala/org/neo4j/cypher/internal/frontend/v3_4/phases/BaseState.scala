@@ -34,6 +34,9 @@ trait BaseState {
 
   def accumulatedConditions: Set[Condition]
 
+  /**
+    * @return { @code true} if the query is a PERIODIC COMMIT query and not an EXPLAIN query
+    */
   def isPeriodicCommit: Boolean = statement() match {
     case Query(Some(_), _) => true
     case _ => false

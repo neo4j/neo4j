@@ -530,6 +530,33 @@ public class BoltConnectionIT
     }
 
     @Test
+    public void shouldSupportUsingExplainPeriodicCommitInTransaction() throws Exception
+    {
+        // Given
+        BoltStateMachine machine = env.newMachine( boltChannel );
+        machine.init( USER_AGENT, emptyMap(), null );
+        MapValue params = map( "csvFileUrl", createLocalIrisData( machine ) );
+        runAndPull( machine, "BEGIN" );
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.run(
+                "EXPLAIN USING PERIODIC COMMIT 40\n" +
+                "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
+                "MATCH (c:Class {name: l.class_name})\n" +
+                "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l" +
+                ".petal_length, petal_width: l.petal_width})\n" +
+                "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
+                "RETURN count(*) AS c",
+                params,
+                recorder
+        );
+
+        // Then
+        assertThat( recorder.nextResponse(), succeeded() );
+    }
+
+    @Test
     public void shouldCloseTransactionOnCommit() throws Exception
     {
         // Given
