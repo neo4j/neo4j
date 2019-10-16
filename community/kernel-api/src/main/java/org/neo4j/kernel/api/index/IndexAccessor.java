@@ -101,6 +101,37 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
 
     BoundedIterable<Long> newAllEntriesReader();
 
+    default IndexEntriesReader[] newAllIndexEntriesReader( int partitions )
+    {
+        Iterator<Long> ids = newAllEntriesReader().iterator();
+        IndexEntriesReader reader = new IndexEntriesReader()
+        {
+            @Override
+            public Value[] values()
+            {
+                return null;
+            }
+
+            @Override
+            public long next()
+            {
+                return ids.next();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return ids.hasNext();
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+        return new IndexEntriesReader[]{reader};
+    }
+
     /**
      * Should return a full listing of all files needed by this index accessor to work with the index. The files
      * need to remain available until the resource iterator returned here is closed. This is used to duplicate created

@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,10 +30,12 @@ import org.neo4j.common.Validator;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
@@ -88,4 +94,67 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
         return map;
     }
 
+    @Override
+    public IndexEntriesReader[] newAllIndexEntriesReader( int partitions )
+    {
+        GenericKey lowest = layout.newKey();
+        lowest.initialize( Long.MIN_VALUE );
+        lowest.initValuesAsLowest();
+        GenericKey highest = layout.newKey();
+        highest.initialize( Long.MAX_VALUE );
+        highest.initValuesAsHighest();
+        try
+        {
+            Collection<Seeker<GenericKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions );
+            Collection<IndexEntriesReader> readers = new ArrayList<>();
+            for ( Seeker<GenericKey,NativeIndexValue> seeker : seekers )
+            {
+                readers.add( new IndexEntriesReader()
+                {
+                    @Override
+                    public long next()
+                    {
+                        return seeker.key().getEntityId();
+                    }
+
+                    @Override
+                    public boolean hasNext()
+                    {
+                        try
+                        {
+                            return seeker.next();
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new UncheckedIOException( e );
+                        }
+                    }
+
+                    @Override
+                    public Value[] values()
+                    {
+                        return null; // TODO
+                    }
+
+                    @Override
+                    public void close()
+                    {
+                        try
+                        {
+                            seeker.close();
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new UncheckedIOException( e );
+                        }
+                    }
+                } );
+            }
+            return readers.toArray( new IndexEntriesReader[0] );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
 }
