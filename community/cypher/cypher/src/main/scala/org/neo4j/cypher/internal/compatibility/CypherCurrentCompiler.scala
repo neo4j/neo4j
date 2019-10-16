@@ -201,8 +201,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                    queryType, allNotifications)
           } else {
 
-            val doProfile = innerExecutionMode == ProfileMode
-            val runtimeResult = executionPlan.run(queryContext, doProfile, params)
+            val runtimeResult = executionPlan.run(queryContext, innerExecutionMode, params)
 
             new StandardInternalExecutionResult(queryContext,
                                                 executionPlan.runtimeName,

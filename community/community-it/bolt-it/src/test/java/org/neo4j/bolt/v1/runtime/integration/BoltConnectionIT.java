@@ -549,20 +549,47 @@ public class BoltConnectionIT
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         machine.process( new RunMessage(
-                "USING PERIODIC COMMIT 40\n" +
+                                 "USING PERIODIC COMMIT 40\n" +
+                                 "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
+                                 "MATCH (c:Class {name: l.class_name})\n" +
+                                 "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l" +
+                                 ".petal_length, petal_width: l.petal_width})\n" +
+                                 "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
+                                 "RETURN count(*) AS c",
+                                 params ),
+                         recorder
+        );
+
+        // Then
+        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SemanticError ) );
+        // "Executing queries that use periodic commit in an open transaction is not possible."
+    }
+
+    @Test
+    public void shouldSupportUsingExplainPeriodicCommitInTransaction() throws Exception
+    {
+        // Given
+        BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        MapValue params = map( "csvFileUrl", createLocalIrisData( machine ) );
+        runAndPull( machine, "BEGIN" );
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process( new RunMessage(
+                "EXPLAIN USING PERIODIC COMMIT 40\n" +
                         "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
                         "MATCH (c:Class {name: l.class_name})\n" +
                         "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l" +
                         ".petal_length, petal_width: l.petal_width})\n" +
                         "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
                         "RETURN count(*) AS c",
-                        params ),
+                params ),
                 recorder
         );
 
         // Then
-        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SemanticError ) );
-        // "Executing queries that use periodic commit in an open transaction is not possible."
+        assertThat( recorder.nextResponse(), succeeded() );
     }
 
     @Test

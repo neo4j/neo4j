@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v3_5.util.InternalNotification
 
 abstract class ExecutionPlan {
 
-  def run(queryContext: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult
+  def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): RuntimeResult
 
   def runtimeName: RuntimeName
 
@@ -38,8 +38,9 @@ abstract class ExecutionPlan {
 }
 
 abstract class DelegatingExecutionPlan(inner: ExecutionPlan) extends ExecutionPlan {
-  override def run(queryContext: QueryContext, doProfile: Boolean,
-                   params: MapValue): RuntimeResult = inner.run(queryContext, doProfile, params)
+  override def run(queryContext: QueryContext,
+                   planType: ExecutionMode,
+                   params: MapValue): RuntimeResult = inner.run(queryContext, planType, params)
 
   override def runtimeName: RuntimeName = inner.runtimeName
 
