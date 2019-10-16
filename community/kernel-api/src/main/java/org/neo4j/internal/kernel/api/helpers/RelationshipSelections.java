@@ -19,9 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -52,20 +49,38 @@ public final class RelationshipSelections
      * @return A cursor that allows traversing the relationship chain.
      */
     public static RelationshipSelectionCursor outgoingCursor( CursorFactory cursors,
-                                                              NodeCursor node,
-                                                              int[] types )
+            NodeCursor node,
+            int[] types )
     {
         if ( node.isDense() )
         {
             RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            withDenseCursors( cursors,
-                              ( group, traversal ) -> setupOutgoingDense( selectionCursor, group, traversal, node, types ) );
+            RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupOutgoingDense( selectionCursor, group, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                IOUtils.<Cursor>closeAllUnchecked( group, traversal );
+                throw t;
+            }
             return selectionCursor;
         }
         else
         {
             RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-            withSparseCursor( cursors, traversal -> setupOutgoingSparse( selectionCursor, traversal, node, types ) );
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupOutgoingSparse( selectionCursor, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                traversal.close();
+                throw t;
+            }
             return selectionCursor;
         }
     }
@@ -104,14 +119,32 @@ public final class RelationshipSelections
         if ( node.isDense() )
         {
             RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            withDenseCursors( cursors,
-                              ( group, traversal ) -> setupIncomingDense( selectionCursor, group, traversal, node, types ) );
+            RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupIncomingDense( selectionCursor, group, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                IOUtils.<Cursor>closeAllUnchecked( group, traversal );
+                throw t;
+            }
             return selectionCursor;
         }
         else
         {
             RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-            withSparseCursor( cursors, traversal -> setupIncomingSparse( selectionCursor, traversal, node, types ) );
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupIncomingSparse( selectionCursor, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                traversal.close();
+                throw t;
+            }
             return selectionCursor;
         }
     }
@@ -150,14 +183,32 @@ public final class RelationshipSelections
         if ( node.isDense() )
         {
             RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            withDenseCursors( cursors,
-                              ( group, traversal ) -> setupAllDense( selectionCursor, group, traversal, node, types ) );
+            RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupAllDense( selectionCursor, group, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                IOUtils.<Cursor>closeAllUnchecked( group, traversal );
+                throw t;
+            }
             return selectionCursor;
         }
         else
         {
             RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-            withSparseCursor( cursors, traversal -> setupAllSparse( selectionCursor, traversal, node, types ) );
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupAllSparse( selectionCursor, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                traversal.close();
+                throw t;
+            }
             return selectionCursor;
         }
     }
@@ -199,15 +250,33 @@ public final class RelationshipSelections
         {
             RelationshipDenseSelectionIterator<T> selectionIterator =
                     new RelationshipDenseSelectionIterator<>( factory );
-            withDenseCursors( cursors,
-                              ( group, traversal ) -> setupOutgoingDense( selectionIterator, group, traversal, node, types ) );
+            RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupOutgoingDense( selectionIterator, group, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                IOUtils.<Cursor>closeAllUnchecked( group, traversal );
+                throw t;
+            }
             return selectionIterator;
         }
         else
         {
             RelationshipSparseSelectionIterator<T> selectionIterator =
                     new RelationshipSparseSelectionIterator<>( factory );
-            withSparseCursor( cursors, traversal -> setupOutgoingSparse( selectionIterator, traversal, node, types ) );
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupOutgoingSparse( selectionIterator, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                traversal.close();
+                throw t;
+            }
             return selectionIterator;
         }
     }
@@ -230,15 +299,33 @@ public final class RelationshipSelections
         {
             RelationshipDenseSelectionIterator<T> selectionIterator =
                     new RelationshipDenseSelectionIterator<>( factory );
-            withDenseCursors( cursors,
-                              ( group, traversal ) -> setupIncomingDense( selectionIterator, group, traversal, node, types ) );
+            RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupIncomingDense( selectionIterator, group, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                IOUtils.<Cursor>closeAllUnchecked( group, traversal );
+                throw t;
+            }
             return selectionIterator;
         }
         else
         {
             RelationshipSparseSelectionIterator<T> selectionIterator =
                     new RelationshipSparseSelectionIterator<>( factory );
-            withSparseCursor( cursors, traversal -> setupIncomingSparse( selectionIterator, traversal, node, types ) );
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupIncomingSparse( selectionIterator, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                traversal.close();
+                throw t;
+            }
             return selectionIterator;
         }
     }
@@ -261,15 +348,33 @@ public final class RelationshipSelections
         {
             RelationshipDenseSelectionIterator<T> selectionIterator =
                     new RelationshipDenseSelectionIterator<>( factory );
-            withDenseCursors( cursors,
-                              ( group, traversal ) -> setupAllDense( selectionIterator, group, traversal, node, types ) );
+            RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupAllDense( selectionIterator, group, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                IOUtils.<Cursor>closeAllUnchecked( group, traversal );
+                throw t;
+            }
             return selectionIterator;
         }
         else
         {
             RelationshipSparseSelectionIterator<T> selectionIterator =
                     new RelationshipSparseSelectionIterator<>( factory );
-            withSparseCursor( cursors, traversal -> setupAllSparse( selectionIterator, traversal, node, types ) );
+            RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+            try
+            {
+                setupAllSparse( selectionIterator, traversal, node, types );
+            }
+            catch ( Throwable t )
+            {
+                traversal.close();
+                throw t;
+            }
             return selectionIterator;
         }
     }
@@ -328,36 +433,5 @@ public final class RelationshipSelections
     {
         node.allRelationships( traversalCursor );
         sparseSelection.all( traversalCursor, types );
-    }
-
-    private static void withDenseCursors( CursorFactory cursors,
-                                          BiConsumer<RelationshipGroupCursor, RelationshipTraversalCursor> f )
-    {
-        RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
-        RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
-        try
-        {
-            f.accept( group, traversal );
-        }
-        catch ( Throwable t )
-        {
-            IOUtils.<Cursor>closeAllUnchecked( group, traversal );
-            throw t;
-        }
-    }
-
-    private static void withSparseCursor( CursorFactory cursors,
-                                          Consumer<RelationshipTraversalCursor> f )
-    {
-        RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
-        try
-        {
-            f.accept( traversal );
-        }
-        catch ( Throwable t )
-        {
-            traversal.close();
-            throw t;
-        }
     }
 }
