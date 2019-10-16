@@ -55,10 +55,12 @@ public class IndexSamplingController
     private final boolean backgroundSampling;
     private final Lock samplingLock = new ReentrantLock();
     private final Log log;
-    private static final boolean LOG_RECOVER_INDEX_SAMPLES = FeatureToggles.flag( IndexSamplingController.class, "log_recover_index_samples", false );
-    private static final boolean ASYNC_RECOVER_INDEX_SAMPLES = FeatureToggles.flag( IndexSamplingController.class, "async_recover_index_samples", false );
-    private static final boolean ASYNC_RECOVER_INDEX_SAMPLES_WAIT =
-            FeatureToggles.flag( IndexSamplingController.class, "async_recover_index_samples_wait", true );
+    static final String LOG_RECOVER_INDEX_SAMPLES_NAME = "log_recover_index_samples";
+    static final String ASYNC_RECOVER_INDEX_SAMPLES_NAME = "async_recover_index_samples";
+    static final String ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME = "async_recover_index_samples_wait";
+    private final boolean logRecoverIndexSamples;
+    private final boolean asyncRecoverIndexSamples;
+    private final boolean asyncRecoverIndexSamplesWait;
 
     private JobHandle backgroundSamplingHandle;
 
@@ -80,6 +82,9 @@ public class IndexSamplingController
         this.scheduler = scheduler;
         this.indexRecoveryCondition = indexRecoveryCondition;
         this.log = logProvider.getLog( getClass() );
+        this.logRecoverIndexSamples = FeatureToggles.flag( IndexSamplingController.class, LOG_RECOVER_INDEX_SAMPLES_NAME, false );
+        this.asyncRecoverIndexSamples = FeatureToggles.flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_NAME, false );
+        this.asyncRecoverIndexSamplesWait = FeatureToggles.flag( IndexSamplingController.class, ASYNC_RECOVER_INDEX_SAMPLES_WAIT_NAME, true );
     }
 
     public void sampleIndexes( IndexSamplingMode mode )
@@ -110,13 +115,12 @@ public class IndexSamplingController
                 CapableIndexDescriptor descriptor = indexMap.getIndexProxy( indexId ).getDescriptor();
                 if ( indexRecoveryCondition.test( descriptor ) )
                 {
-                    if ( LOG_RECOVER_INDEX_SAMPLES )
+                    if ( logRecoverIndexSamples )
                     {
-                        log.info( "index %d, %s, %s requires sampling", indexId,
-                                  descriptor.getName(), descriptor.getUserSuppliedName().orElse( "<N/A>" ) );
+                        log.info( "Index requires sampling, id=%d, name=%s.", indexId, descriptor.getName() );
                     }
 
-                    if ( ASYNC_RECOVER_INDEX_SAMPLES )
+                    if ( asyncRecoverIndexSamples )
                     {
                         asyncSamplingJobs.add( sampleIndexOnTracker( indexMap, indexId ) );
                     }
@@ -127,13 +131,13 @@ public class IndexSamplingController
                 }
                 else
                 {
-                    if ( LOG_RECOVER_INDEX_SAMPLES )
+                    if ( logRecoverIndexSamples )
                     {
-                        log.info( "index %d, %s doesn't require sampling", indexId, descriptor.getName() );
+                        log.info( "Index does not require sampling, id=%d, name=%s.", indexId, descriptor.getName() );
                     }
                 }
             }
-            if ( ASYNC_RECOVER_INDEX_SAMPLES_WAIT )
+            if ( asyncRecoverIndexSamplesWait )
             {
                 waitForAsyncIndexSamples( asyncSamplingJobs );
             }
