@@ -53,7 +53,35 @@ import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchem
 
 public class IndexSamplingControllerTest
 {
+    private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
+    private final IndexSamplingJobFactory jobFactory = mock( IndexSamplingJobFactory.class );
+    private final IndexSamplingJobQueue<Long> jobQueue = new IndexSamplingJobQueue<>( Predicates.alwaysTrue() );
+    private final IndexSamplingJobTracker tracker = mock( IndexSamplingJobTracker.class );
+    private final JobScheduler scheduler = mock( JobScheduler.class );
+    private final IndexMapSnapshotProvider snapshotProvider = mock( IndexMapSnapshotProvider.class );
+    private final IndexMap indexMap = new IndexMap();
+    private final long indexId = 2;
+    private final long anotherIndexId = 3;
+    private final IndexProxy indexProxy = mock( IndexProxy.class );
+    private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
+    private final CapableIndexDescriptor descriptor =
+            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).withId( indexId ).withoutCapabilities();
+    private final CapableIndexDescriptor anotherDescriptor =
+            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withId( anotherIndexId ).withoutCapabilities();
+    private final IndexSamplingJob job = mock( IndexSamplingJob.class );
+    private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
     private AssertableLogProvider logProvider;
+
+    {
+        when( samplingConfig.backgroundSampling() ).thenReturn( true );
+        when( samplingConfig.jobLimit() ).thenReturn( 1 );
+        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
+        when( anotherIndexProxy.getDescriptor() ).thenReturn( anotherDescriptor );
+        when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
+        when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
+        when( jobFactory.create( anotherIndexId, anotherIndexProxy ) ).thenReturn( anotherJob );
+        indexMap.putIndexProxy( indexProxy );
+    }
 
     @Before
     public void setupLogProvider()
@@ -351,51 +379,6 @@ public class IndexSamplingControllerTest
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 
-    private static class Always implements IndexSamplingController.RecoveryCondition
-    {
-        private final boolean ans;
-
-        Always( boolean ans )
-        {
-            this.ans = ans;
-        }
-
-        @Override
-        public boolean test( StoreIndexDescriptor descriptor )
-        {
-            return ans;
-        }
-    }
-
-    private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
-    private final IndexSamplingJobFactory jobFactory = mock( IndexSamplingJobFactory.class );
-    private final IndexSamplingJobQueue<Long> jobQueue = new IndexSamplingJobQueue<>( Predicates.alwaysTrue() );
-    private final IndexSamplingJobTracker tracker = mock( IndexSamplingJobTracker.class );
-    private final JobScheduler scheduler = mock( JobScheduler.class );
-    private final IndexMapSnapshotProvider snapshotProvider = mock( IndexMapSnapshotProvider.class );
-    private final IndexMap indexMap = new IndexMap();
-    private final long indexId = 2;
-    private final long anotherIndexId = 3;
-    private final IndexProxy indexProxy = mock( IndexProxy.class );
-    private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
-    private final CapableIndexDescriptor descriptor =
-            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).withId( indexId ).withoutCapabilities();
-    private final CapableIndexDescriptor anotherDescriptor =
-            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withId( anotherIndexId ).withoutCapabilities();
-    private final IndexSamplingJob job = mock( IndexSamplingJob.class );
-    private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
-
-    {
-        when( samplingConfig.backgroundSampling() ).thenReturn( true );
-        when( samplingConfig.jobLimit() ).thenReturn( 1 );
-        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
-        when( anotherIndexProxy.getDescriptor() ).thenReturn( anotherDescriptor );
-        when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
-        when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
-        when( jobFactory.create( anotherIndexId, anotherIndexProxy ) ).thenReturn( anotherJob );
-        indexMap.putIndexProxy( indexProxy );
-    }
-
     private IndexSamplingController.RecoveryCondition always( boolean ans )
     {
         return new Always( ans );
@@ -411,5 +394,21 @@ public class IndexSamplingControllerTest
     private Runnable runController( final IndexSamplingController controller, final IndexSamplingMode mode )
     {
         return () -> controller.sampleIndexes( mode );
+    }
+
+    private static class Always implements IndexSamplingController.RecoveryCondition
+    {
+        private final boolean ans;
+
+        Always( boolean ans )
+        {
+            this.ans = ans;
+        }
+
+        @Override
+        public boolean test( StoreIndexDescriptor descriptor )
+        {
+            return ans;
+        }
     }
 }
