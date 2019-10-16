@@ -118,6 +118,12 @@ public interface AccessMode
         }
 
         @Override
+        public boolean allowsLabel( long label )
+        {
+            return read;
+        }
+
+        @Override
         public boolean disallowsTraverseLabel( long label )
         {
             return false;
@@ -205,6 +211,8 @@ public interface AccessMode
     boolean allowsTraverseAllLabels();
     /** true if all nodes with this label can be traversed */
     boolean allowsTraverseLabel( long label );
+    /** true if this label is visible */
+    boolean allowsLabel( long label );
     /** true if this label is blacklisted for traversal */
     boolean disallowsTraverseLabel( long label );
 
