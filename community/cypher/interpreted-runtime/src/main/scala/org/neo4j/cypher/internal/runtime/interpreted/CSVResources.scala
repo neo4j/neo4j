@@ -53,10 +53,15 @@ object CSVResources {
 case class CSVResource(url: URL, resource: AutoCloseable) extends DefaultCloseListenable with AutoCloseablePlus {
   override def closeInternal(): Unit = resource.close()
 
+  override def close(): Unit = {
+    closeInternal()
+    if (getCloseListener != null) getCloseListener.onClosed(this)
+  }
+
   // This is not correct, but hopefully the defensive answer. We don't expect this to be called,
   // but splitting isClosed and setCloseListener into different interfaces leads to
   // multiple inheritance problems instead.
-  override def isClosed: Boolean = false
+  override def isClosed = false
 }
 
 class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource {

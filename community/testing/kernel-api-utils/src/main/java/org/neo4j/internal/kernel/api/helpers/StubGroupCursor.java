@@ -63,6 +63,16 @@ public class StubGroupCursor extends DefaultCloseListenable implements Relations
     }
 
     @Override
+    public void close()
+    {
+        closeInternal();
+        if ( getCloseListener() != null )
+        {
+            getCloseListener().onClosed( this );
+        }
+    }
+
+    @Override
     public void closeInternal()
     {
         isClosed = true;

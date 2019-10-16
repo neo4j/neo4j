@@ -89,6 +89,12 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
         }
 
         @Override
+        public void close()
+        {
+            //do nothing
+        }
+
+        @Override
         public void closeInternal()
         {
 

@@ -39,6 +39,16 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     }
 
     @Override
+    public void close()
+    {
+        closeInternal();
+        if ( getCloseListener() != null )
+        {
+            getCloseListener().onClosed( this );
+        }
+    }
+
+    @Override
     public long relationshipReference()
     {
         return cursor.relationshipReference();

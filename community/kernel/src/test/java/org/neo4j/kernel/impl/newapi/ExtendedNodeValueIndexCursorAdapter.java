@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
@@ -35,6 +36,16 @@ public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable 
     public void closeInternal()
     {
 
+    }
+
+    @Override
+    public void close()
+    {
+        CloseListener closeListener = getCloseListener();
+        if ( closeListener != null )
+        {
+            getCloseListener().onClosed( this );
+        }
     }
 
     @Override

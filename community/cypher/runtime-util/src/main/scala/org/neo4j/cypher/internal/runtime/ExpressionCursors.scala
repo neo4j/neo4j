@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.internal.kernel.api.{AutoCloseablePlus, CursorFactory, DefaultCloseListenable, NodeCursor, PropertyCursor, RelationshipScanCursor}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.io.IOUtils
 
 /**
@@ -35,6 +35,11 @@ class ExpressionCursors(cursorFactory: CursorFactory) extends DefaultCloseListen
 
   override def isClosed: Boolean = {
     nodeCursor.isClosed && relationshipScanCursor.isClosed && propertyCursor.isClosed
+  }
+
+  override def close(): Unit = {
+    closeInternal()
+    if (getCloseListener != null) getCloseListener.onClosed(this)
   }
 
   override def closeInternal(): Unit = {

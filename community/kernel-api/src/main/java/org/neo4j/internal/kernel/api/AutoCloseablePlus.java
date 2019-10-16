@@ -28,14 +28,7 @@ package org.neo4j.internal.kernel.api;
 public interface AutoCloseablePlus extends AutoCloseable
 {
     @Override
-    default void close()
-    {
-        closeInternal();
-        if ( getCloseListener() != null )
-        {
-            getCloseListener().onClosed( this );
-        }
-    }
+    void close();
 
     /**
      * Same as close(), but invoked before the listener has been notified.

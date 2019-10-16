@@ -26,9 +26,9 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext}
-import org.neo4j.cypher.internal.v4_0.expressions.{CachedProperty, NODE_TYPE, PropertyKeyName, PropertyKeyToken, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.kernel.api.{DefaultCloseListenable, IndexQuery, KernelReadTracer, NodeCursor, NodeValueIndexCursor}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{NodeValue, VirtualNodeValue, VirtualValues}
@@ -113,6 +113,9 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
       }
     }
 
+    override def close(): Unit = {
+      if (getCloseListener != null) getCloseListener.onClosed(this)
+    }
     override def closeInternal(): Unit = {}
 
     override def isClosed: Boolean = current != null

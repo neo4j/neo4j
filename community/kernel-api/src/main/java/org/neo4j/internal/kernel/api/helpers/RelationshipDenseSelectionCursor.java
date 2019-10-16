@@ -111,4 +111,14 @@ public final class RelationshipDenseSelectionCursor extends RelationshipDenseSel
             return "RelationshipDenseSelectionCursor[relCursor=" + relationshipCursor.toString() + "]";
         }
     }
+
+    @Override
+    public void close()
+    {
+        closeInternal();
+        if ( getCloseListener() != null )
+        {
+            getCloseListener().onClosed( this );
+        }
+    }
 }

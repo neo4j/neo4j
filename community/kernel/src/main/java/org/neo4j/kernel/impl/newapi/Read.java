@@ -368,6 +368,16 @@ abstract class Read implements TxStateHolder,
         }
 
         @Override
+        public void close()
+        {
+            closeInternal();
+            if ( getCloseListener() != null )
+            {
+                getCloseListener().onClosed( this );
+            }
+        }
+
+        @Override
         public void closeInternal()
         {
             if ( !isClosed() )

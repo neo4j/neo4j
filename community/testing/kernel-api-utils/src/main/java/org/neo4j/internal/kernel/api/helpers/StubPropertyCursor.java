@@ -47,6 +47,16 @@ public class StubPropertyCursor extends DefaultCloseListenable implements Proper
     }
 
     @Override
+    public void close()
+    {
+        closeInternal();
+        if ( getCloseListener() != null )
+        {
+            getCloseListener().onClosed( this );
+        }
+    }
+
+    @Override
     public void closeInternal()
     {
 

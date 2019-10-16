@@ -244,6 +244,16 @@ public abstract class CompiledExpandUtils
         return new RelationshipSelectionCursor()
         {
             @Override
+            public void close()
+            {
+                closeInternal();
+                if ( getCloseListener() != null )
+                {
+                    getCloseListener().onClosed( this );
+                }
+            }
+
+            @Override
             public void closeInternal()
             {
                 allRelationships.close();

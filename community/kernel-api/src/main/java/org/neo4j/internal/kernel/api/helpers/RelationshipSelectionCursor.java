@@ -62,6 +62,12 @@ public interface RelationshipSelectionCursor extends AutoCloseablePlus
         }
 
         @Override
+        public void close()
+        {
+
+        }
+
+        @Override
         public long relationshipReference()
         {
             return -1;
