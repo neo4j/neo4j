@@ -88,11 +88,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final String DEFAULT_DATABASES_ROOT_DIR_NAME = "databases";
     public static final String DEFAULT_TX_LOGS_ROOT_DIR_NAME = "tx-logs";
 
-    @Internal
-    @Description( "Root relative to which directory settings are resolved. This is set in code and should never be " +
-            "configured explicitly." )
+    @Description( "Root relative to which directory settings are resolved." )
     @DocumentedDefaultValue( "Defaults to current working directory" )
-    public static final Setting<Path> neo4j_home = newBuilder( "unsupported.dbms.directories.neo4j_home", PATH, Path.of( "" ).toAbsolutePath() )
+    public static final Setting<Path> neo4j_home = newBuilder( "dbms.directories.neo4j_home", PATH, Path.of( "" ).toAbsolutePath() )
             .addConstraint( ABSOLUTE_PATH )
             .immutable()
             .build();
