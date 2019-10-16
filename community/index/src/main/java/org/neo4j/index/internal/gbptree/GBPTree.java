@@ -30,11 +30,15 @@ import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.index.internal.gbptree.TreeNode.Type;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -964,6 +968,94 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return new SeekCursor<>( cursor, bTreeNode, fromInclusive, toExclusive, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchupSupplier.get(), rootGeneration,
                 exceptionDecorator, SeekCursor.DEFAULT_MAX_READ_AHEAD );
+    }
+
+    /**
+     * Partitions the provided key range into {@code numberOfPartitions} partitions and instantiates a {@link Seeker} for each.
+     * Caller can seek through the partitions in parallel. Caller is responsible for closing the returned {@link Seeker seekers}.
+     *
+     * To keep implementation (much) simpler the partitioning is done on the root only, which means that the partitioning will be less granular
+     * the bigger keys are in the root and if there there can only be returned max numberOfRootKeys+1 partitions from this method.
+     *
+     * @param fromInclusive lower bound of the range to seek (inclusive).
+     * @param toExclusive higher bound of the range to seek (exclusive).
+     * @param numberOfPartitions number of partitions desired by the caller. If the tree is small a lower number of partitions may be returned.
+     * The number of partitions will never be higher than the provided {@code numberOfPartitions}.
+     * @return a {@link Collection} of {@link Seeker seekers}, each having their own distinct partition to seek. Collectively they
+     * seek across the whole provided range.
+     * @throws IOException on error reading from index.
+     */
+    public Collection<Seeker<KEY,VALUE>> partitionedSeek( KEY fromInclusive, KEY toExclusive, int numberOfPartitions ) throws IOException
+    {
+        // Read the root w/ all its keys
+        List<KEY> splits;
+        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            boolean goodRead;
+            do
+            {
+                goodRead = false;
+                splits = new ArrayList<>();
+                root.goTo( cursor );
+                byte nodeType = TreeNode.nodeType( cursor );
+                byte treeNodeTypeByte = TreeNode.treeNodeType( cursor );
+                int keyCount = TreeNode.keyCount( cursor );
+                if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE ||
+                     (treeNodeTypeByte != TreeNode.LEAF_FLAG && treeNodeTypeByte != TreeNode.INTERNAL_FLAG) ||
+                     !bTreeNode.reasonableKeyCount( keyCount ) )
+                {
+                    // We've read something in the midst of changing, most likely... just retry the whole read
+                    continue;
+                }
+                if ( treeNodeTypeByte == TreeNode.LEAF_FLAG )
+                {
+                    // The root is a leaf, not much to split on... so just exit the read w/o splits, i.e. this will result in only one seeker for all keys
+                    break;
+                }
+
+                // Read the internal keys from the root into splits list
+                for ( int pos = 0; pos < keyCount; pos++ )
+                {
+                    KEY key = bTreeNode.keyAt( cursor, layout.newKey(), pos, Type.INTERNAL );
+                    if ( layout.compare( key, fromInclusive ) >= 0 && layout.compare( key, toExclusive ) < 0 )
+                    {
+                        splits.add( key );
+                    }
+                }
+                goodRead = true;
+            }
+            while ( cursor.shouldRetry() || !goodRead );
+        }
+
+        // Now that we have the splits, instantiate seekers for those ranges
+        List<Seeker<KEY,VALUE>> seekers = new ArrayList<>();
+        boolean success = false;
+        float stride = splits.size() < numberOfPartitions ? 1 : (1f + splits.size()) / numberOfPartitions;
+        float pos = stride;
+        try
+        {
+            KEY prev = fromInclusive;
+            for ( int i = 0; i < numberOfPartitions - 1 && i < splits.size(); i++, pos += stride )
+            {
+                KEY split = splits.get( Math.round( pos ) - 1 );
+                seekers.add( seek( prev, split ) );
+                prev = layout.newKey();
+                layout.copyKey( split, prev );
+            }
+            seekers.add( seek( prev, toExclusive ) );
+            success = true;
+        }
+        finally
+        {
+            if ( !success )
+            {
+                for ( Seeker<KEY,VALUE> seeker : seekers )
+                {
+                    seeker.close();
+                }
+            }
+        }
+        return seekers;
     }
 
     /**
