@@ -55,7 +55,7 @@ public class GroupingRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCol
         if ( !jobs.isEmpty() )
         {
             StringJoiner joiner = new StringJoiner( String.format( "%n  " ), "Did not expect there to be any cleanup jobs still here. Jobs[", "]" );
-            consumeAndCloseJobs( cj -> joiner.add( jobs.toString() ) );
+            consumeAndCloseJobs( cj -> joiner.add( cj.toString() ) );
             throw new IllegalStateException( joiner.toString() );
         }
         scheduleJobs();
