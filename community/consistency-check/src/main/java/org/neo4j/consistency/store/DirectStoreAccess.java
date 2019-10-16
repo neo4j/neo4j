@@ -21,6 +21,7 @@ package org.neo4j.consistency.store;
 
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.token.TokenHolders;
 
@@ -30,13 +31,16 @@ public class DirectStoreAccess
     private final LabelScanStore labelScanStore;
     private final IndexProviderMap indexes;
     private final TokenHolders tokenHolders;
+    private final IndexStatisticsStore indexStatisticsStore;
 
-    public DirectStoreAccess( StoreAccess nativeStores, LabelScanStore labelScanStore, IndexProviderMap indexes, TokenHolders tokenHolders )
+    public DirectStoreAccess( StoreAccess nativeStores, LabelScanStore labelScanStore, IndexProviderMap indexes, TokenHolders tokenHolders,
+            IndexStatisticsStore indexStatisticsStore )
     {
         this.nativeStores = nativeStores;
         this.labelScanStore = labelScanStore;
         this.indexes = indexes;
         this.tokenHolders = tokenHolders;
+        this.indexStatisticsStore = indexStatisticsStore;
     }
 
     public StoreAccess nativeStores()
@@ -57,5 +61,10 @@ public class DirectStoreAccess
     public TokenHolders tokenHolders()
     {
         return tokenHolders;
+    }
+
+    public IndexStatisticsStore indexStatisticsStore()
+    {
+        return indexStatisticsStore;
     }
 }

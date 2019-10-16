@@ -26,9 +26,9 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link GBPTree} layout in {@link IndexStatisticsStore}, using {@link IndexStatisticsKey} and {@link IndexStatisticsValue}.
  */
-class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStatisticsValue>
+public class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStatisticsValue>
 {
-    IndexStatisticsLayout()
+    public IndexStatisticsLayout()
     {
         super( true, 556677, 0, 2 );
     }

@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -145,6 +146,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private final PageCache pageCache;
     private final TestDirectory testDirectory;
     private LabelScanStore labelScanStore;
+    private IndexStatisticsStore indexStatisticsStore;
     private ThreadPoolJobScheduler jobScheduler;
     private CountsStore counts;
 
@@ -220,10 +222,26 @@ public abstract class GraphStoreFixture implements AutoCloseable
             Monitors monitors = new Monitors();
             labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors, readOnly );
             IndexProviderMap indexes = createIndexes( pageCache, config, logProvider, monitors);
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, readOnlyTokenHolders( neoStore ) );
+            indexStatisticsStore = startIndexStatisticsStore( readOnly );
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, readOnlyTokenHolders( neoStore ), indexStatisticsStore );
             storeReader = new RecordStorageReader( neoStore );
         }
         return directStoreAccess;
+    }
+
+    private IndexStatisticsStore startIndexStatisticsStore( boolean readOnly )
+    {
+        final IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout(), immediate(), readOnly );
+        try
+        {
+            indexStatisticsStore.init();
+            indexStatisticsStore.start();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+        return indexStatisticsStore;
     }
 
     public ThrowingSupplier<CountsStore,IOException> counts()
@@ -627,6 +645,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             storeReader.close();
             neoStore.close();
             labelScanStore.shutdown();
+            indexStatisticsStore.shutdown();
             jobScheduler.shutdown();
             directStoreAccess = null;
             if ( counts != null )

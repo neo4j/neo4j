@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
@@ -36,6 +38,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.util.VisibleForTesting;
@@ -47,7 +50,7 @@ import org.neo4j.util.VisibleForTesting;
  *
  * The store is accessible after {@link #init()} has been called.
  */
-public class IndexStatisticsStore extends LifecycleAdapter implements IndexStatisticsVisitor.Visitable
+public class IndexStatisticsStore extends LifecycleAdapter implements IndexStatisticsVisitor.Visitable, ConsistencyCheckable
 {
     // Used in GBPTree.seek. Please don't use for writes
     private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey( Long.MIN_VALUE );
@@ -198,10 +201,27 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public void checkpoint( IOLimiter ioLimiter ) throws IOException
     {
         // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
-        assertNotReadOnly();
         clearTree();
         writeCacheContentsIntoTree();
         tree.checkpoint( ioLimiter );
+    }
+
+    @Override
+    public boolean consistencyCheck( ReporterFactory reporterFactory )
+    {
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ) );
+    }
+
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<IndexStatisticsKey> visitor )
+    {
+        try
+        {
+            return tree.consistencyCheck( visitor );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     private void scanTree( BiConsumer<IndexStatisticsKey,IndexStatisticsValue> consumer ) throws IOException

@@ -32,6 +32,7 @@ import org.neo4j.index.internal.gbptree.Meta;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.internal.index.label.LabelScanLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsLayout;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
 public class SchemaLayouts implements LayoutBootstrapper
@@ -43,7 +44,8 @@ public class SchemaLayouts implements LayoutBootstrapper
         allSchemaLayout = new ArrayList<>();
         allSchemaLayout.addAll( Arrays.asList(
                 genericLayout(),
-                ( indexFile, pageCache, meta, targetLayout ) -> new LabelScanLayout() ) );
+                ( indexFile, pageCache, meta, targetLayout ) -> new LabelScanLayout(),
+                ( indexFile, pageCache, meta, targetLayout ) -> new IndexStatisticsLayout() ) );
     }
 
     @Override

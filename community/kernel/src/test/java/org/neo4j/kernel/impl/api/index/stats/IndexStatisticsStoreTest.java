@@ -254,12 +254,6 @@ class IndexStatisticsStoreTest
         assertOperationThrowInReadOnlyMode( iss -> () -> iss.incrementIndexUpdates( 1, 1 ) );
     }
 
-    @Test
-    void shouldNotCheckpointIfReadOnly() throws IOException
-    {
-        assertOperationThrowInReadOnlyMode( iss -> () -> iss.checkpoint( IOLimiter.UNLIMITED ) );
-    }
-
     private void assertOperationThrowInReadOnlyMode( Function<IndexStatisticsStore,Executable> operation ) throws IOException
     {
         final File file = testDirectory.file( "existing" );

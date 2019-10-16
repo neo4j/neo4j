@@ -58,6 +58,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.extension.DatabaseExtensions;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -213,9 +214,10 @@ public class ConsistencyCheckService
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        final RecoveryCleanupWorkCollector workCollector = RecoveryCleanupWorkCollector.ignore();
         DatabaseExtensions extensions = life.add( instantiateExtensions( databaseLayout,
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache, jobScheduler,
-                RecoveryCleanupWorkCollector.ignore(),
+                workCollector,
                 TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational mode, which is important.
                 monitors, tokenHolders ) );
         DefaultIndexProviderMap indexes = life.add( new DefaultIndexProviderMap( extensions, config ) );
@@ -228,9 +230,10 @@ public class ConsistencyCheckService
             life.start();
 
             LabelScanStore labelScanStore =
-                    new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, true, monitors,
-                            RecoveryCleanupWorkCollector.ignore() );
+                    new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, true, monitors, workCollector );
             life.add( labelScanStore );
+            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true );
+            life.add( indexStatisticsStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();
             Statistics statistics;
@@ -247,7 +250,7 @@ public class ConsistencyCheckService
                 storeAccess = new StoreAccess( neoStores );
             }
             storeAccess.initialize();
-            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders );
+            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders, indexStatisticsStore );
             FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config );
             summary = check.execute( stores, countsManager, new DuplicatingLog( log, reportLog ) );
         }

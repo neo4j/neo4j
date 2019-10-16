@@ -45,6 +45,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -124,7 +125,8 @@ public class DetectAllRelationshipInconsistenciesIT
             DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
                     db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
                     db.getDependencyResolver().resolveDependency( IndexProviderMap.class ),
-                    db.getDependencyResolver().resolveDependency( TokenHolders.class ) );
+                    db.getDependencyResolver().resolveDependency( TokenHolders.class ),
+                    db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ) );
 
             int threads = random.intBetween( 2, 10 );
             FullCheck checker = new FullCheck( ConsistencyFlags.DEFAULT,

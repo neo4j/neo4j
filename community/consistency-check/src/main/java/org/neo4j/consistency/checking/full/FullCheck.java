@@ -51,6 +51,8 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -162,7 +164,7 @@ public class FullCheck
 
             if ( checkIndexStructure )
             {
-                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), indexes, reporter, progressFactory );
+                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), indexes, reporter, progressFactory );
             }
 
             List<ConsistencyCheckerTask> tasks =
@@ -185,26 +187,35 @@ public class FullCheck
                 readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
     }
 
-    private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore, IndexAccessors indexes,
+    private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore,
+            IndexStatisticsStore indexStatisticsStore, IndexAccessors indexes,
             ConsistencyReporter report, ProgressMonitorFactory progressMonitorFactory )
     {
         final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
-        final long additionalCount = 1; // LabelScanStore
+        final long additionalCount = 1 /*LabelScanStore*/ + 1 /*IndexStatisticsStore*/;
         final long totalCount = schemaIndexCount + additionalCount;
         final ProgressListener listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
         listener.started();
 
-        consistencyCheckLabelScanStore( labelScanStore, report, listener );
+        consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, indexStatisticsStore );
         consistencyCheckSchemaIndexes( indexes, report, listener );
 
         listener.done();
     }
 
-    private static void consistencyCheckLabelScanStore( LabelScanStore labelScanStore, ConsistencyReporter report, ProgressListener listener )
+    private static void consistencyCheckNonSchemaIndexes( ConsistencyReporter report, ProgressListener listener,
+            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore )
     {
-        ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( RecordType.LABEL_SCAN_DOCUMENT );
+        consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT );
+        consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS );
+    }
+
+    private static void consistencyCheckSingleCheckable( ConsistencyReporter report, ProgressListener listener, ConsistencyCheckable checkable, RecordType recordType )
+    {
+        ConsistencyReporter.FormattingDocumentedHandler handler = report.formattingHandler( recordType );
         ReporterFactory proxyFactory = new ReporterFactory( handler );
-        labelScanStore.consistencyCheck( proxyFactory );
+
+        checkable.consistencyCheck( proxyFactory );
         handler.updateSummary();
         listener.add( 1 );
     }

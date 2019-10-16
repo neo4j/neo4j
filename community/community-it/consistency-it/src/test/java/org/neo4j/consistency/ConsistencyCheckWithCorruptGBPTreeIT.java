@@ -534,6 +534,22 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
+    void corruptionInIndexStatisticsStore() throws Exception
+    {
+        MutableObject<Long> rootNode = new MutableObject<>();
+        File indexStatisticsStoreFile = indexStatisticsStoreFile();
+        corruptIndexes( true, ( tree, inspection ) -> {
+            rootNode.setValue( inspection.getRootNode() );
+            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ) );
+        }, indexStatisticsStoreFile );
+
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        assertFalse( result.isSuccessful() );
+        assertResultContainsMessage( result, "Index inconsistency: Broken pointer found in tree node " + rootNode.getValue() + ", pointerType='left sibling'" );
+        assertResultContainsMessage( result, "Number of inconsistent INDEX_STATISTICS records: 1" );
+    }
+
+    @Test
     void multipleCorruptionsInFusionIndex() throws Exception
     {
         // Because NATIVE30 provider use Lucene internally we can not use the snapshot from ephemeral file system because
@@ -658,6 +674,12 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         final File dataDir = databaseLayout.databaseDirectory();
         return new File( dataDir, DatabaseFile.LABEL_SCAN_STORE.getName() );
+    }
+
+    private File indexStatisticsStoreFile()
+    {
+        final File dataDir = databaseLayout.databaseDirectory();
+        return new File( dataDir, DatabaseFile.INDEX_STATISTICS_STORE.getName() );
     }
 
     private File[] schemaIndexFiles() throws IOException

@@ -45,6 +45,7 @@ public enum RecordType
     // Below are non-native records
 
     LABEL_SCAN_DOCUMENT,
+    INDEX_STATISTICS,
     INDEX,
     COUNTS,
 }
