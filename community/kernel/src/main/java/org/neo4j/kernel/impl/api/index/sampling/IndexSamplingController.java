@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -54,6 +57,8 @@ public class IndexSamplingController
     private final Log log;
     private static final boolean LOG_RECOVER_INDEX_SAMPLES = FeatureToggles.flag( IndexSamplingController.class, "log_recover_index_samples", false );
     private static final boolean ASYNC_RECOVER_INDEX_SAMPLES = FeatureToggles.flag( IndexSamplingController.class, "async_recover_index_samples", false );
+    private static final boolean ASYNC_RECOVER_INDEX_SAMPLES_WAIT =
+            FeatureToggles.flag( IndexSamplingController.class, "async_recover_index_samples_wait", true );
 
     private JobHandle backgroundSamplingHandle;
 
@@ -98,6 +103,7 @@ public class IndexSamplingController
         {
             IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
             final LongIterator indexIds = indexMap.indexIds();
+            List<IndexSamplingJobHandle> asyncSamplingJobs = new ArrayList<>();
             while ( indexIds.hasNext() )
             {
                 long indexId = indexIds.next();
@@ -112,7 +118,7 @@ public class IndexSamplingController
 
                     if ( ASYNC_RECOVER_INDEX_SAMPLES )
                     {
-                        sampleIndexOnTracker( indexMap, indexId );
+                        asyncSamplingJobs.add( sampleIndexOnTracker( indexMap, indexId ) );
                     }
                     else
                     {
@@ -127,10 +133,30 @@ public class IndexSamplingController
                     }
                 }
             }
+            if ( ASYNC_RECOVER_INDEX_SAMPLES_WAIT )
+            {
+                waitForAsyncIndexSamples( asyncSamplingJobs );
+            }
         }
         finally
         {
             samplingLock.unlock();
+        }
+    }
+
+    private void waitForAsyncIndexSamples( List<IndexSamplingJobHandle> asyncSamplingJobs )
+    {
+        for ( IndexSamplingJobHandle asyncSamplingJob : asyncSamplingJobs )
+        {
+            try
+            {
+                asyncSamplingJob.jobHandle.waitTermination();
+            }
+            catch ( InterruptedException | ExecutionException e )
+            {
+                throw new RuntimeException(
+                        "Failed to asynchronously sample index during recovery, index: " + asyncSamplingJob.indexSamplingJob.indexId(), e );
+            }
         }
     }
 
@@ -209,13 +235,14 @@ public class IndexSamplingController
         }
     }
 
-    private void sampleIndexOnTracker( IndexMap indexMap, long indexId )
+    private IndexSamplingJobHandle sampleIndexOnTracker( IndexMap indexMap, long indexId )
     {
         IndexSamplingJob job = createSamplingJob( indexMap, indexId );
         if ( job != null )
         {
-            jobTracker.scheduleSamplingJob( job );
+            return new IndexSamplingJobHandle( job, jobTracker.scheduleSamplingJob( job ) );
         }
+        return new IndexSamplingJobHandle( job, JobHandle.nullInstance );
     }
 
     private void sampleIndexOnCurrentThread( IndexMap indexMap, long indexId )
@@ -253,5 +280,17 @@ public class IndexSamplingController
             backgroundSamplingHandle.cancel( true );
         }
         jobTracker.stopAndAwaitAllJobs();
+    }
+
+    private static class IndexSamplingJobHandle
+    {
+        final IndexSamplingJob indexSamplingJob;
+        final JobHandle jobHandle;
+
+        IndexSamplingJobHandle( IndexSamplingJob indexSamplingJob, JobHandle jobHandle )
+        {
+            this.indexSamplingJob = indexSamplingJob;
+            this.jobHandle = jobHandle;
+        }
     }
 }
