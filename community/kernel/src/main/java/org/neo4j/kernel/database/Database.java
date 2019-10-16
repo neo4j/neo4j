@@ -402,7 +402,7 @@ public class Database extends LifecycleAdapter
             // Schema indexes
             DynamicIndexStoreView indexStoreView =
                     new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, storageEngine::newReader, internalLogProvider );
-            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector );
+            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector, readOnly );
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore );
 
             TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();

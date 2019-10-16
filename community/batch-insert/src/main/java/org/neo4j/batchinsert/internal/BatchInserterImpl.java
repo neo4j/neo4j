@@ -555,7 +555,7 @@ public class BatchInserterImpl implements BatchInserter
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, NO_LOCK_SERVICE,
                 () -> new RecordStorageReader( neoStores ), logProvider );
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
-                immediate() );
+                immediate(), false );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, new NonTransactionalTokenNameLookup( tokenHolders ),
                         emptyList(), logProvider, userLogProvider, NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, false );

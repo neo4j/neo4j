@@ -22,12 +22,17 @@ package org.neo4j.kernel.impl.api.index.stats;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.function.Function;
 
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -38,6 +43,9 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.Race.throwing;
 
@@ -69,7 +77,7 @@ class IndexStatisticsStoreTest
     private IndexStatisticsStore openStore()
     {
         return lifeSupport.add(
-                new IndexStatisticsStore( pageCache, testDirectory.file( "stats" ), RecoveryCleanupWorkCollector.immediate() ) );
+                new IndexStatisticsStore( pageCache, testDirectory.file( "stats" ), immediate(), false ) );
     }
 
     @Test
@@ -215,6 +223,69 @@ class IndexStatisticsStoreTest
         for ( int i = 0; i < indexes; i++ )
         {
             assertRegister( expected.get( i ), 0, store.indexUpdatesAndSize( i, newDoubleLongRegister() ) );
+        }
+    }
+
+    @Test
+    void shouldNotStartWithoutFileIfReadOnly()
+    {
+        final IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), true );
+        final Exception e = assertThrows( Exception.class, indexStatisticsStore::init );
+        assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
+    }
+
+    @Test
+    void shouldNotReplaceStatsIfReadOnly() throws IOException
+    {
+        assertOperationThrowInReadOnlyMode( iss -> () -> iss.replaceStats( 1, 1, 1, 1 ) );
+    }
+
+    @Test
+    void shouldNotRemoveIndexIfReadOnly() throws IOException
+    {
+        assertOperationThrowInReadOnlyMode( iss -> () -> iss.removeIndex( 1 ) );
+    }
+
+    @Test
+    void shouldNotIncrementIndexUpdatesIfReadOnly() throws IOException
+    {
+        assertOperationThrowInReadOnlyMode( iss -> () -> iss.incrementIndexUpdates( 1, 1 ) );
+    }
+
+    @Test
+    void shouldNotCheckpointIfReadOnly() throws IOException
+    {
+        assertOperationThrowInReadOnlyMode( iss -> () -> iss.checkpoint( IOLimiter.UNLIMITED ) );
+    }
+
+    private void assertOperationThrowInReadOnlyMode( Function<IndexStatisticsStore,Executable> operation ) throws IOException
+    {
+        final File file = testDirectory.file( "existing" );
+
+        // Create store
+        IndexStatisticsStore store = new IndexStatisticsStore( pageCache, file, immediate(), false );
+        try
+        {
+            store.init();
+        }
+        finally
+        {
+            store.shutdown();
+        }
+
+        // Start in readOnly mode
+        IndexStatisticsStore readOnlyStore = new IndexStatisticsStore( pageCache, file, immediate(), true );
+        try
+        {
+            readOnlyStore.init();
+            final UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, operation.apply( readOnlyStore ) );
+            assertEquals( "Can not write to index statistics store while in read only mode.", e.getMessage() );
+        }
+        finally
+        {
+            readOnlyStore.shutdown();
         }
     }
 

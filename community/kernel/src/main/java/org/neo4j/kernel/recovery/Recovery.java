@@ -305,7 +305,7 @@ public final class Recovery
         // Schema indexes
         DynamicIndexStoreView indexStoreView =
                 new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, NO_LOCK_SERVICE, storageEngine::newReader, logProvider );
-        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector );
+        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, false );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
                 config, scheduler, indexProviderMap, tokenNameLookup, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ), false );
 

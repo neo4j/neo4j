@@ -31,6 +31,7 @@ import java.util.function.BiConsumer;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -56,29 +57,40 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private final File file;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final IndexStatisticsLayout layout;
+    private final boolean readOnly;
     private GBPTree<IndexStatisticsKey,IndexStatisticsValue> tree;
     // Let IndexStatisticsValue be immutable in this map so that checkpoint doesn't have to coordinate with concurrent writers
     // It's assumed that the data in this map will be so small that everything can just be in it always.
     private final ConcurrentHashMap<IndexStatisticsKey,IndexStatisticsValue> cache = new ConcurrentHashMap<>();
 
-    public IndexStatisticsStore( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    public IndexStatisticsStore( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         this.pageCache = pageCache;
         this.file = file;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.layout = new IndexStatisticsLayout();
+        this.readOnly = readOnly;
     }
 
-    public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            boolean readOnly )
     {
-        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector );
+        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnly );
     }
 
     @Override
     public void init() throws IOException
     {
-        tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                recoveryCleanupWorkCollector, false );
+        try
+        {
+            tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
+                    recoveryCleanupWorkCollector, readOnly );
+        }
+        catch ( TreeFileNotFoundException e )
+        {
+            throw new IllegalStateException(
+                    "Index statistics store file could not be found, most likely this database needs to be recovered, file:" + file, e );
+        }
         scanTree( cache::put );
     }
 
@@ -138,6 +150,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     @VisibleForTesting
     void replaceStats( long indexId, long numberOfUniqueValuesInSample, long sampleSize, long updatesCount, long indexSize )
     {
+        assertNotReadOnly();
         IndexStatisticsKey key = new IndexStatisticsKey( indexId );
         IndexStatisticsValue value = new IndexStatisticsValue( numberOfUniqueValuesInSample, sampleSize, updatesCount, indexSize );
         cache.put( key, value );
@@ -145,11 +158,13 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
 
     public void removeIndex( long indexId )
     {
+        assertNotReadOnly();
         cache.remove( new IndexStatisticsKey( indexId ) );
     }
 
     public void incrementIndexUpdates( long indexId, long delta )
     {
+        assertNotReadOnly();
         IndexStatisticsKey key = new IndexStatisticsKey( indexId );
         boolean replaced;
         do
@@ -183,6 +198,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public void checkpoint( IOLimiter ioLimiter ) throws IOException
     {
         // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
+        assertNotReadOnly();
         clearTree();
         writeCacheContentsIntoTree();
         tree.checkpoint( ioLimiter );
@@ -226,6 +242,14 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
             {
                 writer.put( entry.getKey(), entry.getValue() );
             }
+        }
+    }
+
+    private void assertNotReadOnly()
+    {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Can not write to index statistics store while in read only mode." );
         }
     }
 
