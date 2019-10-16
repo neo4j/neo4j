@@ -52,8 +52,8 @@ public class IndexSamplingController
     private final boolean backgroundSampling;
     private final Lock samplingLock = new ReentrantLock();
     private final Log log;
-    private final boolean LOG_RECOVER_INDEX_SAMPLES = FeatureToggles.flag(getClass(), "logging", false);
-    private final boolean ASYNC_RECOVER_INDEX_SAMPLES = FeatureToggles.flag(getClass(), "async", false);
+    private static final boolean LOG_RECOVER_INDEX_SAMPLES = FeatureToggles.flag( IndexSamplingController.class, "log_recover_index_samples", false );
+    private static final boolean ASYNC_RECOVER_INDEX_SAMPLES = FeatureToggles.flag( IndexSamplingController.class, "async_recover_index_samples", false );
 
     private JobHandle backgroundSamplingHandle;
 
@@ -74,7 +74,7 @@ public class IndexSamplingController
         this.jobTracker = jobTracker;
         this.scheduler = scheduler;
         this.indexRecoveryCondition = indexRecoveryCondition;
-        this.log = logProvider.getLog(this.getClass());
+        this.log = logProvider.getLog( getClass() );
     }
 
     public void sampleIndexes( IndexSamplingMode mode )
