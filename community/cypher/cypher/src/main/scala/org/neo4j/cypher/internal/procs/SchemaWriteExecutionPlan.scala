@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.internal.{ExecutionPlan, SchemaRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.{ExecutionPlan, RuntimeName, SchemaRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
@@ -38,7 +38,7 @@ case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => U
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext,
-                   doProfile: Boolean,
+                   executionMode: ExecutionMode,
                    params: MapValue,
                    prePopulateResults: Boolean,
                    ignore: InputDataStream,

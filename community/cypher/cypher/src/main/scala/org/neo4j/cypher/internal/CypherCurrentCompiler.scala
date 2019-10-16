@@ -284,8 +284,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                internalQueryType, allNotifications, subscriber)
       } else {
 
-        val doProfile = innerExecutionMode == ProfileMode
-        val runtimeResult = executionPlan.run(queryContext, doProfile, params, prePopulateResults, input, subscriber)
+        val runtimeResult = executionPlan.run(queryContext, innerExecutionMode, params, prePopulateResults, input, subscriber)
 
         transactionalContext.executingQuery().executionStarted(runtimeResult)
 

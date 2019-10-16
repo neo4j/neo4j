@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
@@ -36,7 +36,7 @@ import org.neo4j.values.virtual.MapValue
 case class AdministrativeCommandPrivilegeExecutionPlan(securityContext: SecurityContext, action: AdminAction, database: DatabaseScope,
                                                        userName: Option[String] = None) extends ExecutionPlan {
   override def run(ctx: QueryContext,
-                   doProfile: Boolean,
+                   executionMode: ExecutionMode,
                    params: MapValue,
                    prePopulateResults: Boolean,
                    ignore: InputDataStream,

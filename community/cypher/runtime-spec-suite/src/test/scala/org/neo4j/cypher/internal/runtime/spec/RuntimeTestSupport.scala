@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.runtime.{InputDataStream, NormalMode, ProfileMode, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
@@ -135,7 +135,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val queryContext = newQueryContext(txContext, executableQuery.threadSafeCursorFactory())
     val runtimeContext = newRuntimeContext(txContext, queryContext)
 
-    val result = executableQuery.run(queryContext, doProfile = profile, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
+    val executionMode = if(profile) ProfileMode else NormalMode
+    val result = executableQuery.run(queryContext, executionMode, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
     val assertAllReleased =
       if (!workloadMode) runtimeContextManager.assertAllReleased _ else () => ()
     resultMapper(runtimeContext, new ClosingRuntimeResult(result, tx, txContext, queryContext.resources, subscriber, assertAllReleased))

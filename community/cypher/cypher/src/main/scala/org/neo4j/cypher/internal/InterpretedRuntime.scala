@@ -76,17 +76,18 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                  override val metadata: Seq[Argument]) extends ExecutionPlan {
 
     override def run(queryContext: QueryContext,
-                     doProfile: Boolean,
+                     executionMode: ExecutionMode,
                      params: MapValue,
                      prePopulateResults: Boolean,
                      input: InputDataStream,
                      subscriber: QuerySubscriber): RuntimeResult = {
+      val doProfile = executionMode == ProfileMode
       val builderContext = if (!readOnly || doProfile) new UpdateCountingQueryContext(queryContext) else queryContext
       val builder = resultBuilderFactory.create(builderContext)
 
       val profileInformation = new InterpretedProfileInformation
 
-      if (periodicCommit.isDefined) {
+      if (periodicCommit.isDefined && executionMode != ExplainMode) {
         if (!builderContext.transactionalContext.isTopLevelTx)
           throw new PeriodicCommitInOpenTransactionException()
         builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)

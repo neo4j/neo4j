@@ -175,7 +175,6 @@ trait ExecutionEngineHelper {
           query = fpq,
           params = ExecutionEngineHelper.asMapValue(params),
           context = context,
-          profile = false,
           prePopulate = false,
           input = input,
           subscriber = subscriber

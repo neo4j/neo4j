@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
@@ -30,13 +30,13 @@ import org.neo4j.values.virtual.MapValue
 
 case class LoggingSystemCommandExecutionPlan(source: ExecutionPlan, commandString: String, securityContext: SecurityContext, logger: (String, SecurityContext) => Unit) extends ExecutionPlan {
   override def run(ctx: QueryContext,
-                   doProfile: Boolean,
+                   executionMode: ExecutionMode,
                    params: MapValue,
                    prePopulateResults: Boolean,
                    ignore: InputDataStream,
                    subscriber: QuerySubscriber): RuntimeResult = {
 
-    val sourceResult = source.run(ctx,doProfile,params,prePopulateResults,ignore,subscriber)
+    val sourceResult = source.run(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
     sourceResult match {
       case IgnoredRuntimeResult =>
         IgnoredRuntimeResult

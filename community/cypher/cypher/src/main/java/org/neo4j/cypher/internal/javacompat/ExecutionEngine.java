@@ -131,7 +131,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate, input, subscriber );
+            return cypherExecutionEngine.execute( query, parameters, context, prePopulate, input, subscriber );
         }
         catch ( Neo4jException e )
         {

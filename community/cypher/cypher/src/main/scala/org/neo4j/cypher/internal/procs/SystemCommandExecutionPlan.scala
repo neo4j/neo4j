@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, ProfileMode, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
@@ -41,7 +41,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
   extends ExecutionPlan {
 
   override def run(originalCtx: QueryContext,
-                   doProfile: Boolean,
+                   executionMode: ExecutionMode,
                    params: MapValue,
                    prePopulateResults: Boolean,
                    ignore: InputDataStream,
@@ -49,7 +49,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
     val ctx = SystemUpdateCountingQueryContext.from(originalCtx)
     // Only the outermost query should be tied into the reactive results stream. The source queries should use an empty subscriber
-    val sourceResult = source.map(_.run(ctx, doProfile, params, prePopulateResults, ignore, QuerySubscriber.DO_NOTHING_SUBSCRIBER))
+    val sourceResult = source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, QuerySubscriber.DO_NOTHING_SUBSCRIBER))
     sourceResult match {
       case Some(IgnoredRuntimeResult) => IgnoredRuntimeResult
       case _ =>
@@ -64,7 +64,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
           revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
           val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler)
-          val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+          val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
           systemSubscriber.assertNotFailed()
 
           if (systemSubscriber.shouldIgnoreResult()) {

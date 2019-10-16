@@ -35,10 +35,6 @@ trait BaseState {
 
   def accumulatedConditions: Set[Condition]
 
-  def isPeriodicCommit: Boolean = statement() match {
-    case Query(Some(_), _) => true
-    case _ => false
-  }
 
   def statement(): Statement = maybeStatement getOrElse fail("Statement")
   def returnColumns(): Seq[String] = maybeReturnColumns getOrElse fail("Return columns")

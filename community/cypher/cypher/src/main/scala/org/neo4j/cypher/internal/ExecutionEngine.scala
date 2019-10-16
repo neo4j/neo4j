@@ -23,6 +23,7 @@ import java.time.Clock
 import java.util.function.Supplier
 import java.{lang, util}
 
+import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
@@ -143,7 +144,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     * @param query       the query to execute
     * @param params      the parameters of the query
     * @param context     the context in which to run the query
-    * @param profile     if `true` run with profiling enabled
     * @param prePopulate if `true` pre populate all results
     * @param subscriber  the subscriber where results will be streamed
     * @return a `QueryExecution` that controls the demand to the subscriber
@@ -151,13 +151,12 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def execute(query: FullyParsedQuery,
               params: MapValue,
               context: TransactionalContext,
-              profile: Boolean,
               prePopulate: Boolean,
               input: InputDataStream,
               subscriber: QuerySubscriber): QueryExecution = {
     val queryTracer = tracer.compileQuery(query.description)
     closing(context, queryTracer) {
-      doExecute(query, params, context, shouldCloseTransaction = true, profile, prePopulate, input, queryTracer, subscriber)
+      doExecute(query, params, context, shouldCloseTransaction = true, prePopulate, input, queryTracer, subscriber)
     }
   }
 
@@ -185,7 +184,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     val queryTracer = tracer.compileQuery(query)
     closing(context, queryTracer) {
       val preParsedQuery = preParser.preParseQuery(query, profile)
-      doExecute(preParsedQuery, params, context, shouldCloseTransaction, profile, prePopulate, NoInput, queryTracer, subscriber)
+      doExecute(preParsedQuery, params, context, shouldCloseTransaction, prePopulate, NoInput, queryTracer, subscriber)
     }
   }
 
@@ -200,7 +199,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         params: MapValue,
                         context: TransactionalContext,
                         shouldCloseTransaction: Boolean,
-                        profile: Boolean,
                         prePopulate: Boolean,
                         input: InputDataStream,
                         tracer: QueryCompilationEvent,
@@ -283,8 +281,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def clearQueryCaches(): Long =
     List(masterCompiler.clearCaches(), queryCache.clear(), preParser.clearCache()).max
 
-  def isPeriodicCommit(query: String): Boolean =
-    preParser.preParseQuery(query, profile = false).options.isPeriodicCommit
+  /**
+   * @return { @code true} if the query is a PERIODIC COMMIT query and not an EXPLAIN query
+   */
+  def isPeriodicCommit(query: String): Boolean = {
+    val preParsedQuery = preParser.preParseQuery(query)
+    preParsedQuery.options.executionMode != CypherExecutionMode.explain && preParsedQuery.options.isPeriodicCommit
+  }
 
   def getCypherFunctions: util.List[FunctionInformation] = {
     val informations: Seq[FunctionInformation] = org.neo4j.cypher.internal.v4_0.expressions.functions.Function.functionInfo.map(FunctionWithInformation)

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.CursorFactory
@@ -30,7 +30,7 @@ import org.neo4j.values.virtual.MapValue
 abstract class ExecutionPlan {
 
   def run(queryContext: QueryContext,
-          doProfile: Boolean,
+          executionMode: ExecutionMode,
           params: MapValue,
           prePopulateResults: Boolean,
           input: InputDataStream,
@@ -51,12 +51,12 @@ abstract class ExecutionPlan {
 
 abstract class DelegatingExecutionPlan(inner: ExecutionPlan) extends ExecutionPlan {
   override def run(queryContext: QueryContext,
-                   doProfile: Boolean,
+                   executionMode: ExecutionMode,
                    params: MapValue,
                    prePopulateResults: Boolean,
                    input: InputDataStream,
                    subscriber: QuerySubscriber): RuntimeResult =
-    inner.run(queryContext, doProfile, params, prePopulateResults, input, subscriber)
+    inner.run(queryContext, executionMode, params, prePopulateResults, input, subscriber)
 
   override def runtimeName: RuntimeName = inner.runtimeName
 
