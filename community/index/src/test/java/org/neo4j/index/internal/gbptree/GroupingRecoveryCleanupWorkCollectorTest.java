@@ -35,6 +35,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobSchedulerAdapter;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -91,7 +92,8 @@ class GroupingRecoveryCleanupWorkCollectorTest
 
         // when
         addAll( someJobs );
-        assertThrows( IllegalStateException.class, collector::init );
+        final IllegalStateException e = assertThrows( IllegalStateException.class, collector::init );
+        assertEquals( format( "Did not expect there to be any cleanup jobs still here. Jobs[A%n  B%n  C]" ), e.getMessage() );
     }
 
     @Test
