@@ -45,6 +45,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -72,6 +73,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 public class GBPTreeCountsStore implements CountsStore
 {
     public static final Monitor NO_MONITOR = txId -> {};
+    private static final int NEEDS_REBUILDING_HIGH_ID = -1;
 
     private final GBPTree<CountsKey,CountsValue> tree;
     private final OutOfOrderSequence idSequence;
@@ -91,8 +93,8 @@ public class GBPTreeCountsStore implements CountsStore
         this.monitor = monitor;
 
         // First just read the header so that we can avoid creating it if this store is read-only
-        CountsHeader header = new CountsHeader( 0 );
-        this.tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector, false );
+        CountsHeader header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
+        this.tree = instantiateTree( pageCache, file, recoveryCollector, readOnly, header );
         boolean successful = false;
         try
         {
@@ -102,7 +104,7 @@ public class GBPTreeCountsStore implements CountsStore
             this.txIdInformation.strayTxIds.forEach( txId -> idSequence.offer( txId, EMPTY_LONG_ARRAY ) );
             // Only care about initial counts rebuilding if the tree was created right now when opening this tree
             // The actual rebuilding will happen in start()
-            this.initialCountsBuilder = header.wasRead() && header.highestGapFreeTxId() != 0 ? null : initialCountsBuilder;
+            this.initialCountsBuilder = header.wasRead() && header.highestGapFreeTxId() != NEEDS_REBUILDING_HIGH_ID ? null : initialCountsBuilder;
             successful = true;
         }
         finally
@@ -114,6 +116,20 @@ public class GBPTreeCountsStore implements CountsStore
         }
     }
 
+    private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCollector, boolean readOnly,
+            CountsHeader header )
+    {
+        try
+        {
+            return new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnly );
+        }
+        catch ( TreeFileNotFoundException e )
+        {
+            throw new IllegalStateException(
+                    "Counts store file could not be found, most likely this database needs to be recovered, file:" + file, e );
+        }
+    }
+
     // === Life cycle ===
 
     public void start() throws IOException
@@ -121,6 +137,10 @@ public class GBPTreeCountsStore implements CountsStore
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
         if ( initialCountsBuilder != null )
         {
+            if ( readOnly )
+            {
+                throw new IllegalStateException( "Counts store needs rebuilding, most likely this database needs to be recovered." );
+            }
             Lock lock = lock( this.lock.writeLock() );
             long txId = initialCountsBuilder.lastCommittedTxId();
             try ( CountsAccessor.Updater updater = new CountUpdater( new TreeWriter( tree.writer(), idSequence, txId ), lock ) )

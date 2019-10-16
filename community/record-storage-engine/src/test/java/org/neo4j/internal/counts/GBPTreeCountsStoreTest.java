@@ -41,6 +41,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
+import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.OtherThreadExecutor;
@@ -396,9 +398,21 @@ class GBPTreeCountsStoreTest
     }
 
     @Test
+    void shouldNotStartWithoutFileIfReadOnly()
+    {
+        final File file = directory.file( "non-existing" );
+        final IllegalStateException e = assertThrows( IllegalStateException.class,
+                () -> new GBPTreeCountsStore( pageCache, file, immediate(), CountsBuilder.EMPTY, true, NO_MONITOR ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
+    }
+
+    @Test
     void shouldFailApplyInReadOnlyMode() throws IOException
     {
         // given
+        countsStore.checkpoint( UNLIMITED );
         closeCountsStore();
         instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
         countsStore.start();
@@ -411,6 +425,7 @@ class GBPTreeCountsStoreTest
     void shouldNotCheckpointInReadOnlyMode() throws IOException
     {
         // given
+        countsStore.checkpoint( UNLIMITED );
         closeCountsStore();
         instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
         countsStore.start();
