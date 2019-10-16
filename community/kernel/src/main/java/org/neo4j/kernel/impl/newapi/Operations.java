@@ -1225,7 +1225,8 @@ public class Operations implements Write, SchemaWrite
                 String schemaDescription = schema.userDescription( tokenNameLookup );
                 String constraintDescription = constraints.next().userDescription( tokenNameLookup );
                 throw new DropConstraintFailureException( constraint, new IllegalArgumentException(
-                        "More than one " + type + " constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription ) );
+                        "More than one " + type + " constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription +
+                                ", please drop constraint by name instead." ) );
             }
         }
         else
