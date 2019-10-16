@@ -415,18 +415,28 @@ trait Statement extends Parser
     keyword("ACCESS") ~~~> (_ => ast.AccessDatabaseAction) |
       keyword("START") ~~~> (_ => ast.StartDatabaseAction) |
       keyword("STOP") ~~~> (_ => ast.StopDatabaseAction) |
-      group(keyword("CREATE") ~~ keyword("INDEX")) ~~~> (_ => ast.CreateIndexAction) |
-      group(keyword("DROP") ~~ keyword("INDEX")) ~~~> (_ => ast.DropIndexAction) |
-      group(keyword("INDEX") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.IndexManagementAction) |
-      group(keyword("CREATE") ~~ keyword("CONSTRAINT")) ~~~> (_ => ast.CreateConstraintAction) |
-      group(keyword("DROP") ~~ keyword("CONSTRAINT")) ~~~> (_ => ast.DropConstraintAction) |
-      group(keyword("CONSTRAINT") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.ConstraintManagementAction) |
-      group(keyword("CREATE NEW") ~~ optional(keyword("NODE")) ~~ keyword("LABEL")) ~~~> (_ => ast.CreateNodeLabelAction) |
-      group(keyword("CREATE NEW") ~~ optional(keyword("RELATIONSHIP")) ~~ keyword("TYPE")) ~~~> (_ => ast.CreateRelationshipTypeAction) |
-      group(keyword("CREATE NEW") ~~ optional(keyword("PROPERTY")) ~~ keyword("NAME")) ~~~> (_ => ast.CreatePropertyKeyAction) |
+      group(keyword("CREATE") ~~ IndexKeyword) ~~~> (_ => ast.CreateIndexAction) |
+      group(keyword("DROP") ~~ IndexKeyword) ~~~> (_ => ast.DropIndexAction) |
+      group(IndexKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.IndexManagementAction) |
+      group(keyword("CREATE") ~~ ConstraintKeyword) ~~~> (_ => ast.CreateConstraintAction) |
+      group(keyword("DROP") ~~ ConstraintKeyword) ~~~> (_ => ast.DropConstraintAction) |
+      group(ConstraintKeyword ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.ConstraintManagementAction) |
+      group(keyword("CREATE NEW") ~~ optional(keyword("NODE")) ~~ LabelKeyword) ~~~> (_ => ast.CreateNodeLabelAction) |
+      group(keyword("CREATE NEW") ~~ optional(keyword("RELATIONSHIP")) ~~ TypeKeyword) ~~~> (_ => ast.CreateRelationshipTypeAction) |
+      group(keyword("CREATE NEW") ~~ optional(keyword("PROPERTY")) ~~ NameKeyword) ~~~> (_ => ast.CreatePropertyKeyAction) |
       group(keyword("NAME") ~~ optional(keyword("MANAGEMENT"))) ~~~> (_ => ast.TokenManagementAction) |
       group(keyword("ALL") ~~ optional(optional(keyword("DATABASE")) ~~ keyword("PRIVILEGES"))) ~~~> (_ => ast.AllDatabaseAction)
   )
+
+  private def IndexKeyword: Rule0 = keyword("INDEXES") | keyword("INDEX")
+
+  private def ConstraintKeyword: Rule0 = keyword("CONSTRAINTS") | keyword("CONSTRAINT")
+
+  private def LabelKeyword: Rule0 = keyword("LABELS") | keyword("LABEL")
+
+  private def TypeKeyword: Rule0 = keyword("TYPES") | keyword("TYPE")
+
+  private def NameKeyword: Rule0 = keyword("NAMES") | keyword("NAME")
 
   private def Graph: Rule1[GraphScope] = rule("on a database/graph")(
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
