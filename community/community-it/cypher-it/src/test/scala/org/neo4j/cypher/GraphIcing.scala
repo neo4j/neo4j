@@ -229,7 +229,9 @@ trait GraphIcing {
       val tx = graph.beginTransaction(txType, AUTH_DISABLED)
       try {
         val result = f(tx)
-        tx.commit()
+        if (tx.isOpen) {
+          tx.commit()
+        }
         result
       } finally {
         tx.close()

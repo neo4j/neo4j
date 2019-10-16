@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
-import org.neo4j.cypher.internal.planning._
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
+import org.neo4j.cypher.internal.planning._
 import org.neo4j.cypher.internal.result.{ClosingExecutionResult, ExplainExecutionResult, StandardInternalExecutionResult, _}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
@@ -246,7 +246,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
       val taskCloser = new TaskCloser
       val queryContext = getQueryContext(transactionalContext, queryOptions.debugOptions)
-      if (shouldCloseTransaction) taskCloser.addTask(_ => queryContext.transactionalContext.close())
+      if (shouldCloseTransaction) taskCloser.addTask(success => {
+        val context = queryContext.transactionalContext
+        if (!success) {
+          context.rollback()
+        } else {
+          context.close()
+        }
+      })
       taskCloser.addTask(_ => queryContext.resources.close())
       try {
         innerExecute(transactionalContext, queryOptions, taskCloser, queryContext, params, prePopulateResults, input, subscriber)
@@ -254,6 +261,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case e: Throwable =>
           QuerySubscriber.safelyOnError(subscriber, e)
           taskCloser.close(false)
+          transactionalContext.rollback();
           new FailedExecutionResult(columnNames(logicalPlan), internalQueryType, subscriber)
       }
     }

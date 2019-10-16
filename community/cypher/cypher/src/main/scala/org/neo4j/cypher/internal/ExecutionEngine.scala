@@ -191,7 +191,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def closing[T](context: TransactionalContext, traceEvent: QueryCompilationEvent)(code: => T): T =
     try code catch {
       case t: Throwable =>
-        context.close()
+        context.rollback()
         throw t
     } finally traceEvent.close()
 

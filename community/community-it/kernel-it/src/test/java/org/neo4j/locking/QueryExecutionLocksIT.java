@@ -267,6 +267,12 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public void rollback()
+        {
+            delegate.rollback();
+        }
+
+        @Override
         public void terminate()
         {
             delegate.terminate();

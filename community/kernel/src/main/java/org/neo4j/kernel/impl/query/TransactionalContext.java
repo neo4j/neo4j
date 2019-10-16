@@ -52,6 +52,11 @@ public interface TransactionalContext
     void close();
 
     /**
+     * Close and rollback transaction context. For cases when exception occurred during query execution and owning transaction should be rolledback
+     */
+    void rollback();
+
+    /**
      * This is used to terminate a currently running query. Can be called from any thread. Will roll back the current
      * transaction if it is still open.
      */

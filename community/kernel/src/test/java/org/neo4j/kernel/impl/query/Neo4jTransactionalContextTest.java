@@ -76,6 +76,23 @@ class Neo4jTransactionalContextTest
     }
 
     @Test
+    void contextRollbackClosesAndRollbackTransaction() throws TransactionFailureException
+    {
+        ExecutingQuery executingQuery = mock( ExecutingQuery.class );
+        InternalTransaction internalTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
+        KernelTransaction kernelTransaction = mockTransaction( initialStatement );
+        when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
+
+        Neo4jTransactionalContext transactionalContext =
+                new Neo4jTransactionalContext( null, internalTransaction, initialStatement, executingQuery, transactionFactory );
+
+        transactionalContext.rollback();
+
+        verify( internalTransaction ).rollback();
+        assertFalse( transactionalContext.isOpen() );
+    }
+
+    @Test
     void checkKernelStatementOnCheck()
     {
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );

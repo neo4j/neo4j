@@ -52,4 +52,6 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
     void setMetaData( Map<String, Object> txMeta );
 
     void checkInTransaction();
+
+    boolean isOpen();
 }

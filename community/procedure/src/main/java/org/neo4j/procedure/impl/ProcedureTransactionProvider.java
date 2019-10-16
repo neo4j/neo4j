@@ -289,6 +289,12 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
+        public boolean isOpen()
+        {
+            return transaction.isOpen();
+        }
+
+        @Override
         public void terminate()
         {
             transaction.terminate();

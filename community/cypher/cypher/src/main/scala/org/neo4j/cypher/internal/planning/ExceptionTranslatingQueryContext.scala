@@ -335,6 +335,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   class ExceptionTranslatingTransactionalContext(inner: QueryTransactionalContext) extends DelegatingQueryTransactionalContext(inner) {
     override def close() { translateException(super.close()) }
+
+    override def rollback() { translateException(super.rollback()) }
   }
 
 }

@@ -535,7 +535,7 @@ public class TransactionImpl implements InternalTransaction
 
     private String closeFailureMessage()
     {
-        return "Unable to rollback transaction";
+        return "Unable to complete transaction.";
     }
 
     @Override
@@ -683,6 +683,12 @@ public class TransactionImpl implements InternalTransaction
             Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
             throw new TransactionTerminatedException( terminationReason );
         }
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return !closed;
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex(

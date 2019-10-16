@@ -129,6 +129,19 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
+    public void rollback()
+    {
+        try
+        {
+            close();
+        }
+        finally
+        {
+            transaction.rollback();
+        }
+    }
+
+    @Override
     public void terminate()
     {
         if ( isOpen )

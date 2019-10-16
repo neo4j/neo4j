@@ -60,7 +60,7 @@ class Neo4jAdapter(var managementService: DatabaseManagementService,
   override def cypher(query: String, params: Map[String, CypherValue], meta: QueryType): Result = {
     val neo4jParams = params.mapValues(v => TCKValueToNeo4jValue(v)).asJava
 
-    val tx = database.beginTx
+    var tx = database.beginTx
     val queryToExecute = if (meta == ExecQuery) {
       s"$executionPrefix $query"
     } else query
@@ -72,6 +72,8 @@ class Neo4jAdapter(var managementService: DatabaseManagementService,
           case Success(_) => converted
         }
       case Failure(exception) =>
+        tx.close()
+        tx = database.beginTx()
         val explainedResult = Try(tx.execute(explainPrefix + queryToExecute))
         val phase = explainedResult match {
           case Failure(_) => Phase.compile

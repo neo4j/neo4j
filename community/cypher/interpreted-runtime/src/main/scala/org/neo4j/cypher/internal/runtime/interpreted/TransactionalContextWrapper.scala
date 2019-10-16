@@ -73,4 +73,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
     }
     schemaRead.schemaStateGetOrCreate(key, javaCreator)
   }
+
+  override def rollback(): Unit = tc.rollback()
 }

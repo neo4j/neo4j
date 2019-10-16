@@ -325,6 +325,8 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def close()
 
+  def rollback();
+
   def commitAndRestartTx()
 
   def kernelStatisticProvider: KernelStatisticProvider

@@ -240,8 +240,10 @@ class RequireTransactionIT
     @Test
     void requireTransactionForRollback()
     {
-        Executable executable = () -> transaction.rollback();
-        checkTransactionRequirement( transaction, executable );
+        assertDoesNotThrow( () -> transaction.rollback() );
+        assertDoesNotThrow( () -> transaction.rollback() );
+        assertDoesNotThrow( () -> transaction.rollback() );
+        assertDoesNotThrow( () -> transaction.rollback() );
     }
 
     @Test
