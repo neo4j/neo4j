@@ -118,7 +118,7 @@ public class FullCheck
                 statistics.getCounts(), threads );
         RecordAccess records = recordAccess( stores.nativeStores(), cacheAccess );
         CountsStore countsStore = checkCountsStore( countsSupplier, log, summary, report, countsBuilder, records );
-        execute( stores, decorator, records, report, cacheAccess, reportMonitor );
+        execute( stores, decorator, records, report, cacheAccess, reportMonitor, countsStore );
         ownerCheck.scanForOrphanChains( progressFactory );
 
         if ( !summary.isConsistent() )
@@ -154,8 +154,8 @@ public class FullCheck
     }
 
     void execute( final DirectStoreAccess directStoreAccess, final CheckDecorator decorator,
-                  final RecordAccess recordAccess, final InconsistencyReport report,
-                  CacheAccess cacheAccess, Monitor reportMonitor )
+            final RecordAccess recordAccess, final InconsistencyReport report,
+            CacheAccess cacheAccess, Monitor reportMonitor, CountsStore countsStore )
             throws ConsistencyCheckIncompleteException
     {
         final ConsistencyReporter reporter = new ConsistencyReporter( recordAccess, report, reportMonitor );
@@ -173,7 +173,8 @@ public class FullCheck
 
             if ( checkIndexStructure )
             {
-                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), indexes, reporter, progressFactory );
+                consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.indexStatisticsStore(), countsStore, indexes, reporter,
+                        progressFactory );
             }
 
             List<ConsistencyCheckerTask> tasks =
@@ -197,7 +198,7 @@ public class FullCheck
     }
 
     private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore,
-            IndexStatisticsStore indexStatisticsStore, IndexAccessors indexes,
+            IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, IndexAccessors indexes,
             ConsistencyReporter report, ProgressMonitorFactory progressMonitorFactory )
     {
         final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
@@ -206,17 +207,18 @@ public class FullCheck
         final ProgressListener listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
         listener.started();
 
-        consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, indexStatisticsStore );
+        consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, indexStatisticsStore, countsStore );
         consistencyCheckSchemaIndexes( indexes, report, listener );
 
         listener.done();
     }
 
     private static void consistencyCheckNonSchemaIndexes( ConsistencyReporter report, ProgressListener listener,
-            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore )
+            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, CountsStore countsStore )
     {
         consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT );
         consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS );
+        consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS );
     }
 
     private static void consistencyCheckSingleCheckable( ConsistencyReporter report, ProgressListener listener, ConsistencyCheckable checkable, RecordType recordType )

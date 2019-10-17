@@ -55,6 +55,8 @@ import org.neo4j.index.internal.gbptree.GBPTreeCorruption;
 import org.neo4j.index.internal.gbptree.GBPTreeInspection;
 import org.neo4j.index.internal.gbptree.GBPTreePointerType;
 import org.neo4j.index.internal.gbptree.InspectingVisitor;
+import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
+import org.neo4j.internal.counts.CountsLayout;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -550,6 +552,24 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
+    void corruptionInCountsStore() throws Exception
+    {
+        MutableObject<Long> rootNode = new MutableObject<>();
+        File countsStoreFile = countsStoreFile();
+        final LayoutBootstrapper countsLayoutBootstrapper = ( indexFile, pageCache, meta, targetLayout ) -> new CountsLayout();
+        corruptIndexes( fs, true, ( tree, inspection ) -> {
+            rootNode.setValue( inspection.getRootNode() );
+            tree.unsafe( GBPTreeCorruption.pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ) );
+        }, countsLayoutBootstrapper, countsStoreFile );
+
+        ConsistencyFlags flags = new ConsistencyFlags( false, false, true, false, false );
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
+        assertFalse( result.isSuccessful() );
+        assertResultContainsMessage( result, "Index inconsistency: Broken pointer found in tree node " + rootNode.getValue() + ", pointerType='left sibling'" );
+        assertResultContainsMessage( result, "Number of inconsistent COUNTS records: 1" );
+    }
+
+    @Test
     void multipleCorruptionsInFusionIndex() throws Exception
     {
         // Because NATIVE30 provider use Lucene internally we can not use the snapshot from ephemeral file system because
@@ -682,6 +702,12 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return new File( dataDir, DatabaseFile.INDEX_STATISTICS_STORE.getName() );
     }
 
+    private File countsStoreFile()
+    {
+        final File dataDir = databaseLayout.databaseDirectory();
+        return new File( dataDir, DatabaseFile.COUNTS_STORE.getName() );
+    }
+
     private File[] schemaIndexFiles() throws IOException
     {
         final File databaseDir = databaseLayout.databaseDirectory();
@@ -705,12 +731,17 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private List<File> corruptIndexes( FileSystemAbstraction fs, boolean readOnly, CorruptionInject corruptionInject, File... targetFiles ) throws Exception
     {
+        return corruptIndexes( fs, readOnly, corruptionInject, new SchemaLayouts(), targetFiles );
+    }
+
+    private List<File> corruptIndexes( FileSystemAbstraction fs, boolean readOnly, CorruptionInject corruptionInject, LayoutBootstrapper layoutBootstrapper,
+            File... targetFiles ) throws Exception
+    {
         List<File> treeFiles = new ArrayList<>();
         try ( JobScheduler jobScheduler = createInitialisedScheduler();
               PageCache pageCache = createPageCache( fs, jobScheduler ) )
         {
-            SchemaLayouts schemaLayouts = new SchemaLayouts();
-            GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( pageCache, schemaLayouts, readOnly );
+            GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( pageCache, layoutBootstrapper, readOnly );
             for ( File file : targetFiles )
             {
                 GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file, "generic1" );

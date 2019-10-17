@@ -58,6 +58,7 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.counts.CountsStore;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -142,6 +143,7 @@ public class ExecutionOrderIntegrationTest
         int threads = defaultConsistencyCheckThreadsNumber();
         CacheAccess cacheAccess = new DefaultCacheAccess( defaultArray( store.getNodeStore().getHighId() ), new DefaultCounts( threads ), threads );
         RecordAccess access = FullCheck.recordAccess( store, cacheAccess );
+        CountsStore countsStore = fixture.counts().get();
 
         FullCheck singlePass = new FullCheck( ConsistencyFlags.DEFAULT, getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
 
@@ -151,7 +153,7 @@ public class ExecutionOrderIntegrationTest
 
         // when
         singlePass.execute( fixture.directStoreAccess(), new LogDecorator( singlePassChecks ), access, new InconsistencyReport( logger,
-                singlePassSummary ), cacheAccess, NO_MONITOR );
+                singlePassSummary ), cacheAccess, NO_MONITOR, countsStore );
 
         // then
         verifyZeroInteractions( logger );

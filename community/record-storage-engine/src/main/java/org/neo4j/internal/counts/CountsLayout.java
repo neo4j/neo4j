@@ -22,9 +22,9 @@ package org.neo4j.internal.counts;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-class CountsLayout extends Layout.Adapter<CountsKey,CountsValue>
+public class CountsLayout extends Layout.Adapter<CountsKey,CountsValue>
 {
-    CountsLayout()
+    public CountsLayout()
     {
         super( true, Layout.namedIdentifier( "CoLa", 987 ), 0, 1 );
     }
