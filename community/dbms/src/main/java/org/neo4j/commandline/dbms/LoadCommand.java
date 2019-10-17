@@ -79,7 +79,7 @@ public class LoadCommand extends AbstractCommand
 
         DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database );
         databaseLayout.databaseDirectory().mkdirs();
-        try ( Closeable check = DatabaseLockChecker.check( databaseLayout ) )
+        try ( Closeable ignore = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             deleteIfNecessary( databaseLayout, force );
             load( from, databaseLayout );

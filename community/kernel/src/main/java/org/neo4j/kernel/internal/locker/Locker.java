@@ -35,7 +35,7 @@ import org.neo4j.io.fs.StoreChannel;
 public class Locker implements Closeable
 {
     private final FileSystemAbstraction fileSystemAbstraction;
-    final File lockFile;
+    private final File lockFile;
 
     FileLock lockFileLock;
     private StoreChannel lockFileChannel;
@@ -44,6 +44,11 @@ public class Locker implements Closeable
     {
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.lockFile = lockFile;
+    }
+
+    public final File lockFile()
+    {
+        return lockFile;
     }
 
     /**

@@ -22,50 +22,57 @@ package org.neo4j.commandline.dbms;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.FileLockException;
+import org.neo4j.kernel.internal.locker.GlobalLocker;
 import org.neo4j.kernel.internal.locker.Locker;
 
-public class DatabaseLockChecker implements Closeable
+public class LockChecker implements Closeable
 {
-
     private final FileSystemAbstraction fileSystem;
     private final Locker locker;
 
-    private DatabaseLockChecker( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout )
+    private LockChecker( FileSystemAbstraction fileSystem, Locker locker )
     {
         this.fileSystem = fileSystem;
-        this.locker = new DatabaseLocker( fileSystem, databaseLayout );
+        this.locker = locker;
     }
 
-    /**
-     * Create database lock checker with lock on a provided database layout if its exist and writable
-     *
-     * @param databaseLayout database layout to check
-     * @return lock checker or empty closeable in case if path does not exists or is not writable
-     * @see Locker
-     * @see Files
-     */
-    public static Closeable check( DatabaseLayout databaseLayout ) throws CannotWriteException
+    public static Closeable checkDbmsLock( Neo4jLayout neo4jLayout ) throws CannotWriteException
     {
-        Path lockFile = databaseLayout.databaseLockFile().toPath();
-        if ( Files.isWritable( databaseLayout.databaseDirectory().toPath() ) )
+        var fileSystem = new DefaultFileSystemAbstraction();
+        var locker = new GlobalLocker( fileSystem, neo4jLayout );
+        return check( locker, fileSystem );
+    }
+
+    public static Closeable checkDatabaseLock( DatabaseLayout databaseLayout ) throws CannotWriteException
+    {
+        var fileSystem = new DefaultFileSystemAbstraction();
+        var locker = new DatabaseLocker( fileSystem, databaseLayout );
+        return check( locker, fileSystem );
+    }
+
+    private static Closeable check( Locker locker, FileSystemAbstraction fileSystem ) throws CannotWriteException
+    {
+        var lockFile = locker.lockFile().toPath();
+
+        if ( Files.isWritable( lockFile.getParent() ) )
         {
-            if ( Files.exists( databaseLayout.databaseLockFile().toPath() ) && !Files.isWritable( databaseLayout.databaseLockFile().toPath() ) )
+            if ( Files.exists( lockFile ) && !Files.isWritable( lockFile ) )
             {
                 throw new CannotWriteException( lockFile );
             }
-            DatabaseLockChecker locker = new DatabaseLockChecker( new DefaultFileSystemAbstraction(), databaseLayout );
+            LockChecker lockChecker = new LockChecker( fileSystem, locker );
             try
             {
-                locker.checkLock();
-                return locker;
+                lockChecker.checkLock();
+                return lockChecker;
             }
             catch ( FileLockException le )
             {

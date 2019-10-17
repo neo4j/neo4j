@@ -21,45 +21,72 @@ package org.neo4j.kernel.database;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.Closeable;
-
-import org.neo4j.commandline.dbms.DatabaseLockChecker;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.commandline.dbms.LockChecker;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 @DbmsExtension
 class DatabaseLockIT
 {
     @Inject
-    private GraphDatabaseAPI databaseAPI;
+    private DatabaseManagementService managementService;
 
     @Test
-    void databaseHoldingLockWhenStarted()
+    void allDatabasesLockedWhenStarted()
     {
-        DatabaseLayout databaseLayout = databaseAPI.databaseLayout();
+        var databaseNames = managementService.listDatabases();
+        assertThat( databaseNames, not( empty() ) );
 
-        assertThrows( FileLockException.class, () -> DatabaseLockChecker.check( databaseLayout ) );
+        for ( var databaseName : databaseNames )
+        {
+            var dbApi = (GraphDatabaseAPI) managementService.database( databaseName );
+            assertThrows( FileLockException.class, () -> LockChecker.checkDatabaseLock( dbApi.databaseLayout() ) );
+        }
     }
 
     @Test
-    void databaseReleaseLockWhenStopped()
+    void allDatabaseLocksReleasedWhenStopped()
     {
-        DatabaseLayout databaseLayout = databaseAPI.databaseLayout();
-        Database database = databaseAPI.getDependencyResolver().resolveDependency( Database.class );
-        database.stop();
+        var databaseNames = managementService.listDatabases();
+        assertThat( databaseNames, not( empty() ) );
 
-        assertDoesNotThrow( () ->
+        for ( var databaseName : databaseNames )
         {
-            try ( Closeable closeable = DatabaseLockChecker.check( databaseLayout ) )
-            {
-                // empty
-            }
-        } );
+            var dbApi = (GraphDatabaseAPI) managementService.database( databaseName );
+            var db = dbApi.getDependencyResolver().resolveDependency( Database.class );
+            db.stop();
+
+            assertDoesNotThrow( () -> LockChecker.checkDatabaseLock( dbApi.databaseLayout() ).close() );
+        }
+    }
+
+    @Test
+    void dbmsLockedWhenStarted()
+    {
+        var dbApi = (GraphDatabaseAPI) managementService.database( SYSTEM_DATABASE_NAME );
+        var neo4jLayout = dbApi.databaseLayout().getNeo4jLayout();
+
+        assertThrows( FileLockException.class, () -> LockChecker.checkDbmsLock( neo4jLayout ) );
+    }
+
+    @Test
+    void dbmsLockReleasedWhenStopped()
+    {
+        var dbApi = (GraphDatabaseAPI) managementService.database( SYSTEM_DATABASE_NAME );
+        var neo4jLayout = dbApi.databaseLayout().getNeo4jLayout();
+
+        managementService.shutdown();
+
+        assertDoesNotThrow( () -> LockChecker.checkDbmsLock( neo4jLayout ).close() );
     }
 }

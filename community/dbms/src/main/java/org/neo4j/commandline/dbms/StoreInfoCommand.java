@@ -64,9 +64,9 @@ public class StoreInfoCommand extends AbstractCommand
         Validators.CONTAINS_EXISTING_DATABASE.validate( storePath );
 
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( storePath );
-        try ( Closeable ignored = DatabaseLockChecker.check( databaseLayout );
-                JobScheduler jobScheduler = createInitialisedScheduler();
-                PageCache pageCache = StandalonePageCacheFactory.createPageCache( ctx.fs(), jobScheduler ) )
+        try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout );
+              JobScheduler jobScheduler = createInitialisedScheduler();
+              PageCache pageCache = StandalonePageCacheFactory.createPageCache( ctx.fs(), jobScheduler ) )
         {
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
             StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( ctx.fs(), databaseLayout, Config.defaults(), pageCache,

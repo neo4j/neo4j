@@ -180,7 +180,7 @@ class CheckConsistencyCommandIT
 
         testDirectory.getFileSystem().mkdirs( databaseLayout.databaseDirectory() );
 
-        try ( Closeable lock = DatabaseLockChecker.check( databaseLayout ) )
+        try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--verbose" );
             CommandFailedException exception = assertThrows( CommandFailedException.class, checkConsistencyCommand::execute );

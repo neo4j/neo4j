@@ -90,7 +90,7 @@ public class DumpCommand extends AbstractCommand
             throw new CommandFailedException( "Database does not exist: " + database, e );
         }
 
-        try ( Closeable ignored = DatabaseLockChecker.check( databaseLayout ) )
+        try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             checkDbState( databaseLayout, config );
             dump( database, databaseLayout, archive );

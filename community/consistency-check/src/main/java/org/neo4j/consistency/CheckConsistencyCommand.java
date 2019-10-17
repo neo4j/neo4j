@@ -33,7 +33,7 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.Util;
 import org.neo4j.commandline.dbms.CannotWriteException;
-import org.neo4j.commandline.dbms.DatabaseLockChecker;
+import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -122,7 +122,7 @@ public class CheckConsistencyCommand extends AbstractCommand
                     .orElseGet( () -> Neo4jLayout.of( config ).databaseLayout( target.database ) );
 
             checkDatabaseExistence( databaseLayout );
-            try ( Closeable lock = DatabaseLockChecker.check( databaseLayout ) )
+            try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
             {
                 checkDbState( databaseLayout, config );
                 // Only output progress indicator if a console receives the output

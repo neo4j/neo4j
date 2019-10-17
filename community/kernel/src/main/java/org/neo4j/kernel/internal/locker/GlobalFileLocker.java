@@ -56,13 +56,13 @@ class GlobalFileLocker extends Locker
     public void checkLock() throws FileLockException
     {
         super.checkLock();
-        lockedFiles.add( lockFile );
+        lockedFiles.add( lockFile() );
     }
 
     @Override
     protected boolean haveLockAlready()
     {
-        if ( lockedFiles.contains( lockFile ) )
+        if ( lockedFiles.contains( lockFile() ) )
         {
             if ( lockFileLock != null )
             {
@@ -76,7 +76,7 @@ class GlobalFileLocker extends Locker
     @Override
     protected void releaseLock() throws IOException
     {
-        lockedFiles.remove( lockFile );
+        lockedFiles.remove( lockFile() );
         super.releaseLock();
     }
 }

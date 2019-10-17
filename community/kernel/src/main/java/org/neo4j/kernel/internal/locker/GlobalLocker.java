@@ -25,9 +25,9 @@ import org.neo4j.io.layout.Neo4jLayout;
 /**
  * Global DBMS level lock to prevent multiple DBMS to be started on top of single {@link Neo4jLayout}
  */
-class GlobalLocker extends GlobalFileLocker
+public class GlobalLocker extends GlobalFileLocker
 {
-    GlobalLocker( FileSystemAbstraction fileSystemAbstraction, Neo4jLayout neo4jLayout )
+    public GlobalLocker( FileSystemAbstraction fileSystemAbstraction, Neo4jLayout neo4jLayout )
     {
         super( fileSystemAbstraction, neo4jLayout.storeLockFile() );
     }
