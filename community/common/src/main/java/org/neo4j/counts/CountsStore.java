@@ -21,12 +21,15 @@ package org.neo4j.counts;
 
 import java.io.IOException;
 
+import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
+
 /**
  * Store and accessor of entity counts. Counts changes revolves around one or a combination of multiple tokens and are applied as deltas.
  * This makes it necessary to tie all changes to transaction ids so that this store can tell whether or not to re-apply any given
  * set of changes during recovery. Changes are applied by making calls to {@link CountsAccessor.Updater} from {@link #apply(long)}.
  */
-public interface CountsStore extends CountsAccessor, AutoCloseable
+public interface CountsStore extends CountsAccessor, AutoCloseable, ConsistencyCheckable
 {
     /**
      * @param txId id of the transaction that produces the changes that are being applied.
@@ -82,6 +85,12 @@ public interface CountsStore extends CountsAccessor, AutoCloseable
         @Override
         public void accept( CountsVisitor visitor )
         {   // no-op
+        }
+
+        @Override
+        public boolean consistencyCheck( ReporterFactory reporterFactory )
+        {
+            return true;
         }
     }
 }
