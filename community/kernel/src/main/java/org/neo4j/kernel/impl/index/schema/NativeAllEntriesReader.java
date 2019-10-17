@@ -94,6 +94,13 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extend
     @Override
     public long maxCount()
     {
-        return UNKNOWN_MAX_COUNT;
+        try
+        {
+            return tree.estimateNumberOfEntriesInTree();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 }
