@@ -23,8 +23,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.recordstorage.StoreTokens;
@@ -105,7 +106,7 @@ class SchemaRuleMigrationTest
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst );
 
         assertEquals( 1, writtenRules.size() );
-        assertEquals( "Uniqueness constraint on :Label (prop)", writtenRules.get( 0 ).getName() );
+        assertEquals( "constraint_952591e6", writtenRules.get( 0 ).getName() );
     }
 
     @Test
@@ -119,7 +120,7 @@ class SchemaRuleMigrationTest
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst );
 
         assertEquals( 1, writtenRules.size() );
-        assertEquals( "Index on :Label (prop)", writtenRules.get( 0 ).getName() );
+        assertEquals( "index_c3fbd584", writtenRules.get( 0 ).getName() );
     }
 
     @Test
@@ -133,15 +134,14 @@ class SchemaRuleMigrationTest
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst );
 
         assertEquals( 1, writtenRules.size() );
-        assertEquals( "Uniqueness constraint on :Label (prop)", writtenRules.get( 0 ).getName() );
+        assertEquals( "constraint_952591e6", writtenRules.get( 0 ).getName() );
     }
 
     @Test
     void mustEnsureUniqueNamesEvenWhenOldNamesMatchesNewDefaults() throws KernelException
     {
         SchemaRule rule1 = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withId( 1 );
-        SchemaRule rule2 = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 3 ) ).withId( 2 )
-                .withName( "Uniqueness constraint on :Label (prop)" );
+        SchemaRule rule2 = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withId( 2 );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ), new NamedToken( "bla", 3 ) ) );
         when( src.getAll() ).thenReturn( List.of( rule1, rule2 ) );
@@ -149,15 +149,9 @@ class SchemaRuleMigrationTest
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst );
 
         assertEquals( 2, writtenRules.size() );
-        writtenRules.sort( Comparator.comparing( SchemaRule::getId ) );
+        Set<String> names = writtenRules.stream().map( SchemaRule::getName ).collect( Collectors.toSet() );
 
-        // Even though the generated name perfectly matches this rule, a later rule has already been explicitly given this name,
-        // so we have to ensure that we disambiguate this one.
-        assertEquals( 1, writtenRules.get( 0 ).getId() );
-        assertEquals( "Uniqueness constraint on :Label (prop) (1)", writtenRules.get( 0 ).getName() );
-
-        // The rule with the explicit name gets to keep it as long as it is unique.
-        assertEquals( 2, writtenRules.get( 1 ).getId() );
-        assertEquals( "Uniqueness constraint on :Label (prop)", writtenRules.get( 1 ).getName() );
+        // Collisions in generated names (however fantastically unlikely) must be resolved by appending a count.
+        assertEquals( Set.of( "constraint_952591e6", "constraint_952591e6_1" ), names );
     }
 }

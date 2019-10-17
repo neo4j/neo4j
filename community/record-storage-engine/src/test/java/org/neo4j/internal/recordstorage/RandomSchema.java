@@ -259,7 +259,7 @@ public class RandomSchema implements Supplier<SchemaRule>
         {
             name = ((TextValue) values.nextValueOfTypes( textTypes )).stringValue().trim();
         }
-        while ( name.isEmpty() || name.isBlank() || name.contains( "\0" ) ); // Avoid generating empty names.
+        while ( name.isEmpty() || name.isBlank() || name.contains( "\0" ) || name.contains( "`" ) ); // Avoid generating empty names.
         return name;
     }
 

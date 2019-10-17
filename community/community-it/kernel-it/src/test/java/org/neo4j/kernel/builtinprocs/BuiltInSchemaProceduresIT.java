@@ -58,7 +58,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Node1: (:`This:is_a:label` {color: "red"})
 
-        createNode( singletonList( "`This:is_a:label`" ), singletonList( "color" ),
+        createNode( singletonList( "This:is_a:label" ), singletonList( "color" ),
                 singletonList( stringValue( "red" ) ) );
 
         // When
@@ -67,7 +67,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( nodeEntry( ":``This:is_a:label``", singletonList( "`This:is_a:label`" ), "color",
+                equalTo( nodeEntry( ":`This:is_a:label`", singletonList( "This:is_a:label" ), "color",
                         singletonList( "String" ), true ) ) ) );
 //        printStream( stream );
     }

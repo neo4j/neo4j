@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -30,6 +31,9 @@ import java.util.stream.Stream;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.common.EntityType.NODE;
@@ -80,20 +84,25 @@ class SchemaRuleTest
         }
     };
 
+    /**
+     * There are many tests throughout the code base that end up relying on indexes getting specific names.
+     * For that reason, we need to keep the hash function output relatively pinned down.
+     */
     @Test
-    void mustGenerateReasonableNames()
+    void mustGenerateDeterministicNames()
     {
+        assertName( labelPrototype, "index_41a159fc" );
+        assertName( labelUniquePrototype, "index_cc141e85" );
+        assertName( relTypePrototype, "index_d0e8fbc6" );
+        assertName( relTypeUniquePrototype, "index_918ead01" );
+        assertName( nodeFtsPrototype, "index_99c88876" );
+        assertName( relFtsPrototype, "index_9c14864e" );
+        assertName( uniqueLabelConstraint, "constraint_9d5cc155" );
+        assertName( existsLabelConstraint, "constraint_b23c1483" );
+        assertName( nodeKeyConstraint, "constraint_7b8dd387" );
+        assertName( existsRelTypeConstraint, "constraint_ef4bbcac" );
 
-        assertName( labelPrototype, new String[]{"A"}, new String[]{"B", "C"}, "Index on :A (B,C)" );
-        assertName( labelUniquePrototype, new String[]{"A"}, new String[]{"B", "C"}, "Unique Index on :A (B,C)" );
-        assertName( relTypePrototype, new String[]{"A"}, new String[]{"B", "C"}, "Index on ()-[:A]-() (B,C)" );
-        assertName( relTypeUniquePrototype, new String[]{"A"}, new String[]{"B", "C"}, "Unique Index on ()-[:A]-() (B,C)" );
-        assertName( nodeFtsPrototype, new String[]{"A", "B"}, new String[]{"C", "D"}, "Full-Text Index on :A,:B (C,D)" );
-        assertName( relFtsPrototype, new String[]{"A", "B"}, new String[]{"C", "D"}, "Full-Text Index on ()-[:A|:B]-() (C,D)" );
-        assertName( uniqueLabelConstraint, new String[] {"A"}, new String[] {"B", "C"}, "Uniqueness constraint on :A (B,C)" );
-        assertName( existsLabelConstraint, new String[] {"A"}, new String[] {"B", "C"}, "Property existence constraint on :A (B,C)" );
-        assertName( nodeKeyConstraint, new String[] {"A"}, new String[] {"B", "C"}, "Node key constraint on :A (B,C)" );
-        assertName( existsRelTypeConstraint, new String[] {"A"}, new String[] {"B", "C"}, "Property existence constraint on ()-[:A]-() (B,C)" );
+        System.out.println(SchemaRule.generateName( ConstraintDescriptorFactory.nodeKeyForLabel( 0, 0 ), new String[]{"Label"}, new String[]{"prop"} ));
     }
 
     @Test
@@ -114,17 +123,11 @@ class SchemaRuleTest
         assertUserDescription( "Constraint( UNIQUE, :`La:bel`(`prop:erty`, prop1) )", uniqueLabelConstraint2 );
     }
 
-    @Test
-    void mustNotGenerateBrokenNamesWhenTokensContainNullBytes()
+    private void assertName( SchemaDescriptorSupplier schemaish, String expectedName )
     {
-        assertName( IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ), new String[]{"a\0b"}, new String[]{"c\0d"}, "Index on :a\\0b (c\\0d)" );
-    }
-
-    private void assertName( SchemaDescriptorSupplier schemaish, String[] entityTokenNames, String[] propertyNames, String expectedName )
-    {
-        String generateName = SchemaRule.generateName( schemaish, entityTokenNames, propertyNames );
-        assertEquals( expectedName, generateName );
-        assertEquals( expectedName, SchemaRule.sanitiseName( generateName ) );
+        String generateName = SchemaRule.generateName( schemaish, new String[] {"A"}, new String[] {"B", "C"} );
+        assertThat( generateName, equalTo( expectedName ) );
+        assertThat( SchemaRule.sanitiseName( generateName ), equalTo( expectedName ) );
     }
 
     private void assertUserDescription( String description, SchemaDescriptorSupplier schemaish )

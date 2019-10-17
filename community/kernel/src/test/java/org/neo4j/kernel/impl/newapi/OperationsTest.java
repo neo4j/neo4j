@@ -1052,9 +1052,9 @@ class OperationsTest
         assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getId(), is( 1L ) );
         assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getId(), is( 2L ) );
         assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getId(), is( 3L ) );
-        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getName(), is( "Index on :LabelA (PropA)" ) );
-        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getName(), is( "Full-Text Index on :LabelB,:LabelC (PropA,PropB)" ) );
-        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getName(), is( "Index on :LabelC (PropA)" ) );
+        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getName(), is( "index_5c81a58e" ) );
+        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getName(), is( "index_2813986a" ) );
+        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getName(), is( "index_edb2dfd3" ) );
     }
 
     @Test

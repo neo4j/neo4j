@@ -823,7 +823,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             while ( takenNames.containsKey( name ) )
             {
                 count++;
-                name = originalName + " (" + count + ")";
+                name = originalName + "_" + count;
             }
             rule = (T) rule.withName( name );
             takenNames.put( name, rule );

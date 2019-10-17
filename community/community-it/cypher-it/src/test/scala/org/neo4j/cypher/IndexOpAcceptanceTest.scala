@@ -55,7 +55,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     val e = intercept[CypherExecutionException](execute("CREATE INDEX FOR (n:Person) ON (n.name)"))
 
     // THEN
-    e should have message "An equivalent index already exists, 'Index( 1, 'Index on :Person (name)', GENERAL BTREE, :Person(name), native-btree-1.0 )'."
+    e should have message "An equivalent index already exists, 'Index( 1, 'index_5c0607ad', GENERAL BTREE, :Person(name), native-btree-1.0 )'."
   }
 
   test("secondIndexCreationShouldFailIfIndexesHasFailed") {

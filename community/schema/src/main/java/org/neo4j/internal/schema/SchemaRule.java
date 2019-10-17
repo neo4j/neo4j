@@ -19,11 +19,9 @@
  */
 package org.neo4j.internal.schema;
 
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-import org.neo4j.common.EntityType;
+import org.neo4j.hashing.HashFunction;
 
 /**
  * Represents a stored schema rule.
@@ -76,106 +74,40 @@ public interface SchemaRule extends SchemaDescriptorSupplier
     }
 
     /**
-     * Generate a human friendly name for the given {@link SchemaDescriptorSupplier}, using the supplied arrays of resolved schema token names.
+     * Generate a <em>deterministic</em> name for the given {@link SchemaDescriptorSupplier}.
      *
      * Only {@link SchemaRule} implementations, and {@link IndexPrototype}, are supported arguments for the schema descriptor supplier.
      *
      * @param rule The {@link SchemaDescriptorSupplier} to generate a name for.
      * @param entityTokenNames The resolved names of the schema entity tokens, that is, label names or relationship type names.
      * @param propertyNames The resolved property key names.
-     * @return A suitable name.
+     * @return A name.
      */
     static String generateName( SchemaDescriptorSupplier rule, String[] entityTokenNames, String[] propertyNames )
     {
-        sanitiseTokens( entityTokenNames );
-        sanitiseTokens( propertyNames );
+        // NOTE to future maintainers: You probably want to avoid touching this function.
+        // Last time this was changed, we had some 400+ tests to update.
+        HashFunction hf = HashFunction.incrementalXXH64();
+        long key = hf.initialise( Boolean.hashCode( rule instanceof ConstraintDescriptor ) );
+        key = hf.update( key, rule.schema().entityType().ordinal() );
+        key = hf.update( key, rule.schema().propertySchemaType().ordinal() );
+        key = hf.updateWithArray( key, entityTokenNames, String::hashCode );
+        key = hf.updateWithArray( key, propertyNames, String::hashCode );
+
         if ( rule instanceof IndexRef<?> )
         {
-            return generateName( (IndexRef<?>) rule, entityTokenNames, propertyNames );
+            IndexRef<?> indexRef = (IndexRef<?>) rule;
+            key = hf.update( key, indexRef.getIndexType().ordinal() );
+            key = hf.update( key, Boolean.hashCode( indexRef.isUnique() ) );
+            return String.format( "index_%x", hf.toInt( hf.finalise( key ) ) );
         }
         if ( rule instanceof ConstraintDescriptor )
         {
-            return generateName( (ConstraintDescriptor) rule, entityTokenNames, propertyNames );
+            ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
+            key = hf.update( key, constraint.type().ordinal() );
+            return String.format( "constraint_%x", hf.toInt( hf.finalise( key ) ) );
         }
         throw new IllegalArgumentException( "Don't know how to generate a name for this SchemaDescriptorSupplier implementation: " + rule + "." );
-    }
-
-    private static void sanitiseTokens( String[] tokens )
-    {
-        for ( int i = 0; i < tokens.length; i++ )
-        {
-            if ( tokens[i].indexOf( '\0' ) != -1 )
-            {
-                tokens[i] = tokens[i].replace( "\0", "\\0" );
-            }
-        }
-    }
-
-    /**
-     * Generate a human friendly name for the given {@link IndexRef}, using the supplied arrays of resolved schema token names.
-     * @param indexRef The {@link IndexRef} to generate a name for.
-     * @param entityTokenNames The resolved names of the schema entity tokens, that is, label names or relationship type names.
-     * @param propertyNames The resolved property key names.
-     * @return A suitable name.
-     */
-    private static String generateName( IndexRef<?> indexRef, String[] entityTokenNames, String[] propertyNames )
-    {
-        SchemaDescriptor schema = indexRef.schema();
-        String indexType = indexRef.getIndexType() == IndexType.FULLTEXT ? "Full-Text Index" : indexRef.isUnique() ? "Unique Index" : "Index";
-        String entityPart = generateEntityNamePart( schema, entityTokenNames );
-        return indexType + " on " + entityPart + " (" + String.join( ",", propertyNames ) + ")";
-    }
-
-    /**
-     * Generate a human friendly name for the given {@link ConstraintDescriptor}, using the supplied arrays of resolved schema token names.
-     * @param constraint The {@link ConstraintDescriptor} to generate a name for.
-     * @param entityTokenNames The resolved names of the schema entity tokens, that is, label names or relationship type names.
-     * @param propertyNames The resolved property key names.
-     * @return A suitable name.
-     */
-    private static String generateName( ConstraintDescriptor constraint, String[] entityTokenNames, String[] propertyNames )
-    {
-        SchemaDescriptor schema = constraint.schema();
-        String constraintType;
-        switch ( constraint.type() )
-        {
-        case EXISTS:
-            constraintType = "Property existence constraint";
-            break;
-        case UNIQUE:
-            constraintType = "Uniqueness constraint";
-            break;
-        case UNIQUE_EXISTS:
-            if ( schema.entityType() != EntityType.NODE )
-            {
-                throw new IllegalArgumentException(
-                        "Cannot describe " + ConstraintType.UNIQUE_EXISTS + " constraints for " + schema.entityType() + " entities." );
-            }
-            constraintType = "Node key constraint";
-            break;
-        default:
-            throw new IllegalArgumentException( "Unknown ConstraintType: " + constraint.type() );
-        }
-
-        String entityPart = generateEntityNamePart( schema, entityTokenNames );
-        return constraintType + " on " + entityPart + " (" + String.join( ",", propertyNames ) + ")";
-    }
-
-    private static String generateEntityNamePart( SchemaDescriptor schema, String[] entityTokenNames )
-    {
-        String entityPart;
-        switch ( schema.entityType() )
-        {
-        case NODE:
-            entityPart = Arrays.stream( entityTokenNames ).collect( Collectors.joining( ",:", ":", "" ) );
-            break;
-        case RELATIONSHIP:
-            entityPart = Arrays.stream( entityTokenNames ).collect( Collectors.joining( "|:", "()-[:", "]-()" ) );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unknown EntityType: " + schema.entityType() + "." );
-        }
-        return entityPart;
     }
 
     /**
