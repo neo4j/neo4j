@@ -27,7 +27,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
   import org.neo4j.cypher.internal.v3_5.parser.ParserFixture.parser
 
   test("should extract starts with patterns") {
-    assertRewrite("RETURN x STARTS WITH 'Pattern' as X", "RETURN x STARTS WITH {`  AUTOSTRING0`} as X", Map("  AUTOSTRING0" -> "Pattern"))
+    assertRewrite("RETURN x STARTS WITH 'Pattern' as X", "RETURN x STARTS WITH $`  AUTOSTRING0` as X", Map("  AUTOSTRING0" -> "Pattern"))
   }
 
   test("should not extract literal dynamic property lookups") {
@@ -35,11 +35,11 @@ class LiteralReplacementTest extends CypherFunSuite  {
   }
 
   test("should extract literals in return clause") {
-    assertRewrite(s"RETURN 1 as result", s"RETURN {`  AUTOINT0`} as result", Map("  AUTOINT0" -> 1))
-    assertRewrite(s"RETURN 1.1 as result", s"RETURN {`  AUTODOUBLE0`} as result", Map("  AUTODOUBLE0" -> 1.1))
-    assertRewrite("RETURN 'apa' as result", "RETURN {`  AUTOSTRING0`} as result", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("RETURN \"apa\" as result", "RETURN {`  AUTOSTRING0`} as result", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("RETURN [1, 2, 3] as result", "RETURN {`  AUTOLIST0`} as result", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
+    assertRewrite("RETURN 1 as result", "RETURN $`  AUTOINT0` as result", Map("  AUTOINT0" -> 1))
+    assertRewrite("RETURN 1.1 as result", "RETURN $`  AUTODOUBLE0` as result", Map("  AUTODOUBLE0" -> 1.1))
+    assertRewrite("RETURN 'apa' as result", "RETURN $`  AUTOSTRING0` as result", Map("  AUTOSTRING0" -> "apa"))
+    assertRewrite("RETURN \"apa\" as result", "RETURN $`  AUTOSTRING0` as result", Map("  AUTOSTRING0" -> "apa"))
+    assertRewrite("RETURN [1, 2, 3] as result", "RETURN $`  AUTOLIST0` as result", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
   }
 
   test("should not extract boolean literals in return clause") {
@@ -48,11 +48,11 @@ class LiteralReplacementTest extends CypherFunSuite  {
   }
 
   test("should extract literals in match clause") {
-    assertRewrite(s"MATCH ({a:1})", s"MATCH ({a:{`  AUTOINT0`}})", Map("  AUTOINT0" -> 1))
-    assertRewrite(s"MATCH ({a:1.1})", s"MATCH ({a:{`  AUTODOUBLE0`}})", Map("  AUTODOUBLE0" -> 1.1))
-    assertRewrite("MATCH ({a:'apa'})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("MATCH ({a:\"apa\"})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("MATCH (n) WHERE ID(n) IN [1, 2, 3]", "MATCH (n) WHERE ID(n) IN {`  AUTOLIST0`}", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
+    assertRewrite("MATCH ({a:1})", "MATCH ({a:$`  AUTOINT0`})", Map("  AUTOINT0" -> 1))
+    assertRewrite("MATCH ({a:1.1})", "MATCH ({a:$`  AUTODOUBLE0`})", Map("  AUTODOUBLE0" -> 1.1))
+    assertRewrite("MATCH ({a:'apa'})", "MATCH ({a:$`  AUTOSTRING0`})", Map("  AUTOSTRING0" -> "apa"))
+    assertRewrite("MATCH ({a:\"apa\"})", "MATCH ({a:$`  AUTOSTRING0`})", Map("  AUTOSTRING0" -> "apa"))
+    assertRewrite("MATCH (n) WHERE ID(n) IN [1, 2, 3]", "MATCH (n) WHERE ID(n) IN $`  AUTOLIST0`", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
   }
 
   test("should not extract boolean literals in match clause") {
@@ -63,7 +63,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
   test("should extract literals in skip clause") {
     assertRewrite(
       s"RETURN 0 as x SKIP 1 limit 2",
-      s"RETURN {`  AUTOINT0`} as x SKIP {`  AUTOINT1`} LIMIT 2",
+      "RETURN $`  AUTOINT0` as x SKIP $`  AUTOINT1` LIMIT 2",
       Map("  AUTOINT0" -> 0, "  AUTOINT1" -> 1)
     )
   }
@@ -71,7 +71,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
   test("should extract literals in create statement clause") {
     assertRewrite(
       "create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'})",
-      "create (a {a:{`  AUTOINT0`}, b:{`  AUTOSTRING1`}, c:{`  AUTOINT2`}, d:{`  AUTOSTRING3`}})",
+      "create (a {a:$`  AUTOINT0`, b:$`  AUTOSTRING1`, c:$`  AUTOINT2`, d:$`  AUTOSTRING3`})",
       Map("  AUTOINT0"->0,"  AUTOSTRING1"->"name 0","  AUTOINT2"->10000000,"  AUTOSTRING3"->"a very long string 0")
     )
   }
@@ -79,7 +79,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
   test("should extract literals in merge clause") {
     assertRewrite(
       s"MERGE (n {a:'apa'}) ON CREATE SET n.foo = 'apa' ON MATCH SET n.foo = 'apa'",
-      s"MERGE (n {a:{`  AUTOSTRING0`}}) ON CREATE SET n.foo = {`  AUTOSTRING1`} ON MATCH SET n.foo = {`  AUTOSTRING2`}",
+      "MERGE (n {a:$`  AUTOSTRING0`}) ON CREATE SET n.foo = $`  AUTOSTRING1` ON MATCH SET n.foo = $`  AUTOSTRING2`",
       Map("  AUTOSTRING0" -> "apa", "  AUTOSTRING1" -> "apa", "  AUTOSTRING2" -> "apa")
     )
   }
@@ -87,7 +87,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
   test("should extract literals in multiple patterns") {
     assertRewrite(
       s"create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (b {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (a)-[:KNOWS {since: 0}]->(b)",
-      s"create (a {a:{`  AUTOINT0`}, b:{`  AUTOSTRING1`}, c:{`  AUTOINT2`}, d:{`  AUTOSTRING3`}}) create (b {a:{`  AUTOINT4`}, b:{`  AUTOSTRING5`}, c:{`  AUTOINT6`}, d:{`  AUTOSTRING7`}}) create (a)-[:KNOWS {since: {`  AUTOINT8`}}]->(b)",
+      "create (a {a:$`  AUTOINT0`, b:$`  AUTOSTRING1`, c:$`  AUTOINT2`, d:$`  AUTOSTRING3`}) create (b {a:$`  AUTOINT4`, b:$`  AUTOSTRING5`, c:$`  AUTOINT6`, d:$`  AUTOSTRING7`}) create (a)-[:KNOWS {since: $`  AUTOINT8`}]->(b)",
       Map(
         "  AUTOINT0" -> 0, "  AUTOSTRING1" -> "name 0", "  AUTOINT2" -> 10000000, "  AUTOSTRING3" -> "a very long string 0",
         "  AUTOINT4" -> 0, "  AUTOSTRING5" -> "name 0", "  AUTOINT6" -> 10000000, "  AUTOSTRING7" -> "a very long string 0",
@@ -98,8 +98,8 @@ class LiteralReplacementTest extends CypherFunSuite  {
 
   test("should not rewrite queries that already have params in them") {
     assertRewrite(
-      "CREATE (a:Person {name:'Jakub', age:{age} })",
-      "CREATE (a:Person {name:'Jakub', age:{age} })",
+      "CREATE (a:Person {name:'Jakub', age:$age })",
+      "CREATE (a:Person {name:'Jakub', age:$age })",
       Map.empty
     )
   }
@@ -107,14 +107,14 @@ class LiteralReplacementTest extends CypherFunSuite  {
   test("should rewrite queries that already have params in them if configured to") {
     assertRewrite(
       "CREATE (a:Person {name: 'Jakub', age: $age })",
-      "CREATE (a:Person {name: {`  AUTOSTRING0`}, age: $age })",
+      "CREATE (a:Person {name: $`  AUTOSTRING0`, age: $age })",
       Map("  AUTOSTRING0" -> "Jakub"),
       Forced
     )
   }
 
   test("should extract from procedure calls") {
-    assertRewrite("CALL foo(12)", "CALL foo({`  AUTOINT0`})", Map("  AUTOINT0" -> 12))
+    assertRewrite("CALL foo(12)", "CALL foo($`  AUTOINT0`)", Map("  AUTOINT0" -> 12))
   }
 
   test("should extract from UNWIND") {

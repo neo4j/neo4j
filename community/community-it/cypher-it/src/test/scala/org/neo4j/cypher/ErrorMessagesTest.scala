@@ -85,7 +85,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("noIndexName") {
     expectSyntaxError(
       "start a = node(name=\"sebastian\") match (a)-[:WORKED_ON]-b return b",
-      "Invalid input 'n': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16 (offset: 15))",
+      "Invalid input 'n': expected whitespace, an unsigned integer, a parameter, a parameter (old syntax) or '*' (line 1, column 16 (offset: 15))",
       15
     )
   }
@@ -152,7 +152,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("relTypeInsteadOfRelIdInStart") {
     expectSyntaxError(
       "start r = relationship(:WORKED_ON) return r",
-      "Invalid input ':': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 24 (offset: " +
+      "Invalid input ':': expected whitespace, an unsigned integer, a parameter, a parameter (old syntax) or '*' (line 1, column 24 (offset: " +
         "23))",
       23
     )
@@ -161,7 +161,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("noNodeIdInStart") {
     expectSyntaxError(
       "start r = node() return r",
-      "Invalid input ')': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16 (offset: 15))",
+      "Invalid input ')': expected whitespace, an unsigned integer, a parameter, a parameter (old syntax) or '*' (line 1, column 16 (offset: 15))",
       15
     )
   }

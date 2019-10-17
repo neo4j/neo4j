@@ -184,10 +184,10 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       "MATCH (a) WITH count(a) AS `  AGGREGATION17` RETURN `  AGGREGATION17` > 0 AS bool")
   }
 
-  test("MATCH (a) RETURN count(a) > {param} AS bool") {
+  test("MATCH (a) RETURN count(a) > $param AS bool") {
     assertRewrite(
-      "MATCH (a) RETURN count(a) > {param} AS bool",
-      "MATCH (a) WITH count(a) AS `  AGGREGATION17` RETURN `  AGGREGATION17` > {param} AS bool")
+      "MATCH (a) RETURN count(a) > $param AS bool",
+      "MATCH (a) WITH count(a) AS `  AGGREGATION17` RETURN `  AGGREGATION17` > $param AS bool")
   }
 
   test("should not introduce multiple return items for the same expression") {

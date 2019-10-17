@@ -58,6 +58,8 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
         s"{$is}"
       case Parameter(name, _) =>
         s"$$${backtick(name)}"
+      case ParameterWithOldSyntax(name, _) =>
+        s"$$${backtick(name)}"
       case _: CountStar =>
         s"count(*)"
       case e@IsNull(arg) =>

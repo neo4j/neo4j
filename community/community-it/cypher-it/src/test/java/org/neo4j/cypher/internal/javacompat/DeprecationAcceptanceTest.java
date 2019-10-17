@@ -114,6 +114,19 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
+    public void deprecatedParameterSyntax()
+    {
+        assertNotifications( "EXPLAIN RETURN {param} AS parameter",
+                containsItem( deprecatedParameterSyntax ) );
+    }
+
+    @Test
+    public void deprecatedParameterSyntaxForPropertyMap()
+    {
+        assertNotifications( "EXPLAIN CREATE (:Label {props})", containsItem( deprecatedParameterSyntax ) );
+    }
+
+    @Test
     public void deprecatedFilterShouldNotHitCacheForNewVersion()
     {
         assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds",
@@ -361,6 +374,9 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
             deprecation( "The semantics of using colon in the separation of alternative relationship " +
                          "types in conjunction with the use of variable binding, inlined property " +
                          "predicates, or variable length will change in a future version." );
+
+    private Matcher<Notification> deprecatedParameterSyntax =
+            deprecation( "The parameter syntax `{param}` is deprecated, please use `$param` instead" );
 
     private Matcher<Notification> deprecation( String message )
     {

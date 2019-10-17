@@ -67,6 +67,13 @@ object Deprecations {
           () => p,
           () => Some(DeprecatedRelTypeSeparatorNotification(p.position))
         )
+
+      // old parameter syntax
+      case p@ParameterWithOldSyntax(name, parameterType) =>
+        Deprecation(
+          () => Parameter(name, parameterType)(p.position),
+          () => Some(DeprecatedParameterSyntax(p.position))
+        )
     }
   }
 
