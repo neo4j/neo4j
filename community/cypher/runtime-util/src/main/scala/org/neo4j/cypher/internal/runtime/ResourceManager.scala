@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.{AutoCloseablePlus, CloseListener}
 import scala.collection.JavaConverters._
 
 class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends CloseableResource with CloseListener {
-  private val resources: util.Collection[AutoCloseablePlus] = new util.ArrayList[AutoCloseablePlus](INITIAL_CAPACITY)
+  protected val resources: util.Collection[AutoCloseablePlus] = new util.ArrayList[AutoCloseablePlus](INITIAL_CAPACITY)
 
   /**
    * Trace a resource
@@ -81,6 +81,10 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
       resources.clear()
     }
   }
+}
+
+class ThreadSafeResourceManager(monitor: ResourceMonitor) extends ResourceManager(monitor) {
+  override protected val resources: util.Collection[AutoCloseablePlus] = new util.concurrent.ConcurrentLinkedQueue[AutoCloseablePlus]()
 }
 
 object ResourceManager {

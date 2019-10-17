@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.Argument
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InputDataStream, QueryContext, ResourceManager, ResourceMonitor}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.CursorFactory
@@ -37,16 +37,20 @@ abstract class ExecutionPlan {
           subscriber: QuerySubscriber): RuntimeResult
 
   /**
-    * @return if this ExecutionPlan needs a thread safe cursor factory to be used from the TransactionBoundQueryContext,
+    * @return if this ExecutionPlan needs a thread safe cursor factory and resource manager factory to be used from the TransactionBoundQueryContext,
     *         then it has to override this method and provide it here.
     */
-  def threadSafeCursorFactory(): Option[CursorFactory] = None
+  def threadSafeExecutionResources(): Option[(CursorFactory, ResourceManagerFactory)] = None
 
   def runtimeName: RuntimeName
 
   def metadata: Seq[Argument]
 
   def notifications: Set[InternalNotification]
+}
+
+trait ResourceManagerFactory {
+  def apply(monitor: ResourceMonitor): ResourceManager
 }
 
 abstract class DelegatingExecutionPlan(inner: ExecutionPlan) extends ExecutionPlan {

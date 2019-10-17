@@ -307,8 +307,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
 
-  // TODO fix
-  ignore("should handle arguments spanning two morsels") {
+  test("should handle arguments spanning two morsels") {
     // NOTE: This is a specific test for morsel runtime with morsel size _4_
     // where an argument will span two morsels that are put into a MorselBuffer
 
@@ -360,8 +359,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x", "y", "r").withNoRows()
   }
 
-  // TODO fix
-  ignore("should handle arguments spanning two morsels with sort") {
+  test("should handle arguments spanning two morsels with sort") {
     // NOTE: This is a specific test for morsel runtime with morsel size _4_
     // where an argument will span two morsels that are put into a MorselBuffer
 

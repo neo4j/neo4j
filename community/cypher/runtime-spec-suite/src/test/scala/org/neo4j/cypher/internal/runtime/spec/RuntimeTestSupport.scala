@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime.{InputDataStream, NormalMode, ProfileMode, QueryContext}
+import org.neo4j.cypher.internal.runtime.{InputDataStream, NormalMode, ProfileMode, QueryContext, ResourceManager, ResourceMonitor}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
@@ -108,8 +108,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     DebugLog.log("RuntimeTestSupport.run(...)")
     val tx = cypherGraphDb.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
     val txContext = contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    val queryContext = newQueryContext(txContext)
     try {
-      val executionPlan = compileWithTx(logicalQuery, runtime, txContext)
+      val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)
       runWithTx(executionPlan, input, resultMapper, subscriber, profile, tx, txContext)
     } finally {
       txContext.close()
@@ -132,8 +133,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                         profile: Boolean,
                         tx: InternalTransaction,
                         txContext: TransactionalContext): RESULT = {
-    val queryContext = newQueryContext(txContext, executableQuery.threadSafeCursorFactory())
-    val runtimeContext = newRuntimeContext(txContext, queryContext)
+    val queryContext = newQueryContext(txContext, executableQuery.threadSafeExecutionResources())
+    val runtimeContext = newRuntimeContext(queryContext)
 
     val executionMode = if(profile) ProfileMode else NormalMode
     val result = executableQuery.run(queryContext, executionMode, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
@@ -144,17 +145,17 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   def compile(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
-    compileWithTx(logicalQuery, runtime, txContext)
+    compileWithTx(logicalQuery, runtime, newQueryContext(txContext))
   }
 
   def compileWithTx(logicalQuery: LogicalQuery,
                     runtime: CypherRuntime[CONTEXT],
-                    txContext: TransactionalContext): ExecutionPlan = {
-    val runtimeContext = newRuntimeContext(txContext, newQueryContext(txContext))
+                    queryContext: QueryContext): ExecutionPlan = {
+    val runtimeContext = newRuntimeContext(queryContext)
     runtime.compileToExecutable(logicalQuery, runtimeContext)
   }
 
-  protected def newRuntimeContext(txContext: TransactionalContext, queryContext: QueryContext): CONTEXT = {
+  protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {
 
     val cypherConfiguration: CypherConfiguration = edition.cypherConfig()
 
@@ -169,7 +170,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
       cypherConfiguration.interpretedPipesFallback)
 
     runtimeContextManager.create(queryContext,
-                                 txContext.kernelTransaction().schemaRead(),
+                                 queryContext.transactionalContext.transaction.schemaRead(),
                                  MasterCompiler.CLOCK,
                                  Set.empty,
                                  compileExpressions = queryOptions.useCompiledExpressions,
@@ -178,7 +179,12 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  interpretedPipesFallback = queryOptions.interpretedPipesFallback)
   }
 
-  private def newQueryContext(txContext: TransactionalContext, maybeCursorFactory: Option[CursorFactory] = None): QueryContext = {
-    new TransactionBoundQueryContext(TransactionalContextWrapper(txContext, maybeCursorFactory.orNull))(monitors.newMonitor(classOf[IndexSearchMonitor]))
+  private def newQueryContext(txContext: TransactionalContext, maybeExecutionResources: Option[(CursorFactory, ResourceManagerFactory)] = None): QueryContext = {
+    val (threadSafeCursorFactory, resourceManager) = maybeExecutionResources match {
+      case Some((tFactory, rFactory)) => (tFactory, rFactory(ResourceMonitor.NOOP))
+      case None => (null, new ResourceManager(ResourceMonitor.NOOP))
+    }
+
+    new TransactionBoundQueryContext(TransactionalContextWrapper(txContext, threadSafeCursorFactory), resourceManager)(monitors.newMonitor(classOf[IndexSearchMonitor]))
   }
 }

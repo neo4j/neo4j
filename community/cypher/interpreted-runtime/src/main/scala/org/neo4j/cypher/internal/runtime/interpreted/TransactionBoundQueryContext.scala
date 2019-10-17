@@ -91,11 +91,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
 
-  lazy val withActiveRead: TransactionBoundQueryContext =
-    new TransactionBoundQueryContext(transactionalContext, resources)(indexSearchMonitor) {
-      override def reads(): Read = transactionalContext.dataRead
-    }
-
   override def createNode(labels: Array[Int]): NodeValue = ValueUtils.fromNodeEntity(entityAccessor.newNodeEntity(writes().nodeCreateWithLabels(labels)))
 
   override def createNodeId(labels: Array[Int]): Long = writes().nodeCreateWithLabels(labels)

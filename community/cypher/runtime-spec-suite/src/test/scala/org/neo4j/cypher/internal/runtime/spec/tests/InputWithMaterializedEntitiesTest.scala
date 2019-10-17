@@ -214,9 +214,9 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
                                                   logProvider: LogProvider): RuntimeTestSupport[CONTEXT] = {
     new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider) {
 
-      override protected def newRuntimeContext(txContext: TransactionalContext, queryContext: QueryContext): CONTEXT = {
+      override protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {
         runtimeContextManager.create(queryContext,
-          txContext.kernelTransaction().schemaRead(),
+          queryContext.transactionalContext.transaction.schemaRead(),
           MasterCompiler.CLOCK,
           Set.empty,
           compileExpressions = false,

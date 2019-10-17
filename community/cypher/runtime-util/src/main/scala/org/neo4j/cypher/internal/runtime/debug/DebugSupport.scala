@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.debug
 
-import org.neo4j.exceptions.InternalException
-
 object DebugSupport {
 
   /** COLORS AND FORMATTING **/

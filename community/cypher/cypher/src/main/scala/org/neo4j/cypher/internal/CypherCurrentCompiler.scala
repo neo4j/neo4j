@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
 import org.neo4j.cypher.{CypherExecutionMode, CypherVersion}
 import org.neo4j.exceptions.{Neo4jException, ParameterNotFoundException, ParameterWrongTypeException}
 import org.neo4j.graphdb.{Notification, QueryExecutionType}
+import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
@@ -225,10 +226,12 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         executionPlan.metadata)
 
     private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: Set[String]) = {
-      val txContextWrapper = TransactionalContextWrapper(transactionalContext, executionPlan.threadSafeCursorFactory().orNull)
-      val ctx = new TransactionBoundQueryContext(txContextWrapper,
-                                                 new ResourceManager(resourceMonitor)
-                                               )(searchMonitor)
+      val (threadSafeCursorFactory, resourceManager) = executionPlan.threadSafeExecutionResources() match {
+        case Some((tFactory, rFactory)) => (tFactory, rFactory(resourceMonitor))
+        case None => (null, new ResourceManager(resourceMonitor))
+      }
+      val txContextWrapper = TransactionalContextWrapper(transactionalContext, threadSafeCursorFactory)
+      val ctx = new TransactionBoundQueryContext(txContextWrapper, resourceManager)(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
 
