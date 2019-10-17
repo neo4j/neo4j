@@ -32,4 +32,19 @@ public interface JobHandle
     {
         throw new UnsupportedOperationException( "Unsupported in this implementation" );
     }
+
+    JobHandle nullInstance = new NullJobHandle();
+
+    class NullJobHandle implements JobHandle
+    {
+        @Override
+        public void cancel()
+        {   // no-op
+        }
+
+        @Override
+        public void waitTermination() throws CancellationException
+        {   // no-op
+        }
+    }
 }
