@@ -28,17 +28,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
+import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdGenerator.Marker;
@@ -57,6 +62,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
@@ -455,6 +461,94 @@ class IndexedIdGeneratorTest
         // then
         verifyNoMoreInteractions( highIdSupplier );
         assertEquals( highId, freelist.getHighId() );
+    }
+
+    @Test
+    void shouldNotStartWithoutFileIfReadOnly()
+    {
+        File file = directory.file( "non-existing" );
+        final IllegalStateException e = assertThrows( IllegalStateException.class,
+                () -> new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
+    }
+
+    @Test
+    void shouldNotRebuildIfReadOnly()
+    {
+        File file = directory.file( "existing" );
+        new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false ).close();
+        // Never start id generator means it will need rebuild on next start
+
+        // Start in readOnly mode
+        try ( IndexedIdGenerator readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true ) )
+        {
+            final UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, () -> readOnlyGenerator.start( NO_FREE_IDS ) );
+            assertEquals( "Can not write to id generator while in read only mode.", e.getMessage() );
+        }
+    }
+
+    @Test
+    void shouldStartInReadOnlyModeIfEmpty() throws IOException
+    {
+        File file = directory.file( "existing" );
+        final IndexedIdGenerator indexedIdGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false );
+        indexedIdGenerator.start( NO_FREE_IDS );
+        indexedIdGenerator.close();
+        // Never start id generator means it will need rebuild on next start
+
+        // Start in readOnly mode should not throw
+        try ( IndexedIdGenerator readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true ) )
+        {
+            readOnlyGenerator.start( NO_FREE_IDS );
+        }
+    }
+
+    @Test
+    void shouldNotNextIdIfReadOnly() throws IOException
+    {
+        assertOperationThrowInReadOnlyMode( idGenerator -> idGenerator::nextId );
+    }
+
+    @Test
+    void shouldNotCommitMarkerIfReadOnly() throws IOException
+    {
+        assertOperationThrowInReadOnlyMode( idGenerator -> idGenerator::commitMarker );
+    }
+
+    @Test
+    void shouldNotReuseMarkerIfReadOnly() throws IOException
+    {
+        assertOperationThrowInReadOnlyMode( idGenerator -> idGenerator::reuseMarker );
+    }
+
+    @Test
+    void shouldNotSetHighIdIfReadOnly() throws IOException
+    {
+        assertOperationThrowInReadOnlyMode( idGenerator -> () -> idGenerator.setHighId( 1 ) );
+    }
+
+    @Test
+    void shouldNotMarkHighestWrittenAtHighIdIfReadOnly() throws IOException
+    {
+        assertOperationThrowInReadOnlyMode( idGenerator -> idGenerator::markHighestWrittenAtHighId );
+    }
+
+    private void assertOperationThrowInReadOnlyMode( Function<IndexedIdGenerator,Executable> operation ) throws IOException
+    {
+        File file = directory.file( "existing" );
+        final IndexedIdGenerator indexedIdGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false );
+        indexedIdGenerator.start( NO_FREE_IDS );
+        indexedIdGenerator.close();
+
+        // Start in readOnly mode
+        try ( IndexedIdGenerator readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, true ) )
+        {
+            readOnlyGenerator.start( NO_FREE_IDS );
+            final UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, operation.apply( readOnlyGenerator ) );
+            assertEquals( "Can not write to id generator while in read only mode.", e.getMessage() );
+        }
     }
 
     private void verifyReallocationDoesNotIncreaseHighId( ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse )

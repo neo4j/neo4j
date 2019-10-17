@@ -38,6 +38,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
@@ -177,6 +178,7 @@ public class IndexedIdGenerator implements IdGenerator
      */
     private final AtomicLong highestWrittenId = new AtomicLong();
     private final File file;
+    private final boolean readOnly;
 
     /**
      * {@code false} after construction and before a call to {@link IdGenerator#start(FreeIds)}, where false means that operations made this freelist
@@ -188,6 +190,7 @@ public class IndexedIdGenerator implements IdGenerator
             boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, OpenOption... openOptions )
     {
         this.file = file;
+        this.readOnly = readOnly;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
         this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
@@ -221,17 +224,32 @@ public class IndexedIdGenerator implements IdGenerator
         }
 
         this.layout = new IdRangeLayout( idsPerEntry );
-        this.tree = new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER_READER,
-                new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry ), recoveryCleanupWorkCollector, readOnly, openOptions );
+        this.tree = instatiateTree( pageCache, file, recoveryCleanupWorkCollector, readOnly, openOptions );
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
         this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
                 () -> lockAndInstantiateMarker( true, true ), generation, strictlyPrioritizeFreelist );
     }
 
+    private GBPTree<IdRangeKey,IdRange> instatiateTree( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            boolean readOnly, OpenOption[] openOptions )
+    {
+        try
+        {
+            final HeaderWriter headerWriter = new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry );
+            return new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnly, openOptions );
+        }
+        catch ( TreeFileNotFoundException e )
+        {
+            throw new IllegalStateException(
+                    "Id generator file could not be found, most likely this database needs to be recovered, file:" + file, e );
+        }
+    }
+
     @Override
     public long nextId()
     {
+        assertNotReadOnly();
         // To try and minimize the gap where the cache is empty and scanner is trying to find more to put in the cache
         // we can see if the cache is starting to dry out and if so do a scan right here.
         // There may be multiple allocation requests doing this, but it should be very cheap:
@@ -325,6 +343,7 @@ public class IndexedIdGenerator implements IdGenerator
 
     IdRangeMarker lockAndInstantiateMarker( boolean bridgeIdGaps, boolean strict )
     {
+        assertNotReadOnly();
         commitAndReuseLock.lock();
         try
         {
@@ -354,6 +373,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void setHighId( long newHighId )
     {
+        assertNotReadOnly();
         // Apparently there's this thing where there's a check that highId is only set if it's higher than the current highId,
         // i.e. highId cannot be set to something lower than it already is. This check is done in the store implementation.
         // But can we rely on it always guarding this, and can this even happen at all? Anyway here's a simple guard for not setting it to something lower.
@@ -370,6 +390,7 @@ public class IndexedIdGenerator implements IdGenerator
     {
         if ( needsRebuild )
         {
+            assertNotReadOnly();
             // This id generator was created right now, it needs to be populated with all free ids from its owning store so that it's in sync
             try ( IdRangeMarker idRangeMarker = lockAndInstantiateMarker( false, true ) )
             {
@@ -445,6 +466,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void markHighestWrittenAtHighId()
     {
+        assertNotReadOnly();
         this.highestWrittenId.set( highId.get() - 1 );
     }
 
@@ -511,6 +533,14 @@ public class IndexedIdGenerator implements IdGenerator
                 }
             } );
             System.out.println( header );
+        }
+    }
+
+    private void assertNotReadOnly()
+    {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Can not write to id generator while in read only mode." );
         }
     }
 
