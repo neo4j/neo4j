@@ -117,31 +117,40 @@ public class FullCheck
                 AUTO_WITHOUT_PAGECACHE.newByteArray( stores.nativeStores().getNodeStore().getHighId(), new byte[ByteArrayBitsManipulator.MAX_BYTES] ),
                 statistics.getCounts(), threads );
         RecordAccess records = recordAccess( stores.nativeStores(), cacheAccess );
+        CountsStore countsStore = checkCountsStore( countsSupplier, log, summary, report, countsBuilder, records );
         execute( stores, decorator, records, report, cacheAccess, reportMonitor );
         ownerCheck.scanForOrphanChains( progressFactory );
-
-        CountsStore counts;
-        if ( checkGraph )
-        {
-            // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,
-            // but the consistency checker should instead prevent rebuild and report that the counts store is broken or missing
-            try
-            {
-                counts = countsSupplier.get();
-                countsBuilder.checkCounts( counts, new ConsistencyReporter( records, report ), progressFactory );
-            }
-            catch ( Exception e )
-            {
-                log.error( "Counts store is missing, broken or of an older format and will not be consistency checked", e );
-                summary.update( RecordType.COUNTS, 1, 0 );
-            }
-        }
 
         if ( !summary.isConsistent() )
         {
             log.warn( "Inconsistencies found: " + summary );
         }
         return summary;
+    }
+
+    private CountsStore checkCountsStore( ThrowingSupplier<CountsStore,IOException> countsSupplier, Log log, ConsistencySummaryStatistics summary,
+            InconsistencyReport report, CountsBuilderDecorator countsBuilder, RecordAccess records )
+    {
+        CountsStore countsStore = CountsStore.nullInstance;
+        // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,
+        // but the consistency checker should instead prevent rebuild and report that the counts store is broken or missing
+        try
+        {
+            countsStore = countsSupplier.get();
+            if ( checkGraph )
+            {
+                countsBuilder.checkCounts( countsStore, new ConsistencyReporter( records, report ), progressFactory );
+            }
+        }
+        catch ( Exception e )
+        {
+            if ( checkGraph )
+            {
+                log.error( "Counts store is missing, broken or of an older format and will not be consistency checked", e );
+                summary.update( RecordType.COUNTS, 1, 0 );
+            }
+        }
+        return countsStore;
     }
 
     void execute( final DirectStoreAccess directStoreAccess, final CheckDecorator decorator,

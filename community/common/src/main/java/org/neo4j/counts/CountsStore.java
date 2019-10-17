@@ -46,4 +46,42 @@ public interface CountsStore extends CountsAccessor, AutoCloseable
      * @throws IOException any type of error happening when transitioning to started state.
      */
     void start() throws IOException;
+
+    CountsStore nullInstance = new NullCountsStore();
+
+    class NullCountsStore implements CountsStore
+    {
+        @Override
+        public Updater apply( long txId )
+        {
+            return CountsAccessor.NO_OP_UPDATER;
+        }
+
+        @Override
+        public void close()
+        {   // no-op
+        }
+
+        @Override
+        public void start() throws IOException
+        {   // no-op
+        }
+
+        @Override
+        public long nodeCount( int labelId )
+        {
+            return 0;
+        }
+
+        @Override
+        public long relationshipCount( int startLabelId, int typeId, int endLabelId )
+        {
+            return 0;
+        }
+
+        @Override
+        public void accept( CountsVisitor visitor )
+        {   // no-op
+        }
+    }
 }
