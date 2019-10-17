@@ -59,7 +59,8 @@ class BufferingIdGeneratorFactoryTest
         PageCache pageCache = mock( PageCache.class );
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries );
-        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
+        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE,
+                false );
 
         // WHEN
         try ( Marker marker = idGenerator.marker() )
@@ -104,7 +105,8 @@ class BufferingIdGeneratorFactoryTest
         private final Marker[] markers = new Marker[IdType.values().length];
 
         @Override
-        public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
+        public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+                OpenOption... openOptions )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
             Marker marker = mock( Marker.class );
@@ -117,9 +119,9 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                OpenOption... openOptions )
+                boolean readOnly, OpenOption... openOptions )
         {
-            return open( pageCache, filename, idType, () -> highId, maxId, openOptions );
+            return open( pageCache, filename, idType, () -> highId, maxId, readOnly, openOptions );
         }
 
         @Override

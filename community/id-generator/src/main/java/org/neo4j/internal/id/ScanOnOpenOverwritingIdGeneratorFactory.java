@@ -44,9 +44,10 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
     }
 
     @Override
-    public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
+    public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
+            OpenOption... openOptions )
     {
         long highId = highIdScanner.getAsLong();
-        return create( pageCache, filename, idType, highId, true, maxId, openOptions );
+        return create( pageCache, filename, idType, highId, true, maxId, readOnly, openOptions );
     }
 }

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.function.LongPredicate;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -231,7 +232,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     determineRecordSize( storeHeaderFormat.generateHeader() );
 
                     // Create the id generator, and also open it because some stores may need the id generator when initializing their store
-                    idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(),
+                    boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
+                    idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(), readOnly,
                             openOptions );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
@@ -587,7 +589,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     private void openIdGenerator()
     {
-        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId(), openOptions );
+        boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
+        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId(), readOnly, openOptions );
     }
 
     /**

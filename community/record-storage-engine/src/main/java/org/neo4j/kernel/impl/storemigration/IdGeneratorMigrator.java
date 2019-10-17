@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
@@ -167,9 +168,10 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             File actualIdFile = layout.idFile( storeType.getDatabaseFile() ).get();
             File idFile = new File( actualIdFile.getAbsolutePath() + ".new" );
             renameMap.add( Pair.of( idFile, actualIdFile ) );
+            boolean readOnly = config.get( GraphDatabaseSettings.read_only );
             try ( PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds() );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
-                    IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE );
+                  IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE, readOnly );
                     Marker marker = idGenerator.marker() )
             {
                 AbstractBaseRecord record = store.newRecord();

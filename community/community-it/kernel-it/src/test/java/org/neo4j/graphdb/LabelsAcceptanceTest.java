@@ -811,16 +811,18 @@ class LabelsAcceptanceTest
                 any -> new DefaultIdGeneratorFactory( fileSystem, immediate() )
                 {
                     @Override
-                    public IdGenerator open( PageCache pageCache, File fileName, IdType idType, LongSupplier highId, long maxId, OpenOption... openOptions )
+                    public IdGenerator open( PageCache pageCache, File fileName, IdType idType, LongSupplier highId, long maxId, boolean readOnly,
+                            OpenOption... openOptions )
                     {
-                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), openOptions );
+                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnly, openOptions );
                     }
 
                     @Override
                     public IdGenerator create( PageCache pageCache, File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                            OpenOption... openOptions )
+                            boolean readOnly, OpenOption... openOptions )
                     {
-                        return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), openOptions );
+                        return super
+                                .create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnly, openOptions );
                     }
 
                     private long maxId( IdType idType, long maxId, LongSupplier highId )

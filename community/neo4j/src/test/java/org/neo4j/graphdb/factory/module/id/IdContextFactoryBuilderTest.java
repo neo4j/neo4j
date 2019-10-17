@@ -85,9 +85,9 @@ class IdContextFactoryBuilderTest
         LongSupplier highIdSupplier = () -> 0;
         int maxId = 100;
 
-        idGeneratorFactory.open( pageCache, file, idType, highIdSupplier, maxId );
+        idGeneratorFactory.open( pageCache, file, idType, highIdSupplier, maxId, false );
 
-        verify( idGeneratorFactory ).open( pageCache, file, idType, highIdSupplier, maxId );
+        verify( idGeneratorFactory ).open( pageCache, file, idType, highIdSupplier, maxId, false );
     }
 
     @Test

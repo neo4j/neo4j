@@ -390,9 +390,10 @@ class NodeStoreTest
         {
             @Override
             protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                    File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, OpenOption[] openOptions )
+                    File fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, OpenOption[] openOptions )
             {
-                return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, openOptions ) );
+                return spy(
+                        super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, openOptions ) );
             }
         } );
         StoreFactory factory =

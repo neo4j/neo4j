@@ -380,7 +380,8 @@ public class DatabaseTest
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
-        doThrow( openStoresError ).when( idGeneratorFactory ).create( any(), any( File.class ), any(), anyLong(), anyBoolean(), anyLong(), anyVararg() );
+        doThrow( openStoresError ).when( idGeneratorFactory )
+                .create( any(), any( File.class ), any(), anyLong(), anyBoolean(), anyLong(), anyBoolean(), anyVararg() );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
