@@ -196,17 +196,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public void cleanForReuse()
-    {
-        // close the old statement reference after the statement has been "upgraded"
-        // to either a schema data or a schema statement, so that the locks are "handed over".
-        statement.queryRegistration().unregisterExecutingQuery( executingQuery );
-        statement.close();
-        statement = transaction.kernelTransaction().acquireStatement();
-        statement.queryRegistration().registerExecutingQuery( executingQuery );
-    }
-
-    @Override
     public TransactionalContext getOrBeginNewIfClosed()
     {
         checkNotTerminated();

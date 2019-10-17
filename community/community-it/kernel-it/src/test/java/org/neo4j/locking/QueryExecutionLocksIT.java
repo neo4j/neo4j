@@ -285,12 +285,6 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public void cleanForReuse()
-        {
-            delegate.cleanForReuse();
-        }
-
-        @Override
         public TransactionalContext getOrBeginNewIfClosed()
         {
             if ( isOpen() )

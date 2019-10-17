@@ -264,7 +264,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         val executableQuery = cacheLookup.executableQuery
 
         if (schemaHelper.lockLabels(schemaToken, executableQuery, inputQuery.options.version, tc)) {
-          tc.cleanForReuse()
           return executableQuery
         }
 

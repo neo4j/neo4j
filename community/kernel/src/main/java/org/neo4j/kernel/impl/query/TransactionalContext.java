@@ -64,8 +64,6 @@ public interface TransactionalContext
 
     void commitAndRestartTx();
 
-    void cleanForReuse();
-
     TransactionalContext getOrBeginNewIfClosed();
 
     boolean isOpen();
