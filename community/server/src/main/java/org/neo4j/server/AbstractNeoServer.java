@@ -41,6 +41,7 @@ import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -326,7 +327,24 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void stop()
     {
+        shutdownGlobalAvailabilityGuard();
         life.stop();
+    }
+
+    private void shutdownGlobalAvailabilityGuard()
+    {
+        try
+        {
+            // Although the globalGuard availability guard is shutdown as part of LifeSupport#stop(), we never hit that if we're
+            // blocking in LifeSupport#start() and the blocked starting components may be using this guard as a bail out signal
+            var globalGuard = getSystemDatabaseDependencyResolver().resolveDependency( CompositeDatabaseAvailabilityGuard.class );
+            globalGuard.shutdown();
+        }
+        catch ( Throwable t )
+        {
+            // Not much we can do other than log - we're trying to shutdown anyway
+            log.error( "Failed to set the global availability guard to shutdown in the process of stopping the Neo4j server", t );
+        }
     }
 
     private void stopWebServer() throws Exception
