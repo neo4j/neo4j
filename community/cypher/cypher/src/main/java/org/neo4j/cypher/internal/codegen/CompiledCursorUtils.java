@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.api.StatementConstants;
@@ -55,7 +54,7 @@ public final class CompiledCursorUtils
      * @param propertyCursor The property cursor to use
      * @param prop The id of the property to find
      * @return The value of the given property
-     * @throws EntityNotFoundException If the node cannot be find.
+     * @throws EntityNotFoundException If the node was deleted in transaction.
      */
     public static Value nodeGetProperty( Read read, NodeCursor nodeCursor, long node, PropertyCursor propertyCursor,
             int prop ) throws EntityNotFoundException
@@ -64,7 +63,18 @@ public final class CompiledCursorUtils
         {
             return Values.NO_VALUE;
         }
-        singleNode( read, nodeCursor, node );
+        read.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            if ( read.nodeDeletedInTransaction( node ) )
+            {
+                throw new EntityNotFoundException( String.format("Node with id %d has been deleted in this transaction", node ) );
+            }
+            else
+            {
+                return Values.NO_VALUE;
+            }
+        }
         nodeCursor.properties( propertyCursor );
         while ( propertyCursor.next() )
         {
@@ -85,16 +95,14 @@ public final class CompiledCursorUtils
      * @param node The id of the node
      * @param label The id of the label
      * @return {@code true} if the node has the label, otherwise {@code false}
-     * @throws EntityNotFoundException if the node is not there.
      */
     public static boolean nodeHasLabel( Read read, NodeCursor nodeCursor, long node, int label )
-            throws EntityNotFoundException
     {
-        if ( label == StatementConstants.NO_SUCH_LABEL )
+        read.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
         {
             return false;
         }
-        singleNode( read, nodeCursor, node );
 
         return nodeCursor.hasLabel( label );
     }
@@ -124,22 +132,34 @@ public final class CompiledCursorUtils
      * Fetches a given property from a relationship
      *
      * @param read The current Read instance
-     * @param relationship The node cursor to use
-     * @param node The id of the node
+     * @param relationshipCursor The relationship cursor to use
+     * @param relationship The id of the relationship
      * @param propertyCursor The property cursor to use
      * @param prop The id of the property to find
      * @return The value of the given property
      * @throws EntityNotFoundException If the node cannot be find.
      */
-    public static Value relationshipGetProperty( Read read, RelationshipScanCursor relationship, long node, PropertyCursor propertyCursor,
+    public static Value relationshipGetProperty( Read read, RelationshipScanCursor relationshipCursor, long relationship, PropertyCursor propertyCursor,
             int prop ) throws EntityNotFoundException
     {
         if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
             return Values.NO_VALUE;
         }
-        singleRelationship( read, relationship, node );
-        relationship.properties( propertyCursor );
+        read.singleRelationship( relationship, relationshipCursor );
+        if ( !relationshipCursor.next() )
+        {
+            if ( read.relationshipDeletedInTransaction( relationship ) )
+            {
+                throw new EntityNotFoundException(
+                        String.format( "Relationship with id %d has been deleted in this transaction", relationship ) );
+            }
+            else
+            {
+                return Values.NO_VALUE;
+            }
+        }
+        relationshipCursor.properties( propertyCursor );
         while ( propertyCursor.next() )
         {
             if ( propertyCursor.propertyKey() == prop )
@@ -156,24 +176,6 @@ public final class CompiledCursorUtils
             Direction direction )
     {
         return nodeGetRelationships( read, cursors, node, nodeId, direction, null );
-    }
-
-    private static void singleNode( Read read, NodeCursor nodeCursor, long node ) throws EntityNotFoundException
-    {
-        read.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
-    }
-
-    private static void singleRelationship( Read read, RelationshipScanCursor relationships, long relationship ) throws EntityNotFoundException
-    {
-        read.singleRelationship( relationship, relationships );
-        if ( !relationships.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, relationship );
-        }
     }
 }
 

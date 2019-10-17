@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.codegen
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.codegen.CompiledCursorUtils.{nodeGetProperty, nodeHasLabel, relationshipGetProperty}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException
 import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, Read, RelationshipScanCursor}
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 
@@ -58,14 +57,14 @@ class CompiledCursorUtilsTest extends CypherFunSuite {
     value should equal(NO_VALUE)
   }
 
-  test("should throw if node is missing when querying for property") {
+  test("should return NO_VALUE if node is missing when querying for property") {
     // Given
     val read = mock[Read]
     val nodeCursor = mock[NodeCursor]
     when(nodeCursor.next()).thenReturn(false)
 
     // Expect
-    an [EntityNotFoundException] shouldBe thrownBy(nodeGetProperty(read, nodeCursor, 42L, mock[PropertyCursor], 1337))
+    nodeGetProperty(read, nodeCursor, 42L, mock[PropertyCursor], 1337) shouldBe NO_VALUE
   }
 
   test("should find a property from a relationship cursor") {
@@ -98,14 +97,14 @@ class CompiledCursorUtilsTest extends CypherFunSuite {
     value should equal(NO_VALUE)
   }
 
-  test("should throw if relationship is missing when querying for property") {
+  test("should return NO_VALUE if relationship is missing when querying for property") {
     // Given
     val read = mock[Read]
     val relationshipCursor = mock[RelationshipScanCursor]
     when(relationshipCursor.next()).thenReturn(false)
 
     // Expect
-    an [EntityNotFoundException] shouldBe thrownBy(relationshipGetProperty(read, relationshipCursor, 42L, mock[PropertyCursor], 1337))
+    relationshipGetProperty(read, relationshipCursor, 42L, mock[PropertyCursor], 1337) shouldBe NO_VALUE
   }
 
   test("should find if a node has a label") {
@@ -120,12 +119,12 @@ class CompiledCursorUtilsTest extends CypherFunSuite {
     nodeHasLabel(mock[Read], nodeCursor, 1L, 1980) shouldBe false
   }
 
-  test("should throw when node is missing when checking label") {
+  test("should return false when node is missing when checking label") {
     // Given
     val nodeCursor = mock[NodeCursor]
     when(nodeCursor.next()).thenReturn(false)
 
     // Expect
-    an [EntityNotFoundException] shouldBe thrownBy(nodeHasLabel(mock[Read], nodeCursor, 1L, 1337))
+    nodeHasLabel(mock[Read], nodeCursor, 1L, 1337) shouldBe false
   }
 }
